@@ -911,7 +911,15 @@ export default [
     {
         files: ['features/files/**/*'],
         rules: {
-            // The files feature owns cloud-files internals. It still must NOT use legacy Supabase API key
+            // The files feature owns cloud-files internals — the global
+            // `no-restricted-imports` bans (deleted file hooks, internal
+            // subdirs, the barrel) are all about OUTSIDE consumers reaching
+            // into features/files; inside the feature they'd flag the
+            // canonical modules themselves (e.g. the index.ts barrel
+            // re-exporting its own internals). Turn the import bans off here,
+            // matching the redux/tts allowlists below.
+            'no-restricted-imports': 'off',
+            // It still must NOT use legacy Supabase API key
             // env vars, nor write the global active context (Surface A only).
             'no-restricted-syntax': [
                 'error',
@@ -1023,8 +1031,26 @@ export default [
         // docs/OVERLAY_WINDOW_OVERHAUL.md.
         files: ['features/overlays/OverlayController.tsx'],
         rules: {
+            // Flat config REPLACES (not merges) the rule per file, so this
+            // override re-lists every global syntax ban alongside the
+            // spread ban — at 'error', matching the global slot. A plain
+            // ['warn', {JSXSpreadAttribute}] here silently stripped ALL the
+            // global chokepoints from this file (D68).
             'no-restricted-syntax': [
-                'warn',
+                'error',
+                ...legacySupabaseKeyBan,
+                ...storageUriEradicationBan,
+                ...directObjectStoreSyntaxRestrictions,
+                ...scopesChokepointSyntaxRestrictions,
+                ...appContextWriteSyntaxRestrictions,
+                ...toolResultsChokepointSyntaxRestrictions,
+                ...contentIrChokepointSyntaxRestrictions,
+                ...contextMenuV3StaticImportBan,
+                ...heavyImplStaticImportBan,
+                ...reactFlowStaticImportBan,
+                ...audioSystemStaticImportBan,
+                ...cameraGetUserMediaChokepointBan,
+                ...surfaceLabelOverrideBan,
                 {
                     selector: 'JSXSpreadAttribute',
                     message:

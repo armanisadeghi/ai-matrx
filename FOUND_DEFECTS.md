@@ -13,397 +13,177 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D112 — canonical list rows are mouse-only: no keyboard or screen-reader path to open a record (2026-07-27)
-
-Every list built on the canonical entry-list shell opens a record via a click handler
-on the bare `<tr>`. Verified live on `/crm`: the row has `cursor: pointer` but
-`role=null`, `tabindex=null`, and the name cell is plain text, not a link. The only
-focusable control in the row is the `…` kebab (`aria-label="Actions for <name>"`).
-
-So a keyboard user cannot open any record from any list page, a screen reader
-announces no affordance, and middle-click / cmd-click "open in new tab" does not work
-anywhere in the app.
-
-**Not a CRM defect — the gold standard has it too.** `features/agents/browse/components/AgentBrowseTable.tsx`
-has exactly the same shape (aria-labels on the favorite toggle and the kebab, nothing
-on the row). CRM matched the canonical pattern correctly; the pattern is what is wrong.
-Fixing it in one feature would be a divergence, which is why it is filed instead of
-patched.
-
-Fix, once, in the shared primitive: render the primary/title cell as a real
-`next/link` to the row's href (the entity registry already supplies `hrefFor`), keeping
-the row click as a convenience. That gets keyboard focus, screen-reader semantics, and
-open-in-new-tab for every list at once. The `/shapes` list hit the agent-driving half of
-this in 2026-07-18 and patched only itself with `aria-label="Open <label>"` — that
-narrower fix should be superseded by the link.
-
-Touches `components/matrx/MatrxDataTable` + the browse table; audit
-`AgentBrowseRows`/`AgentBrowseCards` for the same gap.
-
 ### D110 — stray or broken Cloudflare Workers build is red on frontend releases (2026-07-27)
 
-GitHub check `Workers Builds: ai-matrx-admin` failed on release `v0.4.154`
-(`005edd3af`, Cloudflare build `7328b9c2-77b0-4809-bb15-411a8b3f3105`) and on
-multiple recent release commits, while the canonical Vercel deployment is green
-and `aimatrx.com` is serving it. No Wrangler/Cloudflare deployment config exists
-in the repository; the check comes from an external Cloudflare integration whose
-dashboard logs require account access. Decision needed: if that deployment is
-retired, remove the GitHub/Cloudflare integration; if it is intended, inspect the
-Cloudflare build log and add the missing repository configuration or build
-settings.
-
-### D109 — frontend release gates are globally disabled by environment (2026-07-27)
-
-Both `scripts/release.sh` runs for the feedback MCP printed
-`TEMP_SKIP_RELEASE_CHECKS=true` and silently forced `--no-migrate --no-gates`,
-skipping migration, protocol, attribution, and advisory quality gates. The
-feedback release was independently type-checked/tested and its live migration
-verified, but future releases may not be. Find and remove the persistent flag
-at its source; if an emergency bypass is still needed, make it explicit per
-invocation so routine releases cannot inherit it invisibly.
-
-### D106 — research context builder loses settings on save; token budget is the wrong affordance (2026-07-26)
-
-Owner-reported after live testing. Four related failures in the research context/setup save path (`features/research/` — the context builder + topic setup surfaces; start at `hooks/useContextBuilder.ts`, `components/resources/ResourcePicker.tsx`, and whatever writes the topic's `agent_config` / report-type selection).
-
-1. **`on_demand` vs `inject` is not respected.** The per-resource delivery mode is chosen in the picker but is not honored on save/reload — the round-trip drops it.
-2. **The chosen agent is lost.** Selected on setup, gone when you come back.
-3. **The report type initially selected is lost.** Same round-trip.
-4. **The token-budget number is the wrong affordance and should be replaced.** Owner is running Gemini 3.6, which handles very long context well for this thematic work, so a precise token count is noise. Replace it with a green/yellow/red indicator plus warnings — the user needs "is this fine / getting heavy / too much", not a number.
-
-Items 1-3 look like ONE bug class: the save shape and the load shape have drifted, so fields written by the UI are not read back (or are not written at all). Diff what the picker/setup form builds against what the loader reads before fixing them individually.
-
-Owner's framing: these are real but not blocking — the core scoring/triage work is "significantly better" — so this was deliberately deferred to keep momentum, not silently dropped.
+GitHub check `Workers Builds: ai-matrx-admin` fails on release commits while Vercel is green and serving. No Wrangler/Cloudflare config exists in the repo; the check comes from an external Cloudflare integration. **Decides: Arman** — retire the integration, or configure the deployment it expects.
 
 ### D107 — the build-OOM fix is UNATTRIBUTED: two candidate causes landed in the same green build (2026-07-27)
 
-Production was stuck on v0.4.129 for seven releases; v0.4.130–136 all SIGKILL'd with a compile-phase OOM. v0.4.138 went green (15.9 min). **But two independent changes landed between the last failure and that success, and nobody has isolated which one did it:**
-
-1. **v0.4.137** (parallel session) — reverted the ENTIRE `React.lazy → next/dynamic` campaign (the v0.4.124–132 changes), restoring pre-124 code paths specifically to isolate the OOM.
-2. **v0.4.138** (this session) — `turbopackMemoryLimit` 40GiB → 30GiB in `next.config.js`, on the evidence that measured peak RSS was 58.49 GiB against a 60 GB machine.
-
-Both are plausible sole causes. Consequences of leaving this unresolved: (a) if the revert was the fix, the memory ceiling is costing wall-clock on every build for nothing; (b) if the ceiling was the fix, the lazy→dynamic campaign was reverted for nothing and should be re-landed; (c) if BOTH were needed, the headroom is thin again the moment either is undone.
-
-Isolate with one controlled experiment before building anything else on top: restore `turbopackMemoryLimit` to 40GiB alone and release. Green ⇒ the revert was the fix and the ceiling should go back to 40GiB. Red ⇒ the ceiling is load-bearing, keep 30GiB and re-land the lazy→dynamic campaign on top of it. **Do not re-land the campaign and change the ceiling in the same release** — that is exactly how this became unattributable.
+v0.4.130–136 SIGKILL'd; v0.4.138 went green after BOTH the `React.lazy → next/dynamic` campaign revert (v0.4.137) AND `turbopackMemoryLimit` 40→30GiB (v0.4.138). Isolate with one controlled experiment: restore 40GiB alone and release. Green ⇒ revert was the fix, keep 40GiB. Red ⇒ ceiling is load-bearing, keep 30GiB and re-land the campaign. Never change both in one release.
 
 ### D108 — seven historic feedback screenshots are permanently dead (2026-07-27)
 
-`users.user_feedback.image_urls` has seven `https://server.app.matrxserver.com/share/<uuid>/download` values whose share rows no longer exist; all return `404 share_link_invalid`, so those screenshots cannot be recovered from the stored pointer. New MCP writes reject this expiring URL class and accept only durable public URLs. Remaining fix: recover the original files from backups/audit history if available and replace these seven pointers with CDN URLs; otherwise mark the affected items' screenshot evidence irrecoverable.
+`users.user_feedback.image_urls` has seven expired `…/share/<uuid>/download` pointers (404 `share_link_invalid`). New MCP writes already reject this URL class. Fix: recover originals from backups if possible and replace with CDN URLs; otherwise mark irrecoverable.
+
+### D106 — research context builder loses settings on save; token budget is the wrong affordance (2026-07-26)
+
+Owner-reported, deferred deliberately. `features/research/` (start: `hooks/useContextBuilder.ts`, `components/resources/ResourcePicker.tsx`): (1) per-resource `on_demand` vs `inject` not honored on save/reload; (2) chosen agent lost on round-trip; (3) report type lost on round-trip — likely ONE save-shape/load-shape drift bug, diff written vs read before fixing individually; (4) replace the token-budget number with a green/yellow/red indicator.
 
 ### D106b — five more surfaces still claim "Only you" from data that can't support it (2026-07-26)
 
-Same class as the files fix (`22e8d79ea`) and the `PermissionsList` fix: a surface reads one signal — a `visibility` value or an empty grant list — and renders a privacy guarantee. None of them can see container conveyance via `platform.reachability`, so each can be wrong the moment the record is attached to a scope, project, or data store.
+Same class as the files fix (`22e8d79ea`): a surface reads one signal and renders a privacy guarantee, blind to container conveyance via `platform.reachability`. Fix per surface: call `public.entity_access_summary(type,id)` or reword to what the surface actually knows. Don't bulk-rewrite blind — check each feature's conveyance first.
 
-- `features/secrets/components/VaultItemDetail.tsx:1406` — "Only you. Add someone above to share this credential." **Highest stakes** (credentials); verify whether vault items convey through any container before trusting or rewording.
-- `features/canvas/social/CanvasShareSheet.tsx:373` — "Only you can view".
-- `features/structured-lists/StructuredListManagerV2.tsx:139` — `private` hint "Only you".
-- `features/content-ir/studio/components/ShapeOwnerEditor.tsx:40` — "Only you and explicitly granted people."
-- `features/education/data/features.ts:236` — user-facing marketing copy: "Only you, until you explicitly share a link or publish a resource. Sharing is always an action you take, never a default." That is a **promise to users**, and it is false wherever a table defaults to `internal` (see D105). Resolve with D105.
-
-Fix per surface: either call `public.entity_access_summary(type,id)` (the honest answer, one entity at a time — see `features/sharing/FEATURE.md`) or reword to state only what the surface actually knows ("No one has been granted access here"). Do NOT bulk-rewrite blind: each feature's conveyance needs checking first.
+- `features/secrets/components/VaultItemDetail.tsx:1406` (highest stakes — credentials)
+- `features/canvas/social/CanvasShareSheet.tsx:373`
+- `features/structured-lists/StructuredListManagerV2.tsx:139`
+- `features/content-ir/studio/components/ShapeOwnerEditor.tsx:40`
+- `features/education/data/features.ts:236` (marketing promise — resolve with D105)
 
 ### D105 — files default to `internal` (org-readable): 11,003 rows. Product call, Arman (2026-07-26)
 
-`files.files.visibility` and `files.folders.visibility` both `DEFAULT 'internal'::platform.visibility`, so **every upload that doesn't pass an explicit visibility is readable by everyone in the owning org**. Live counts (non-deleted): `internal` 11,003 · `personal` 10,463 · `public` 1,238 · `link` 1.
-
-This was invisible until 2026-07-26, because the client folded `internal` into `personal` and rendered it as "Only you" (fixed in `22e8d79ea`). The UI now tells the truth, which means ~11k files that read "Only you" yesterday read "Organization" today. **Nothing about who can access them changed** — `iam.has_access_for_base` has always honored `internal`; only the label was wrong.
-
-Not filed as a bug because it may be intended (org collaboration by default). **Decision needed from Arman**: (a) leave the default and accept that uploads are org-visible; (b) flip the default to `personal` and let sharing be explicit — new rows only, no backfill; or (c) flip the default AND backfill existing `internal` rows that were never deliberately set, which is unknowable from the row alone (no audit of who set what) and so would have to be a blunt date-cutoff sweep. Do not act on this without an explicit answer — (c) can silently revoke access people are currently relying on.
+`files.files.visibility` / `files.folders.visibility` DEFAULT `internal`, so unlabelled uploads are org-readable. Access behavior never changed — only the label was wrong (fixed `22e8d79ea`). **Decides: Arman**: (a) keep the default; (b) flip to `personal` for new rows; (c) flip + backfill (dangerous — can silently revoke relied-upon access). Do not act without an explicit answer.
 
 ### D104 — no footer anywhere in `(public)`; legal docs are near-unreachable (2026-07-26)
 
-`app/(public)/layout.tsx` renders `PublicHeader` and no footer; no public footer component exists in the repo. `/privacy-policy` and `/terms-and-conditions` are linked only from OAuth consent screens, SMS compliance constants, and the hand-rolled footer on `app/page.tsx:122-131` (which links Privacy but NOT Terms). Fix: one shared public footer component (Privacy, Terms, Contact) mounted in `(public)/layout.tsx` and reused by `app/page.tsx`. Product call on placement/links: Arman.
+`app/(public)/layout.tsx` has no footer; `/privacy-policy` and `/terms-and-conditions` are linked only from OAuth consent, SMS constants, and `app/page.tsx:122-131` (which omits Terms). Fix: one shared public footer (Privacy, Terms, Contact) in `(public)/layout.tsx` + `app/page.tsx`. Placement/links: Arman.
 
 ### D103 — legal vertical landings predate `ModuleLanding`; PD calculator has no guest landing (2026-07-26)
 
-`features/legal/components/landing/LegalLanding.tsx` + `features/legal/wc/components/landing/CaWcLanding.tsx` are ~900 lines hand-duplicating the structure `ModuleLanding` was modeled on (`ModuleLanding.tsx:73-78`), are not registered in `MODULE_LANDING_DIRECTORY` (so `/legal` is invisible on `/features`), and get no guest conversion nudges. Dead CTAs + missing `AuthedWorkspaceCTA` were fixed 2026-07-26; the remaining fix is migrating both onto `ModuleLanding` + directory registration. Related orphan: `features/legal/wc/pd-ratings/components/landing/PdRatingsCalculatorLanding.tsx` (331 lines, zero importers) while `/legal/ca-wc/pd-ratings-calculator/page.tsx` renders the client workspace unconditionally with no guest branch — wire the orphan in via the `module-landing-pages` skill postures or delete it.
-
-### D102 — a structured server validation error reaches the user as bare "HTTP 422" (2026-07-25)
-
-Every aidream 4xx with a validation body is surfaced to the user as just the
-status line. The server's response is precise and actionable — for an
-unregistered `source_feature` it returns
-`{"error":"validation_error","user_message":"Request validation failed with 1
-issue: \`body.source_feature\`: … add the real feature to
-source_attribution.SOURCE_FEATURES or fix the caller","details":[{field,
-message,help,rejected_input}]}`— and NONE of it is shown or logged; the toast
-says "HTTP 422" and the Error Inspector entry carries no more. Cost three
-failed agent runs and a manual`fetch`replay in the browser console to
-discover, and it will cost the same again every time. Fix: in the`callApi`
-error path (`lib/api/call-api.ts`), parse the JSON body and prefer
-`user_message`/`message`/`details[].message`over the status line, the way
-the stream`error`event is already handled in`features/agents/run/useRunAgent.ts`. Found while wiring the research Context
-Builder; unrelated to that feature, and it affects every Python call in the app.
+`features/legal/components/landing/LegalLanding.tsx` + `wc/components/landing/CaWcLanding.tsx` (~900 lines) hand-duplicate `ModuleLanding`, aren't in `MODULE_LANDING_DIRECTORY`, get no conversion nudges. Migrate both onto `ModuleLanding` + register. Also: `PdRatingsCalculatorLanding.tsx` (331 lines, zero importers) — wire in via the `module-landing-pages` skill or delete.
 
 ### D101 (partial) — `agx_get_list` has no org scope; the delete path is a HARD delete (2026-07-25)
 
-Soft-delete gap FIXED live on the two gallery readers — `migrations/agx_get_list_excludes_soft_deleted.sql` AND `migrations/agx_search_excludes_soft_deleted.sql` (`agx_search` had copied the missing predicate verbatim and merges into the SAME grid via `mergeAgentListRows`, so fixing only the list would have left search able to resurrect a deleted agent permanently). **Severity correction:** D101 said "1 such row live today" — that row is `agent_type='builtin'` with `user_id=NULL` and no grants, which no arm could return, so the gap was LATENT, not a live leak. Three halves remain: (1) `agx_get_list` returns only rows you own or were explicitly granted, but every user agent is `visibility='internal'` with an `organization_id`, so **agents your own teammates created in your own org are invisible**; that is a behaviour WIDENING and belongs with retiring `/agents/all` onto the replacement `public.agx_list_scoped` (`migrations/agx_list_scoped.sql`, live, used by `/agents/browse`) once `/agents/browse` is ratified. (2) `features/agents/redux/agent-definition/thunks.ts:805` deletes agents with a **hard** `.delete()`, so no soft-delete/undo exists on this path at all — the predicate just added has nothing to protect there. (3) ~6 more SECURITY DEFINER readers of `agent.definition` carry the same missing predicate — `agx_get_shared_with_me`, `agx_get_shared_for_chat`, `get_agents_for_chat`, `agx_get_access_level`, `agx_duplicate_agent`, `agx_get_shortcuts_for_context`/`_initial`, plus `agx_get_list_full`'s builtin arm; none is on the gallery path, so sweeping them is its own change.
+Soft-delete predicate fixed on both gallery readers (`migrations/agx_get_list_excludes_soft_deleted.sql`, `agx_search_excludes_soft_deleted.sql`). Remaining: (1) org-teammate agents invisible in `agx_get_list` — belongs with retiring `/agents/all` onto `agx_list_scoped` once `/agents/browse` is ratified; (2) `features/agents/redux/agent-definition/thunks.ts:805` hard-deletes agents — no soft-delete/undo on that path; (3) ~6 more SECURITY DEFINER readers of `agent.definition` share the missing soft-delete predicate (`agx_get_shared_with_me`, `agx_get_shared_for_chat`, `get_agents_for_chat`, `agx_get_access_level`, `agx_duplicate_agent`, `agx_get_shortcuts_for_context*`, `agx_get_list_full` builtin arm).
 
-### D100 — three registered catalog entity types are ACL-invisible: no user can ever be a viewer (2026-07-24)
+### D100 — three registered catalog entity types are ACL-invisible (2026-07-24)
 
-`public.analysis_recipes`, `runtime.global_origin`, and `scraper.sites` are registered in `platform.entity_types` but carry **no** `visibility` / `created_by` / `owner_id` / `organization_id` column and declare **no** `default_visibility`. `platform.entity_row_access_attrs()` therefore resolves them to `personal` with a NULL owner and NULL org, and `iam.has_access_for_base()` denies every user — so any `assoc_add` edge targeting one of them is impossible to write, for everyone, forever. Same class as the surface-binding regression fixed in `migrations/entity_access_attrs_honor_registry_default_visibility.sql`; that fix makes the resolver honor the registry, so the remaining work is a **product call**: declare each one's `default_visibility` (`public` for catalogs, `internal` for org-scoped) or give it real ownership columns. No caller hits them today — latent, not live.
+`public.analysis_recipes`, `runtime.global_origin`, `scraper.sites` have no ownership/visibility columns and no `default_visibility`, so `iam.has_access_for_base()` denies everyone and no `assoc_add` edge can target them. Latent (no live callers). **Product call**: declare `default_visibility` (`public` for catalogs, `internal` for org-scoped) or add ownership columns.
 
-### D99 — Podcast article hook violates React ref/effect rules (2026-07-24)
+### D96 — aidream writes Univer document snapshots with no page geometry (2026-07-23)
 
-`features/podcasts/generator/useEpisodeArticles.ts` writes
-`articleRef.current` during render and synchronously changes loading state
-inside an effect. Targeted lint fails on `react-hooks/refs` and
-`react-hooks/set-state-in-effect`. Refactor the state/reference flow; discovered
-while validating the unrelated request-attribution callsite update.
-
-### D98 — Outputs Studio fails its targeted React lint gate (2026-07-24)
-
-`features/research/components/outputs/OutputsStudio.tsx` synchronously calls
-`setReportLoading(true)` inside an effect (`react-hooks/set-state-in-effect`).
-The same file also uses the banned `Sparkles` icon and carries two stale
-`no-img-element` disable comments. Refactor the loading transition around the
-async fetch and clean the icon/directives; discovered while validating the
-unrelated request-context fix.
-
-### D96 — writers ship Univer document snapshots with no page geometry; the doc then cannot scroll (2026-07-23)
-
-Every `workbench.udt_document_snapshots` row written with `origin='agent'` carries `documentStyle: {}` — no `pageSize`, no margins. Univer lays a document out inside `documentStyle.pageSize`; with none there is no page box, so text never wraps (it runs off the right edge) and the docs viewport reports **no scrollable extent** — the wheel is swallowed and `/documents/[id]` sits frozen at the top. 8 of the 10 most-recent documents are affected. The frontend now recovers loudly (`sanitizeUniverDocSnapshot#restorePageStyle` stamps `DEFAULT_DOCUMENT_PAGE_STYLE` + `console.warn`), which fixes reading, but **the writer is the real bug and lives in aidream** — the snapshot is still stored page-less, so every other consumer (export, print, any non-Matrx reader) still gets a malformed document. Fix aidream's markdown→Univer document writer to stamp A4 geometry (`pageSize {width:595,height:842}`, margins 72/72/90/90 — mirrors `features/data-tables/document-page-style.ts`), then backfill the existing `documentStyle: {}` snapshots.
-
-### D97 — scrolling a cloud document writes a snapshot (2026-07-23)
-
-`DocumentEditor`'s autosave is driven by `apiRef.current.onCommandExecuted(...)` with no command filter. Univer dispatches commands for **viewport scroll**, so merely opening a document and scrolling flips the status to "Unsaved changes" and, 2.5s later, appends a new row to `workbench.udt_document_snapshots`. Confirmed live: four `origin='autosave'` snapshots for doc `5f2a3fea…` created by scrolling alone during a read-only inspection. Pollutes version history, defeats the append-only audit trail, and fires collab broadcasts for a non-edit. Fix: filter `onCommandExecuted` to mutation commands (Univer's `CommandType.MUTATION` / an explicit allowlist) before marking dirty.
+`workbench.udt_document_snapshots` rows with `origin='agent'` carry `documentStyle: {}` → no wrap, no scroll. FE recovers loudly (`sanitizeUniverDocSnapshot#restorePageStyle`), but the writer bug lives in aidream: stamp A4 geometry (mirror `features/data-tables/document-page-style.ts`), then backfill existing `{}` snapshots.
 
 ### D92 — 38 dead RLS policies: policy exists, `authenticated` lacks the privilege (2026-07-23)
 
-Surfaced by the new `pnpm check:access-drift` dead-policy guard (P4). 38 SELECT/ALL policies for `authenticated`/public sit on tables where the role has NO schema USAGE or NO table/column SELECT — the policy can never admit anyone, so legitimate users are silently locked out (over-tightening class, and the recurring schema-move USAGE-grant gap). Clusters: `scraper.*` (17 tables, `std_select` with no table grant), `runtime.*` + `history.row_versions` (missing schema USAGE), `seo.topic`/`keyword_topic`/`site_topic_value`, `platform.activity_log`/`comments`/`entity_types`/`edge_payload_kind`/`org_module_config`/`share_links`/`user_entity_state`, `iam.memberships`/`invitations`. Run `pnpm check:access-drift` for the exact live list. Fix per cluster: decide intended audience, then `GRANT USAGE`/`GRANT SELECT` (or delete the dead policy if the table is service-only). Intentional deny-alls (`billing.stripe_event`, `cron.*`) are allowlisted in `scripts/access-matrix/check-access-drift.ts`.
+Run `pnpm check:access-drift` for the live list (clusters: `scraper.*`, `runtime.*`, `history.row_versions`, `seo.*`, assorted `platform.*`, `iam.memberships`/`invitations`). Fix per cluster: decide intended audience, then `GRANT USAGE`/`GRANT SELECT` (or delete the dead policy). Intentional deny-alls are allowlisted in `scripts/access-matrix/check-access-drift.ts`.
 
 ### D93 — `rag.kg_chunks` reads statement-timeout for non-entitled users (perf class) (2026-07-23)
 
-Measured during P4 (item 7 perf sanity): a non-entitled user filtering AMA chunks (`source_kind=cld_file & source_id=<ama>`, 2,733 rows) hits `57014 statement timeout` — every candidate row evaluates per-row SECURITY DEFINER policy functions (`rag_source_has_library_grant`, `iam.has_access`) before RLS concludes zero rows. Entitled users return fast (grant branch matches). Denial-by-timeout is correct-but-awful: it burns a full statement budget and is indistinguishable from an outage to the client. Fix direction: the per-row predicates take `(source_kind, source_id)` which is CONSTANT across a source's chunks — hoist to a `LATERAL`/initplan-friendly shape, or add a per-source materialized visibility check. Optimize only against measured plans. The acceptance matrix deliberately probes a single chunk id to stay decisive (`scripts/access-matrix/FEATURE.md`).
+Per-row SECURITY DEFINER policy functions evaluate over thousands of candidate rows before RLS concludes zero. Denial-by-timeout burns a full statement budget and looks like an outage. Fix: hoist the constant `(source_kind, source_id)` predicates to a LATERAL/initplan-friendly shape or per-source materialized visibility check; optimize only against measured plans.
 
 ### D94 — `docproc.page_extraction_jobs.project_id` is a project FK on a feature table (forbidden pattern) (2026-07-23)
 
-Live FK `page_extraction_jobs_project_id_fkey → workspace.projects(id) ON DELETE SET NULL`. CLAUDE.md's "Forbidden relationship shortcuts" bans a feature table depending on a project FK — project membership must be an optional `platform.associations` edge. It is nullable and not used for authorization/lifecycle (P4 verified the auth gates never read it), so this is the tagging-column variant, not a load-bearing dependency; but removing it end-to-end (column + FE types/forms + aidream model + edge backfill) is its own focused change. Reported here per the fix-on-sight rule's reporting clause rather than derailing P4.
-
-### D95 — RESOLVED 2026-07-23 — `features/marketing/seo/keyword-research` didn't type-check against the aidream contract
-
-Root cause was server-side and systemic, not a frontend alias problem: all SEVEN aidream SEO command-result models were typed Pydantic but reached clients as opaque objects (`seo.collection_run.result` → `RunStatusResponse.result: dict[str, Any]`), so none existed in `api-types.ts`. Fixed at the funnel: each result model gained a `result_kind` Literal (= its `operation`), `aidream/services/seo/command_results.py::SeoCommandResult` is the discriminated union, and `GET /seo/collections[/{run_id}]` now return `SeoRunStatusResponse`/`SeoRunListResponse`. `KeywordResearchResult.artifact` is now the typed `KeywordResearchArtifact` (killing this file's hand-written inline cast). Backfill `aidream/db/migrations/0244_seo_command_result_kind_backfill.sql` applied + verified (11 rows, all 11 revalidated through the union). Guard: `aidream/services/seo/test_command_results.py`.
-
-### D89 — RESOLVED 2026-07-23 — `rag.fn_data_store_members_rich` denied grant readers
-
-Found during P3 (Shared Knowledge discovery); fixed same day. The rich member RPC raised `data store not found` for grant-entitled callers (gate predated `data_stores_grant_reader_select.sql`), so `/rag/data-stores` showed "Could not load members" on granted stores. Fixed in `migrations/data_store_members_rich_grant_reader.sql` (applied + ledgered): gate now super-admin OR creator/org-member OR `user_can_read_data_store_via_grant` (the frozen predicate, not a fork). Verified live: entitled reader `77c6af70-…` gets 1 member on the AMA store; control `929274b1-…` still refused.
-
-### D87 — RESOLVED 2026-07-23 (Phase 5 rulings) — plaintext secret columns in live tables
-
-Found during the Unified Credential Vault Phase 0 inventory (plan: `common-docs/projects/unified-credential-vault/PLAN.md`, item I-6). Resolved by Phase 5 (aidream migration `0242_d87_secret_columns_rulings.sql`, applied + ledgered) with per-column rulings from live inspection:
-
-- **`ai.endpoint.byok_secret_key` — never held secrets.** All 11 non-null values are ENV-VAR NAMES (`ANTHROPIC_API_KEY`, …) on platform system rows (`is_system=true`, system org), resolved through matrx-ai's `resolve_api_key`. Deployment-config bootstrap exception; a live CHECK constraint (`endpoint_byok_secret_key_is_env_name`) now forbids the column from ever holding a raw key.
-- **`files.webhooks.secret` — stays DB-readable plaintext BY DESIGN.** Outbound delivery runs entirely in Postgres (`pg_cron` → `files.webhook_dispatch()` → `files.webhook_sign()` HMAC-SHA256 via pgcrypto → `pg_net`); app-side Fernet would break DB-side signing. It is our system-generated signing value (not a user credential), RLS owner-scoped, returned only at create/rotate. Documented via column COMMENT.
-- **`workflow.trigger.webhook_secret` — now battery-Fernet ciphertext.** 0 legacy rows existed at cutover; encrypted at create (`workflow_triggers.py`), decrypted + constant-time compared at fire (`services/runtime/triggers.py`), never serialized in responses; undecryptable rows refuse to fire loudly.
-
-Still open elsewhere: the orphaned `vault.secrets` `OPENAI_API_KEY` row (2024-10-03 — verify dead, then delete) and the `tool.mcp_user_conn` pgcrypto path (owned by vault Phase 4).
+Nullable tagging-column variant, not load-bearing (auth gates never read it). Removing it end-to-end (column + FE types/forms + aidream model + edge backfill) is its own focused change.
 
 ### D88 — service-role RPCs accept raw p_user_id with no internal actor guard (2026-07-23)
 
-`public.get_mcp_credentials(p_user_id, p_server_id)` (returns DECRYPTED MCP tokens) and `public.get_user_form_context(p_user_id)` are safe today only because EXECUTE is service-role-only (verified live) — one re-grant to `authenticated` away from a D86-class actor-spoof hole. `get_mcp_credentials` is deleted by vault plan Phase 4; until then, and for any surviving service-role function of this shape, add an internal guard (`auth.uid()` must be null/service or equal `p_user_id`).
+`public.get_mcp_credentials` (returns decrypted MCP tokens) and `public.get_user_form_context` are safe only because EXECUTE is service-role-only — one re-grant away from a D86-class actor-spoof hole. `get_mcp_credentials` dies with vault Phase 4; until then add an internal guard (`auth.uid()` null/service or equal `p_user_id`).
 
 ### D85 — CROSS-REPO (aidream): concurrent child agents share ONE emitter turn-text accumulator (2026-07-23)
 
-**Owner: aidream. Symptom fixed; root cause latent.** A child-agent fork aliases the parent emitter (`fork_for_child_agent` does not replace `emitter`), and the executor rebuilds a stage's output from that emitter's `_turn_text_acc` on the error/truncate/cancel paths — so concurrent sub-agents can cross-contaminate each other's captured `.output`. Root cause of "Style 5 = Image unavailable" (a metadata image's stored output was verbatim `feature_prompt[788:1576]` — a window of the concurrent TEXT prompt agent's stream). The sink is the EMITTER, not `request_id` (confirmed: `AgentRunResult.output` = `config.get_last_output()`, not request-keyed). **Fixed (2026-07-23):** the feature-image prompt+render agents run `suppress_stream=True` (own SilentEmitter — the real isolation; `independent_request` was tried, then removed as it isolates the wrong vector and orphans CX cost per SUBAGENTS.md H4). A `_is_media_url` guard rejects non-URL image/video output at BOTH `_attempt`/`_run_image` (fresh) and `image_urls` assembly (resume-safe). **Still open:** the SCRIPT agent is also an unisolated long-text streamer concurrent with the image slots — same class, now CONTAINED by the guard (worst case a spurious failed image card, not a garbage cover). The 5 image + 2 video agents share the accumulator among themselves too (URL-vs-URL swap is invisible, uncatchable by the guard, cosmetic). Durable platform fix = isolate the emitter per child in `fork_for_child_agent` (per-child turn-text accumulator); every concurrent fan-out in the platform (e.g. research per-page summaries) shares this latent race. Not done here — a platform-wide context change beyond this bug's scope.
+**Owner: aidream. Symptom fixed; root cause latent.** Podcast feature-image agents now run isolated (`suppress_stream=True`) with a `_is_media_url` guard, but every concurrent fan-out platform-wide shares the emitter's `_turn_text_acc` and can cross-contaminate captured `.output`. Durable fix: per-child emitter isolation in `fork_for_child_agent`.
 
 ### D84 — live Supabase security-advisor baseline contains unrelated errors (2026-07-22)
 
-Running `supabase db advisors --linked --type security --level error` before exposing the RLS-protected `seo` schema reported pre-existing `security_definer_view` errors (including `public.category_items_view`, `agent.context_menu_view`, and `iam.organization_member`) plus RLS-disabled exposed tables (including `public.full_spectrum_positions`, `files.structure`, and `workflow.worker_heartbeat`). The SEO change added no view/table and all 16 `seo` tables have RLS; this baseline needs a separate owner-by-owner audit before the advisor can become a clean release gate.
-
-### D82 — three unrelated DB-function defects found while auditing paginated RPCs (2026-07-22)
-
-Surfaced by the `agx_get_list` unstable-pagination audit (that class was fixed; these are separate and were NOT touched):
-
-1. **`public.get_user_table_data_paginated` (v1) has a live SQL-injection hole.** `p_search_term` and `v_field_name` are concatenated into dynamic SQL with no `replace(…, '''', '''''')` escaping — v2 added exactly that escaping, v1 never got it. It is `SECURITY INVOKER`, so blast radius is the caller's own rights, but it is a real injection vector. Fix: port v2's escaping into v1, or retire v1 if every consumer is on v2 (check callers first).
-2. **RESOLVED 2026-07-25** — `public.get_user_feed` actor guard (`migrations/get_user_feed_actor_guard.sql`, applied + ledgered). Correction to the original severity: this was LATENT, not a live leak — the function returns only `visibility='public'` canvas items and `users.user_follows` carries a `USING (true)` SELECT policy, so nothing was disclosed that an anonymous caller could not already read. The guard is stricter than the siblings' (`auth.uid() IS DISTINCT FROM p_user_id`, service_role bypass) because those allow a NULL `auth.uid()` to pass any id — harmless for a service-role-only RPC, but this one was reachable by `anon`, which was the actual hole. Closing it took two passes: the first `REVOKE ... FROM anon` was a NO-OP because the grant is held by `PUBLIC` and `anon` merely inherits it — the file claimed a second layer that did not exist. Now revoked from `PUBLIC` with explicit grants to `authenticated`/`service_role`; verified live (`has_function_privilege('anon', …)` is false).
-3. **`public.get_version_history` has three dead branches.** `p_entity_type` of `'prompt'`, `'builtin'`, `'prompt_app'` reference `public.prompt_versions`, `public.prompt_builtin_versions`, `public.prompt_app_versions` — all three tables are gone (`to_regclass` → null), so those branches raise `relation does not exist` at runtime. The `'tool'`, `'tool_ui_component'`, `'agent'`, `'code_file'` branches are live and fine. Fix: delete the three dead branches (they are unreachable-by-design remnants of the deleted prompts system) after confirming no caller passes those entity types.
+Pre-existing `security_definer_view` errors + RLS-disabled exposed tables (e.g. `public.full_spectrum_positions`, `files.structure`, `workflow.worker_heartbeat`). Needs an owner-by-owner audit before the advisor can be a clean release gate.
 
 ### D81 — five inline copies of the mic level-meter analyser (2026-07-22)
 
-`features/audio/useStreamAudioLevel.ts` is now THE hook for a 0-100 input level (shared `AudioContext`, analyser + rAF, disconnect on every exit). Five modules still grow their own inline copy of the same graph, each re-deriving the same `(avg/255)*150` scaling and its own teardown: `features/audio/hooks/useSimpleRecorder.ts`, `features/audio/hooks/useChunkedRecordAndTranscribe.ts`, `features/audio/components/devices/MediaDevicesPanel.tsx`, `features/voice-agent/audio/audioCapture.ts`, `features/flashcards/fast-fire/audio/continuousCapture.ts`. Risk is a missed teardown leaking a rAF loop + graph node for the tab's life, and drift in what "level" means between meters. Not fixed here because `useSimpleRecorder` and the voice-agent capture entangle the analyser lifecycle with their recording teardown, and both are hot paths under concurrent edits — a blind swap during this task would have been the riskier move. Fix: port each onto the hook (or, for the framework-free modules, extract the same core as a non-React `createStreamLevelMeter`), one module per change, verifying the meter still moves.
+`features/audio/useStreamAudioLevel.ts` is THE hook. Still-inline copies: `useSimpleRecorder.ts`, `useChunkedRecordAndTranscribe.ts`, `MediaDevicesPanel.tsx`, `voice-agent/audio/audioCapture.ts`, `flashcards/fast-fire/audio/continuousCapture.ts`. Port one module per change (framework-free modules may need a non-React `createStreamLevelMeter` core), verifying the meter still moves.
 
 ### D80 — stale agent records report full `_loadedFields` with EMPTY `variableDefinitions` (2026-07-22)
 
-Launching agent `04b7c631` (Veo Video Generator, live row has 1 variable definition) via `launchAgentExecution`'s raw-agentId path produced an instance with `definitions: []` — Step 0.5's `selectAgentCustomExecutionPayload.isReady` was true (all required `_loadedFields` present, likely from persisted/rehydrated state predating the agent's v3 edit), so `fetchAgentExecutionFull` was skipped and the stale empty `variableDefinitions` snapshot seeded the instance. Downstream effect (now mitigated): `selectVariablesForRequest` iterated zero definitions and DROPPED caller-injected `runtime.variables`, so the server silently used the agent's defaults — the fix in `instance-variable-values.selectors.ts` (2026-07-22) passes explicit userValues through unconditionally, but the staleness itself remains: model settings, context slots, and the variable PANEL still render from the stale record until something forces a refetch. Fix candidates: (a) treat a rehydrated-from-persistence record as never `isReady` (require a fresh fetch per session), (b) stamp `_loadedFields` with `updatedAt` and refetch when the live row is newer, (c) always `fetchAgentExecutionFull` on launch (cheap RPC, correctness-first). Who decides: Arman (touches persistence strategy for the agentDefinition slice).
+Persisted/rehydrated agentDefinition records predate live edits, `isReady` short-circuits the refetch, and model settings/context slots/variable panel render stale. (Caller-injected runtime variables now pass through unconditionally, so execution is correct.) Fix candidates: treat rehydrated records as never `isReady`; stamp `_loadedFields` with `updatedAt` and refetch when the live row is newer; or always `fetchAgentExecutionFull` on launch. **Decides: Arman** (persistence strategy).
 
-### D79 — CRITICAL: direct project FKs make feature rows project-dependent; research must be decoupled first (2026-07-21)
+### D79 — CRITICAL: direct project FKs make feature rows project-dependent; research decoupling in flight (2026-07-21)
 
-> **Status 2026-07-21: frontend cutover implemented, pending backend deploy + Phase 4.** Phase-0 migration is LIVE (`_mirror_proj` trigger + `rs_topic_project_id_fkey` dropped; `project_id` nullable; synthesis CHECK widened). This repo's Phase-2 cutover is done: `createTopic` is project-optional (org from canonical app context), project filtering/labels/move are association-backed via `associationsService`, no code path writes `project_id`, and the domain type strips the leftover column. Remaining before this closes: aidream Phase-3 cutover + deploy, Phase-4 column drop/scope migration, the aidream release guard, and the live acceptance matrix. Do not delete this entry until then. System of record: `common-docs/projects/research-project-decoupling/FEATURE.md`.
+Frontend cutover DONE (project-optional `createTopic`, association-backed filtering, no path writes `project_id`); Phase-0 migration live. Remaining: aidream Phase-3 cutover + deploy, Phase-4 column drop/scope migration, the aidream release guard, live acceptance matrix. System of record: `common-docs/projects/research-project-decoupling/FEATURE.md`. Keep until then.
 
-Live research tables and their client/server consumers still treat `project_id` as a physical FK and required routing context. That violates the platform contract: a project is optional classification through a canonical `platform.associations` edge, never ownership, lifecycle, authorization, or a prerequisite for creating/using the entity. Research must be the first complete removal: inventory every research FK/column dependency and all frontend/aidream consumers; migrate any intended links to optional canonical associations; drop the FKs and required-project behavior; prove every research flow works with no project. Then retire the same pattern one touched feature/table at a time. Missing extinction layer: add a live-schema/release guard that screams on any new feature/domain FK to a project relation.
+### D78 — CRITICAL: legacy `platform._mirror_fk_to_assoc` triggers remain live (2026-07-21)
 
-### D78 — CRITICAL: legacy `platform._mirror_fk_to_assoc` triggers remain live without an alarm or creation guard (2026-07-21)
-
-> **Status 2026-07-21: frontend cutover implemented, pending deploy + Phase 4.** Research's `_mirror_proj` trigger is DROPPED live (Phase 0 — Research is at zero; platform-wide ratchet baseline is 32). Frontend alarm layer shipped: `lib/diagnostics/errorTierRules.ts` now pins any `_mirror_fk_to_assoc` firing as a permanent critical (red, never downgradeable) and translates 23503 association-registration failures into a human-readable message linking the Relationship Rules admin. Remaining: the aidream release guard (strict tier + 32-ratchet) and live verification of the induced-failure inspector flow. Do not delete this entry until then.
-
-The failed `research.rs_topic` insert exposed a live `_mirror_proj` trigger calling `platform._mirror_fk_to_assoc('rs_topic', 'project_id', 'project')`; the helper raw-inserts an association using the physical table token `rs_topic`, while the registered canonical token is `research_topic`, producing FK `23503`. This is not a token typo to patch: the FK-mirroring helper is a forbidden second relationship authority and must be retired. Inventory every live trigger/function/migration/client/server dependency, replace each focused feature with canonical association writes, then drop the helper when dependency count reaches zero. Missing extinction layers: a live-schema/release guard must fail loudly on any call/reference, and any runtime firing must enter the admin error system as a critical platform violation with the trigger/table/remediation—not a generic PostgREST error.
+Research's `_mirror_proj` trigger dropped (ratchet baseline 32 remain platform-wide). FE alarm layer shipped (`lib/diagnostics/errorTierRules.ts` pins any firing as permanent critical). Remaining: the aidream release guard (strict tier + 32-ratchet) and live verification of the induced-failure inspector flow.
 
 ### D74 — `web.link_edge.http_status` is NEVER populated: no broken-link detection exists (2026-07-20)
 
-Verified live: every one of the 10,676 `web.link_edge` rows (internal AND external) has `http_status = null` — the scraper records link edges from snapshots but never checks their targets, so broken internal links and broken outbound links cannot be flagged anywhere. The FE is ready: the link graph colors/flags broken targets (`features/marketing/components/inspection/link-graph/`), the External view shows an honest "status not checked" notice, and the table has an HTTP column — all waiting on data. Fix lives in the scraper (matrx-scraper/aidream): a post-crawl link-check pass (HEAD/GET with caps + per-domain rate limits, internal targets resolvable from crawled snapshots without any fetch) writing `http_status` back to `web.link_edge`. Backend owner decides scheduling; relay prompt handed to Arman 2026-07-20.
+All 10,676 rows null. FE is ready (link graph, External view, HTTP column). Fix lives in the scraper (matrx-scraper/aidream): post-crawl link-check pass writing `http_status` back. Relay prompt handed to Arman 2026-07-20.
 
 ### D73 — Folder picking needs a canonical story (2026-07-20)
 
-The one-file-picker consolidation is DONE (see `features/files/FEATURE.md` 2026-07-20): `FilesResourcePicker` + `FilePickerWindow` everywhere; thin `FilePicker`/`useFilePicker`, `AssociationPickerSheet`, and rag `CldFilePicker` deleted. `FolderPicker`/`SaveAsDialog` (folder selection, not file pick) still use the old `PickerShell` dialog — decide whether to extend `FilesResourcePicker` with folder-select mode or keep a dedicated folder surface, then retire `PickerShell`. Safe meanwhile: the DB listing gate protects all tree consumers.
+File-picker consolidation done; `FolderPicker`/`SaveAsDialog` still use the old `PickerShell` dialog. Decide: extend `FilesResourcePicker` with folder-select mode or keep a dedicated folder surface, then retire `PickerShell`.
 
-### D72 — CRITICAL: /files desktop table row click can create a real share link as a side effect (2026-07-19)
+### D74b — /voice/playground: "Failed to fetch voices" — Cartesia SDK/API shape mismatch (2026-07-19)
 
-**Data-exposure risk — highest priority in this batch.** Observed live: clicking a table row's hover-revealed inline action area on the desktop `/files` table can trigger `onShare` (creating a real, persisted share link) even though the click looked like a plain row activation, not a deliberate Share click. `Unverified — from live testing only; code analysis pending.`
+`lib/cartesia/cartesiaUtils.ts#listVoices` (`cartesia.voices.list()`) throws `ParseError: Expected list. Received object.` — the API now returns a paginated envelope the installed SDK doesn't expect. Fix: bump/pin the SDK or unwrap the envelope. ALSO check `lib/cartesia/client.ts` for a client-side API key — if present that's its own P1 (route through aidream / token broker).
 
-Suspect: `features/files/components/surfaces/desktop/FileTableRow.tsx`. The file's own header comment (line ~14) documents the intended contract — "button for keyboard) MUST `e.stopPropagation()` on click so they [don't bubble to row `onClick`]" — and every `RowActions` button (`onShare`, `onCopyLink`, the `MoreHorizontal` menu) does call `e.stopPropagation()` in its handler (~line 617-628, and the duplicate second row-renderer ~line 509-527). So the leak is not a missing `stopPropagation` — most likely a **hit-testing race**: the `RowActionsToolbar`/`RowActions` is conditionally rendered via `visible={hovered}` (mounts/unmounts or repositions on hover state change), so a fast click can land on where the Share button rendered a frame earlier while the row's own `onClick={onActivate}` (line 174 / 442) also fires from the same click, or the toolbar overlaps the row's clickable area without full click capture. Note also there are **two structurally near-identical row renderers** in this one file (~122-268 and ~388-527) — worth collapsing to one component while fixing this, per the reuse-first doctrine.
+### D76 — app-wide: "state update on a component that hasn't mounted yet" on `/scraper` and `/` (2026-07-19)
 
-Fix approach: make the row's own `onClick` ignore clicks whose target (or `e.target.closest`) is inside the actions toolbar, in addition to each button's own `stopPropagation` — belt-and-suspenders — and/or keep the toolbar always mounted (opacity-only, not conditional render) so its hit area is stable across the hover transition. Verify by rapid-clicking a row immediately after it becomes hovered, across several rows, confirming no share link is created unless the Share icon itself was hit.
-
-### D73 — /artifacts list card click can leave the card stuck in an infinite `isNavigating` spinner (2026-07-19)
-
-`Unverified — from live testing only; code analysis done, root cause identified.` `features/artifacts/components/CmsArtifactList.tsx`: `handleNavigate` (~line 344-348) does `setNavigatingId(id)` then `startTransition(() => router.push(...))`, but **nothing ever resets `navigatingId` back to `null`** — no effect keyed on `pathname`, no `isPending`-driven reset, no timeout fallback. If `router.push` doesn't actually cause a navigation/unmount (soft-nav no-op, route intercepted, prefetch failure, or the user is already on that route), the card's `isNavigating` flag (line 508: `navigatingId === artifact.id`) stays true forever, and — because `handleNavigate` early-returns `if (navigatingId) return;` (line 345) — **every other card on the list also becomes unclickable** (`isAnyNavigating` at line 133/509), since `onClick={handleCardClick}` on the whole card gates on `isDisabled`.
-
-Fix sketch: reset `navigatingId` in a `useEffect` on `pathname` change (the list unmounts anyway on real navigation, so this is mostly a safety net) or, better, wrap the reset in the transition's completion — since `startTransition`'s callback doesn't await `router.push`, add a `finally`/timeout (e.g. clear `navigatingId` after `router.push` settles, or a hard 5-8s fallback timeout) so a failed/no-op nav can't wedge the whole list. Also, `handleOpenEditor` (~line 358) calls `router.push` directly (not through `handleNavigate`/`startTransition`) for the `html_page` case — inconsistent with the rest of the component.
-
-### D74 — /voice/playground: "Failed to fetch voices" + Cartesia `ParseError: Expected list. Received object.` (2026-07-19)
-
-`Unverified — from live testing only; code analysis pending.` Route: `app/(core)/voice/playground/page.tsx` → `features/audio/voice/AiVoicePage.tsx` → `features/audio/voice/VoicesList.tsx`, which calls `listVoices()` in `lib/cartesia/cartesiaUtils.ts` (`cartesia.voices.list()` via the Cartesia SDK client `lib/cartesia/client.ts`). `VoicesList.tsx` (~line 48) surfaces the generic toast "Failed to fetch voices." on any thrown error; the underlying SDK error is a `ParseError: Expected list. Received object.` — strongly suggests the Cartesia API now returns a **paginated object** (`{data: [...], ...}` or similar) where the installed SDK version still expects a bare array, i.e. an SDK/API version mismatch. Also worth flagging: `cartesia.voices.list()` is called **client-side** (browser), which if it holds a Cartesia API key client-side would be a secret-exposure concern separate from this parse bug — check `lib/cartesia/client.ts` for how the key is supplied.
-
-Fix sketch: bump/pin the `@cartesia/cartesia-js` (or equivalent) SDK to a version matching Cartesia's current `/voices` response shape, or unwrap the paginated envelope manually in `listVoices()`. If the API key is client-exposed, that becomes its own P0/P1 defect (route the call through aidream instead, per the "client goes to aidream for provider secrets" architecture rule).
-
-### D75 — /transcripts/scribe: nested `<button>` inside `<button>` on the rename control (React DOM nesting warning) (2026-07-19)
-
-`Analyzed 2026-07-19 — verified in code.` `features/transcripts/components/TranscriptsSidebar.tsx`: the non-editing row render (~line 271-298) wraps the entire row body in `<button type="button" onClick={() => setActiveTranscript(transcript)} className="w-full p-3 text-left">`, and **inside** that button's JSX tree sits a second interactive `<Button ... onClick={(e) => startRename(transcript, e)}>` (the rename pencil icon, ~line 287-296, `opacity-0 group-hover:opacity-100`). A `<button>` (or the shadcn `Button` component, which renders a `<button>`) cannot legally be a descendant of another `<button>` in the DOM — this is the exact class of error React logs as "`<button>` cannot be a descendant of `<button>`", plus it's an accessibility/click-target bug (nested buttons have undefined/inconsistent click behavior across browsers).
-
-Fix: change the outer row wrapper from `<button>` to a `<div role="button" tabIndex={0} onClick=... onKeyDown={...Enter/Space...}>` (or move `onClick={setActiveTranscript}` onto a non-interactive wrapper and keep only the title text/icon area focusable), so the rename `Button` is a sibling, not a child, of the activating control. Same pattern likely exists on the folder-row buttons above it in the same file — check ~line 169-206 too, though those don't currently nest a second button.
-
-### D76 — app-wide: "Can't perform a React state update on a component that hasn't mounted yet" fires on `/scraper` and the home page (2026-07-19)
-
-`Unverified — from live testing only; code analysis pending.` Observed on two otherwise-unrelated routes: `/scraper` (`(transitional)`) and `/` (`app/page.tsx`, a Server Component with client children `LandingCTAs` / `AuthAwareButton`). Because the warning spans routes that share little except common providers/shell/hooks, the likely cause is a **shared client hook or provider doing async work (fetch, timer, subscription) that calls `setState` after the initiating component unmounted or before it mounted** — no cleanup/abort on the effect, or a state-setter called synchronously during a render-phase side effect (same bug class already tracked for `/chat` in D61, "side-effect in your render function").
-
-Not attributed to a specific file — needs a live repro with the React DevTools/error-overlay component stack (this session did not open a browser per its assignment) to name the exact hook/component. Candidates worth checking first: any shared auth/session hook, analytics/telemetry init, or a `useEffect` with an async fetch lacking an `isMounted`/`AbortController` guard that runs on most/all routes via a top-level provider in `app/layout.tsx` or `features/shell/`. Cross-reference D61 before fixing — if the root cause is the same shared pattern, fix once and close both.
-
-### D82 — CROSS-REPO (aidream): podcast runs from the education/flashcard path return an EMPTY title, so episodes publish as "Untitled Episode" with no description and no art (2026-07-22)
-
-**Owner: aidream.** Root cause of "the last few podcasts are missing their core items". `podcast.pc_studio_runs` row `7d0d5433-e087-42db-a360-71773affce7d` completed with `status='completed'`, a full `script` and working `audio_url`, but `title=''` (empty string, not null), `description=null`, `image_urls='{}'`. aidream then created the episode with its `"Untitled Episode"` fallback. Two separate misses:
-
-1. **Empty title is treated as success.** The script agent returned no title for `input_data_type='full_content'` (a serialized flashcard study deck). aidream must derive a title when the agent omits one (from the deck/source name or the first script beat) and must never persist `title=''` — an untitled episode is a failed run, not a completed one.
-2. **The caller asks for zero art.** `features/flashcards/data/podcastOverview.ts#buildDeckOverviewRequest` sends `max_images: 0, max_videos: 0` deliberately ("fast and cheap per-set audio overview"). That is defensible for an in-app audio overview, but those episodes are still published to the public show, where a card with no art is indistinguishable from broken. **Decides: Arman** — either give deck overviews at least one cover image, or keep them out of the public show list.
-
-The two affected episodes were soft-deleted 2026-07-22 during cleanup; the generator bug is NOT fixed and will reproduce on the next flashcard→podcast run.
-
-### D83 — `pc_episodes.duration_seconds` is null on 44 of 48 episodes; nothing ever writes it (2026-07-22)
-
-aidream's podcast generator persists `audio_url` but not the rendered duration, so every server-rendered surface (episode lists, cards, RSS `<itunes:duration>`) has no length to show. The player now recovers a duration client-side from the audio element (see the `durationchange` sync in `PodcastAudioPlayer`), but that only helps once the file has been fetched — a list of 31 episodes still cannot show per-episode runtimes without downloading 31 audio files. Fix belongs in aidream: write `duration_seconds` at publish time. Frontend backfill for existing rows would require probing each file.
-
-### D64 — nothing is enforced automatically: no pre-commit hook, no CI (2026-07-18)
-
-**Decides: Arman.** `.git/hooks` has no `pre-commit`, there is no `.husky/`, `simple-git-hooks` is not installed, `lint-staged` is a dependency with zero config, and **there is no `.github/` directory at all** — no CI. Every guard this repo owns (`check:doctrine`, `check:migrations`, `check:schema`, `check:doc-claims`, `pnpm lint`, `pnpm type-check`) runs only when a human or agent runs it, and `scripts/release.sh` invokes the gates as `--advisory || true` by deliberate ruling ("only git can block a release", `e4bbb4e13`). Docs claimed a pre-commit hook in three places; corrected 2026-07-18 to state the truth rather than paper over it.
-
-This is the ROOT CAUSE of the D62/D63 drift class: a `TEMP:` flag flip survived ~3 months, 485 files sat outside the type gate for 3 weeks, and `storage_uri` template-literal violations went unreported — none of which any automation would have caught. Decide one: (a) install a pre-commit hook running `check:doc-claims` + `check:tsconfig` on staged files (fast, offline, no network), (b) add a CI workflow running the `:strict` gates on PR, or (c) ratify "advisory-only, agents run checks by hand" and keep the docs saying exactly that. Until then, an agent's own discipline is the only enforcement.
-
-### D65 — production builds never type-check (`ignoreBuildErrors: true`) (2026-07-18)
-
-**Decides: Arman (one-line flip, but it can red a deploy).** `next.config.js:153` has set `typescript: { ignoreBuildErrors: true }` since **2024-12-06** (`cb9f854827`, "few fixed for build") with no comment and no doc mention — 19 months. Combined with D64 (no CI), a type error reaches production and the only gate is a manual `pnpm type-check`.
-
-**Measured 2026-07-18: the cost of flipping it is near zero.** Full-repo `tsc` (all excludes removed) = **8 errors**, of which 5 are transient collateral from other sessions' uncommitted work in this tree (`buildNotesEditorContextData.ts`, `agent-definition.types.ts` refactors) and 3 are real, all in `app/(dev)/demos/`. Do this on a clean tree: fix the 3 demo errors → remove `ignoreBuildErrors` → `pnpm build`. Not done here only because flipping it against a dirty working tree would have broken the next deploy for in-flight work. CLAUDE.md now states plainly that the build does not gate on types.
-
-### D66 — `app/(dev)/**` is the last shipped-code hole in the type gate (2026-07-18)
-
-`tsconfig.typecheck.json` still excludes `app/(dev)/**`, hiding 6 real errors (3 in `demos/scopes/context-lab/reimagine/page.dev.tsx` — a create handler returning `{id}` where `void | Promise<void>` is expected; 3 from the in-flight notes-context refactor). Defensible in that `(dev)` is stripped from the `core` production profile, but it is still code agents read and copy. The sibling excludes (`app/(transitional)/**`, `features/applet/**`, 485 files) were removed the same day at **zero** error cost — see Resolved D63. Fix the 6 and drop the last exclude; `pnpm check:doc-claims` already fails if any non-`(dev)` shipped path is re-excluded.
-
-### D67 — doctrine says "banned", ESLint says `warn`, with live violations (2026-07-18)
-
-Three bans CLAUDE.md/PRINCIPLES.md state absolutely are `warn` in `eslint.config.mjs`, and with no CI (D64) a warning stops nothing:
-
-- **Browser dialogs** (`no-alert`, `no-restricted-globals`, `:775-797`) — doc says "forbidden anywhere a human can see — including demos, admin, prototypes". Live: 2 `window.*` forms plus ~20 bare `confirm(`/`alert(`/`prompt(` in `app/(transitional)/apps/app-builder/**` (unsaved-changes guards) and `app/(dev)/demos/**`.
-- **Barrel files** (`no-barrel-files`, `:735`) — 488 warnings, 37 `index.ts` remain.
-- **Banned lucide brand icons** (`matrx/no-banned-lucide-icons`, `:736`) — held at `warn` since 2026-05-18 "while we clean up"; these are type-valid but **runtime-missing → 500s**, so a warning is the wrong severity for this one specifically.
-
-Each needs the same decision: finish the cleanup and promote to `error`, or soften the doc. Do not leave doc and rule disagreeing — that is the D62 class.
-
-### D68 — ESLint override in `OverlayController.tsx` silently drops ~10 unrelated bans (2026-07-18)
-
-`eslint.config.mjs:988-998` sets `'no-restricted-syntax': ['warn', {JSXSpreadAttribute}]` for `features/overlays/OverlayController.tsx`. Flat config **replaces** rather than merges, so that file loses every global ban (legacy Supabase keys, `storage_uri`, file-handler ring-fence, scopes chokepoint, appContext writes, tool_results, content-IR, heavy-Impl, React Flow) — every other override in the file carefully re-lists them; this one does not. Also `warn`, though CLAUDE.md calls it a "hard rule". Currently 0 spread violations, so it is latent. Fix: `'error'` + re-list the globals, matching `:895` / `:918` / the `lib/integrity/checks.ts` override added in D63.
-
-### D69 — `features/files/index.ts` violates the ring-fence it exists to serve (2026-07-18)
-
-The Tier 1-4 file-handler ring-fence bans importing `@/features/files/handler|hooks|components|redux|utils`. The `features/files/**` override (`eslint.config.mjs:890`) relaxes only `no-restricted-syntax`, **not** `no-restricted-imports` — unlike the analogous allowlists at `:1143` / `:1168` / `:1184`. So the canonical public barrel throws **77 `no-restricted-imports` errors against itself**. Fix: add `features/files/**` to a `'no-restricted-imports': 'off'` override. (Note: that file is currently modified in-tree by another session.)
-
-### D70 — `reactFlowStaticImportBan`'s own comment is false; 10 live violations (2026-07-18)
-
-`eslint.config.mjs:702-709` claims React Flow "lives in exactly ONE module — `SetBuilderCanvasImpl.tsx`". Live static `@xyflow/react` imports exist in `features/rag/components/visualization/` (6 files), `features/administration/schema-visualizer/` (3), and `components/mardown-display/blocks/diagram/InteractiveDiagramBlock.tsx`. The rule is `error` and simply never blocks anything (D64). This is the exact bundle-bloat class CLAUDE.md warns about (one such leak took the build 15→24 min). Fix: migrate them to `next/dynamic` or scope the ban with an explicit allowlist and correct the comment.
-
-### D71 — live SQL functions still hand agents the retired `rag_search` tool name (2026-07-18)
-
-**Decides: Arman (needs a forward migration applied to live Supabase, not a file).** The 2026-07-18 knowledge-family consolidation renamed `rag_search` → `knowledge_search` and soft-deleted the old `tool.definition` row. All frontend/TS call sites were updated, but **four `ctx_resolve_full_context*` SQL function bodies in `migrations/` emit an agent-facing hint naming the dead tool**:
-
-`'hint', 'Knowledge resource — query it with the RAG tools, e.g. rag_search(data_store_id=<data_store_id>).'`
-
-- `migrations/ctx_extended_value_types.sql:448`
-- `migrations/ctx_resolve_full_context_dataset_pointers.sql:143`
-- `migrations/ctx_resolve_full_context_restore_cells_after_schema_move.sql:159`
-- `migrations/ctx_scope_tables_versioning_soft_delete.sql:567`
-
-Plus the `platform.entity_types` description seeded by `migrations/register_data_store_entity_type.sql:25` ("the scope-gate for rag_search retrieval").
-
-**These are live function bodies — editing the historical migration files changes nothing.** Every agent resolving a `data_store` context pointer is currently being taught to call a tool that no longer exists. Fix: ONE forward migration that `CREATE OR REPLACE`s the current `ctx_resolve_full_context*` definition with `knowledge_search(data_store_id=…)` and updates the `entity_types` description, applied to live Supabase (`txzxabzwovsujtloxrus`) + ledger-recorded in the same session. Not written here because an unapplied migration file is worse than none. Related: aidream `aidream/tools/KNOWLEDGE_TOOLS_FEATURE.md` rule 5 ("a rename is not done until every prompt fragment agrees").
+Unattributed; spans routes sharing only providers/shell. Needs a live repro with the component stack. Cross-reference D61 (same warning on `/chat` streams, suspect render-time side-effect in the db-component compile path) — if the root cause is shared, fix once and close both.
 
 ### D61 — /chat streams warn "state update on a component that hasn't mounted yet" (2026-07-18)
 
-Observed twice during a live `/chat` stream that rendered a `db_kind_component` (wine_tasting verification runs): React error "Can't perform a React state update on a component that hasn't mounted yet… side-effect in your render function". Source unattributed — plausible suspects are a render-time side-effect in the db-component compile path (`getOrCompileDbKindComponent` is called during render and its cache captures errors into a module store) or pre-existing chat-page code; no `[content-ir]` scream accompanied it and rendering was correct. Needs a React-owner pass to attribute (component stack via dev overlay) and move the offending side-effect into an effect. Not user-visible; filed so it doesn't vanish into a chat log.
+See D76. Suspect: `getOrCompileDbKindComponent` called during render with a module-store cache. Needs attribution via dev overlay component stack.
+
+### D82b — CROSS-REPO (aidream): education/flashcard podcast runs publish "Untitled Episode" (2026-07-22)
+
+**Owner: aidream.** (1) Empty title treated as success — derive a title when the agent omits one; never persist `title=''`. (2) `buildDeckOverviewRequest` sends `max_images: 0` yet episodes publish to the public show — **decides: Arman**: give deck overviews a cover or keep them out of the show. Reproduces on the next flashcard→podcast run.
+
+### D83 — `pc_episodes.duration_seconds` null on 44 of 48 episodes (2026-07-22)
+
+aidream never writes it; lists/RSS can't show runtimes (player recovers client-side per fetched file only). Fix in aidream at publish time; backfill needs per-file probing.
+
+### D64 — nothing is enforced automatically: no pre-commit hook, no CI (2026-07-18)
+
+**Decides: Arman.** Root cause of the doc/config drift class. Pick one: (a) pre-commit hook running `check:doc-claims` + `check:tsconfig`; (b) CI running the `:strict` gates on PR; (c) ratify advisory-only and keep docs saying exactly that.
+
+### D65 — production builds never type-check (`ignoreBuildErrors: true`) (2026-07-18)
+
+**Decides: Arman.** Set since 2024-12. Measured cost of flipping ≈ zero (8 errors full-repo, 3 real, all in `(dev)` demos). On a clean tree: fix the 3, remove the flag, `pnpm build`.
+
+### D66 — `app/(dev)/**` is the last shipped-code hole in the type gate (2026-07-18)
+
+`tsconfig.typecheck.json` still excludes it (~6 real errors). Fix the errors and drop the exclude; `check:doc-claims` already guards non-`(dev)` paths.
+
+### D67 — doctrine says "banned", ESLint says `warn`, with live violations (2026-07-18)
+
+Browser dialogs (`no-alert` etc., ~20 live in app-builder + demos), barrel files (488 warnings), banned lucide brand icons (runtime-missing → 500s; `warn` is the wrong severity). Each needs: finish cleanup and promote to `error`, or soften the doc. Don't leave doc and rule disagreeing.
+
+### D70 — `reactFlowStaticImportBan`'s own comment is false; 10 live violations (2026-07-18)
+
+Static `@xyflow/react` imports in `features/rag/components/visualization/` (6), `features/administration/schema-visualizer/` (3), `InteractiveDiagramBlock.tsx`. Migrate to `next/dynamic` or scope the ban with an allowlist and fix the comment.
 
 ### D60 — chat draft transfer never lands for VARIABLE-INPUT agents (2026-07-17)
 
-The `/chat/a/[agentId]` single-hop draft transfer (`chat-draft-transfer.ts`) now works for standard chat agents — the entry-existence race is fixed (ChatRoomClient gates the consume on `selectUserInputEntryExists`; before, `setUserInputText` silently dropped the write because the input entry is created only after the launcher's async agent fetch, losing every stashed draft). **Still broken for agents with launch variables/broker inputs** (repro: agent `a2525cd3` "Get Gemini Image" — stash consumed, dispatch fires, but the smart-input's message box stays empty; the plain-agent path verified working with `c50529ec`). Suspect: the variable-bearing smart input binds its message text differently from `AgentTextarea`'s `selectUserInputText`, or the instance is recreated when variables hydrate. Matters for the Shapes studio create-with-agent handoff (`features/content-ir/studio/components/NewShapeClient.tsx`) if K2's creator agent ships with launch variables. Also: the `setUserInputText` reducer's `if (!entry) return;` is a silent drop — should scream per loud-recovery doctrine.
+Plain-agent path fixed. For agents with launch variables/broker inputs (repro: agent `a2525cd3`) the stash is consumed but the smart-input stays empty — suspect the variable-bearing input binds text differently or the instance is recreated on variable hydration. Also: `setUserInputText`'s `if (!entry) return;` is a silent drop — should scream.
 
 ### D59 — CRITICAL: follow-up turns must CONFIRM identity-context changes with the user (2026-07-15)
 
-**Very serious.** Context (`organization_id`, `project_id`, `task_id`, `scope_ids`, `source_*`, agent identity) must not silently drift between turns. Required: FE reads previous (`metadata.last_request_context` from BE) + current AppContext; if they differ, **prompt the user to confirm** before POST — only explicit user-driven actions may change context without that prompt. Today: yellow console warn at call time (`warn-request-context-drift.ts`) + BE stream warning `request_context_changed` — **neither blocks nor confirms**. Twin entry: aidream `FOUND_DEFECTS.md`. Owner: Arman (confirm UX).
+Context (`organization_id`, `project_id`, `task_id`, `scope_ids`, agent identity) must not silently drift between turns. Today: console warn + BE stream warning only — neither blocks nor confirms. Required: FE compares previous vs current and prompts the user. **Owner: Arman** (confirm UX). Twin entry in aidream.
 
-### D58 — Convergence-C: paid-class gate is a no-op stub — `edu_class_purchase` grants entitlement with NO payment (2026-07-14)
+### D58 — paid-class gate is a no-op stub — `edu_class_purchase` grants entitlement with NO payment (2026-07-14)
 
-**Decides: Arman (wire Stripe Connect before any class is sold).** `public.edu_class_purchase(p_class)` (SECURITY DEFINER, authenticated) is the only path to `entitled` on a `paid` class, and it just inserts an `iam.memberships` row with `status='entitled', metadata->>'grant_source'='purchase_stub'` — no charge, no Stripe, no verification. Live repro: as arman (genuine non-member) `select edu_class_purchase('<paid-class>')` → `{"status":"entitled","stub":true}`; a follow-up `edu_class_join` would flip to `active`. So today ANY authenticated user can enroll in ANY paid class for free. The rest of the paid gate IS airtight (`edu_class_join` on paid with no entitlement → `needs_purchase`; direct `iam.memberships` insert → `permission denied` (no anon/authenticated grant); non-owner `edu_class_grant`/`approve`/`set_access`/`remove` → 42501). This is a known placeholder (`stub:true`, service.ts comment "real Stripe Connect pending") but must be gated/removed until real payment lands — the paid tier is unenforced. Fix: replace the stub body with a Stripe-Connect-verified entitlement path (or block the "paid" access_mode in the UI until then).
+**Decides: Arman.** Any authenticated user can enroll in any paid class free (`purchase_stub`). The rest of the paid gate is airtight. Wire Stripe Connect or block the `paid` access_mode in the UI until then.
 
-### D57 — Convergence-C COPPA gate: client fail-open CLOSED + SERVER-SIDE enforcement DONE + `age_band` write-tamper CODE gap CLOSED (2026-07-15); only the LEGAL policy call is open
+### D57 — COPPA gate: only the LEGAL policy calls remain (2026-07-15)
 
-**Decides: Arman/legal (only the remaining LEGAL items — self-declared-age _policy_ + verifiable-consent _method_; the CODE parts are done).** The gate DB layer is correct and self-scoped (`edu_coppa_gate`/`edu_set_age_band` operate on `auth.uid()`), the CLIENT rollout is complete (9 education AI entry points call `useAiComplianceGate.ensureAllowed()` first), the **client fail-open hole is fixed** (fails CLOSED for the minor path on a resolver error), and the **SERVER-SIDE enforcement is DONE** — aidream's agent-execution funnel (`enforce_education_coppa`, scoped by `source_feature=education-*`, fails CLOSED) independently REFUSES an education generation for a signed-in under-13 without a VERIFIED guardian link, refusing a client bypass (devtools/direct API) with `error_type="education_coppa_consent_required"`. Contract: aidream `services/education_compliance/FEATURE.md`.
+All code layers done (client fail-closed, server-side enforcement in aidream, `age_band` write-tamper trigger + audit). **Open (Arman/legal):** (1) self-declared age — hard-block the `under_13→adult` transition vs allow-audited (currently audited + `review_signal`); (2) verifiable-consent method per COPPA §312.5. See `COPPA_VERIFIABLE_CONSENT_RUNBOOK.md` §1.
 
-**`age_band` write-tamper — CODE DONE (2026-07-15).** The 2026-07-15 adversarial review found `edu_set_age_band` was NOT the only write path — the `users.profiles` `std_update` RLS policy (`created_by = auth.uid()`) let a user directly `UPDATE users.profiles SET age_band='adult'` via PostgREST, bypassing the RPC entirely (live-repro'd). Fixed: `migrations/edu_age_band_write_guard.sql` adds a `BEFORE UPDATE` trigger (`users._guard_age_band_change()`) that blocks any `age_band` write unless it comes through `edu_set_age_band()` (sets a tx-local GUC the trigger checks) or a genuine `service_role` caller — `errcode 42501` otherwise. Every column-except-`age_band` update is untouched (verified: a `display_name` edit still succeeds). Every `age_band` change is now audited to `education.data_rights_event` (`action='age_band_change'`, `old_band`/`new_band`/`via`); a self-declared `under_13 → adult` transition additionally sets `detail.review_signal=true` + `RAISE WARNING` — a detectability signal, not a block (see policy note below). Live-verified via Supabase MCP (project `txzxabzwovsujtloxrus`): direct table UPDATE of `age_band` as an authenticated non-owner-bypass user → blocked 42501; `edu_set_age_band()` → succeeds + writes the audit row; unrelated column edit → succeeds, `age_band` untouched; `under_13→adult` → `review_signal:true` confirmed on the audit row. `AgeBandPrivacyCard.tsx` already called the RPC (not a direct write) — no FE change needed.
+### D53 — `files.matrxserver.com` CORS blocks local browser uploads; fix published, deploy pending (2026-07-14)
 
-**STILL OPEN (Arman/legal, NOT code — the mechanism above enforces whatever policy Arman picks):** (1) `age_band` is still _self-declared_ — the RPC will still let an under-13 set `adult` (now audited + flagged, not blocked); whether to hard-block that transition behind a verifiable-age step vs. allow it audited (COPPA-standard neutral age screening) is Arman's call — see `COPPA_VERIFIABLE_CONSENT_RUNBOOK.md` §1 last item + `CONVERGENCE_C_LAUNCH_RUNBOOK.md` §3 item 2. (2) "guardian approves from their own account" is consent capture, not a legally _verifiable_ method (COPPA §312.5) — same runbook §1.
+`matrx-files==0.1.10` fixes CORS; remaining: deploy to the EC2 service (AWS SSO was expired). Live recheck still 405/no-ACAO until the container swap.
 
-### D53 — FIXED + PUBLISHED; pending EC2 container deploy: `files.matrxserver.com` CORS blocks local browser uploads (2026-07-14)
+### D51 — vision-variant path collision fixed in aidream; pending prod release (2026-07-14)
 
-The package fix is published as `matrx-files==0.1.10`: credentialed CORS permits Matrx production/preview + loopback dev origins, rejects unrelated origins, and wraps JWT auth so OPTIONS stays unauthenticated; exact-list/regex env overrides can narrow it. Smoke/security tests pass and the independence import gate is green. **Remaining:** deploy `0.1.10` to the existing EC2 service; live recheck still returns HTTP 405/no ACAO on `/files/upload` until that container swap. AWS SSO is currently expired.
+Root cause: variant paths lacked master-file identity, so all grade-flow uploads collapsed onto one cached variant. Fixed in aidream `8d9513e8a` (master-scoped path + loud `derived_from` guard), verified on dev. Ships with the next aidream release.
 
-### D51 — ROOT-CAUSED + FIXED (verified live on dev; pending prod release): handwritten vision grader (`77db0f64…`) served a stale image via a vision-variant PATH COLLISION (2026-07-14)
+### D35 — `platform.association_types` PK forbids what the pair+label index exists to allow (2026-07-09)
 
-**What:** every real browser-UI grading run at `/education/grade-work` returns the IDENTICAL transcription ("Solve for x: 3(x + 2) = 15 / 3x + 2 = 15 / 3x = 13 / x = 13/3") regardless of the actual uploaded photo. Live-verified end-to-end: uploaded two genuinely distinct images through the real UI file input (imgA "1/2+1/3=5/6", sha256 `447483f1…`; imgB "triangle area, forgot the ½", sha256 `81401617…`) — distinct `file_id`s (`380b7cf6…`, `1c63993f…`) confirmed byte-correct via direct S3 signed-URL download, so upload/storage is NOT the bug. Both POSTs to `/v2/ai/agents/77db0f64-15a3-43dd-96f7-ec9380057be8` still returned the same wrong transcription; the model's own `<reasoning>` trace explicitly flags the mismatch ("the accompanying image presents a completely different problem") yet grades the phantom image anyway. Confirmed systemic in `education.study_attempt` (`response_kind='handwritten'`): 9/9 consecutive rows spanning 06:30–07:23 UTC today, 6+ distinct `response_image_file_id` values, ALL carry the identical `response_transcript`. The stale text exactly matches `worked_problem.png`, an unrelated dev-testing image uploaded hours earlier in a different session — points to a server-side cache/memoization in the aidream agent-execution or media-resolution path keyed on something other than the actual `file_id` (user+capability? a stuck fixture path?).
-**Contradicts the "refuted" verdict this entry previously carried** — that test drove `/api/v2/ai/agents/{id}` directly with an admin-JWT script and pre-existing file_ids, never the real browser multipart-upload flow; the real flow is what's broken, so that difference in code path is the first thing to check. Reopened during Education Hub UI certification (Playwright against live `localhost:3000`, 2026-07-14).
-
-**ROOT CAUSE FOUND + FIXED (2026-07-14, aidream `matrx-files`).** NOT a cache/memoization keyed on user/agent — a **vision-variant PATH COLLISION**. Before sending an image to a vision model, the server re-encodes it into a per-model "vision variant" (`gemini25_default`) stored as its own `files.files` row. `matrx_files/cloud_sync/variants.py::variant_file_path` built the variant's storage path from the master's **directory only** — `{master_dir}/v/{variant_key}.{ext}` — with **no master-file identity in the path**. `render_variant_async` then path-hits any existing file there (`get_file_by_path_async(owner, path)`). The grade flow uploads EVERY photo into ONE folder (`system-files/image-grade/responses/`, `CloudFolders.SYSTEM_IMAGE_GRADE_RESPONSES`), so all their `gemini25_default` variants collapsed onto a single path `…/responses/v/gemini25_default.jpg`. The first grade (`worked_problem.png`) rendered it; every later distinct submission path-hit that one variant and was served its bytes. Proven in the DB: the two distinct submissions (`380b7cf6` imgA, `1c63993f` imgB) BOTH persisted the identical resolved image `file_id b9978434` (`gemini25_default.jpg`, 12167 bytes) in `chat.message`, while the correct problem TEXT differed per grade.
-
-**Why Investigation 1 (direct API) saw DISTINCT correct results:** its two pre-existing file_ids lived in **different folders** (normal per-file paths), so their variant paths never collided — dodging the bug entirely. Only the grade flow's single shared folder triggers it. Contradiction fully reconciled.
-
-**Fix (aidream commit `8d9513e8a`, `packages/matrx-files/matrx_files/cloud_sync/variants.py`):** variant path is now master-scoped — `{master_dir}/v/{master_file_id}/{variant_key}.{ext}` — collision-proof for any directory layout, plus a loud `derived_from` mismatch guard in `render_variant_async` (screams + re-renders, never serves the wrong master's bytes) as the second independent layer. Regression tests in `packages/matrx-files/tests/test_variants.py`. No frontend change needed; the grade FE was correct all along. Deployed to dev (`dev.app.matrxserver.com`) and verified end-to-end (see aidream report). Ships to prod on the next aidream release.
-
-### D35 — `platform.association_types` carries TWO conflicting uniqueness rules; the PK forbids what the other index exists to allow (2026-07-09; live-verified 2026-07-12)
-
-**Decides: Arman (product — do we want per-label reachability rules at all?). Latent: 41 rows live, 0 with a label.**
-Live indexes (queried 2026-07-12):
-
-- `association_types_pkey` — UNIQUE `(source_type, target_type)`
-- `association_types_pair_label_uq` — UNIQUE `(source_type, target_type, COALESCE(label,''))`
-
-The 3-col index exists so a generic rule (`label IS NULL` = any label) and a label-specific override can coexist for the same pair, with the label rule taking precedence (`docs/db_changes/REACHABILITY-ROLLOUT.md` §1.1, §3.1). The 2-col PK is stricter and forbids that second row — so the 3-col index can never do its job. Origin: the table shipped PK-less, matrx-orm refuses to import a PK-less model (broke every `db.models` import), so aidream added the pair as the PK (`aidream/db/migrations/platform_association_types_pk.sql`, 2026-07-06) — assuming the pair is the natural key, which is exactly what the label feature contradicts.
-`admin_upsert_relationship_rule` (`migrations/relationship_manager_admin_rpcs.sql:48`) targets the 3-col index in `ON CONFLICT` — it PLANS FINE today (verified), so the RPC is not broken. It throws an uncaught `unique_violation` on `association_types_pkey` the first time anyone adds a label rule beside a generic one for the same pair. Reachable via the Relationship Manager's rule form (`features/admin/relationships/components/RelationshipManagerClient.tsx:445`). Loud (a toast), not data loss.
-**The two coherent end states — Arman picks:** (A) **Per-label rules are wanted** → surrogate `id uuid` PK (matrx-orm just needs _a_ PK), 3-col index becomes the real key; requires aidream ORM regen + cross-repo commit. (B) **Per-label rules are NOT wanted** → drop `association_types_pair_label_uq`, drop the label field from the rule form, amend the reachability doc; the pair is genuinely the key. Do NOT do `label NOT NULL DEFAULT ''` — it breaks the `label IS NULL = generic` semantics both repos read.
+**Decides: Arman.** Latent (0 labeled rows). (A) per-label rules wanted → surrogate uuid PK, 3-col index becomes the key (needs aidream ORM regen); (B) not wanted → drop the 3-col index + label field + amend the reachability doc. Never `label NOT NULL DEFAULT ''`.
 
 ---
 
 ## Pending Arman review
 
-**Proposed promotion (2026-07-19, non-interactive triage — awaiting approval):**
-
-1. **Task: "Fix /files desktop table row-click creating unintended share links"** — replaces **D72**. Severity: **P0** (data exposure — a plain click can persist a real share link a user never intended to create). Why: this was directly observed live during mobile-fix verification; even though every button-level handler already calls `stopPropagation()`, the leak persists, which points to a hit-testing/timing race in the hover-conditional `RowActionsToolbar` in `features/files/components/surfaces/desktop/FileTableRow.tsx` — not a one-line fix, needs someone to reproduce and pin the exact race (rapid-click right after hover-in). Analysis stamp: unverified from live testing only — code review narrowed the suspect but did not reproduce the race; **task will need "code analysis pending" acknowledged** until someone reproduces it in-browser.
-
-Other four filed this pass (D73-D76) are lower severity (UX/console-noise/dead-spinner, no data exposure) — held in OPEN, not proposed for promotion yet; revisit next triage pass once someone has bandwidth, or promote alongside D72 if preferred.
+**Proposed promotion (2026-07-19):** none outstanding — D72 (the prior P0 proposal) was fixed 2026-07-28.
 
 ---
 
@@ -415,86 +195,86 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
-- **D111** — `web.page.canonical_page_id` (live NOT NULL, trigger-filled, absent from the committed types) broke `pnpm type-check` on the next `db-types` run. Added it to `PAGE_COLUMNS` and made `createManualPage` mint the id and set itself canonical, so the self-canonical intent is explicit rather than hidden in a trigger the type system cannot see. `features/marketing/data/service.ts`. 2026-07-27.
-
-- **D73-feedback** — External MCP submission no longer requires `agent_id`; the preferred `feedback` tool reports with description only and the service account satisfies the live auth-user FK. `app/api/mcp/[transport]/route.ts`, `lib/services/agent-feedback.service.ts`. 2026-07-27.
-
-- **D104 — Research condensed export type-check failures fixed (2026-07-25):**
-  imported the canonical snippet normalizer and corrected the source-filter
-  coverage prop to its rendered string contract. Follow-through same day: the
-  resource catalog's private `readSnippets`/`capSnippets` duplicate (kept only
-  because of this defect) was deleted — `catalog.ts` now imports
-  `normalizeSearchSnippets`/`applySnippetLengthLimit` from the canonical module.
-
-- **D86 — actor-spoofing privilege escalation in the `public.industry_*` RPC family (found + fixed 2026-07-23).** `industry_upsert` / `industry_curator_grant` / `industry_curator_revoke` resolved their actor as `COALESCE(p_actor, auth.uid())` — the caller-supplied uuid won over the session — and all five `public.industry_*` RPCs were `EXECUTE`-granted to **anon**; any caller could pass a known super-admin uuid to perform super-admin writes, and `industry_curator_grant` writes `iam.industry_curators`, which `can_curate_library_document` reads (a path to WRITE on Shared Knowledge library documents, audit-logged under the impersonated admin). Fixed to `COALESCE(auth.uid(), p_actor)` + anon revoked on all five (`migrations/industry_rpc_actor_spoof_fix.sql`, applied + ledgered; anon call now 42501; audit log shows no prior exploitation). **Same class as D31 — when adding any SECURITY DEFINER RPC that accepts an actor param, the session identity must always win.**
-- **D77 — `podcast-assets` storage bucket deleted, all its URLs 400 (2026-07-20 → resolved 2026-07-22).** Dead image refs healed (Phoenix Echo cover re-pointed to its surviving CDN image; the rest nulled to the designed placeholder); the 4 episodes with unrecoverable dead audio, 2 untitled episodes, and 9 duplicate test runs were soft-deleted, and the empty `The AP Bio Podcast` show with them. Live podcast data is now 33 episodes / 3 shows, zero dead media refs. Standing gap it exposed — nothing re-audits media refs that go dead after a write — remains untracked; `mtx_public_url_guard` only checks URLs at write time.
-
 One line per fix — title, date, pointer. History lives in git.
 
-- **D103** — Production build OOM from unused admin TypeScript-error analyzer (whole-repo fs scan + TypeScript compiler in the app graph). Deleted the route/UI + local-logs API; old bookmarks redirect to `/administration/utilities`; CLI replacement `pnpm capture-errors`; `pnpm build:trace` for local Perfetto timing; `check:turbopack-fs` now bans value-imports of `typescript` in the app graph. (2026-07-25)
-- **D62** — React Compiler re-enabled (`reactCompiler: true`) with A/B build proof: core-profile build 10.6min off / 12.0min on (+13%), 3,669 chunks carry compiled components, built app boots clean — CLAUDE.md doctrine is true again. (`next.config.js`, 2026-07-18)
-- **D63** — Doc-vs-config drift sweep after D62. Built `pnpm check:doc-claims` (10 machine-verified CLAUDE.md claims, negative-tested, wired into release gates); un-excluded 485 shipped files from `tsconfig.typecheck.json` at zero error cost; restored `removeConsole` (743 `console.log` were shipping to prod); closed the `storage_uri` template-literal lint hole; migrated 28 skills out of the Claude-Code-invisible `.cursor/skills/` (incl. `finalize-and-ship`, instructed on every task) and repointed 34 files; corrected route groups, stack versions, `'use cache'`, dead cross-repo path, and three false enforcement claims. Residue filed as D64-D70. (`scripts/check-doc-claims.ts`, 2026-07-18)
-
-- **D41-audio** — Batch STT/TTS now uses authenticated aidream catalog aliases with typed responses, retry/filter/metering and durable media; duplicate Next/provider routes and retired voice demos were removed or fail-closed, and real TTS/STT smokes pass. (`features/audio/FEATURE.md`, 2026-07-15)
-- **D36** — Dynamic-route soft 404s are fixed in production: the existence checks run before streamed content commits. Re-verified all four affected families on `www.aimatrx.com`: bogus identifiers return 404 and real identifiers return 200. (`3cb3a011f`, `d3214f473`, 2026-07-15 verification)
-- **D32** — The 500-page PDF scale set shipped 2026-07-08: virtualized Studio text pages; resumable per-page clean for >200 pages; lazy streamed render-all/split ZIPs; reading-order inspector tab; and upload page-1 thumbnails. Re-audited all entry points and reran aidream lazy-render/ZIP tests (7/7 pass). (`features/pdf/FEATURE.md`, 2026-07-15 re-verification)
-- **D60** — Team organization creation was a two-transaction org-then-owner flow that could leave an ownerless row. `org_create` now creates both atomically, binds the owner to `auth.uid()`, and direct authenticated/anon organization INSERT is revoked; both frontend entry points use the RPC. Live rolled-back verification passed. (`supabase/migrations/20260715060000_atomic_organization_creation.sql`, 2026-07-15)
-- **D48** — Superseded 2026-07-16: the frontend cold-registry gate was removed after it used the selectable-model view to authorize pinned historical execution, breaking every shortcut pinned to a deprecated model. Aidream is the execution authority for model resolution, interaction validation, and deprecated-model fallback. (`features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts`)
-- **D59** — Restored recoverable scope/scope-type soft delete after a later migration overwrote it with cascade-prone hard deletes; exact owner/admin ACLs and accurate archive confirmation copy are live-verified. (`supabase/migrations/20260715054500_restore_scope_soft_delete_admin_acl.sql`, 2026-07-15)
-- **D2** — Closed canonical membership/invitation privilege escalation: exact-container owner/admin checks, safe creator bootstrap, serialized last-owner protection, resource binding, authenticated ownership transfer, and server-derived invitation email payloads are applied and live-verified. (`supabase/migrations/20260715053000_*`, `20260715053100_*`, 2026-07-15)
-- **D47** — Image Studio no longer issues guaranteed 404s for undeployed generation, face detection, prompt edit, or edit-suggestion routes; one backend-capability registry gates/removes every affected affordance until its contract is live. (`features/image-studio/constants/backend-capabilities.ts`, 2026-07-15)
-- **D31** — SECURITY DEFINER caller-identity/org/resource audit closed across every PostgREST-exposed schema: anon recurrence guard green; authenticated self/org/owner/admin/service boundaries applied and live-verified; feedback/DM/share/app/RAG/scope paths hardened. (`supabase/migrations/20260715042550_*` through `20260715050602_*`, 2026-07-15)
-- **D50** — Full repo TypeScript is green: eliminated 616 raw `tsc --noEmit` diagnostics across `(dev)`, `(transitional)`, and legacy applet surfaces with runtime narrowing and contract repairs; both raw and canonical type-checks pass. 2026-07-15.
-- **D12** — `selectContextPayload` preserves primitive context entry labels/types using the rich wire form without emitting `max_inline_chars`; seven selector regressions pass (`instance-context.selectors.ts`). Fixed 2026-07-07; ledger reconciled 2026-07-14.
-- **D47-notes** — Restored `/notes` rich-document actions by removing orphaned `note-detail-*` remote publishers; preview and split editors now render their canonical inline action controls (`features/notes/components/NotesView.tsx`). 2026-07-14.
-- **D3** — Agent Find Usages + Drift is live: prod HTTP registry/report/scan, weekly scheduler runs, dedicated Matrx System bot sender, actionable DM insertion, and core browser surfaces verified (`docs/handoffs/agent-find-usages.md`, aidream `b12d8c186`/`419dc9942`/`095310b92`). 2026-07-15.
-- **D9** — Agent working-document edits now stream live through `context_delta`; FE applies guarded splice/full deltas to agent and Scribe documents (`features/agents/redux/execution-system/instance-working-document/contextDelta.ts`, 8 regression tests). 2026-07-08; ledger reconciled 2026-07-15.
-- **D54** — CORRECTED + FIXED (2026-07-15, adversarial review): D54's original text asserted the anon-EXECUTE grant on `creator_*`/`edu_class_*` RPCs was "NOT exploitable today" because "`_edu_is_owner` ... is false for a null uid" — **that assumption was wrong.** `_edu_is_owner` returned SQL NULL (not false) for `auth.uid() IS NULL`, and `IF NOT NULL THEN RAISE` is a silent no-op in PL/pgSQL, not a raise. Live-proved as genuinely anonymous (`set role anon`, no JWT claim): `edu_class_set_access` flipped a closed class to `open`, `edu_class_grant` comped a free paid-class entitlement, `edu_class_roster` leaked a closed class's full roster incl. real emails, `edu_class_state` leaked closed-class metadata — all with zero authentication. Fixed in `migrations/edu_class_anon_null_bypass_fix.sql` (applied + ledgered): `_edu_is_owner` now `coalesce(...,false)`-wrapped (root-cause, fixes every call site at once) + stray PUBLIC/anon EXECUTE revoked on 15 `edu_class_*` + 5 `creator_*` RPCs. All 4 live attacks re-verified blocked post-fix; owner/non-owner-authenticated regression-checked clean.
-- **D55** — `_edu_class`/`edu_class_state` invalid errcode `'NO_DATA_FOUND'` (not a real Postgres condition name) caused a raw `42704 unrecognized exception condition` on every not-found/denied path instead of a clean error. Fixed to `'P0002'` (the convention already used elsewhere in this codebase). `migrations/edu_class_state_errcode_fix.sql`, applied + ledgered, verified live. 2026-07-15.
-- **D56** — `edu_class_roster` leaked every active member's email to all co-members (student-PII to peers in a school-safe/under-13 context). Roster now nulls the `email` field for non-owner callers (owner/teacher still sees emails to manage) and returns a non-PII `display_name` so members see names, not raw UUIDs. `migrations/edu_class_roster_member_email_privacy.sql` (CREATE OR REPLACE, applied + ledgered); FE `ClassRosterMember.displayName` + `ClassRosterPanel` label fallback. Live-verified on a controlled fixture: owner call includes emails, member call nulls all peer emails + shows display names; non-member still 42501; anon still can't call it (D54 critical fix holds). 2026-07-15.
-- **D52** — `guardian_grant`/`guardian_request_student` email-enumeration oracle closed + consent-request rate limit added (`migrations/edu_guardian_link_d52_enumeration_ratelimit.sql`, applied + ledgered). Both RPCs now return an identical neutral jsonb (`{status:'sent'|'granted'}`) whether or not the email resolves — never confirming existence; the only errors are the caller's own-email case + a per-requester 8/min cap (reuses `public.check_file_rate_limit`). Service/types/UI updated to the neutral contract (`features/education/family/{familyService,types}.ts`, `components/FamilyDashboard.tsx`). MCP-verified: nonexistent + real emails → identical `{status:"sent"}`; 9th rapid request blocked. 2026-07-15.
-
-- **D49** — canvas materialized `tasks`/`structured_info` artifacts rendered blank (same early-bail class as the table fix): both bailed on `if (!content) return null` before (or, for `structured_info`, in place of) an `isMaterializedArtifactId` branch, and canvas always opens a materialized item with `data:{artifactId}`, no raw content — confirmed via Redux/prop trace (`canvasSlice.openArtifactInCanvas` → `CanvasBody` → `ArtifactRender`) and live `canvas_items` rows of both types. Fixed both to mirror `TableArtifactMaterialized`: a `TasksArtifactMaterialized` / `StructuredInfoArtifactMaterialized` wrapper self-loads the row via `useCanvasItem` and extracts `content.data` (verified live rows store exactly that shape) before handing off to the existing prop-based inner components. `features/canvas/artifact-types/renderers/{TasksArtifact,StructuredInfoArtifact}.tsx`, `cecd46a51` + `5f8d577ee`. 2026-07-13.
-- **D46** — draft-transcript auto-labeling 404'd silently: `autoLabelDraftTranscript` POSTed to `/api/content-label` through the python client, but that path exists on neither the Next app nor the aidream backend (real route is `/content-label`, no `/api` prefix) — every FE-direct/Voice-Pad save's auto-title silently failed. Fixed + bound to the contract via `apiPost("/content-label", …)` so the wrong path can't recur. Surfaced by the API-contract campaign. 2026-07-12.
-- **D45** — folder rename/move were silent server-side no-ops: FE sent `PATCH /folders {folder_name, parent_id}` but the backend model has neither (renames via `folder_path` only), so Pydantic dropped them and the change reverted on refresh. Fixed `updateFolder` thunk to send the target `folder_path`; `CreateFolderRequest`/`FolderPatchRequest` now derived from the contract (phantom fields = compile error). 2026-07-12, `74942304f`. **Live rename/move UI test still pending** (type-safe + reasoned across rename/move-to-root/reparent/visibility-only cases; not yet exercised in-browser).
-
-- **D45-mobile** — mobile flashcard cloze/matching rendering gap: FIXED + adversarially reviewed + fix round (2026-07-12, `4bf7958d5` + `e7fae6a95` + `d4011b698`) — shared `studyFaces`/`matchingPairs` faces on the mobile bridge, `MatchingCardPlayer` on mobile/canvas, index-keyed matching (duplicate pairs playable), empty-pairs guard, loud grade-write failure + retry, Options-button drawer access, 3-line wrap, filmstrip markdown strip. Verified on 390×844 with adversarial cards (duplicate-rights board completes 4/4) AND desktop deck. TASK-004 (duplicate of this) confirmed closed in `.matrx/AGENT_TASKS.md`. **Re-verified live 2026-07-13** on the "D45 Test — Cloze & Matching" seed set (`303236ec-a66f-4e07-aa47-3c27aec87e1c`, `education.fc_set`) at 390×844: cloze front shows `[ … ]` blanks (never raw `{{c1::…}}`), back reveals bolded answers; matching card renders the shared tap-to-pair player, completes 4/4, self-grades, and the ledger write lands in `education.study_attempt` (`item_type='fc_card'`); the duplicate-rights/long-text adversarial card also renders cleanly (3-line clamp, distinct duplicate buttons). No regressions from concurrent-agent changes elsewhere in the tree. No code changes were needed this pass.
-- **D44** — RAG hand-mirrored types: all seven document types + search-lab responses now derive from `components["schemas"]`, `/api/document` on the typed client, the two unguarded optional derefs are guards, baseline ratcheted 38→37; review round also killed the invented `DiagnoseHit` entity-field extension (adapter is type-narrowed per shape). 2026-07-12, `5329ff502` + `96d03fd6a` + `0515bd282`.
-- **D33** — html-preview save-back + content-actions `onSave`: htmlPreview opener was already callback-aware (2026-07-08); this pass fixed the actually-unreachable notes save path (notes editors never passed `contentSource` — no Save button existed), screamed the no-target bridge branch, purged the last 3 raw-`onSave`-through-Redux sites (cx-chat registry + AssistantActionBar) and dead tombstones, and gated the read-only race on `access.loading`. E2E: note edited via HTML preview persisted across reload. 2026-07-12, `3ccdaae1a` + `327d6f2ef` + `5f78cc940`.
-- **D14** — war-room recording tab-switch + per-session transcripts: both fences were built 2026-07-08 (`RoomRecordingController` + `hydrateThreadTranscripts`); this pass live-verified end-to-end (recording survives tab switch, same session, no new row; both `session_cleaned` + `session_NN_cleaned` reach agent context) and fixed the stale-transcript-key prune bug (`6bcab5a21`). Orphan-finalize path code-reviewed, not browser-driven. 2026-07-12.
-- **D15-primitives** — generic `file_read` tool + `source_ids` RAG filter: shipped in aidream 2026-07-08 (`c7dba3450`/`9395d9927`), but `file_read` had been **silently dead on live since 2026-07-09** (migration 0156 column-grant relock broke its `SELECT *`; the ORM swallowed 42501 into "not found") — fixed with explicit-column reads + a live guard test (aidream `4769866cc`, pushed for deploy). FE `war_room_read_file` already deleted. 2026-07-12.
-- **D19-items** — audit_bridge `actor_id` (aidream `eaa28dade`), redeliver button + `files.webhook_redeliver` RPC (applied, typed), `latency_ms` capture, `/files/webhooks` browser-verified — all confirmed shipped 2026-07-08; entry was stale. Remaining tail folded into the slimmed D19 (org-wide fan-out only). 2026-07-12.
-
-- **D34** — `api_class` tear-out gaps all closed: (1) llama-4-scout capabilities data corrected live; (3) `ai.offering.token_billed` landed, name-pattern stopgap deleted (both verified 2026-07-11); (2) the two silently-dropped capability fields (`interaction:"extraction"`, `multilingual`) promoted to TASK-003 with a full silent-drop sweep. (2026-07-12)
-
-- **D42** — aidream prod persistence-barrier outage (`Model name 'Users' is ambiguous`): fix `61d5c60b2` deployed (prod rebooted ~2026-07-12 00:43 UTC); verified via live server_status — last ambiguous-Users failure 2026-07-11 18:28 UTC, all subsequent conversation runs completed with tokens + persisted conversations. (2026-07-12)
-- **D40** — Education-Hub audio never reached a `ready` episode: the B4 param-shaping regression is the root cause. The gemini-*-tts offering's `ai.offering.override.params` declares `tts_voice`/`audio_format` `supported:true` with defaults, so `controls.outbound` injected them into the resolved params and the Google chat translator merged them blind into `GenerateContentConfig` → _"2 validation errors … Extra inputs"_ on EVERY Gemini TTS request. Fixed aidream `outbound_params.py` by adding both to `_STRUCTURAL_CANONICAL_KEYS` (translator-owned, like `response_format`) + regression test; deployed **v0.1.544** (Coolify `gouye8lkc7fch5c64zddsj06`, finished/healthy). **Live E2E verified** `POST /podcast/generate` (real admin JWT, deck→`full_content`, 2 hosts): `success:true`, `podcast.pc_episodes` `70d876ce-131f-4844-8ac0-05e22e0b16f2`, durable public 22MB audio/wav (`files.files abb7a397-b310-403f-bafa-d04c8edffa90`, visibility=public). The frontend flips `education.study_media` → `status:'ready'` on this completion event (`AudioStudyDetail.tsx#LiveAudioRun`, keyed off `audio_stream_end.file_id` + `episode_id` — both present), so the P3 audio path is unblocked. **Residual — RESOLVED (aidream feedback `04909ace`, fixed 2026-07-14):** the `generate_metadata` stage shipped episodes with empty title/description via a non-fatal `cx_request_user_request_id_fkey` FK violation. **Root cause** (aidream `packages/matrx-ai/matrx_ai/db/conversation_gate.py`): the podcast pipeline fans out the script + metadata sub-agents concurrently (`asyncio.create_task`); each becomes a forked child agent with its OWN WriteCoordinator but they SHARE the parent `request_id`. The process-global `_ensured_request_ids` memo in `ensure_user_request_exists()` was a bare exists-flag set the instant the FIRST sub-agent QUEUED (not committed) the parent `cx_user_request` into its own Session — so the sibling hit the memo, SKIPPED queuing the parent into ITS Session, and flushed a `cx_request` whose `user_request_id` had no parent row → the FK orphan; whichever coordinator committed its `cx_request` before the sibling's `cx_user_request` landed lost the metadata turn, blanking the title. **Fix:** coordinator-scope each memo entry — `_ENSURED_DURABLE` (committed out-of-request, trusted by any coordinator) vs the `id()` of the coordinator that queued it (trusted only by that same coordinator). A sibling coordinator now falls through and queues its own idempotent parent INSERT; the Session individual-write pkey swallow (`matrx-orm` `session.py::_individual_write_pass`, which explicitly documents this exact sub-agent race) collapses the duplicate so the FK always resolves in-Session. Regression test `packages/matrx-ai/tests/test_user_request_memo_scope.py`; live persistence contract re-verified `ALL CHECKS PASSED`. **Live baseline confirmed** before the fix: 2/2 `podcast.pc_episodes` created 2026-07-14 shipped `title='Untitled Episode'`/`description=NULL`, each with a matching `public.system_write_failure` `cx_request_user_request_id_fkey` insert (06:04/05:46/05:26). aidream commit `cadb87011`, deployed **v0.1.545** (cross-repo, explicit-path). (2026-07-14) (original TTS root cause: aidream fix commit in v0.1.544)
-
-- **D43** — app-builder services called a retired RPC family (8 functions gone from live `pg_proc`, not just the 5 first spotted: also `create_component_group`, `refresh_all_fields_in_group`, `remove_field_from_group`): reimplemented client-side with direct `graveyardDb` queries — group `fields` composed from `graveyard.field_components`, applet `containers` composed from `graveyard.component_groups` — in `lib/redux/app-builder/service/fieldContainerService.ts` + `customAppletService.ts`; same signatures, callers untouched, two `as unknown as` casts removed, zero added. (2026-07-11)
-- **D39** — platform-wide agent-execution outage (`resolve_call_profile: … model_provider=None`): the ai_024 rename (`ai.model_definition.model_provider`→`provider_id`) left two stale consumers. (a) aidream `packages/matrx-ai/matrx_ai/catalog/resolve.py` read `getattr(model, "model_provider")` — fixed in aidream `3d3105cb3` (2026-07-10 08:10 PT; the outage window was the pre-fix deploy) and confirmed deployed 2026-07-11: a live `agent_run` passes provider resolution for model `979205fd`. (b) The LIVE bodies of `public.get_ssr_shell_data` / `get_ssr_agent_shell_data` carried an ad-hoc, never-committed `LEFT JOIN ai.provider p ON p.id = md.model_provider` — both RPCs 42703'd ("column md.model_provider does not exist") and `DeferredShellData` silently hydrated an EMPTY shell (no ai_models/preferences/org context). Repointed to `provider_id`, keeping the `maker` join the FE expects: `migrations/ssr_shell_models_provider_id_fix.sql` (applied + ledgered + verified live: 122 models, maker resolved). Successor outage (persistence barrier) → D42. (2026-07-11)
-- **D37** — cross-personal-account multiplayer loaded an EMPTY deck: `fcService.getSetWithCards` read card-membership edges through the org-gated `assoc_for_targets` (only `iam.has_org_access`), so a guest from a different personal org got 0 edges on a `visibility='public'` deck even though `fc_set`/`fc_card` RLS (via `iam.has_access` → reachability → public parent) already lets them read the set + cards. Fix: new visibility-aware `assoc_members_visible` RPC (`has_org_access OR iam.has_access(target,'viewer')` — strict superset, per-target auth) wrapped by `associationsService.listForTargetsVisible`; `getSetWithCards` routes through it, so ALL flashcard surfaces (game/study/quiz/match) now read public/shared decks cross-account. Live-verified as guest `test@test.com` (org membership removed → true stranger): old rpc 0 edges → new rpc 52 edges → 52 playable cards; PERSONAL (formerly PRIVATE) un-granted deck stays 0 (no leak). `migrations/assoc_members_visible_rpc.sql` (ledgered), 2026-07-10.
-- **D38** — `learn_doc` registry `is_public_column='visibility'` (enum treated as boolean flag, same class as the assessment bug): nulled live + ledgered (`migrations/p7_fix_learn_doc_registry_is_public_column.sql`), snapshot + `registry.ts` regenned, parity 62/62 (2026-07-10).
-- **D34** — `pnpm dev` fatal (`opengraph-image.tsx` under `learn/[...slug]` — metadata-image conventions can't live in a catch-all): moved to `app/(core)/education/learn/og/[...slug]/route.tsx` + `generateMetadata` reference (2026-07-07, `9461f3b52`).
-- **D28** — `study_record_attempt` rejected NULL `result` (`item_mastery.struggle_flag` NOT NULL): live RPC has the ungraded early-branch + `coalesce(...,false)`, verified live 2026-07-07; client `source_kind='set'` halves landed earlier (`b9bab8309`).
-- **D27** — phantom association tokens (2026-07-07): `normalizeEntityToken()` chokepoint in `features/scopes/service/associationGuards.ts` (`cx_message→message`, `cx_conversation→conversation`, `user_file→file`, `agent_app→app`, `chat_block→message`; loud on hit), applied before `checkToken` in every `associationsService` method; `get_task_associations` reads canonical tokens (`migrations/get_task_associations_canonical_*.sql`); zero phantom rows in data; `blocks` bucket intentionally `[]` — do not resurrect `chat_block`.
-- **D26** — working-document legacy litter (2026-07-02): `conversation_id`/`user_id` dropped from `workbench.working_documents`, `chat.conversation_documents` graveyarded (`migrations/working_document_canonicalize_step3_drop_legacy.sql`); FE row-type trimmed 2026-07-07.
-- **D25-menus** — content-block insertion restored on all 4 surfaces via v3 `EditableContextMenu`; dead `DeferredShellData` preloads + `getSSRAgentShellData` deleted (2026-07-07).
-- **D22** — auth open-redirect + spoofable `x-forwarded-host` (2026-07-07): `safeRelativePath` + `safeForwardedHost` in `utils/auth/safe-redirect.ts` at every sink; PII logs dev-gated.
-- **D30** — shareable-resource TS mirror regenerated from `platform.shareable_resource_registry` (2026-07-07): token-vs-physical-table split + `resolveResourceToken()`; org-shared-count bug fixed; 4 legacy grant rows backfilled (`migrations/permissions_legacy_resource_type_backfill.sql`). 12 no-`visibility`-column tables fail `make_resource_public` gracefully — not real share surfaces.
-- **R3** — soft-delete/restore broken app-wide by `deleted_at` in authenticated RLS (2026-07-04): `iam.apply_rls` v2 gates `deleted_at` ONLY on anon `pub_read` (`migrations/iam_apply_rls_v2_soft_delete_select_fix.sql`, self-verifying). **Standing rule:** authenticated RLS = authorization only; readers filter `deleted_at` themselves — [`docs/official/db-rules.md`](docs/official/db-rules.md) (broken pointer fixed 2026-07-15; was `docs/db_changes/CANONICAL_DATABASE_SYSTEM.md`, a file that never existed). Caveat: a reader that forgets the filter sees soft-deleted rows it has access to (never cross-tenant).
-- **D16** — composer draft false-alarm scream + non-unified send (2026-07-02, `a3dfe59d2`): `clearComposerIfUnsubmitted` at all four clear sites + `conversationLifecycle` anti-orphan guard in `smartExecute`. Live-browser pass never run.
-- **D11** — per-turn context chips (2026-06-29): read `chat.message.model_context` (FE freezes `metadata.context_snapshot` at submit as fallback). **Standing rule:** historical record components read frozen per-record snapshots, never live slices. Future scope: [`features/agents/docs/CONTEXT_RECORD_SPEC.md`](features/agents/docs/CONTEXT_RECORD_SPEC.md).
-- **D8** — item-presentation detailSources (2026-06-29, `6769af0c6`): `message` → `chat.message` + 4 stale schemas repointed; `session` left seed-only BY DECISION (ambiguous canonical source — code comment on the entry).
-- **D24** — no-op `contentHistory` overlay deleted end-to-end (2026-06-29, `594498a5e`); the live twin is `EditHistoryDialog`.
-- **D23** — task-attachments data loss: orphaned `TaskDetails` variant replaced with canonical `<TaskAttachmentsPanel>` (2026-06-29, `c4a639ca9`).
-- **D21** — dead AI-Runs feature (graveyarded `ai_runs`) deleted (2026-06-29, `b4092df3b`); live `ai_tasks` half kept — belongs to the D25 applet rebuild.
-- **D6b** — duplicate tool-viz `dynamic/` code-runner deleted, leaves relocated (2026-06-29, `d05096766`).
-- **D18** — `files.share_links`/`file_versions` owner SELECT RLS gap + `SingleFileShell` error swallow (2026-06-27).
-- **D17** — `userPreferencesSlice` module lists: `sandbox`/`transcription`/`agentConnections` added to partialize/rehydrate/reset (2026-06-27).
-- **D6a** — window geometry restore keyed by slug, not overlayId, in `WindowPersistenceManager.tsx` (2026-06-27).
-- **D5a** — permissive `shortcut_categories` SELECT policy dropped (2026-06-27, `migrations/shortcut_categories_drop_permissive_select.sql`).
-- **R2** — the 11 severed overlay callbacks were all dead: props/openers/`resourcePickerWindow` branch deleted (2026-06-14).
-- **R1** — chat Edit/resubmit severed `onSave` + two missing RPCs (2026-06-14, `migrations/cx_message_soft_delete_and_truncate.sql`): `fullScreenEditor` callback-aware with loud fallback; fork-position bug fixed. Open tail → D33. Bug class documented in [`features/overlays/FEATURE.md`](features/overlays/FEATURE.md).
-- **D5b (mermaid reach)** — removed from this ledger: not a defect. Extension/desktop/mobile renderers + `skl_resources` injection + per-block menu filtering are roadmap, tracked by the `is_active=false` rows in `skl_render_components` and the feature docs.
-- **D41-research** — Research live spend is catalog-driven end to end: aidream streams authoritative nullable `cost_usd` on analysis/synthesis completions, and the frontend removed all provider-name pricing guesses. (`aidream/research/usage.py`, `features/research/hooks/usePipelineProgress.ts`, 2026-07-15)
-- **D41-podcast** — Podcast provider/default-cast policy is server-owned through typed `GET /podcast/cast-preview`; the studio only overlays user edits and no longer mirrors host-count routing or a Gemini voice order. (`aidream/services/podcast/generation.py`, `features/podcasts/generator/usePodcastCastPreview.ts`, 2026-07-15)
+- **D112** — canonical list title cells are now real `next/link`s (keyboard/SR/middle-click) via `MatrxColumnDef.href` in `MatrxDataTable`; agents-browse + CRM columns wired. 2026-07-28.
+- **D102** — `callApi` now surfaces server `user_message`/`message`/`details[].message` instead of bare "HTTP 422" (`lib/api/call-api.ts`). 2026-07-28.
+- **D97** — Univer autosave filtered to `CommandType.MUTATION` (+ denylist); scrolling no longer writes snapshots — `DocumentEditor.tsx`, `WorkbookEditor.tsx`, shared `isSnapshotMutation.ts`. 2026-07-28.
+- **D99** — `useEpisodeArticles` render-phase ref write + sync setState-in-effect refactored; lint clean. 2026-07-28.
+- **D98** — `OutputsStudio` loading derived from fetch lifecycle; banned `Sparkles` replaced; stale disables removed. 2026-07-28.
+- **D75** — transcripts sidebar nested `<button>` → `role="button"` div with keyboard handlers (`TranscriptsSidebar.tsx`). 2026-07-28.
+- **D73c** — /artifacts stuck `isNavigating` spinner: pathname-reset + 6s fallback + unified `handleNavigate` (`CmsArtifactList.tsx`). 2026-07-28.
+- **D72** — /files row-click share race closed: hidden toolbars get `pointer-events-none`, row onClick ignores `[data-row-actions]` targets (`FileTableRow.tsx`). 2026-07-28.
+- **D68** — OverlayController ESLint override now `error` and re-lists all 13 global ban groups. 2026-07-28.
+- **D69** — `features/files/**` gets `no-restricted-imports: off` (ring-fence targets outside consumers). 2026-07-28.
+- **D109** — `TEMP_SKIP_RELEASE_CHECKS` no longer exists anywhere (repo, env, shell rc); release gates run normally. Verified 2026-07-28.
+- **D82** — (1) v1 paginated RPC SQL injection fixed with bound params (`migrations/get_user_table_data_paginated_v1_injection_fix.sql`); (2) `get_user_feed` actor guard 2026-07-25; (3) dead prompt branches dropped from `get_version_history` + dead `features/versioning` deleted (`migrations/get_version_history_drop_dead_prompt_branches.sql`). 2026-07-28.
+- **D71** — retired `rag_search` name gone from live SQL; `platform.entity_types.data_store` note updated to `knowledge_search`. 2026-07-28.
+- **D111** — `web.page.canonical_page_id` added to `PAGE_COLUMNS`; `createManualPage` mints the id (`features/marketing/data/service.ts`). 2026-07-27.
+- **D73-feedback** — external MCP submission no longer requires `agent_id` (`app/api/mcp/[transport]/route.ts`). 2026-07-27.
+- **D104b** — research condensed export type-check fixed; duplicate snippet normalizer deleted. 2026-07-25.
+- **D103b** — production build OOM from unused admin TS-error analyzer: route deleted, `pnpm capture-errors` CLI replaces it. 2026-07-25.
+- **D95** — SEO command results now a discriminated union end-to-end (aidream `SeoCommandResult` + `result_kind`); FE inline casts killed. 2026-07-23.
+- **D89** — `rag.fn_data_store_members_rich` admits grant readers (`migrations/data_store_members_rich_grant_reader.sql`). 2026-07-23.
+- **D87** — plaintext secret columns ruled per-column: `byok_secret_key` holds env-var names (CHECK-guarded), `files.webhooks.secret` DB-plaintext by design, `workflow.trigger.webhook_secret` Fernet-encrypted (aidream `0242`). 2026-07-23.
+- **D86** — `industry_*` RPC actor-spoof + anon EXECUTE fixed (`migrations/industry_rpc_actor_spoof_fix.sql`). Class rule: session identity always wins over an actor param. 2026-07-23.
+- **D77** — dead `podcast-assets` bucket refs healed; dead-media episodes soft-deleted. Standing gap: nothing re-audits media refs post-write. 2026-07-22.
+- **D62** — React Compiler re-enabled with A/B proof (+13% build). 2026-07-18.
+- **D63** — doc-vs-config drift sweep: `pnpm check:doc-claims` built; 485 files un-excluded from the type gate; `removeConsole` restored; 28 skills migrated. 2026-07-18.
+- **D41-audio** — batch STT/TTS on authenticated catalog aliases, typed responses, durable media. 2026-07-15.
+- **D36** — dynamic-route soft 404s fixed in production (`3cb3a011f`, `d3214f473`). 2026-07-15.
+- **D32** — 500-page PDF scale set shipped (virtualized Studio, resumable clean, lazy ZIPs). 2026-07-08.
+- **D60-org** — atomic `org_create` (org + owner in one tx); direct INSERT revoked (`20260715060000`). 2026-07-15.
+- **D48** — FE cold-registry gate removed; aidream is the model-resolution authority. 2026-07-16.
+- **D59-scopes** — scope/scope-type soft delete restored with owner/admin ACLs (`20260715054500`). 2026-07-15.
+- **D2** — canonical membership/invitation privilege escalation closed (`20260715053000-53100`). 2026-07-15.
+- **D47** — Image Studio 404 affordances gated by one backend-capability registry. 2026-07-15.
+- **D31** — SECURITY DEFINER caller-identity audit closed across all PostgREST-exposed schemas (`20260715042550-050602`). 2026-07-15.
+- **D50** — full repo TypeScript green (616 diagnostics eliminated). 2026-07-15.
+- **D12** — `selectContextPayload` preserves primitive context labels/types. 2026-07-07.
+- **D47-notes** — /notes rich-document actions restored (`NotesView.tsx`). 2026-07-14.
+- **D3** — Agent Find Usages + Drift live (prod registry/report/scan, weekly runs). 2026-07-15.
+- **D9** — agent working-document edits stream via `context_delta` (8 regression tests). 2026-07-08.
+- **D54** — anon NULL-uid bypass in `edu_class_*`/`creator_*` RPCs closed (`migrations/edu_class_anon_null_bypass_fix.sql`). 2026-07-15.
+- **D55** — invalid errcode `'NO_DATA_FOUND'` → `'P0002'` (`migrations/edu_class_state_errcode_fix.sql`). 2026-07-15.
+- **D56** — `edu_class_roster` peer-email leak: emails nulled for non-owners, `display_name` added (`migrations/edu_class_roster_member_email_privacy.sql`). 2026-07-15.
+- **D52** — guardian-link email-enumeration oracle closed + 8/min rate limit (`migrations/edu_guardian_link_d52_enumeration_ratelimit.sql`). 2026-07-15.
+- **D49** — canvas materialized tasks/structured_info artifacts self-load via `useCanvasItem` (`cecd46a51`, `5f8d577ee`). 2026-07-13.
+- **D46** — draft-transcript auto-label 404: `/api/content-label` → contract-bound `/content-label`. 2026-07-12.
+- **D45** — folder rename/move silent no-op: `updateFolder` sends `folder_path`; contract-derived request types (`74942304f`). 2026-07-12.
+- **D45-mobile** — mobile flashcard cloze/matching rendering (`4bf7958d5`+). 2026-07-12; re-verified 07-13.
+- **D44** — RAG hand-mirrored types derive from `components["schemas"]` (`5329ff502`+). 2026-07-12.
+- **D33** — html-preview save-back + content-actions `onSave` chain fixed E2E (`3ccdaae1a`+). 2026-07-12.
+- **D14** — war-room recording tab-switch + per-session transcripts verified; stale-key prune fixed (`6bcab5a21`). 2026-07-12.
+- **D15-primitives** — generic `file_read` tool + `source_ids` RAG filter live (aidream `4769866cc`). 2026-07-12.
+- **D19-items** — audit_bridge `actor_id`, webhook redeliver, `latency_ms` shipped. 2026-07-12.
+- **D34-api** — `api_class` tear-out gaps closed; silent-drop sweep promoted to TASK-003. 2026-07-12.
+- **D42** — aidream persistence-barrier outage (`Model name 'Users' is ambiguous`) fixed + deployed (`61d5c60b2`). 2026-07-12.
+- **D40** — Gemini TTS param-shaping regression fixed (aidream v0.1.544) + concurrent sub-agent `request_id` memo race fixed (v0.1.545); podcast audio E2E verified. 2026-07-14.
+- **D43** — app-builder retired-RPC family reimplemented client-side over `graveyardDb`. 2026-07-11.
+- **D39** — `model_provider`→`provider_id` stale consumers fixed (aidream `3d3105cb3`; `migrations/ssr_shell_models_provider_id_fix.sql`). 2026-07-11.
+- **D37** — cross-account flashcard decks readable via visibility-aware `assoc_members_visible` RPC. 2026-07-10.
+- **D38** — `learn_doc` registry `is_public_column` enum-as-boolean nulled (`migrations/p7_fix_learn_doc_registry_is_public_column.sql`). 2026-07-10.
+- **D34-dev** — `opengraph-image.tsx` under catch-all moved to a route handler (`9461f3b52`). 2026-07-07.
+- **D28** — `study_record_attempt` NULL-result branch fixed live. 2026-07-07.
+- **D27** — phantom association tokens: `normalizeEntityToken()` chokepoint + canonical reads. 2026-07-07.
+- **D26** — working-document legacy columns dropped; `conversation_documents` graveyarded. 2026-07-02.
+- **D25-menus** — content-block insertion restored on all 4 surfaces via v3 `EditableContextMenu`. 2026-07-07.
+- **D22** — auth open-redirect + spoofable `x-forwarded-host` closed (`utils/auth/safe-redirect.ts`). 2026-07-07.
+- **D30** — shareable-resource TS mirror regenerated from the registry; legacy grant rows backfilled. 2026-07-07.
+- **R3** — soft-delete in authenticated RLS removed (`iam.apply_rls` v2). Standing rule: authenticated RLS = authorization only; readers filter `deleted_at` themselves (`docs/official/db-rules.md`). 2026-07-04.
+- **D16** — composer draft false-alarm scream + unified send (`a3dfe59d2`). 2026-07-02.
+- **D11** — per-turn context chips read frozen `model_context` snapshots. Standing rule: historical record components read frozen snapshots, never live slices. 2026-06-29.
+- **D8** — item-presentation detailSources repointed to live schemas (`6769af0c6`). 2026-06-29.
+- **D24** — no-op `contentHistory` overlay deleted (`594498a5e`). 2026-06-29.
+- **D23** — orphaned `TaskDetails` variant replaced with `<TaskAttachmentsPanel>` (`c4a639ca9`). 2026-06-29.
+- **D21** — dead AI-Runs feature deleted (`b4092df3b`). 2026-06-29.
+- **D6b** — duplicate tool-viz code-runner deleted (`d05096766`). 2026-06-29.
+- **D18** — `files.share_links`/`file_versions` owner SELECT RLS gap closed. 2026-06-27.
+- **D17** — `userPreferencesSlice` module lists completed. 2026-06-27.
+- **D6a** — window geometry restore keyed by slug (`WindowPersistenceManager.tsx`). 2026-06-27.
+- **D5a** — permissive `shortcut_categories` SELECT policy dropped. 2026-06-27.
+- **R2** — 11 severed overlay callbacks were dead; deleted. 2026-06-14.
+- **R1** — chat Edit/resubmit severed `onSave` + missing RPCs fixed (`migrations/cx_message_soft_delete_and_truncate.sql`). 2026-06-14.
+- **D41-research** — research live spend catalog-driven end to end. 2026-07-15.
+- **D41-podcast** — podcast cast policy server-owned via typed `GET /podcast/cast-preview`. 2026-07-15.
