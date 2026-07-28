@@ -4,14 +4,10 @@ import { selectInstanceAgentDescription } from "@/features/agents/redux/executio
 import { Webhook } from "lucide-react";
 import dynamic from "next/dynamic";
 import type { RootState } from "@/lib/redux/store";
-
-const MarkdownStream = dynamic(
-  () =>
-    import("@/components/MarkdownStreamImpl").then((m) => ({
-      default: m.default,
-    })),
-  { ssr: false },
-);
+// The MarkdownStream FRONT DOOR (already a dynamic ssr:false shell) — never
+// re-wrap or bypass it with a second boundary on MarkdownStreamImpl; that
+// duplicated the whole rich-document engine into a second chunk group.
+import MarkdownStream from "@/components/MarkdownStream";
 
 const IconResolver = dynamic(
   () =>

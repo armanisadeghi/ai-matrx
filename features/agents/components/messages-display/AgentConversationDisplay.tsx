@@ -25,7 +25,6 @@ import {
   useRef,
   type RefObject,
 } from "react";
-import dynamic from "next/dynamic";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectConversationMessages,
@@ -52,45 +51,19 @@ import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
 } from "@/features/war-room/utils/renderPathTrace";
-const AssistantTurnGroup = dynamic(
-  () =>
-    import("./assistant/AssistantTurnGroup").then((m) => ({
-      default: m.AssistantTurnGroup,
-    })),
-  { ssr: false, loading: () => <AssistantDynamicFallback /> },
-);
-
-// Dynamic (ssr:false) — same as AssistantTurnGroup. AgentAssistantMessage
-// pulls in useDomCapturePrint → jspdf → fflate, whose Node Worker import
-// cannot be resolved during SSR. A static import here 500s the route.
-const AgentAssistantMessage = dynamic(
-  () =>
-    import("./assistant/AgentAssistantMessage").then((m) => ({
-      default: m.AgentAssistantMessage,
-    })),
-  { ssr: false, loading: () => <AssistantDynamicFallback /> },
-);
-
-const AgentEmptyMessageDisplay = dynamic(
-  () =>
-    import("./assistant/AgentEmptyMessageDisplay").then((m) => ({
-      default: m.AgentEmptyMessageDisplay,
-    })),
-  { ssr: false },
-);
+// STATIC (2026-07-28, fragmentation campaign): these three render together on
+// every transcript, so their former per-component dynamic(ssr:false)
+// boundaries multiplied chunk groups across every consuming context for zero
+// deferral. The old "static import 500s the route — jspdf → fflate node
+// worker" reason is gone: next.config.js pins `jspdf` to its browser build
+// via turbopack.resolveAlias (see the comment there), verified by an SSR
+// render of /chat after this change. The heavy engines below these (the
+// MarkdownStream front door) keep their own single edges.
+import { AssistantTurnGroup } from "./assistant/AssistantTurnGroup";
+import { AgentAssistantMessage } from "./assistant/AgentAssistantMessage";
+import { AgentEmptyMessageDisplay } from "./assistant/AgentEmptyMessageDisplay";
 
 const COLD_MARKDOWN_ANCHOR_WINDOW_MS = 4200;
-
-function AssistantDynamicFallback() {
-  return (
-    <div className="py-1 space-y-3" aria-hidden>
-      <div className="h-3.5 w-[96%] animate-pulse rounded bg-muted/55" />
-      <div className="h-3.5 w-[88%] animate-pulse rounded bg-muted/50" />
-      <div className="h-3.5 w-[72%] animate-pulse rounded bg-muted/45" />
-      <div className="h-3.5 w-[42%] animate-pulse rounded bg-muted/35" />
-    </div>
-  );
-}
 
 interface AgentConversationDisplayProps {
   conversationId: string;
