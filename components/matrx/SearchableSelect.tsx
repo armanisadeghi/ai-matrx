@@ -66,11 +66,11 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
             <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
           </button>
         </PopoverTrigger>
-        <PopoverContent 
-          className="w-[var(--radix-popover-trigger-width)] p-0 bg-elevation1 rounded-md border border-elevation3" 
+        <PopoverContent
+          className="w-[var(--radix-popover-trigger-width)] p-0 bg-popover text-popover-foreground rounded-md border border-border shadow-md"
           align="start"
         >
-          <Command className="bg-elevation1" shouldFilter={false}>
+          <Command className="bg-popover text-popover-foreground" shouldFilter={false}>
             <CommandInput
               placeholder={searchPlaceholder}
               value={search}
