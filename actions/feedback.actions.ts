@@ -91,6 +91,10 @@ export async function submitFeedback(
       .insert({
         organization_id: await ensureOrgIdServer(supabase, undefined),
         user_id: user.id,
+        // RLS owner branch keys on created_by — without it the submitter
+        // can't see their own report (this insert uses the admin client, so
+        // nothing stamps it automatically).
+        created_by: user.id,
         username,
         feedback_type: input.feedback_type,
         route: input.route,
