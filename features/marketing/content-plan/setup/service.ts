@@ -43,11 +43,19 @@ import {
   type Archetype,
   type PlanSpecNode,
 } from "./archetypes";
+import { CONCEPT_MAP_KEY, parseConceptCatalog, type Concept } from "./concepts";
 
 // ── archetype library ──────────────────────────────────────────────────────
 
 export interface ArchetypeLibrary {
   archetypes: Archetype[];
+  /**
+   * The concept MENU the selection-form archetypes name. Loaded from the SAME
+   * profile rows (`template_map.concepts` is the sibling key of `.archetypes`)
+   * — an archetype selection is meaningless without it, and two sources would
+   * create a partial-load state where a shape references a concept nobody read.
+   */
+  catalog: Record<string, Concept>;
   /** Keys an org profile overrode — said out loud, never silently hidden. */
   shadowed: string[];
   /** Parse failures + loud recoveries, surfaced instead of swallowed. */
@@ -69,6 +77,7 @@ export async function loadArchetypeLibrary(
   const byKey = new Map<string, Archetype>();
   const builtinKeys = new Set<string>();
   const shadowed: string[] = [];
+  const catalog: Record<string, Concept> = {};
 
   const ingest = (
     rows: typeof profiles,
@@ -76,10 +85,34 @@ export async function loadArchetypeLibrary(
     source: (vertical: string) => string,
   ) => {
     for (const row of rows) {
-      const map =
+      const templateMap =
         row.template_map && typeof row.template_map === "object"
-          ? (row.template_map as Record<string, unknown>)[ARCHETYPE_MAP_KEY]
+          ? (row.template_map as Record<string, unknown>)
           : null;
+      if (!templateMap) continue;
+
+      // Concepts first: the catalog must be in hand before any selection that
+      // names it is resolved. An org profile shadows INDIVIDUAL concept keys,
+      // exactly the way it shadows individual archetype keys.
+      const conceptsRaw = templateMap[CONCEPT_MAP_KEY];
+      if (conceptsRaw !== null && conceptsRaw !== undefined) {
+        try {
+          Object.assign(
+            catalog,
+            parseConceptCatalog(
+              conceptsRaw,
+              `plan.profile "${row.vertical}"`,
+              problems,
+            ),
+          );
+        } catch (error) {
+          problems.push(
+            `plan.profile "${row.vertical}" concepts: ${extractErrorMessage(error)}`,
+          );
+        }
+      }
+
+      const map = templateMap[ARCHETYPE_MAP_KEY];
       if (map === null || map === undefined) continue;
       try {
         for (const archetype of parseArchetypeMap(
@@ -128,6 +161,7 @@ export async function loadArchetypeLibrary(
     archetypes: [...byKey.values()].sort(
       (a, b) => size(a) - size(b) || a.label.localeCompare(b.label),
     ),
+    catalog,
     shadowed,
     problems,
   };

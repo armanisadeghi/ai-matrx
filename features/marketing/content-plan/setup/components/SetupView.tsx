@@ -41,7 +41,9 @@ import {
   ArchetypeError,
   type Archetype,
   type ExpandedArchetype,
+  type FamilyPlan,
 } from "../archetypes";
+import type { Concept } from "../concepts";
 import { useArchetypeLibrary, useCmsFacts } from "../hooks";
 import { buildPreview } from "../preview";
 import { buildReadiness } from "../readiness";
@@ -74,10 +76,14 @@ function expandSafely(
   archetype: Archetype | null,
   counts: Record<string, number>,
   names: Record<string, string[]>,
+  catalog: Record<string, Concept>,
 ): Expansion {
   if (!archetype) return { expanded: null, error: null };
   try {
-    return { expanded: expandArchetype(archetype, { counts, names }), error: null };
+    return {
+      expanded: expandArchetype(archetype, { counts, names, catalog }),
+      error: null,
+    };
   } catch (error) {
     return {
       expanded: null,
@@ -102,16 +108,19 @@ function expandSafely(
  *
  * A child is only adopted when its label round-trips to its slug: identity is
  * (parent, slug), and a name whose slug differs would not match the live row.
+ *
+ * Reads the families off the EXPANSION, not the archetype: a selection-form
+ * archetype has no `families` until its concepts are resolved against the
+ * catalog, so reading the config directly would silently adopt nothing.
  */
 function namesFromPlan(
-  archetype: Archetype | null,
+  families: FamilyPlan[],
   liveNodes: PlanNodeRow[],
 ): Record<string, string[]> {
-  if (!archetype) return {};
   const out: Record<string, string[]> = {};
-  for (const family of archetype.families) {
+  for (const family of families) {
     if (family.materialize !== "pages") continue;
-    const hub = `/${family.slug ?? family.key}`;
+    const hub = family.route;
     const labels = liveNodes
       .filter(
         (node) =>
@@ -162,6 +171,14 @@ export function SetupView() {
   const [result, setResult] = useState<CommitResult | null>(null);
 
   const archetypes = library.data?.archetypes ?? [];
+  const catalog = library.data?.catalog ?? {};
+  // Every shape expanded at its OWN defaults — one pure call per archetype, the
+  // same function the commit uses. It gives the shape list its family/omits
+  // summary AND gives the selected shape its family SET, which a selection-form
+  // archetype only has after its concepts resolve against the catalog.
+  const baseline = new Map<string, ExpandedArchetype | null>(
+    archetypes.map((item) => [item.key, expandSafely(item, {}, {}, catalog).expanded]),
+  );
   const selectedKey =
     pickedKey ??
     (committed && archetypes.some((item) => item.key === committed.key)
@@ -174,11 +191,12 @@ export function SetupView() {
   // shows the work order that was actually promised (by this view OR the chat
   // tool: both write the same `web.site.settings.content_plan.archetype`).
   const localCounts = selected ? countsByArchetype[selected.key] : undefined;
+  const baseFamilies = (selectedKey ? baseline.get(selectedKey) : null)?.families ?? [];
   const counts: Record<string, number> =
     localCounts ??
     (selected && committed && committed.key === selected.key
       ? Object.fromEntries(
-          selected.families
+          baseFamilies
             .filter((family) => typeof committed.counts[family.key] === "number")
             .map((family) => [family.key, committed.counts[family.key]]),
         )
@@ -188,10 +206,10 @@ export function SetupView() {
   // them. Clearing a paste falls back to the plan, never to placeholders.
   const userNames: Record<string, string[]> =
     (selected ? namesByArchetype[selected.key] : undefined) ?? {};
-  const planNames = namesFromPlan(selected, nodeRows);
+  const planNames = namesFromPlan(baseFamilies, nodeRows);
   const names: Record<string, string[]> = { ...planNames, ...userNames };
 
-  const expansion = expandSafely(selected, counts, names);
+  const expansion = expandSafely(selected, counts, names, catalog);
   const expanded = expansion.expanded;
 
   const readiness = expanded
@@ -436,6 +454,7 @@ export function SetupView() {
           ) : (
             <SetupShapeColumn
               archetypes={archetypes}
+              baseline={baseline}
               loading={false}
               selectedKey={selectedKey}
               committedKey={committed?.key ?? null}

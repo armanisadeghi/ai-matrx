@@ -11,11 +11,12 @@ import { Check } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-import type { Archetype } from "../archetypes";
+import { humanizeKey, type Archetype, type ExpandedArchetype } from "../archetypes";
 import { SetupSection } from "./SetupSection";
 
 export function SetupShapeColumn({
   archetypes,
+  baseline,
   loading,
   selectedKey,
   committedKey,
@@ -23,6 +24,12 @@ export function SetupShapeColumn({
   onSelect,
 }: {
   archetypes: Archetype[];
+  /**
+   * Each shape expanded at its own defaults, keyed by archetype. The summary
+   * and the omits list are read from HERE, never off the raw config: a
+   * selection-form archetype has no families until its concepts resolve.
+   */
+  baseline: Map<string, ExpandedArchetype | null>;
   loading: boolean;
   selectedKey: string | null;
   committedKey: string | null;
@@ -70,9 +77,13 @@ export function SetupShapeColumn({
             const selected = archetype.key === selectedKey;
             const committed = archetype.key === committedKey;
             const overrides = shadowed.includes(archetype.key);
-            const families = archetype.families
+            const expanded = baseline.get(archetype.key) ?? null;
+            const families = (expanded?.families ?? [])
               .map((family) => `${family.label} × ${family.count}`)
               .join(" · ");
+            // What the tier deliberately LEAVES OUT is the other half of the
+            // decision — without it the menu only ever says yes.
+            const omits = expanded?.omits ?? [];
             return (
               <li key={archetype.key}>
                 <button
@@ -107,6 +118,14 @@ export function SetupShapeColumn({
                   {families ? (
                     <p className="mt-1.5 truncate font-mono text-[11px] text-muted-foreground">
                       {families}
+                    </p>
+                  ) : null}
+                  {omits.length > 0 ? (
+                    <p
+                      className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground/80"
+                      title={`Left off this shape: ${omits.map(humanizeKey).join(", ")}`}
+                    >
+                      Leaves out {omits.map(humanizeKey).join(", ")}
                     </p>
                   ) : null}
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] leading-none">

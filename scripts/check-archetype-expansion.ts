@@ -32,6 +32,10 @@ import {
   type Archetype,
   type PlanSpecNode,
 } from "../features/marketing/content-plan/setup/archetypes";
+import {
+  parseConceptCatalog,
+  type Concept,
+} from "../features/marketing/content-plan/setup/concepts";
 
 interface ExpectNode {
   depth: number;
@@ -43,11 +47,23 @@ interface ExpectNode {
   attributes: unknown;
 }
 
+interface ExpectConcept {
+  concept: string;
+  label: string;
+  variant: string;
+  variant_label: string;
+  order: number;
+  family_key: string | null;
+  page_routes: string[];
+}
+
 interface ExpandCase {
   name: string;
   archetype_key: string;
   archetype?: unknown;
   archetype_map_raw?: unknown;
+  /** The concept MENU a selection-form case resolves against (raw blob). */
+  catalog?: unknown;
   counts: Record<string, number> | null;
   names: Record<string, string[]> | null;
   expect: {
@@ -71,6 +87,8 @@ interface ExpandCase {
       declared_as: string;
     }[];
     nodes: ExpectNode[];
+    concepts?: ExpectConcept[];
+    omits?: string[];
   };
 }
 
@@ -78,6 +96,7 @@ interface ErrorCase {
   name: string;
   archetype_key: string;
   archetype?: unknown;
+  catalog?: unknown;
   archetype_map_raw?: unknown;
   counts: Record<string, number> | null;
   names: Record<string, string[]> | null;
@@ -136,6 +155,16 @@ function parseCase(
   return found;
 }
 
+/**
+ * The concept menu a SELECTION-form case resolves against. Parsed from the
+ * fixture's raw blob, never handed over pre-built: the catalog parser is half
+ * of what the twin has to agree on.
+ */
+function parseCatalog(entry: { catalog?: unknown }): Record<string, Concept> | undefined {
+  if (entry.catalog === undefined || entry.catalog === null) return undefined;
+  return parseConceptCatalog(entry.catalog, "fixture catalog");
+}
+
 function flatten(roots: PlanSpecNode[]): { node: PlanSpecNode; depth: number }[] {
   const out: { node: PlanSpecNode; depth: number }[] = [];
   const visit = (node: PlanSpecNode, depth: number) => {
@@ -160,6 +189,7 @@ for (const c of fixture.expand_cases ?? []) {
     const expanded = expandArchetype(archetype, {
       counts: c.counts ?? undefined,
       names: c.names ?? undefined,
+      catalog: parseCatalog(c),
     });
 
     same("counts", expanded.counts, c.expect.counts, problems);
@@ -205,6 +235,23 @@ for (const c of fixture.expand_cases ?? []) {
       c.expect.nodes,
       problems,
     );
+    // Selection-form reporting: which menu items produced this, and what the
+    // shape deliberately left off. Absent on the pre-concept cases.
+    same(
+      "concepts",
+      expanded.concepts.map((item) => ({
+        concept: item.concept,
+        label: item.label,
+        variant: item.variant,
+        variant_label: item.variantLabel,
+        order: item.order,
+        family_key: item.familyKey,
+        page_routes: item.pageRoutes,
+      })),
+      c.expect.concepts ?? [],
+      problems,
+    );
+    same("omits", expanded.omits, c.expect.omits ?? [], problems);
 
     // walkSpec is what the commit writer walks — it must agree with the
     // preview's own flatten, or the two disagree about write order.
@@ -233,6 +280,7 @@ for (const c of fixture.error_cases ?? []) {
     expandArchetype(archetype, {
       counts: c.counts ?? undefined,
       names: c.names ?? undefined,
+      catalog: parseCatalog(c),
     });
   } catch (error) {
     message = error instanceof Error ? error.message : String(error);

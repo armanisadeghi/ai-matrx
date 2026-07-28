@@ -31,9 +31,10 @@ plan CRUD through it.
   (UI, future envelope-apply, generators) delegates here; nothing else calls
   `supabase.schema("plan")`.
 - `setup/` — the Site Setup view (`?view=setup`): the archetype twin
-  (`archetypes.ts` + its pinning fixture), the library/work-order/commit service,
-  the readiness checklist, the route-preview diff, and the three columns. Its
-  writes go through `data/service.ts#createPlanNode` like everything else.
+  (`archetypes.ts` + the concept library `concepts.ts` + their pinning fixture),
+  the library/work-order/commit service, the readiness checklist, the
+  route-preview diff, and the three columns. Its writes go through
+  `data/service.ts#createPlanNode` like everything else.
 - `data/associations.ts` — plan edges via the canonical
   `associationsService` (assoc_add/assoc_remove RPCs); never a parallel path.
 - `data/hooks.ts` — TanStack Query hooks (`planKeys.*`).
@@ -151,16 +152,50 @@ plan CRUD through it.
   the preview flags it **`conflict` BEFORE commit** instead of surfacing it as a
   post-commit failure. Never reintroduce a route-keyed diff.
 - **The archetype expander is a TWIN of aidream's canonical
-  `services/content_plan/archetypes.py`,** pinned by the language-neutral
-  fixture `setup/archetype-expansion-cases.json` (copied verbatim from aidream,
-  which owns it) and the runnable guard **`pnpm check:archetype-expansion`**
-  (20 cases + a checksum against aidream's copy; aidream runs the same cases in
+  `services/content_plan/archetypes.py` + `concepts.py`,** pinned by the
+  language-neutral fixture `setup/archetype-expansion-cases.json` (copied
+  verbatim from aidream, which owns it) and the runnable guard
+  **`pnpm check:archetype-expansion`** (45 cases + a checksum against aidream's
+  copy; aidream runs the same cases in
   `tests/test_archetype_expansion_fixture.py`). Behaviour changes go: fixture in
   aidream → copy here → fix the twin. **Never edit the fixture to make the twin
   pass.** Two canonical behaviours it pins that are easy to get wrong: an
   unrecognised `node_type` COERCES to `article` loudly (it does not refuse —
   refusing would preview nothing for a tree the chat tool happily writes), and
   unknown config keys are REJECTED (the canonical models are `extra="forbid"`).
+
+- **An archetype is a SELECTION from the concept menu — and BOTH authoring
+  forms parse, never mixed.** `plan.profile.template_map` carries two sibling
+  keys on the SAME row: `archetypes` and the `concepts` catalog they name
+  (`setup/concepts.ts`; one row, because a selection is meaningless without the
+  catalog it references). Three layers:
+  **concept** (`home`, `about`, `services`, … — a menu row) → **variant** (a
+  named composition: either fixed real-named `pages`, which may nest `children`
+  to arbitrary depth, or ONE count-bearing `family`) → **selection**
+  (`{concept: {variant?, count?, brief?, child_brief?}}` plus `omits`).
+  **Count and variant are orthogonal and both optional**; nothing is required
+  except `home`. `expandArchetype` resolves a selection into the same
+  `core`+`families`+`foundation` shape the explicit form uses, ONCE, at the top
+  — so everything downstream (preview, readiness, commit) is unchanged. Rules
+  that are easy to break:
+  - **Never flatten a variant's nested `children`.** `/about/founder` is a real
+    route the CMS serves; flattening silently rewrites the composition the user
+    approved. (`about × 3` would emit `/about/about-1`, which is why a variant
+    is a composition and not a count.)
+  - **Declaring `concepts` AND `core`/`families` raises**, as does
+    `omits`/`foundation_overrides` with no `concepts`. Two authorities for one
+    tree is how a preview stops matching what lands.
+  - **A selection-form archetype has NO `families` until it resolves.** Read
+    families off the EXPANSION (`SetupView` expands every shape at its own
+    defaults into `baseline`), never off the raw config — reading the config is
+    how the counts UI and `namesFromPlan` silently see nothing.
+  - **Adding a concept or a variant is DATA.** No `Literal`, no CHECK
+    constraint, no component. The twin validates shape only and never
+    enumerates concept names.
+  - **`omits` is surfaced, not inferred.** What a shape deliberately leaves out
+    is half the decision; it is shown on the shape row and in the Concepts
+    section. Node provenance (`attributes.archetype.concept` / `.variant`,
+    written identically by both sides) says which menu item owns which page.
 - **The committed work order lives in ONE place:**
   `web.site.settings.content_plan.archetype = {key, counts, instantiated_at}` —
   byte-identical to what aidream's `_record_site_archetype` writes, MERGED into
@@ -213,6 +248,29 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-28 — Claude: **the twin learned the SITE CONCEPT LIBRARY — live
+  regression fixed.** A concurrent aidream session rewrote
+  `template_map.archetypes` into the selection form (`concepts` / `omits` /
+  `foundation_overrides`) beside a new `concepts` catalog; the twin still parsed
+  only `core`/`families` and — because unknown keys are correctly REJECTED —
+  threw on the whole builtin map, so Site Setup showed "No site shapes
+  available" and zero routes for every archetype. New `setup/concepts.ts`
+  (catalog parse + `resolveSelection`, mirroring `concepts.py` exactly),
+  `ArchetypeCorePage.children` with recursive nested-route expansion,
+  provenance stamps (`concept`/`variant`), `omits` + resolved-concept reporting
+  on `ExpandedArchetype`, the catalog loaded beside archetypes in
+  `loadArchetypeLibrary`, and `SetupView` reading families off the expansion
+  instead of the raw config. UI surfaces what each shape LEAVES OUT (shape row +
+  a Concepts section listing concept → variant). Fixture grew 20 → 45 cases
+  (13 selection expansions incl. all three `about` variants and 3-deep nesting,
+  12 error cases) — **authored on aidream's canonical copy first**, generated
+  from `expand_archetype` itself, then synced here byte-identical; both runners
+  now pass a per-case `catalog`. Verified: 45/45 both sides, and all 10 live
+  archetypes (4 seeded + 6 synthetic) expand byte-identically in Python and TS
+  against the LIVE catalog. Browser-verified on a throwaway site — nested
+  `/about/founder|leadership|team` committed at depth 2 with correct
+  DB-computed routes and provenance, re-run reported "Nothing new to create"
+  (identityKey invariant intact); all throwaway rows removed.
 - 2026-07-28 — Claude: **Site Setup (`?view=setup`) — the fifth view**, merged
   from a four-way UI bake-off (`create-{sharp,reimagine,refine,dense}`, all four
   now deleted). Refine's three-column feel and mobile treatment; dense's

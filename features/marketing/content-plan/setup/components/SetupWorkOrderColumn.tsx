@@ -87,6 +87,47 @@ export function SetupWorkOrderColumn({
         </div>
       </SetupSection>
 
+      {expanded.concepts.length > 0 || expanded.omits.length > 0 ? (
+        <SetupSection title="Concepts">
+          <p className="mb-2 text-xs leading-relaxed text-muted-foreground">
+            A shape is a SELECTION from the concept menu — what it takes, at
+            which variant, and what it deliberately leaves for you to add later.
+          </p>
+          {expanded.concepts.length > 0 ? (
+            <ul className="divide-y divide-border overflow-hidden rounded-md border border-border">
+              {expanded.concepts.map((item) => (
+                <li
+                  key={item.concept}
+                  className="flex items-baseline justify-between gap-3 bg-card px-2.5 py-1.5"
+                >
+                  <span className="truncate text-xs font-medium text-foreground">
+                    {item.label}
+                  </span>
+                  <span className="shrink-0 truncate text-[11px] text-muted-foreground">
+                    {item.variantLabel}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {expanded.omits.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-1">
+              <span className="text-[11px] leading-5 text-muted-foreground">
+                Left out:
+              </span>
+              {expanded.omits.map((key) => (
+                <span
+                  key={key}
+                  className="rounded bg-muted px-1.5 py-0.5 text-[11px] leading-4 text-muted-foreground"
+                >
+                  {humanizeKey(key)}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </SetupSection>
+      ) : null}
+
       <SetupSection
         title="Counts"
         action={

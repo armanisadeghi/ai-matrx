@@ -29,6 +29,16 @@
  * site that never gets planned.
  */
 
+import {
+  parseConceptSelection,
+  parseFoundationFragment,
+  resolveSelection,
+  type Concept,
+  type ConceptFoundationFragment,
+  type ConceptSelection,
+  type ResolvedConcept,
+} from "./concepts";
+
 /** Node types accepted by `plan.node.node_type` (DB check constraint). */
 export const NODE_TYPES = [
   "home",
@@ -59,6 +69,13 @@ export interface ArchetypeCorePage {
   nodeType: NodeType;
   pageType: string | null;
   brief: string[];
+  /**
+   * FIXED, REAL-NAMED sub-pages (`/about/founder`), not a count — that is what
+   * makes `about:founder-and-team` expressible while `about × 3` (which would
+   * emit `/about/about-1`) is not. Counted children remain the job of
+   * `ArchetypeFamily`. Arbitrary depth: the CMS serves it, so never flatten.
+   */
+  children: ArchetypeCorePage[];
 }
 
 export interface ArchetypeFamily {
@@ -85,11 +102,34 @@ export interface ArchetypeFoundationConfig {
   assets: Record<string, CountRef>;
 }
 
+/**
+ * A curated STARTING SELECTION from the concept menu — never a fixed outcome;
+ * the user edits it.
+ *
+ * Two authoring forms, and an archetype uses exactly ONE:
+ *
+ * * **selection form** (canonical) — `concepts` (+ `omits` /
+ *   `foundationOverrides`), resolved against the concept catalog at expansion
+ *   time.
+ * * **explicit form** (still fully supported) — `core` + `families` +
+ *   `foundation` spelled out, so an org hand-writing a one-off shape never has
+ *   to author a catalog first.
+ *
+ * Declaring both raises: two authorities for the same tree is how a preview
+ * stops matching what lands.
+ */
 export interface Archetype {
   key: string;
   label: string;
   description: string;
   pageEstimate: string;
+  /** Selection form. Empty for an explicit-form archetype. */
+  concepts: Record<string, ConceptSelection>;
+  /** Concepts this shape deliberately leaves on the menu (selection form). */
+  omits: string[];
+  /** Archetype-level foundation tweaks; `0` DROPS an item the menu added. */
+  foundationOverrides: ConceptFoundationFragment | null;
+  /** Explicit form (also the materialized result of a resolved selection). */
   core: ArchetypeCorePage[];
   families: ArchetypeFamily[];
   foundation: ArchetypeFoundationConfig;
@@ -144,6 +184,14 @@ export interface ExpandedArchetype {
   pageCount: number;
   families: FamilyPlan[];
   foundation: FoundationRequirement[];
+  /**
+   * Selection-form only: which concepts/variants produced this. Empty for an
+   * explicit-form archetype.
+   */
+  concepts: ResolvedConcept[];
+  /** What this shape deliberately left off the menu — the other half of a
+   * checkbox surface, so it is reported, never inferred from absence. */
+  omits: string[];
 }
 
 const COUNT_REF = /^=([a-z0-9][a-z0-9_-]*)\.count$/;
@@ -188,14 +236,14 @@ export function resolveCount(
 
 // ── config parsing ─────────────────────────────────────────────────────────
 
-function asRecord(value: unknown, where: string): Record<string, unknown> {
+export function asRecord(value: unknown, where: string): Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new ArchetypeError(`${where}: expected an object.`);
   }
   return value as Record<string, unknown>;
 }
 
-function asString(value: unknown, where: string, fallback?: string): string {
+export function asString(value: unknown, where: string, fallback?: string): string {
   if (typeof value === "string" && value.trim()) return value;
   if (fallback !== undefined) return fallback;
   throw new ArchetypeError(`${where}: expected a non-empty string.`);
@@ -227,7 +275,7 @@ function asNodeType(
  * A typo'd config key means the author asked for something the expander never
  * applied — silently ignoring it is how a whole family goes missing.
  */
-function rejectUnknownKeys(
+export function rejectUnknownKeys(
   row: Record<string, unknown>,
   allowed: readonly string[],
   where: string,
@@ -240,7 +288,14 @@ function rejectUnknownKeys(
   }
 }
 
-const CORE_KEYS = ["label", "slug", "node_type", "page_type", "brief"] as const;
+const CORE_KEYS = [
+  "label",
+  "slug",
+  "node_type",
+  "page_type",
+  "brief",
+  "children",
+] as const;
 const FAMILY_KEYS = [
   "key",
   "label",
@@ -267,18 +322,21 @@ const ARCHETYPE_KEYS = [
   "label",
   "description",
   "page_estimate",
+  "concepts",
+  "omits",
+  "foundation_overrides",
   "core",
   "families",
   "foundation",
 ] as const;
 
-function asStringList(value: unknown, where: string): string[] {
+export function asStringList(value: unknown, where: string): string[] {
   if (value === undefined || value === null) return [];
   if (!Array.isArray(value)) throw new ArchetypeError(`${where}: expected a list of strings.`);
   return value.map((item, index) => asString(item, `${where}[${index}]`));
 }
 
-function asCountRef(value: unknown, where: string, fallback: CountRef): CountRef {
+export function asCountRef(value: unknown, where: string, fallback: CountRef): CountRef {
   if (value === undefined || value === null) return fallback;
   if (typeof value === "number" || typeof value === "boolean" || typeof value === "string") {
     return value;
@@ -286,23 +344,27 @@ function asCountRef(value: unknown, where: string, fallback: CountRef): CountRef
   throw new ArchetypeError(`${where}: count must be a number, true/false, or "=<family>.count".`);
 }
 
-function parseCore(
+export function parseCore(
   raw: unknown,
   where: string,
   problems: string[],
 ): ArchetypeCorePage {
   const row = asRecord(raw, where);
   rejectUnknownKeys(row, CORE_KEYS, where);
+  const childrenRaw = Array.isArray(row.children) ? row.children : [];
   return {
     label: asString(row.label, `${where}.label`),
     slug: typeof row.slug === "string" && row.slug.trim() ? row.slug.trim() : null,
     nodeType: asNodeType(row.node_type, "article", where, problems),
     pageType: typeof row.page_type === "string" ? row.page_type : null,
     brief: asStringList(row.brief, `${where}.brief`),
+    children: childrenRaw.map((item, index) =>
+      parseCore(item, `${where}.children[${index}]`, problems),
+    ),
   };
 }
 
-function parseFamily(
+export function parseFamily(
   raw: unknown,
   where: string,
   problems: string[],
@@ -387,13 +449,50 @@ export function parseArchetypeMap(
     const scope = `${where}.${key}`;
     const row = asRecord(value, scope);
     rejectUnknownKeys(row, ARCHETYPE_KEYS, scope);
+    const label = asString(row.label, `${scope}.label`, key);
     const coreRaw = Array.isArray(row.core) ? row.core : [];
     const familiesRaw = Array.isArray(row.families) ? row.families : [];
+
+    const conceptsRaw =
+      row.concepts === undefined || row.concepts === null
+        ? {}
+        : asRecord(row.concepts, `${scope}.concepts`);
+    const concepts: Record<string, ConceptSelection> = {};
+    for (const [conceptKey, pick] of Object.entries(conceptsRaw)) {
+      concepts[conceptKey] = parseConceptSelection(
+        pick,
+        `${scope}.concepts.${conceptKey}`,
+      );
+    }
+    const omits = asStringList(row.omits, `${scope}.omits`);
+    const foundationOverrides =
+      row.foundation_overrides === undefined || row.foundation_overrides === null
+        ? null
+        : parseFoundationFragment(
+            row.foundation_overrides,
+            `${scope}.foundation_overrides`,
+          );
+
+    const hasSelection = Object.keys(concepts).length > 0;
+    if (hasSelection && (coreRaw.length > 0 || familiesRaw.length > 0)) {
+      throw new ArchetypeError(
+        `Archetype "${label}" declares BOTH \`concepts\` (selection form) and \`core\`/\`families\` (explicit form). Two authorities for the same tree is how a preview stops matching what lands — pick one.`,
+      );
+    }
+    if (!hasSelection && (omits.length > 0 || foundationOverrides !== null)) {
+      throw new ArchetypeError(
+        `Archetype "${label}" uses \`omits\`/\`foundation_overrides\`, which only mean something against a concept selection — it declares no \`concepts\`.`,
+      );
+    }
+
     return {
       key,
-      label: asString(row.label, `${scope}.label`, key),
+      label,
       description: typeof row.description === "string" ? row.description : "",
       pageEstimate: typeof row.page_estimate === "string" ? row.page_estimate : "",
+      concepts,
+      omits,
+      foundationOverrides,
       core: coreRaw.map((item, index) =>
         parseCore(item, `${scope}.core[${index}]`, problems),
       ),
@@ -405,6 +504,12 @@ export function parseArchetypeMap(
     } satisfies Archetype;
   });
 }
+
+// The concept catalog that sits BESIDE `archetypes` on the same
+// `plan.profile.template_map` row is parsed by `./concepts`
+// (`parseConceptCatalog` + `CONCEPT_MAP_KEY`) — import it from there. An
+// archetype selection is meaningless without the catalog it names, so a caller
+// that loads one always loads both.
 
 // ── expansion ──────────────────────────────────────────────────────────────
 
@@ -490,6 +595,62 @@ export function humanizeKey(key: string): string {
 export interface ExpandOptions {
   counts?: Record<string, number>;
   names?: Record<string, string[]>;
+  /**
+   * The concept library. Required only when the archetype is authored as a
+   * SELECTION (`concepts`); explicit-form archetypes ignore it.
+   */
+  catalog?: Record<string, Concept>;
+}
+
+/** `concept` / `variant` stamped onto the nodes a menu item produced. */
+type ProvenanceStamp = { concept: string; variant: string };
+
+/**
+ * Selection form → explicit form, ONCE, at the top of expansion.
+ *
+ * Explicit-form archetypes pass straight through untouched — which is what
+ * keeps a hand-authored org shape byte-identical to what it always produced.
+ */
+function resolveIfSelection(
+  archetype: Archetype,
+  catalog: Record<string, Concept> | undefined,
+): {
+  archetype: Archetype;
+  concepts: ResolvedConcept[];
+  provenance: Map<string, ProvenanceStamp>;
+} {
+  if (Object.keys(archetype.concepts).length === 0) {
+    return { archetype, concepts: [], provenance: new Map() };
+  }
+  if (!catalog || Object.keys(catalog).length === 0) {
+    throw new ArchetypeError(
+      `Archetype "${archetype.key}" is authored as a concept SELECTION but no concept catalog was supplied. The catalog lives in plan.profile.template_map.concepts on the system-org row (vertical='platform-archetypes').`,
+    );
+  }
+  const resolved = resolveSelection(catalog, archetype.concepts, {
+    omits: archetype.omits,
+    foundationOverrides: archetype.foundationOverrides,
+    where: `archetype "${archetype.key}"`,
+  });
+  const provenance = new Map<string, ProvenanceStamp>();
+  for (const item of resolved.concepts) {
+    const stamp: ProvenanceStamp = { concept: item.concept, variant: item.variant };
+    if (item.familyKey) provenance.set(`family:${item.familyKey}`, stamp);
+    for (const route of item.pageRoutes) provenance.set(`page:${route}`, stamp);
+  }
+  return {
+    archetype: {
+      ...archetype,
+      concepts: {},
+      omits: [],
+      foundationOverrides: null,
+      core: resolved.core,
+      families: resolved.families,
+      foundation: resolved.foundation,
+    },
+    concepts: resolved.concepts,
+    provenance,
+  };
 }
 
 /**
@@ -498,9 +659,15 @@ export interface ExpandOptions {
  * preview is the truth, not an approximation.
  */
 export function expandArchetype(
-  archetype: Archetype,
+  source: Archetype,
   options: ExpandOptions = {},
 ): ExpandedArchetype {
+  const omits = [...source.omits];
+  const {
+    archetype,
+    concepts: conceptReport,
+    provenance,
+  } = resolveIfSelection(source, options.catalog);
   const counts = familyCounts(archetype, options.counts, options.names);
 
   let home: ArchetypeCorePage | null = null;
@@ -508,6 +675,11 @@ export function expandArchetype(
   for (const page of archetype.core) {
     if (page.nodeType === "home") {
       if (home) throw new ArchetypeError("This archetype declares more than one home page.");
+      if (page.children.length > 0) {
+        throw new ArchetypeError(
+          "The home page cannot declare children — every other page is already its child.",
+        );
+      }
       home = page;
     } else {
       if (!page.slug) throw new ArchetypeError(`Core page "${page.label}" needs a slug.`);
@@ -524,28 +696,45 @@ export function expandArchetype(
   const familyPlans: FamilyPlan[] = [];
   const children: PlanSpecNode[] = [];
 
-  for (const page of otherCore) {
-    const route = `/${page.slug}`;
+  // Recursive on purpose: a variant's nested `children` must land as nested
+  // routes (`/about/founder`). The CMS serves arbitrary depth — flattening here
+  // would quietly rewrite the composition the user approved.
+  const coreSpec = (page: ArchetypeCorePage, prefix: string): PlanSpecNode => {
+    const route = `${prefix}/${page.slug}`;
     routes.push(route);
-    children.push({
+    const sub: PlanSpecNode[] = [];
+    for (const child of page.children) {
+      if (!child.slug) throw new ArchetypeError(`Core page "${child.label}" needs a slug.`);
+      sub.push(coreSpec(child, route));
+    }
+    return {
       route,
       label: page.label,
       slug: page.slug,
       nodeType: page.nodeType,
       pageType: page.pageType,
       brief: [...page.brief],
-      attributes: { [NODE_ATTR_KEY]: { source: archetype.key, role: "core" } },
+      attributes: {
+        [NODE_ATTR_KEY]: {
+          source: archetype.key,
+          role: "core",
+          ...(provenance.get(`page:${route}`) ?? {}),
+        },
+      },
       role: "core",
       familyKey: null,
-      children: [],
-    });
-  }
+      children: sub,
+    };
+  };
+
+  for (const page of otherCore) children.push(coreSpec(page, ""));
 
   for (const family of archetype.families) {
     const count = counts[family.key];
     const slug = family.slug ?? family.key;
     const hubRoute = `/${slug}`;
     const supplied = options.names?.[family.key];
+    const stamp = provenance.get(`family:${family.key}`) ?? {};
     const familyChildren: PlanSpecNode[] = [];
     const childLabels: string[] = [];
 
@@ -577,6 +766,7 @@ export function expandArchetype(
               source: archetype.key,
               role: "family_child",
               family: family.key,
+              ...stamp,
             },
           },
           role: "family_child",
@@ -610,6 +800,7 @@ export function expandArchetype(
           family: family.key,
           target_count: count,
           materialize: family.materialize,
+          ...stamp,
         },
       },
       role: "family_hub",
@@ -625,7 +816,13 @@ export function expandArchetype(
     nodeType: "home",
     pageType: home.pageType,
     brief: [...home.brief],
-    attributes: { [NODE_ATTR_KEY]: { source: archetype.key, role: "core" } },
+    attributes: {
+      [NODE_ATTR_KEY]: {
+        source: archetype.key,
+        role: "core",
+        ...(provenance.get("page:/") ?? {}),
+      },
+    },
     role: "core",
     familyKey: null,
     children,
@@ -642,6 +839,8 @@ export function expandArchetype(
     pageCount: unique.length,
     families: familyPlans,
     foundation: foundationRequirements(archetype.foundation, counts),
+    concepts: conceptReport,
+    omits,
   };
 }
 
