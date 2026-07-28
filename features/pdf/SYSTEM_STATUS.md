@@ -1,9 +1,9 @@
-# PDF System — Canonical Status (2026-06-13)
+# PDF System — Status (2026-06-13)
 
 ## 2026-06-13 — reliability + caching overhaul (verified in-browser)
 - **CACHING FIXED (was the #1 defect).** The viewer used an uncached Range-
   streaming path — the same PDF re-downloaded every view (even twice on one
-  page, ~30s). Now routed through the canonical cached byte path
+  page, ~30s). Now routed through the shared cached byte path
   (`useFileBlob`: XHR + module LRU + IndexedDB). **Verified: re-selecting a
   file makes ZERO new network requests** and renders from cache; survives
   page reloads (IDB). Two simultaneous mounts of one file share ONE download.

@@ -1,4 +1,4 @@
-# Handoff — the canonical entity-list system
+# Handoff — the shared entity-list system
 
 **Live:** `/agents/all` in production (v0.4.157). It is the proving ground for
 a reusable list shell that every feature will adopt.

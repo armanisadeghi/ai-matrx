@@ -2,7 +2,7 @@
 
 A Redux-backed, local-first OS-style window manager. Handles classic floating windows, bottom sheets, modals, and inline agent widgets through one registry and one renderer.
 
-> **Canonical docs**: [`FEATURE.md`](./FEATURE.md) — architecture, invariants, registry fields, slice responsibilities, mobile model, bundle rules, persistence details, known gaps, change log.
+> **Primary docs**: [`FEATURE.md`](./FEATURE.md) — architecture, invariants, registry fields, slice responsibilities, mobile model, bundle rules, persistence details, known gaps, change log.
 > This README is the lightweight entry point; `FEATURE.md` is the full reference.
 
 ---

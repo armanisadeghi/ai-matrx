@@ -4,7 +4,7 @@ Centralized server selection and authentication for all API test pages.
 
 ## Architecture
 
-**Authority model:** The hook (`useApiTestConfig`) and its panel (`ApiTestConfigPanel`) are the single source of truth for server selection and validation. Pages provide a `defaultServerType` for instant render, but they NEVER perform their own health checks or override the config. All validation is handled at the header/panel level.
+**Ownership model:** The hook (`useApiTestConfig`) and its panel (`ApiTestConfigPanel`) jointly own server selection and validation. Pages provide a `defaultServerType` for instant render, but they NEVER perform their own health checks or override the config. All validation is handled at the header/panel level.
 
 ### How it works
 

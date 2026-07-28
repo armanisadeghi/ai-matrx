@@ -3,9 +3,9 @@
 > **Direction:** INBOUND (Python/backend → frontend). What the backend now ships
 > to us and how to consume it.
 > **Audience:** Frontend team, and any consumer of the AIDream chat stream.
-> **Canonical source of truth:** aidream `docs/TURN_BOUNDARY_INBOX.md` (the server
+> **Server contract reference:** aidream `docs/TURN_BOUNDARY_INBOX.md` (the server
 > contract). This doc is the FE-facing summary + our client checklist; if anything
-> here disagrees with the canonical doc, the canonical doc wins.
+> here disagrees with that server-side contract, the server-side contract wins.
 > **Deploy gate:** everything below is on aidream `main`; it must be **deployed**
 > before we can exercise it. Re-run `pnpm sync-types` after the backend deploys to
 > pick up the typed `injection_consumed` event.

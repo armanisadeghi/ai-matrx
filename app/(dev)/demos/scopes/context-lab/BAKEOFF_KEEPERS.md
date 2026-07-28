@@ -3,7 +3,7 @@
 Running ledger of the four-posture bakeoff (`sharp` / `reimagine` / `refine` / `dense`).
 **KEEPERS are locked:** regardless of which set "wins", every item marked KEEP below gets
 captured exactly as it existed at the snapshot commit and becomes part of the future
-canonical component set. The consolidation pass MUST read this file.
+retained component set. The consolidation pass MUST read this file.
 
 ## dense
 

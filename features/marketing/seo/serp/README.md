@@ -1,7 +1,7 @@
-# SERP primitive — canonical metadata + search-appearance system
+# SERP primitive — metadata + search-appearance system
 
 The ONE place that knows how to render "how this title/description appears in
-Google", and the ONE source of truth for SEO meta limits and measurement.
+Google", and the shared reference for SEO meta limits and measurement.
 Presentational core — no Redux, no data fetching. Give it text, it renders.
 
 ## Measurement is DETERMINISTIC and cross-language

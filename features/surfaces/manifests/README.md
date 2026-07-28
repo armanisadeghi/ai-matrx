@@ -1,8 +1,8 @@
 # Surface Manifests
 
-Code-first declarations of each UI surface's full contract: canonical label, value groups, and the named runtime values the surface can supply. Mirrored into `ui.ui_surface` (label, value_groups, url_pattern, intro, parent) + `ui.ui_surface_value` (values incl. group_key/auto_context) so binding UIs, chrome, and the drift report always reflect what the surface actually is and emits.
+Code-first declarations of each UI surface's full contract: registered label, value groups, and the named runtime values the surface can supply. Mirrored into `ui.ui_surface` (label, value_groups, url_pattern, intro, parent) + `ui.ui_surface_value` (values incl. group_key/auto_context) so binding UIs, chrome, and the drift report always reflect what the surface actually is and emits.
 
-This directory is the **single source of truth**. The DB is a synced reflection. Admin UI for surface values is read-only — to change what a surface offers, you change the manifest here.
+This directory **owns the declarations**. The DB is a synced reflection. Admin UI for surface values is read-only — to change what a surface offers, you change the manifest here.
 
 **Full authoring rules → invoke the `surface-authoring` skill. End-to-end registration → `surface-registration` skill.**
 

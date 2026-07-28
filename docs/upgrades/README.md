@@ -1,6 +1,6 @@
 # Dependency Upgrade Initiative — Master Tracker
 
-> **Single source of truth** for the 2026 dependency modernization of `matrx-frontend`.
+> **Working tracker** for the 2026 dependency modernization of `matrx-frontend`.
 > Every bump, every decision, every rule Arman set, and every research handoff lives here.
 > Update this file in the **same change** as any dependency work. Stale rows here = mixed-up pushes.
 

@@ -1,6 +1,6 @@
 # Triggering Agent Shortcuts — Quick Reference
 
-The shortcut system is the canonical way to run an agent from application code,
+The shortcut system is the standard way to run an agent from application code,
 UI, or automations. It replaces the legacy "run this prompt by id" paths.
 
 **Every agent shortcut is defined once** (category, agent, variable mappings,

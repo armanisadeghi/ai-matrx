@@ -5,7 +5,7 @@ The design for how content that became a living artifact stays *ownable as text*
 
 ## The model
 
-Once a block materializes (`materializeBlocks.ts`), the **artifact row is the source of truth** and the surface holds only a reference: the canonical R1 text form `<artifact type id version title>body</artifact>` (`artifactWire.ts#wrapArtifactText`), written via the caller's `persistRewrite`. Three ways out of (or around) that binding:
+Once a block materializes (`materializeBlocks.ts`), the **artifact row is the durable record** and the surface holds only a reference: the standard R1 text form `<artifact type id version title>body</artifact>` (`artifactWire.ts#wrapArtifactText`), written via the caller's `persistRewrite`. Three ways out of (or around) that binding:
 
 | Path | What it is | Status |
 |---|---|---|

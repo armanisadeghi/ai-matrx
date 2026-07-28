@@ -6,7 +6,7 @@
 >
 > Anything we want from the Python team goes in [for_python/REQUESTS.md](../for_python/REQUESTS.md).
 >
-> This is the single canonical doc for the cloud-files HTTP contract +
+> This is the consolidated tracker for the cloud-files HTTP contract +
 > any release notes / breaking changes / runtime expectations the
 > backend team wants the frontend team to internalize.
 >

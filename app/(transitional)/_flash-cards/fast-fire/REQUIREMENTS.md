@@ -1,8 +1,8 @@
 # Fast Fire Flashcards — Requirements, Vision & Ground-Up Build Spec
 
-> **Status: NOT BUILT. Build from scratch, correctly, canonical from day one.**
+> **Status: NOT BUILT. Build from scratch, correctly, coherent from day one.**
 >
-> This is the single source of truth for the eventual rebuild. We are **not** patching the old
+> These are the primary requirements for the eventual rebuild. We are **not** patching the old
 > route and **not** binding to any existing flashcard tables. Everything the platform has today
 > (the `education` schema, the old `users.user_flashcard_*` tables, the localStorage AI hooks) is
 > **inspiration only** — we study it to understand the goal, then design the ideal from a blank

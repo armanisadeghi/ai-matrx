@@ -1,6 +1,6 @@
 # Streaming Contract (Client ↔ Python Backend)
 
-Describes the NDJSON stream contract that every Matrx client consumes. The canonical Python implementation lives in `matrx_connect.emitters.stream_emitter.StreamEmitter` (aidream repo). Web client enforcement of timing lives in `lib/net/stream-monitor.ts` — servers that violate the deadlines will have their streams aborted client-side with `HeartbeatTimeoutError`.
+Describes the NDJSON stream contract that every Matrx client consumes. The Python reference implementation lives in `matrx_connect.emitters.stream_emitter.StreamEmitter` (aidream repo). Web client enforcement of timing lives in `lib/net/stream-monitor.ts` — servers that violate the deadlines will have their streams aborted client-side with `HeartbeatTimeoutError`.
 
 ## Status
 

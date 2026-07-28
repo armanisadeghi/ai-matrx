@@ -3,7 +3,7 @@
 **Audience:** the agent assigned to take this over. You have access to
 the **matrx-frontend** (this repo) and the **aidream Python backend**.
 
-**Source of truth (architecture):**
+**Architecture reference:**
 [`features/voice-agent/docs/REALTIME_TOOL_BRIDGE.md`](../features/voice-agent/docs/REALTIME_TOOL_BRIDGE.md).
 Read that first. This document is the **implementation guide** layered on
 top: concrete code skeletons, file-by-file changes, a sequence diagram,

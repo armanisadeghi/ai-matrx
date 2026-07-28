@@ -1,7 +1,7 @@
 # Education Hub — Routing Rules of Engagement
 
 > **Read this before adding ANY route under `/education`.** It is the contract that keeps
-> marketing, content, and the app tools coherent. The product source of truth is
+> marketing, content, and the app tools coherent. The product routing reference is
 > [`VISION-education-hub.md`](./VISION-education-hub.md); the feature doc is
 > [`features/education/FEATURE.md`](../../../features/education/FEATURE.md). If something here
 > drifts from the vision, **stop and flag the user** — do not invent a new pattern.

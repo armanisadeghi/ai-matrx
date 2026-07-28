@@ -4,7 +4,7 @@ AI-powered research pipeline with human-in-the-loop curation. Searches the web, 
 
 This route serves as the **reference implementation** for Next.js best practices across the project.
 
-> Engineering source of truth (entry points, flows, **invariants**): [`FEATURE.md`](./FEATURE.md). Read it before changing pipeline/stream/render behavior.
+> Engineering reference (entry points, flows, **invariants**): [`FEATURE.md`](./FEATURE.md). Read it before changing pipeline/stream/render behavior.
 
 ## Data Model
 

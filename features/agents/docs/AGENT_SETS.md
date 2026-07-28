@@ -1,10 +1,10 @@
 # Agent Sets (Orchestrators)
 
-A **set** = one **orchestrator agent** presiding over **member agents**, each filling a gap in a bigger picture. Built entirely on the canonical `platform.associations` system — **there is no `agent_set` table.**
+A **set** = one **orchestrator agent** presiding over **member agents**, each filling a gap in a bigger picture. Built entirely on the registered `platform.associations` system — **there is no `agent_set` table.**
 
 ## Data model — zero new tables
 
-`agent` is a registered entity token (`platform.entity_types` → `agent.definition`). A set is two kinds of association edge, written ONLY through the canonical chokepoint (`associationsService` → `assoc_add`/`assoc_remove`/`assoc_set_targets`):
+`agent` is a registered entity token (`platform.entity_types` → `agent.definition`). A set is two kinds of association edge, written ONLY through the registered chokepoint (`associationsService` → `assoc_add`/`assoc_remove`/`assoc_set_targets`):
 
 | Edge | source → target | role | Carries |
 |---|---|---|---|

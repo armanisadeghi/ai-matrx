@@ -1,6 +1,6 @@
 # Administration Information Architecture Proposal
 
-**Status:** Implemented from the canonical registry.
+**Status:** Implemented from the shared registry.
 
 ## Goal
 

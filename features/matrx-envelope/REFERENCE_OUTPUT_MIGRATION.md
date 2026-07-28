@@ -1,8 +1,8 @@
 # Reference Output Migration — subagent playbook
 
-**Goal:** every place in the codebase that produces a user-facing **bookmark / reference artifact** (a string the user copies, downloads, or sees in a "copy this" box) must emit the **canonical `matrx` reference fence**, never a hand-rolled bookmark JSON object.
+**Goal:** every place in the codebase that produces a user-facing **bookmark / reference artifact** (a string the user copies, downloads, or sees in a "copy this" box) must emit the **standard `matrx` reference fence**, never a hand-rolled bookmark JSON object.
 
-A bare bookmark object (`{ type: "table_cell", table_id, ... }`) pasted into chat is just dead text. The canonical fence resolves to a **live reference chip** the agent can read and the user can open. Unifying the output is the whole point — see `docs/protocol/MATRX_REFERENCES.md` and `features/matrx-envelope/FEATURE.md`.
+A bare bookmark object (`{ type: "table_cell", table_id, ... }`) pasted into chat is just dead text. The standard fence resolves to a **live reference chip** the agent can read and the user can open. Unifying the output is the whole point — see `docs/protocol/MATRX_REFERENCES.md` and `features/matrx-envelope/FEATURE.md`.
 
 > Workflow code (`features/workflows/**`) is being deleted — **skip it**. It still consumes the legacy object shape programmatically and is not worth migrating.
 

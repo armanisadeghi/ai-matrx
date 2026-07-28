@@ -1,9 +1,9 @@
-# `web` Schema — Canonical Contract
+# `web` Schema — Implemented Contract
 
 **Project:** Matrx Main (`txzxabzwovsujtloxrus`)  
 **Schema:** `web`
 
-**Status:** Live and canonical-certified; reconciled to the implemented schema on
+**Status:** Live and verified; reconciled to the implemented schema on
 2026-07-19.
 
 **Purpose:** Site crawler, marketing analysis, and future CMS operations.

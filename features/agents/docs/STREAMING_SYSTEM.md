@@ -1,10 +1,10 @@
 # STREAMING_SYSTEM.md
 
-**Status:** `active` — canonical contract
-**Tier:** 1 (cross-cutting; anchored here because the agents system owns the canonical implementation)
+**Status:** `active` — app-level contract
+**Tier:** 1 (cross-cutting; anchored here because the agents system owns the implementation)
 **Last updated:** `2026-07-02`
 
-> This is the **single source of truth** for streaming across the app. Chat, conversation, artifacts, tool calls, and every long-running endpoint must conform. The detailed event-type and phase-value reference lives in [`STREAM_STATUS_LIFECYCLE.md`](./STREAM_STATUS_LIFECYCLE.md) — this doc is the higher-level contract and usage guide.
+> This is the **working contract** for streaming across the app. Chat, conversation, artifacts, tool calls, and every long-running endpoint must conform. The detailed event-type and phase-value reference lives in [`STREAM_STATUS_LIFECYCLE.md`](./STREAM_STATUS_LIFECYCLE.md) — this doc is the higher-level contract and usage guide.
 
 ---
 

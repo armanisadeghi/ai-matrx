@@ -1,6 +1,6 @@
 # PDF Upload & Processing — Frontend Endpoint Map (code-confirmed)
 
-**Purpose:** A single source of truth for every PDF-related backend call the
+**Purpose:** A working reference for every PDF-related backend call the
 **matrx-frontend** actually makes, so the server team can converge endpoints,
 arguments, and contracts where possible.
 

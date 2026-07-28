@@ -1,6 +1,6 @@
 # Matrx Knowledge System — Master Architecture
 
-> **Single source of truth** for the architecture and the full 7-phase lifecycle. The Phase 6 NER pipeline is zoomed in further in [`03_KNOWLEDGE_MODULE.md`](03_KNOWLEDGE_MODULE.md). Every module, package, and line of code — Python server, Admin, Local, Code, Chrome, Mobile, and the Matrx packages — maps to a place in here. A module that maps **nowhere** is a red flag.
+> **Architecture map** for the full 7-phase lifecycle. The Phase 6 NER pipeline is zoomed in further in [`03_KNOWLEDGE_MODULE.md`](03_KNOWLEDGE_MODULE.md). Every module, package, and line of code — Python server, Admin, Local, Code, Chrome, Mobile, and the Matrx packages — maps to a place in here. A module that maps **nowhere** is a red flag.
 
 ---
 

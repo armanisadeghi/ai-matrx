@@ -1,4 +1,4 @@
-# Scopeable Entities — Canonical List (working draft)
+# Scopeable Entities — Working List
 
 Unit = the **concept we track**, not the table. Modern table listed first; legacy
 tables are candidates to merge/drop later. Ordered by likelihood of inclusion.
@@ -7,7 +7,7 @@ tables are candidates to merge/drop later. Ordered by likelihood of inclusion.
 
 ## Include — high confidence
 
-| Canonical | Modern table | Legacy → merge/drop |
+| Entity token | Modern table | Legacy → merge/drop |
 |---|---|---|
 | Notes | `notes` | `note_folders`, `note_versions` (sub-tables, not entities) |
 | Files | `cld_files` (+ `cld_folders`) | `user_files`, `file_entities`, `file_analysis`, `attachments`, `extracted_documents_legacy` |

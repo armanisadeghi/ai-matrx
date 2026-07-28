@@ -2,7 +2,7 @@
 
 Local types that shadow globals. Prioritized list — act on HIGH items first.
 
-| Severity | File:line | Local type | Canonical source | Action |
+| Severity | File:line | Local type | Shared source | Action |
 |---|---|---|---|---|
 | **HIGH** | `features/agents/types/agent-message-types.ts:316` | `interface ConversationMessage` | `features/cx-chat/types/conversation.ts:39` | **Consolidate.** Two `ConversationMessage` types with different shapes — one for API wire, one for UI state. Chat slice should wrap/extend the API shape, not redefine it. |
 | **HIGH** | `features/cx-chat/types/conversation.ts:26` | `type MessageRole = "system" \| "user" \| "assistant"` | `features/agents/types/agent-message-types.ts:99` (`type Role` — 6 values incl. `"tool"`, `"developer"`, `"output"`) | **Align.** Chat slice's `MessageRole` is too narrow for DB rows (missing `"tool"`). Replace with `Role` from agent-message-types. |

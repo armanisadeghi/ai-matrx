@@ -3,7 +3,7 @@
 > Chunk of [`PANEL_INVENTORY.md`](../../PANEL_INVENTORY.md). Covers the admin/debug inspectors, the modal-replacement quick-execute dialogs, the reusable utility primitives, the iframe browsers, and the WhatsApp demo windows.
 > Legend: ✓ present · ◑ partial · ✗ missing · — n/a. Priority P0/P1/P2 · Effort S/M/L.
 
-**Canonical overlayId map (the chunk-spec names differ from the real IDs):**
+**Registered overlayId map (the chunk-spec names differ from the real IDs):**
 
 | Chunk-spec name | Real overlayId(s) | Component |
 |---|---|---|

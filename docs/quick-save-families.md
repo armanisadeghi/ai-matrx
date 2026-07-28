@@ -6,7 +6,7 @@ Not about browsing workspaces (`QuickDataWindow`, `QuickTasksWindow`, `QuickNote
 
 ---
 
-## Pattern (canonical)
+## Standard pattern
 
 | Layer | Responsibility | Typical files |
 |-------|----------------|---------------|

@@ -1,6 +1,6 @@
 # Python envelope contract — `engine: "py-block-detector"`
 
-The FE accepts **pre-built CanonicalBlockIR envelopes from aidream** and never re-parses what they describe. This is the wire contract Python must satisfy. FE twin: `features/content-ir/core/ir-types.ts` (shapes), `core/fingerprint.ts` (hash), `core/envelope-cache.ts` (part cache).
+The FE accepts pre-built `CanonicalBlockIR` envelopes from aidream and never re-parses what they describe. This is the wire contract Python must satisfy. FE twin: `features/content-ir/core/ir-types.ts` (shapes), `core/fingerprint.ts` (hash), `core/envelope-cache.ts` (part cache).
 
 ## Where it rides
 

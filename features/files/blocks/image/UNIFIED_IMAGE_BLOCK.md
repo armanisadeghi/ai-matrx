@@ -3,7 +3,7 @@
 > 🚫 **`storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06).** The client never carries a native storage location: no `fileUri`/`canonicalFileUri` on any block, no `file_uri` on the wire. Identify by `fileId`; render via `cdnUrl`/`signedUrl`/`downloadUrl`. The contract sections below are amended; any remaining historical mention (change log, phase narrative) is obsolete — see [features/files/FEATURE.md](../../FEATURE.md).
 
 > **Audience:** Python team, frontend engineers, future agents working on streaming, persistence, or rendering of images.
-> **Status:** Phase 2 — frontend ingestion is **wire-shape ready and awaiting the Python deploy**. The canonical `UnifiedMediaBlock` shape, the `fromMediaBlock` adapter, and the `process-stream.ts` dispatch are all live; Python backend code landed on `main` 2026-05-16 (commit `96f7ff7b`) but isn't deployed yet at the time of writing. The legacy adapters (`image_output` / `partial_image`) currently carry traffic and become fallback once Python deploys.
+> **Status:** Phase 2 — frontend ingestion is **wire-shape ready and awaiting the Python deploy**. The shared `UnifiedMediaBlock` shape, the `fromMediaBlock` adapter, and the `process-stream.ts` dispatch are all live; Python backend code landed on `main` 2026-05-16 (commit `96f7ff7b`) but isn't deployed yet at the time of writing. The legacy adapters (`image_output` / `partial_image`) currently carry traffic and become fallback once Python deploys.
 
 > **See also:** [docs/PYTHON_UPDATES.md](../../../../docs/archive/2026/PYTHON_UPDATES.md) — the Python rollout that landed Phase 2.
 > The image-specific story below is now one slice of the broader media story documented in `features/files/blocks/types.ts` (`UnifiedMediaBlock`).

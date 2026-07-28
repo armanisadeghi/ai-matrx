@@ -113,7 +113,10 @@ for (const file of files) {
   } catch {
     continue;
   }
-  const m = head.match(CONFIDENT);
+  // Code identifiers can legitimately contain reserved prose (for example,
+  // `CanonicalBlockIR` or `canonical-vs-final`) without claiming doc authority.
+  const authorityProse = head.replace(/`[^`]*`/g, "");
+  const m = authorityProse.match(CONFIDENT);
   if (!m) continue;
   // Pointer stubs point AT authority (common-docs); they don't claim it.
   if (head.includes("common-docs/")) continue;

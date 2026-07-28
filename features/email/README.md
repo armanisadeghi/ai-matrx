@@ -1,6 +1,6 @@
 # Email
 
-**Source of truth:** [`FEATURE.md`](./FEATURE.md)
+**Primary documentation:** [`FEATURE.md`](./FEATURE.md)
 
 Legacy long-form docs in this folder and `docs/other/EMAIL_*.md` may be outdated.
 Use `FEATURE.md` for delivery paths, credentials, and DNS.

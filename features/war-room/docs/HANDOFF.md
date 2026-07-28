@@ -1,7 +1,7 @@
 # War Room — Handoff (2026-06-16)
 
 Takeover doc for the autonomous build kicked off after the "system structure
-review". The canonical feature doc is [`../FEATURE.md`](../FEATURE.md); this is
+review". The feature doc is [`../FEATURE.md`](../FEATURE.md); this is
 the live working state + what's left.
 
 ## Mission (user's words, distilled)

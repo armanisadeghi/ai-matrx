@@ -5,7 +5,7 @@
 **Last updated:** 2026-07-18
 
 This is the working document → Canvas → surfaces → context-clarity arc. A concurrent
-agent has been HEAVILY refactoring the same area (doc canonicalization: the
+agent has been HEAVILY refactoring the same area (doc consolidation: the
 `cx_working_documents` table was moved to `workbench.working_documents`, its
 `conversation_id` column dropped, junction `cx_conversation_documents` retired,
 links now via `platform.associations`). Coordinate — this zone churns every hour.

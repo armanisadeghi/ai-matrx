@@ -1,6 +1,6 @@
 # Prompts → Agents Migration
 
-This directory is the **single source of truth** for the migration from the legacy prompt system (`/ai/prompts`, `features/prompts`, `features/prompt-builtins`, `features/prompt-apps`, `features/prompt-actions`, `features/context-menu`) to the agent system (`/agents`, `features/agents`).
+This directory is the **working tracker** for the migration from the legacy prompt system (`/ai/prompts`, `features/prompts`, `features/prompt-builtins`, `features/prompt-apps`, `features/prompt-actions`, `features/context-menu`) to the agent system (`/agents`, `features/agents`).
 
 ## Goal
 

@@ -5,7 +5,7 @@
 
 > **2026‑07‑09 — activity icons → app shell.** On `/code`, the 48px ActivityBar icon rail injects into the main shell sidebar via `CodeSidebarMenu` + `route-menu-registry` (same Large-Route pattern as `/chat`). The resizable/collapsible side panel (Library / Explorer / …) stays in `WorkspaceLayout`. Floating `CodeWorkspaceWindow` and `/agent-apps/[id]/code` keep `showActivityBar` (embedded rail).
 
-This doc is the single source of truth for the `/code` (VSCode‑style) workspace. It captures (1) what is shipped, (2) what is wired but incomplete, (3) what is intentionally deferred, and (4) the wire format / mechanics of the editor→agent context bridge and the Monaco type environment system.
+This doc is the current-state reference for the `/code` (VSCode‑style) workspace. It captures (1) what is shipped, (2) what is wired but incomplete, (3) what is intentionally deferred, and (4) the wire format / mechanics of the editor→agent context bridge and the Monaco type environment system.
 
 > **2026‑04‑25 verification:** Probed both orchestrators directly via `GET /api-surface`. **Both EC2 and hosted are live at v0.2.0 with identical route surfaces** — the earlier "EC2 stale, deploy disk‑full" remark in §3 is no longer accurate. Capability discovery should always go through `/api-surface`, never `/openapi.json` (which omits catchall proxy routes). See §3 below.
 

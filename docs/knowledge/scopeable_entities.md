@@ -1,4 +1,4 @@
-# Scopeable Entities — Canonical List (working draft)
+# Scopeable Entities — Working List
 
 > The entity catalogue for Plane 1. Scope model → [`scope-model.md`](scope-model.md); roles/trust → [`knowledge_provenance_model.md`](knowledge_provenance_model.md); architecture → [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md).
 

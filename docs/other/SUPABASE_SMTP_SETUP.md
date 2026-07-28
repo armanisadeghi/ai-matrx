@@ -1,6 +1,6 @@
 # Supabase Auth SMTP (Resend)
 
-> Canonical overview: `features/email/FEATURE.md`  
+> Primary overview: `features/email/FEATURE.md`
 > This doc covers **Path 2 only** — Supabase Auth email. App email uses `RESEND_API_KEY`
 > via `lib/email/client.ts` and is a **separate** Resend credential.
 

@@ -7,7 +7,7 @@ facts + `ok` + `issues[{severity: error|warning, message}]`:
 |---|---|---|
 | Social share card (OG + Twitter) | `social.ts` (`evaluateSocialCard`) | errors on missing title/image; warnings on description, card type, lengths (70/200), og:url/og:type, http:// images |
 | Heading structure | `headings.ts` (`evaluateHeadingStructure` + `headingInputsFromRaw`) | errors on no headings / no H1; warnings on multiple H1s, non-H1 first, skipped levels, empty, >70 chars |
-| Indexability | `indexability.ts` (`evaluateIndexability`) | `verdict: indexable \| check \| blocked` from HTTP status, robots (`noindex`/`nofollow`/`none`), canonical-vs-final (normalized), redirect hops |
+| Indexability | `indexability.ts` (`evaluateIndexability`) | `verdict: indexable \| check \| blocked` from HTTP status, robots (`noindex`/`nofollow`/`none`), declared-vs-final URL (normalized), redirect hops |
 | URL quality | `url-quality.ts` (`evaluateUrlQuality`) | warnings only (never blocks indexing): length >100, depth >4, uppercase, underscores, query params, #fragments, percent-encoding, double slashes |
 
 ## Cross-language parity — the law

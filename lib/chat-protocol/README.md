@@ -1,13 +1,13 @@
 # `lib/chat-protocol/`
 
-Pure TypeScript helpers for turning raw chat inputs (stream events or DB rows) into a canonical, renderer-friendly shape. No React, no browser APIs — safe to import from any runtime.
+Pure TypeScript helpers for turning raw chat inputs (stream events or DB rows) into a normalized, renderer-friendly shape. No React, no browser APIs — safe to import from any runtime.
 
 ## Files
 
 | File | Purpose |
 |---|---|
 | `types.ts` | `CanonicalBlock` discriminated union (`TextBlock`, `ThinkingBlock`, `MediaBlock`, `ToolCallBlock`, `ErrorBlock`), `CanonicalMessage`, `StreamingState`, and narrowing helpers (`isToolCallBlock`, etc.). |
-| `from-stream.ts` | `buildCanonicalBlocks(events: TypedStreamEvent[])`, `buildStreamingState(...)`, `buildCanonicalMessageFromStream(...)`, `extractPersistableToolBlocks(...)`. Converts wire events to canonical blocks. |
+| `from-stream.ts` | `buildCanonicalBlocks(events: TypedStreamEvent[])`, `buildStreamingState(...)`, `buildCanonicalMessageFromStream(...)`, `extractPersistableToolBlocks(...)`. Converts wire events to normalized blocks. |
 | `from-db.ts` | `buildCanonicalMessages(cxMessages, cxToolCalls?)` and `buildCanonicalMessage(...)`. Exported but not yet wired into app code — retained for the SSR/DB rendering path. |
 | `index.ts` | Barrel — always import from `@/lib/chat-protocol`, never from a subfile. |
 

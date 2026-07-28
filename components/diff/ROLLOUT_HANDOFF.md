@@ -1,6 +1,6 @@
-# Canonical Diff System — Rollout Handoff
+# Diff System — Rollout Handoff
 
-**Pick up here.** The canonical diff system (`components/diff/`) is solid and
+**Pick up here.** The shared diff system (`components/diff/`) is solid and
 widely adopted. This is the remaining backlog + how to continue. Full state +
 change log: [`FEATURE.md`](./FEATURE.md). Compare everything live:
 **`/demos/diff-gallery`**. Playground: **`/demos/diff`**.

@@ -6,7 +6,7 @@
 > the CONNECTIONS, the real UI, and sessions CRUD. Build order below is the priority order.
 
 ## State
-- Committed + solid: Waves 0–4 (canonical DB, data layer, study spine, render-block repoint, FastFire
+- Committed + solid: Waves 0–4 (database foundation, data layer, study spine, render-block repoint, FastFire
   control layer) + create-from-topic + 10 live agents (gemini-3.5-flash, owner-tuned). See status doc.
 - **Routing: leave AS-IS for now** — owner says it looks good; a separate agent is doing a structural
   analysis + adding placeholder routes; incorporate later. Just keep building; don't fight that agent.

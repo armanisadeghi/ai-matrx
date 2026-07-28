@@ -4,7 +4,7 @@
 > **Commit that created the infrastructure:** `aa1f584f`  
 > **Status:** Infrastructure built. Zero routes migrated. Step 1 (file move) is next.
 
-This document is the single source of truth for the unified conversation system.  
+This document is the current architecture reference for the unified conversation system.
 It contains: what exists, where it lives, what it depends on, what needs to happen, and how to track progress.
 
 ---

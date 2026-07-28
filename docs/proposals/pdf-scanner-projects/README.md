@@ -1,9 +1,9 @@
-# Photo-to-PDF / Document Pipeline — MASTER PLAN (single source of truth for execution)
+# Photo-to-PDF / Document Pipeline — Master Execution Plan
 
 > **Status date:** 2026-07-07 (v1).
 > **Vision anchor:** [`features/pdf/FEATURE.md`](../../../features/pdf/FEATURE.md) — the PDF
-> domain doc (canonical parts, invariants, roadmap). No separate VISION doc exists for this
-> domain; FEATURE.md's roadmap section + this plan are the source of truth.
+> domain doc (shared parts, invariants, roadmap). No separate VISION doc exists for this
+> domain; FEATURE.md's roadmap section + this plan are the working references.
 > **Design sources:** [`design/Photo-to-PDF Desktop.dc.html`](./design/) + mobile — the actual
 > Claude Design prototypes (read the HTML/CSS directly; pixel truth for every surface).
 > Every brief in this folder is standalone — hand it to one agent blind using the copy-paste

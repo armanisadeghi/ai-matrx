@@ -1,11 +1,11 @@
 # Podcast System — Authoritative Handoff & Known-State
 
-**Last updated: 2026-06-12.** This is the single source of truth for the state
+**Last updated: 2026-06-12.** This handoff records the state
 of the podcast generation system across both repos. If you're taking over, read
 this top to bottom — it tells you exactly what works, what doesn't, and what's a
 known weakness. Supersedes `HANDOFF_2026-06-12.md` (archived at `docs/archive/2026/HANDOFF_2026-06-12.md`).
 
-- **Server (the pipeline):** `aidream` → `packages/matrx-ai/matrx_ai/agent_runners/podcast_generator.py` + the canonical contract **`PODCAST_PIPELINE.md`** beside it. **Read PODCAST_PIPELINE.md** — it is the law for the flow.
+- **Server (the pipeline):** `aidream` → `packages/matrx-ai/matrx_ai/agent_runners/podcast_generator.py` + the primary contract **`PODCAST_PIPELINE.md`** beside it. **Read PODCAST_PIPELINE.md** — it is the law for the flow.
 - **Frontend:** `matrx-frontend` → `features/podcasts/` + `app/(core)/podcast/`.
 - **DB:** Supabase `txzxabzwovsujtloxrus` (shared by both).
 - **Work on `main` in both.** Server code is **committed but the user deploys it.**

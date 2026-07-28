@@ -1,6 +1,6 @@
 # `@matrx/scheduler-client`
 
-TypeScript twin of the Python [`matrx-scheduler`](../../../aidream/packages/matrx-scheduler/) package. This is the **canonical home** of the TS scheduler client. matrx-extend vendors/mirrors a copy of this module (see Phase 3c of the scheduler rollout for the sync plan).
+TypeScript twin of the Python [`matrx-scheduler`](../../../aidream/packages/matrx-scheduler/) package. This is the **maintained home** of the TS scheduler client. matrx-extend vendors/mirrors a copy of this module (see Phase 3c of the scheduler rollout for the sync plan).
 
 ## Why this exists
 

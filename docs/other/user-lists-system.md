@@ -5,7 +5,7 @@
 > `workbench.udt_structured_list_items`. The product/data concept is **Structured List**; "picklist"
 > describes one usage mode, not the full data shape.
 
-**Historical source of truth:** `public.user_lists` and `public.user_list_items` on the **automation-matrix** Supabase project (`txzxabzwovsujtloxrus`, `public` schema).  
+**Historical reference tables:** `public.user_lists` and `public.user_list_items` on the **automation-matrix** Supabase project (`txzxabzwovsujtloxrus`, `public` schema).
 **Purpose:** Named, editable collections (**Structured Lists**) owned by a user, each with many **items** (rows). Items support **optional grouping** via `group_name`. A Structured List can be consumed as dropdown/picklist choices, but it can also represent grouped checklists, shopping lists, menus, lightweight taxonomies, and other reusable item collections.
 
 ---

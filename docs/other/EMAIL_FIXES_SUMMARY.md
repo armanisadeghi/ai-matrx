@@ -1,6 +1,6 @@
 # Email System Fixes - Summary
 
-> **Canonical config:** `features/email/FEATURE.md`. App email and Supabase Auth
+> **Primary config:** `features/email/FEATURE.md`. App email and Supabase Auth
 > email use separate Resend credentials.
 
 ## Issues Fixed

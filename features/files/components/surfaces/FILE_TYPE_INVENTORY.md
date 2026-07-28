@@ -1,6 +1,6 @@
 # File Type Capability Inventory
 
-> **Scope:** the two file-viewing surfaces and their 7 tabs (Preview, Edit, Document, Analysis, Share, Info, Versions). Treat this doc as the single source of truth for "what do we support per file type today." Update it whenever a previewer, editor, or tab gains/loses a capability.
+> **Scope:** the two file-viewing surfaces and their 7 tabs (Preview, Edit, Document, Analysis, Share, Info, Versions). Treat this doc as the current capability inventory for "what do we support per file type today." Update it whenever a previewer, editor, or tab gains/loses a capability.
 >
 > **Surfaces:**
 > - `PreviewPane` (`features/files/components/surfaces/PreviewPane.tsx`) — compact side panel inside `PageShell` at `/files` and `/files/<path>`.

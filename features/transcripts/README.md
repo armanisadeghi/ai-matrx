@@ -1,6 +1,6 @@
 # Transcripts Feature
 
-> **Storage contract:** [`FEATURE.md`](./FEATURE.md) is the source of truth for how every `/transcripts` route stores records and audio. Read it before touching storage code. This README is user-facing usage docs only.
+> **Storage contract:** [`FEATURE.md`](./FEATURE.md) defines how every `/transcripts` route stores records and audio. Read it before touching storage code. This README is user-facing usage docs only.
 
 ## 📋 Overview
 
@@ -393,4 +393,3 @@ When adding features:
 ---
 
 **Happy transcribing! 🎙️**
-

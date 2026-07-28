@@ -20,3 +20,7 @@ PRINCIPLES.md
 TYPESCRIPT_STANDARDS.md
 # - docs/official/ is the repo's explicitly sanctioned official-docs directory.
 docs/official/
+# Owner-authored VISION may state authority by policy.
+features/artifacts/docs/ARTIFACT_VISION_AND_DESIGN.md
+# Preserves Arman's verbatim vision quote containing the SEO term "canonical pages".
+docs/MARKETING_PROGRAM_BOARD.md

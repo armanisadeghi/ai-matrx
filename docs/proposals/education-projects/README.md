@@ -1,4 +1,4 @@
-# Education Hub — MASTER PLAN (single source of truth for execution)
+# Education Hub — Master Execution Plan
 
 > **Status date:** 2026-07-07 (v2 — competitive research merged).
 > **This is the one document.** It merges the vision

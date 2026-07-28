@@ -1,4 +1,4 @@
-# Window Panel Inventory — Source of Truth
+# Window Panel Inventory
 
 > Purpose of THIS doc: a complete, structured inventory of every window panel and the current state of each, so we can see gaps and assign parallel work. Three linked tables (A/B/C) share one panel-identity key. Per-category row files live in [`docs/inventory/`](./docs/inventory/); this file holds the model, the column contracts, the system-level build list, and the cross-cutting findings.
 >

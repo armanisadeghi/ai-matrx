@@ -2,7 +2,7 @@
 
 # Flashcards + FastFire — Status & Issues
 
-> **Single source of truth for the current state + the corrected path forward.** Written 2026-06-30
+> **Current-state tracker and corrected path forward.** Written 2026-06-30
 > after owner review. Context is filling across long sessions; THIS doc is what a fresh context reads
 > to pick up. Read it before touching flashcards/FastFire. The build plan is
 > `~/.claude/plans/okay-so-if-i-declarative-jellyfish.md`; the agents are in `LIVE_AGENTS.md` +

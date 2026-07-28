@@ -1,10 +1,10 @@
 # Handoff — processed_document / file / association integrity
 
-Canonical model: one `files.files` binary → one canonical `initial_extract`
+Reference model: one `files.files` binary → one primary `initial_extract`
 (`files.canonical_processed_document_id`) → many expensive derivations
 (clean, `synthetic_qa`, `agent_structured_json`, `chunked_*`, `user_fork`), all
 dual-anchored to the file via `source_kind='cld_file'` + `source_id`. **The
-canonical pointer is the ONLY resolution rule — never "newest per source_id."**
+the designated pointer is the ONLY resolution rule — never "newest per source_id."**
 
 ## DONE (2026-07-17, live + committed)
 

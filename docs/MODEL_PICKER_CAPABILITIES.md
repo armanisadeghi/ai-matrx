@@ -2,7 +2,7 @@
 
 Goal: replace the flat model dropdown in the agent builder with a **capability-driven picker** — tabs by output type (Text / Image / Video / Audio / Realtime / Extraction) plus a capability filter — now that every model's capabilities are real and DB-backed.
 
-Backend context (aidream): the `ai_model.capabilities` jsonb is now the source of truth, shape `{input, output, features, interaction}` — exactly the `ModelCapabilities` type this repo already has. Backend design: `aidream/docs/model_capabilities/CAPABILITY_SYSTEM.md`.
+Backend context (aidream): `ai_model.capabilities` now provides the capability data, shaped as `{input, output, features, interaction}` — exactly the `ModelCapabilities` type this repo already has. Backend design: `aidream/docs/model_capabilities/CAPABILITY_SYSTEM.md`.
 
 ## Good news — most of this already exists here
 

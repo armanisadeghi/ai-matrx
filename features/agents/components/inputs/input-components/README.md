@@ -1,6 +1,6 @@
 # Agent variable inputs
 
-UI for **agent execution variables** (`VariableDefinition` + `customComponent` on `AgentDefinition`). Types and the canonical component-type list live in `@/features/agents/types/agent-definition.types.ts` — this is **not** the Prompts feature.
+UI for **agent execution variables** (`VariableDefinition` + `customComponent` on `AgentDefinition`). Types and the registered component-type list live in `@/features/agents/types/agent-definition.types.ts` — this is **not** the Prompts feature.
 
 ## Layouts (`variable-input-variations/`)
 

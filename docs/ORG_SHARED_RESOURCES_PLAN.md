@@ -4,7 +4,7 @@ This doc tracks the work to make every tile on `app/(a)/organizations/[orgId]/pa
 ("Shared Resources" grid) show real counts and link to a real list page, plus
 add a "Share with organization" path for each resource type.
 
-Source of truth for sharing is `features/sharing/FEATURE.md` and
+The sharing reference is `features/sharing/FEATURE.md` and
 `utils/permissions/registry.ts` (the TS mirror of `public.shareable_resource_registry`).
 
 ---

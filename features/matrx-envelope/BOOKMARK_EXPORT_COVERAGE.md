@@ -4,7 +4,7 @@
 
 ## What an "export bookmark" is
 
-A small UI affordance ("copy reference" / bookmark button) on an entity that copies the **canonical `matrx` reference fence** for it. Pasted into chat it resolves to a **live reference chip** the agent reads — the backend re-fetches the live value each turn from the ids, never the value. The artifact is always built with `buildBookmarkReferenceFence(...)` (`features/matrx-envelope/bookmarkToReference.ts`) for UDT bookmarks (tables/lists) or `buildRecordReferenceFence(...)` / `buildFileReferenceFence(...)` for RecordRef / FileRef entities. Never hand-roll JSON. See `docs/protocol/MATRX_REFERENCES.md` and `features/matrx-envelope/REFERENCE_OUTPUT_MIGRATION.md`.
+A small UI affordance ("copy reference" / bookmark button) on an entity that copies the **standard `matrx` reference fence** for it. Pasted into chat it resolves to a **live reference chip** the agent reads — the backend re-fetches the live value each turn from the ids, never the value. The artifact is always built with `buildBookmarkReferenceFence(...)` (`features/matrx-envelope/bookmarkToReference.ts`) for UDT bookmarks (tables/lists) or `buildRecordReferenceFence(...)` / `buildFileReferenceFence(...)` for RecordRef / FileRef entities. Never hand-roll JSON. See `docs/protocol/MATRX_REFERENCES.md` and `features/matrx-envelope/REFERENCE_OUTPUT_MIGRATION.md`.
 
 The goal of this doc: decide **which entities qualify** for an export bookmark, and **how many "dimensions"** (granularities) each one needs.
 

@@ -7,7 +7,7 @@
 > Anything the Python team wants to broadcast to us goes in
 > [from_python/UPDATES.md](../from_python/UPDATES.md).
 >
-> This is the single canonical doc for everything the FE needs from
+> This is the consolidated request tracker for everything the FE needs from
 > the BE. Items move from `Open` → `Resolved` when the corresponding
 > work ships and we've verified it on our side.
 >

@@ -1,7 +1,7 @@
 
 Here is a **gap analysis file list**: everything that ties into the current stream contract (`status_update`, old `completion` shape, undiscriminated `data` / `conversation_id` events, `StreamEvent` helpers, or Redux `activeRequests` stream fields) and therefore needs to move to **Streaming Events V2** (`phase`, `info`, `init`/`completion` pairing, typed `data`, etc.). Paths are **deduplicated**; no per-file detail.
 
-### Generated types (single source of truth)
+### Generated type definitions
 - `types/python-generated/stream-events.ts` (replace/regenerate to match V2; guide references `aidream/api/generated/stream-events.ts` — align import path or re-export as you standardize)
 
 ### Redux — agent execution system

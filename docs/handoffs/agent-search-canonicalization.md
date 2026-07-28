@@ -5,7 +5,7 @@ repos: [matrx-frontend]
 vision: []
 ---
 
-# Agent search — canonicalize + serverside everywhere
+# Agent search — consolidate + server-side everywhere
 
 The `/agents/all` gallery is done. The remaining work carries the same doctrine to the
 two chat-side pickers that still search locally over a partial set, and collapses the

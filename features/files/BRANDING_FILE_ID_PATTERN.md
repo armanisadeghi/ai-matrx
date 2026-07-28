@@ -1,6 +1,6 @@
 # Branding images: store `file_id`, render via `file_id`
 
-> **Never persist a resolved upload URL as the source of truth for an image.**
+> **Never persist a resolved upload URL as the durable reference for an image.**
 > Store the durable cld_files `file_id` and re-resolve the URL at render time.
 
 ## Why

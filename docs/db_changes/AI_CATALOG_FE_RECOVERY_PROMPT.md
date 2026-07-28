@@ -1,13 +1,13 @@
-# AI Model Catalog — Frontend State: Recovery + Canonicalization
+# AI Model Catalog — Frontend State: Recovery + Consolidation
 
 > **This doc has two jobs.** (1) It is the **recovery reference** for the live `ai.model_definition`
-> column-drop reshape (still true, still load-bearing). (2) It is the **canonicalization brief** for
+> column-drop reshape (still true, still load-bearing). (2) It is the **consolidation brief** for
 > collapsing every model-data path in the frontend onto **one slice, one set of actions and
 > selectors, one picker** — with an admin variant. Part A is the DB reality. Part B is the target
-> architecture. Part C is the current (partially-canonical) state and the worklist. The appendix is
+> architecture. Part C is the current (partially consolidated) state and the worklist. The appendix is
 > the impacted-file inventory + live usage map.
 >
-> **This is an interim doc.** Once the canonicalization lands it gets rewritten into a clean
+> **This is an interim doc.** Once the consolidation lands it gets rewritten into a clean
 > `features/ai-models/FEATURE.md`-anchored reference. Keep it accurate while the work is in flight;
 > do not polish it.
 

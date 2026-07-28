@@ -6,7 +6,7 @@
 contracts every brief builds against. Supersedes the two Cursor plans and
 `docs/rag-access-convo-dump.md` (both describe a bug that is fixed).
 
-**Vision.** Matrx curates system-owned knowledge (canonical: AMA Guides 5th Ed) once and issues
+**Vision.** Matrx curates system-owned knowledge (reference example: AMA Guides 5th Ed) once and issues
 READ to whole audiences — an industry, an org, everyone — through one grant primitive
 (`rag.data_store_grants`). A grant on the container must confer read on *everything inside it*:
 source file bytes, OCR/clean text, pages, page images, chunks, derivations, extractions. Access

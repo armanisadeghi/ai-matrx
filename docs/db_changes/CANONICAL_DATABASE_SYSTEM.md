@@ -1,6 +1,6 @@
-# AI Matrx — Canonical Database System
+# AI Matrx — Database System Reference
 
-**Authoritative reference.** Postgres project `txzxabzwovsujtloxrus`. This is the single source of truth for how tables, access, versioning, associations, and conformance work. If code disagrees with this document, the code is wrong. Last verified 2026-07-03.
+**Implementation reference.** Postgres project `txzxabzwovsujtloxrus`. This captures the database-system shape verified on 2026-07-03. Live schema and `docs/official/db-rules.md` take precedence when this document has drifted.
 
 ---
 

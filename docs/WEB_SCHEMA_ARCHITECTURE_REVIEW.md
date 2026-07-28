@@ -3,7 +3,7 @@
 **Status:** Approved architecture; database foundation and first frontend
 vertical implemented.
 
-**Schema authority:** `docs/WEB_SCHEMA_CANONICAL_REFERENCE.md`  
+**Schema reference:** `docs/WEB_SCHEMA_CANONICAL_REFERENCE.md`
 **Route authority:** `docs/MARKETING_SITE_ROUTE_ARCHITECTURE.md`
 
 **Approved decisions:** `docs/MARKETING_SITE_DECISION_REGISTER.md`

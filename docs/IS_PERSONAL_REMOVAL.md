@@ -6,7 +6,7 @@
 
 There is a real **personal organization** per user (`organizations.is_personal = true`, created by the `ensure_personal_organization` RPC). The separate `is_personal` boolean on `ctx_projects` / `ctx_templates` is redundant with org membership and actively causes bugs. Remove the flag everywhere; derive "personal" from the org instead.
 
-**Canonical rule after removal:** a project/task/template is "personal" iff its `organization_id` is the user's personal org. Do not use `NULL` organization ids for personal rows. The UI should show the owning org's name; reserve a "Personal" label for the personal org specifically (`organizations.is_personal`, which we are KEEPING on the `organizations` table as the source of truth).
+**Rule after removal:** a project/task/template is "personal" iff its `organization_id` is the user's personal org. Do not use `NULL` organization ids for personal rows. The UI should show the owning org's name; reserve a "Personal" label for the personal org specifically (`organizations.is_personal`, which remains the durable ownership marker on the `organizations` table).
 
 > Keep `organizations.is_personal` (it identifies the one personal org). Remove `ctx_projects.is_personal` and `ctx_templates.is_personal`. This doc assumes that split; confirm before migrating.
 

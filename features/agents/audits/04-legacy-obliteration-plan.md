@@ -6,7 +6,7 @@ more legacy-first naming. Execute waves in order.
 ## Wave 1 — Zero-risk alias deletions (30 min, no consumers)
 
 These aliases exist only to ease the migration window. Consumer code
-already uses the canonical names.
+already uses the standard names.
 
 - [ ] `features/agents/redux/execution-system/conversations/index.ts` — remove `executionInstancesReducer` re-export.
 - [ ] `features/agents/redux/execution-system/messages/index.ts` — remove `instanceConversationHistoryReducer` re-export.

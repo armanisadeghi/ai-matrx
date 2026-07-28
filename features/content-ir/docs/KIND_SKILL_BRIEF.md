@@ -3,11 +3,11 @@
 You are ONE agent building the platform skill + content blocks for **one** content-ir kind. Other agents are doing the other kinds in parallel off this same brief. Produce a migration FILE; do NOT apply it (the orchestrator applies all centrally to avoid races).
 
 ## The goal (why this matters)
-A content-ir "kind" is a canonical structured-content type (e.g. `flashcard_set`) an agent emits as JSON carrying `"__kind": "<kind>"`. A **skill** teaches an agent how to emit it; a generated sample then feeds the dual gate (`content_ir.kind_definition.is_active`), and a **content block** lets a user right-click it into an agent's system prompt. You are producing both for your kind.
+A content-ir "kind" is a registered structured-content type (e.g. `flashcard_set`) an agent emits as JSON carrying `"__kind": "<kind>"`. A **skill** teaches an agent how to emit it; a generated sample then feeds the dual gate (`content_ir.kind_definition.is_active`), and a **content block** lets a user right-click it into an agent's system prompt. You are producing both for your kind.
 
 ## Read these first (the real contracts — never invent syntax)
 1. `.claude/skills/create-render-block-skill/SKILL.md` — the recipe. Follow it, WITH the corrections below.
-2. **Your kind's canonical schema** — query it live (this is what you teach):
+2. **Your kind's registered schema** — query it live (this is what you teach):
    ```sql
    SELECT kind, label, data, sample_data, emitted_block_schema
    FROM content_ir.kind_definition WHERE kind = '<YOUR_KIND>';

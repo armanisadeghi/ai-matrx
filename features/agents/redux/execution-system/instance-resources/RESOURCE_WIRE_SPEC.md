@@ -4,7 +4,7 @@ How the frontend includes attached resources (notes, tasks, files, and the new
 Matrx-entity references) in a user message. **For backend confirmation** — the
 "Pending" types below are emitted by the FE but need backend handlers.
 
-Source of truth (FE):
+Frontend reference:
 - `instance-resources.selectors.ts` → `selectResourcePayloads` (builds the blocks)
 - `editable-resource-types.ts` → which types support the `editable` flag
 - `instance.types.ts` → `ResourceBlockType` union

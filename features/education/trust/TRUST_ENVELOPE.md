@@ -2,7 +2,7 @@
 
 > **Status:** Published 2026-07-07 (Wave 1, day-1 contract). Owner: P0 — Trust Layer.
 > **This is the contract every education AI project (P1–P4, P6, P9) builds against.**
-> Typed source of truth: [`types.ts`](./types.ts). At **Convergence A, any education AI output
+> Typed definition: [`types.ts`](./types.ts). At **Convergence A, any education AI output
 > without this envelope is a defect.**
 
 ## What it is

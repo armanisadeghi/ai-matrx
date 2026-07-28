@@ -5,7 +5,7 @@
 > [`education-projects/`](./education-projects/README.md) — assign agents from THERE, not from §3.
 > This doc remains the narrative overview.
 
-> **Status date:** 2026-06-29. **Source of truth for scope:** [`app/(core)/education/VISION-education-hub.md`](../../app/(core)/education/VISION-education-hub.md).
+> **Status date:** 2026-06-29. **Scope reference:** [`app/(core)/education/VISION-education-hub.md`](../../app/(core)/education/VISION-education-hub.md).
 > This roadmap is grounded in a live codebase + database audit (not memory). Each project below is
 > sized to hand to one capable agent with a human in the loop. Read §1 before assigning anything.
 

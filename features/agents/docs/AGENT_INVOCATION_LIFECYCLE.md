@@ -4,7 +4,7 @@
 **Tier:** 1 (sub-feature of `features/agents/`)
 **Last updated:** `2026-07-18`
 
-> Read [`features/agents/FEATURE.md`](../FEATURE.md) first. This doc is the endpoint routing contract — the rules for which URL, which payload, which mode. Canonical source in code: [`features/agents/types/conversation-invocation.types.ts`](../types/conversation-invocation.types.ts).
+> Read [`features/agents/FEATURE.md`](../FEATURE.md) first. This doc is the endpoint routing contract — the rules for which URL, which payload, which mode. Implementation source: [`features/agents/types/conversation-invocation.types.ts`](../types/conversation-invocation.types.ts).
 
 ---
 

@@ -1,4 +1,4 @@
-# Cloud-files RPCs — canonical direct-vs-server map (2026-06-26)
+# Cloud-files RPCs — direct-vs-server map (2026-06-26)
 
 Two things happened on 2026-06-26:
 1. The DB dropped the `cld_` prefix from the cloud-files functions (one non-trivial:

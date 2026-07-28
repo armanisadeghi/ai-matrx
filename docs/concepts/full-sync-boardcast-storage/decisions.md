@@ -1,6 +1,6 @@
 # Sync / Broadcast / Storage — Decisions
 
-Single source of truth for the unified client-side state persistence, cross-tab broadcast, and cache system. One line per decision. Append-only edits — older decisions can be marked superseded but never silently rewritten.
+Decision log for the unified client-side state persistence, cross-tab broadcast, and cache system. One line per decision. Append-only edits — older decisions can be marked superseded but never silently rewritten.
 
 Last updated: 2026-04-20.
 

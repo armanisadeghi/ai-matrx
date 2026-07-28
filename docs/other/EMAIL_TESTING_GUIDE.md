@@ -1,6 +1,6 @@
 # Email System Testing Guide
 
-> **Canonical config:** `features/email/FEATURE.md`. Auth email sender is
+> **Primary config:** `features/email/FEATURE.md`. Auth email sender is
 > `noreply@updates.aimatrx.com` (Supabase SMTP), not app `EMAIL_FROM`.
 
 This guide provides step-by-step instructions for testing all email functionality in AI Matrx.

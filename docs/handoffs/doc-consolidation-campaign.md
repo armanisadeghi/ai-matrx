@@ -1,10 +1,10 @@
-# Handoff — Documentation Consolidation Campaign (Single Source of Truth)
+# Handoff — Documentation Consolidation Campaign
 
 **Owner:** the common-docs structure session (took over 2026-07-22; integrating with the docs-architecture redesign). Originated by the access-campaign session. **Created 2026-07-22** from a four-agent full inventory: ai-matrx (794 docs), aidream (774 docs), matrx-common-docs (~30 docs, healthy), skills (68 ai-matrx + 24 aidream + 29 legacy Cursor-era). Raw tables: ai-matrx sortable artifact at https://claude.ai/code/artifact/68e68a6b-882f-4c1e-a621-cbfff074f8b6 ; aidream per-file table (774 rows: path | mtime | title) at [`doc-inventory-aidream-full-table.txt`](doc-inventory-aidream-full-table.txt) beside this doc. NOT covered by the inventory: matrx-extend, matrx-local, my-matrx, matrx-ship, matrx-sandbox, matrx-package-template.
 
-**Goal:** one source of truth per system; everything else is a pointer, an archive, or deleted. Arman signs off on every deletion wave.
+**Goal:** one designated authority per system; everything else is a pointer, an archive, or deleted. Arman signs off on every deletion wave.
 
-**Classification scheme** (identical across all four inventory agents): **SOR** (claims canonical status) · **FEATURE** (living doc beside code — one per feature/service/package is the intended pattern, not duplication) · **GUIDE** (how-to/reference) · **HISTORY** (finished work: handoffs, migration sagas, investigations — archival candidates) · **VISION** (Arman-authored aspirational — never junk; gap-analysis input only) · **JUNK** (superseded, self-declared dead, or exact duplicate; every JUNK verdict names its superseder). Caveat: the ai-matrx pass was largely path/title-heuristic with spot-checks (aidream got deeper per-file reads) — treat classes as a strong first pass and verify before deleting anything not self-declared dead.
+**Classification scheme** (identical across all four inventory agents): **SOR** (claims designated authority) · **FEATURE** (living doc beside code — one per feature/service/package is the intended pattern, not duplication) · **GUIDE** (how-to/reference) · **HISTORY** (finished work: handoffs, migration sagas, investigations — archival candidates) · **VISION** (Arman-authored aspirational — never junk; gap-analysis input only) · **JUNK** (superseded, self-declared dead, or exact duplicate; every JUNK verdict names its superseder). Caveat: the ai-matrx pass was largely path/title-heuristic with spot-checks (aidream got deeper per-file reads) — treat classes as a strong first pass and verify before deleting anything not self-declared dead.
 
 ## The verdict in one paragraph
 

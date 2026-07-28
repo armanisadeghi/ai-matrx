@@ -4,7 +4,7 @@
 (`chat`, `manual`, `agents/{id}`, `conversations/{id}`) route through the
 backend's `/v2` runtime spine by default. Frontend commit `ab8596e42`; running
 in production with no issues. See `aidream/docs/runtime/V2_FRONTEND_MIGRATION.md`
-for Phase 1 and `lib/api/ai-api-version.ts` for the single source of truth.
+for Phase 1 and `lib/api/ai-api-version.ts` for the maintained definition.
 
 **What Phase 2 is:** close the remaining lifecycle gaps so the spine tracks a
 request's **whole** life (not just the opening turn), and **surface** the

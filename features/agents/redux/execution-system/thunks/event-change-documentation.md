@@ -2,7 +2,7 @@
 
 ## 1. Summary
 
-This guide documents the complete V2 streaming event system. All events are fully typed, enum-driven, and generated from Python Pydantic models as a single source of truth.
+This guide documents the complete V2 streaming event system. All events are fully typed, enum-driven, and generated from Python Pydantic models as the schema basis.
 
 **Breaking changes from V1:**
 - `status_update` is **removed** — replaced by `phase` (state transitions) and `info` (progress messages)

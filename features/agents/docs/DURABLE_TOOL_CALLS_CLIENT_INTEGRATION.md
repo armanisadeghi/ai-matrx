@@ -1,11 +1,11 @@
 # Durable Client-Delegated Tool Calls — Client Integration Brief
 
-> **⚠ SUPERSEDED.** The canonical protocol lives at
+> **⚠ SUPERSEDED.** The current protocol lives at
 > [`CLIENT_TOOL_SUSPEND_RESUME.md`](./CLIENT_TOOL_SUSPEND_RESUME.md) — read
 > that instead. This document captures useful background on the durable
 > ledger and idempotent `/tool_results` semantics, but its UI-wiring
 > recommendations are STALE: it references a `processStreamEvent` Redux
-> action that does not exist (the canonical reducer is the
+> action that does not exist (the current reducer is the
 > [`processStream`](../redux/execution-system/thunks/process-stream.ts)
 > async function), and it proposes plumbing resume through `callApi`'s
 > `onStreamEvent` callback — bypassing the heartbeat-monitored

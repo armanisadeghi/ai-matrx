@@ -5,7 +5,7 @@ repos: [matrx-frontend]
 vision: []
 ---
 
-# User Management hub — canonical Users & Access
+# User Management hub — shared Users & Access
 
 ## Vision — Arman's words
 

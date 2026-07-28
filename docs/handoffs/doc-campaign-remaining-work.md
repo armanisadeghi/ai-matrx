@@ -30,9 +30,14 @@ in aidream, run inside release.sh) started at ~108 (ai-matrx) + ~83 (aidream) vi
 policies|meta|skills>/...`), and ai-matrx's three root-level strays (archived to
 `docs/archive/2026/` with banners). Counts now **93 (ai-matrx) + 76 (aidream)**.
 
+**Cleared by the 2026-07-28 ai-matrx sweep:** all 94 confident-title findings observed in
+`matrx-frontend` (94 → 0). Stale authority claims were demoted in place, two policy-valid
+VISION/owner-quote exceptions were added by exact path, and inline code identifiers are now
+excluded from prose scanning. Root-level and pointer-path findings remain at zero.
+
 **Remaining:**
-- **Confident-title claimants** (93 ai-matrx + 70 aidream) that predate the policy — each needs
-  demote-or-allowlist-with-reason. This is the bulk of the backlog.
+- **Confident-title claimants** (0 ai-matrx + 70 aidream) that predate the policy — each needs
+  demote-or-allowlist-with-reason. The remaining backlog is in aidream.
 - **aidream root-level strays** (6): ACCEPTANCE_DEV_SERVER, AUDIO_STREAMING,
   ENV_FLAG_ERADICATION, PERSISTENCE_AND_ERROR_HANDLING_BUGS, TASK-systemwide-error-tracking,
   audit_api_types. Unlike ai-matrx's, these have **live referrers** — CLAUDE.md, `.claude/skills/`,

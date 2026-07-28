@@ -1,6 +1,6 @@
-# Durable Records — the canonical persistence contract
+# Durable Records — shared persistence contract
 
-Single source of truth for how any feature record is **edited, dirty-tracked, saved, versioned, and soft-deleted**. One declaration, one drop-in hook, one set of guarantees — from "never lose a keystroke" (notes) to "save only when I click Save" (agent builder), and every point between.
+Operational contract for how any feature record is **edited, dirty-tracked, saved, versioned, and soft-deleted**. One declaration, one drop-in hook, one set of guarantees — from "never lose a keystroke" (notes) to "save only when I click Save" (agent builder), and every point between.
 
 Status: `agreed` — direction + the four core decisions locked (§10). First consumer: **Tasks + Projects**. **The code is the hard part — that is where effort goes; the DB scaffolding is the easy, well-trodden part.**
 Last updated: 2026-06-21.
