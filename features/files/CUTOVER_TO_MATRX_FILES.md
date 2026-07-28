@@ -1,8 +1,10 @@
 # TASK: route file traffic to the matrx-files microservice
 
 **Status:** server routing is implemented. Direct authenticated browser routing is implemented
-behind `NEXT_PUBLIC_FILES_BROWSER_CUTOVER=false` and is currently blocked: the live service returns
-HTTP 405 to browser CORS preflight for `/files/upload`.
+behind `NEXT_PUBLIC_FILES_BROWSER_CUTOVER=false` and is **unblocked** — the July 405 on the
+`/files/upload` CORS preflight is fixed. Re-verified live 2026-07-28: `OPTIONS /files/upload` with
+`Origin: https://aimatrx.com` returns **200** allowing `authorization` and `x-idempotency-key`.
+All that remains is setting the flag to `true` in Vercel and watching the shadow log.
 
 `lib/python-client.ts` owns the browser split at the final shared URL-construction boundary, but it
 only activates when `NEXT_PUBLIC_FILES_BROWSER_CUTOVER=true`. `server-client.ts` handles server-side

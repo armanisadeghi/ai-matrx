@@ -1,6 +1,6 @@
 ---
 status: blocked            # remaining lanes are all gated on Arman's answers below
-updated: 2026-07-18
+updated: 2026-07-28
 repos: [matrx-frontend]
 vision: []                 # no standalone vision doc — Arman's words captured verbatim below
 ---
@@ -46,9 +46,9 @@ Follow-ups (2026-07-18):
 1. **Get phase-2 scope from Arman** (see Decisions). Do not invent enhancements — he explicitly said "we are going to work together" on that phase.
 2. **Shared-component tabs, deliberately untouched** — each is consumed by other surfaces, so densifying means either (a) restyling the shared component everywhere or (b) adding a compact variant prop. Needs Arman's per-tab call:
    - Attach → `features/resource-manager/resource-picker/ResourcePickerMenu.tsx` (also the `+` menu)
-   - Document → `working-document/documents-workspace/DocumentsWorkspace.tsx` (also a standalone panel)
+   - Document → `features/agents/components/working-document/documents-workspace/DocumentsWorkspace.tsx` (also a standalone panel)
    - Tools → `smart-input/RunToolPicker.tsx` · Skills → `smart-input/RunSkillPicker.tsx` (both also inside Quickset popovers)
-   - Overrides rows → `settings-management/controls/SettingControlInput.tsx` (shared with agent builder)
+   - Overrides rows → `features/agents/components/settings-management/controls/SettingControlInput.tsx` (shared with agent builder)
 3. **Preferences tab** — still a single "Submit on Enter" toggle (duplicated in Quickset). Obvious fold-into-Settings candidate, but that's a structure change Arman deferred ("don't move or change anything yet").
 4. **Creator tab** — three large icon-rows (Creator panel / Debug / Preview prompt); not yet on the dense row style.
 5. **Settings tab reorganization** — only condensed so far per instruction; grouping/ordering rethink is phase-2 material.

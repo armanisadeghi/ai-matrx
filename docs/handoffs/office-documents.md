@@ -1,14 +1,19 @@
 ---
 status: active
-updated: 2026-07-15
+updated: 2026-07-28
 repos: [matrx-frontend, aidream, matrx-local]
 ---
 
 # Office documents (docx / pptx / xlsx) — surface the capability
 
-The backend capability is **built, live, and verified**. It has been used **zero times** —
-`chat.tool_call WHERE tool_name='office'` = 0. Every remaining task exists to put this in
-front of a human. If nothing below ships, the whole thing is dead code.
+The backend capability is **built, live, and verified**. In two weeks it has been called **4
+times** — `chat.tool_call WHERE tool_name='office'` = 4 (verified 2026-07-28), all agent probes,
+no user-facing surface. Every remaining task exists to put this in front of a human. If nothing
+below ships, the whole thing is dead code.
+
+**Nothing below has shipped since this doc was written** — verified 2026-07-28: no office commit
+in either repo since 2026-07-19; `FILE_TYPE_INVENTORY.md:526-527` still marks docx/pptx 🔴 with no
+`PreviewKind`; the three `office_*` kinds are still `is_active=false`.
 
 ## Vision — Arman's words
 

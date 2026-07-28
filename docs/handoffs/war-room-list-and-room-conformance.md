@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-23
+updated: 2026-07-28
 repos: [matrx-frontend]
 vision: [features/war-room/FEATURE.md, .claude/skills/core-route-headers/SKILL.md]
 ---
@@ -37,12 +37,12 @@ On the individual room page `/war-room/[id]` (session 3):
 ## Remaining work
 
 1. **`/war-room/[id]` room page header is NON-CONFORMANT — the main gap.**
-   `features/war-room/components/room/WarRoomShell.tsx:200` uses banned `h-[calc(100vh-2.5rem)]`, and `:202` is a full in-body `<header>` with the `pr-14` avatar-collision hack — exactly the disease `core-route-headers` kills. It was missed by the header-conformance campaign because that campaign's audit greps `app/(core)` ONLY, and this offender lives in `features/` (**trap: the `features/` half of every route is invisible to `pnpm check:page-headers` and the campaign's grep — audit both**).
+   Re-verified 2026-07-28: `features/war-room/components/room/WarRoomShell.tsx:240` still uses banned `h-[calc(100vh-2.5rem)]`, and `:242` is still a full in-body `<header>` with the `pr-14` avatar-collision hack — exactly the disease `core-route-headers` kills. (Line numbers drift; grep the two patterns.) It was missed by the header-conformance campaign because that campaign's audit greps `app/(core)` ONLY, and this offender lives in `features/` (**trap: the `features/` half of every route is invisible to `pnpm check:page-headers` and the campaign's grep — audit both**).
    The fix is the `/war-room/all` treatment already done next door: move chrome into `<PageHeader>`, body → `h-full overflow-hidden` (drop the calc), avatar hack deletes itself once controls sit in the bounded center zone. This header is unusually DENSE (back, title, live meter, Stage⇄Grid, instrument projector, density dial, identity, project, resources, context chip, Room Agent, delete) — far more than `EntityModeHeader` carries. Collapse secondary controls (projector, density, resources, identity, delete) into an overflow/`…` menu; keep Stage⇄Grid + Room Agent + the context chip primary. On mobile: back + title + ONE `…` drawer holding everything. Do NOT lose the `@container` query behavior the current header uses to progressively hide labels.
    All the control COMPONENTS are already correct and room-scoped — this is a re-housing job, not a rewrite of the controls.
 
 2. **Thread search is title-only; Arman implied he expects more.**
-   `useThreadSearch.ts` ranks by thread title (tile title → anchored task title) and skips parked threads. The room `ThreadSearchBox` and the `/war-room/all` cross-room search share this shallow depth. If deeper search is wanted, extend the searchable projection to description + note/task contents (the projection selector in `useThreadSearch.ts` is the one place to widen; `/war-room/all`'s `useWarRoomAllSearch.ts` mirrors it). **Decision below — confirm scope before building.**
+   Re-verified 2026-07-28 — still title-only. `useThreadSearch.ts` ranks by thread title (tile title → anchored task title) and skips parked threads. The room `ThreadSearchBox` and the `/war-room/all` cross-room search share this shallow depth. If deeper search is wanted, extend the searchable projection to description + note/task contents (the projection selector in `useThreadSearch.ts` is the one place to widen; `/war-room/all`'s `useWarRoomAllSearch.ts` mirrors it). **Decision below — confirm scope before building.**
 
 ## Done
 

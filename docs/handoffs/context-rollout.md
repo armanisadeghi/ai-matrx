@@ -1,15 +1,15 @@
 ---
 status: active
-updated: 2026-07-12
+updated: 2026-07-28
 repos: [matrx-frontend]
+vision: [features/scopes/FEATURE.md]
 ---
 
 # Context / Scope-Assignment Rollout
 
 The ContextAssignment system (tag entities to scopes; set/filter by active context) is built and
 wired across Files / PDF / RAG / sidebar / Chat / Transcripts / Notes / Knowledge graph. Storage is
-fully canonical: **scope tags live on `platform.associations`** — `ctx_scope_assignments` is
-graveyarded (see `features/scopes/FEATURE.md`, 2026-06-24/25 entries).
+canonical: **scope tags live on `platform.associations`** — `ctx_scope_assignments` is graveyarded.
 
 ## Vision — Arman's words
 
@@ -29,33 +29,36 @@ graveyarded (see `features/scopes/FEATURE.md`, 2026-06-24/25 entries).
   (+ Popover/Dialog/Window wrappers, `ContextSummaryChips`, `ContextStatusButton`,
   `UploadContextPrompt`, `data.ts` caches).
 - Surface A (global-context writers): `features/scopes/components/active-context/` —
-  `ActiveContextTree`, `ActiveContextPanel`, `ActiveScopeChips`, `ActiveContextLayersPanel`,
-  `ContradictionBanner`, `ClearContextButton`.
+  `ActiveContextTree`, `ActiveContextPanel`, `ActiveContextButton`, `ActiveContextLensChip`,
+  `ContextLensBar`, `ActiveScopeChips`, `ActiveContextLayersPanel`, `ContradictionBanner`,
+  `ClearContextButton`.
 - Writes: `scopesService.setEntityScopes`; global state: `lib/redux/slices/appContextSlice.ts`
-  (`addActiveScope`/`removeActiveScope` are additive — no same-type eviction).
+  (`addActiveScope`/`removeActiveScope` are additive, id-keyed — no same-type eviction).
 - Demo lab: `/demos/scopes/context-lab`.
 
 ## Remaining work
 
 1. **Knowledge-graph deep integration** — direct scope↔node assignment / scope nodes in the graph.
-   Design not started; the biggest-win item above.
-2. **Notes local multi-scope FILTER UI** — the field's `filter` mode is built; `NoteSidebar` still
-   filters via active context only. Mount the filter mode + bulk scope read for the orphan hint.
-3. **Header-level context indicator** — blocked on Arman's direction (see Vision).
+   The graph page today only *filters* by working context (`ActiveContextButton` in the
+   `PageHeader` of `app/(core)/knowledge/graph/page.tsx`, plus `?scope=`/`?scopeType=` deep links);
+   nothing in `features/knowledge/**` writes or reads a per-node scope. Design not started; this is
+   the biggest-win item above.
+2. **Notes local multi-scope FILTER UI** — the field's `filter` mode is built, but `NoteSidebar`
+   still derives its scope filter purely from the global active context
+   (`selectScopeSelectionsContext` → `useEntitiesByScopes`, `features/notes/components/NoteSidebar.tsx`
+   ~line 174). Mount the filter mode locally + a bulk scope read for the orphan hint.
+3. **App-shell header context indicator** — still awaiting Arman's direction. Note the chat-side
+   face already shipped (`ActiveContextLensChip` in `ChatRunHeader`, `QuicksetPanel`, war-room
+   header; `ContextLensBar` in the composer's `PlusAttachMenu`), so the open question is narrowed
+   to the global shell header specifically.
 
 ## Done
 
-- Legacy hierarchy-selection family converted to MULTI-SCOPE (2026-07-12): `useHierarchySelection`
-  is id-keyed with additive `toggleScope`/`clearScopeType`; Cascade/Tree/Pills use checkbox
-  semantics with "+N" multi display; `useReduxBridge` diffs to `addActiveScope`/`removeActiveScope`;
-  `AgentAppHierarchyCascade` drops first-wins trimming. Dead variants deleted outright
-  (`HierarchyBreadcrumb`/`HierarchyHoverMenu`/`HierarchyCommand`/`SidebarContextSelector` — no live
-  route rendered them).
 - Full component family + all nine surfaces wired — `features/scopes/components/context-assignment/`.
 - Storage migrated to `platform.associations`; `ctx_scope_assignments` graveyarded (FEATURE.md 2026-06-24/25).
-- Multi-scope active context restored (2026-07-07, Arman-ruled regression): additive slice actions,
-  checkbox semantics in `ActiveContextTree`/`TasksContextSidebar`, id-keyed readers, ambient path
-  ships all scopes — `lib/redux/slices/appContextSlice.ts`, `features/scopes/FEATURE.md` change log.
-- Both stranded write sites persist via `platform.associations` (2026-07-07) —
-  `UploadContextPrompt.tsx` (real per-file `setTargets` writes), `FileContextSection.tsx` (was
-  already wired; stale comment removed).
+- Multi-scope active context restored (2026-07-07, Arman-ruled regression) — additive id-keyed slice
+  actions, checkbox semantics, ambient path ships all scopes; verified still intact 2026-07-28.
+- Legacy hierarchy-selection family converted to MULTI-SCOPE (2026-07-12); dead variants deleted
+  (`HierarchyBreadcrumb`/`HierarchyHoverMenu`/`HierarchyCommand`/`SidebarContextSelector`).
+- Both stranded write sites persist via `platform.associations` — `UploadContextPrompt.tsx`,
+  `FileContextSection.tsx`.

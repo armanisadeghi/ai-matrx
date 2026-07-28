@@ -1,73 +1,88 @@
-# Handoff — Education Hub remaining work
+---
+status: active
+updated: 2026-07-28
+repos: [matrx-frontend, aidream]
+vision: [app/(core)/education/VISION-education-hub.md, features/education/ARMAN_VISION.md]
+---
 
-> **Forward work-order.** Current state lives in
-> [`docs/proposals/education-projects/STATUS.md`](../proposals/education-projects/STATUS.md);
-> vision in [`app/(core)/education/VISION-education-hub.md`](../../app/(core)/education/VISION-education-hub.md).
-> Written 2026-07-14 after two large build waves. The **student-facing study system is complete**;
-> what's left is deploys, a few decisions, and the institutional/Convergence-C frontier.
+# Education Hub — remaining work
 
-## Do first (unblocks shipped work)
+The student-facing study system is complete and live. What remains is the institutional /
+teacher / community frontier (Convergence C), Wave-2 reach, and two Arman/legal decisions.
+Current-state detail: [`docs/proposals/education-projects/STATUS.md`](../proposals/education-projects/STATUS.md).
 
-1. **Ship the aidream release to prod.** aidream local `main` carries two finished, verified fixes not on
-   prod: the handwritten-grading vision-variant path-collision fix (`08314b357`) and the YouTube-transcript
-   endpoint (`3c94ed4af`). One `scripts/release.sh` ships both. **Blocked only** because the aidream tree
-   holds others' uncommitted work + untracked migrations — land/stash that (its owner, not blindly) then
-   release. Until then: handwritten grading serves the OLD (buggy) result on prod, and YouTube ingest 404s
-   (honest fallback).
-2. **Push matrx-frontend `main`** (deploys aimatrx.com) once Arman has clicked through the new tools —
-   ~15 education commits are ready and education-area type-check is clean.
+## Remaining work
 
-## Convergence-C / creators (shipped 2026-07-14 — see CONVERGENCE_C_CREATORS.md)
+1. **Stripe Connect — finish the go-live.** The code is built and on prod (`584eb5941`): Checkout
+   destination-charge (80/20 split) → signature-verified webhook → service-role
+   `edu_class_confer_purchase`, with refund/dispute revoke. **Blocked on Arman's dashboard
+   actions:** enable Stripe Connect on the platform account, set `STRIPE_WEBHOOK_SECRET`, register
+   `/api/stripe/webhook`. Then run one test-mode purchase E2E. Tracked as D58 in `FOUND_DEFECTS.md`.
 
-Built: open/closed/paid classes + roster + join; creator profiles + `/c/[handle]` public landing pages;
-teacher tools (assignments + analytics + assignment-confers-read-visibility); COPPA gate on all AI entries +
-student data rights + D52 fix; DOCX/PPTX ingestion. A security review found + fixed a **critical anon-bypass**
-of every owner-gated `edu_class_*`/`creator_*` write RPC. **Remaining on this frontier:**
-- **Stripe Connect creator payouts** — `edu_class_purchase` is a payment-free stub (D58); paid classes are
-  currently free. Build after Arman confirms the payout/revenue-share model.
-- **D57 server-side COPPA enforcement + verifiable consent** — the gate is client-side (fails closed now) but
-  aidream's generation seam doesn't re-check it, and age is self-declared. Needs an aidream-side gate + a
-  real (non-self-declared) consent/age mechanism before a genuine school launch.
-- **Class rooms / real-time co-study / discussion threads**, **LMS (Classroom/Canvas, LTI 1.3/OneRoster)**,
-  **live classroom quiz mode**, **community library at scale + moderation** — not yet built.
-- Small: `edu_class_roster` email now owner-only; a pre-existing `assoc_members_visible` org-branch returns
-  card-membership *edges* (not content) to org members — flagged, not filed.
+2. **Class rooms / real-time co-study / card-level discussion threads.** Not built. Builds on the
+   per-class hub (classes are scopes) + the study spine.
 
-## Decisions needed from Arman (see the turn's decision list)
+3. **LMS integration** — Google Classroom / Canvas, LTI 1.3 / OneRoster. Not built; needs an LTI
+   library + a provisioning path.
 
-- Free-tier numbers + whether to flip any capability `enforced:true` (all permissive today; needs the
-  aidream per-capability spend re-check first).
-- DOCX/PPTX ingestion extractor choice (LibreOffice→PDF vs python-docx/unstructured) — the only real
-  *new dependency*.
-- Convergence-C direction for classes: teacher/roster/sharing semantics (per-class hub is student-centric
-  today; forward path = share the class scope via `iam.permissions` + roster via `iam.memberships`).
-- D52 (`FOUND_DEFECTS.md`): guardian consent flow leaks email existence via error message + no rate limit —
-  generic response vs typo feedback is a UX call.
+4. **Live classroom quiz mode** — fan-out reusing the study game's Broadcast multiplayer.
 
-## The remaining build frontier (no dependencies — assignable now)
+5. **FERPA / COPPA compliance package + DUA** — legal + data-handling; gates institutional sales.
 
-- **Convergence C — teacher tools:** assignment creation/distribution, auto-grade, per-student + class
-  analytics. Builds on the per-class hub (classes are scopes) + P5 analytics + the study spine.
-- **Convergence C — class rooms & real-time co-study, card-level discussion threads.**
-- **LMS:** Google Classroom / Canvas, LTI 1.3 / OneRoster (needs an LTI library + provisioning).
-- **FERPA / COPPA compliance + DUA** (legal + data-handling; gates institutional sales).
-- **Live classroom quiz mode** (P10 fan-out — reuse the game's Broadcast multiplayer).
-- **Study songs / musical mnemonics** — needs a decision: real music model vs rhythmic-TTS chant over the
-  existing podcast pipeline.
-- **Wave-2 reach:** offline mode, browser-extension clipper (matrx-extend), native-mobile parity,
-  standards alignment (Common Core/NGSS), grade-adaptive theming (K-5).
+6. **Study songs / musical mnemonics** — needs a decision first (below).
 
-## Small follow-ups (cheap, safe)
+7. **Wave-2 reach** — offline mode, browser-extension clipper (matrx-extend), native-mobile parity,
+   standards alignment (Common Core / NGSS), grade-adaptive theming (K-5).
 
-- Per-class hub: planner auto-read of a class's exam calendar (deep-link prefill today); per-tool
-  class-filtered list views; widen `EntityScopeTagger.entityType` to the `EntityTypeToken` union (it's
-  cast at one boundary today; scopes-core is owned elsewhere).
-- Update `features/education/docs/LIVE_AGENTS.md` with this session's new agents (memory, spoken-practice
-  grader/reviewer, pronunciation grader/designer, handwritten grader, structured-trust tutor
-  `cb268e29`).
-- `features/entitlements/FEATURE.md` consumers table still says "commit pending" for the flashcards rows —
-  now wired; update when that file is next free.
+8. **Small follow-ups (cheap, safe):**
+   - Per-class hub: planner auto-read of a class's exam calendar (deep-link prefill today);
+     per-tool class-filtered list views.
+   - Widen `EntityScopeTagger.entityType` (`features/scopes/components/entity-context/EntityScopeTagger.tsx`)
+     to the `EntityTypeToken` union — cast at one boundary today; scopes-core is owned elsewhere.
+   - `features/education/docs/LIVE_AGENTS.md` still omits the memory, spoken-practice
+     grader/reviewer, pronunciation grader/designer, and handwritten-grader agents (the
+     structured-trust tutor `cb268e29` is documented).
+   - `features/entitlements/FEATURE.md` consumers table still says "commit pending" for the three
+     flashcards rows (`education.generate_cards`, `education.card_enrichment`,
+     `education.live_grade`) — they are wired; update the table.
+   - A pre-existing `assoc_members_visible` org-branch returns card-membership *edges* (not
+     content) to org members — flagged, never filed. File it if it's real.
 
-## Change log
-- **2026-07-14** — Created after the two build waves. Everything student-facing is live (bar the aidream
-  deploy); this captures deploys + decisions + the Convergence-C/Wave-2 frontier.
+## Decisions needed
+
+**Free-tier limits and enforcement.** Every education capability is metered but permissive today —
+nothing is `enforced:true`, so a user can consume unlimited AI generation. Turning enforcement on
+needs per-capability spend numbers and an aidream-side re-check of what each call actually costs.
+**Decide:** the free-tier quantity per capability, and whether to flip any capability to enforced
+now or stay permissive until launch.
+
+**Study songs.** Musical mnemonics can be built two ways: call a real music-generation model (new
+provider, real per-song cost), or generate a rhythmic spoken chant through the existing podcast/TTS
+pipeline (near-zero marginal cost, much weaker as a "song"). **Decide:** which one.
+
+**Self-declared age (COPPA).** All code layers are done — client fail-closed, server-side
+enforcement in aidream, an `age_band` write-tamper trigger + audit. A child can still declare
+themselves an adult; today that transition is audited and raises a review signal rather than being
+blocked. **Decide:** hard-block the under-13→adult transition, or keep it audited. Separately, a
+verifiable-consent method per COPPA §312.5 must be chosen before a genuine school launch — see
+`COPPA_VERIFIABLE_CONSENT_RUNBOOK.md` §1. Tracked as D57.
+
+**Guardian-consent error copy.** The guardian-link flow's error message told the caller whether an
+email existed. The oracle is closed and rate-limited now, but the copy is a UX call. **Decide:**
+one generic response for every outcome, or specific typo feedback for a mistyped address.
+
+## Done
+
+- Student-facing study system complete and live — flashcards/FastFire, study modes on the one FSRS
+  spine, grounded cited voice tutor, quizzes + practice tests, audio study, mind maps, memory tools.
+  See `docs/proposals/education-projects/STATUS.md`.
+- Convergence C creators — open/closed/paid classes + roster + join, creator profiles and
+  `/c/[handle]` public landing pages, teacher tools (assignments + analytics +
+  assignment-confers-read-visibility), DOCX/PPTX ingestion. See
+  `docs/proposals/education-projects/CONVERGENCE_C_CREATORS.md`.
+- Critical anon-bypass of every owner-gated `edu_class_*` / `creator_*` write RPC — found and fixed.
+- Server-side COPPA enforcement at the aidream agent-execution boundary — see
+  `aidream/services/education_compliance/`.
+- Guardian-link email-enumeration oracle closed + 8/min rate limit (D52).
+- aidream handwritten-grading vision-variant path collision + YouTube-transcript endpoint — shipped
+  to prod.

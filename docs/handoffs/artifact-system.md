@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-10
+updated: 2026-07-28
 repos: [matrx-frontend, aidream]
 vision: [features/artifacts/docs/ARTIFACT_VISION_AND_DESIGN.md]
 ---
@@ -28,7 +28,7 @@ Ratified rules R1–R8 live in the vision doc. **Governing rule: the artifact la
 
 ## Remaining work
 
-1. **One-click Convert unreachable on fresh tables** — Convert only after materialize+reload. Make Convert work inline (materialize-if-needed → UDT → link).
+1. **One-click Convert unreachable on fresh tables** — Convert only after materialize+reload. Make Convert work inline (materialize-if-needed → UDT → link). `features/canvas/artifact-types/renderers/TableArtifact.tsx`: the non-materialized branch passes no `convertToTable`; the only such prop site is inside `TableArtifactMaterialized`.
 
 2. **Domain connections for self-contained types** — wire `code` → `code.code_files`, transcript → transcripts, etc. (flashcards/html already connect). Trap: bare ```code never auto-materializes; language discrimination required.
 
@@ -36,14 +36,14 @@ Ratified rules R1–R8 live in the vision doc. **Governing rule: the artifact la
 
 4. **Media escape hatches** — audio expand; video editor target.
 
-5. **Consolidation** — delete `app/api/artifacts` middle-tier; collapse legacy CanvasRenderer; one discovery front door.
+5. **Consolidation** — delete the `app/api/artifacts` middle-tier (still the only path used by `lib/redux/thunks/artifactThunks.ts`); collapse legacy `features/canvas/core/CanvasRenderer.tsx` (3 live importers: `features/cx-chat/components/core/ConversationShell.tsx`, `features/cx-conversation/ConversationShell.tsx`, `components/layout/adaptive-layout/AdaptiveLayout.tsx` — it was tiered for build perf in `5a11c2e15`, not removed); one discovery front door.
 
 6. **Pin persistence across reload** — pins live in `instanceContext` (session). Reload drops the rail chip; R1 tag + canvas row survive. Decide: hydrate pins from R1/`userEditable` on load, or persist a pin set.
 
 ## Done
 
 - Streaming + inline-edit persistence for render blocks — `BlockRenderer` / `artifact-renderers.tsx`.
-- Table two-way Convert — `TableArtifact.tsx`.
+- Table two-way Convert — `features/canvas/artifact-types/renderers/TableArtifact.tsx`.
 - Generic version history — `ArtifactVersionHistory.tsx`.
 - `userEditable` registry flag + ArtifactRefBlock `resolve:"latest"` (mermaid + code).
 - **Pin code/JSON as editable context** — attach primitive + rewrite + writeback + rail + stream refresh.
@@ -51,6 +51,7 @@ Ratified rules R1–R8 live in the vision doc. **Governing rule: the artifact la
 - `cx_canvas_save_user_version` preserves `external_system`/`external_id`/org/metadata/source identity.
 - HTML auto-publish + flashcards domain link.
 - Single-message refresh — `refetch-single-message.thunk.ts`.
+- UNBIND leg + notes materialization surface; materialization now requires a durably successful stream — see `features/artifacts/FEATURE.md` change log (2026-07-15 → 2026-07-28).
 
 ## Decisions needed
 

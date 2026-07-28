@@ -21,9 +21,16 @@ The shell header is a **transparent glass strip** over the page. The shell owns 
 | `/organizations/[orgId]/scopes/**` | Best breadcrumb nav: full-path breadcrumb, per-level sibling dropdowns, mobile drawer — mounted ONCE at the layout | `features/scope-system/components/ScopesRouteHeader.tsx`, mounted in `app/(core)/organizations/[orgId]/layout.tsx` |
 | `/tasks` | Resizable panels: per-panel `pt-[var(--shell-header-h)]` only where static top UI must clear the glass | `app/(core)/tasks/` |
 
-**Anti-examples** (study, then kill the pattern):
-- `app/(core)/cms/page.tsx` — the full disease: `"use client"` page, in-body header bar (`bg-background/80 backdrop-blur` — invisible to the audit script), `h-[calc(100dvh-var(--shell-header-h))]`, title in the body, buttons colliding with the avatar, spinner-only loading.
-- `app/(core)/cms/html-pages/page.tsx` — a *half* fix: `PageHeader` used, but hardcoded `pt-12` (not `var(--shell-header-h)`), bespoke `ml-auto` action row instead of `HeaderActions` (no mobile bottom-sheet collapse), spinner fallback.
+**Anti-examples** — the two CMS pages formerly listed here (`app/(core)/cms/page.tsx`,
+`app/(core)/cms/html-pages/page.tsx`) have both been **fixed** (verified 2026-07-28) and are
+now a *positive* example instead: they share ONE `CmsHubHeader`
+(`features/cms/components/CmsHubHeader.tsx`) wrapping `RouteHeader` + `RouteModeNav`, with
+no title text — the section nav IS the identity, and each page passes only its contextual
+tap-buttons via `right`. Copy that shape for any two-or-more-page hub.
+
+To find live offenders, don't trust a list in this file — run `pnpm check:page-headers` and
+grep the route for the failure classes below. A hardcoded anti-example list rots the moment
+someone fixes it.
 
 ## Failure classes — classify before you touch anything
 

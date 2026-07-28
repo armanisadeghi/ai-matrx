@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-07
+updated: 2026-07-28
 repos: [matrx-frontend]
 vision: []
 ---
@@ -35,14 +35,19 @@ Otherwise, we share the space. Therefore, you do not subtract anything!"
    `DocumentEditor.tsx`, `WorkbookCursorOverlay.tsx`, `verify-collab.ts`. Pure rename +
    `workbookId` → `resourceId` field rename; `SupabaseYjsProvider` already namespaces via
    `channelPrefix`. Check for outside importers before also renaming the `collab/` directory.
-2. **DOCX import/export for documents.** Nothing exists; the landing page's "Coming soon" is
-   accurate. Mirror the workbook shape (`xlsx-to-univer.ts` / `univer-to-xlsx.ts`): a single
-   `docxToUniverDoc(file): Promise<Partial<IDocumentData>>` consumed by an "Import DOCX" button on
-   the documents list page (doesn't exist yet). Candidates: `mammoth.js` (DOCX→HTML + adapter),
-   the `docx` npm package, or Univer's `@univerjs/preset-docs-advanced` (check availability).
+2. **DOCX import/export for documents — half-declared, unbuilt.** `document-service.ts` already
+   declares `source: "imported_docx"` and the hub filters/labels it (`DocumentsHubTable.tsx`,
+   `utils/documentsHubDisplay.ts`), but **no converter and no import button exist** — nothing in
+   the repo references `mammoth`, `docx`, or `docxToUniverDoc`, and `app/(core)/documents/page.tsx`
+   has no import affordance (nor a "Coming soon" note — a user sees a dead enum value). Mirror the
+   workbook shape (`xlsx-to-univer.ts` / `univer-to-xlsx.ts`): a single
+   `docxToUniverDoc(file): Promise<Partial<IDocumentData>>` plus an "Import DOCX" button on the
+   documents list page. Candidates: `mammoth.js` (DOCX→HTML + adapter, and
+   `markdown-to-univer-doc.ts` already exists as the MD analogue), the `docx` npm package, or
+   Univer's `@univerjs/preset-docs-advanced`.
 3. **Smart importer for documents.** `smart-importer.ts` (`detectImportRoute()`) +
-   `ImportRouteDialog.tsx` exist but are workbook-shaped; the documents route is undecided — see
-   Decisions needed.
+   `ImportRouteDialog.tsx` exist but are workbook-shaped — `ImportRouting` is still only
+   `"typed" | "workbook"`. The documents route is undecided — see Decisions needed.
 
 ## Done
 

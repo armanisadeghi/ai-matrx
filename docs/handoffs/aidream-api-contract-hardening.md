@@ -1,104 +1,105 @@
-# Handoff: aidream API-contract hardening (backend half)
+---
+status: active
+updated: 2026-07-28
+repos: [aidream, matrx-frontend]
+vision: []
+---
 
-**Owner repo:** aidream (backend). **Target:** ~5 business days. **Status:** queued.
-**Origin:** the frontend API-contract campaign (matrx-frontend) — 2026-07-12.
+# aidream API-contract hardening (backend half)
 
-## Why
+Most remaining work is in **aidream**; the doc lives here because the frontend campaign that found it does.
 
-A production 400 shipped (`invalid_variant_spec: preset_id Field required`,
-`/images/convert`): the FE hand-mirrored a request type with `key` while the
-backend model used `preset_id`. The FE is now bound to the generated OpenAPI
-contract (`lib/api/typed-client.ts`, `lib/api/FEATURE.md`, ratchet
-`scripts/check-api-contracts.ts`), so JSON body/response drift is a **compile
-error** after `pnpm sync-types`.
+## Vision
 
-Two gaps only the backend can close. They are deliberately NOT done on the FE
-because their failure mode is a runtime 422 that TypeScript cannot fully catch
-ahead of time — doing them blind would risk the exact prod outages we're trying
-to prevent.
+No Arman quotes on record. **(inferred)** The frontend is bound to the generated OpenAPI
+contract, so any body/response drift is a compile error after `pnpm sync-types`. The backend
+half closes the gaps TypeScript cannot see: silently-ignored request keys, untyped streamed
+responses, and response models so loose the FE can't bind to them at all.
 
-## The work (do in order, staging-first)
+Origin: a production 400 (`invalid_variant_spec: preset_id Field required`, `/images/convert`) —
+the FE hand-mirrored a request type with `key` while the backend model used `preset_id`.
 
-1. **`extra='forbid'` on request models.** Add
-   `model_config = ConfigDict(extra='forbid')` to Pydantic REQUEST bodies so a
-   renamed/unexpected key is rejected loudly instead of silently ignored.
-   - **Sequencing is critical:** per-endpoint, ONLY after auditing that no live
-     FE/extension callsite still sends a now-forbidden field. A forbidden extra
-     field becomes a runtime 422 that TS won't always flag (object-literal
-     excess-property checks catch some cases; spread / variable-typed bodies do
-     not). Roll out on **staging first**, watch for 422s, then prod. No big-bang.
+## Resources
 
-2. **Prefer typed JSON endpoints over JSON-in-multipart.** FastAPI multipart
-   bodies encode JSON fields as `string` (e.g. `variants_json: str`), erasing the
-   inner type from OpenAPI — the FE can't get compile-time safety on that payload.
-   Where raw file **bytes** aren't required, expose/prefer a JSON sibling endpoint
-   (like `/assets/preview` vs `/assets/preview/multipart`) with a typed body model.
-   For multipart endpoints that must stay, document the inner schema so the FE can
-   type the pre-stringify object against `components["schemas"][...]`.
+- FE contract layer: `lib/api/typed-client.ts`, `lib/api/FEATURE.md`, ratchet
+  `scripts/check-api-contracts.ts` + `scripts/api-contracts-baseline.json`.
+- Generated schema (FE): `types/python-generated/openapi.json`, `types/python-generated/api-types.ts`.
+- Type regen: `pnpm sync-types && pnpm type-check` after every backend model change — drift lights up red.
+- aidream generator: `scripts/sync-types.mjs`.
+- Asset models: `aidream/packages/matrx-files/matrx_files/asset_envelope.py` (`AssetPreviewRequest`),
+  `aidream/api/routers/assets.py` (`AssetPdfCompressRequest`, the `/multipart` siblings).
+- File response models: `aidream/api/routers/files/permissions.py` (`PermissionRecord`, `ShareLinkRecord`),
+  `aidream/api/routers/files/__init__.py` (`PatchFolderRequest`).
 
-3. **Streaming endpoints publish `unknown` responses.** The frontend campaign
-   found that most `/rag/*` endpoints (and other post-`stream-everything`
-   routes) type their 200 response as `unknown` in the generated OpenAPI — so
-   the FE gets ZERO response typing for them, the exact surface most prone to
-   drift. Either publish a typed terminal/summary payload for streamed
-   responses, or document the NDJSON event envelope as a schema so the FE can
-   bind to it. Until then these calls stay on the raw client by necessity.
+## Remaining work
 
-4. **✅ DONE (2026-07-12) — Defaulted fields were emitted as REQUIRED.**
-   `openapi-typescript` promoted any `default`-bearing Pydantic field to
-   REQUIRED, blocking typed POST bodies. Fixed at the generator: aidream
-   `scripts/sync-types.mjs` now passes `--default-non-nullable false`
-   (commit `ee58b0d1a`), making the TS faithful to the OpenAPI `required`
-   arrays. Verified **0 new type errors** across matrx-frontend on adoption.
-   RAG/service POSTs are now bindable.
+1. **`/images/generate` and `/images/face-detect` do not exist on the backend — and a live user
+   page calls one.** Neither is a route in `aidream/api/routers/image_edit.py` or `image_studio.py`,
+   and neither is in the published OpenAPI. The FE calls both from
+   `features/image-studio/api/python.ts:380,410`, and `/images/generate` is reachable from the UI
+   (`app/(core)/images/generate/GenerateShellClient.tsx`, linked from
+   `app/(core)/images/_components/imagesRoutes.ts` and `ImagesLandingHero.tsx`). Either build the
+   routes or delete the FE surface — today it is a user-facing 404. **Highest priority; this is a
+   live break, not hardening.**
+   (`/images/edit-by-prompt` + `/images/suggest-edits` are intentional FE stubs — ignore those.)
 
-5. **Untyped / missing endpoints the FE calls (audit 2026-07-12).**
-   - **MISSING from OpenAPI entirely:** `/images/generate`, `/images/face-detect`
-     (the FE calls both; not in `paths`). `/images/edit-by-prompt` +
-     `/images/suggest-edits` are also missing but are intentional FE stubs for
-     unbuilt Wave-2 features — ignore those two. Confirm whether generate /
-     face-detect are live routes excluded from the schema (`include_in_schema`?)
-     and register them, or delete the dead FE callers.
-   - **229 endpoints publish an empty/`unknown` 200 schema** — mostly streaming
-     (`/ai/agent/*`, `/rag/search`), health, and warm calls. The streaming AI/RAG
-     ones are the ones worth a typed terminal payload (see item 3); the rest are
-     noise. Do NOT blanket-fix; target the FE-consumed streamed responses.
+2. **`extra='forbid'` on request models.** Add `model_config = ConfigDict(extra='forbid')` to
+   Pydantic REQUEST bodies so a renamed/unexpected key is rejected loudly instead of silently
+   ignored. Asset-preview models still have none. **Sequencing is critical:** per-endpoint, ONLY
+   after auditing that no live FE/extension callsite still sends a now-forbidden field — a
+   forbidden extra becomes a runtime 422 TS won't always catch (excess-property checks miss
+   spreads and variable-typed bodies). Staging first, watch for 422s, then prod. No big-bang.
 
-6. **Some `*Record` response schemas are under-specified vs the real DB rows.**
-   Verified shapes (2026-07-12): `FolderRecord` is actually CLEAN (required
-   `id`/`owner_id`/`folder_path`/`folder_name`, no `additionalProperties`) — the
-   FE just types folder responses as the Supabase `CloudFolderRow` via
-   `dbRowToCloudFolder`; bindable FE-side with a small mapper tweak. The genuinely
-   loose ones are **`PermissionRecord` and `ShareLinkRecord`**: `required: null`
-   (ALL fields optional) + `additionalProperties: true` (index signature) — almost
-   certainly `model_config = ConfigDict(extra='allow')` or an untyped dict build.
-   `TrashListResponse` / `StorageUsageResponse` also mark real fields optional.
-   The FE therefore types these as concrete DB-Rows and can't bind without
-   WEAKENING the types + breaking redux-thunk consumers, so `permissions.ts` /
-   `share-links.ts` / `versions.ts` list/create responses stay raw. Tighten those
-   Pydantic response models (required where the DB is NOT NULL, drop `extra`/the
-   index signature) and the FE bindings unblock. Decide per model which columns
-   are guaranteed; watch extension/mobile consumers (they read these too).
+3. **Streamed endpoints publish an empty 200 schema — 256 operations of 797** (was 229 at the
+   2026-07-12 audit; it is getting worse). Still `unknown`: `POST /rag/search`, `/rag/search/stream`,
+   `/rag/ingest`, `/rag/verify`, `/rag/cross-doc/stream`, 10+ `/rag/library/*`, `/ai/agent/{id}`,
+   `/ai/agents/{id}`, `/v2/ai/agent*`. Publish a typed terminal/summary payload, or register the
+   NDJSON event envelope as a schema. **Do NOT blanket-fix** — target FE-consumed streamed
+   responses only; health/warm calls are noise. Until then these calls stay on the raw client.
 
-7. **`PATCH /folders` ignores `folder_name`/`parent_id` (already worked around FE-side).**
-   The FE was sending those (rename/move) and the model silently dropped them
-   (fixed FE-side in `74942304f` by sending `folder_path`). CONSIDER whether the
-   backend SHOULD accept `folder_name`/`parent_id` as an ergonomic rename/move
-   API instead of path-only — product call. Until then the path-only contract is
-   the source of truth and the FE matches it.
+4. **`PermissionRecord` / `ShareLinkRecord` are unbindable.** Both in
+   `aidream/api/routers/files/permissions.py` carry `ConfigDict(extra="allow")` with every field
+   `str | None = None` → `required: null` + `additionalProperties: true` in OpenAPI.
+   `TrashListResponse` / `StorageUsageResponse` also mark real fields optional. Tighten: required
+   where the DB column is NOT NULL, drop `extra`/the index signature. Then
+   `features/files/api/versions.ts` can leave the raw `@/lib/python-client`. Watch extension and
+   mobile consumers — they read these too. (`FolderRecord` is already clean; the FE just needs a
+   `dbRowToCloudFolder` mapper tweak. There is no `share-links.ts` on the FE, and
+   `features/files/api/permissions.ts` goes straight to Supabase, not through aidream.)
 
-8. **(Roadmap, out of scope here)** Runtime response validation on the FE seam
-   (openapi-zod-client or similar) — the only thing that catches the server
-   returning a payload that diverges from its own published OpenAPI.
+5. **Prefer typed JSON endpoints over JSON-in-multipart.** Multipart bodies encode JSON fields as
+   `string`, erasing the inner type from OpenAPI. Remaining offenders: `assets.py` `metadata_json`
+   / `custom_variants_json` / `options_json` (lines ~144-149) and
+   `aidream/api/routers/files/__init__.py:726-727`. Where raw bytes aren't required, add a JSON
+   sibling (the `/assets/preview` vs `/assets/preview/multipart` pattern already exists). For
+   multipart endpoints that must stay, document the inner schema so the FE can type the
+   pre-stringify object against `components["schemas"][...]`.
 
-## After each backend model change
+6. **`PATCH /folders` is path-only — product call, not a bug.** `PatchFolderRequest`
+   (`files/__init__.py:297`) accepts `folder_path` / `visibility` / `metadata`; the handler derives
+   `folder_name` + `parent_id` from the path. The FE already matches (fixed in `74942304f`).
+   Decide whether the backend SHOULD accept `folder_name`/`parent_id` as an ergonomic rename/move.
 
-Regenerate FE types and surface any drift:
-`cd matrx-frontend && pnpm sync-types && pnpm type-check`. Every disagreement now
-lights up red — that is the point.
+7. **FE ratchet is advisory and currently red.** `check:api-contracts` runs only via
+   `scripts/run-release-gates.sh`, invoked `--advisory || true` post-push in `scripts/release.sh` —
+   there is no CI workflow and no git hook, so nothing blocks. The baseline holds 17 offenders and
+   there is **1 new one**: `features/rag/api/library-ingest.ts` imports the raw
+   `@/lib/python-client`. Fix or accept it, and decide whether the gate should block.
 
-## Done when
+8. **(Roadmap)** Runtime response validation on the FE seam (openapi-zod-client or similar) — the
+   only thing that catches the server returning a payload that diverges from its own OpenAPI.
 
-`extra='forbid'` is live (staging-validated) on the asset-preview models + the
-high-traffic REST bodies, JSON siblings exist for the multipart endpoints that
-don't need raw bytes, and a `sync-types` + `type-check` on the FE is clean.
+## Done
+
+- FE bound to the generated OpenAPI contract — `lib/api/typed-client.ts`, ~25 adopting call sites.
+- Defaulted Pydantic fields no longer emitted as REQUIRED — aidream `scripts/sync-types.mjs` passes
+  `--default-non-nullable false` (`ee58b0d1a`); 0 new FE type errors on adoption.
+
+## Decisions needed
+
+1. **Images generate/face-detect.** The app has a live "generate an image" page whose backend
+   endpoint has never existed. Should the backend route be built, or should the page and its two
+   API callers be deleted?
+
+2. **Contract gate enforcement.** The check that stops the frontend from hand-writing API types
+   currently runs after a push and can't fail a build. Should it block the release, or stay advisory?

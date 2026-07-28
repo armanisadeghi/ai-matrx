@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-18
+updated: 2026-07-28
 repos: [matrx-frontend, aidream]
 vision: []   # vision was given in-session; captured verbatim below
 ---
@@ -82,10 +82,12 @@ descriptions are fragments or absent.
 
 ## Remaining work (priority order)
 
-1. **Re-verify against prod.** The endpoint deployed after the last browser pass
-   (which ran against local aidream). Open the panel with the FE on the prod
-   backend; confirm block + variables render and errors don't fire. Trap: the
-   panel errors LOUDLY by design — an error state here is signal, not styling.
+1. **Re-verify against prod.** `POST /ai/context/preview` is confirmed live
+   (present in `https://server.app.matrxserver.com/openapi.json`; `76934c9b9`
+   is an ancestor of the SHA prod reports at `/health/version`), but the only
+   browser pass ran against local aidream. Open the panel with the FE on the
+   prod backend; confirm block + variables render and errors don't fire. Trap:
+   the panel errors LOUDLY by design — an error state here is signal, not styling.
 2. **Live-verify the bindings section.** `bindings` renders only when an agent
    with scope-bound variables/slots is active; no visible agent had any, so the
    UI section has never displayed real data. Create/use an agent with a

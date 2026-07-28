@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-18
+updated: 2026-07-28
 repos: [matrx-frontend, aidream]
 vision: []
 ---
@@ -54,7 +54,7 @@ Normalization MUST be idempotent — `is_normalized_citation` keys on `kind`+`pr
 
 ## Remaining work (ordered; each item independently actionable)
 
-1. **Prove it in prod (30 min, do FIRST).** Both repos are pushed; prod restarted 2026-07-19. In prod `/chat`: attach a small PDF, ask a question that quotes it. Expect: multi-block answer, inline numbered chips, Sources footer. Then SQL (Supabase MCP, project `txzxabzwovsujtloxrus`): `select id from chat.message where created_at > now() - interval '1 day' and content::text like '%"kind": "document_char"%'` — non-empty = capture live. If chips don't appear, first check the deployed aidream includes `58ae6c1d7`/`e355e97a9`.
+1. **Prove it in prod (30 min, do FIRST).** Backend is confirmed live — `58ae6c1d7` and `e355e97a9` are both ancestors of the SHA prod reports at `/health/version`, so a missing chip is NOT a deploy gap. In prod `/chat`: attach a small PDF, ask a question that quotes it. Expect: multi-block answer, inline numbered chips, Sources footer. Then SQL (Supabase MCP, project `txzxabzwovsujtloxrus`): `select id from chat.message where created_at > now() - interval '1 day' and content::text like '%"kind": "document_char"%'` — non-empty = capture live.
 2. **Live-stream visual pass.** Same repro, watch DURING streaming: chips + Sources must appear mid-stream, no double markers after settle, no marker text in the DB row afterward.
 3. **Citable tool results** (closes the pinned-trigger scenario — highest user value). Convert `document_search` / RAG tool output into Anthropic `search_result` content blocks (`{type:"search_result", source, title, content:[{type:"text",…}], citations:{enabled:true}}`) instead of JSON text. Start: `aidream/tools/document_search_tool.py` + `tools/models.py` serialization; wire fixture: `packages/matrx-ai/tests/fixtures/citations/anthropic_search_result.json`.
 4. **`document_index` → `file_id` mapping** (unlocks PDF click-through for attached files). `normalize_anthropic_citation` (`config/citations.py`) can't see the request; thread the request's ordered document list (file_id per index) into `TextContent.from_anthropic` / the response translator, or post-process citations where request+response meet (`providers/unified_client.py`). FE already routes `file_id`+`page` → Source Inspector at page — backend-only work.

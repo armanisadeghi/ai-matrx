@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-12
+updated: 2026-07-28
 verify_surface: /demos/header-demo → select "Structured" variant → header renders IconButtons (back chevron + action pills). Compare computed styles + screenshot before/after each slice.
 repos: [matrx-frontend]
 ---
@@ -40,7 +40,7 @@ descendant based on `.shell-root` state/attribute, or is a pseudo-element/keyfra
 
 ## Resources
 
-- Target files: `styles/shell.css` (2,450 ln), `features/shell/components/header/variants/header-variants.css` (716), `app/(core)/notes/notes.css` (674, container-queries — mostly Bucket B).
+- Target files (line counts as of 2026-07-28): `styles/shell.css` (2,626 ln — **up from 2,450 at the last port slice; the file is growing faster than it is being ported**), `features/shell/components/header/variants/header-variants.css` (717), `app/(core)/notes/notes.css` (565, container-queries — mostly Bucket B).
 - **`app/globals.css` STAYS** — it is the Tailwind v4 `@theme`/token/gradient config, not a port target. Bucket A classes port to *element classNames*, referencing globals tokens.
 - Shell is CSS-driven & server-rendered: `features/shell/components/AppShell.tsx` (structure), `Sidebar.tsx`, `header/Header.tsx`. `shell.css` is imported globally by AppShell → wraps every authed page (highest blast radius in the repo).
 - Guard already in place: `styles/__tests__/shell-grid-invariants.test.ts` (`npx jest styles/__tests__` ). Extend it with a similar static assertion whenever a slice lands.
@@ -54,7 +54,7 @@ surface at desktop + mobile, sidebar open + closed, before and after — no slic
 visual diff.** Keep Bucket B untouched.
 
 1. **`.shell-tactile` / `.shell-tactile-subtle`** — hover/active `transform: scale()` helpers.
-   Pure styling, BUT used in ~20 files (sidebar controls, header variants, `CodeSidebarMenu`,
+   Pure styling, BUT used in 23 files as of 2026-07-28 (sidebar controls, header variants, `CodeSidebarMenu`,
    `ChatSidebarMenu`, `AgentRunSidebarMenu`, demos). Higher blast radius than `.icon-btn*` was —
    port the CSS to a shared Tailwind cluster + swap every consumer in one pass, or leave it as a
    thin utility. Verify a hover/press still scales on a sidebar row and a header action.
@@ -69,11 +69,11 @@ visual diff.** Keep Bucket B untouched.
 Do NOT attempt: converting the sidebar/mobile-menu toggles, the `data-pathname` active-nav map,
 view transitions, or keyframes. Those are Bucket B by design.
 
-**Dead-code finding (verify then delete, separate from the port):** `.notes-toolbar`
-(`container-name: notes-toolbar`, `app/(core)/notes/notes.css`) is applied in ZERO components
-repo-wide, so its whole `@container notes-toolbar` block is inert. The `.icon-btn*` slice already
-removed the dead rows referencing ported classes; the rest of that container block is likely also
-dead. Confirm the class truly isn't applied (grep all string forms) before removing.
+**Dead-code finding (re-confirmed 2026-07-28 — grep for `notes-toolbar` across `.tsx` returns
+nothing; the only hits are `notes.css` itself):** `.notes-toolbar` (`container-name: notes-toolbar`,
+`app/(core)/notes/notes.css:49`) is applied in ZERO components repo-wide, so its whole
+`@container notes-toolbar` block — including the `.notes-toolbar-*` children — is inert. Delete it,
+separately from the port.
 
 ## Done
 

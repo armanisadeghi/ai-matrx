@@ -1,11 +1,15 @@
 ---
 status: active
-updated: 2026-07-15
+updated: 2026-07-28
 repos: [matrx-frontend, aidream]
 vision: [features/agents/docs/AGENT_SETS.md, features/agents/docs/AGENT_SETS_ROADMAP.md]
 ---
 
 # Agent Sets — Runtime Delegation
+
+The **execution** half of Agent Sets. Sibling handoff `docs/handoffs/agent-sets-sync-and-inspect.md`
+owns the **authoring** half (builder / Sync / inspectors). Both share one feature doc
+(`features/agents/docs/AGENT_SETS.md`).
 
 ## Vision — Arman's words
 
@@ -15,29 +19,32 @@ vision: [features/agents/docs/AGENT_SETS.md, features/agents/docs/AGENT_SETS_ROA
 
 > "Yes Runtime Delegation.. but you have to look at the code first… Work in a loop with your sights set on making every part of my vision a reality. Make improvements and enhancements when you see the opportunity. Apply all best practices. Finally, use adversarial agents to check all of your work."
 
-The endgame: click **Run** on a set and the orchestrator visibly delegates to its members (each "filling a gap in a bigger picture"), weaving their outputs into one answer, with the canvas lighting up live as each member runs.
+The endgame: click **Run** on a set and the orchestrator visibly delegates to its members (each
+"filling a gap in a bigger picture"), weaving their outputs into one answer, with the canvas lighting
+up live as each member runs.
 
 ## Resources
 
-- **FE feature docs (system of record):** `features/agents/docs/AGENT_SETS.md` (see the **Runtime delegation** section) + `AGENT_SETS_ROADMAP.md`.
-- **aidream service:** `aidream/services/agent_sets/` (`set_reader.py`, `member_tools.py`, `models.py`) + its `FEATURE.md`. Injection seam: `aidream/services/ai_execution/agent_run.py` (search `build_orchestrator_member_specs`, right before `apply_unified_tools`).
+- **FE feature docs (system of record):** `features/agents/docs/AGENT_SETS.md` ("Runtime delegation") + `AGENT_SETS_ROADMAP.md`.
+- **aidream service:** `aidream/aidream/services/agent_sets/` (`set_reader.py`, `member_tools.py`, `models.py`) + its `FEATURE.md`. Injection seam: `aidream/aidream/services/ai_execution/agent_run.py` — `build_orchestrator_member_specs` at `:500` (new conversation, in `prepare_agent_run`) and `:837` (continue path). Only `mode="supervisor"` injects.
 - **Contracts reused (verify still true — code moves daily):** `AgentToolSpec` in `packages/matrx-ai/matrx_ai/tools/specs.py`; `Associations` ORM in `aidream/db/models/platform.py`; dispatch `packages/matrx-ai/matrx_ai/tools/agent_tool.py#execute_agent_tool`.
+- **FE set state:** `features/agents/redux/agent-sets/{slice,selectors,thunks}.ts` (its `status` is a *load* status, not a run status).
 - **FE run/stream selectors (for the live highlight):** `active-requests` slice — `selectPrimaryRequest`, `selectActiveTools`, `selectSubAgentResults`, `selectConversationTree`; `process-stream.ts` handles `sub_agent` + `tool_delegated`. War Room live-watch reference: `features/war-room/redux/watchSlice.ts` + `MasterWatchLayer.tsx`.
-- **FE highlight seam:** `SetBuilderCanvasImpl.tsx` MemberNode accent ring (~line 134) — swap for a status-driven ring read via a selector INSIDE MemberNode (never through node `data`, which would touch the reconcile `sig`).
-- **Test:** log in at `/login` (`admin@admin.com` / `Password1234#`), go to `/agents/sets` → Generate orchestrator → add flashcard members (they live in org `3e790542`) → **Sync agent listings** → **Run**. Flashcard agent ids: `features/education/docs/LIVE_AGENTS.md`.
-- **Smoke-test the backend once deployed:** AI Dream MCP `agent_run` on an orchestrator agent id.
+- **FE highlight seam:** `SetBuilderCanvasImpl.tsx` MemberNode (~`:132-155`) currently overlays a *static* accent ring from set config; `MemberData` has no status field. Swap for a status-driven ring read via a selector **inside** MemberNode (never through node `data`, which would touch the reconcile `sig`).
+- **Test:** `/login` (`admin@admin.com` / `Password1234#`) → `/agents/sets` → Generate orchestrator → add flashcard members (org `3e790542`) → **Sync agent listings** → **Run**. Flashcard agent ids: `features/education/docs/LIVE_AGENTS.md`.
+- **Backend smoke test:** AI Dream MCP `agent_run` on an orchestrator agent id.
 
 ## Remaining work
 
-1. **Verify the aidream half live (after deploy).** The server code ships in aidream commit `153ad4291` but is inert until aidream deploys. Run an orchestrator (MCP `agent_run` or the FE Run button) and confirm: members appear as tools, get called, sub-runs nest, recursion guard holds, cost is attributed. This is the real proof — nothing above is verified end-to-end yet.
-2. **Live member highlight on the canvas** (the one open Phase-1 piece). Blocked on a mount-model decision (see Decisions). Once decided: new `agentSetRun` selector layer mapping the orchestrator run's active tool / sub-agent results → member `agentId` → an "idle/running/done" ring on MemberNode. Highlight goes inside MemberNode via a selector, NOT node data.
-3. **Shared-member hydration** (Phase 3, cheap win): a member shared-with-you (not in your owned slice) shows a fallback name. Batch-fetch missing member ids on set load. `features/agents/docs/AGENT_SETS_ROADMAP.md` Phase 3.
+1. **Verify the aidream half live — still nothing is verified end to end.** The server code shipped in aidream `153ad4291` + `ce852fcaa` (2026-07-15) and aidream has released ~120 times since (origin/main at v0.1.674), so it **is deployed** — the old "inert until deploy" blocker is gone and nobody has run the check. Run an orchestrator (MCP `agent_run` or the FE Run button) and confirm: members appear as tools, get called, sub-runs nest, the recursion guard holds, cost is attributed.
+2. **Live member highlight on the canvas** (the one open Phase-1 piece). Blocked on the mount-model decision below. Once decided: an `agentSetRun` selector layer (does not exist today) mapping the orchestrator run's active tool / sub-agent results → member `agentId` → an idle/running/done ring on MemberNode.
+3. **Shared-member hydration** (Phase 3, cheap win). A member shared-with-you but outside your owned slice renders the fallback `"Agent"` (`AgentRoleCard.tsx:56`). Batch-fetch missing member ids on set load — today `fetchFullAgent` is only called per-agent from the inspectors. `AGENT_SETS_ROADMAP.md` Phase 3 (all five items there are still open: dangling-member GC, this, cycle prevention, versioned runs via `member_version_id`, cross-org shared-set auth).
 
 ## Done
 
-- Server set reader + member-as-tool projection on BOTH the new-conversation and continue paths (turn 2+ re-injects — adversarial-review HIGH fix) — `aidream/services/agent_sets/` + the `agent_run.py` seams (commits `153ad4291` + `ce852fcaa`, live after deploy).
-- Supervisor prompt on generated orchestrators (`ORCHESTRATOR_SUPERVISOR_PROMPT` via `setOrchestratorMessages`) + Run entries on builder header & set card — matrx-frontend HEAD.
-- Builder UI, canonical rail, non-blocking peek, generate-orchestrator + Sync agent listings — see `AGENT_SETS.md`.
+- Server set reader + member-as-tool projection on BOTH the new-conversation and continue paths (turn 2+ re-injects) — `aidream/aidream/services/agent_sets/` + the two `agent_run.py` seams; deployed.
+- Supervisor prompt on generated orchestrators (`ORCHESTRATOR_SUPERVISOR_PROMPT` in `agent-sets/orchestrator/constants.ts:56` via `orchestratorService.setOrchestratorMessages`) + Run entries on builder header & set card.
+- Builder UI, canonical rail, non-blocking peek, generate-orchestrator + Sync agent listings — see `AGENT_SETS.md` and the sibling handoff.
 
 ## Decisions needed
 
@@ -45,4 +52,4 @@ The endgame: click **Run** on a set and the orchestrator visibly delegates to it
 - Situation: clicking Run navigates to the standalone runner `/agents/:id/run`; the set builder canvas is not mounted during the run, so a canvas highlight would never be seen. The run state does live in Redux (`active-requests`) and is findable, but nothing renders the set while running.
 - Decide: (a) embed a run panel INSIDE the builder so the existing canvas lights up in place, or (b) render a compact member-status view ON the runner beside the conversation. (a) is more faithful to the drag-drop canvas vision; (b) is less code and works with the canonical runner as-is.
 
-**Planner-vs-supervisor paradigm — RESOLVED, flagging for awareness.** The "Agent Orchestrator" template `b06689e3` is a *planner* (emits a JSON dispatch plan, never calls tools), which cannot drive member-as-tool delegation. Resolved non-destructively: generated orchestrators get a supervisor prompt; your template is untouched. If you'd rather the *template itself* be a supervisor, say so and it can be updated in `agent.template`.
+**Planner-vs-supervisor paradigm — RESOLVED, flagged for awareness.** The "Agent Orchestrator" template `b06689e3` is a *planner* (emits a JSON dispatch plan, never calls tools), which cannot drive member-as-tool delegation. Resolved non-destructively: generated orchestrators get a supervisor prompt; your template is untouched. If you'd rather the *template itself* be a supervisor, say so and it can be updated in `agent.template`.

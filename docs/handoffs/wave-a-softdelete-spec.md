@@ -1,13 +1,13 @@
 ---
 status: active
-updated: 2026-07-18
+updated: 2026-07-28
 repos: [matrx-frontend, aidream]
 vision: [see "Vision — Arman's words" below; original full spec + build history in git: `git log --oneline --grep=wave-a -i` in BOTH repos, and this file's history]
 ---
 
-# Wave A — document/RAG soft-delete: deploy, verify, finish the edges
+# Wave A — document/RAG soft-delete: finish the edges
 
-The build is DONE and live in the DB + committed in both repos (unpushed local commits on `main` in each). What remains is deploy + prod verification + a few scoped follow-ups. Read Vision first; it is the contract every follow-up must preserve.
+The build is DONE, live in the DB, and **deployed in both repos** (prod aidream serves the wave-a commits). What remains is one untested path, one missing purge path, and one retention decision. Read Vision first; it is the contract every follow-up must preserve.
 
 ## Vision — Arman's words
 
@@ -37,11 +37,9 @@ Documented deviation (V10, accepted by adversarial review): the BEFORE DELETE gu
 
 ## Remaining work (priority order)
 
-1. **Deploy aidream to prod, then re-verify server-side surfaces.** Until deployed, prod search/tools rely on RLS + RPCs only (safe but belt-less), and prod library deletes still run the OLD hard-delete Python code — this is the one dangerous gap. Deploy, then against prod spot-check: soft-delete a doc → vector/lexical/entity search return 0 hits from it; `document_content` reports `has_extraction=False`; library list/summary exclude it; restore reverses all. Ship the FE release in the same window (release.sh).
-2. **Regenerate FE API types after deploy:** `pnpm sync-types` (picks up `LibraryDeleteResponse.skipped_canonical` etc. from the OpenAPI). Until then FE ignores the new field — harmless.
-3. **Multi-sibling canonical repoint is untested end-to-end.** No file in the live DB had 2+ extract siblings, so "repoint to NEWEST live sibling" was verified only by reading `recompute_canonical_for_file`. Create a fixture file with two `initial_extract` siblings, soft-delete the canonical, assert the pointer moves to the newest LIVE sibling (not NULL), restore, assert it returns.
-4. **File-family purge path (trash-empty) does not exist.** Family-trashed docs are restore-only today (per-doc purge correctly raises). Build "purge file family": a `rag.fn_purge_library_file(p_file_id)` that verifies the file is trashed + owned, then purges every family doc (pre-stamp is already there) + the `files.files` row + storage sweep hook, surfaced from the files trash UI (`app/(a)/files/trash` — note its restore UI is itself listed as unwired in `features/files/CLOUD_FILES_RPC_DISPOSITIONS.md`). Keep THE INVARIANT: reachable only for already-trashed files.
-5. **Trash has no retention/auto-purge** — deliberate for now (see Decisions). Don't add one without the decision below.
+1. **Multi-sibling canonical repoint is untested end-to-end.** Still zero files in the live DB with 2+ `initial_extract`/`legacy_import` siblings, so "repoint to NEWEST live sibling" is verified only by reading `docproc.recompute_canonical_for_file`. Create a fixture file with two `initial_extract` siblings, soft-delete the canonical, assert the pointer moves to the newest LIVE sibling (not NULL), restore, assert it returns.
+2. **File-family purge path (trash-empty) does not exist.** `rag.fn_purge_library_file` is absent from the DB; family-trashed docs are restore-only today (per-doc purge correctly raises). Build it: verify the file is trashed + owned, then purge every family doc (pre-stamp is already there) + the `files.files` row + storage sweep hook, surfaced from the files trash UI (`app/(core)/files/trash/page.tsx` — note its restore UI is itself listed as unwired in `features/files/CLOUD_FILES_RPC_DISPOSITIONS.md`). Keep THE INVARIANT: reachable only for already-trashed files.
+3. **Trash has no retention/auto-purge** — deliberate for now (see Decisions). Don't add one without the decision below.
 
 Known traps for whoever picks this up: (a) never clear `valid_to` on restore — that resurrects superseded chunks; (b) never add `deleted_at` filters to `processed_documents_owner_all` or any authenticated UPDATE policy (42501 class, fixed platform-wide 2026-07-04); (c) parallel agent sessions rewrite `main` constantly — rebase, don't assume; (d) the DB is already migrated — a `.sql` file edit does nothing until re-applied via Supabase MCP + ledger update.
 
@@ -51,11 +49,12 @@ Known traps for whoever picks this up: (a) never clear `valid_to` on restore —
 - Phase 2 — every read surface gated (search lanes, RLS ×6, gate fns, ~25 ORM sites incl. 7 found by adversarial round 1) — `migrations/wave_a_softdelete_read_surfaces.sql` + aidream tools/services.
 - Phase 3 — canonical repoint triggers (soft-delete/restore/purge → newest live sibling) — `migrations/wave_a_canonical_repoint.sql`.
 - Phase 4 — FE resolver + V7 read-site guards — `features/files/api/document-lookup.ts` and friends.
-- Phase 5 — one transactional cascade authority on `files.files`, marker-gated restore — `migrations/wave_a_file_cascade_true_inverse.sql`.
+- Phase 5 — one transactional cascade authority on `files.files`, marker-gated restore — `migrations/wave_a_cascade_true_inverse.sql`.
 - Phase 5.5 — owner Trash surface (list/restore/purge, family lock) — `LibraryTrashSheet.tsx` + `migrations/wave_a_library_trash_rpcs.sql`; browser-verified.
 - Phase 6 — reprocess re-activates chunks; archive/replace retire chunks; bulk delete top-level only — `ingestion.py`, `dedup_service.py`.
 - Capstone — BEFORE DELETE guard live + purge pre-stamping; FE hard-delete RPCs converted (adversarial catch: Python conversion alone left the FE RPCs hard-deleting).
-- Two full adversarial passes (4 Sonnet rounds) — all findings fixed or recorded as V10.
+- Two full adversarial passes — all findings fixed or recorded as V10.
+- Shipped to prod — both repos pushed and deployed (aidream `/health/version` serves the wave-a commits); FE API types regenerated (`LibraryDeleteResponse.skipped_canonical` is in `types/python-generated/api-types.ts`).
 
 ## Decisions needed (Arman)
 

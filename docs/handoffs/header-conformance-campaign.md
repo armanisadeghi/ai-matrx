@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-19
+updated: 2026-07-28
 repos: [matrx-frontend]
 vision: [.claude/skills/core-route-headers/SKILL.md, .claude/skills/ios-mobile-first/SKILL.md, features/shell/components/header/variants/USAGE.md]
 ---
@@ -26,18 +26,18 @@ vision: [.claude/skills/core-route-headers/SKILL.md, .claude/skills/ios-mobile-f
 
 ## Remaining work
 
-1. **Raw-table sweep — 68 files left.** Wave-3 did 4 surfaces under a deliberate cap. Apply the same frozen-first-column treatment (or migrate the table to `MatrxDataTable` and get it free). Full list: `grep -rl "<table" app/\(core\) features`.
+1. **Raw-table sweep — 92 files left** (recounted 2026-07-28; it has GROWN since the campaign started, so new tables are still landing raw). Wave-3 did 4 surfaces under a deliberate cap. Apply the same frozen-first-column treatment (or migrate the table to `MatrxDataTable` and get it free). Full list: `grep -rl "<table" app/\(core\) features`.
 2. **`MobilePanelShell` gap: drawers don't close on in-panel ACTIONS.** It auto-closes on route change, but a panel action that isn't navigation (transcripts studio: pick a session / Clean Up / create session) leaves the drawer covering the result. Add an opt-in close callback to the primitive and adopt it in `StudioSidebar` / `CleanupPad`.
-3. **Mobile bodies still broken** (verified live, out of the capped scope): `/rag/data-stores` split-pane bleeds off a 375 viewport (`RichMemberTable`); `RagHitCard`'s action-icon strip scrolls horizontally inside its own card; `/agent-connections` Resources filter-tab row wraps mid-word; `/tasks/new` success toast overlaps the shell header.
+3. **Mobile bodies still broken** (last observed live 2026-07-19; re-repro at 375 before fixing — not re-verified since): `/rag/data-stores` split-pane bleeds off a 375 viewport (`RichMemberTable`); `RagHitCard`'s action-icon strip scrolls horizontally inside its own card; `/agent-connections` Resources filter-tab row wraps mid-word; `/tasks/new` success toast overlaps the shell header.
 4. **Width sweep second pass** — each agent was capped at ~8 files. Re-run the `max-w-2xl|3xl` grep over `app/(core)` and finish the tail.
-5. **`/messages/[conversationId]` crashes on load** — realtime presence-callback error. Owned by the messaging refactor; invoke the `supabase-realtime` skill.
-6. **Defects D72–D76** are filed in `FOUND_DEFECTS.md` — **D72 is P0 data exposure** (a plain row click on the /files desktop table can create a real share link). Needs a live repro of the hover/click race in `features/files/components/surfaces/desktop/FileTableRow.tsx`.
+5. **`/messages/[conversationId]` crashes on load** — realtime presence-callback error (`useOnlinePresence` in `app/(core)/messages/[conversationId]/page.tsx`). **Unconfirmed since 2026-07-19** — a realtime pass landed after this was filed; repro before working it. Invoke the `supabase-realtime` skill.
+6. **Open defects from this campaign, tracked in `FOUND_DEFECTS.md`:** D73 (folder-picking canonical story), D74 (`web.link_edge.http_status` never populated), D76 (mount-time state-update warning on `/scraper` and `/`). D72 (/files share-link race) and D75 (transcripts nested button) were fixed 2026-07-28.
 7. `app/(core)/education/**` — owned by the education session; leave alone.
 8. **Audit blind spot:** `pnpm check:page-headers` and the grep below scan `app/(core)` only — a route's `features/` half is invisible. Known offender: `features/war-room/components/room/WarRoomShell.tsx` (banned `h-[calc(100vh-2.5rem)]` + in-body header). Tracked in `docs/handoffs/war-room-list-and-room-conformance.md`. "Zero in (core)" below means zero in the `app/` tree, not in feature components.
 
 ## Done
 
-- Headers: skill + `EntityModeHeader`/`CrumbTrailHeader` + `TapTargetButtonDestructive`; every `(core)` family fixed and browser-verified. **Faux headers and banned heights in `(core)`: zero.**
+- Headers: skill + `EntityModeHeader`/`CrumbTrailHeader` + `TapTargetButtonDestructive`; every `(core)` family fixed and browser-verified. **Faux headers and banned heights in `(core)`: zero** — re-verified 2026-07-28 (`pnpm check:page-headers` reports no `app/(core)` offender; the only banned-height hits are the excluded `education/**` pages). The audit does flag five `app/(public)/seo/*` pages — outside this campaign's `(core)` scope, unclaimed.
 - Mobile primitives: `MobilePanelShell`; `MatrxDataTable` mobile scroll + frozen first column (`610b752e5`).
 - Multi-pane routes onto `MobilePanelShell`: /code, /agent-connections, /user-settings, /transcripts studio+cleanup, RAG DocumentViewer. (/notes and /tasks already had native mobile views — verified, left alone; /notes deep-link-to-editor bug fixed en route.)
 - Width sweep applied across agents/agent-apps, podcast/transcripts/images, organizations/projects/scopes, schedules/cms/rag — `/schedules/[id]` is now full-width two-column.

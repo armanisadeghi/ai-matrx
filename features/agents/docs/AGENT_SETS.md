@@ -56,13 +56,13 @@ Running an orchestrator makes it **call its members as tools** and weave their o
 - **FE — Run.** A **Run** entry on the builder header (`SetBuilder`) + set-card hover row (`AgentSetCard`) routes to the canonical runner `/agents/:id/run` — no bespoke run surface (roadmap P1: "reuse the agent runner/chat").
 - **Not yet built:** the live member-highlight on the canvas (light up the active member node during a run) — Phase 1's last bullet. Requires a run co-mounted with the canvas (or highlight on the runner); see the roadmap.
 - **Multi-turn:** the projection re-runs on EVERY turn (both the new-conversation and continue paths) — the persisted config keeps only the member tool *names*, not their agent-projection definitions, so turn 2+ must re-inject or members drop out.
-- **Deploy gate:** the aidream half ships in commits `153ad4291` + `ce852fcaa` but is **only live after aidream deploys**. The AI Dream MCP `agent_run` tool can smoke-test an orchestrator once deployed (send a 2nd message to confirm members persist).
+- **Deployed, not yet verified:** the aidream half shipped in commits `153ad4291` + `ce852fcaa` (2026-07-15) and has been live since that day's release — but no end-to-end delegation run has been confirmed. Smoke-test with the AI Dream MCP `agent_run` tool on an orchestrator (send a 2nd message to confirm members persist).
 
 ## Files
 
 - `agent-sets/service/agentSetsService.ts` — thin service over the association chokepoint + `agent_set_list()`. **Owns no new mutation path.**
 - `agent-sets/orchestrator/` — the "generate an orchestrator" flow (template copy + headless description-generator run + `<available_agents>` injection + set wiring; `GenerateOrchestratorDialog` is its UI).
-- `agent-sets/redux/{slice,thunks,selectors}.ts` — `agentSets` read-model (list + per-set member/config cache; optimistic writes reconcile on error).
+- `features/agents/redux/agent-sets/{slice,thunks,selectors}.ts` — `agentSets` read-model (list + per-set member/config cache; optimistic writes reconcile on error).
 - `agent-sets/components/` — `SetBuilder` (shell), `SetBuilderCanvas` (+ `…Impl`), `AgentLibraryRail`, `SetMemberGrid`, `MemberInspector`, `OrchestratorInspector`, `AgentIODetails` (shared I/O block), `AgentRoleCard`, `AgentPeekButton`, `AgentSetCard`, `AddToSetMenu`, `CreateSetDialog`, `SetSettingsDialog`, `accents.ts`.
 - `agent-sets/hooks/` — `useAgentSetsList`, `useAgentSet`.
 
