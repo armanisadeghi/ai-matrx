@@ -7,8 +7,27 @@
  * `aidream/aidream/services/cms/url-rules.json` — keep this copy byte-identical
  * (re-copy on any change; the two suites must load the same rules).
  */
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import fixture from "./url-rules.json";
 import { clientPageUrl, clientPageRoute, htmlPageUrl, clientSiteRootUrl, normalizeDomainInput } from "../pageUrls";
+
+/**
+ * SHA-256 of `url-rules.json`, pinned IDENTICALLY in both repos — aidream's
+ * `aidream/services/cms/tests/test_cms_urls.py` holds the same constant. The two
+ * copies are supposed to be byte-identical, but nothing MECHANICALLY enforced
+ * that: editing one side alone left two silently different guards, which is the
+ * same defect class as the `parent_route` divergence itself (CMS 0029). Now a
+ * one-sided edit reddens the suite in the repo that was NOT updated.
+ *
+ * Changing the fixture is a FOUR-file change, deliberately:
+ *   1. edit `aidream/aidream/services/cms/url-rules.json` (the CANONICAL copy)
+ *   2. copy it verbatim here   3. update this constant
+ *   4. update `_FIXTURE_SHA256` in `test_cms_urls.py`
+ * Never "fix" a red here by loosening the check — re-sync the copies.
+ */
+const FIXTURE_SHA256 = "a596e978b936eb977d3a5595dd99204ed1997e59b37671d7e64b84c80d52f25a";
 
 interface ClientCase {
   name: string;
@@ -42,6 +61,13 @@ interface DerivationCase {
 }
 
 describe("C4 URL contract — fixture parity", () => {
+  it("fixture is byte-identical to aidream's canonical copy", () => {
+    const actual = createHash("sha256")
+      .update(readFileSync(join(__dirname, "url-rules.json")))
+      .digest("hex");
+    expect(actual).toBe(FIXTURE_SHA256);
+  });
+
   it("base_url matches the fixture", () => {
     // The TS twin's non-domain host is the fixture base_url.
     expect(fixture.base_url).toBe("https://mymatrx.com");
