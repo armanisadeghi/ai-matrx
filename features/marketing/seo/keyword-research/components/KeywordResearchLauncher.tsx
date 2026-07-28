@@ -10,16 +10,26 @@
  *  - KeywordResearchWindow (floating panel, openable from anywhere via
  *    `useOpenKeywordResearchWindow`)
  *
- * State lives in the caller's `useKeywordResearch()` instance — this
- * component is presentational + input handling only, so a host can compose
- * it with its own explorer (table, cluster list) off the same hook.
+ * State lives in the caller's `useKeywordResearch()` instance so a host can
+ * compose it with its own explorer (table, cluster list) off the same hook.
+ * The launcher additionally owns DURABLE MEMORY: it reads the latest saved
+ * artifact for the phrase in play (useSavedKeywordResearch) and renders it
+ * whenever the ephemeral live stream can't — idle remounts, reopened windows,
+ * and rejoined runs (the server replays stages, never AI chunks). Results a
+ * user paid for must never vanish from the surface that produced them.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, SearchCheck } from "lucide-react";
 
 import type { ResearchRunState } from "../useKeywordResearch";
+import {
+  savedKeywordResearchQueryKey,
+  useSavedKeywordResearch,
+} from "../useSavedKeywordResearch";
 import LiveResearchFeed from "./LiveResearchFeed";
+import SavedResearchFeed from "./SavedResearchFeed";
 
 export interface KeywordResearchLauncherProps {
   run: ResearchRunState;
@@ -32,6 +42,9 @@ export interface KeywordResearchLauncherProps {
   feedMaxHeightClassName?: string;
   /** Notified on every input change — hosts persist it (window panels). */
   onKeywordChange?: (keyword: string) => void;
+  /** Org owning the durable saved-research read. Defaults to the effective
+   * organization (the same org callApi stamps on the run itself). */
+  organizationId?: string | null;
 }
 
 export default function KeywordResearchLauncher({
@@ -41,9 +54,40 @@ export default function KeywordResearchLauncher({
   autoRun = false,
   feedMaxHeightClassName = "max-h-[26rem]",
   onKeywordChange,
+  organizationId,
 }: KeywordResearchLauncherProps) {
   const [primaryInput, setPrimaryInput] = useState(initialKeyword ?? "");
   const autoRanRef = useRef(false);
+  const queryClient = useQueryClient();
+
+  // Durable memory: the latest persisted artifact for the phrase in play.
+  // The live stream is ephemeral (the server's rejoin replays stages, never
+  // AI chunks), so after a remount/reopen this is what keeps results visible.
+  const savedPhrase = run.primaryKeyword ?? primaryInput;
+  const saved = useSavedKeywordResearch(savedPhrase, organizationId, {
+    debounceMs: 350,
+  });
+
+  const hasLiveOutput = Boolean(
+    (run.researchOutput ?? "").trim() || (run.classificationOutput ?? "").trim(),
+  );
+  // The freshest durable truth: this run's completed result, else the saved
+  // artifact from a previous run of the same phrase.
+  const durableArtifact = run.result?.artifact ?? saved.data?.artifact ?? null;
+
+  // A finished run persisted a new artifact — refresh the shared saved-research
+  // cache so every consumer (this launcher, the Keyword Intelligence tab)
+  // remembers it after remount.
+  useEffect(() => {
+    if (run.status === "done") {
+      void queryClient.invalidateQueries({
+        queryKey: savedKeywordResearchQueryKey(
+          saved.organizationId,
+          savedPhrase,
+        ),
+      });
+    }
+  }, [run.status, queryClient, saved.organizationId, savedPhrase]);
 
   const handleRun = useCallback(() => {
     if (!primaryInput.trim() || run.status === "running") return;
@@ -118,13 +162,19 @@ export default function KeywordResearchLauncher({
             </span>
           </div>
           <div className="px-3 py-2">
-            {(run.researchOutput ?? "").trim() === "" &&
-            (run.classificationOutput ?? "").trim() === "" ? (
-              <p className="text-xs text-muted-foreground">
-                {run.status === "error"
-                  ? "No agent output was produced. Research stopped before structured output began."
-                  : "Waiting for structured research output…"}
-              </p>
+            {!hasLiveOutput ? (
+              durableArtifact && run.status !== "error" ? (
+                // Rejoined or recovered run: the token stream is gone (chunk
+                // replay doesn't exist), but the persisted artifact is the
+                // same content — render it instead of a blank "waiting".
+                <SavedResearchFeed artifact={durableArtifact} />
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  {run.status === "error"
+                    ? "No agent output was produced. Research stopped before structured output began."
+                    : "Waiting for structured research output…"}
+                </p>
+              )
             ) : (
               <LiveResearchFeed
                 streamKey={run.streamKey}
@@ -136,6 +186,23 @@ export default function KeywordResearchLauncher({
                 }
               />
             )}
+          </div>
+        </div>
+      )}
+      {/* Idle memory: the last persisted research for the phrase in the
+          input — a reopened window / revisited page starts from what the
+          user already paid for instead of a blank slate. */}
+      {run.status === "idle" && saved.data && (
+        <div className="mt-2">
+          <p className="mb-1.5 text-[11px] text-muted-foreground">
+            Showing saved research from{" "}
+            {new Date(saved.data.createdAt).toLocaleString()}. Run again only
+            for a refresh.
+          </p>
+          <div
+            className={`overflow-y-auto rounded-md border border-border bg-muted/20 px-3 py-2 ${feedMaxHeightClassName}`}
+          >
+            <SavedResearchFeed artifact={saved.data.artifact} />
           </div>
         </div>
       )}

@@ -93,9 +93,21 @@ before adding any keyword field or per-keyword display anywhere.
 - `components/SavedResearchFeed.tsx` — durable in-place rendering of the saved
   hierarchy plus persisted classification rows through the same selectable
   blocks used by the live feed.
+- `useSavedKeywordResearch.ts` — THE one query for the latest durable
+  research artifact per (org, phrase): wraps `getLatestSavedKeywordResearch`,
+  resolves the org exactly like `callApi` (explicit override else
+  `selectEffectiveOrganizationId`) so the read scope always equals the run's
+  write scope, exports `savedKeywordResearchQueryKey` for invalidation, and
+  optionally debounces a live-input phrase. Consumed by the launcher AND the
+  Keyword Intelligence Research tab — never re-declare the query inline.
 - `components/KeywordResearchLauncher.tsx` — **THE canonical research runner**
-  (input → live feed → summary), presentational over a caller-owned
-  `useKeywordResearch()` instance. Consumed by the workbench AND
+  (input → live feed → summary) over a caller-owned `useKeywordResearch()`
+  instance, PLUS durable memory: it renders the saved artifact
+  (`SavedResearchFeed`) whenever the ephemeral live stream can't — idle
+  remounts/reopened windows show the phrase's last saved research, and a
+  rejoined/recovered run renders `run.result.artifact` instead of a blank
+  "waiting" (the server's rejoin replays stages, never AI chunks). Consumed
+  by the workbench AND
   `features/window-panels/windows/seo/KeywordResearchWindow.tsx` (open from
   anywhere: `useOpenKeywordResearchWindow({ primaryKeyword, autoRun })` in
   `features/overlays/openers/keywordResearchWindow.tsx`; `?panels=keyword_research`).
@@ -124,6 +136,17 @@ before adding any keyword field or per-keyword display anywhere.
 
 ## Change Log
 
+- 2026-07-28 — **Durable memory on EVERY research surface (launcher + window +
+  workbench).** Extracted `useSavedKeywordResearch` (shared query + key;
+  effective-org fallback mirrors callApi) and taught the canonical
+  `KeywordResearchLauncher` to fall back to the persisted artifact whenever
+  live buffers are empty: idle remount/reopened window shows the phrase's
+  saved research; a rejoined or snapshot-recovered run renders
+  `run.result.artifact` instead of "Waiting for structured research output…".
+  The Research tab now consumes the same hook (query previously declared
+  inline — drift risk closed). Root cause of the "my research disappeared"
+  reports: only the tab had a durable fallback, and the server's rejoin never
+  replays AI chunks, so every remounted launcher surface rendered nothing.
 - 2026-07-28 — **Saved-state restore + page supporting-keyword selection.**
   Keyword Intelligence reads the latest org-internal research artifact before
   offering a rerun, renders hierarchy and persisted classification together,

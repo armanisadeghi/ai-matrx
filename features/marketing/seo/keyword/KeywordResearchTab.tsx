@@ -11,15 +11,18 @@
  */
 
 import { useEffect, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FlaskConical, Loader2, Plus, Play } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { seoKeywordKeys } from "./hooks";
 import { useKeywordResearch } from "@/features/marketing/seo/keyword-research/useKeywordResearch";
+import {
+  savedKeywordResearchQueryKey,
+  useSavedKeywordResearch,
+} from "@/features/marketing/seo/keyword-research/useSavedKeywordResearch";
 import LiveResearchFeed from "@/features/marketing/seo/keyword-research/components/LiveResearchFeed";
 import SavedResearchFeed from "@/features/marketing/seo/keyword-research/components/SavedResearchFeed";
-import { getLatestSavedKeywordResearch } from "@/features/marketing/seo/keyword-research/data/queries";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 import {
   addPageSupportingKeywords,
@@ -43,20 +46,7 @@ export function KeywordResearchTab({
   const [selectedByKey, setSelectedByKey] = useState<Record<string, string>>({});
   const selectedPhrases = new Set(Object.keys(selectedByKey));
   const disabledPhrases = new Set([normalizeKeywordPhrase(phrase)]);
-  const saved = useQuery({
-    queryKey: [
-      "seo",
-      "keyword-research",
-      "saved",
-      organizationId ?? null,
-      normalizeKeywordPhrase(phrase),
-    ],
-    queryFn: ({ signal }) =>
-      organizationId
-        ? getLatestSavedKeywordResearch(organizationId, phrase, signal)
-        : Promise.resolve(null),
-    enabled: Boolean(organizationId && phrase.trim()),
-  });
+  const saved = useSavedKeywordResearch(phrase, organizationId);
   const visibleArtifact = run.result?.artifact ?? saved.data?.artifact ?? null;
   const hasLiveOutput = Boolean(
     run.streamKey &&
@@ -123,16 +113,10 @@ export function KeywordResearchTab({
     if (run.status === "done") {
       void queryClient.invalidateQueries({ queryKey: seoKeywordKeys.all });
       void queryClient.invalidateQueries({
-        queryKey: [
-          "seo",
-          "keyword-research",
-          "saved",
-          organizationId ?? null,
-          normalizeKeywordPhrase(phrase),
-        ],
+        queryKey: savedKeywordResearchQueryKey(saved.organizationId, phrase),
       });
     }
-  }, [run.status, queryClient, organizationId, phrase]);
+  }, [run.status, queryClient, saved.organizationId, phrase]);
 
   return (
     <div className="grid gap-3">
