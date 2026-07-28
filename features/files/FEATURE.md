@@ -6,7 +6,7 @@
 
 This is the live architecture doc for the canonical file management system under `features/files/`. File bytes live in S3 and metadata lives in Postgres; the browser never talks to an object-store SDK.
 
-> **Cross-repo system-of-record — the file BACKEND is now a standalone service:** `/Users/armanisadeghi/code/common-docs/systems/matrx-files-service/FEATURE.md`. The aidream file layer was extracted into the independent `matrx-files` microservice (deployed to EC2 2026-07-13). Default production browser traffic remains on aidream unless `NEXT_PUBLIC_FILES_BROWSER_CUTOVER=true`. The canonical API selector may route exact standalone-owned paths to `matrx-files` when an admin switches all services to localhost or explicitly pins Files; broader file-adjacent routes remain on aidream. Read the system-of-record before any file-backend-facing change.
+> **Cross-repo system-of-record — the file BACKEND is now a standalone service:** `/Users/armanisadeghi/code/common-docs/systems/matrx-files-service/FEATURE.md`. The aidream file layer was extracted into the independent `matrx-files` microservice (deployed to EC2 2026-07-13). **Browser traffic for standalone-owned routes goes to `matrx-files` unconditionally — there is no toggle.** Route ownership is a property of the architecture; which HOST answers (production, localhost, an admin pin) is resolved separately by `resolveFilesBaseUrl`. Broader file-adjacent routes (`/files/{id}/ingest`, RAG, annotations, media) remain on aidream until parity lands. Read the system-of-record before any file-backend-facing change.
 
 If you're modifying anything in this feature, **also update this doc in the same change.** Stale docs cascade across parallel agents.
 
@@ -486,6 +486,7 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 
 ## Change log
 
+- **2026-07-28 — `NEXT_PUBLIC_FILES_BROWSER_CUTOVER` ANNIHILATED; the browser cutover is unconditional.** The flag was added 2026-07-15 as a panic gate when `files.matrxserver.com/files/upload` 405'd on CORS preflight. The CORS bug was fixed — and the flag then sat at `false` in production for two weeks, silently sending every browser upload back to aidream while the docs described the cutover as "ready." **Nobody knew the flag existed.** Deleted: the env read in `lib/api/service-routing.ts`, the `target`/`environment`/`override` gate arguments, the now-dead `selectApiServiceTargets` lookup in `lib/python-client.ts`, the `.env.example` line, and the `CUTOVER_TO_MATRX_FILES.md` task doc. `shouldRouteBrowserRequestToStandaloneFiles(path, method)` now simply *is* `isStandaloneFileServiceRoute`. Tests assert the two-argument signature so a reintroduced toggle fails CI. **The rule this broke: an environment variable is for a value that genuinely differs per environment (a URL, a key) — NEVER for a feature toggle.** A toggle belongs in code as a `CAPS` constant, where flipping it is a reviewable push; an env toggle fails silently and invisibly, which is exactly what happened here. `NEXT_PUBLIC_FILES_URL` stays — it is a real per-environment URL, and it carries a hardcoded production default so a missing value cannot silently fall back to aidream.
 - 2026-07-28 — File previewers consolidated onto ONE shared `FilePreview/PreviewerSwitch.tsx` (fragmentation campaign): `FilePreview` (11 dynamics), `UniversalInlineFile` (7), and the code editor's `BinaryFileViewer` (5) now render the same switch — 7 light previewers static, 4 heavy engines (pdf/markdown/data/code) as in-gate `React.lazy`; byte source is a `fileId | blob` discriminated prop and `BinaryFilePdfPreview` was absorbed. Adding a previewer = edit the switch, never a per-site dynamic.
 - 2026-07-28 — D72 fixed: desktop FileTableRow hidden action toolbars now pointer-events-none + row onClick ignores [data-row-actions] targets, closing the accidental-share-link race.
 
@@ -494,9 +495,10 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 - **2026-07-22 — Canonical multi-service environment selection.** The shell's main
   Production/Localhost action now moves file-byte requests together with aidream, scraper,
   and SEO. Exact standalone-owned routes use the local files target during a global-local
-  session, or the selected target when Files is explicitly pinned. Default production
-  behavior still observes `NEXT_PUBLIC_FILES_BROWSER_CUTOVER=false`; RAG, ingestion, and
-  other aidream-owned routes never move merely because their path begins with `/files`.
+  session, or the selected target when Files is explicitly pinned. (The
+  `NEXT_PUBLIC_FILES_BROWSER_CUTOVER` gate referenced here was deleted 2026-07-28 — see the
+  top of this log.) RAG, ingestion, and other aidream-owned routes never move merely because
+  their path begins with `/files`.
 - **2026-07-26 — Deleted `features/files/index.ts` barrel (~200 importers migrated).** All consumers now import directly from owning modules (`handler/handler`, `handler/hooks/*`, `hooks/*`, `components/**`, `redux/*`, `types`, `utils/*`). ESLint bans `@/features/files` (exact); internal subdirs `cache/`, `virtual-sources/`, `upload/`, `providers/`, `services/`, `api/` stay ring-fenced. Pdf annotation exports route to `@/features/pdf/components/viewer/annotation-layer/*`.
 - **2026-07-22 — Off-tree file preview hydrates by canonical file UUID.** Opening `filePreviewWindow` / `PreviewPane` / `FilePreview` with only a `files.files` id (marketing crawl captures, chat chips, deep links) no longer stuck on "File not found." `useEnsureCloudFile` is now the single hydration primitive: direct supabase-js select via `filesDb` + `FILES_TABLE_COLUMNS` (RLS `files.has_access_for`, including crawl artifacts that are viewable but not discoverable), loud on query error, in-flight dedup across concurrent mounts, status returned for Loading / missing / error UI. Wired into `PreviewPane`, `FilePreview`, and `SingleFileShell` (replacing the bespoke deep-link self-heal). Identity remains **only** the canonical file UUID — never storage path / bucket / signed URL construction on the client.
 

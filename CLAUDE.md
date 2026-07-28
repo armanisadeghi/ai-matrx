@@ -239,6 +239,33 @@ A signed S3 URL (`?X-Amz-Signature=…&Expires=…`) expires and breaks days lat
 
 Track bugs/gaps you can't fully fix in [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (the frontend twin of aidream's). If a fix is partial, record what's open there — a defect that lives only in a chat log will recur. Four-file task system: `FOUND_DEFECTS.md` (unapproved discoveries), `CURRENT_ERRORS.md` (error-dump inbox), `.matrx/AGENT_TASKS.md` (the only approved worklist), `.matrx/ARMAN_TASKS.md` (Arman-only asks).
 
+## 🚨 An env var is a VALUE, never a TOGGLE — a flag in env fails silently and invisibly
+
+> **This rule exists because it was broken.** `NEXT_PUBLIC_FILES_BROWSER_CUTOVER` was added as a
+> panic gate when a CORS preflight 405'd. The CORS bug was fixed days later — and the flag sat at
+> `false` in production for two weeks, silently routing every browser upload back to the old server
+> while the docs described the cutover as done. **Arman had no idea the flag existed**; he assumed
+> the migration had shipped. Nothing was broken, nothing was logged, weeks of paid-for work were
+> simply inert. Deleted 2026-07-28.
+
+- **Legitimate env var:** a value that genuinely differs per environment and cannot be known in
+  code — a URL (`NEXT_PUBLIC_FILES_URL`), a publishable key, a Supabase project ref. Give it a
+  hardcoded production default so a missing value cannot silently degrade to a legacy path.
+- **NOT an env var:** a feature toggle, a rollout gate, a "cutover" switch, an engine choice, a
+  model name, a threshold. Those are **`CAPS` constants at the top of the file**. Flipping one
+  then takes a code push — that's the point: it's reviewable, greppable, and it can't be forgotten
+  in a dashboard nobody opens.
+- **Architecture is not configuration.** Which service owns a route, which pipeline handles a
+  type, which component renders a kind — decided in code, unconditionally. If you're tempted to
+  gate a migration behind a flag "just until we verify," you are building the exact trap above:
+  write the verification into a test, ship the cutover, and delete the escape hatch.
+- **`process.env.X === "true"` in product code is the smell.** It is currently confined to build
+  scripts; keep it that way. If a genuine emergency kill-switch is unavoidable, it is a `CAPS`
+  constant plus a loud console/log banner whenever the non-default path is taken — never a silent
+  read.
+
+Same doctrine, server side: aidream's [CLAUDE.md](/Users/armanisadeghi/code/aidream/CLAUDE.md) §"A new env var fails SILENTLY in production."
+
 ## "Coming Soon" is a promise — track it like a found defect
 
 We deliberately advertise actions we intend to build so users see where the product is going and engineers feel the debt. **Growing the list is encouraged.** That only works if every promise is declared in ONE registry — `lib/coming-soon/registry.ts` — and handled with the same reflex as [FOUND_DEFECTS.md](./FOUND_DEFECTS.md): **report it, and ask to solve it.**

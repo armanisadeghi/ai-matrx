@@ -47,9 +47,11 @@ both the global choice and pins persist in `matrx.apiConfig.v1`.
 - Environment overrides are `NEXT_PUBLIC_SCRAPER_URL(_LOCAL)`,
   `NEXT_PUBLIC_FILES_URL(_LOCAL)`, and `NEXT_PUBLIC_SEO_URL(_LOCAL)`; aidream keeps its
   existing `NEXT_PUBLIC_BACKEND_URL_*` family.
-- Files retain one deliberate production nuance: default browser traffic remains on aidream
-  until `NEXT_PUBLIC_FILES_BROWSER_CUTOVER=true`, while global localhost or an explicit Files
-  pin routes only the paths that the standalone service actually owns.
+- **Those `*_URL` vars are the ONLY thing env may decide here: which HOST answers.** Which
+  SERVICE owns a route is decided in code (`STANDALONE_FILE_ROUTE_RULES`), unconditionally.
+  There is no cutover flag and there must never be one — `NEXT_PUBLIC_FILES_BROWSER_CUTOVER`
+  existed until 2026-07-28 and silently kept two weeks of production uploads on aidream after
+  the problem it guarded was fixed. A feature toggle in env fails invisibly; put it in code.
 
 ## The two rules
 

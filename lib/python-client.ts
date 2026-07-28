@@ -28,10 +28,7 @@ import { parseHttpError, BackendApiError } from "@/lib/api/errors";
 import { BACKEND_URLS } from "@/lib/api/endpoints";
 import { supabase } from "@/utils/supabase/client";
 import { getStore } from "@/lib/redux/store-singleton";
-import {
-  selectApiServiceTargets,
-  selectResolvedBaseUrl,
-} from "@/lib/redux/slices/apiConfigSlice";
+import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { extractErrorMessage } from "@/utils/errors";
 import { getCachedFingerprint } from "@/lib/services/fingerprint-service";
 import { logApiTarget } from "@/lib/api/log-api-target";
@@ -142,13 +139,7 @@ export function resolveBaseUrlForPath(
   method?: string,
 ): string {
   if (override) return override.replace(/\/$/, "");
-  const store = getStore();
-  const filesTarget = store
-    ? selectApiServiceTargets(
-        store.getState() as Parameters<typeof selectApiServiceTargets>[0],
-      ).find((target) => target.service === "files")
-    : undefined;
-  if (shouldRouteBrowserRequestToStandaloneFiles(path, method, filesTarget)) {
+  if (shouldRouteBrowserRequestToStandaloneFiles(path, method)) {
     return resolveFilesBaseUrl();
   }
   return resolveBaseUrl();

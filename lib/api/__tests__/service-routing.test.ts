@@ -43,39 +43,22 @@ describe("isStandaloneFileServiceRoute", () => {
 });
 
 describe("multi-service file routing", () => {
-  const originalCutover = process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER;
-
-  afterEach(() => {
-    if (originalCutover === undefined) {
-      delete process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER;
-    } else {
-      process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER = originalCutover;
-    }
+  // Route ownership is unconditional — no env gate, no environment argument.
+  // A standalone-owned route ALWAYS goes to matrx-files; which host answers is
+  // resolveFilesBaseUrl's job. Any reintroduced toggle should fail these.
+  it("sends a standalone-owned route to matrx-files", () => {
+    expect(
+      shouldRouteBrowserRequestToStandaloneFiles("/files/upload", "POST"),
+    ).toBe(true);
   });
 
-  it("preserves the aidream production fallback until the default cutover", () => {
-    delete process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER;
+  it("leaves a route the service does not own on aidream", () => {
     expect(
-      shouldRouteBrowserRequestToStandaloneFiles("/files/upload", "POST", {
-        environment: "production",
-        override: null,
-      }),
+      shouldRouteBrowserRequestToStandaloneFiles("/ai/chat", "POST"),
     ).toBe(false);
   });
 
-  it("uses matrx-files for a global localhost target or an individual pin", () => {
-    delete process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER;
-    expect(
-      shouldRouteBrowserRequestToStandaloneFiles("/files/upload", "POST", {
-        environment: "localhost",
-        override: null,
-      }),
-    ).toBe(true);
-    expect(
-      shouldRouteBrowserRequestToStandaloneFiles("/files/upload", "POST", {
-        environment: "production",
-        override: "production",
-      }),
-    ).toBe(true);
+  it("takes no environment or override argument", () => {
+    expect(shouldRouteBrowserRequestToStandaloneFiles.length).toBe(2);
   });
 });

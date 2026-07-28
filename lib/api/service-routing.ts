@@ -186,25 +186,20 @@ export function isStandaloneFileServiceRoute(
   );
 }
 
-/** Default-production file cutover gate; admin local/individual pins can override it. */
-export function isStandaloneFilesBrowserCutoverEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER === "true";
-}
-
+/**
+ * The standalone `matrx-files` service OWNS these routes — browser traffic goes
+ * there unconditionally. There is deliberately no toggle: route ownership is a
+ * property of the architecture, not of an environment variable. (A
+ * `NEXT_PUBLIC_FILES_BROWSER_CUTOVER` env gate lived here until 2026-07-28 and
+ * silently kept every browser upload on aidream for two weeks after the CORS
+ * problem it was added for had been fixed.) Which HOST answers — production,
+ * localhost, or an admin pin — is resolved separately by `resolveFilesBaseUrl`.
+ */
 export function shouldRouteBrowserRequestToStandaloneFiles(
   path: string,
   method: string | undefined,
-  target?: {
-    environment: ServiceEnvironment;
-    override: ServiceEnvironment | null;
-  },
 ): boolean {
-  return (
-    isStandaloneFileServiceRoute(path, method) &&
-    (isStandaloneFilesBrowserCutoverEnabled() ||
-      target?.override != null ||
-      target?.environment === "localhost")
-  );
+  return isStandaloneFileServiceRoute(path, method);
 }
 
 /** Resolve and normalize the optional public files-service origin. */
