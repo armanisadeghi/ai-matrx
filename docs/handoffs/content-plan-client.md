@@ -61,11 +61,18 @@
   test)" (agent.definition 0315e53f-…, admin@admin.com);
   admin@admin.com added as `member` of the Titanium org (revoke if unwanted).
 
-**UNCOMMITTED in the working tree, awaiting Arman's build-risk review
-(2026-07-26):** the restored plan-tree preview + apply UX (his lost commit
-5986fa6ab "(3A)": `PlanTreePreview.tsx` + renderer/resolver/ApplyDirectiveButton/
-ProposedDirectivesZone/envelope edits; conflict resolved KEEPING main's slimmed
-build-memory-safe `catalog-nouns` resolver; banned Sparkles icon swapped).
+**UNCOMMITTED (2026-07-26, awaiting Arman's review — review-queue row 0b49b353):
+the list-management layer** from his second punch list: tree toolbar (search
+keeping ancestors, status/type/keyword/reviewer filters with counts, sibling
+sorts, expand/collapse all, Pillars|Clusters|All level control, descendant-count
+badges) + a fourth `table` view (MatrxDataTable, every column sorts+filters,
+row→node sheet, `useListViewPrefs("content-plan-nodes")`). New files:
+`PlanTreeToolbar.tsx`, `PlanNodesTable.tsx`, `lib/tree-view.ts`.
+Browser-verified on prpinjectionmd (293 nodes); DB surface `view` description
+re-synced to include `table`.
+
+The 2026-07-26 build-crisis restore (plan-tree preview + apply UX, commit
+"(3A)") passed Arman's build-risk review and is merged on main.
 
 **Build-memory audit of this feature's code (2026-07-26):** no API routes, no
 generateStaticParams, React Flow stays behind `dynamic({ssr:false})`. ONE

@@ -43,6 +43,7 @@ import { useContentPlanSites } from "./ContentPlanHeader";
 import { EntityManager } from "./EntityManager";
 import { NewNodeDialog } from "./NewNodeDialog";
 import { NodePanel } from "./NodePanel";
+import { PlanNodesTable } from "./PlanNodesTable";
 import { PlanTree } from "./PlanTree";
 
 // React Flow is heavy and browser-only; the map chunk loads only when the
@@ -237,6 +238,14 @@ export function ContentPlanWorkbench({
               siteId={siteId}
               organizationId={site.organization_id}
             />
+          ) : view === "table" ? (
+            <PlanNodesTable
+              nodes={nodeRows}
+              isLoading={nodes.isLoading}
+              isFetching={nodes.isFetching}
+              selectedId={selectedNodeId}
+              onSelect={setSelectedNodeId}
+            />
           ) : view === "map" ? (
             <PillarMap
               nodes={nodeRows}
@@ -310,9 +319,10 @@ export function ContentPlanWorkbench({
           )}
         </div>
 
-        {/* Map view and mobile tree open the node in a right sheet — same
-          panel, second presentation. Desktop tree renders it inline. */}
-        {siteId && (view === "map" || isMobile) ? (
+        {/* Map/table views and the mobile tree open the node in a right
+          sheet — same panel, second presentation. Desktop tree renders it
+          inline. */}
+        {siteId && (view === "map" || view === "table" || isMobile) ? (
           <Sheet
             open={selectedNode !== null}
             onOpenChange={(open) => {
