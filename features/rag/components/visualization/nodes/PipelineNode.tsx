@@ -14,6 +14,7 @@
  */
 
 import { memo } from "react";
+// eslint-disable-next-line no-restricted-syntax -- inside the RagFlowVisualization/IngestFlowAnimation dynamic(ssr:false) front-door gate; React Flow stays STATIC in-gate per the code-splitting skill (rule 3).
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { motion } from "motion/react";
 import { Check } from "lucide-react";

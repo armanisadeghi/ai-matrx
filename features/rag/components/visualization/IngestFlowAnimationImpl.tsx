@@ -26,6 +26,7 @@
 
 import { useMemo } from "react";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+// eslint-disable-next-line no-restricted-syntax -- inside the IngestFlowAnimation dynamic(ssr:false) front-door gate; React Flow stays STATIC in-gate per the code-splitting skill (rule 3).
 import {
   ReactFlow,
   Background,
@@ -64,27 +65,16 @@ import {
   type FlowEdgeData,
   type FlowEdgeLiveStats,
 } from "./edges/FlowEdge";
-import type { UseFileIngestState } from "@/features/rag/hooks/useFileIngest";
+import type { IngestHandle, IngestFlowAnimationProps } from "./IngestFlowAnimation";
 import type { IngestProgress, IngestResponse } from "@/features/rag/api/ingest";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-interface IngestHandle extends UseFileIngestState {
-  run: (opts?: { force?: boolean }) => Promise<void>;
-  runOnce: (opts?: { force?: boolean }) => Promise<void>;
-  cancel: () => void;
-  reset: () => void;
-}
-
-export interface IngestFlowAnimationProps {
-  fileName: string;
-  ingest: IngestHandle;
-  /** Called when the user dismisses a terminal-state run (success/error). */
-  onClose: () => void;
-  className?: string;
-}
+// IngestHandle + IngestFlowAnimationProps live in the shell
+// (IngestFlowAnimation.tsx) so consumers get types without pulling this Impl
+// into their static graph.
 
 // ---------------------------------------------------------------------------
 // Stage mapping — turn the streaming `IngestProgress.stage` into a position

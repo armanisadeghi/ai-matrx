@@ -617,19 +617,29 @@ const heavyImplStaticImportBan = [
 ];
 
 // React Flow (@xyflow/react / reactflow) is a heavy, browser-only graph-canvas
-// engine. It lives in exactly ONE module — the Agent Set builder canvas
-// (features/agents/agent-sets/components/SetBuilderCanvasImpl.tsx) — reached
-// only through the SetBuilderCanvas `next/dynamic({ ssr: false })` wrapper. A
-// static value import anywhere else drags the whole flow runtime into that
+// engine. Every consumer surface has exactly ONE next/dynamic({ ssr: false })
+// front-door gate; React Flow is imported statically ONLY inside a gated graph
+// (each such file carries a justified one-line eslint-disable). The gated
+// surfaces (D70 sweep, 2026-07-28):
+//   - Agent Set builder: SetBuilderCanvas wrapper → agent-sets/components/SetBuilderCanvasImpl.tsx
+//   - RAG visualization: features/rag/components/visualization/{RagFlowVisualization,IngestFlowAnimation}.tsx
+//     wrappers → *Impl + nodes/ + edges/
+//   - Schema visualizer: features/administration/schema-visualizer/index.tsx wrapper
+//     → SchemaVisualizerImpl.tsx + SchemaNode.tsx + utils.ts
+//   - Diagram block: components/mardown-display/blocks/diagram/{InteractiveDiagramBlock,layout-utils}
+//     (every consumer loads it via React.lazy/next/dynamic)
+//   - Pillar map: features/marketing/content-plan/components/PillarMap.tsx
+//     (gated by ContentPlanWorkbench's next/dynamic)
+// A static value import anywhere else drags the whole flow runtime into that
 // route/server chunk: the exact build-time-leak class that ballooned the build
-// 15→24min for the context menu. The Impl file carries a justified one-line
-// eslint-disable. `import type {...}` and dynamic `import()` are unaffected.
+// 15→24min for the context menu. `import type {...}` and dynamic `import()`
+// are unaffected.
 const reactFlowStaticImportBan = [
     {
         selector:
             "ImportDeclaration[importKind!='type'][source.value=/^(@xyflow\\/react|reactflow)$/]",
         message:
-            "Do not statically import React Flow (@xyflow/react / reactflow) — it's a heavy browser-only canvas. Keep it in features/agents/agent-sets/components/SetBuilderCanvasImpl.tsx behind the SetBuilderCanvas next/dynamic({ ssr: false }) wrapper. If this file IS that Impl, add `// eslint-disable-next-line no-restricted-syntax` directly above the import with a one-line justification. `import type {...}` and dynamic import() are fine. See the code-splitting skill.",
+            "Do not statically import React Flow (@xyflow/react / reactflow) — it's a heavy browser-only canvas. Keep it inside one of the gated surfaces (SetBuilderCanvasImpl, rag visualization Impls, schema-visualizer Impl, InteractiveDiagramBlock, PillarMap — see the comment above reactFlowStaticImportBan), each behind ONE next/dynamic({ ssr: false }) front door. If this file is inside such a gate, add `// eslint-disable-next-line no-restricted-syntax` directly above the import with a one-line justification. `import type {...}` and dynamic import() are fine. See the code-splitting skill.",
     },
 ];
 

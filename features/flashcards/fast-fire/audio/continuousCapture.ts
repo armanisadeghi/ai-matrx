@@ -57,6 +57,10 @@ import {
   resumeSharedAudioContext,
 } from "@/features/audio/audioContext";
 import { claimCapture, releaseCapture } from "@/features/audio/captureLock";
+import {
+  createStreamLevelMeter,
+  type StreamLevelMeter,
+} from "@/features/audio/streamLevelMeter";
 import { beginRecordingSession } from "@/features/audio/session/audioSessionRegistry";
 import type { PlaybackSessionHandle } from "@/features/audio/session/types";
 import { makeSineFloat32, mixInto } from "@/lib/audio/pcm";
@@ -122,8 +126,8 @@ interface CaptureStore {
   workletNode: AudioWorkletNode | null;
   scriptNode: ScriptProcessorNode | null;
   sinkGain: GainNode | null;
-  analyser: AnalyserNode | null;
-  rafId: number | null;
+  /** Canonical level meter (features/audio/streamLevelMeter) — no forked math. */
+  levelMeter: StreamLevelMeter | null;
   // Per-card windows + deferred clip resolvers, keyed by stable card id.
   cards: Map<string, CardWindow>;
   cardOrder: string[];
@@ -153,8 +157,7 @@ const store: CaptureStore = {
   workletNode: null,
   scriptNode: null,
   sinkGain: null,
-  analyser: null,
-  rafId: null,
+  levelMeter: null,
   cards: new Map(),
   cardOrder: [],
   activeCardId: null,
@@ -252,7 +255,10 @@ function appendFrame(frame: Float32Array): void {
   store.sampleCount += frame.length;
 }
 
-// ── Level meter (AnalyserNode tap, rAF) — also drives debug emission ──────────
+// ── Level meter — the canonical `createStreamLevelMeter` core, adapted at this
+// boundary from its 0-100 scale to the 0-1 contract `subscribeLevel` consumers
+// (VoiceAnswerMicMeter, FastFireTimerBar, spoken-practice) already depend on.
+// The meter callback also drives throttled debug emission, as before. ─────────
 function emitLevel(level: number): void {
   store.level = level;
   for (const l of store.levelListeners) {
@@ -264,38 +270,19 @@ function emitLevel(level: number): void {
   }
 }
 
-function startLevelMeter(ctx: AudioContext): void {
-  if (!store.source) return;
-  store.analyser = ctx.createAnalyser();
-  store.analyser.fftSize = 256;
-  store.source.connect(store.analyser);
-  const data = new Uint8Array(store.analyser.frequencyBinCount);
-  const tick = () => {
-    if (!store.analyser) return;
-    store.analyser.getByteFrequencyData(data);
-    let sum = 0;
-    for (let i = 0; i < data.length; i++) sum += data[i];
-    emitLevel(data.length > 0 ? sum / data.length / 255 : 0);
+function startLevelMeter(stream: MediaStream): void {
+  stopLevelMeter(); // never stack meters
+  store.levelMeter = createStreamLevelMeter(stream, (level0to100) => {
+    emitLevel(level0to100 / 100);
     maybeEmitDebug();
-    store.rafId = requestAnimationFrame(tick);
-  };
-  tick();
+  });
 }
 
 function stopLevelMeter(): void {
-  if (store.rafId !== null) {
-    cancelAnimationFrame(store.rafId);
-    store.rafId = null;
-  }
-  if (store.analyser) {
-    try {
-      store.analyser.disconnect();
-    } catch {
-      /* ignore */
-    }
-    store.analyser = null;
-  }
-  emitLevel(0);
+  // stop() cancels the rAF, disconnects the graph, and emits a final 0
+  // (which flows through the callback above to every listener).
+  store.levelMeter?.stop();
+  store.levelMeter = null;
 }
 
 /** True while the continuous PCM capture graph is wired and recording. */
@@ -442,7 +429,7 @@ async function startContinuousCaptureInner(
     controls: { stop: () => hardStopCapture() },
   });
 
-  startLevelMeter(ctx);
+  startLevelMeter(stream);
   maybeEmitDebug(true);
 
   if (!store.capturePath) {

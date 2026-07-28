@@ -10,7 +10,9 @@
 // voice-agent/audio/audioCapture, flashcards/fast-fire/continuousCapture).
 // Every one of them re-derived the same scaling and the same teardown, and a
 // missed teardown leaks a rAF loop + a graph node for the life of the tab.
-// This is the one implementation new code consumes.
+// This is the one implementation new code consumes. Non-React modules consume
+// the same core directly via `createStreamLevelMeter`
+// (`features/audio/streamLevelMeter.ts`) — the graph + math live there once.
 //
 // CONTRACT
 // - Pass a live `MediaStream` (with at least one audio track) to meter it;
@@ -25,19 +27,8 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import {
-  getSharedAudioContext,
-  resumeSharedAudioContext,
-} from "@/features/audio/audioContext";
-
-/** Matches the scaling every prior inline copy used (headroom for visibility). */
-function normalize(data: Uint8Array): number {
-  let sum = 0;
-  for (let i = 0; i < data.length; i += 1) sum += data[i];
-  const average = sum / Math.max(1, data.length);
-  return Math.min(100, (average / 255) * 150);
-}
+import { useEffect, useState } from "react";
+import { createStreamLevelMeter } from "@/features/audio/streamLevelMeter";
 
 /**
  * Live input level (0-100) for `stream`, or 0 when `stream` is null/silent.
@@ -45,62 +36,13 @@ function normalize(data: Uint8Array): number {
  */
 export function useStreamAudioLevel(stream: MediaStream | null): number {
   const [level, setLevel] = useState(0);
-  const frameRef = useRef<number | null>(null);
   const metered = stream !== null && stream.getAudioTracks().length > 0;
 
   useEffect(() => {
     if (!metered || !stream) return;
-
-    let cancelled = false;
-    let analyser: AnalyserNode | null = null;
-    let source: MediaStreamAudioSourceNode | null = null;
-
-    // Async by design (the shared context may need a gesture-driven resume).
-    void (async () => {
-      await resumeSharedAudioContext();
-      if (cancelled) return;
-      const ctx = getSharedAudioContext();
-      if (!ctx) return; // No Web Audio here — the meter stays at 0, loudly inert.
-      try {
-        analyser = ctx.createAnalyser();
-        analyser.fftSize = 256;
-        analyser.smoothingTimeConstant = 0.8;
-        source = ctx.createMediaStreamSource(stream);
-        source.connect(analyser);
-      } catch (err) {
-        console.error("[useStreamAudioLevel] analyser graph failed:", err);
-        return;
-      }
-
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      const tick = (): void => {
-        if (cancelled || !analyser) return;
-        analyser.getByteFrequencyData(data);
-        setLevel(normalize(data));
-        frameRef.current = requestAnimationFrame(tick);
-      };
-      tick();
-    })();
-
-    return () => {
-      cancelled = true;
-      if (frameRef.current !== null) {
-        cancelAnimationFrame(frameRef.current);
-        frameRef.current = null;
-      }
-      // Disconnect (never close — the context is shared).
-      try {
-        source?.disconnect();
-      } catch (err) {
-        console.error("[useStreamAudioLevel] source disconnect threw:", err);
-      }
-      try {
-        analyser?.disconnect();
-      } catch (err) {
-        console.error("[useStreamAudioLevel] analyser disconnect threw:", err);
-      }
-      setLevel(0);
-    };
+    const meter = createStreamLevelMeter(stream, setLevel);
+    // stop() cancels the rAF, disconnects the graph, and emits a final 0.
+    return () => meter.stop();
   }, [stream, metered]);
 
   // Derived, not reset-in-an-effect: with nothing to meter the level IS zero,

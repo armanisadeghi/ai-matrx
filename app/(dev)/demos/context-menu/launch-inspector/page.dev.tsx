@@ -676,11 +676,11 @@ export default function LaunchInspectorDemoPage() {
                   <div className="space-y-1 pt-1">
                     {resources.map((r) => (
                       <p
-                        key={r.id}
+                        key={r.resourceId}
                         className="font-mono text-[11px] text-muted-foreground truncate"
                       >
-                        resource: {r.type} · {r.status} ·{" "}
-                        {previewValue(r.label ?? r.id, 80)}
+                        resource: {r.blockType} · {r.status} ·{" "}
+                        {previewValue(r.resourceId, 80)}
                       </p>
                     ))}
                   </div>

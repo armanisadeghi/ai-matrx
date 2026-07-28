@@ -249,6 +249,12 @@ function TriggersSection() {
 
 /* ── page ────────────────────────────────────────────────────────────────── */
 
+/** Picker `onCreate` handlers return void; `createDraft` returns the new
+ *  draft id for hosts that need it. This page doesn't, so drop it. */
+function handleCreateDraft(payload: Parameters<typeof createDraft>[0]): void {
+  createDraft(payload);
+}
+
 export default function ContextReimaginePage() {
   return (
     <div className="min-h-dvh bg-textured">
@@ -305,7 +311,7 @@ export default function ContextReimaginePage() {
                   <DrillDeck
                     engine={engine}
                     mode={mode}
-                    onCreate={createDraft}
+                    onCreate={handleCreateDraft}
                     className="h-[420px] w-[260px]"
                   />
                 </div>
@@ -337,7 +343,7 @@ export default function ContextReimaginePage() {
                 <MillerColumns
                   engine={engine}
                   mode={mode}
-                  onCreate={createDraft}
+                  onCreate={handleCreateDraft}
                   className="h-[480px] w-full"
                 />
               )}
@@ -354,7 +360,7 @@ export default function ContextReimaginePage() {
                   engine={engine}
                   mode={mode}
                   variant="condensed"
-                  onCreate={createDraft}
+                  onCreate={handleCreateDraft}
                   className="h-[300px] w-full"
                 />
               )}

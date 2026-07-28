@@ -2,6 +2,7 @@
 // Builds React Flow nodes/edges from the standalone SchemaOverview.
 
 import type { CSSProperties } from "react";
+// eslint-disable-next-line no-restricted-syntax -- inside the SchemaVisualizer dynamic(ssr:false) front-door gate (index.tsx); React Flow stays STATIC in-gate per the code-splitting skill (rule 3).
 import { Position } from "reactflow";
 import type {
   SchemaOverview,

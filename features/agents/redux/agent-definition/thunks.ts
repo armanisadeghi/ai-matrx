@@ -797,7 +797,11 @@ export const createAgent = createAsyncThunk<
 });
 
 /**
- * Deletes an agent from the DB and removes it from state.
+ * Soft-deletes an agent (sets `deleted_at`) and removes it from state.
+ *
+ * Platform standard: never hard-delete. The gallery readers (`agx_get_list`,
+ * `agx_search`) already exclude rows with `deleted_at IS NOT NULL`, so the
+ * agent disappears everywhere while remaining restorable in the DB.
  */
 export const deleteAgent = createAsyncThunk<void, string, ThunkApi>(
   "agentDefinition/delete",
@@ -805,7 +809,7 @@ export const deleteAgent = createAsyncThunk<void, string, ThunkApi>(
     const { error } = await supabase
       .schema("agent")
       .from("definition")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", agentId);
 
     if (error) throw pgErrorToError(error);

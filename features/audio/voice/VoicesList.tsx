@@ -45,10 +45,11 @@ const VoicesList: React.FC = () => {
       setOneData("availableVoices", filteredVoices);
     } catch (err) {
       console.error("Error in loadVoices:", err);
-      setError("Failed to fetch voices.");
+      const detail = err instanceof Error ? err.message : String(err);
+      setError(`Failed to fetch voices: ${detail}`);
       toast({
-        title: "Error",
-        description: "Failed to fetch voices. Please try again.",
+        title: "Failed to fetch voices",
+        description: detail,
         variant: "destructive",
       });
     } finally {

@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useRef,
 } from "react";
+// eslint-disable-next-line no-restricted-syntax -- every consumer loads InteractiveDiagramBlock via React.lazy/next/dynamic (BlockComponentRegistry, CanvasRenderer, MindMapView, artifact-renderers); React Flow stays STATIC in-gate per the code-splitting skill (rule 3).
 import ReactFlow, {
   Node,
   Edge,

@@ -282,7 +282,11 @@ const nextConfig = {
         // levers are rootReducer lazy-injection (shrinks every per-page server
         // bundle) or building off-Vercel (GH Actions + `vercel deploy
         // --prebuilt`), and the graph itself needs to come down.
-        turbopackMemoryLimit: 32212254720,
+        // 30GiB → 40GiB (2026-07-28, Arman ruling closing D107): the 30GiB drop
+        // was NOT the OOM fix — eliminating the incorrect edge lazy imports that
+        // caused massive chunking (the v0.4.137 revert) was. Restored to 40GiB
+        // for compile speed; the worker-phase headroom math above still holds.
+        turbopackMemoryLimit: 42949672960,
         cpus: 4,
         serverActions: {
             bodySizeLimit: "10mb",
@@ -331,6 +335,10 @@ const nextConfig = {
     // - @scaleflex/ui: Filerobot's underlying UI primitives (same pattern).
     transpilePackages: ["react-filerobot-image-editor", "@scaleflex/ui"],
     typescript: {
+        // RATIFIED (Arman, 2026-07-28, closing D64/D65): checks scream loud but
+        // NEVER stop the build. Type errors are surfaced by the advisory release
+        // gates (`pnpm check:release-gates` in release.sh); the build itself must
+        // always ship. Do not flip this without a new ruling.
         ignoreBuildErrors: true,
     },
     // Next.js 16 removed the `eslint` config block and the `next lint` command.

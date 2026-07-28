@@ -101,7 +101,19 @@ function parseBindings(raw: unknown): BundleBinding[] {
     const kinds = Array.isArray(entry.kinds)
       ? entry.kinds.filter((k): k is string => typeof k === "string")
       : [];
-    out.push({ variable, kinds: kinds as BundleBinding["kinds"] });
+    // The wire shape carries `strategy` and `delivery` — dropping either here
+    // was D106: a bundle saved with "on demand" delivery reloaded as all-inject,
+    // and `strategy: "first"` bundles (Report only) reloaded as concat.
+    out.push({
+      variable,
+      kinds: kinds as BundleBinding["kinds"],
+      ...(entry.strategy === "first" || entry.strategy === "concat"
+        ? { strategy: entry.strategy }
+        : {}),
+      ...(entry.delivery === "context" || entry.delivery === "direct"
+        ? { delivery: entry.delivery }
+        : {}),
+    });
   }
   return out;
 }

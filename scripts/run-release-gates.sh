@@ -37,6 +37,7 @@ done
 
 if $STRICT; then
     declare -a GATES=(
+        "TypeScript type-check|pnpm type-check"
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts --strict"
         "Doc claims vs live config|pnpm exec tsx scripts/check-doc-claims.ts --strict"
         "Turbopack filesystem tracing|pnpm exec tsx scripts/check-turbopack-fs-tracing.ts"
@@ -53,6 +54,9 @@ if $STRICT; then
 else
     # Non-strict variants still print the full loud report; they exit 0.
     declare -a GATES=(
+        # Arman ruling 2026-07-28 (D64/D65): type errors SCREAM here on every
+        # release but never stop the build (ignoreBuildErrors stays true).
+        "TypeScript type-check|pnpm type-check"
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts"
         "Doc claims vs live config|pnpm exec tsx scripts/check-doc-claims.ts"
         "Turbopack filesystem tracing|pnpm exec tsx scripts/check-turbopack-fs-tracing.ts"

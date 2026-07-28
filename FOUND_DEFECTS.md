@@ -17,17 +17,13 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 GitHub check `Workers Builds: ai-matrx-admin` fails on release commits while Vercel is green and serving. No Wrangler/Cloudflare config exists in the repo; the check comes from an external Cloudflare integration. **Decides: Arman** — retire the integration, or configure the deployment it expects.
 
-### D107 — the build-OOM fix is UNATTRIBUTED: two candidate causes landed in the same green build (2026-07-27)
-
-v0.4.130–136 SIGKILL'd; v0.4.138 went green after BOTH the `React.lazy → next/dynamic` campaign revert (v0.4.137) AND `turbopackMemoryLimit` 40→30GiB (v0.4.138). Isolate with one controlled experiment: restore 40GiB alone and release. Green ⇒ revert was the fix, keep 40GiB. Red ⇒ ceiling is load-bearing, keep 30GiB and re-land the campaign. Never change both in one release.
-
 ### D108 — seven historic feedback screenshots are permanently dead (2026-07-27)
 
 `users.user_feedback.image_urls` has seven expired `…/share/<uuid>/download` pointers (404 `share_link_invalid`). New MCP writes already reject this URL class. Fix: recover originals from backups if possible and replace with CDN URLs; otherwise mark irrecoverable.
 
-### D106 — research context builder loses settings on save; token budget is the wrong affordance (2026-07-26)
+### D106 (remainder) — research context builder: replace the token-budget number (2026-07-26)
 
-Owner-reported, deferred deliberately. `features/research/` (start: `hooks/useContextBuilder.ts`, `components/resources/ResourcePicker.tsx`): (1) per-resource `on_demand` vs `inject` not honored on save/reload; (2) chosen agent lost on round-trip; (3) report type lost on round-trip — likely ONE save-shape/load-shape drift bug, diff written vs read before fixing individually; (4) replace the token-budget number with a green/yellow/red indicator.
+Items 1-3 (save/load drift) fixed 2026-07-28. Remaining: replace the token-budget number with a green/yellow/red indicator + warnings — the user needs "fine / getting heavy / too much", not a count.
 
 ### D106b — five more surfaces still claim "Only you" from data that can't support it (2026-07-26)
 
@@ -39,13 +35,9 @@ Same class as the files fix (`22e8d79ea`): a surface reads one signal and render
 - `features/content-ir/studio/components/ShapeOwnerEditor.tsx:40`
 - `features/education/data/features.ts:236` (marketing promise — resolve with D105)
 
-### D105 — files default to `internal` (org-readable): 11,003 rows. Product call, Arman (2026-07-26)
+### D105b — file surfaces must separate MY files from ORG files (Arman ruling 2026-07-28)
 
-`files.files.visibility` / `files.folders.visibility` DEFAULT `internal`, so unlabelled uploads are org-readable. Access behavior never changed — only the label was wrong (fixed `22e8d79ea`). **Decides: Arman**: (a) keep the default; (b) flip to `personal` for new rows; (c) flip + backfill (dangerous — can silently revoke relied-upon access). Do not act without an explicit answer.
-
-### D104 — no footer anywhere in `(public)`; legal docs are near-unreachable (2026-07-26)
-
-`app/(public)/layout.tsx` has no footer; `/privacy-policy` and `/terms-and-conditions` are linked only from OAuth consent, SMS constants, and `app/page.tsx:122-131` (which omits Terms). Fix: one shared public footer (Privacy, Terms, Contact) in `(public)/layout.tsx` + `app/page.tsx`. Placement/links: Arman.
+RULED: `internal` default is correct and stays — files are org collaboration data by design; never propose flipping visibility defaults. The real defect is architectural: file list pages don't cleanly separate files that are YOURS from files that belong to the ORGANIZATION (the Mine / My Orgs scope pattern from the canonical entry list). Needs an architecture discussion with Arman before building; do not restyle privacy labels as a substitute.
 
 ### D103 — legal vertical landings predate `ModuleLanding`; PD calculator has no guest landing (2026-07-26)
 
@@ -53,7 +45,7 @@ Same class as the files fix (`22e8d79ea`): a surface reads one signal and render
 
 ### D101 (partial) — `agx_get_list` has no org scope; the delete path is a HARD delete (2026-07-25)
 
-Soft-delete predicate fixed on both gallery readers (`migrations/agx_get_list_excludes_soft_deleted.sql`, `agx_search_excludes_soft_deleted.sql`). Remaining: (1) org-teammate agents invisible in `agx_get_list` — belongs with retiring `/agents/all` onto `agx_list_scoped` once `/agents/browse` is ratified; (2) `features/agents/redux/agent-definition/thunks.ts:805` hard-deletes agents — no soft-delete/undo on that path; (3) ~6 more SECURITY DEFINER readers of `agent.definition` share the missing soft-delete predicate (`agx_get_shared_with_me`, `agx_get_shared_for_chat`, `get_agents_for_chat`, `agx_get_access_level`, `agx_duplicate_agent`, `agx_get_shortcuts_for_context*`, `agx_get_list_full` builtin arm).
+Soft-delete predicate fixed on both gallery readers; the hard-delete path became a soft delete (`deleted_at`) 2026-07-28. Remaining: (1) org-teammate agents invisible in `agx_get_list` — belongs with retiring `/agents/all` onto `agx_list_scoped` once `/agents/browse` is ratified; (2) ~6 more SECURITY DEFINER readers of `agent.definition` share the missing soft-delete predicate (`agx_get_shared_with_me`, `agx_get_shared_for_chat`, `get_agents_for_chat`, `agx_get_access_level`, `agx_duplicate_agent`, `agx_get_shortcuts_for_context*`, `agx_get_list_full` builtin arm).
 
 ### D100 — three registered catalog entity types are ACL-invisible (2026-07-24)
 
@@ -87,9 +79,9 @@ Nullable tagging-column variant, not load-bearing (auth gates never read it). Re
 
 Pre-existing `security_definer_view` errors + RLS-disabled exposed tables (e.g. `public.full_spectrum_positions`, `files.structure`, `workflow.worker_heartbeat`). Needs an owner-by-owner audit before the advisor can be a clean release gate.
 
-### D81 — five inline copies of the mic level-meter analyser (2026-07-22)
+### D81 (remainder) — two inline mic level-meter copies left (2026-07-22)
 
-`features/audio/useStreamAudioLevel.ts` is THE hook. Still-inline copies: `useSimpleRecorder.ts`, `useChunkedRecordAndTranscribe.ts`, `MediaDevicesPanel.tsx`, `voice-agent/audio/audioCapture.ts`, `flashcards/fast-fire/audio/continuousCapture.ts`. Port one module per change (framework-free modules may need a non-React `createStreamLevelMeter` core), verifying the meter still moves.
+Canonical core now `features/audio/streamLevelMeter.ts` (+ `useStreamAudioLevel`); 3 of 5 modules ported 2026-07-28. Remaining: `useSimpleRecorder.ts` and `voice-agent/audio/audioCapture.ts` — analyser lifecycle entangled with recording teardown; port carefully, one per change, verifying the meter still moves.
 
 ### D80 — stale agent records report full `_loadedFields` with EMPTY `variableDefinitions` (2026-07-22)
 
@@ -111,9 +103,9 @@ All 10,676 rows null. FE is ready (link graph, External view, HTTP column). Fix 
 
 File-picker consolidation done; `FolderPicker`/`SaveAsDialog` still use the old `PickerShell` dialog. Decide: extend `FilesResourcePicker` with folder-select mode or keep a dedicated folder surface, then retire `PickerShell`.
 
-### D74b — /voice/playground: "Failed to fetch voices" — Cartesia SDK/API shape mismatch (2026-07-19)
+### D113 — Cartesia API key is exposed client-side (`NEXT_PUBLIC_CARTESIA_API_KEY`) (2026-07-28)
 
-`lib/cartesia/cartesiaUtils.ts#listVoices` (`cartesia.voices.list()`) throws `ParseError: Expected list. Received object.` — the API now returns a paginated envelope the installed SDK doesn't expect. Fix: bump/pin the SDK or unwrap the envelope. ALSO check `lib/cartesia/client.ts` for a client-side API key — if present that's its own P1 (route through aidream / token broker).
+`lib/cartesia/client.ts` builds the Cartesia client from `NEXT_PUBLIC_CARTESIA_API_KEY` — the real key is inlined into the browser bundle, readable in devtools, usable for arbitrary TTS/voice-clone billing. Fix: mint scoped short-lived credentials via the token broker (`lib/api/broker/`, `token-broker-client` skill) or route Cartesia calls through aidream. Found while fixing D74b.
 
 ### D76 — app-wide: "state update on a component that hasn't mounted yet" on `/scraper` and `/` (2026-07-19)
 
@@ -131,25 +123,9 @@ See D76. Suspect: `getOrCompileDbKindComponent` called during render with a modu
 
 aidream never writes it; lists/RSS can't show runtimes (player recovers client-side per fetched file only). Fix in aidream at publish time; backfill needs per-file probing.
 
-### D64 — nothing is enforced automatically: no pre-commit hook, no CI (2026-07-18)
-
-**Decides: Arman.** Root cause of the doc/config drift class. Pick one: (a) pre-commit hook running `check:doc-claims` + `check:tsconfig`; (b) CI running the `:strict` gates on PR; (c) ratify advisory-only and keep docs saying exactly that.
-
-### D65 — production builds never type-check (`ignoreBuildErrors: true`) (2026-07-18)
-
-**Decides: Arman.** Set since 2024-12. Measured cost of flipping ≈ zero (8 errors full-repo, 3 real, all in `(dev)` demos). On a clean tree: fix the 3, remove the flag, `pnpm build`.
-
-### D66 — `app/(dev)/**` is the last shipped-code hole in the type gate (2026-07-18)
-
-`tsconfig.typecheck.json` still excludes it (~6 real errors). Fix the errors and drop the exclude; `check:doc-claims` already guards non-`(dev)` paths.
-
 ### D67 — doctrine says "banned", ESLint says `warn`, with live violations (2026-07-18)
 
 Browser dialogs (`no-alert` etc., ~20 live in app-builder + demos), barrel files (488 warnings), banned lucide brand icons (runtime-missing → 500s; `warn` is the wrong severity). Each needs: finish cleanup and promote to `error`, or soften the doc. Don't leave doc and rule disagreeing.
-
-### D70 — `reactFlowStaticImportBan`'s own comment is false; 10 live violations (2026-07-18)
-
-Static `@xyflow/react` imports in `features/rag/components/visualization/` (6), `features/administration/schema-visualizer/` (3), `InteractiveDiagramBlock.tsx`. Migrate to `next/dynamic` or scope the ban with an allowlist and fix the comment.
 
 ### D60 — chat draft transfer never lands for VARIABLE-INPUT agents (2026-07-17)
 
@@ -159,9 +135,9 @@ Plain-agent path fixed. For agents with launch variables/broker inputs (repro: a
 
 Context (`organization_id`, `project_id`, `task_id`, `scope_ids`, agent identity) must not silently drift between turns. Today: console warn + BE stream warning only — neither blocks nor confirms. Required: FE compares previous vs current and prompts the user. **Owner: Arman** (confirm UX). Twin entry in aidream.
 
-### D58 — paid-class gate is a no-op stub — `edu_class_purchase` grants entitlement with NO payment (2026-07-14)
+### D58 (remainder) — Stripe Connect built + live; Arman dashboard actions remain (2026-07-15)
 
-**Decides: Arman.** Any authenticated user can enroll in any paid class free (`purchase_stub`). The rest of the paid gate is airtight. Wire Stripe Connect or block the `paid` access_mode in the UI until then.
+The stub is DELETED live (verified 2026-07-28); real path shipped `584eb5941`: Checkout destination-charge (80/20 split) → signature-verified webhook → service-role `edu_class_confer_purchase` (+ refund/dispute revoke). **Blocked on Arman:** (1) enable Stripe Connect on the platform account; (2) set `STRIPE_WEBHOOK_SECRET` + register `/api/stripe/webhook` in the dashboard; then one test-mode purchase E2E.
 
 ### D57 — COPPA gate: only the LEGAL policy calls remain (2026-07-15)
 
@@ -197,6 +173,15 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 One line per fix — title, date, pointer. History lives in git.
 
+- **D107** — closed by Arman's attribution: the OOM fix was eliminating bad edge lazy imports (v0.4.137 revert), NOT the memory ceiling; `turbopackMemoryLimit` restored to 40GiB. 2026-07-28.
+- **D104** — shared `PublicFooter` (Privacy/Terms/Contact) mounted in `(public)/layout.tsx` + `app/page.tsx` (`components/matrx/PublicFooter.tsx`). 2026-07-28.
+- **D106.1-3** — research context builder save/load drift: `parseBindings` round-trips `delivery`+`strategy`; agent selection lifted + persisted (`features/research/service/resources.ts`, `ContextBuilder.tsx`). 2026-07-28.
+- **D101.2** — agent delete is now a soft delete (`deleted_at`) in `agent-definition/thunks.ts`. 2026-07-28.
+- **D81 (3/5)** — level-meter core extracted to `features/audio/streamLevelMeter.ts`; MediaDevicesPanel, useChunkedRecordAndTranscribe, continuousCapture ported. 2026-07-28.
+- **D74b** — Cartesia voices list unwraps the paginated envelope via direct versioned REST (`lib/cartesia/cartesiaUtils.ts`); real error surfaced in the toast. Key exposure filed as D113. 2026-07-28.
+- **D70** — every React Flow surface behind ONE dynamic gate (rag viz + schema-visualizer shells → `*Impl`); `reactFlowStaticImportBan` comment corrected. 2026-07-28.
+- **D66** — `app/(dev)/**` un-excluded from the type gate; all dev-route errors fixed properly; full repo green. 2026-07-28.
+- **D64/D65** — RATIFIED by Arman: "scream loud, never stop the build" — `ignoreBuildErrors` stays (annotated), `pnpm type-check` added to the advisory release gates so every release screams. 2026-07-28.
 - **D112** — canonical list title cells are now real `next/link`s (keyboard/SR/middle-click) via `MatrxColumnDef.href` in `MatrxDataTable`; agents-browse + CRM columns wired. 2026-07-28.
 - **D102** — `callApi` now surfaces server `user_message`/`message`/`details[].message` instead of bare "HTTP 422" (`lib/api/call-api.ts`). 2026-07-28.
 - **D97** — Univer autosave filtered to `CommandType.MUTATION` (+ denylist); scrolling no longer writes snapshots — `DocumentEditor.tsx`, `WorkbookEditor.tsx`, shared `isSnapshotMutation.ts`. 2026-07-28.

@@ -50,10 +50,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAudioDevices } from "@/features/audio/useAudioDevices";
 import { acquireMicStream, releaseMicStream } from "@/features/audio/micStream";
-import {
-  getSharedAudioContext,
-  resumeSharedAudioContext,
-} from "@/features/audio/audioContext";
+import { useStreamAudioLevel } from "@/features/audio/useStreamAudioLevel";
 import {
   audioContextSinkSupported,
   getPreferredOutputDeviceId,
@@ -350,82 +347,38 @@ function PermissionRow({
 
 /**
  * Live input-level meter. Acquires the shared mic stream (NOT a new
- * getUserMedia) + an AnalyserNode on the shared AudioContext; releases the hold
- * and disconnects on stop / unmount. Never stops the singleton's tracks.
+ * getUserMedia); the level itself comes from the canonical
+ * `useStreamAudioLevel` hook (shared AudioContext, analyser teardown on every
+ * exit path). Releases the mic hold on stop / unmount; never stops the
+ * singleton's tracks.
  */
 function MicLevelMeter({ disabled }: { disabled: boolean }) {
   const [testing, setTesting] = useState(false);
-  const [level, setLevel] = useState(0);
+  const [stream, setStream] = useState<MediaStream | null>(null);
   const heldRef = useRef(false);
   const disposedRef = useRef(false);
-  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const rafRef = useRef<number | null>(null);
+  const level = Math.round(useStreamAudioLevel(stream));
 
   const stop = useCallback(() => {
-    if (rafRef.current != null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-    if (sourceRef.current) {
-      try {
-        sourceRef.current.disconnect();
-      } catch {
-        /* ignore */
-      }
-      sourceRef.current = null;
-    }
-    if (analyserRef.current) {
-      try {
-        analyserRef.current.disconnect();
-      } catch {
-        /* ignore */
-      }
-      analyserRef.current = null;
-    }
+    setStream(null); // the hook cancels its rAF + disconnects its graph
     if (heldRef.current) {
       releaseMicStream();
       heldRef.current = false;
     }
-    setLevel(0);
     setTesting(false);
   }, []);
 
   const start = useCallback(async () => {
     try {
-      await resumeSharedAudioContext();
-      const ctx = getSharedAudioContext();
-      if (!ctx) {
-        toast.error("Audio not available in this browser");
-        return;
-      }
-      const stream = await acquireMicStream();
+      const micStream = await acquireMicStream();
       if (disposedRef.current) {
         // Unmounted while gUM was pending — release the ownerless hold now.
         releaseMicStream();
         return;
       }
       heldRef.current = true;
-      const source = ctx.createMediaStreamSource(stream);
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      source.connect(analyser);
-      sourceRef.current = source;
-      analyserRef.current = analyser;
+      setStream(micStream);
       setTesting(true);
-
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      const tick = () => {
-        const a = analyserRef.current;
-        if (!a) return;
-        a.getByteFrequencyData(data);
-        let sum = 0;
-        for (let i = 0; i < data.length; i++) sum += data[i];
-        const avg = sum / data.length; // 0..255
-        setLevel(Math.min(100, Math.round((avg / 255) * 140)));
-        rafRef.current = requestAnimationFrame(tick);
-      };
-      tick();
     } catch (err) {
       // Acquisition failed — release any partial hold so we never leak the mic.
       if (heldRef.current) {

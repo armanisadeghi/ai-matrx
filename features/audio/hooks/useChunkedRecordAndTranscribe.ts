@@ -39,9 +39,9 @@ import {
   subscribeMicInterruption,
 } from "../micStream";
 import {
-  getSharedAudioContext,
-  resumeSharedAudioContext,
-} from "../audioContext";
+  createStreamLevelMeter,
+  type StreamLevelMeter,
+} from "../streamLevelMeter";
 import { toAudioFile } from "../utils/audio-mime";
 import { transcribeAudioFile } from "../services/speechApi";
 
@@ -143,12 +143,10 @@ export function useChunkedRecordAndTranscribe({
   const startTimeRef = useRef(0);
   const pausedAtRef = useRef(0);
   const pausedDurationRef = useRef(0);
-  // Points at the SHARED AudioContext (not owned/closed here) — the analyser is
-  // only the cosmetic level meter; capture runs off the MediaStream directly.
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const rafRef = useRef<number | null>(null);
+  // The canonical level meter (features/audio/streamLevelMeter — shared
+  // AudioContext, analyser graph + rAF + teardown all inside). Cosmetic only;
+  // capture runs off the MediaStream directly.
+  const meterRef = useRef<StreamLevelMeter | null>(null);
   const safetyIdRef = useRef<string>("");
   const isPageHidingRef = useRef(false);
   const chunkIndexRef = useRef(0);
@@ -193,19 +191,11 @@ export function useChunkedRecordAndTranscribe({
     return Math.max(0, elapsed) / 1000;
   }, []);
 
-  // Tear down the analyser graph WITHOUT closing the shared AudioContext (it's
-  // reused by the next recording + other surfaces). Disconnect the source +
-  // analyser nodes so they're collected; the context stays warm.
-  const disconnectAnalyser = useCallback(() => {
-    try {
-      sourceNodeRef.current?.disconnect();
-    } catch {}
-    try {
-      analyserRef.current?.disconnect();
-    } catch {}
-    sourceNodeRef.current = null;
-    analyserRef.current = null;
-    audioCtxRef.current = null;
+  // Tear down the level meter (cancels its rAF + disconnects its analyser
+  // graph; the shared AudioContext stays warm for the next recording).
+  const stopLevelMeter = useCallback(() => {
+    meterRef.current?.stop();
+    meterRef.current = null;
   }, []);
 
   const cleanup = useCallback(() => {
@@ -220,11 +210,7 @@ export function useChunkedRecordAndTranscribe({
       clearInterval(durationTimerRef.current);
       durationTimerRef.current = null;
     }
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-    disconnectAnalyser();
+    stopLevelMeter();
     streamRef.current = null;
     if (micHeldRef.current) {
       releaseMicStream();
@@ -239,7 +225,7 @@ export function useChunkedRecordAndTranscribe({
     pausedAtRef.current = 0;
     pausedDurationRef.current = 0;
     isStoppingRef.current = false;
-  }, [disconnectAnalyser]);
+  }, [stopLevelMeter]);
 
   useEffect(
     () => () => {
@@ -273,10 +259,8 @@ export function useChunkedRecordAndTranscribe({
         clearInterval(durationTimerRef.current);
         durationTimerRef.current = null;
       }
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
+      meterRef.current?.stop();
+      meterRef.current = null;
 
       // Release the microphone (shared manager keeps the grant warm so a
       // bfcache restore won't re-prompt; a real unload tears everything down).
@@ -662,21 +646,15 @@ export function useChunkedRecordAndTranscribe({
     mediaRecorderRef.current = createRecorder(streamRef.current);
   }, [createRecorder]);
 
-  const startAudioAnalysis = useCallback(() => {
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-    const tick = () => {
-      if (!analyserRef.current) return;
-      const buf = new Uint8Array(analyserRef.current.frequencyBinCount);
-      analyserRef.current.getByteFrequencyData(buf);
-      const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
-      setAudioLevel(Math.min(100, (avg / 255) * 150));
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    tick();
-  }, []);
+  // Start the canonical level meter on `stream` (replacing any previous one).
+  // Same 0-100 scale the inline analyser produced; teardown lives in the core.
+  const startLevelMeter = useCallback(
+    (stream: MediaStream) => {
+      stopLevelMeter(); // never stack meters
+      meterRef.current = createStreamLevelMeter(stream, setAudioLevel);
+    },
+    [stopLevelMeter],
+  );
 
   const startDurationTimer = useCallback(() => {
     if (durationTimerRef.current) {
@@ -749,23 +727,12 @@ export function useChunkedRecordAndTranscribe({
       micHeldRef.current = true;
       streamRef.current = stream;
 
-      // Level meter taps the SHARED, resumable AudioContext (never per-instance
-      // `new AudioContext()` — that churned contexts and risked iOS exhaustion).
-      // resume() here rides the record-button gesture so iOS un-suspends it.
-      // Capture is independent of this; if Web Audio is unavailable the meter
-      // just stays flat and recording proceeds normally.
-      const sharedCtx = getSharedAudioContext();
-      if (sharedCtx) {
-        await resumeSharedAudioContext();
-        audioCtxRef.current = sharedCtx;
-        analyserRef.current = sharedCtx.createAnalyser();
-        analyserRef.current.fftSize = 256;
-        analyserRef.current.smoothingTimeConstant = 0.8;
-        const source = sharedCtx.createMediaStreamSource(stream);
-        source.connect(analyserRef.current);
-        sourceNodeRef.current = source;
-        startAudioAnalysis();
-      }
+      // Level meter = the canonical core (shared, resumable AudioContext —
+      // never per-instance `new AudioContext()`). Its internal resume() rides
+      // the record-button gesture so iOS un-suspends the context. Capture is
+      // independent of this; if Web Audio is unavailable the meter just stays
+      // flat and recording proceeds normally.
+      startLevelMeter(stream);
 
       mimeTypeRef.current = MediaRecorder.isTypeSupported(
         "audio/webm;codecs=opus",
@@ -815,13 +782,7 @@ export function useChunkedRecordAndTranscribe({
     } finally {
       startingRef.current = false;
     }
-  }, [
-    cleanup,
-    startAudioAnalysis,
-    startDurationTimer,
-    createRecorder,
-    rotateChunk,
-  ]);
+  }, [cleanup, startLevelMeter, startDurationTimer, createRecorder, rotateChunk]);
 
   const stopRecording = useCallback(() => {
     isStoppingRef.current = true;
@@ -837,11 +798,7 @@ export function useChunkedRecordAndTranscribe({
       clearInterval(durationTimerRef.current);
       durationTimerRef.current = null;
     }
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-    disconnectAnalyser();
+    stopLevelMeter();
     streamRef.current = null;
     if (micHeldRef.current) {
       releaseMicStream();
@@ -872,7 +829,7 @@ export function useChunkedRecordAndTranscribe({
 
     mediaRecorderRef.current.stop();
     mediaRecorderRef.current = null;
-  }, [maybeFireFinal, disconnectAnalyser]);
+  }, [maybeFireFinal, stopLevelMeter]);
 
   // Surface OS-level mic interruptions LOUDLY while recording. A hard `ended`
   // (iOS lock / call / app switch) or a permission revoke kills capture — the
@@ -906,10 +863,6 @@ export function useChunkedRecordAndTranscribe({
       clearInterval(durationTimerRef.current);
       durationTimerRef.current = null;
     }
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
 
     // Flush the current chunk (onstop → transcribeBlob saves + transcribes it).
     mediaRecorderRef.current.stop();
@@ -921,7 +874,7 @@ export function useChunkedRecordAndTranscribe({
     // light on, which alarms users and is the exact "open vs standby" bug we're
     // killing). The grant + chosen device survive in the warm singleton, so
     // `resumeRecording` re-acquires instantly with no re-prompt.
-    disconnectAnalyser();
+    stopLevelMeter();
     streamRef.current = null;
     if (micHeldRef.current) {
       releaseMicStream();
@@ -931,7 +884,7 @@ export function useChunkedRecordAndTranscribe({
     pausedAtRef.current = Date.now();
     setAudioLevel(0);
     setIsPaused(true);
-  }, [disconnectAnalyser]);
+  }, [stopLevelMeter]);
 
   const resumeRecording = useCallback(async () => {
     // Re-acquire the mic out of standby. Within the singleton's keepalive this
@@ -957,22 +910,13 @@ export function useChunkedRecordAndTranscribe({
       micHeldRef.current = true;
       streamRef.current = stream;
 
-      const sharedCtx = getSharedAudioContext();
-      if (sharedCtx) {
-        await resumeSharedAudioContext();
-        audioCtxRef.current = sharedCtx;
-        analyserRef.current = sharedCtx.createAnalyser();
-        analyserRef.current.fftSize = 256;
-        analyserRef.current.smoothingTimeConstant = 0.8;
-        const source = sharedCtx.createMediaStreamSource(stream);
-        source.connect(analyserRef.current);
-        sourceNodeRef.current = source;
-      }
+      // Fresh canonical meter on the (possibly new) stream — the paused one
+      // was already stopped in pauseRecording.
+      startLevelMeter(stream);
 
       pausedDurationRef.current += Date.now() - pausedAtRef.current;
       mediaRecorderRef.current = createRecorder(stream);
 
-      startAudioAnalysis();
       startDurationTimer();
       scheduleNextRotationRef.current?.();
       setIsPaused(false);
@@ -983,7 +927,7 @@ export function useChunkedRecordAndTranscribe({
     } finally {
       startingRef.current = false;
     }
-  }, [createRecorder, startAudioAnalysis, startDurationTimer, cleanup]);
+  }, [createRecorder, startLevelMeter, startDurationTimer, cleanup]);
 
   const reset = useCallback(() => {
     cleanup();

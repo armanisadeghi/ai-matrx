@@ -5,6 +5,7 @@ import { Lock, Shield, Zap, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LandingCTAs } from "@/features/landing/components/LandingCTAs";
 import { AuthAwareButton } from "@/features/landing/components/AuthAwareButton";
+import { PublicFooter } from "@/components/matrx/PublicFooter";
 
 // Enhanced metadata for SEO
 export const metadata: Metadata = {
@@ -119,17 +120,10 @@ export default function LandingPage() {
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent pointer-events-none" />
       </main>
 
-      {/* Footer */}
-      <footer className="py-6 border-t border-zinc-200 dark:border-zinc-800 relative z-10">
-        <div className="container mx-auto px-4 text-center">
-          <Link
-            href="/privacy-policy"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Privacy Policy
-          </Link>
-        </div>
-      </footer>
+      {/* Footer — shared public footer (Privacy / Terms / Contact) */}
+      <div className="relative z-10">
+        <PublicFooter />
+      </div>
     </div>
   );
 }

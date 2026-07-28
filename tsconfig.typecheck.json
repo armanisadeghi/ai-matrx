@@ -31,13 +31,12 @@
     ".claude",
     "out",
     "utils/schema/schemaUtils.ts",
-    "next-env.d.ts",
+    "next-env.d.ts"
 
     // (transitional) + features/applet were excluded 2026-06-28 to green a build. Measured
     // 2026-07-18 (D63): together they hid ZERO errors while removing 485 shipped files from
     // the only type gate this repo has. Un-excluded — do not re-add without a measurement.
-    // (dev) stays excluded: it holds 6 real errors and is stripped from the core prod profile.
-    // Tracked in FOUND_DEFECTS.md D64; verify with `pnpm type-check` before re-including.
-    "app/(dev)/**"
+    // app/(dev)/** was un-excluded 2026-07-28 (D66) after fixing its errors — the type gate
+    // now covers the entire app tree. Do not re-add any app/** exclude.
   ]
 }

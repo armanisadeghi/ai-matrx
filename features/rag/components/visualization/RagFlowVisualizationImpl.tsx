@@ -31,6 +31,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+// eslint-disable-next-line no-restricted-syntax -- inside the RagFlowVisualization dynamic(ssr:false) front-door gate; React Flow stays STATIC in-gate per the code-splitting skill (rule 3).
 import {
   ReactFlow,
   Background,
@@ -57,6 +58,7 @@ import { Button } from "@/components/ui/button";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { Pause, Play, RotateCcw, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { RagFlowVisualizationProps } from "./RagFlowVisualization";
 
 import {
   PipelineNode,
@@ -504,13 +506,8 @@ const edgeTypes: EdgeTypes = {
 // Main component
 // ---------------------------------------------------------------------------
 
-export interface RagFlowVisualizationProps {
-  className?: string;
-  /** When true, controls are visible; default true */
-  showControls?: boolean;
-  /** Initial play state; default true */
-  autoPlay?: boolean;
-}
+// RagFlowVisualizationProps lives in the shell (RagFlowVisualization.tsx) so
+// consumers get types without pulling this Impl into their static graph.
 
 const SPEEDS: { label: string; value: number }[] = [
   { label: "0.5×", value: 0.5 },

@@ -82,6 +82,10 @@ export default function ContextBuilder() {
   const [saving, setSaving] = useState(false);
   /** Agent the loaded bundle was authored for — preselects the runner. */
   const [suggestedAgentId, setSuggestedAgentId] = useState<string | null>(null);
+  /** Agent the USER picked in the runner. Saved with the bundle (D106). */
+  const [pickedAgentId, setPickedAgentId] = useState<string | null>(null);
+  /** What a save persists and the runner uses: the user's pick, else the bundle's. */
+  const agentId = pickedAgentId ?? suggestedAgentId;
 
   const searchParams = useSearchParams();
   const requestedSlug = searchParams.get("bundle");
@@ -142,12 +146,14 @@ export default function ContextBuilder() {
       deliveries: bundleDeliveries(loaded),
     });
     // Bindings are compared too: switching a kind between inject and lazy
-    // context changes only the binding, and that IS an unsaved edit.
+    // context changes only the binding, and that IS an unsaved edit. So is
+    // picking a different agent — the agent is saved with the bundle.
+    if (pickedAgentId !== null && pickedAgentId !== loaded.agentId) return true;
     return (
       JSON.stringify([builder.draft.selectors, builder.draft.bindings]) !==
       JSON.stringify([normalized.selectors, normalized.bindings])
     );
-  }, [loaded, builder.draft.selectors, builder.draft.bindings, selectionCount, topicId]);
+  }, [loaded, builder.draft.selectors, builder.draft.bindings, selectionCount, topicId, pickedAgentId]);
 
   const applyBundle = (bundle: ContextBundle) => {
     builder.setSelection(bundleToSelection(bundle));
@@ -158,7 +164,10 @@ export default function ContextBuilder() {
       }
     }
     if (bundle.budget) builder.setBudgetTokens(bundle.budget.maxTokens);
-    if (bundle.agentId) setSuggestedAgentId(bundle.agentId);
+    // The bundle's agent (or its absence) replaces any earlier suggestion AND
+    // any manual pick — the loaded bundle is now the whole editor state.
+    setSuggestedAgentId(bundle.agentId ?? null);
+    setPickedAgentId(null);
     setLoaded(bundle);
     toast.success(`Loaded "${bundle.name}"`);
   };
@@ -179,8 +188,11 @@ export default function ContextBuilder() {
         selectors: builder.draft.selectors,
         bindings: builder.draft.bindings,
         budget: builder.draft.budget,
+        agentId,
       });
       setLoaded(saved);
+      setPickedAgentId(null);
+      setSuggestedAgentId(saved.agentId ?? null);
       reloadBundles();
       toast.success("Selection saved");
     } catch (e) {
@@ -199,9 +211,12 @@ export default function ContextBuilder() {
         selectors: builder.draft.selectors,
         bindings: builder.draft.bindings,
         budget: builder.draft.budget,
+        agentId,
         organizationId: topic?.organization_id ?? null,
       });
       setLoaded(saved);
+      setPickedAgentId(null);
+      setSuggestedAgentId(saved.agentId ?? null);
       reloadBundles();
       toast.success(
         asTemplate ? "Saved as a reusable template" : "Saved for this topic",
@@ -296,6 +311,8 @@ export default function ContextBuilder() {
                   builder.clear();
                   builder.setDeliveries({});
                   setLoaded(null);
+                  setSuggestedAgentId(null);
+                  setPickedAgentId(null);
                 }}
               >
                 <X className="h-3.5 w-3.5" />
@@ -352,7 +369,8 @@ export default function ContextBuilder() {
               manifest={manifest}
               bundle={builder.draft}
               disabled={selectionCount === 0}
-              suggestedAgentId={suggestedAgentId}
+              agentId={agentId}
+              onSelectAgent={setPickedAgentId}
             />
           </div>
         </div>
@@ -389,24 +407,25 @@ function AgentRunner({
   manifest,
   bundle,
   disabled,
-  suggestedAgentId,
+  agentId,
+  onSelectAgent,
 }: {
   manifest: Parameters<typeof resolveBundle>[0];
   bundle: ContextBundle;
   disabled: boolean;
-  /** The agent a loaded bundle was authored for. Preselected, never forced. */
-  suggestedAgentId: string | null;
+  /**
+   * Controlled by the parent: the user's pick, else the loaded bundle's agent.
+   * Lifted so a bundle save can persist the choice (D106: the agent was local
+   * to this card and every save silently wrote `agent_id: null`).
+   */
+  agentId: string | null;
+  onSelectAgent: (id: string) => void;
 }) {
   const dispatch = useAppDispatch();
   const { topicId } = useTopicContext();
   const { launchAgent } = useAgentLauncher();
   const liveAgents = useAppSelector(selectLiveAgents);
-  // The bundle's own agent is a DEFAULT, not state to synchronise: derive it.
-  // (An effect that setState'd on `suggestedAgentId` was a cascading render,
-  // and it could also fight a choice the user had already made.)
-  const [pickedAgentId, setPickedAgentId] = useState<string | null>(null);
-  const agentId = pickedAgentId ?? suggestedAgentId;
-  const setAgentId = setPickedAgentId;
+  const setAgentId = onSelectAgent;
   const [launching, setLaunching] = useState(false);
   /**
    * The run instruction. Variables carry the RESEARCH; this carries the ASK, and
