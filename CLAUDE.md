@@ -93,6 +93,25 @@ App code has **no DDL path** (Supabase JS / PostgREST only); agents apply DDL vi
 
 Same rule as migrations, one layer up: **a commit that is not pushed, and a push that is not deployed, has delivered zero value.** Finishing the code is the middle of the job. Work left sitting locally is worse than not started, because the next agent reads it as shipped. Commit as you go, in small commits; don't ask permission for routine work, and don't end a turn with a dirty tree or unpushed commits.
 
+> ### 🚨 `git push` DEPLOYS NOTHING. `./scripts/release.sh` is the ONLY way to build.
+>
+> Vercel skips every commit whose first line is not release-prefixed, so a plain
+> `git push` to `main` ships your code to GitHub and **to no user, ever** — no
+> build starts, and the deployment shows as `CANCELED`. There is no timeout to
+> wait out and nothing to poll: production simply stays on the last release.
+>
+> **If you want it live, run `./scripts/release.sh` (or `./ship.sh`).** That is
+> the only approved path — it runs the gates, applies pending migrations, bumps
+> the version, and writes the `release:` prefix that lets the build run.
+>
+> Written because an agent pushed a fix, watched six `CANCELED` deployments,
+> polled production for 70 minutes, and concluded that "concurrent pushes were
+> canceling the build" — when the real answer was that it never ran `release.sh`.
+> **Never disable a check in this script to get a build out** (a `TEMP_SKIP…`
+> flag once silently disabled migrations, protocol sync, attribution, and gates
+> for every release until someone noticed). Emergency skips use the existing
+> `--no-migrate` / `--no-gates` flags, per-invocation.
+
 - **Deploy:** `./scripts/release.sh` / `./ship.sh` (applies pending FE migrations, bumps, tags, pushes). **Vercel builds ONLY for release-prefixed commits** (`vercel.json` → `scripts/vercel-ignore-build.sh`) — plain pushes to `main` are skipped so agent traffic cannot start a second overlapping ~20-minute production build. The prefix picks the deployment (see Build gate): `release:` → main app only; `release-admin:` / `release-demos:` → that subdomain only; `release-all:` → all three. Ship a satellite with `./ship.sh "msg" --target admin|demos|all`. Sibling repos: `aidream` → its own `./scripts/release.sh` (Coolify auto-deploys on push; `/health/version` returns the deployed git SHA — compare to `origin/main`). `my-matrx` → push to `main` (Vercel GitHub integration).
 - **Report deployed state, never intended state.** "Built and verified" ≠ "shipped". If you didn't deploy, say so in the same breath as the completion claim.
 - **Verify against production, not localhost** — hit the real URL and confirm your change answers there.

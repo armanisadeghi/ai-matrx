@@ -67,6 +67,21 @@ Plain git, per the global commit rules: review `git status` + `git diff` first, 
 
 > `pnpm ship "msg"` is the **versioned-release** path (bumps version, notifies the ship API). Use it only when the user asks to cut a release — not for routine work.
 
+### 6. If it must reach USERS, release it — `git push` alone deploys nothing
+
+**Vercel skips every commit whose first line is not release-prefixed** (`vercel.json` → `scripts/vercel-ignore-build.sh`). A plain `git push origin main` reaches GitHub and **no user, ever**: no build starts, the deployment reads `CANCELED`, and production stays on the last release. Polling the live URL will never turn green — there is nothing running to wait for.
+
+So decide explicitly, and say which you did:
+
+| Situation | Do |
+|---|---|
+| Routine work; user did not ask for it live | commit + push (§5). **Report it as pushed, NOT deployed.** |
+| User asked to ship / deploy / "get it live", or the change is user-visible and they're waiting on it | `./scripts/release.sh` (or `./ship.sh "msg"`) |
+
+Verify a release actually landed: a `READY` production deployment whose commit is yours or a descendant (Vercel MCP `list_deployments`), then assert on a string that exists **only** in the new build — a marker the old build also contained reports a false success.
+
+**Never edit `scripts/release.sh` to skip a check so a build goes out.** A `TEMP_SKIP_RELEASE_CHECKS` flag added during one emergency silently disabled migrations, protocol sync, source attribution, and every gate for *all* subsequent releases. Per-invocation `--no-migrate` / `--no-gates` exist for that; use those, and never commit a default-on skip.
+
 ## Stop-and-ask triggers
 
 Halt and ask the user instead of pushing through when:

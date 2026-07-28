@@ -305,25 +305,23 @@ prioritizes.
 
 ## 5. Gotchas
 
-1. **Pushed ≠ deployed — verify against Vercel's deployment list, not `git push`.**
-   This repo takes commits from many concurrent agent sessions, often minutes
-   apart. Vercel **cancels the in-flight production build whenever a newer
-   commit lands**, and a build takes 10–25 minutes. When the push rate exceeds
-   the build time, *no* build completes and production silently freezes on the
-   last one that survived — every later commit shows as `CANCELED`.
+1. **`git push` deploys NOTHING — only `./scripts/release.sh` builds.**
+   Vercel skips every commit whose first line is not release-prefixed
+   (`vercel.json` → `scripts/vercel-ignore-build.sh`), so a plain push to `main`
+   reaches GitHub and no user. The deployment reads `CANCELED` and production
+   stays on the last release. There is nothing to wait for; polling the live URL
+   will never turn green.
 
-   Observed on 2026-07-27: production sat on `release: v0.4.166` while six
-   consecutive deployments (including `b97f5dcc2`, the landing-derivation fix)
-   were canceled in a row. Separately, `release: v0.4.161` ended in `ERROR` —
-   its content only reached production several releases later via a descendant.
+   This was learned the hard way during this work: a fix was pushed, six
+   deployments showed `CANCELED`, production was polled for 70 minutes, and the
+   wrong conclusion ("concurrent pushes are canceling the build") was reached —
+   the real answer was that `release.sh` was never run.
 
-   **So:** a green `git push` proves nothing. Check the deployment list
-   (Vercel MCP `list_deployments`, project `prj_ZIeMm2FW8RgOAO9BJgQ2YQcXpwrH`,
-   team `team_zWxJHqDHuRr1kpl9Hu9oON3g`) and confirm a `READY` deploy whose
-   commit is your commit or a descendant of it. Then hit
-   `https://www.aimatrx.com` (note: `aimatrx.com` 308s to `www`) and assert on a
-   string that exists ONLY in your new build — picking a marker the old build
-   also contained will report a false success.
+   **Verify a release landed** with a `READY` deployment whose commit is yours or
+   a descendant (Vercel MCP `list_deployments`, project
+   `prj_ZIeMm2FW8RgOAO9BJgQ2YQcXpwrH`, team `team_zWxJHqDHuRr1kpl9Hu9oON3g`),
+   then assert on a string that exists **only** in the new build — a marker the
+   old build also contained reports a false success (it did here, twice).
 
 2. **Never move a reserved URL.** Its permanence is the promise. If a name is
    wrong, change the label — not the href.
