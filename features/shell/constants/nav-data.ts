@@ -115,10 +115,11 @@ export interface ShellNavChild {
 /**
  * The Marketing module's sidebar children, derived from `MARKETING_PILLARS`
  * so the shell menu and the `/marketing` hub can never disagree. Pillars
- * become flyout subgroups; reserved (coming-soon) surfaces are included on
- * purpose — they are real routes, and showing them is how a user learns where
- * the module is going. `navHidden` entries (the inlined public analyzers,
- * which already have their own "SEO Tools" destination) stay off the menu.
+ * become flyout subgroups. Mixed pillars expose only their live surfaces;
+ * fully reserved pillars get one top-level placeholder instead of listing
+ * every promised child route. `navHidden` entries (the inlined public
+ * analyzers, which already have their own "SEO Tools" destination) stay off
+ * the menu.
  */
 function marketingNavChildren(): ShellNavChild[] {
   const hub: ShellNavChild = {
@@ -132,26 +133,38 @@ function marketingNavChildren(): ShellNavChild[] {
     profileMenu: true,
     dashboard: true,
   };
-  const fromPillars = MARKETING_PILLARS.flatMap((pillar) =>
-    pillar.entries
-      .filter((entry) => !entry.navHidden)
-      .map((entry): ShellNavChild => ({
-        label: entry.label,
-        href: entry.href,
-        iconName: entry.iconName,
-        group: pillar.label,
-        description:
-          entry.status === "coming-soon"
-            ? `Coming soon — ${entry.description}`
-            : entry.description,
-        color: "green",
-        external: entry.external,
-        // Reserved surfaces stay off the dashboard and profile menu until they
-        // do something; the sidebar and hub are where the roadmap belongs.
-        profileMenu: entry.status !== "coming-soon",
-        dashboard: entry.status !== "coming-soon",
-      })),
-  );
+  const fromPillars = MARKETING_PILLARS.flatMap((pillar) => {
+    const visibleEntries = pillar.entries.filter((entry) => !entry.navHidden);
+    const liveEntries = visibleEntries.filter(
+      (entry) => entry.status !== "coming-soon",
+    );
+
+    if (liveEntries.length === 0) {
+      const destination = visibleEntries[0];
+      if (!destination) return [];
+      return [
+        {
+          label: pillar.label,
+          href: pillar.landingHref ?? destination.href,
+          iconName: pillar.iconName,
+          description: `Coming soon — ${pillar.description}`,
+          color: "green",
+        } satisfies ShellNavChild,
+      ];
+    }
+
+    return liveEntries.map((entry): ShellNavChild => ({
+      label: entry.label,
+      href: entry.href,
+      iconName: entry.iconName,
+      group: pillar.label,
+      description: entry.description,
+      color: "green",
+      external: entry.external,
+      profileMenu: true,
+      dashboard: true,
+    }));
+  });
   return [hub, ...fromPillars];
 }
 

@@ -130,6 +130,7 @@ export function PromoteToSiteDialog({
       ? clientPageUrl({
           siteSlug: selectedSite.slug,
           slug: result.page.slug,
+          route: result.page.route,
           category: result.page.category,
           preview: true,
         })

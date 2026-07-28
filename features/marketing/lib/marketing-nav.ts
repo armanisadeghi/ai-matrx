@@ -266,7 +266,7 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         href: marketingRoutes.youtubeDiscovery(),
         description:
           "Find videos and compare creator authority, engagement, and research value.",
-        iconName: "Youtube",
+        iconName: "Video",
       },
       {
         label: "Rank Tracking",
