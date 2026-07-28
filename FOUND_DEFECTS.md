@@ -13,6 +13,31 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D111 — `web.page.canonical_page_id` shipped live without regenerating types; 8 type errors surface on the next `pnpm db-types` (2026-07-27)
+
+`web.page.canonical_page_id uuid NOT NULL` (no DB default) and its BEFORE-INSERT
+trigger `_default_canonical_identity` → `web.default_page_canonical_identity()`
+(self-fills `new.canonical_page_id := new.id` when null) are **live**, but
+`types/database.types.ts` at HEAD does not contain the column at all — so nobody
+regenerated types after applying it. Runtime is fine (the trigger fills it); the
+type contract is not.
+
+Found while regenerating types for the CRM schema. Any `pnpm db-types` now turns
+`pnpm type-check` red with 8 errors, all `Property 'canonical_page_id' is missing`,
+in `features/marketing/data/service.ts` (lines ~716, 1012, 1065, 1108, 2280, 2308,
+2311) plus the `PageListRow` type.
+
+Cause: a NOT NULL column with **no DB default** is emitted as REQUIRED in the
+generated `Insert` type, even though a trigger always fills it. Postgres cannot
+express "default to my own id" as a column default, so there is no free DB fix —
+`DEFAULT gen_random_uuid()` would make the trigger's same-site branch raise 23514.
+
+Fix (owner: whoever shipped the canonical-page work): either have the marketing
+service pass `canonical_page_id` explicitly on insert, or make the column nullable
+and let the trigger keep enforcing it, so the generator marks it optional.
+**Not guessed at here** — the canonical-page semantics belong to the marketing/web
+domain, and this is unrelated to the change that surfaced it.
+
 ### D110 — stray or broken Cloudflare Workers build is red on frontend releases (2026-07-27)
 
 GitHub check `Workers Builds: ai-matrx-admin` failed on release `v0.4.154`

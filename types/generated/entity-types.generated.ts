@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 307 active entity tokens. A token here is FK-valid for
+// 315 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -97,6 +97,7 @@ export type EntityTypeToken =
   | "comment"
   | "comparison_set"
   | "component_group"
+  | "contact_medium"
   | "contact_submission"
   | "content_block"
   | "content_ir_kind"
@@ -111,6 +112,12 @@ export type EntityTypeToken =
   | "context_item_suggestion"
   | "conversation"
   | "conversation_value"
+  | "crm_address"
+  | "crm_affiliation"
+  | "crm_campaign"
+  | "crm_campaign_member"
+  | "crm_interaction"
+  | "crm_party_merge"
   | "custom_app_config"
   | "custom_applet_config"
   | "cx_agent_memory"
@@ -188,6 +195,8 @@ export type EntityTypeToken =
   | "organization"
   | "page_extraction_job"
   | "page_extraction_page_run"
+  | "party"
+  | "party_contact_point"
   | "pc_article"
   | "pc_episode"
   | "pc_show"
@@ -199,7 +208,6 @@ export type EntityTypeToken =
   | "plan_profile"
   | "processed_document"
   | "processed_document_page"
-  | "profile"
   | "project"
   | "prompt"
   | "quiz_session"
@@ -383,6 +391,7 @@ export type ReferencePickableEntityToken =
   | "content_template"
   | "context_item"
   | "conversation"
+  | "crm_campaign"
   | "custom_app_config"
   | "custom_applet_config"
   | "cx_agent_memory"
@@ -404,6 +413,7 @@ export type ReferencePickableEntityToken =
   | "note_folder"
   | "organization"
   | "page_extraction_job"
+  | "party"
   | "pc_article"
   | "pc_episode"
   | "pc_show"
@@ -473,6 +483,11 @@ export type ComponentEntityToken =
   | "content_ir_kind_example"
   | "content_ir_kind_surface"
   | "conversation_value"
+  | "crm_address"
+  | "crm_affiliation"
+  | "crm_campaign_member"
+  | "crm_interaction"
+  | "crm_party_merge"
   | "cx_agent_plan"
   | "cx_agent_task"
   | "cx_code_edit"
@@ -501,6 +516,7 @@ export type ComponentEntityToken =
   | "global_execution_event"
   | "global_meter_entry"
   | "message"
+  | "party_contact_point"
   | "pc_studio_run_asset"
   | "processed_document_page"
   | "redaction_mapping"
@@ -620,6 +636,7 @@ export type ScopeableEntityToken =
   | "comment"
   | "comparison_set"
   | "component_group"
+  | "contact_medium"
   | "contact_submission"
   | "content_block"
   | "content_ir_kind"
@@ -633,6 +650,12 @@ export type ScopeableEntityToken =
   | "context_item"
   | "context_item_suggestion"
   | "conversation"
+  | "crm_address"
+  | "crm_affiliation"
+  | "crm_campaign"
+  | "crm_campaign_member"
+  | "crm_interaction"
+  | "crm_party_merge"
   | "custom_app_config"
   | "custom_applet_config"
   | "dashboard_saved_view"
@@ -694,6 +717,8 @@ export type ScopeableEntityToken =
   | "organization"
   | "page_extraction_job"
   | "page_extraction_page_run"
+  | "party"
+  | "party_contact_point"
   | "pc_article"
   | "pc_episode"
   | "pc_show"
@@ -705,7 +730,6 @@ export type ScopeableEntityToken =
   | "plan_profile"
   | "processed_document"
   | "processed_document_page"
-  | "profile"
   | "project"
   | "prompt"
   | "quiz_session"
@@ -866,8 +890,10 @@ export type ListedEntityToken =
   | "ai_setting"
   | "content_ir_kind"
   | "content_ir_kind_instance"
+  | "crm_campaign"
   | "dataset"
   | "learn_doc"
+  | "party"
   | "plan_entity"
   | "plan_node"
   | "research_context_bundle"
@@ -940,6 +966,7 @@ export const ENTITY_TYPE_METADATA = {
   "comment": { token: "comment", schema: "platform", table: "comments", label: "Comment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "comparison_set": { token: "comparison_set", schema: "agent", table: "cmp_comparison_sets", label: "Comparison Set", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "component_group": { token: "component_group", schema: "public", table: "component_groups", label: "Component Group", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "contact_medium": { token: "contact_medium", schema: "crm", table: "contact_medium", label: "Contact Medium", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "display_value", contentRole: "utility", referenceCategory: null },
   "contact_submission": { token: "contact_submission", schema: "public", table: "contact_submissions", label: "Contact Submission", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "content_block": { token: "content_block", schema: "public", table: "content_blocks", label: "Content Block", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
   "content_ir_kind": { token: "content_ir_kind", schema: "content_ir", table: "kind_definition", label: "Content-IR Kind", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
@@ -954,6 +981,12 @@ export const ENTITY_TYPE_METADATA = {
   "context_item_suggestion": { token: "context_item_suggestion", schema: "reg", table: "context_item_suggestions", label: "Context Item Suggestion", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "conversation": { token: "conversation", schema: "chat", table: "conversation", label: "Conversation", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Outputs", referencePickable: true, titleColumn: "title", contentRole: "destination", referenceCategory: null },
   "conversation_value": { token: "conversation_value", schema: "chat", table: "conversation_value", label: "Conversation Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: null, referencePickable: false, titleColumn: "key", contentRole: null, referenceCategory: null },
+  "crm_address": { token: "crm_address", schema: "crm", table: "address", label: "Address", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
+  "crm_affiliation": { token: "crm_affiliation", schema: "crm", table: "affiliation", label: "Affiliation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
+  "crm_campaign": { token: "crm_campaign", schema: "crm", table: "campaign", label: "Campaign", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
+  "crm_campaign_member": { token: "crm_campaign_member", schema: "crm", table: "campaign_member", label: "Campaign Member", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "crm_interaction": { token: "crm_interaction", schema: "crm", table: "interaction", label: "Interaction", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "subject", contentRole: null, referenceCategory: null },
+  "crm_party_merge": { token: "crm_party_merge", schema: "crm", table: "party_merge", label: "Party Merge", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "custom_app_config": { token: "custom_app_config", schema: "public", table: "custom_app_configs", label: "Custom App Config", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "custom_applet_config": { token: "custom_applet_config", schema: "public", table: "custom_applet_configs", label: "Custom Applet Config", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "cx_agent_memory": { token: "cx_agent_memory", schema: "chat", table: "agent_memory", label: "Agent Memory", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: true, titleColumn: "key", contentRole: null, referenceCategory: null },
@@ -1031,6 +1064,8 @@ export const ENTITY_TYPE_METADATA = {
   "organization": { token: "organization", schema: "iam", table: "organizations", label: "Organization", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
   "page_extraction_job": { token: "page_extraction_job", schema: "docproc", table: "page_extraction_jobs", label: "Extraction Dataset", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "page_extraction_page_run": { token: "page_extraction_page_run", schema: "docproc", table: "page_extraction_page_runs", label: "Page Extraction Page Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "party": { token: "party", schema: "crm", table: "party", label: "Entity", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "display_name", contentRole: "source", referenceCategory: null },
+  "party_contact_point": { token: "party_contact_point", schema: "crm", table: "party_contact_point", label: "Contact Point", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "pc_article": { token: "pc_article", schema: "podcast", table: "pc_articles", label: "Podcast Article", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "pc_episode": { token: "pc_episode", schema: "podcast", table: "pc_episodes", label: "Podcast Episode", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "pc_show": { token: "pc_show", schema: "podcast", table: "pc_shows", label: "Podcast Show", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
@@ -1042,7 +1077,6 @@ export const ENTITY_TYPE_METADATA = {
   "plan_profile": { token: "plan_profile", schema: "plan", table: "profile", label: "Plan Vertical Profile", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "vertical", contentRole: null, referenceCategory: null },
   "processed_document": { token: "processed_document", schema: "docproc", table: "processed_documents", label: "Processed document", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "processed_document_page": { token: "processed_document_page", schema: "docproc", table: "processed_document_pages", label: "Processed document page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "profile": { token: "profile", schema: "user", table: "profiles", label: "User Profile", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "project": { token: "project", schema: "workspace", table: "projects", label: "Project", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Workspaces", referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
   "prompt": { token: "prompt", schema: "public", table: "prompts", label: "Prompt", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "quiz_session": { token: "quiz_session", schema: "education", table: "quiz_sessions", label: "Quiz Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: "destination", referenceCategory: null },
@@ -1251,6 +1285,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "comment",
   "comparison_set",
   "component_group",
+  "contact_medium",
   "contact_submission",
   "content_block",
   "content_ir_kind",
@@ -1265,6 +1300,12 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "context_item_suggestion",
   "conversation",
   "conversation_value",
+  "crm_address",
+  "crm_affiliation",
+  "crm_campaign",
+  "crm_campaign_member",
+  "crm_interaction",
+  "crm_party_merge",
   "custom_app_config",
   "custom_applet_config",
   "cx_agent_memory",
@@ -1342,6 +1383,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "organization",
   "page_extraction_job",
   "page_extraction_page_run",
+  "party",
+  "party_contact_point",
   "pc_article",
   "pc_episode",
   "pc_show",
@@ -1353,7 +1396,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "plan_profile",
   "processed_document",
   "processed_document_page",
-  "profile",
   "project",
   "prompt",
   "quiz_session",
@@ -1532,6 +1574,7 @@ export const SCHEMA_DISPLAY: Record<
   "education": { label: "Education", sortOrder: 75, isActive: true },
   "research": { label: "Research", sortOrder: 80, isActive: true },
   "rag": { label: "Knowledge", sortOrder: 85, isActive: true },
+  "crm": { label: "CRM", sortOrder: 87, isActive: true },
   "plan": { label: "Content Planning", sortOrder: 88, isActive: true },
   "web": { label: "Marketing & Web", sortOrder: 90, isActive: true },
   "scraper": { label: "Web Scraper", sortOrder: 95, isActive: true },

@@ -1,0 +1,147 @@
+# FEATURE.md — `crm`
+
+**Status:** `db-core live` (no UI yet) · **Tier:** `1` · **Last updated:** `2026-07-27`
+
+---
+
+## Purpose
+
+**`crm.party` is the ONE record for a person or a company that is not one of our
+tenants** — an expert, a lead, a customer, a vendor, an author, a competitor. Before
+this, every module grew its own half-copy (`plan.entity`, `web.brand`,
+`rag.kg_entities`, `users.invitation_requests`, `public.contact_submissions`,
+`users.user_form_profile`), and none could be reused by the next one.
+
+It serves, in one schema: known individuals with social channels, cold **email**
+campaigns, cold **calling** campaigns, real customers, and vendors — with companies
+first-class. "Company" here means **our users' clients**, never `iam.organizations`.
+
+---
+
+## The load-bearing split — read this before touching contact data
+
+**A medium is not a contact point.**
+
+- **`crm.contact_medium`** — ONE row per normalized value per org. Owns everything
+  intrinsic to the *value*: verification, MX, bounce type/count, complaint,
+  unsubscribe, DNC state, suppression.
+- **`crm.party_contact_point`** — says *who* uses that medium, *how* (purpose),
+  and *since when*.
+
+Why: Acme's switchboard is reachable for 40 contacts and `info@acme.com` sits on the
+company plus six people. Storing deliverability per party means a DNC scrub or a hard
+bounce updates **one of forty**, and the next rep dials a do-not-call number. It also
+gives suppression a home: **a medium with no party attached IS the suppression list**
+(`suppressed_at`), so "never email `legal@bigco.com`" needs no invented party.
+
+Never add an email/phone/handle column to `crm.party`. That is the failure this
+schema exists to prevent.
+
+---
+
+## Tables (schema `crm`, live 2026-07-27)
+
+| Table | Variant | Versioned | Holds |
+|---|---|---|---|
+| `party` | entity | ✅ | person or company; identity, curation, per-org stance |
+| `contact_medium` | entity | ❌ | one row per value per org; deliverability + suppression |
+| `party_contact_point` | component of `party` | ❌ | who uses a medium, purpose, validity |
+| `address` | component of `party` | ❌ | structured postal + geo |
+| `affiliation` | component of `party` | ✅ | person ↔ company employment, with dates |
+| `interaction` | component of `party` | ❌ | calls/emails/meetings, planned AND completed |
+| `campaign` | entity | ✅ | a named audience or cold campaign |
+| `campaign_member` | component of `campaign` | ❌ | per-member state, attempts, dialer claim |
+| `party_merge` | component of `party` | ❌ | the exact unmerge record |
+
+`party_kind ('person','organization')` is the **only** closed set. Expert, lead,
+vendor, journalist, competitor, customer are **roles** — `platform.categories` rows in
+the `party_role` dimension attached by a `party → category` edge. **A new kind of
+person never needs a migration.**
+
+DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
+[`migrations/crm_02_core.sql`](../../migrations/crm_02_core.sql).
+
+---
+
+## Invariants / gotchas
+
+- **Employment is `crm.affiliation`, a real table — not an association edge.** The
+  edge unique key is `(source_type, source_id, target_type, target_id, role)`, so an
+  edge can express only ONE `works_at` between a person and a company, ever: no second
+  stint, no promotion history, and `assoc_unlink` hard-deletes so "they left" would
+  erase that they were ever there. `crm._affiliation_edge()` mirrors the current
+  affiliation to a `party → party` `works_at` edge (payload kind `party_affiliation`)
+  so the 360° association surfaces still render, and maintains
+  `party.primary_employer_party_id` / `party.job_title` so grids, sorts and exports are
+  one column read. **It does NOT use the forbidden `platform._mirror_fk_to_assoc`** —
+  it is modelled on `plan._site_edge`.
+- **`party_contact_point.channel` is denormalized from the medium by
+  `crm._contact_point_shape()`** so "one primary per channel" can be a real partial
+  unique index (a primary email AND a primary phone must both be legal). Never write it
+  from a client.
+- **Setting a primary goes through `public.crm_set_primary_contact_point(id)`.**
+  Partial unique indexes cannot be `DEFERRABLE`, so a naive "set new, clear old" 23505s.
+- **Components inherit org from their parent** via `crm._inherit_parent_org()`
+  (trigger `_a_org_from_parent`, named to sort before `_stamp_*`). Without it
+  `_stamp_org_default` derives org from the *creator's personal org* and silently lands
+  a contact point in a different org than its party.
+- **Merge never destroys anything.** `public.crm_merge_parties` repoints children whose
+  move would not collide, records every moved id in `crm.party_merge.moved`, and sets
+  `canonical_id` on the loser — which stays live. `crm_unmerge_parties` replays that
+  record exactly. Children that *would* collide stay on the loser on purpose.
+- **`last_touch_at` is deliberately NOT stored on `party`.** `party` is versioned; a
+  cold-call floor would snapshot the whole row into `history.row_versions` on every
+  dial. Derive it from `crm.interaction` (indexed `(party_id, occurred_at desc)`).
+- **`crm.party_purge(id)` is the erasure path** — it also clears
+  `history.row_versions`, `platform.comments`, and `platform.user_entity_state`. A
+  purge that only deletes the live row is not a purge.
+- **Category dimensions are seeded `visibility='public'`.** At `internal` under the
+  system org they are invisible to every customer org (empty pickers) *and* every
+  `party → category` edge write fails 42501, because `assoc_add` requires
+  `has_access(target,'viewer')`.
+- **`text` + a CHECK, never `char(n)`** for `phone_country` / `country_code`: `char` is
+  blank-padded and the matrx-orm generator has no Field mapping for `bpchar`.
+
+---
+
+## Entry points
+
+**Tokens** (`platform.entity_types`): `party`, `contact_medium`, `crm_campaign`
+(entities) · `party_contact_point`, `crm_address`, `crm_affiliation`,
+`crm_interaction`, `crm_campaign_member`, `crm_party_merge` (components).
+
+**RPCs** (`public`, `auth.uid()`-gated, `activity_log`-audited):
+`crm_set_primary_contact_point` · `crm_merge_parties` · `crm_unmerge_parties` ·
+`crm_party_purge`.
+
+**Server models:** aidream `db/models/crm.py` + `db/managers/crm/` (generated;
+`crm` is registered in `aidream/db/matrx_orm.yaml`).
+
+**Inherited, never rebuilt:** notes = `platform.comments` (pass `p_org_id` — `cmt_add`'s
+org resolution is task-only) · audit = `platform.activity_log` · favorites/pins/recents
+= `platform.user_entity_state` · follow-ups = real `workspace.tasks` via an edge ·
+attachments = `features/files` · tags/stages = `platform.categories` · the 360° view =
+`AssociationCardGrid` once `ENTITY_OVERLAY` has a `party` line.
+
+---
+
+## Not built yet
+
+- **PostgREST exposure for `crm` is NOT set** (Supabase → Settings → API → Exposed
+  schemas). Browser reads 404 until a human adds it. Grants and `anon` USAGE are done.
+- No UI: `/crm` list, party record page, campaign builder, call queue, CSV import.
+- No `ENTITY_OVERLAY` entry and no `ASSOCIATION_TARGET_TYPES` addition yet.
+- Research expert writing, dedup automation, the `web.brand` fold, expert
+  registration — see [`docs/handoffs/contact-entity-system.md`](../../docs/handoffs/contact-entity-system.md).
+
+---
+
+## Change log
+
+- 2026-07-27 — DB core live: 9 tables, canonical RLS (zero FAIL / zero WARN on
+  `iam.verify_canonical` for all 9), 17 association pairs, 8 category dimensions seeded
+  public, `party_observation` + `party_affiliation` edge payload kinds, shareable
+  registry rows, per-token association GC, and the four RPCs. Constraint/trigger and
+  merge/unmerge round-trip tests run live against org Titanium and cleaned up.
+  Retired the stale `platform.entity_types` row `token='profile'` (pointed at a
+  nonexistent schema `user`).
