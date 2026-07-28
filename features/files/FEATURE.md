@@ -486,6 +486,7 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 
 ## Change log
 
+- 2026-07-28 — File previewers consolidated onto ONE shared `FilePreview/PreviewerSwitch.tsx` (fragmentation campaign): `FilePreview` (11 dynamics), `UniversalInlineFile` (7), and the code editor's `BinaryFileViewer` (5) now render the same switch — 7 light previewers static, 4 heavy engines (pdf/markdown/data/code) as in-gate `React.lazy`; byte source is a `fileId | blob` discriminated prop and `BinaryFilePdfPreview` was absorbed. Adding a previewer = edit the switch, never a per-site dynamic.
 - 2026-07-28 — D72 fixed: desktop FileTableRow hidden action toolbars now pointer-events-none + row onClick ignores [data-row-actions] targets, closing the accidental-share-link race.
 
 - **2026-07-24 — Cross-organization user-library upload regression closed at the shared boundary.** `Shared Assets/**` and `Private Assets/**` are personal-organization folder namespaces, independent of whichever organization happens to be active in the shell; public visibility no longer causes ambient organization metadata to collide with those existing folder rows. Buffered XHR upload failures now feed the system Error Inspector with the structured backend detail and request id, matching the fetch client instead of producing only a generic toast.
