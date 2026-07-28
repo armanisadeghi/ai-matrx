@@ -16,6 +16,7 @@ import {
 } from "@/features/cms/services/cmsService";
 import type {
   ClientSite,
+  ClientSiteSummary,
   ClientPageSummary,
   ClientComponent,
 } from "@/features/cms/types";
@@ -69,7 +70,7 @@ interface SiteContextValue {
    * while the list request is in flight (never null, so the inherited
    * always-available promise stays honest).
    */
-  allSites: ClientSite[];
+  allSites: ClientSiteSummary[];
   /** Which tab of the workspace is showing, derived from the pathname. */
   currentMode: CmsSiteMode;
 }
@@ -138,7 +139,7 @@ function SiteSurfaceRuntime({
   site: ClientSite;
   pages: ClientPageSummary[];
   components: ClientComponent[];
-  allSites: ClientSite[];
+  allSites: ClientSiteSummary[];
   currentMode: CmsSiteMode;
   children: React.ReactNode;
 }) {
@@ -171,7 +172,9 @@ export default function SiteLayoutClient({
   const [site, setSite] = useState<ClientSite | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [allSites, setAllSites] = useState<ClientSite[]>([]);
+  // SUMMARY rows — `listSites` returns a column subset (switcher + inherited
+  // hub inventory only). The open site itself is a FULL row from `getSite`.
+  const [allSites, setAllSites] = useState<ClientSiteSummary[]>([]);
 
   const [pages, setPages] = useState<ClientPageSummary[]>([]);
   const [pagesLoading, setPagesLoading] = useState(true);

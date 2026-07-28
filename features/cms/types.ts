@@ -42,6 +42,54 @@ export interface ClientSite {
   updated_at: string;
 }
 
+/**
+ * What `/api/cms/sites` action=`list` ACTUALLY returns — a summary row, not a
+ * whole site. Keep this in lockstep with that route's `select(...)`.
+ *
+ * It exists because typing the list `ClientSite[]` was a lie the compiler could
+ * not see: `theme_config` / `navigation` / `data_api_key` come back `undefined`
+ * with no type error, so a caller reading them off a list row silently reports
+ * "no theme, 0 nav entries, no data key" for a site that has all three. Need a
+ * full row? `CmsSiteService.getSite(id)` returns one.
+ */
+export type ClientSiteSummary = Pick<
+  ClientSite,
+  | "id"
+  | "slug"
+  | "name"
+  | "domain"
+  | "is_active"
+  | "owner_user_id"
+  | "favicon"
+  | "settings"
+  | "created_at"
+  | "updated_at"
+> & {
+  /**
+   * Whether the site has minted its public data key. The KEY ITSELF is never in
+   * this response — only the fact, which is all any consumer needs. Computed
+   * server-side in `app/api/cms/sites/route.ts` (action=`list`).
+   */
+  has_data_api_key: boolean;
+};
+
+/** Narrow a full site to the summary shape (create/update return full rows). */
+export function toClientSiteSummary(site: ClientSite): ClientSiteSummary {
+  return {
+    id: site.id,
+    slug: site.slug,
+    name: site.name,
+    domain: site.domain,
+    is_active: site.is_active,
+    owner_user_id: site.owner_user_id,
+    favicon: site.favicon,
+    settings: site.settings,
+    created_at: site.created_at,
+    updated_at: site.updated_at,
+    has_data_api_key: Boolean(site.data_api_key),
+  };
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────
 export interface ClientPage {
   id: string;

@@ -56,10 +56,17 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        // SUMMARY columns only — the client type for this response is
+        // `ClientSiteSummary`, not `ClientSite`. Keep the two in lockstep.
+        // `data_api_key` is read but NEVER returned: consumers only ever need
+        // to know whether one exists, and its value belongs in the Collections
+        // tab where it can be revealed/rotated deliberately. Returning the row
+        // without it while typing the response `ClientSite[]` is exactly how
+        // `has_data_api_key` reported false for every site that has one.
         const { data, error } = await db
           .from("client_sites")
           .select(
-            "id, slug, name, domain, is_active, owner_user_id, favicon, settings, created_at, updated_at",
+            "id, slug, name, domain, is_active, owner_user_id, favicon, settings, created_at, updated_at, data_api_key",
           )
           .eq("owner_user_id", user.id)
           .order("name");
@@ -69,7 +76,11 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        return NextResponse.json({ sites: data ?? [] });
+        const sites = (data ?? []).map(({ data_api_key, ...site }) => ({
+          ...site,
+          has_data_api_key: Boolean(data_api_key),
+        }));
+        return NextResponse.json({ sites });
       }
 
       case "get": {

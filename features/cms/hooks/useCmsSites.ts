@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { CmsSiteService } from '../services/cmsService';
-import type { ClientSite } from '../types';
+import { toClientSiteSummary } from '../types';
+import type { ClientSiteSummary } from '../types';
 
 export function useCmsSites() {
-    const [sites, setSites] = useState<ClientSite[]>([]);
-    const [activeSite, setActiveSite] = useState<ClientSite | null>(null);
+    // SUMMARY rows — `listSites` returns a column subset, not whole sites.
+    const [sites, setSites] = useState<ClientSiteSummary[]>([]);
+    const [activeSite, setActiveSite] = useState<ClientSiteSummary | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -42,7 +44,7 @@ export function useCmsSites() {
             }
             try {
                 const site = await CmsSiteService.getSite(siteId);
-                setActiveSite(site);
+                setActiveSite(toClientSiteSummary(site));
                 return site;
             } catch (err: any) {
                 setError(err.message);
@@ -57,8 +59,9 @@ export function useCmsSites() {
             setError(null);
             try {
                 const site = await CmsSiteService.createSite(params);
-                setSites((prev) => [...prev, site]);
-                setActiveSite(site);
+                const summary = toClientSiteSummary(site);
+                setSites((prev) => [...prev, summary]);
+                setActiveSite(summary);
                 return site;
             } catch (err: any) {
                 setError(err.message);
@@ -73,8 +76,9 @@ export function useCmsSites() {
             setError(null);
             try {
                 const site = await CmsSiteService.updateSite(siteId, updates);
-                setSites((prev) => prev.map((s) => (s.id === siteId ? site : s)));
-                if (activeSite?.id === siteId) setActiveSite(site);
+                const summary = toClientSiteSummary(site);
+                setSites((prev) => prev.map((s) => (s.id === siteId ? summary : s)));
+                if (activeSite?.id === siteId) setActiveSite(summary);
                 return site;
             } catch (err: any) {
                 setError(err.message);

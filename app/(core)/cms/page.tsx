@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { CmsSiteService } from "@/features/cms/services/cmsService";
-import type { ClientSite } from "@/features/cms/types";
+import type { ClientSiteSummary } from "@/features/cms/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +34,9 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 
 export default function SitesListPage() {
   const router = useRouter();
-  const [sites, setSites] = useState<ClientSite[]>([]);
+  // SUMMARY rows — `listSites` does not return theme_config / navigation /
+  // data_api_key. Drill into a site for the full row.
+  const [sites, setSites] = useState<ClientSiteSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

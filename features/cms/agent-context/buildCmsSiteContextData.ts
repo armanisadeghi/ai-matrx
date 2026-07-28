@@ -30,6 +30,7 @@ import type {
   ClientComponent,
   ClientPageSummary,
   ClientSite,
+  ClientSiteSummary,
   SiteCollectionSummary,
 } from "../types";
 import { buildSiteStructureXml } from "../utils/buildSiteStructureXml";
@@ -61,7 +62,7 @@ export interface BuildCmsSiteContextDataArgs {
   pages: readonly ClientPageSummary[];
   components: readonly ClientComponent[];
   /** Every site the user owns — the layout's switcher list (inherited values). */
-  allSites: readonly ClientSite[];
+  allSites: readonly ClientSiteSummary[];
   /** Which tab the user is on; derived from the pathname by the layout. */
   currentMode: CmsSiteMode;
   /** Page row the user last hovered/right-clicked in the list, if any. */

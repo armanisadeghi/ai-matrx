@@ -42,7 +42,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { CmsSiteService, CmsPageService } from "@/features/cms/services/cmsService";
-import type { ClientSite, PromoteFromHtmlPageResult } from "@/features/cms/types";
+import type { ClientSiteSummary, PromoteFromHtmlPageResult } from "@/features/cms/types";
 import { clientPageUrl } from "@/features/cms/utils/pageUrls";
 import { slugifyTitle, SLUG_RE } from "@/features/html-pages/utils/promoteConvert";
 
@@ -62,7 +62,8 @@ export function PromoteToSiteDialog({
   onOpenChange,
 }: PromoteToSiteDialogProps) {
   const router = useRouter();
-  const [sites, setSites] = React.useState<ClientSite[] | null>(null);
+  // SUMMARY rows — only id/name/slug/domain are read here.
+  const [sites, setSites] = React.useState<ClientSiteSummary[] | null>(null);
   const [sitesError, setSitesError] = React.useState<string | null>(null);
   const [siteId, setSiteId] = React.useState<string>("");
   const [title, setTitle] = React.useState("");

@@ -26,6 +26,7 @@ import type {
   ClientComponent,
   ClientPageSummary,
   ClientSite,
+  ClientSiteSummary,
   SiteCollectionSummary,
 } from "../types";
 
@@ -33,7 +34,7 @@ export interface UseCmsSiteSurfaceScopeParams {
   site: ClientSite;
   pages: readonly ClientPageSummary[];
   components: readonly ClientComponent[];
-  allSites: readonly ClientSite[];
+  allSites: readonly ClientSiteSummary[];
   currentMode: CmsSiteMode;
   selectedPageId?: string;
   /** Collections tab only. */

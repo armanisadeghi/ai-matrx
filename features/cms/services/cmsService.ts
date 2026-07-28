@@ -9,6 +9,7 @@
 
 import type {
     ClientSite,
+    ClientSiteSummary,
     ClientPage,
     ClientPageSummary,
     PromoteFromHtmlPageResult,
@@ -64,8 +65,14 @@ async function callApi<T = unknown>(endpoint: string, action: string, params: Re
 // ── Sites ────────────────────────────────────────────────────────────────────
 
 export const CmsSiteService = {
-    async listSites(): Promise<ClientSite[]> {
-        const res = await callApi<{ sites: ClientSite[] }>('sites', 'list');
+    /**
+     * SUMMARY rows only — the route selects a subset of columns. Typing this
+     * `ClientSite[]` hid that for months: `theme_config` / `navigation` /
+     * `data_api_key` arrive `undefined` with no type error. Need a full row?
+     * `getSite(id)`.
+     */
+    async listSites(): Promise<ClientSiteSummary[]> {
+        const res = await callApi<{ sites: ClientSiteSummary[] }>('sites', 'list');
         return res.sites;
     },
 

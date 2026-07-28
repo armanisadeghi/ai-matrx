@@ -10,7 +10,7 @@ import {
   createCmsHubScope,
   type CmsHubSiteSummaryEntry,
 } from "@/features/surfaces/manifests/cms.manifest";
-import type { ClientSite } from "../types";
+import type { ClientSiteSummary } from "../types";
 
 /** Draft state of the Create New Site dialog, as typed so far. */
 export interface CmsHubNewSiteDraft {
@@ -20,7 +20,7 @@ export interface CmsHubNewSiteDraft {
 }
 
 export interface BuildCmsHubContextDataArgs {
-  sites: readonly ClientSite[];
+  sites: readonly ClientSiteSummary[];
   selectedSiteId?: string;
   /** In-progress Create New Site dialog values. */
   newSiteDraft?: CmsHubNewSiteDraft;
@@ -37,7 +37,7 @@ export interface BuildCmsHubContextDataArgs {
  * Exported because `matrx-user/cms-site` INHERITS this surface and must emit
  * byte-identical inventory rows.
  */
-export function cmsSiteSummaryEntry(site: ClientSite): CmsHubSiteSummaryEntry {
+export function cmsSiteSummaryEntry(site: ClientSiteSummary): CmsHubSiteSummaryEntry {
   return {
     id: site.id,
     slug: site.slug,
@@ -45,7 +45,7 @@ export function cmsSiteSummaryEntry(site: ClientSite): CmsHubSiteSummaryEntry {
     domain: site.domain,
     is_active: site.is_active,
     agent_write_policy: site.settings?.agent_write_policy ?? "blocked",
-    has_data_api_key: Boolean(site.data_api_key),
+    has_data_api_key: site.has_data_api_key,
     created_at: site.created_at,
     updated_at: site.updated_at,
   };

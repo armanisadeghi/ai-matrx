@@ -16,10 +16,10 @@ import {
   buildCmsHubContextData,
   type CmsHubNewSiteDraft,
 } from "../agent-context/buildCmsHubContextData";
-import type { ClientSite } from "../types";
+import type { ClientSiteSummary } from "../types";
 
 export interface UseCmsHubSurfaceScopeParams {
-  sites: readonly ClientSite[];
+  sites: readonly ClientSiteSummary[];
   selectedSiteId?: string;
   newSiteDraft?: CmsHubNewSiteDraft;
   loadError?: string | null;
