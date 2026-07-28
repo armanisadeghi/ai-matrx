@@ -95,7 +95,13 @@ build-memory win if needed. Not changed; predates this feature.
 2. **Deliverable 4 — reconciler endpoints are live too**
    (`/sites/{id}/reconcile`, `/sites/{id}/dispositions`): plan-vs-reality
    badges (`realizes` edges) + the allgreen migration disposition view.
-3. Human checks wanted: the UI overhaul walkthrough (review queue), one real
+3. **Setup view: per-concept variant selector.** The concept library models
+   named variants (`about: single | founder-and-team | founder-exec-everyone` —
+   see common-docs content-planning FEATURE.md §7) and the Setup view renders
+   the menu + `omits`, but variants are not exposed as a first-class choice.
+   Surface them per concept (the CMS work order lists this once, pointing here:
+   `/Users/armanisadeghi/code/common-docs/systems/cms-system/CMS-BUILDOUT-HANDOFF.md`).
+4. Human checks wanted: the UI overhaul walkthrough (review queue), one real
    drag-reparent on tree + map, 400+-node map smoothness on real data, and a
    Setup pass on a site that HAS a linked CMS counterpart (only `dev-website`
    exists in the CMS project today, and it carries no domain — the linked path
