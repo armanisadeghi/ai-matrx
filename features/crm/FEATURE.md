@@ -151,7 +151,7 @@ attachments = `features/files` · tags/stages = `platform.categories` · the 360
   role category pickers (`platform.categories` dimensions are seeded but unwired),
   trash/restore surface for soft-deleted parties.
 - Research expert writing, dedup automation, the `web.brand` fold, expert
-  registration — see [`docs/handoffs/contact-entity-system.md`](../../docs/handoffs/contact-entity-system.md).
+  registration — see [`docs/handoffs/crm-system.md`](../../docs/handoffs/crm-system.md).
 
 ---
 
