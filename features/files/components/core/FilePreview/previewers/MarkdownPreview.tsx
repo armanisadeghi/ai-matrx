@@ -15,6 +15,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Check, Copy, Loader2 } from "lucide-react";
+// DELIBERATE standalone react-markdown (not the MarkdownCore front door):
+// rehype-prism-plus drags every refractor grammar with it, which must NOT
+// enter the shared MarkdownCore chunk that all chat/doc surfaces download.
+// This module is only ever entered via dynamic() (FilePreview et al.), so the
+// weight stays inside the previewer chunk.
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";

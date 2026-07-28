@@ -6,17 +6,12 @@
  * section_title are surfaced as a header chip so the section taxonomy
  * is visible to the user without opening the chunk pane.
  *
- * Markdown rendering: defer the heavy renderer (react-markdown +
- * remark plugins) so the bundle cost only lands when the viewer route
- * is actually opened.
+ * Markdown rendering goes through the shared MarkdownCore front door
+ * (the one react-markdown edge — see components/markdown-core/).
  */
 
-import dynamic from "next/dynamic";
+import MarkdownCore from "@/components/markdown-core/MarkdownCore";
 import type { PageDetail } from "@/features/rag/types/documents";
-
-// react-markdown + remark-gfm together are ~100KB. Lazy.
-const Markdown = dynamic(() => import("react-markdown"), { ssr: false });
-const remarkGfm = dynamic(() => import("remark-gfm"), { ssr: false });
 
 export interface CleanedMarkdownPaneProps {
   page: PageDetail | null;
@@ -57,8 +52,7 @@ export function CleanedMarkdownPane({
           !error &&
           page &&
           (page.cleaned_text ? (
-            // @ts-expect-error react-markdown's plugin typings are loose
-            <Markdown remarkPlugins={[remarkGfm]}>{page.cleaned_text}</Markdown>
+            <MarkdownCore preset="gfm">{page.cleaned_text}</MarkdownCore>
           ) : (
             <p className="italic text-muted-foreground">
               No cleaned content — this document may not have been processed

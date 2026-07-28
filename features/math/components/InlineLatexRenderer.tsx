@@ -1,12 +1,7 @@
 "use client";
 import React, { memo, useMemo, useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
+import MarkdownCore from '@/components/markdown-core/MarkdownCore';
 import { normalizeLaTeX } from '../utils/latex-normalizer';
-
-const ReactMarkdown = dynamic(() => import('react-markdown'), { ssr: false });
 
 interface InlineLatexRendererProps {
   content: string;
@@ -101,9 +96,8 @@ export const InlineLatexRenderer = memo<InlineLatexRendererProps>(({
     return (
       <LaTeXErrorBoundary fallback={content}>
         <span className={className}>
-          <ReactMarkdown
-            remarkPlugins={[remarkMath]}
-            rehypePlugins={[rehypeKatex]}
+          <MarkdownCore
+            preset="math"
             components={{
               // Render paragraphs as spans for inline display
               p: ({ children }) => <span>{children}</span>,
@@ -112,7 +106,7 @@ export const InlineLatexRenderer = memo<InlineLatexRendererProps>(({
             }}
           >
             {processedContent}
-          </ReactMarkdown>
+          </MarkdownCore>
         </span>
       </LaTeXErrorBoundary>
     );

@@ -1,7 +1,6 @@
 "use client";
 import React from "react";
-import dynamic from "next/dynamic";
-import remarkGfm from "remark-gfm";
+import MarkdownCore from "@/components/markdown-core/MarkdownCore";
 import { cn } from "@/styles/themes/utils";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import { parseMarkdownTable } from "@/components/mardown-display/markdown-classification/processors/bock-processors/parse-markdown-table";
@@ -10,10 +9,6 @@ import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton"
 
 import type { ComponentPropsWithoutRef } from "react";
 import type { Components, ExtraProps } from "react-markdown";
-
-const ReactMarkdown = dynamic(() => import("react-markdown"), {
-  ssr: false,
-});
 
 interface MarkdownRendererProps {
   content: string;
@@ -226,9 +221,9 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           isMarkdown={true}
         />
         <div className="text-base leading-relaxed tracking-wide h-full w-full">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+          <MarkdownCore preset="gfm" components={components}>
             {content}
-          </ReactMarkdown>
+          </MarkdownCore>
         </div>
       </div>
     </div>

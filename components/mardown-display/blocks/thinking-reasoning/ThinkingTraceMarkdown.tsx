@@ -1,12 +1,8 @@
 "use client";
 
 import React from "react";
-import dynamic from "next/dynamic";
-import remarkGfm from "remark-gfm";
-import remarkBreaks from "remark-breaks";
+import MarkdownCore from "@/components/markdown-core/MarkdownCore";
 import { cn } from "@/lib/utils";
-
-const ReactMarkdown = dynamic(() => import("react-markdown"), { ssr: false });
 
 type ThinkingTraceMarkdownVariant = "inline" | "body";
 
@@ -120,12 +116,12 @@ export function ThinkingTraceMarkdown({
         className,
       )}
     >
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkBreaks]}
+      <MarkdownCore
+        preset="gfm-breaks"
         components={variant === "inline" ? inlineComponents : bodyComponents}
       >
         {content}
-      </ReactMarkdown>
+      </MarkdownCore>
     </div>
   );
 }

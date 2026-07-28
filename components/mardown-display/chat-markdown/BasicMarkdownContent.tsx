@@ -16,15 +16,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import React from "react";
-import dynamic from "next/dynamic";
-import remarkGfm from "remark-gfm";
-import remarkBreaks from "remark-breaks";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import rehypeSafeRawHtml, {
-  ALLOWED_RAW_HTML_TAGS,
-} from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
-import "katex/dist/katex.min.css";
+import MarkdownCore from "@/components/markdown-core/MarkdownCore";
+import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 import { cn } from "@/styles/themes/utils";
 import { PencilIcon } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
@@ -36,9 +29,7 @@ import { LinkComponent } from "@/components/mardown-display/blocks/links/LinkCom
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InlineCodeSnippet } from "@/components/mardown-display/chat-markdown/InlineCodeSnippet";
-import remarkMatrxVariable from "@/components/mardown-display/chat-markdown/matrx-variables/remarkMatrxVariable";
 import { MatrxVariableInline } from "@/components/mardown-display/chat-markdown/matrx-variables/MatrxVariableInline";
-import remarkMatrxCite from "@/components/mardown-display/chat-markdown/citations/remarkMatrxCite";
 import { CitationMarkerInline } from "@/components/mardown-display/chat-markdown/citations/CitationMarkerInline";
 import {
   TableRenderPathDiagnostic,
@@ -73,8 +64,6 @@ import type { Element } from "hast";
 /** Props react-markdown passes to a `<code>` renderer/element — the only fields this file reads off `child.props`. */
 type MarkdownCodeElementProps = React.HTMLAttributes<HTMLElement> &
   ExtraProps & { className?: string };
-
-const ReactMarkdown = dynamic(() => import("react-markdown"), { ssr: false });
 
 // Detect text direction utility
 const detectTextDirection = (text: string): "rtl" | "ltr" => {
@@ -992,25 +981,9 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
                 `,
         }}
       />
-      <ReactMarkdown
-        remarkPlugins={[
-          remarkGfm,
-          remarkBreaks,
-          [remarkMath, { singleDollarTextMath: false }],
-          remarkMatrxVariable,
-          remarkMatrxCite,
-        ]}
-        rehypePlugins={[
-          // Parse + sanitize allow-listed raw HTML (img/table/…) BEFORE KaTeX,
-          // so KaTeX's rendered output is never sanitized and matrx-variable /
-          // math element nodes are never touched.
-          rehypeSafeRawHtml,
-          [rehypeKatex, { strict: "ignore" }],
-        ]}
-        components={components}
-      >
+      <MarkdownCore preset="chat" components={components}>
         {processedContent}
-      </ReactMarkdown>
+      </MarkdownCore>
 
       {/* Only render interactive elements when stream is not active */}
       {!isStreamActive && isHovering && (

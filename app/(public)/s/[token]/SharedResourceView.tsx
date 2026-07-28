@@ -2,6 +2,9 @@
 
 import React from "react";
 import Link from "next/link";
+// DELIBERATE static react-markdown (not the MarkdownCore front door): this is
+// an anonymous share/SEO surface — the markdown body must be in the
+// server-rendered HTML, and MarkdownCore is ssr:false.
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ArrowUpRight, Download, ExternalLink, FileIcon, FolderClosed, Sparkles } from "lucide-react";

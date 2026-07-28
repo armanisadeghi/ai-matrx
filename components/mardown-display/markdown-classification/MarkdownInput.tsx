@@ -1,12 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import dynamic from "next/dynamic";
-import remarkGfm from "remark-gfm";
+import MarkdownCore from "@/components/markdown-core/MarkdownCore";
 import CodeComponent from "./parts/CodeComponent";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-
-const ReactMarkdown = dynamic(() => import("react-markdown"), { ssr: false });
 
 interface MarkdownInputProps {
     markdown: string;
@@ -69,14 +66,14 @@ const MarkdownInput: React.FC<MarkdownInputProps> = ({
                         <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Simple Formatted Markdown</h3>
                         {parsedMarkdown ? (
                             <div className={`prose ${mode === "dark" ? "prose-invert" : ""} max-w-none`}>
-                                <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
+                                <MarkdownCore
+                                    preset="gfm"
                                     components={{
                                         code: (props) => <CodeComponent mode={mode} {...props} />,
                                     }}
                                 >
                                     {parsedMarkdown}
-                                </ReactMarkdown>
+                                </MarkdownCore>
                             </div>
                         ) : (
                             <p className="text-gray-500 dark:text-gray-400">Start typing to see the preview.</p>

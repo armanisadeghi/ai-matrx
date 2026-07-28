@@ -16,8 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import MarkdownCore from "@/components/markdown-core/MarkdownCore";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTopicContext, useStreamDebug } from "../../context/ResearchContext";
 import { useResearchApi } from "../../hooks/useResearchApi";
@@ -441,8 +440,8 @@ export default function DocumentViewer() {
           contextData={documentContextData}
         >
           <article className="prose prose-sm dark:prose-invert max-w-none prose-headings:scroll-mt-4">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
+            <MarkdownCore
+              preset="gfm"
               components={{
                 h1: ({ children, ...props }) => (
                   <h1
@@ -477,7 +476,7 @@ export default function DocumentViewer() {
               }}
             >
               {displayContent}
-            </ReactMarkdown>
+            </MarkdownCore>
           </article>
         </NonEditableContextMenu>
 

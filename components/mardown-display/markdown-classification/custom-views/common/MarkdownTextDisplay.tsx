@@ -1,14 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import dynamic from 'next/dynamic';
-
-const ReactMarkdown = dynamic(() => import("react-markdown"), {
-  ssr: false,
-  loading: () => <p className="text-slate-500 dark:text-slate-400">Loading content...</p>
-});
-
-// Import react-markdown components for customization
+import MarkdownCore from '@/components/markdown-core/MarkdownCore';
 import type { Components } from 'react-markdown';
 
 interface MarkdownTextDisplayProps {
@@ -37,7 +30,7 @@ export default function MarkdownTextDisplay({
   if (typeof content === 'string') {
     return (
       <div className={`${className} ${isCollapsed ? 'line-clamp-2' : ''}`}>
-        <ReactMarkdown>{content}</ReactMarkdown>
+        <MarkdownCore preset="plain">{content}</MarkdownCore>
       </div>
     );
   }
@@ -50,9 +43,9 @@ export default function MarkdownTextDisplay({
           <li key={index} className={`${listItemClassName} flex items-start`}>
             <span className="inline-block mr-1">•</span>
             <span className="inline-block">
-              <ReactMarkdown components={customComponents}>
+              <MarkdownCore preset="plain" components={customComponents}>
                 {item}
-              </ReactMarkdown>
+              </MarkdownCore>
             </span>
           </li>
         ))}

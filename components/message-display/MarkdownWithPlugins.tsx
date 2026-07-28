@@ -1,12 +1,8 @@
 "use client";
 
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import remarkBreaks from 'remark-breaks';
-import rehypeRaw from 'rehype-raw';
-import { Components } from 'react-markdown';
+import MarkdownCore from '@/components/markdown-core/MarkdownCore';
+import type { Components } from 'react-markdown';
 import {
   guardMarkdownDelimiters,
   reportDelimiterViolations,
@@ -31,13 +27,9 @@ const MarkdownWithPlugins = ({ content, components }: MarkdownWithPluginsProps) 
   }, [signature]);
 
   return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm, remarkMath, remarkBreaks]}
-      rehypePlugins={[rehypeRaw]}
-      components={components}
-    >
+    <MarkdownCore preset="message" components={components}>
       {guarded}
-    </ReactMarkdown>
+    </MarkdownCore>
   );
 };
 

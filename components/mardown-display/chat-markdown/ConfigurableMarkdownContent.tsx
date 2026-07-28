@@ -14,12 +14,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import React from "react";
-import dynamic from "next/dynamic";
-import remarkGfm from "remark-gfm";
-import remarkBreaks from "remark-breaks";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import "katex/dist/katex.min.css";
+import MarkdownCore from "@/components/markdown-core/MarkdownCore";
 import { cn } from "@/styles/themes/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PencilIcon } from "lucide-react";
@@ -32,8 +27,6 @@ import { LinkComponent } from "@/components/mardown-display/blocks/links/LinkCom
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 
 import type { Components } from "react-markdown";
-
-const ReactMarkdown = dynamic(() => import("react-markdown"), { ssr: false });
 
 // ---------------------------------------------------------------------------
 // Theme / style config types
@@ -999,17 +992,9 @@ export const ConfigurableMarkdownContent: React.FC<
       onMouseLeave={handleMouseLeave}
     >
       <style dangerouslySetInnerHTML={{ __html: dynamicStyles }} />
-      <ReactMarkdown
-        remarkPlugins={[
-          remarkGfm,
-          remarkBreaks,
-          [remarkMath, { singleDollarTextMath: false }],
-        ]}
-        rehypePlugins={[[rehypeKatex, { strict: "ignore" }]]}
-        components={components}
-      >
+      <MarkdownCore preset="rich" components={components}>
         {processedContent}
-      </ReactMarkdown>
+      </MarkdownCore>
 
       {!isStreamActive && isHovering && (
         <div className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
