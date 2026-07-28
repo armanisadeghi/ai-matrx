@@ -35,6 +35,12 @@ interface HtmlCase {
   expect: { path: string; url: string };
 }
 
+interface DerivationCase {
+  name: string;
+  input: { slug: string; category?: string | null; parent_route?: string | null };
+  expect: string;
+}
+
 describe("C4 URL contract — fixture parity", () => {
   it("base_url matches the fixture", () => {
     // The TS twin's non-domain host is the fixture base_url.
@@ -42,11 +48,34 @@ describe("C4 URL contract — fixture parity", () => {
   });
 
   // Every case runs — no skips, no quarantine. If this count drops, a case
-  // stopped executing and the guard silently shrank.
+  // stopped executing and the guard silently shrank. That is not hypothetical:
+  // before CMS migration 0029 the fixture had ZERO `parent_route` cases, so all
+  // three implementations disagreed on parent handling and nothing went red.
   it("runs every fixture case", () => {
-    expect(fixture.client_page_cases).toHaveLength(13);
+    expect(fixture.route_derivation_cases).toHaveLength(30);
+    expect(fixture.client_page_cases).toHaveLength(19);
     expect(fixture.html_page_cases).toHaveLength(1);
+    const parented = fixture.client_page_cases.filter(
+      (c) => "parent_route" in (c as ClientCase).input,
+    );
+    expect(parented).toHaveLength(6);
   });
+
+  // The PURE derivation — the twin of `public._client_page_route_of`. aidream's
+  // pytest suite runs these exact cases from this exact file, AND checks them
+  // against the live SQL function, so SQL/Python/TS are pinned to one answer.
+  it.each(fixture.route_derivation_cases as DerivationCase[])(
+    "derivation case: $name",
+    ({ input, expect: want }) => {
+      expect(
+        clientPageRoute({
+          slug: input.slug,
+          category: input.category,
+          parentRoute: input.parent_route,
+        }),
+      ).toBe(want);
+    },
+  );
 
   it("every client_page case matches", () => {
     let ran = 0;
@@ -92,21 +121,12 @@ describe("C4 URL contract — fixture parity", () => {
 });
 
 /**
- * The fixture pins every derivation rule EXCEPT parent nesting (no case carries
- * `parent_route`) and a whitespace-only category. Those two live here; do not
- * re-test anything the fixture already covers — that copy would drift silently.
+ * Every derivation rule — parent nesting and whitespace-only category included —
+ * now lives in `url-rules.json` and runs above as `route_derivation_cases`.
+ * The hand-written copies that used to sit here were DELETED with CMS migration
+ * 0029: a local copy of a cross-repo rule is a second authority that drifts in
+ * silence, which is the exact defect 0029 fixed. Add new rules to the fixture.
  */
-describe("clientPageRoute — rules the fixture does not reach", () => {
-  it("nests under the parent route at arbitrary depth, ignoring category", () => {
-    expect(clientPageRoute({ slug: "pricing", category: "general", parentRoute: "/locations/austin" }))
-      .toBe("/locations/austin/pricing");
-    expect(clientPageRoute({ slug: "enterprise", category: "plans", parentRoute: "/locations/austin/pricing" }))
-      .toBe("/locations/austin/pricing/enterprise");
-  });
-  it("treats a whitespace-only category as no category", () => {
-    expect(clientPageRoute({ slug: "landing", category: "  " })).toBe("/landing");
-  });
-});
 
 describe("normalizeDomainInput", () => {
   it("strips scheme, path, port, trailing dot and lowercases", () => {

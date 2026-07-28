@@ -1,6 +1,40 @@
 {
-  "_comment": "C4 cross-repo drift guard. Language-neutral encoding of the my-matrx URL routing rules. aidream/services/cms/urls.py AND matrx-frontend's TS twin (features/cms/utils/pageUrls.ts) BOTH test against this exact file — it is byte-identical in both repos. Do not edit one side's URL logic without updating this fixture (and the other side goes red). `route` is client_pages.route (CMS migration 0028): trigger-computed, unique per site, the page's full public path at any depth. When a case omits it, the builder derives it with the same rule as the DB function public._client_page_route_of.",
+  "_comment": "C4 cross-repo drift guard. Language-neutral encoding of the my-matrx URL routing rules. aidream/services/cms/urls.py AND matrx-frontend's TS twin (features/cms/utils/pageUrls.ts) BOTH test against this exact file — it is byte-identical in both repos. The CANONICAL copy is the aidream one; matrx-frontend's features/cms/utils/__tests__/url-rules.json is a verbatim sync of it. Do not edit one side's URL logic without updating this fixture (and the other side goes red). `route` is client_pages.route (CMS migration 0028, amended by 0029): trigger-computed, unique per site, the page's full public path at any depth. When a case omits it, the builder derives it with the same rule as the DB function public._client_page_route_of.",
+  "_comment_derivation": "`route_derivation_cases` pins the PURE derivation — the three-way twin of public._client_page_route_of / client_page_route / clientPageRoute. It is the parameter-level guard; `client_page_cases` below is the URL-level one. THE PARENT RULE (CMS 0029): a parent_route is BTRIMMED, then ALL trailing '/' are stripped, then '/' + slug is appended. Whitespace and trailing slashes in a parent route are normalized away by all three implementations, identically. Before 0029 the three disagreed here and NOTHING in this fixture exercised parent_route — that blindness is why the divergence shipped. Never remove a parent_route case.",
   "base_url": "https://mymatrx.com",
+  "route_derivation_cases": [
+    { "name": "derive_no_category", "input": { "slug": "about" }, "expect": "/about" },
+    { "name": "derive_null_category", "input": { "slug": "about", "category": null }, "expect": "/about" },
+    { "name": "derive_empty_category", "input": { "slug": "about", "category": "" }, "expect": "/about" },
+    { "name": "derive_whitespace_only_category", "input": { "slug": "about", "category": "   " }, "expect": "/about" },
+    { "name": "derive_general_is_no_category", "input": { "slug": "about", "category": "general" }, "expect": "/about" },
+    { "name": "derive_general_is_case_insensitive", "input": { "slug": "about", "category": "GENERAL" }, "expect": "/about" },
+    { "name": "derive_general_is_trimmed", "input": { "slug": "about", "category": "  general  " }, "expect": "/about" },
+    { "name": "derive_distinct_category", "input": { "slug": "gut-health", "category": "education" }, "expect": "/education/gut-health" },
+    { "name": "derive_distinct_category_is_trimmed", "input": { "slug": "gut-health", "category": "  education  " }, "expect": "/education/gut-health" },
+    { "name": "derive_category_equal_to_slug_is_the_index", "input": { "slug": "services", "category": "services" }, "expect": "/services" },
+    { "name": "derive_category_equal_to_slug_case_insensitive", "input": { "slug": "services", "category": "Services" }, "expect": "/services" },
+    { "name": "derive_category_equal_to_slug_trimmed", "input": { "slug": "services", "category": "  SERVICES  " }, "expect": "/services" },
+    { "name": "derive_unicode_slug_and_category", "input": { "slug": "café", "category": "menú" }, "expect": "/menú/café" },
+
+    { "name": "parent_one_level", "input": { "slug": "austin", "parent_route": "/locations" }, "expect": "/locations/austin" },
+    { "name": "parent_overrides_general_category", "input": { "slug": "pricing", "category": "general", "parent_route": "/locations/austin" }, "expect": "/locations/austin/pricing" },
+    { "name": "parent_overrides_distinct_category", "input": { "slug": "pricing", "category": "plans", "parent_route": "/locations/austin" }, "expect": "/locations/austin/pricing" },
+    { "name": "parent_overrides_category_equal_to_slug", "input": { "slug": "services", "category": "services", "parent_route": "/about" }, "expect": "/about/services" },
+    { "name": "parent_three_levels", "input": { "slug": "enterprise", "parent_route": "/locations/austin/pricing" }, "expect": "/locations/austin/pricing/enterprise" },
+    { "name": "parent_deep_chain_no_ceiling", "input": { "slug": "g", "parent_route": "/a/b/c/d/e/f" }, "expect": "/a/b/c/d/e/f/g" },
+    { "name": "parent_trailing_slash_is_stripped", "input": { "slug": "x", "parent_route": "/a/" }, "expect": "/a/x" },
+    { "name": "parent_deep_trailing_slash_is_stripped", "input": { "slug": "pricing", "parent_route": "/locations/austin/" }, "expect": "/locations/austin/pricing" },
+    { "name": "parent_repeated_trailing_slashes_are_stripped", "input": { "slug": "x", "parent_route": "/a//" }, "expect": "/a/x" },
+    { "name": "parent_root_slash_yields_one_segment", "input": { "slug": "x", "parent_route": "/" }, "expect": "/x" },
+    { "name": "parent_root_double_slash_yields_one_segment", "input": { "slug": "x", "parent_route": "//" }, "expect": "/x" },
+    { "name": "parent_whitespace_padded_is_trimmed", "input": { "slug": "x", "parent_route": "  /loc  " }, "expect": "/loc/x" },
+    { "name": "parent_whitespace_padded_with_trailing_slash", "input": { "slug": "x", "parent_route": "  /loc/  " }, "expect": "/loc/x" },
+    { "name": "parent_null_falls_through_to_category", "input": { "slug": "x", "category": "news", "parent_route": null }, "expect": "/news/x" },
+    { "name": "parent_empty_string_falls_through_to_category", "input": { "slug": "x", "category": "blog", "parent_route": "" }, "expect": "/blog/x" },
+    { "name": "parent_whitespace_only_falls_through_to_no_category", "input": { "slug": "x", "category": null, "parent_route": "   " }, "expect": "/x" },
+    { "name": "parent_unicode_chain", "input": { "slug": "café", "category": "general", "parent_route": "/menú/" }, "expect": "/menú/café" }
+  ],
   "client_page_cases": [
     {
       "name": "route_wins_over_slug_and_category",
@@ -120,6 +154,66 @@
         "live_url": "https://www.devwebsite-test.com/home",
         "preview_url": "https://mymatrx.com/c/dev-website/home?preview=true",
         "root_url": "https://www.devwebsite-test.com"
+      }
+    },
+    {
+      "name": "parented_page_derives_nested_route",
+      "input": { "site_slug": "dev-website", "slug": "pricing", "category": "general", "parent_route": "/locations/austin", "is_home_page": false },
+      "expect": {
+        "path": "/c/dev-website/locations/austin/pricing",
+        "live_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing",
+        "preview_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing?preview=true",
+        "root_url": null
+      }
+    },
+    {
+      "name": "parented_page_parent_trailing_slash_normalized",
+      "input": { "site_slug": "dev-website", "slug": "pricing", "category": "plans", "parent_route": "/locations/austin/", "is_home_page": false },
+      "expect": {
+        "path": "/c/dev-website/locations/austin/pricing",
+        "live_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing",
+        "preview_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing?preview=true",
+        "root_url": null
+      }
+    },
+    {
+      "name": "parented_page_parent_is_site_root",
+      "input": { "site_slug": "dev-website", "slug": "about", "category": "general", "parent_route": "/", "is_home_page": false },
+      "expect": {
+        "path": "/c/dev-website/about",
+        "live_url": "https://mymatrx.com/c/dev-website/about",
+        "preview_url": "https://mymatrx.com/c/dev-website/about?preview=true",
+        "root_url": null
+      }
+    },
+    {
+      "name": "parented_page_parent_whitespace_padded",
+      "input": { "site_slug": "iopbm", "slug": "austin", "category": null, "parent_route": "  /locations  ", "is_home_page": false },
+      "expect": {
+        "path": "/c/iopbm/locations/austin",
+        "live_url": "https://mymatrx.com/c/iopbm/locations/austin",
+        "preview_url": "https://mymatrx.com/c/iopbm/locations/austin?preview=true",
+        "root_url": null
+      }
+    },
+    {
+      "name": "domain_parented_page_deep_chain",
+      "input": { "site_slug": "dev-website", "slug": "enterprise", "category": "general", "parent_route": "/locations/austin/pricing", "is_home_page": false, "domain": "www.devwebsite-test.com" },
+      "expect": {
+        "path": "/locations/austin/pricing/enterprise",
+        "live_url": "https://www.devwebsite-test.com/locations/austin/pricing/enterprise",
+        "preview_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing/enterprise?preview=true",
+        "root_url": null
+      }
+    },
+    {
+      "name": "stored_route_wins_over_parent_route",
+      "input": { "site_slug": "dev-website", "slug": "pricing", "category": "plans", "parent_route": "/ignored/entirely", "route": "/locations/austin/pricing", "is_home_page": false },
+      "expect": {
+        "path": "/c/dev-website/locations/austin/pricing",
+        "live_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing",
+        "preview_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing?preview=true",
+        "root_url": null
       }
     },
     {

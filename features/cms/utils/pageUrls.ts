@@ -63,12 +63,22 @@ export interface ClientPageRouteParams {
  *   4. category equals slug (ci)        → `/{slug}`  (a category INDEX page IS the category)
  *   5. otherwise                        → `/{category}/{slug}`
  *
+ * THE PARENT NORMALIZATION RULE (CMS migration 0029). A parent route is
+ * TRIMMED, then ALL trailing `/` are stripped, and only then is `/{slug}`
+ * appended. `'/a/'`, `'/a//'` and `'  /a  '` all yield `/a/x`; the site root
+ * `'/'` yields `/x`, never `//x`. Emptiness is judged on the TRIMMED value, so
+ * a whitespace-only parent falls through to the category rules. One rule
+ * applied once — not a trim for the emptiness test and a raw value for the
+ * concatenation. This file was the one of the three that omitted the
+ * trailing-slash strip entirely (`/a/` → `/a//x`), and `url-rules.json` had
+ * ZERO `parent_route` cases, so nothing caught it. Never remove those cases.
+ *
  * Prefer the saved `client_pages.route` whenever you have the row — this
  * derivation exists for callers that do not (unsaved buffers, promote candidates).
  */
 export function clientPageRoute({ slug, category, parentRoute }: ClientPageRouteParams): string {
   const parent = (parentRoute ?? "").trim();
-  if (parent) return `${parent}/${slug}`;
+  if (parent) return `${parent.replace(/\/+$/, "")}/${slug}`;
   const cat = (category ?? "").trim();
   if (!cat) return `/${slug}`;
   if (cat.toLowerCase() === "general") return `/${slug}`;

@@ -190,9 +190,19 @@ leading slash, no trailing slash, **arbitrary depth**. Sites are no longer cappe
   `/{slug}`; category `'general'` (the column DEFAULT, meaning "the author named no category") →
   `/{slug}`; `lower(category) = lower(slug)` (a category INDEX page IS the category) → `/{slug}`;
   otherwise `/{category}/{slug}`.
+- **Parent normalization (CMS 0029), one rule applied once:** a `parent_route` is TRIMMED, then ALL
+  trailing `/` are stripped, and only then is `/{slug}` appended. `'/a/'`, `'/a//'` and `'  /a  '`
+  all give `/a/x`; the root `'/'` gives `/x`, never `//x`. Emptiness is judged on the TRIMMED value,
+  so a whitespace-only parent falls through to the category rules.
 - **Three twins of that rule must agree exactly:** the DB function (canonical),
   `aidream/services/cms/urls.py::client_page_route`, and `clientPageRoute()` in
   `features/cms/utils/pageUrls.ts`. Change one, change all three plus `url-rules.json`.
+  **The fixture must exercise the parameter you changed.** All three drifted apart on `parent_route`
+  and shipped, because `url-rules.json` carried ZERO `parent_route` cases — a guard blind to the one
+  parameter the feature is about. It now pins 30 pure-derivation cases and 6 URL-level parent cases,
+  and aidream's suite additionally runs every one of them against the LIVE SQL function, so two twins
+  agreeing while the DB says something else can no longer pass. Never delete a case to make a change
+  go green.
 - **Slug is no longer unique per site.** `client_pages_client_id_slug_key` was DROPPED for
   `client_pages_client_id_route_key UNIQUE (client_id, route)` — `/locations/austin/pricing` and
   `/locations/dallas/pricing` legitimately share the leaf `pricing`. **Any uniqueness scan must scan
@@ -323,6 +333,17 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-07-28` — **Three-way route-derivation divergence fixed (CMS migration 0029), and the guard
+  that missed it given teeth.** SQL, Python and TS each produced a DIFFERENT route for a parented
+  page: TS omitted the trailing-slash strip (`parentRoute='/a/'` → `/a//x`, `'/'` → `//x`), and SQL
+  btrimmed the parent for the emptiness test but concatenated the RAW value (`'  /loc  '` →
+  `'  /loc  /x'`). Root cause of the escape: `url-rules.json` had ZERO `parent_route` cases. Normative
+  rule (SQL wins, whitespace case excepted — a route with embedded spaces is not a URL): trim → strip
+  all trailing `/` → append `/{slug}`. `clientPageRoute()` fixed here; fixture grown to 30 pure-
+  derivation + 6 URL-level parent cases and both suites execute every one; aidream additionally
+  asserts each case against the LIVE SQL function. Verified against live data before applying: all 41
+  pages on both sites (incl. the real client `iopbm`) derive byte-identical routes — **zero URLs
+  moved**, and 0029 replaces the function only, running no backfill.
 - `2026-07-27` — **`client_pages.route` adopted (CMS migration 0028): page URLs are no longer capped
   at 2 segments.** `route` added to `ClientPage`/`ClientPageSummary`, to `LIST_COLUMNS`, to the
   agent-facing `site_structure` XML / `pages_summary` / cms-page `page_settings`+`page_layout`.
