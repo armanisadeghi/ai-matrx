@@ -10,6 +10,7 @@ import {
   BackendApiError,
   describeBackendFailure,
   isGenericUserMessage,
+  parseCallApiError,
   parsePersistedBackendError,
   parseStreamError,
   unwrapUpstreamError,
@@ -127,6 +128,30 @@ describe("describeBackendFailure", () => {
     expect(explanation.code).toBe("Ga4PartialCollectionError");
     expect(explanation.requestId).toBe("request-123");
     expect(explanation.headline).toBe("Google Analytics Data API is disabled.");
+  });
+});
+
+describe("parseCallApiError", () => {
+  it("preserves a FastAPI HTTPException user message instead of HTTP 422", () => {
+    const parsed = parseCallApiError({
+      message: "HTTP 422",
+      status: 422,
+      serverDetail: {
+        detail: {
+          error: "provider_credential_missing",
+          message:
+            "no active secret 'DATA_FOR_SEO_EMAIL' for user user-1, org org-titanium",
+          user_message:
+            "DataForSEO is not available for your account in the selected organization.",
+          required_fields: ["DATA_FOR_SEO_EMAIL", "DATA_FOR_SEO_PASSWORD"],
+        },
+      },
+    });
+
+    expect(parsed.code).toBe("provider_credential_missing");
+    expect(parsed.userMessage).toContain("DataForSEO is not available");
+    expect(parsed.detail).toContain("DATA_FOR_SEO_EMAIL");
+    expect(describeBackendFailure(parsed).headline).toBe(parsed.userMessage);
   });
 });
 

@@ -110,6 +110,13 @@ export async function parseHttpError(
     }
   }
 
+  return parseHttpErrorBody(body, status);
+}
+
+function parseHttpErrorBody(
+  body: Record<string, unknown> | null,
+  status: number,
+): BackendApiError {
   if (!body) {
     return new BackendApiError({
       code: statusToCode(status),
@@ -118,7 +125,6 @@ export async function parseHttpError(
       status,
     });
   }
-
   // Standard backend shape: { error, message, user_message, details, request_id }
   if (typeof body.error === "string" && typeof body.user_message === "string") {
     return new BackendApiError({
@@ -218,6 +224,31 @@ export async function parseHttpError(
       typeof body.request_id === "string" ? body.request_id : undefined,
     status,
   });
+}
+
+/**
+ * Adapt callApi's result-style error into the same canonical error used by
+ * direct fetch and streaming consumers.
+ *
+ * callApi intentionally returns errors instead of throwing them, but its
+ * `serverDetail` contains the complete FastAPI body. Sending only
+ * `error.message` to a feature discards that body and turns a precise
+ * configuration failure into "HTTP 422". This adapter keeps one parser and
+ * one human-facing explanation path across both client styles.
+ */
+export function parseCallApiError(error: {
+  message: string;
+  status?: number;
+  serverDetail?: unknown;
+}): BackendApiError {
+  const status = error.status ?? 500;
+  const body =
+    error.serverDetail &&
+    typeof error.serverDetail === "object" &&
+    !Array.isArray(error.serverDetail)
+      ? (error.serverDetail as Record<string, unknown>)
+      : { message: error.message };
+  return parseHttpErrorBody(body, status);
 }
 
 // ============================================================================

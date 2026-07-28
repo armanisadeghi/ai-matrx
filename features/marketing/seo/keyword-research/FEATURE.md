@@ -116,6 +116,13 @@ before adding any keyword field or per-keyword display anywhere.
 
 ## Change Log
 
+- 2026-07-28 — **Credential preflight + truthful persistent failure UI.** The backend
+  now resolves the same personal→organization DataForSEO credential hierarchy before
+  creating a durable research run or spending either agent call. The hook consumes
+  typed stream errors and `callApi.serverDetail` through the shared backend-failure
+  parser instead of replacing the cause with “stream ended without a completed
+  result.” The live feed shell remains mounted on running, completed, and failed runs,
+  with a stable stage header and an explicit preflight-empty state.
 - 2026-07-26 — **Canonicalization round 2: window panel + shared primitives everywhere.**
   Extracted `KeywordResearchLauncher` from the workbench (shared runner UI); new
   `KeywordResearchWindow` (overlayId `keywordResearchWindow`, tools-grid tile,

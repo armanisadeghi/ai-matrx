@@ -13,7 +13,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
-import type { TypedStreamEvent } from "@/lib/api/types";
+import {
+  describeBackendFailure,
+  parseCallApiError,
+  parsePersistedBackendError,
+  parseStreamError,
+} from "@/lib/api/errors";
+import { isErrorEvent, type TypedStreamEvent } from "@/lib/api/types";
 import type { components } from "@/types/python-generated/api-types";
 
 import { listKeywordEdges, listKeywordsWithMarket } from "./data/queries";
@@ -88,7 +94,8 @@ const STAGE_LABELS: Record<string, string> = {
   "seo.volume_run_claimed": "Provider run claimed",
   "seo.volume_provider_request_started": "Requesting DataForSEO market data",
   "seo.volume_provider_task_checkpoint": "DataForSEO task checkpoint persisted",
-  "seo.volume_provider_task_checkpoints": "DataForSEO task checkpoints persisted",
+  "seo.volume_provider_task_checkpoints":
+    "DataForSEO task checkpoints persisted",
   "seo.volume_provider_response": "DataForSEO response received",
   "seo.volume_raw_persisted": "Raw provider response persisted",
   "seo.volume_normalized": "Provider response normalized",
@@ -177,105 +184,125 @@ export function useKeywordResearch(organizationId?: string | null) {
     async (phrase: string, request: ResearchStreamRequest) => {
       const completedResults: KeywordResearchResponse[] = [];
       let serverBusy = false;
+      let streamFailure: string | null = null;
       // Chunk tokens arrive from TWO sequential agent calls on one stream:
       // relationship research first, then intent classification. Bucketing by
       // phase gives each payload its own live parse region.
       let chunkPhase: "research" | "classification" = "research";
       const onStreamEvent = (event: TypedStreamEvent) => {
         {
-            if (event.event === "chunk") {
-              const phase = chunkPhase;
-              setRun((current) =>
-                phase === "research"
-                  ? {
-                      ...current,
-                      researchOutput: `${current.researchOutput ?? ""}${event.data.text}`,
-                    }
-                  : {
-                      ...current,
-                      classificationOutput: `${current.classificationOutput ?? ""}${event.data.text}`,
-                    },
-              );
-              return;
-            }
-            const data = streamData(event);
-            if (!data) return;
-            const kind = typeof data.kind === "string" ? data.kind : null;
-            if (!kind) return;
-            if (kind === "seo.research_agent_completed") {
-              chunkPhase = "classification";
-              setRun((current) => ({ ...current, researchDone: true }));
-            }
-            if (kind === "seo.classification_started") {
-              chunkPhase = "classification";
-            }
-            if (
-              kind === "seo.classification_completed" ||
-              kind === "seo.research_completed"
-            ) {
-              setRun((current) => ({
-                ...current,
-                researchDone: true,
-                classificationDone: true,
-              }));
-            }
-            // Durable job identity — persisted server-side BEFORE the AI call.
-            if (kind === "seo.command_run" && typeof data.run_id === "string") {
-              const runId = data.run_id;
-              storeActiveRun({ runId, primaryKeyword: phrase });
-              setRun((current) => ({ ...current, runId }));
-            }
-            if (kind === "seo.run_in_progress") {
-              serverBusy = true;
-              setRun((current) => ({
-                ...current,
-                stage:
-                  "This research is already running on the server — rejoin or retry shortly.",
-              }));
-              return;
-            }
-            if (kind === "seo.run_snapshot") {
-              // Durable snapshot after a restart: no live stream to follow.
-              const snapshotResult = data.result as KeywordResearchResponse | null;
-              if (data.status === "completed" && snapshotResult) {
-                completedResults.push(snapshotResult);
-                setRun((current) => ({
-                  ...current,
-                  status: "done",
-                  stage: "Research complete (recovered)",
-                  result: snapshotResult,
-                }));
-              } else if (data.status === "failed") {
-                const error = data.error as { message?: string } | null;
-                setRun((current) => ({
-                  ...current,
-                  status: "error",
-                  error: error?.message ?? "The research run failed.",
-                }));
-              } else {
-                serverBusy = true;
-                setRun((current) => ({
-                  ...current,
-                  stage: `Run is ${String(data.status)} on the server`,
-                }));
-              }
-              return;
-            }
+          if (isErrorEvent(event)) {
+            const explanation = describeBackendFailure(
+              parseStreamError(event.data),
+            );
+            streamFailure = explanation.headline;
             setRun((current) => ({
               ...current,
-              stage: STAGE_LABELS[kind] ?? kind,
+              status: "error",
+              stage: "Research stopped",
+              error: explanation.headline,
             }));
-            const final = resultFromEvent(event, "seo.research_completed");
-            if (final) {
-              const completedResult = final as unknown as KeywordResearchResponse;
-              completedResults.push(completedResult);
+            return;
+          }
+          if (event.event === "chunk") {
+            const phase = chunkPhase;
+            setRun((current) =>
+              phase === "research"
+                ? {
+                    ...current,
+                    researchOutput: `${current.researchOutput ?? ""}${event.data.text}`,
+                  }
+                : {
+                    ...current,
+                    classificationOutput: `${current.classificationOutput ?? ""}${event.data.text}`,
+                  },
+            );
+            return;
+          }
+          const data = streamData(event);
+          if (!data) return;
+          const kind = typeof data.kind === "string" ? data.kind : null;
+          if (!kind) return;
+          if (kind === "seo.research_agent_completed") {
+            chunkPhase = "classification";
+            setRun((current) => ({ ...current, researchDone: true }));
+          }
+          if (kind === "seo.classification_started") {
+            chunkPhase = "classification";
+          }
+          if (
+            kind === "seo.classification_completed" ||
+            kind === "seo.research_completed"
+          ) {
+            setRun((current) => ({
+              ...current,
+              researchDone: true,
+              classificationDone: true,
+            }));
+          }
+          // Durable job identity — persisted server-side BEFORE the AI call.
+          if (kind === "seo.command_run" && typeof data.run_id === "string") {
+            const runId = data.run_id;
+            storeActiveRun({ runId, primaryKeyword: phrase });
+            setRun((current) => ({ ...current, runId }));
+          }
+          if (kind === "seo.run_in_progress") {
+            serverBusy = true;
+            setRun((current) => ({
+              ...current,
+              stage:
+                "This research is already running on the server — rejoin or retry shortly.",
+            }));
+            return;
+          }
+          if (kind === "seo.run_snapshot") {
+            // Durable snapshot after a restart: no live stream to follow.
+            const snapshotResult =
+              data.result as KeywordResearchResponse | null;
+            if (data.status === "completed" && snapshotResult) {
+              completedResults.push(snapshotResult);
               setRun((current) => ({
                 ...current,
                 status: "done",
-                stage: "Research complete",
-                result: completedResult,
+                stage: "Research complete (recovered)",
+                result: snapshotResult,
+              }));
+            } else if (data.status === "failed") {
+              const persistedError = parsePersistedBackendError(data.error);
+              const explanation = persistedError
+                ? describeBackendFailure(persistedError)
+                : null;
+              streamFailure =
+                explanation?.headline ?? "The research run failed.";
+              setRun((current) => ({
+                ...current,
+                status: "error",
+                error: streamFailure ?? "The research run failed.",
+              }));
+            } else {
+              serverBusy = true;
+              setRun((current) => ({
+                ...current,
+                stage: `Run is ${String(data.status)} on the server`,
               }));
             }
+            return;
+          }
+          setRun((current) => ({
+            ...current,
+            stage: STAGE_LABELS[kind] ?? kind,
+          }));
+          const final = resultFromEvent(event, "seo.research_completed");
+          if (final) {
+            const completedResult = final as unknown as KeywordResearchResponse;
+            completedResults.push(completedResult);
+            setRun((current) => ({
+              ...current,
+              status: "done",
+              stage: "Research complete",
+              result: completedResult,
+            }));
+          }
         }
       };
       const result = await dispatch(
@@ -307,11 +334,15 @@ export function useKeywordResearch(organizationId?: string | null) {
       }));
       if (result.error) {
         storeActiveRun(null);
+        const explanation = describeBackendFailure(
+          parseCallApiError(result.error),
+        );
         setRun((current) => ({
           ...current,
           status: "error",
           primaryKeyword: phrase,
-          error: result.error?.message,
+          stage: "Research could not start",
+          error: explanation.headline,
         }));
         return;
       }
@@ -323,7 +354,9 @@ export function useKeywordResearch(organizationId?: string | null) {
           ...current,
           status: "error",
           primaryKeyword: phrase,
-          error: "The research stream ended without a completed result.",
+          error:
+            streamFailure ??
+            "The server ended this research run without a result or an error. Please retry; if it repeats, report this as a server-stream defect.",
         }));
         return;
       }
@@ -331,7 +364,9 @@ export function useKeywordResearch(organizationId?: string | null) {
       const artifact = completedResult.artifact;
       const phrases = [
         artifact.primary_keyword || phrase,
-        ...(artifact.keyword_lists ?? []).flatMap((list) => list.keywords ?? []),
+        ...(artifact.keyword_lists ?? []).flatMap(
+          (list) => list.keywords ?? [],
+        ),
       ]
         .map((keyword) => keyword.trim().toLowerCase())
         .filter(Boolean);
@@ -348,7 +383,7 @@ export function useKeywordResearch(organizationId?: string | null) {
       setRun({
         status: "running",
         primaryKeyword: phrase,
-        stage: "Connecting",
+        stage: "Checking organization access and DataForSEO credentials",
         researchOutput: "",
         classificationOutput: "",
         streamKey: crypto.randomUUID(),
@@ -414,7 +449,10 @@ export function useKeywordResearch(organizationId?: string | null) {
             const data = streamData(event);
             const kind = typeof data?.kind === "string" ? data.kind : null;
             if (kind) setVolumeStage(STAGE_LABELS[kind] ?? kind);
-            const final = resultFromEvent(event, "seo.volume_refresh_completed");
+            const final = resultFromEvent(
+              event,
+              "seo.volume_refresh_completed",
+            );
             if (final) completedResults.push(final);
           },
         }),
@@ -436,7 +474,8 @@ export function useKeywordResearch(organizationId?: string | null) {
   );
 
   const loadEdges = useCallback(
-    (keywordId: string): Promise<KeywordEdgeView[]> => listKeywordEdges(keywordId),
+    (keywordId: string): Promise<KeywordEdgeView[]> =>
+      listKeywordEdges(keywordId),
     [],
   );
 

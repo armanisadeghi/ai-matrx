@@ -92,29 +92,60 @@ export default function KeywordResearchLauncher({
           Research
         </button>
       </div>
-      {run.status === "running" && (
-        <p className="mt-2 text-xs text-muted-foreground">
-          {run.stage ?? `Running research for “${run.primaryKeyword}”`}
-        </p>
-      )}
       {/* Live feed: the agent's structured output rendered as real
           components key-by-key while streaming — never raw JSON. Stays
-          visible after completion so the run's map remains inspectable. */}
-      {(run.status === "running" || run.status === "done") && run.streamKey && (
+          visible after completion or failure so the run never vanishes while
+          the user is trying to understand what happened. */}
+      {run.status !== "idle" && run.streamKey && (
         <div
-          className={`mt-2 overflow-y-auto rounded-md border border-border bg-muted/20 px-3 py-1 ${feedMaxHeightClassName}`}
+          className={`mt-2 min-h-16 overflow-y-auto rounded-md border border-border bg-muted/20 ${feedMaxHeightClassName}`}
+          aria-live="polite"
         >
-          <LiveResearchFeed
-            streamKey={run.streamKey}
-            researchText={run.researchOutput ?? ""}
-            researchDone={run.researchDone ?? run.status === "done"}
-            classificationText={run.classificationOutput ?? ""}
-            classificationDone={run.classificationDone ?? run.status === "done"}
-          />
+          <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-background/95 px-3 py-2 text-xs backdrop-blur">
+            {run.status === "running" && (
+              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+            )}
+            <span
+              className={
+                run.status === "error"
+                  ? "font-medium text-destructive"
+                  : run.status === "done"
+                    ? "font-medium text-foreground"
+                    : "text-muted-foreground"
+              }
+            >
+              {run.stage ?? `Running research for “${run.primaryKeyword}”`}
+            </span>
+          </div>
+          <div className="px-3 py-2">
+            {(run.researchOutput ?? "").trim() === "" &&
+            (run.classificationOutput ?? "").trim() === "" ? (
+              <p className="text-xs text-muted-foreground">
+                {run.status === "error"
+                  ? "No agent output was produced. Research stopped before structured output began."
+                  : "Waiting for structured research output…"}
+              </p>
+            ) : (
+              <LiveResearchFeed
+                streamKey={run.streamKey}
+                researchText={run.researchOutput ?? ""}
+                researchDone={run.researchDone ?? run.status !== "running"}
+                classificationText={run.classificationOutput ?? ""}
+                classificationDone={
+                  run.classificationDone ?? run.status !== "running"
+                }
+              />
+            )}
+          </div>
         </div>
       )}
       {run.status === "error" && (
-        <p className="mt-2 text-xs text-destructive">{run.error}</p>
+        <div
+          role="alert"
+          className="mt-2 max-w-2xl rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+        >
+          {run.error}
+        </div>
       )}
       {run.status === "done" && run.result && (
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
