@@ -308,7 +308,14 @@ async function fetchDbInputs(): Promise<DoctorDbInputs> {
         .select("skill_id,label,body")
         .eq("skill_type", "render_block")
         .is("deleted_at", null),
-      supabase.from("content_blocks").select("id,template").is("deleted_at", null),
+      // Canonical: render/content blocks now live in skill.render_definition
+      // (public.content_blocks retired). The shape doctor detects a kind's
+      // teaching block by scanning template text either way.
+      supabase
+        .schema("skill")
+        .from("render_definition")
+        .select("id,template")
+        .is("deleted_at", null),
     ]);
 
   const fail = (what: string, error: { message: string } | null): never => {
@@ -320,7 +327,7 @@ async function fetchDbInputs(): Promise<DoctorDbInputs> {
   if (surfacesRes.error) fail("content_ir.kind_surface", surfacesRes.error);
   if (edgesRes.error) fail("content_ir.kind_edge", edgesRes.error);
   if (skillsRes.error) fail("skill.definition", skillsRes.error);
-  if (blocksRes.error) fail("public.content_blocks", blocksRes.error);
+  if (blocksRes.error) fail("skill.render_definition", blocksRes.error);
 
   const kindRows = (kindsRes.data ?? []) as KindDefinitionRow[];
   const exampleRows = (examplesRes.data ?? []) as KindExampleRow[];
