@@ -3,11 +3,6 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import type { LatLngExpression, LatLngTuple, Map as LeafletMap } from "leaflet";
-import chroma from "chroma-js";
-// Static CSS import — bundled only with this client component, so it never
-// loads for other routes. A runtime `require('leaflet/dist/leaflet.css')`
-// throws under Turbopack and crashed the whole route.
-import "leaflet/dist/leaflet.css";
 import { Loader2, MapPin } from "lucide-react";
 import { ZipCodeData } from "../page";
 import { batchGeocodeZipCodes } from "../utils/zipCodeDatabase";
@@ -15,30 +10,12 @@ import { scaleValues } from "../utils/colorScaling";
 import type { ScalingMethod, ColorScheme } from "./ColorScaleSelector";
 import type { ViewMode } from "./ViewModeSelector";
 
-// Dynamically import Leaflet components
-const MapContainer = dynamic(
-  () => import("react-leaflet").then((mod) => mod.MapContainer),
-  { ssr: false },
-);
-
-const TileLayer = dynamic(
-  () => import("react-leaflet").then((mod) => mod.TileLayer),
-  { ssr: false },
-);
-
-const CircleMarker = dynamic(
-  () => import("react-leaflet").then((mod) => mod.CircleMarker),
-  { ssr: false },
-);
-
-const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), {
+// ONE react-leaflet edge (was five per-export dynamic() wrappers — five
+// loadables over one dependency). Everything leaflet, including its CSS,
+// lives statically inside ZipCodeMapView behind this single boundary.
+const ZipCodeMapView = dynamic(() => import("./ZipCodeMapView"), {
   ssr: false,
 });
-
-const Tooltip = dynamic(
-  () => import("react-leaflet").then((mod) => mod.Tooltip),
-  { ssr: false },
-);
 
 interface ZipCodeMapProps {
   data: ZipCodeData[];
@@ -270,84 +247,16 @@ export default function ZipCodeMap({
         </div>
       )}
 
-      <MapContainer
+      <ZipCodeMapView
         center={US_CENTER}
-        zoom={4}
-        style={{ height: "100%", width: "100%", borderRadius: "0.5rem" }}
-        className={isDark ? "leaflet-dark" : "leaflet-light"}
-        ref={mapRef}
-        scrollWheelZoom={true}
-      >
-        <TileLayer url={tileConfig.url} attribution={tileConfig.attribution} />
-
-        {zipLocations.map((location) => {
-          const scaledValue = colorMapping?.get(location.count);
-          const color = scaledValue?.color || "#3b82f6";
-
-          // Scale radius based on scaled value and view mode
-          // Larger markers for aggregated views
-          const baseRadius = viewMode === "zipCode" ? 8 : 12;
-          const maxRadius = viewMode === "zipCode" ? 30 : 50;
-          const radiusScale = scaledValue?.scaledValue || 0.5;
-          const radius = baseRadius + (maxRadius - baseRadius) * radiusScale;
-
-          return (
-            <CircleMarker
-              key={location.zipCode}
-              center={[location.lat, location.lng]}
-              radius={radius}
-              pathOptions={{
-                fillColor: color,
-                fillOpacity: 0.7,
-                color: chroma(color).darken(1).hex(),
-                weight: 2,
-              }}
-            >
-              <Tooltip direction="top" offset={[0, -10]} opacity={0.9}>
-                <div className="text-xs font-medium">
-                  <div className="font-bold">
-                    {/* Use displayLabel if available (for aggregated views) */}
-                    {data.find((d) => d.zipCode === location.zipCode)
-                      ?.displayLabel || location.zipCode}
-                  </div>
-                  <div>Count: {location.count.toLocaleString()}</div>
-                </div>
-              </Tooltip>
-              <Popup>
-                <div className="text-sm">
-                  <div className="font-bold text-base mb-1">
-                    {data.find((d) => d.zipCode === location.zipCode)
-                      ?.displayLabel ||
-                      (viewMode === "zipCode"
-                        ? `Zip Code: ${location.zipCode}`
-                        : location.zipCode)}
-                  </div>
-                  <div className="text-muted-foreground">
-                    Count:{" "}
-                    <span className="font-semibold text-foreground">
-                      {location.count.toLocaleString()}
-                    </span>
-                  </div>
-                  {viewMode === "zip3" &&
-                    data.find((d) => d.zipCode === location.zipCode)
-                      ?.originalId && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Region:{" "}
-                        {
-                          data.find((d) => d.zipCode === location.zipCode)
-                            ?.originalId
-                        }
-                      </div>
-                    )}
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
-                  </div>
-                </div>
-              </Popup>
-            </CircleMarker>
-          );
-        })}
-      </MapContainer>
+        isDark={isDark}
+        mapRef={mapRef}
+        tileConfig={tileConfig}
+        zipLocations={zipLocations}
+        colorMapping={colorMapping}
+        viewMode={viewMode}
+        data={data}
+      />
     </div>
   );
 }
