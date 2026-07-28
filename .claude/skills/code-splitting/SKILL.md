@@ -7,7 +7,11 @@ description: >-
   component, or reaching for `React.lazy`. Triggers on `next/dynamic`, `dynamic(`, `ssr: false`,
   `React.lazy` / `lazy(`, `loading:`, "code split", "lazy load", "defer this", "make this not
   load on every page", "heavy client component", "shrink the bundle", or wrapping a heavy core in
-  a thin shell. Read this whenever a task touches how a component enters (or stays out of) a chunk.
+  a thin shell. ALSO the first stop for BUILD FAILURES and build-time regressions: "build failed",
+  "OOM", "SIGKILL", "out of memory", "build got slower", "Vercel build error", "Collecting page
+  data" — rule 3 (THE FRAGMENTATION LAW) + docs/handoffs/build-graph-fragmentation-campaign.md
+  hold the measured incident, the diagnosis order, and the fix pattern. Read this whenever a task
+  touches how a component enters (or stays out of) a chunk.
 ---
 
 # code-splitting — `next/dynamic` done right
