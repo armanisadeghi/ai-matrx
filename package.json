@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.176",
+  "version": "0.4.177",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--dns-result-order=ipv4first' next dev",
@@ -138,7 +138,7 @@
     "check:access-matrix:strict": "tsx scripts/access-matrix/check-access-matrix.ts --strict",
     "check:access-drift": "tsx scripts/access-matrix/check-access-drift.ts",
     "check:access-drift:strict": "tsx scripts/access-matrix/check-access-drift.ts --strict",
-    "clean:next": "rm -rf .next-preview* .next-qa* && echo 'removed alternate NEXT_DISTDIR build dirs (.next left intact)'",
+    "clean:next": "bash -c 'shopt -s nullglob; removed=0; for d in .next-*; do rm -rf \"$d\"; removed=1; done; if [[ \"$removed\" -eq 1 ]]; then echo \"removed alternate NEXT_DISTDIR build dirs (.next left intact)\"; else echo \"no alternate .next-* dirs to remove\"; fi' && pnpm -s fix:tsconfig",
     "clean:next:all": "bash scripts/dev-cleanup.sh next",
     "dev:status": "bash scripts/dev-cleanup.sh status",
     "dev:reap": "bash scripts/dev-cleanup.sh reap",

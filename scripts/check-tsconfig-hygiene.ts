@@ -1,5 +1,5 @@
 /**
- * check-tsconfig-hygiene.ts — keep generated Next build output OUT of tsc/eslint.
+ * check-tsconfig-hygiene.ts — keep generated Next build output OUT of tsc/eslint/IDE.
  *
  * The failure this exists to prevent is the worst kind: a checker that reports
  * SUCCESS while checking nothing.
@@ -14,10 +14,17 @@
  * `const x: number = "str"` planted in a real source file was not reported. Every
  * type error in the repo was invisible.
  *
+ * Second leak (2026-07-28): `next-env.d.ts` gets rewritten with
+ *   import "./.next-agent-<sid>/dev/types/routes.d.ts"
+ * TypeScript `exclude` does NOT stop import resolution — so that one line
+ * punches the language server into a multi-GB Turbopack tree and freezes the
+ * IDE. Guard: exclude `next-env.d.ts` from both tsconfigs, and strip any
+ * `.next*` import from the file itself when `--fix` runs.
+ *
  * The fix is a `.next*` exclude glob (exclude beats include, so it holds even
- * when Next re-appends its entry) in both tsconfigs, and a matching `ignores` in
- * the ESLint flat config (which does NOT read .gitignore). This guard fails loudly
- * if any of those three are removed.
+ * when Next re-appends its entry) in both tsconfigs, a matching `ignores` in
+ * the ESLint flat config (which does NOT read .gitignore), and a sanitized
+ * `next-env.d.ts`. This guard fails loudly if any of those are removed.
  */
 
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
@@ -53,6 +60,15 @@ function checkTsconfig(file: string): void {
       `${file}: "exclude" is missing the ".next*/**" glob. Generated build output ` +
         `(.next, .next-preview, any NEXT_DISTDIR variant) will be fed to tsc — and a ` +
         `single truncated validator.ts in one of them silences EVERY type error in the repo.`,
+    );
+  }
+
+  // next-env.d.ts imports punch through exclude — keep the file itself out of the program.
+  if (!exclude.includes("next-env.d.ts")) {
+    problems.push(
+      `${file}: "exclude" is missing "next-env.d.ts". Next rewrites that file with ` +
+        `\`import "./.next…/types/routes.d.ts"\`, and TypeScript exclude does NOT stop ` +
+        `import resolution — the language server walks the whole distDir and freezes the IDE.`,
     );
   }
 }
@@ -106,6 +122,47 @@ function pruneDistdirIncludes(file: string): void {
 pruneDistdirIncludes("tsconfig.json");
 pruneDistdirIncludes("tsconfig.typecheck.json");
 
+/**
+ * Strip any `import "./.next…"` / `/// <reference path="./.next…">` from
+ * next-env.d.ts. Next rewrites this file on every `next dev` boot to point at
+ * the active distDir; left alone, that one import is enough to pull the entire
+ * build tree into the TypeScript language service regardless of exclude.
+ */
+const SAFE_NEXT_ENV = `/// <reference types="next" />
+/// <reference types="next/image-types/global" />
+
+// NOTE: This file should not be edited
+// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
+`;
+
+function sanitizeNextEnvDts(): void {
+  const path = join(ROOT, "next-env.d.ts");
+  if (!existsSync(path)) return;
+  const raw = readFileSync(path, "utf8");
+  const punchesThrough =
+    /from\s+["']\.\/\.next[^"']*["']/.test(raw) ||
+    /import\s+["']\.\/\.next[^"']*["']/.test(raw) ||
+    /reference\s+path=["']\.\/\.next[^"']*["']/.test(raw);
+
+  if (!punchesThrough) return;
+
+  if (!FIX) {
+    console.log(
+      `${YELLOW}note${RESET} next-env.d.ts imports a .next* path (punches through ` +
+        `tsconfig exclude into the language service). Sanitize with \`pnpm fix:tsconfig\`.`,
+    );
+    return;
+  }
+
+  writeFileSync(path, SAFE_NEXT_ENV.endsWith("\n") ? SAFE_NEXT_ENV : `${SAFE_NEXT_ENV}\n`);
+  console.log(
+    `${GREEN}✓${RESET} next-env.d.ts: stripped .next* import (Next will rewrite on next boot; ` +
+      `exclude + this reaper keep it out of the IDE graph).`,
+  );
+}
+
+sanitizeNextEnvDts();
+
 // ESLint flat config does not read .gitignore — it needs its own ignores entry.
 const eslintPath = join(ROOT, "eslint.config.mjs");
 if (existsSync(eslintPath)) {
@@ -117,6 +174,27 @@ if (existsSync(eslintPath)) {
         `output and choke on half-written files.`,
     );
   }
+}
+
+// Cursor's built-in default ignore list covers `.next/` ONLY — not variants.
+// Require an explicit `.next*` pattern in .cursorignore so the indexer never
+// crawls alternate NEXT_DISTDIR trees (the actual IDE-freeze class).
+const cursorIgnorePath = join(ROOT, ".cursorignore");
+if (existsSync(cursorIgnorePath)) {
+  const src = readFileSync(cursorIgnorePath, "utf8");
+  const hasNextStar =
+    /^\s*\.next\*\s*$/m.test(src) || /^\s*\.next\*\/\s*$/m.test(src);
+  if (!hasNextStar) {
+    problems.push(
+      `.cursorignore: missing a ".next*" (or ".next*/") pattern. Cursor's default ` +
+        `ignore list only covers ".next/" — every NEXT_DISTDIR alternate ` +
+        `(.next-preview, .next-agent-*, …) will be indexed and freeze the IDE.`,
+    );
+  }
+} else {
+  problems.push(
+    `.cursorignore: missing. Without it, Cursor indexes every .next* distDir variant.`,
+  );
 }
 
 // Informational: stale alternate build dirs lying around.
@@ -145,7 +223,7 @@ if (problems.length > 0) {
 }
 
 console.log(
-  `${GREEN}✓${RESET} tsconfig + eslint keep .next* build output out of the type/lint graph.`,
+  `${GREEN}✓${RESET} tsconfig + eslint + cursorignore keep .next* build output out of the type/lint/index graph.`,
 );
 if (stale.length > 0) {
   console.log(

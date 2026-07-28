@@ -176,9 +176,13 @@ cmd_status() {
   echo
   bold "Build directories on disk"
   local found=0 d
-  for d in "$REPO_ROOT"/.next "$REPO_ROOT"/.next-preview* "$REPO_ROOT"/.next-qa* "$REPO_ROOT"/.next-agent-* "$REPO_ROOT"/.turbo; do
+  # Glob every `.next*` variant (preview / agent / codex / qa / …) plus .turbo.
+  # Do NOT hard-code prefixes — agents invent new NEXT_DISTDIR names constantly.
+  shopt -s nullglob
+  for d in "$REPO_ROOT"/.next "$REPO_ROOT"/.next-* "$REPO_ROOT"/.turbo; do
     if [[ -e "$d" ]]; then found=1; du -sh "$d" 2>/dev/null | awk '{printf "  %-8s %s\n", $1, $2}'; fi
   done
+  shopt -u nullglob
   [[ "$found" -eq 0 ]] && dim "  (none)" || true
 }
 

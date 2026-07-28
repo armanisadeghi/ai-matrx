@@ -3,7 +3,9 @@
   "files.exclude": {
     "**/__pycache__": true,
     "**/.history": true,
-    "**/.next": false,
+    "**/.next": true,
+    "**/.next-*": true,
+    "**/.turbo": true,
     "**/.idea": true,
     "**/node_modules": true
   },
@@ -11,10 +13,24 @@
     "**/__pycache__": true,
     "**/.history": true,
     "**/.next": true,
+    "**/.next-*": true,
+    "**/.turbo": true,
     "**/.idea": true,
     "**/node_modules": true,
-    "**/temp": true
+    "**/temp": true,
+    "**/coverage": true,
+    "**/.claude/worktrees": true
   },
+  "files.watcherExclude": {
+    "**/.next/**": true,
+    "**/.next-*/**": true,
+    "**/.turbo/**": true,
+    "**/node_modules/**": true,
+    "**/.claude/worktrees/**": true,
+    "**/coverage/**": true,
+    "**/.matrx/dev-sessions/**": true
+  },
+  "js/ts.tsserver.maxMemory": 4096,
   "terminal.integrated.scrollback": 20000,
   "references.preferredLocation": "view"
 }

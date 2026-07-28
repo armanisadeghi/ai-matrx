@@ -85,14 +85,13 @@
     "features/**/*",
     "app/**/*",
     "packages/**/*.ts",
-    "packages/**/*.tsx",
-    ".next-preview-crm/types/**/*.ts",
-    ".next-preview-crm/dev/types/**/*.ts"
+    "packages/**/*.tsx"
   ],
   "exclude": [
     ".next*/**",
     ".next*",
     ".next",
+    "next-env.d.ts",
     "node_modules",
     "_armani",
     "_dev",

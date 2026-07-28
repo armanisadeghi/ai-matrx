@@ -27,6 +27,9 @@ packages/*/tsconfig.tsbuildinfo
 /coverage
 
 # next.js — every distDir variant (.next, .next-preview, .next-agent-*, …)
+# Both forms: bare + trailing-slash. Cursor's default ignore only covers `.next/`.
+.next
+.next*
 .next*/
 /out/
 

@@ -42,7 +42,7 @@ group would take the agent down with the server.
 | `pnpm dev:reap:dry` | Show exactly what `dev:reap` would kill and why. Non-destructive. |
 | `pnpm dev:reap` | Kill **only** runaway / abandoned / untracked servers. Safe to run anytime; this is what runs automatically. |
 | `pnpm dev:stop` | Stop **every** matrx-frontend dev server. Leaves disk. |
-| `pnpm clean:next` | Delete alternate build dirs only (`.next-preview*`, `.next-qa*`); **`.next` intact**. |
+| `pnpm clean:next` | Delete **every** alternate build dir (`.next-*`: preview / agent / codex / qa / …); **`.next` intact**. Also runs `fix:tsconfig` (prunes dead includes + strips `next-env.d.ts` punch-through imports). |
 | `pnpm clean:next:all` | Delete **all** build caches incl. `.next`, `.turbo`, `node_modules/.cache`. Leaves servers. |
 | `pnpm dev:nuke` | The big red button: `dev:stop` + `clean:next:all`. |
 

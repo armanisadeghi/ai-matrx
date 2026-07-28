@@ -1,0 +1,22 @@
+# Indexing-only exclusions. AI can still @-mention these if needed, but they
+# never enter the automatic codebase index. Twin of .cursorignore for the
+# Next distDir variants — Cursor's built-in default only ignores `.next/`,
+# so every NEXT_DISTDIR alternate (.next-preview, .next-agent-*, …) must be
+# listed explicitly or the indexer will walk tens of GB of Turbopack cache.
+
+.next
+.next/
+.next*
+.next*/
+
+.turbo/
+.turbo
+node_modules/
+coverage/
+out/
+*.tsbuildinfo
+type-errors/
+.claude/worktrees/
+.matrx/dev-sessions/
+app/_*_build_excluded/
+app/_*_build_excluded.stale-*/
