@@ -37,6 +37,7 @@ import {
   AudioLines,
   Boxes,
   Building2,
+  Contact,
   Database,
   FileCode2,
   FilePen,
@@ -50,6 +51,7 @@ import {
   Layers3,
   LayoutTemplate,
   ListChecks,
+  Megaphone,
   ListTodo,
   MessagesSquare,
   Mic,
@@ -354,6 +356,22 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Tasks",
     titleColumn: "title",
     hrefFor: (id) => `/tasks/${id}`,
+    contentRole: "container",
+  },
+
+  // ─── CRM (crm.party — the ONE record for an external person/company) ──────
+  party: {
+    Icon: Contact,
+    labelPlural: "People & Companies",
+    // titleColumn ("display_name") comes from the DB metadata.
+    contentRole: "source",
+    hrefFor: (id) => `/crm/${id}`,
+  },
+  crm_campaign: {
+    Icon: Megaphone,
+    labelPlural: "Campaigns",
+    // No hrefFor yet — the campaign builder is a later wave; adding a route
+    // here before it exists would mint dead links on every association card.
     contentRole: "container",
   },
 

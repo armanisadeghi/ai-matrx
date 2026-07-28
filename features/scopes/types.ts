@@ -89,7 +89,8 @@ export type EntityType =
   // ── app entity types (also registered in platform.entity_types) ──
   | "app" //                   an `app.definition` row (packaged agent experience)
   | "agent_surface_binding" // an agent⇄surface binding row
-  | "page_extraction_job"; //  an extraction dataset (one `page_extraction_jobs` row)
+  | "page_extraction_job" //   an extraction dataset (one `page_extraction_jobs` row)
+  | "party"; //                a CRM person/company (crm.party) — notes on the record page ride platform.comments
 
 // ─── Favorite kinds (presentation vocabulary, folded onto EntityType) ──
 //
@@ -143,6 +144,8 @@ export const ASSOCIATION_TARGET_TYPES = [
   "seo_keyword", //          a keyword — plan_node attaches secondaries (role 'secondary_keyword'; the primary is an FK, never an edge)
   "web_page", //             a canonical page — the page workspace attaches notes/tasks/files/keywords onto it (keyword edges: role 'primary'|'supporting')
   "web_screenshot", //       a page capture — per-image attachments on the page workspace
+  "party", //                a CRM person/company (crm.party) — the record page attaches tasks/files/notes onto it; roles come from party→category edges
+  "crm_campaign", //         a CRM campaign — parties and resources attach into it (builder is a later wave)
 ] as const satisfies readonly EntityTypeToken[];
 
 export type AssociationTargetType = (typeof ASSOCIATION_TARGET_TYPES)[number];

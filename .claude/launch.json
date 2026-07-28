@@ -26,6 +26,18 @@
       }
     },
     {
+      "name": "next-dev-crm",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
+      "port": 3051,
+      "autoPort": true,
+      "env": {
+        "NODE_ENV": "development",
+        "PORT": "3051",
+        "NEXT_DISTDIR": ".next-preview-crm"
+      }
+    },
+    {
       "name": "next-dev-cutover-qa",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["dev"],

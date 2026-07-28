@@ -1,6 +1,6 @@
 # FEATURE.md — `crm`
 
-**Status:** `db-core live` (no UI yet) · **Tier:** `1` · **Last updated:** `2026-07-27`
+**Status:** `db-core live · first UI live at /crm` · **Tier:** `1` · **Last updated:** `2026-07-27`
 
 ---
 
@@ -106,6 +106,25 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
 
 ## Entry points
 
+**Routes:** `/crm` (list: People + Companies, `app/(core)/crm/page.tsx`) ·
+`/crm/[partyId]` (record page). Both consume `features/crm/`:
+
+| File | Role |
+|---|---|
+| `types.ts` | Row aliases derived from `types/database.types.ts` (never hand-mirrored), joined embed shapes, closed vocabularies, `CRM_LIST_SCOPES` |
+| `service.ts` | ALL crm reads/writes — direct `supabase.schema("crm")`, scope predicates (THE VIEW LAW), `normalizeMediumValue`, medium find-or-create, the RPC calls |
+| `hooks/usePartyList.ts` · `hooks/usePartyDetail.ts` | Query state + generation-guarded fetch |
+| `components/CrmListPage.tsx` | List assembly on the canonical entity-list primitives (`MatrxDataTable` controlled, `BrowseScopeTabs`, `useListViewPrefs("crm-parties")`, `ItemMenu`) |
+| `components/record/PartyRecordPage.tsx` | The 360°: identity, contact, addresses, employment (both directions), activity, notes (`platform.comments`), Files/Tasks via `AssociationCardGrid` |
+
+**Frontend gotchas (paid for once):**
+- **Self-join embeds MUST target the FK column** — `employer:primary_employer_party_id(...)`. `party!<fk-name>` and `party!<column>` resolve REVERSE (an array) at runtime; postgrest-js can't infer the column-target form, so the service pins it with `.returns<PartyListRow>()`.
+- List scopes are `mine` / `orgs` / `public` client-side predicates (`created_by` / `organization_id in my orgs` / `visibility='public'`). **`shared` needs a grant reader RPC** — do not fake it with a bare RLS read.
+- `party` + `crm_campaign` are registered in `ENTITY_OVERLAY`
+  (`features/scopes/registry/entityRegistry.ts`) and `ASSOCIATION_TARGET_TYPES`
+  (`features/scopes/types.ts`); notes use `commentsService` with
+  `entityType: "party"` + explicit `orgId`.
+
 **Tokens** (`platform.entity_types`): `party`, `contact_medium`, `crm_campaign`
 (entities) · `party_contact_point`, `crm_address`, `crm_affiliation`,
 `crm_interaction`, `crm_campaign_member`, `crm_party_merge` (components).
@@ -127,8 +146,10 @@ attachments = `features/files` · tags/stages = `platform.categories` · the 360
 
 ## Not built yet
 
-- No UI: `/crm` list, party record page, campaign builder, call queue, CSV import.
-- No `ENTITY_OVERLAY` entry and no `ASSOCIATION_TARGET_TYPES` addition yet.
+- Campaign builder, call queue, CSV import, merge review UI.
+- "Shared" list scope (needs a crm grant-reader RPC), lifecycle-stage /
+  role category pickers (`platform.categories` dimensions are seeded but unwired),
+  trash/restore surface for soft-deleted parties.
 - Research expert writing, dedup automation, the `web.brand` fold, expert
   registration — see [`docs/handoffs/contact-entity-system.md`](../../docs/handoffs/contact-entity-system.md).
 
@@ -136,6 +157,11 @@ attachments = `features/files` · tags/stages = `platform.categories` · the 360
 
 ## Change log
 
+- 2026-07-27 — First UI: `/crm` list (scoped, table-first, server-side
+  sort/filter/paging via PostgREST) + `/crm/[partyId]` record page; data layer
+  `features/crm/` (types/service/hooks); `party` + `crm_campaign` registry
+  wiring. Browser-verified live: create person/company, employ, 2 emails +
+  2 phones with RPC primary flips, logged call, note.
 - 2026-07-27 — DB core live: 9 tables, canonical RLS (zero FAIL / zero WARN on
   `iam.verify_canonical` for all 9), 17 association pairs, 8 category dimensions seeded
   public, `party_observation` + `party_affiliation` edge payload kinds, shareable
