@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import {
   ArrowLeft,
+  Clock3,
   ExternalLink,
   Eye,
   MessageCircle,
@@ -14,7 +15,7 @@ import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { Button } from "@/components/ui/button";
 import { youTubeEmbedUrl, youTubeWatchUrl } from "@/lib/media/youtube";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { formatYouTubeCount } from "./formatters";
+import { formatYouTubeCount, formatYouTubeDuration } from "./formatters";
 import type { YouTubeVideoCandidate } from "./types";
 
 export function YouTubeVideoPreviewContent({
@@ -66,6 +67,10 @@ export function YouTubeVideoPreviewContent({
           <span>
             <ThumbsUp className="mr-1 inline h-3.5 w-3.5" />
             {formatYouTubeCount(video.like_count)} likes
+          </span>
+          <span>
+            <Clock3 className="mr-1 inline h-3.5 w-3.5" />
+            {formatYouTubeDuration(video.duration)}
           </span>
           <span>
             <MessageCircle className="mr-1 inline h-3.5 w-3.5" />

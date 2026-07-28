@@ -52,6 +52,8 @@ does not yet add a selected video to a research project.
 
 ## Changelog
 
+- **2026-07-28** — Added each video's formatted duration to the shared preview
+  metadata row alongside views and likes.
 - **2026-07-26** — Moved the complete feature from
   `features/research/youtube-discovery` to its permanent Marketing home,
   registered the canonical routes and navigation, retained legacy redirects,
