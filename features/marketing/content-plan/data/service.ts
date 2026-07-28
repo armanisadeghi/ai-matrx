@@ -241,6 +241,26 @@ export async function listPlanProfiles(
   return assertData(response.data, response.error);
 }
 
+/**
+ * EVERY `plan.profile` row the caller can see, across orgs. Deliberately NOT
+ * org-filtered: the platform archetype library lives on the system org
+ * (`system_orgs.global_readable`), so an org-scoped read can never find it and
+ * the whole builtin vocabulary would silently vanish for normal orgs. RLS stays
+ * the ceiling — this is a config vocabulary read, not a content list.
+ */
+export async function listAllPlanProfiles(
+  signal?: AbortSignal,
+): Promise<PlanProfileRow[]> {
+  const response = await (await planDb())
+    .from("profile")
+    .select("*")
+    .is("deleted_at", null)
+    .order("vertical", { ascending: true })
+    .limit(500)
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
 // ─── seo reads (the plan READS keyword value, never re-decides it) ───────
 
 export interface SiteKeywordValueRow {

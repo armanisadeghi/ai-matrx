@@ -9,6 +9,7 @@
 import { useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  LayoutTemplate,
   ListTree,
   Map as MapIcon,
   RefreshCw,
@@ -36,6 +37,11 @@ import {
 } from "../hooks/usePlanWorkspaceParams";
 
 const VIEW_ITEMS: { view: PlanView; label: string; icon: React.ReactNode }[] = [
+  {
+    view: "setup",
+    label: "Setup",
+    icon: <LayoutTemplate className="h-3.5 w-3.5" />,
+  },
   { view: "tree", label: "Tree", icon: <ListTree className="h-3.5 w-3.5" /> },
   { view: "table", label: "Table", icon: <Table2 className="h-3.5 w-3.5" /> },
   { view: "map", label: "Map", icon: <MapIcon className="h-3.5 w-3.5" /> },

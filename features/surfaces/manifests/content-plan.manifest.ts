@@ -1,7 +1,7 @@
 /**
  * Surface manifest — Content Plan workspace (`matrx-user/content-plan`).
  *
- * Drives `/content-plan?site=<web.site id>&view=tree|table|map|entities` — the
+ * Drives `/content-plan?site=<web.site id>&view=tree|table|map|entities|setup` — the
  * client workspace for the `plan` schema (`features/marketing/content-plan`): every URL
  * a site *should* have, as an editable tree (pillars → clusters → articles)
  * with briefs, keyword bindings, topics, and the people/sources behind the
@@ -124,7 +124,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "view",
     label: "Current view",
     description:
-      "Which workspace view is active: `tree` (tree editor + node panel), `table` (sortable/filterable data table of every planned page), `map` (radial pillar map), or `entities` (E-E-A-T entity manager). Always present — defaults to `tree` when the URL carries no `?view=`.",
+      "Which workspace view is active: `setup` (site-shape scaffolder: pick an archetype, set family counts, preview the exact routes, commit them), `tree` (tree editor + node panel), `table` (sortable/filterable data table of every planned page), `map` (radial pillar map), or `entities` (E-E-A-T entity manager). Always present — defaults to `tree` when the URL carries no `?view=`.",
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 8,
@@ -310,7 +310,7 @@ Empty values mean the workspace is still loading, no site is selected, or the da
  */
 export function createContentPlanScope(values: {
   // alwaysAvailable: true → required
-  view: "tree" | "table" | "map" | "entities";
+  view: "tree" | "table" | "map" | "entities" | "setup";
   // alwaysAvailable: false → optional
   site_id?: string;
   site_domain?: string;

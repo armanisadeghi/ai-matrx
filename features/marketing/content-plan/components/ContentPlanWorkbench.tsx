@@ -45,6 +45,7 @@ import { NewNodeDialog } from "./NewNodeDialog";
 import { NodePanel } from "./NodePanel";
 import { PlanNodesTable } from "./PlanNodesTable";
 import { PlanTree } from "./PlanTree";
+import { SetupView } from "../setup/components/SetupView";
 
 // React Flow is heavy and browser-only; the map chunk loads only when the
 // user switches to it (the conditional render below is the deferral,
@@ -233,6 +234,8 @@ export function ContentPlanWorkbench({
             <p className="p-6 text-sm text-destructive">
               Could not load the plan: {extractErrorMessage(nodes.error)}
             </p>
+          ) : view === "setup" ? (
+            <SetupView />
           ) : view === "entities" && site ? (
             <EntityManager
               siteId={siteId}

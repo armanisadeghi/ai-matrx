@@ -2,7 +2,7 @@
 
 /**
  * URL-backed workspace state for /content-plan: `?site=<web.site id>` and
- * `?view=tree|table|map|entities`. The shell header controls and the body
+ * `?view=tree|table|map|entities|setup`. The shell header controls and the body
  * workbench both read/write through this ONE hook, so the header can live
  * in the PageHeader center zone (core-route doctrine: no in-body toolbar)
  * while the body stays in sync — and the URL stays shareable.
@@ -10,9 +10,9 @@
 import { useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-export type PlanView = "tree" | "table" | "map" | "entities";
+export type PlanView = "tree" | "table" | "map" | "entities" | "setup";
 
-const VIEWS: readonly PlanView[] = ["tree", "table", "map", "entities"];
+const VIEWS: readonly PlanView[] = ["tree", "table", "map", "entities", "setup"];
 
 export function usePlanWorkspaceParams() {
   const router = useRouter();
