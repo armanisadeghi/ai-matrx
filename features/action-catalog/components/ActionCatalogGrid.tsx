@@ -31,6 +31,7 @@ import type {
   ActionVerb,
   NounActions,
 } from "@/features/action-catalog/types";
+import type { ActionShapeSelection } from "@/features/action-catalog/components/ActionShapePanel";
 
 const ALL_FAMILIES = "__all__";
 
@@ -40,7 +41,17 @@ function isWritable(noun: NounActions): boolean {
   );
 }
 
-export function ActionCatalogGrid({ catalog }: { catalog: ActionCatalog }) {
+export function ActionCatalogGrid({
+  catalog,
+  busyToggle,
+  onToggleWritable,
+  onInspect,
+}: {
+  catalog: ActionCatalog;
+  busyToggle: string | null;
+  onToggleWritable: (noun: NounActions, enabled: boolean) => void;
+  onInspect: (selection: ActionShapeSelection) => void;
+}) {
   const verbs = catalog.verbs as ActionVerb[];
 
   const [familyFilter, setFamilyFilter] = useState<string>(ALL_FAMILIES);
@@ -158,6 +169,9 @@ export function ActionCatalogGrid({ catalog }: { catalog: ActionCatalog }) {
                 family={family}
                 rows={rows}
                 verbs={verbs}
+                busyToggle={busyToggle}
+                onToggleWritable={onToggleWritable}
+                onInspect={onInspect}
               />
             ))}
             {filtered.length === 0 && (
@@ -173,7 +187,11 @@ export function ActionCatalogGrid({ catalog }: { catalog: ActionCatalog }) {
           </tbody>
         </table>
 
-        <FunctionsSection catalog={catalog} query={query} />
+        <FunctionsSection
+          catalog={catalog}
+          query={query}
+          onInspect={onInspect}
+        />
       </div>
     </div>
   );
@@ -187,9 +205,11 @@ export function ActionCatalogGrid({ catalog }: { catalog: ActionCatalog }) {
 function FunctionsSection({
   catalog,
   query,
+  onInspect,
 }: {
   catalog: ActionCatalog;
   query: string;
+  onInspect: (selection: ActionShapeSelection) => void;
 }) {
   const functions = catalog.functions ?? [];
   const q = query.trim().toLowerCase();
@@ -207,7 +227,8 @@ function FunctionsSection({
           {visible.map((f) => (
             <tr
               key={`${f.kind}:${f.name}`}
-              className="border-b border-border/60 transition-colors hover:bg-accent/40"
+              className="cursor-pointer border-b border-border/60 transition-colors hover:bg-accent/40"
+              onClick={() => onInspect({ kind: "function", fn: f })}
             >
               <td className="w-64 px-3 py-1 font-mono text-xs font-medium text-foreground">
                 {f.name}
@@ -230,10 +251,16 @@ function FamilyGroup({
   family,
   rows,
   verbs,
+  busyToggle,
+  onToggleWritable,
+  onInspect,
 }: {
   family: string;
   rows: NounActions[];
   verbs: ActionVerb[];
+  busyToggle: string | null;
+  onToggleWritable: (noun: NounActions, enabled: boolean) => void;
+  onInspect: (selection: ActionShapeSelection) => void;
 }) {
   return (
     <>
@@ -258,11 +285,59 @@ function FamilyGroup({
           </td>
           {verbs.map((v) => (
             <td key={v} className="px-2 py-1">
-              <StateCell state={n[v]} />
+              <ActionStateCell
+                noun={n}
+                verb={v}
+                busy={busyToggle === n.noun}
+                onToggleWritable={onToggleWritable}
+                onInspect={onInspect}
+              />
             </td>
           ))}
         </tr>
       ))}
     </>
+  );
+}
+
+function ActionStateCell({
+  noun,
+  verb,
+  busy,
+  onToggleWritable,
+  onInspect,
+}: {
+  noun: NounActions;
+  verb: ActionVerb;
+  busy: boolean;
+  onToggleWritable: (noun: NounActions, enabled: boolean) => void;
+  onInspect: (selection: ActionShapeSelection) => void;
+}) {
+  const state = noun[verb];
+  const writeVerb =
+    verb === "create" || verb === "update" || verb === "delete";
+  const canToggle = writeVerb && state !== "no";
+  const enabled = noun.create === "yes" || noun.update === "yes";
+  const schema = noun.schemas?.[verb];
+
+  return (
+    <StateCell
+      state={state}
+      busy={busy}
+      onToggle={
+        canToggle ? () => onToggleWritable(noun, !enabled) : undefined
+      }
+      toggleLabel={
+        canToggle
+          ? `${enabled ? "Disable" : "Enable"} generic write actions for ${noun.noun}`
+          : undefined
+      }
+      onInspect={
+        schema
+          ? () => onInspect({ kind: "action", noun, verb })
+          : undefined
+      }
+      inspectLabel={`Inspect ${verb}:${noun.noun} shape`}
+    />
   );
 }

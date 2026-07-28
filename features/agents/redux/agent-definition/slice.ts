@@ -71,7 +71,6 @@ function makeEmptyRecord(id: string): AgentDefinitionRecord {
 
     userId: null,
     organizationId: null,
-    projectId: null,
     taskId: null,
 
     sourceAgentId: null,
@@ -473,7 +472,6 @@ export const agentDefinitionSlice = createSlice({
         mcpServers: data.mcpServers ?? [],
         userId: data.userId ?? null,
         organizationId: data.organizationId ?? null,
-        projectId: data.projectId ?? null,
         taskId: data.taskId ?? null,
         sourceAgentId: null,
         sourceSnapshotAt: null,

@@ -180,7 +180,6 @@ export async function POST(request: Request) {
           // (agent._enforce_builtin_system_org) enforces this regardless; we set it
           // explicitly because the regenerated types now require organization_id.
           organization_id: await resolveSystemOrgId(adminClient),
-          project_id: null,
           task_id: null,
           source_agent_id: agent_id,
           source_snapshot_at: new Date().toISOString(),

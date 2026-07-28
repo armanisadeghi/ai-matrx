@@ -52,7 +52,6 @@ const SNAKE_TO_CAMEL: Record<string, keyof AgentDefinition> = {
   change_note: "changeNote",
   user_id: "userId",
   organization_id: "organizationId",
-  project_id: "projectId",
   task_id: "taskId",
   source_agent_id: "sourceAgentId",
   source_snapshot_at: "sourceSnapshotAt",

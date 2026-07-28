@@ -173,6 +173,10 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "context.context_items",
   "title_column": "display_name"
  },
+ "crm_campaign": {
+  "table": "crm.campaign",
+  "title_column": "name"
+ },
  "custom_app_config": {
   "table": "custom_app_configs",
   "title_column": "name"
@@ -252,6 +256,10 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  "page_extraction_job": {
   "table": "docproc.page_extraction_jobs",
   "title_column": "name"
+ },
+ "party": {
+  "table": "crm.party",
+  "title_column": "display_name"
  },
  "pc_article": {
   "table": "podcast.pc_articles",

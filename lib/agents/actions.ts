@@ -124,7 +124,6 @@ export async function createSystemAgentFromSeed(
       user_id: null,
       // organization_id intentionally omitted — the DB guard forces it to the
       // Matrx System org for every builtin (see agent._enforce_builtin_system_org).
-      project_id: null,
       task_id: null,
     })
     .select("id")

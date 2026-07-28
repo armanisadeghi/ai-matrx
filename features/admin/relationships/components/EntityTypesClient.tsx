@@ -22,6 +22,7 @@ import { ENTITY_TYPE_TOKENS } from "@/types/generated/entity-types.generated";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Switch } from "@/components/ui/switch";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -32,6 +33,7 @@ import {
 } from "./EntityTypeForm";
 import { RELATIONSHIPS_LOCATION } from "../utils";
 import type { EntityTypeRow } from "../types";
+import { setEntityTypeAgentWritable } from "../entityTypeMutations";
 
 type EntityTypeFacet = "all" | "active" | "inactive";
 
@@ -113,6 +115,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
   const [editor, setEditor] = useState<EntityTypeEditorState | null>(null);
   const [sidePanelId, setSidePanelId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [writablePending, setWritablePending] = useState<string | null>(null);
   /** Row targeted for deactivate/reactivate confirmation. */
   const [activeTarget, setActiveTarget] = useState<EntityTypeRow | null>(null);
 
@@ -223,6 +226,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
             r.is_module ? "module" : "",
             r.default_scopeable ? "scopeable" : "",
             r.reference_pickable ? "reference" : "",
+            r.agent_writable ? "agent-writable" : "",
           ]
             .filter(Boolean)
             .join(" "),
@@ -235,9 +239,32 @@ export function EntityTypesClient({ entityTypes }: Props) {
             <FlagPill on={row.is_module}>module</FlagPill>
             <FlagPill on={row.default_scopeable}>scopeable</FlagPill>
             <FlagPill on={row.reference_pickable}>reference</FlagPill>
+            <FlagPill on={row.agent_writable}>agent-writable</FlagPill>
           </div>
         ),
         width: 260,
+      },
+      {
+        id: "agent_writable",
+        accessorKey: "agent_writable",
+        header: "Agent writes",
+        filter: "boolean",
+        cell: (row) => (
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={row.agent_writable}
+              disabled={!row.is_active || writablePending === row.token}
+              onCheckedChange={(enabled) =>
+                void toggleAgentWritable(row, enabled)
+              }
+              aria-label={`Toggle generic Matrx write actions for ${row.token}`}
+            />
+            <span className="text-[10px] text-muted-foreground">
+              {row.agent_writable ? "on" : "off"}
+            </span>
+          </div>
+        ),
+        width: 105,
       },
       {
         id: "reference",
@@ -290,7 +317,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
         width: 80,
       },
     ];
-  }, []);
+  }, [writablePending]);
 
   const editorValid =
     editor !== null &&
@@ -401,6 +428,26 @@ export function EntityTypesClient({ entityTypes }: Props) {
     }
   }
 
+  async function toggleAgentWritable(
+    row: EntityTypeRow,
+    enabled: boolean,
+  ) {
+    setWritablePending(row.token);
+    try {
+      await setEntityTypeAgentWritable(row.token, enabled);
+      toast.success(
+        `${row.token} generic Matrx write actions ${enabled ? "enabled" : "disabled"}`,
+      );
+      refresh();
+    } catch (e) {
+      toast.error(
+        `Couldn't update: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    } finally {
+      setWritablePending(null);
+    }
+  }
+
   // -- render ---------------------------------------------------------------------
 
   const activeCount = entityTypes.filter((r) => r.is_active).length;
@@ -500,6 +547,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
                 `${r.label} (${r.token}) — ${r.schema_name}.${r.table_name}`,
                 `tier=${r.base_tier} active=${r.is_active} versioned=${r.is_versioned} soft_delete=${r.has_soft_delete}`,
                 `listed=${r.is_listed} component=${r.is_component} module=${r.is_module} scopeable=${r.default_scopeable}`,
+                `agent_writable=${r.agent_writable}`,
                 r.category ? `category: ${r.category}` : null,
                 r.notes ? `notes: ${r.notes}` : null,
               ]

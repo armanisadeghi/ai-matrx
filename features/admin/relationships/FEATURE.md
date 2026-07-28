@@ -97,6 +97,7 @@ is untouched — never widen or modify it.**
 | `admin_entity_types_list()` | ALL rows incl. inactive; `default_visibility` projected as text; `table_ref` as text. |
 | `admin_upsert_entity_type(...)` | Create/update (ON CONFLICT on `token`). Validates token `^[a-z][a-z0-9_]*$` and that the physical table exists (loud RAISE otherwise); recomputes `table_ref` server-side. |
 | `admin_set_entity_type_active(token, active)` | **The only "delete"** — tokens are FK targets of `platform.associations`; hard deletes are never offered. Loud on a missing token. |
+| `admin_set_entity_type_agent_writable(token, enabled)` | Narrow super-admin toggle for generic `create:/update:/delete:` Matrx Actions; shared by Entity Types and the Actions matrix. |
 
 **Generated-types drift:** after any registry write, `types/generated/entity-types.generated.ts`
 is stale until `pnpm gen:entity-types` runs. `EntityTypesClient` compares active
@@ -140,6 +141,9 @@ used by the per-row **Link policy** side panel).
   schema/table (must physically exist) + label + tier/category/visibility + flag
   switches → upsert. Deactivate via the row power action (ConfirmDialog states the
   semantics); the drift banner then demands `pnpm gen:entity-types`.
+- **Toggle generic agent writes:** the `Agent writes` switch updates
+  `platform.entity_types.agent_writable` through the narrow admin RPC. The Actions tab
+  consumes the same mutation primitive, so both control surfaces stay identical.
 - **Manage what can be shared (Sharing tab):** full CRUD — **Register resource**
   picks any entity token not yet registered and prefills from
   `platform.entity_types`; inline edit covers active/RLS-grants/scopeable/
@@ -205,6 +209,9 @@ used by the per-row **Link policy** side panel).
   a half-empty control plane.
 
 ## Change log
+
+- **2026-07-27** — Added the live `agent_writable` column and one-click toggle to the
+  Entity Types registry; extracted the shared mutation consumed by the Actions matrix.
 
 - **2026-07-25** — Added the read-only **Exposure Audit** tab and
   `admin_exposure_audit_summary/rows` super-admin RPCs. Files and notes now have

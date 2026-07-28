@@ -5,7 +5,6 @@ export const AGENT_EXCLUDE_PATHS = new Set([
   "id",
   "userId",
   "organizationId",
-  "projectId",
   "taskId",
   "createdAt",
   "updatedAt",

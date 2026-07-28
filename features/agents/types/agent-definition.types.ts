@@ -239,7 +239,7 @@ export interface ModelTiers {
 //   id = agx_version.id (used as resolved_id for execution)
 //   Some fields that only exist on live agents will be null on version records:
 //   isPublic, isArchived, isFavorite, userId, organizationId,
-//   projectId, taskId, sourceAgentId, sourceSnapshotAt, createdAt, updatedAt
+//   taskId, sourceAgentId, sourceSnapshotAt, createdAt, updatedAt
 //
 // The UI treats them identically everywhere EXCEPT version-specific UI
 // (version history panel, drift indicators) which uses isVersion + parentAgentId.
@@ -325,7 +325,6 @@ export interface AgentDefinition {
   // Ownership & Hierarchy (null on version records)
   userId: string | null;
   organizationId: string | null;
-  projectId: string | null;
   taskId: string | null;
 
   // Lineage (read-only — managed by DB triggers / agx_duplicate_agent RPC)

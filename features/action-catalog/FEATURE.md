@@ -45,6 +45,15 @@ The admin surface that shows the **Matrx Action Catalog** — every noun (a tabl
 - **Any write verb whose cell is `yes` executes** — the catalog state is the only gate
   (no verb allowlist in FE code). `delete` is a soft delete server-side; `planned` /
   `no` cells stay disabled + explained.
+- **Write-state cells are controls.** A `planned`/`yes` create, update, or delete cell
+  toggles the noun's single `platform.entity_types.agent_writable` flag through
+  `admin_set_entity_type_agent_writable`; the adjacent `{}` affordance opens the
+  server-derived schema panel. The catalog refresh resyncs the backend runtime registry,
+  so enabling takes effect immediately rather than waiting for a deploy.
+- **Shape inspection is generated, never authored.** `ActionShapePanel` renders Minimum,
+  Defaults, Full, and raw JSON Schema views for canonical actions and Plane-2 functions.
+  `schemaExamples.ts` derives copy-ready examples from the server schema; there are no
+  noun-specific example maps.
 
 ## Server-derived, not hand-authored (2026-07-26)
 
@@ -65,6 +74,10 @@ legacy named directives) and the server's alias map. Consequences here:
   reference resolvers derive from.
 
 ## Change Log
+
+- 2026-07-27 — Made easy write capabilities directly toggleable from the matrix; added
+  clickable action/function shape inspection with generated minimum/default/full copy
+  payloads and raw JSON Schema.
 
 - 2026-07-26 — Catalog is server-computed; FE derives identity fields, write gating,
   and the functions section from the payload. Verb allowlist + delete explainer copy

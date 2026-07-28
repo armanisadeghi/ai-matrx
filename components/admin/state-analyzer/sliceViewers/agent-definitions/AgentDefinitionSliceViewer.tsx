@@ -337,7 +337,6 @@ export default function AgentDefinitionSliceViewer({
               <KvRow label="organizationId">
                 {record.organizationId ?? "null"}
               </KvRow>
-              <KvRow label="projectId">{record.projectId ?? "null"}</KvRow>
               <KvRow label="taskId">{record.taskId ?? "null"}</KvRow>
             </section>
 

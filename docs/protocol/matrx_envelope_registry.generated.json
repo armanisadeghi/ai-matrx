@@ -68,6 +68,162 @@
     },
     {
       "category": "side_effect",
+      "doc": "Author and persist an agent through the trained Agent Service builder. Requires name + goals; supports variables, tools, model guidance, and provider-validated structured output.",
+      "item_model": "CreateAgentInput",
+      "kind": "function",
+      "purposes": [],
+      "schema": {
+        "$defs": {
+          "AgentVariableInput": {
+            "properties": {
+              "description": {
+                "default": "",
+                "description": "What this variable contains.",
+                "title": "Description",
+                "type": "string"
+              },
+              "name": {
+                "description": "Variable name the agent template references.",
+                "title": "Name",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "title": "AgentVariableInput",
+            "type": "object"
+          },
+          "JsonValue": {}
+        },
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "description": "Structured agent request. Goes through the trained agent-builder\nmeta-agent \u2014 NOT a freeform agx_agent insert.",
+              "properties": {
+                "goals": {
+                  "description": "Goals / objectives \u2014 what the agent must accomplish.",
+                  "title": "Goals",
+                  "type": "string"
+                },
+                "model_guidance": {
+                  "default": "",
+                  "description": "Model preference/guidance, e.g. cost vs speed vs intelligence.",
+                  "title": "Model Guidance",
+                  "type": "string"
+                },
+                "name": {
+                  "description": "Short snake_case identifier / name for the agent.",
+                  "title": "Name",
+                  "type": "string"
+                },
+                "output_schema": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": {
+                        "$ref": "#/$defs/JsonValue"
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Required when response_format='json_schema'. Validated against provider rules.",
+                  "title": "Output Schema"
+                },
+                "response_format": {
+                  "default": "text",
+                  "description": "'text' (prose), 'json' (free JSON), or 'json_schema' (schema-enforced).",
+                  "enum": [
+                    "text",
+                    "json",
+                    "json_schema"
+                  ],
+                  "title": "Response Format",
+                  "type": "string"
+                },
+                "sample_inputs": {
+                  "default": "",
+                  "description": "Optional example variable values.",
+                  "title": "Sample Inputs",
+                  "type": "string"
+                },
+                "sample_output": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": {
+                        "$ref": "#/$defs/JsonValue"
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Optional sample output; checked for consistency against output_schema.",
+                  "title": "Sample Output"
+                },
+                "summary": {
+                  "default": "",
+                  "description": "One-sentence description of the agent.",
+                  "title": "Summary",
+                  "type": "string"
+                },
+                "tools": {
+                  "description": "Executable tools to assign, by canonical tool NAME (from agent_catalog list_tools; DB UUIDs also accepted). Validated against the live registry \u2014 unknown or inactive tools are rejected loudly. Written to the authoritative agent.definition.tools column the executor reads.",
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Tools",
+                  "type": "array"
+                },
+                "variables": {
+                  "description": "Variables the agent will be given, each with a description.",
+                  "items": {
+                    "$ref": "#/$defs/AgentVariableInput"
+                  },
+                  "title": "Variables",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "name",
+                "goals"
+              ],
+              "title": "CreateAgentInput",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "function",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "create_agent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "create_agent"
+    },
+    {
+      "category": "side_effect",
       "doc": "Patch one plan.node addressed by node_id or site_id+route.",
       "item_model": "PlanNodePatchItem",
       "kind": "function",
@@ -679,6 +835,158 @@
     },
     {
       "category": "side_effect",
+      "doc": "Create one Agent row (agent.definition). Payload = the table's writable columns; DB-required columns without defaults must be present. Batch via items.",
+      "item_model": "CreateAgentItem",
+      "kind": "output_directive",
+      "purposes": [],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "properties": {
+                "agent_type": {
+                  "default": "user",
+                  "title": "Agent Type"
+                },
+                "category": {
+                  "default": null,
+                  "title": "Category"
+                },
+                "context_slots": {
+                  "default": [],
+                  "title": "Context Slots"
+                },
+                "custom_tools": {
+                  "default": [],
+                  "title": "Custom Tools"
+                },
+                "default_rag_boost": {
+                  "default": 0,
+                  "title": "Default Rag Boost"
+                },
+                "description": {
+                  "default": null,
+                  "title": "Description"
+                },
+                "is_active": {
+                  "default": true,
+                  "title": "Is Active"
+                },
+                "is_archived": {
+                  "default": false,
+                  "title": "Is Archived"
+                },
+                "is_favorite": {
+                  "default": false,
+                  "title": "Is Favorite"
+                },
+                "matrx_actions": {
+                  "default": {},
+                  "title": "Matrx Actions"
+                },
+                "mcp_servers": {
+                  "default": [],
+                  "title": "Mcp Servers"
+                },
+                "messages": {
+                  "default": [],
+                  "title": "Messages"
+                },
+                "model_id": {
+                  "default": null,
+                  "title": "Model Id"
+                },
+                "model_tiers": {
+                  "default": null,
+                  "title": "Model Tiers"
+                },
+                "name": {
+                  "title": "Name"
+                },
+                "output_schema": {
+                  "default": null,
+                  "title": "Output Schema"
+                },
+                "rag_awareness_fragment": {
+                  "default": null,
+                  "title": "Rag Awareness Fragment"
+                },
+                "rag_awareness_mode": {
+                  "default": "none",
+                  "title": "Rag Awareness Mode"
+                },
+                "settings": {
+                  "default": {},
+                  "title": "Settings"
+                },
+                "skill_config": {
+                  "default": {},
+                  "title": "Skill Config"
+                },
+                "source_agent_id": {
+                  "default": null,
+                  "title": "Source Agent Id"
+                },
+                "tags": {
+                  "default": [],
+                  "title": "Tags"
+                },
+                "task_id": {
+                  "default": null,
+                  "title": "Task Id"
+                },
+                "tool_config": {
+                  "default": {},
+                  "title": "Tool Config"
+                },
+                "tools": {
+                  "default": [],
+                  "title": "Tools"
+                },
+                "ui_gates": {
+                  "default": {},
+                  "title": "Ui Gates"
+                },
+                "variable_definitions": {
+                  "default": null,
+                  "title": "Variable Definitions"
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "title": "CreateAgentItem",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "output_directive",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "create:agent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "create:agent"
+    },
+    {
+      "category": "side_effect",
       "doc": "Create one Data Table row (workbench.udt_datasets). Payload = the table's writable columns; DB-required columns without defaults must be present. Batch via items.",
       "item_model": "CreateDatasetItem",
       "kind": "output_directive",
@@ -712,10 +1020,6 @@
                 "template_version": {
                   "default": null,
                   "title": "Template Version"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -766,7 +1070,7 @@
                   "title": "Back"
                 },
                 "card_kind": {
-                  "default": null,
+                  "default": "basic",
                   "title": "Card Kind"
                 },
                 "difficulty": {
@@ -774,7 +1078,7 @@
                   "title": "Difficulty"
                 },
                 "dynamic_content": {
-                  "default": null,
+                  "default": {},
                   "title": "Dynamic Content"
                 },
                 "front": {
@@ -785,7 +1089,7 @@
                   "title": "Lesson"
                 },
                 "metadata": {
-                  "default": null,
+                  "default": {},
                   "title": "Metadata"
                 },
                 "personal_notes": {
@@ -795,10 +1099,6 @@
                 "topic": {
                   "default": null,
                   "title": "Topic"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -863,7 +1163,7 @@
                   "title": "Lesson"
                 },
                 "metadata": {
-                  "default": null,
+                  "default": {},
                   "title": "Metadata"
                 },
                 "name": {
@@ -872,10 +1172,6 @@
                 "topic": {
                   "default": null,
                   "title": "Topic"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -935,19 +1231,19 @@
                   "title": "Folder Id"
                 },
                 "folder_name": {
-                  "default": null,
+                  "default": "General",
                   "title": "Folder Name"
                 },
                 "label": {
-                  "default": null,
+                  "default": "New Note",
                   "title": "Label"
                 },
                 "metadata": {
-                  "default": null,
+                  "default": {},
                   "title": "Metadata"
                 },
                 "position": {
-                  "default": null,
+                  "default": 0,
                   "title": "Position"
                 },
                 "project_id": {
@@ -955,16 +1251,12 @@
                   "title": "Project Id"
                 },
                 "tags": {
-                  "default": null,
+                  "default": [],
                   "title": "Tags"
                 },
                 "task_id": {
                   "default": null,
                   "title": "Task Id"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "title": "CreateNoteItem",
@@ -1013,7 +1305,7 @@
                   "title": "Description"
                 },
                 "metadata": {
-                  "default": null,
+                  "default": {},
                   "title": "Metadata"
                 },
                 "name": {
@@ -1024,7 +1316,7 @@
                   "title": "Priority"
                 },
                 "settings": {
-                  "default": null,
+                  "default": {},
                   "title": "Settings"
                 },
                 "slug": {
@@ -1036,16 +1328,12 @@
                   "title": "Start Date"
                 },
                 "status": {
-                  "default": null,
+                  "default": "active",
                   "title": "Status"
                 },
                 "target_date": {
                   "default": null,
                   "title": "Target Date"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -1101,11 +1389,11 @@
                   "title": "Completed At"
                 },
                 "is_completed": {
-                  "default": null,
+                  "default": false,
                   "title": "Is Completed"
                 },
                 "metadata": {
-                  "default": null,
+                  "default": {},
                   "title": "Metadata"
                 },
                 "project_id": {
@@ -1113,16 +1401,12 @@
                   "title": "Project Id"
                 },
                 "quiz_metadata": {
-                  "default": null,
+                  "default": {},
                   "title": "Quiz Metadata"
                 },
                 "title": {
                   "default": null,
                   "title": "Title"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "title": "CreateQuizSessionItem",
@@ -1187,7 +1471,7 @@
                   "title": "Error"
                 },
                 "is_current": {
-                  "default": null,
+                  "default": true,
                   "title": "Is Current"
                 },
                 "model_id": {
@@ -1195,11 +1479,11 @@
                   "title": "Model Id"
                 },
                 "source_consolidation_ids": {
-                  "default": null,
+                  "default": [],
                   "title": "Source Consolidation Ids"
                 },
                 "status": {
-                  "default": null,
+                  "default": "success",
                   "title": "Status"
                 },
                 "title": {
@@ -1207,15 +1491,11 @@
                   "title": "Title"
                 },
                 "token_usage": {
-                  "default": null,
+                  "default": {},
                   "title": "Token Usage"
                 },
                 "topic_id": {
                   "title": "Topic Id"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -1295,7 +1575,7 @@
                   "title": "Entity Match Confidence"
                 },
                 "extra_snippets": {
-                  "default": null,
+                  "default": [],
                   "title": "Extra Snippets"
                 },
                 "final_source_score": {
@@ -1307,11 +1587,11 @@
                   "title": "Hostname"
                 },
                 "is_included": {
-                  "default": null,
+                  "default": true,
                   "title": "Is Included"
                 },
                 "is_stale": {
-                  "default": null,
+                  "default": false,
                   "title": "Is Stale"
                 },
                 "last_seen_at": {
@@ -1327,7 +1607,7 @@
                   "title": "Last Server Failure Reason"
                 },
                 "origin": {
-                  "default": null,
+                  "default": "search",
                   "title": "Origin"
                 },
                 "page_age": {
@@ -1363,7 +1643,7 @@
                   "title": "Rank"
                 },
                 "raw_search_result": {
-                  "default": null,
+                  "default": {},
                   "title": "Raw Search Result"
                 },
                 "recommended_use": {
@@ -1375,7 +1655,7 @@
                   "title": "Redundancy Group"
                 },
                 "scrape_status": {
-                  "default": null,
+                  "default": "pending",
                   "title": "Scrape Status"
                 },
                 "scrape_worthiness": {
@@ -1383,11 +1663,11 @@
                   "title": "Scrape Worthiness"
                 },
                 "server_attempts": {
-                  "default": null,
+                  "default": 0,
                   "title": "Server Attempts"
                 },
                 "server_gave_up": {
-                  "default": null,
+                  "default": false,
                   "title": "Server Gave Up"
                 },
                 "snippet_relevance": {
@@ -1395,7 +1675,7 @@
                   "title": "Snippet Relevance"
                 },
                 "source_type": {
-                  "default": null,
+                  "default": "web",
                   "title": "Source Type"
                 },
                 "thumbnail_url": {
@@ -1408,10 +1688,6 @@
                 },
                 "topic_id": {
                   "title": "Topic Id"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 },
                 "url": {
                   "title": "Url"
@@ -1475,23 +1751,23 @@
               "additionalProperties": true,
               "properties": {
                 "agent_config": {
-                  "default": null,
+                  "default": {},
                   "title": "Agent Config"
                 },
                 "analyses_per_keyword": {
-                  "default": null,
+                  "default": 5,
                   "title": "Analyses Per Keyword"
                 },
                 "autonomy_level": {
-                  "default": null,
+                  "default": "semi",
                   "title": "Autonomy Level"
                 },
                 "default_search_params": {
-                  "default": null,
+                  "default": {},
                   "title": "Default Search Params"
                 },
                 "default_search_provider": {
-                  "default": null,
+                  "default": "brave",
                   "title": "Default Search Provider"
                 },
                 "description": {
@@ -1499,51 +1775,59 @@
                   "title": "Description"
                 },
                 "good_scrape_threshold": {
-                  "default": null,
+                  "default": 1000,
                   "title": "Good Scrape Threshold"
                 },
-                "max_auto_tag_calls": {
+                "intent_brief": {
                   "default": null,
+                  "title": "Intent Brief"
+                },
+                "intent_key": {
+                  "default": null,
+                  "title": "Intent Key"
+                },
+                "max_auto_tag_calls": {
+                  "default": 0,
                   "title": "Max Auto Tag Calls"
                 },
                 "max_documents": {
-                  "default": null,
+                  "default": 1,
                   "title": "Max Documents"
                 },
                 "max_keyword_syntheses": {
-                  "default": null,
+                  "default": 3,
                   "title": "Max Keyword Syntheses"
                 },
                 "max_keywords": {
-                  "default": null,
+                  "default": 3,
                   "title": "Max Keywords"
                 },
                 "max_tag_consolidations": {
-                  "default": null,
+                  "default": 0,
                   "title": "Max Tag Consolidations"
                 },
                 "max_topic_syntheses": {
-                  "default": null,
+                  "default": 1,
                   "title": "Max Topic Syntheses"
                 },
                 "metadata": {
-                  "default": null,
+                  "default": {},
                   "title": "Metadata"
                 },
                 "name": {
-                  "default": null,
+                  "default": "Untitled Research",
                   "title": "Name"
                 },
                 "outputs": {
-                  "default": null,
+                  "default": {},
                   "title": "Outputs"
                 },
                 "scrapes_per_keyword": {
-                  "default": null,
+                  "default": 5,
                   "title": "Scrapes Per Keyword"
                 },
                 "status": {
-                  "default": null,
+                  "default": "draft",
                   "title": "Status"
                 },
                 "tag_suggestions": {
@@ -1558,9 +1842,9 @@
                   "default": null,
                   "title": "Tone Profile"
                 },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
+                "videos_per_keyword": {
+                  "default": 2,
+                  "title": "Videos Per Keyword"
                 }
               },
               "title": "CreateResearchTopicItem",
@@ -1611,10 +1895,6 @@
                 "list_name": {
                   "default": null,
                   "title": "List Name"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "title": "CreateStructuredListItem",
@@ -1671,7 +1951,7 @@
                   "title": "Due Date"
                 },
                 "metadata": {
-                  "default": null,
+                  "default": {},
                   "title": "Metadata"
                 },
                 "parent_task_id": {
@@ -1687,19 +1967,15 @@
                   "title": "Project Id"
                 },
                 "settings": {
-                  "default": null,
+                  "default": {},
                   "title": "Settings"
                 },
                 "status": {
-                  "default": null,
+                  "default": "incomplete",
                   "title": "Status"
                 },
                 "title": {
                   "title": "Title"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -1759,15 +2035,15 @@
                   "title": "Draft Saved At"
                 },
                 "folder_name": {
-                  "default": null,
+                  "default": "Transcripts",
                   "title": "Folder Name"
                 },
                 "is_draft": {
-                  "default": null,
+                  "default": false,
                   "title": "Is Draft"
                 },
                 "metadata": {
-                  "default": null,
+                  "default": {},
                   "title": "Metadata"
                 },
                 "project_id": {
@@ -1775,15 +2051,15 @@
                   "title": "Project Id"
                 },
                 "segments": {
-                  "default": null,
+                  "default": [],
                   "title": "Segments"
                 },
                 "source_type": {
-                  "default": null,
+                  "default": "other",
                   "title": "Source Type"
                 },
                 "tags": {
-                  "default": null,
+                  "default": [],
                   "title": "Tags"
                 },
                 "task_id": {
@@ -1791,12 +2067,8 @@
                   "title": "Task Id"
                 },
                 "title": {
-                  "default": null,
+                  "default": "New Transcript",
                   "title": "Title"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 },
                 "video_file_path": {
                   "default": null,
@@ -1862,10 +2134,6 @@
                 "task_id": {
                   "default": null,
                   "title": "Task Id"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -1927,10 +2195,6 @@
                 "task_id": {
                   "default": null,
                   "title": "Task Id"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 },
                 "workbook_name": {
                   "title": "Workbook Name"
@@ -2330,6 +2594,55 @@
         "type": "object"
       },
       "type": "db_update"
+    },
+    {
+      "category": "side_effect",
+      "doc": "Soft-delete one Agent row (agent.definition) by id (never a hard delete).",
+      "item_model": "DeleteAgentItem",
+      "kind": "output_directive",
+      "purposes": [],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "properties": {
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "DeleteAgentItem",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "output_directive",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "delete:agent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "delete:agent"
     },
     {
       "category": "side_effect",
@@ -3572,6 +3885,163 @@
     },
     {
       "category": "side_effect",
+      "doc": "Update one Agent row (agent.definition) by id; any writable columns.",
+      "item_model": "UpdateAgentItem",
+      "kind": "output_directive",
+      "purposes": [],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "properties": {
+                "agent_type": {
+                  "default": null,
+                  "title": "Agent Type"
+                },
+                "category": {
+                  "default": null,
+                  "title": "Category"
+                },
+                "context_slots": {
+                  "default": null,
+                  "title": "Context Slots"
+                },
+                "custom_tools": {
+                  "default": null,
+                  "title": "Custom Tools"
+                },
+                "default_rag_boost": {
+                  "default": null,
+                  "title": "Default Rag Boost"
+                },
+                "description": {
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "is_active": {
+                  "default": null,
+                  "title": "Is Active"
+                },
+                "is_archived": {
+                  "default": null,
+                  "title": "Is Archived"
+                },
+                "is_favorite": {
+                  "default": null,
+                  "title": "Is Favorite"
+                },
+                "matrx_actions": {
+                  "default": null,
+                  "title": "Matrx Actions"
+                },
+                "mcp_servers": {
+                  "default": null,
+                  "title": "Mcp Servers"
+                },
+                "messages": {
+                  "default": null,
+                  "title": "Messages"
+                },
+                "model_id": {
+                  "default": null,
+                  "title": "Model Id"
+                },
+                "model_tiers": {
+                  "default": null,
+                  "title": "Model Tiers"
+                },
+                "name": {
+                  "default": null,
+                  "title": "Name"
+                },
+                "output_schema": {
+                  "default": null,
+                  "title": "Output Schema"
+                },
+                "rag_awareness_fragment": {
+                  "default": null,
+                  "title": "Rag Awareness Fragment"
+                },
+                "rag_awareness_mode": {
+                  "default": null,
+                  "title": "Rag Awareness Mode"
+                },
+                "settings": {
+                  "default": null,
+                  "title": "Settings"
+                },
+                "skill_config": {
+                  "default": null,
+                  "title": "Skill Config"
+                },
+                "source_agent_id": {
+                  "default": null,
+                  "title": "Source Agent Id"
+                },
+                "tags": {
+                  "default": null,
+                  "title": "Tags"
+                },
+                "task_id": {
+                  "default": null,
+                  "title": "Task Id"
+                },
+                "tool_config": {
+                  "default": null,
+                  "title": "Tool Config"
+                },
+                "tools": {
+                  "default": null,
+                  "title": "Tools"
+                },
+                "ui_gates": {
+                  "default": null,
+                  "title": "Ui Gates"
+                },
+                "variable_definitions": {
+                  "default": null,
+                  "title": "Variable Definitions"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "UpdateAgentItem",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "output_directive",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "update:agent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "update:agent"
+    },
+    {
+      "category": "side_effect",
       "doc": "Update one Data Table row (workbench.udt_datasets) by id; any writable columns.",
       "item_model": "UpdateDatasetItem",
       "kind": "output_directive",
@@ -3610,10 +4080,6 @@
                 "template_version": {
                   "default": null,
                   "title": "Template Version"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -3699,10 +4165,6 @@
                 "topic": {
                   "default": null,
                   "title": "Topic"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -3780,10 +4242,6 @@
                 "topic": {
                   "default": null,
                   "title": "Topic"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -3873,10 +4331,6 @@
                 "task_id": {
                   "default": null,
                   "title": "Task Id"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -3962,10 +4416,6 @@
                 "target_date": {
                   "default": null,
                   "title": "Target Date"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -4043,10 +4493,6 @@
                 "title": {
                   "default": null,
                   "title": "Title"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -4144,10 +4590,6 @@
                 "topic_id": {
                   "default": null,
                   "title": "Topic Id"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -4346,10 +4788,6 @@
                   "default": null,
                   "title": "Topic Id"
                 },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
-                },
                 "url": {
                   "default": null,
                   "title": "Url"
@@ -4443,6 +4881,14 @@
                   "title": "Id",
                   "type": "string"
                 },
+                "intent_brief": {
+                  "default": null,
+                  "title": "Intent Brief"
+                },
+                "intent_key": {
+                  "default": null,
+                  "title": "Intent Key"
+                },
                 "max_auto_tag_calls": {
                   "default": null,
                   "title": "Max Auto Tag Calls"
@@ -4499,9 +4945,9 @@
                   "default": null,
                   "title": "Tone Profile"
                 },
-                "updated_by": {
+                "videos_per_keyword": {
                   "default": null,
-                  "title": "Updated By"
+                  "title": "Videos Per Keyword"
                 }
               },
               "required": [
@@ -4559,10 +5005,6 @@
                 "list_name": {
                   "default": null,
                   "title": "List Name"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -4652,10 +5094,6 @@
                 "title": {
                   "default": null,
                   "title": "Title"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -4754,10 +5192,6 @@
                   "default": null,
                   "title": "Title"
                 },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
-                },
                 "video_file_path": {
                   "default": null,
                   "title": "Video File Path"
@@ -4830,10 +5264,6 @@
                 "task_id": {
                   "default": null,
                   "title": "Task Id"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 }
               },
               "required": [
@@ -4899,10 +5329,6 @@
                 "task_id": {
                   "default": null,
                   "title": "Task Id"
-                },
-                "updated_by": {
-                  "default": null,
-                  "title": "Updated By"
                 },
                 "workbook_name": {
                   "default": null,
@@ -8355,6 +8781,102 @@
     },
     {
       "category": "pure",
+      "doc": "Pointer to one Campaign (crm.campaign) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "kind": "reference",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "reference",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "crm_campaign",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "crm_campaign"
+    },
+    {
+      "category": "pure",
       "doc": "Pointer to one Custom App Config (custom_app_configs) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "kind": "reference",
@@ -11384,6 +11906,102 @@
         "type": "object"
       },
       "type": "page_extraction_job"
+    },
+    {
+      "category": "pure",
+      "doc": "Pointer to one Entity (crm.party) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "kind": "reference",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "reference",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "party",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "party"
     },
     {
       "category": "pure",

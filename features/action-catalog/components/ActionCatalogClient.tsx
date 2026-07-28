@@ -11,7 +11,9 @@
  * layout level; this is the documented, lowerable in-page gate (any admin level).
  */
 
+import { useState } from "react";
 import { AlertTriangle, Loader2, RefreshCw, Server } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -20,6 +22,12 @@ import { selectActiveServer } from "@/lib/redux/slices/apiConfigSlice";
 import { useActionCatalog } from "@/features/action-catalog/hooks/useActionCatalog";
 import { ActionCatalogGrid } from "@/features/action-catalog/components/ActionCatalogGrid";
 import { ActionBuilderPanel } from "@/features/action-catalog/components/ActionBuilderPanel";
+import {
+  ActionShapePanel,
+  type ActionShapeSelection,
+} from "@/features/action-catalog/components/ActionShapePanel";
+import { setEntityTypeAgentWritable } from "@/features/admin/relationships/entityTypeMutations";
+import type { NounActions } from "@/features/action-catalog/types";
 
 /**
  * No polling. The action catalog is static metadata — the set of registered
@@ -40,6 +48,27 @@ export function ActionCatalogClient() {
   const activeServer = useAppSelector(selectActiveServer);
   const { catalog, isLoading, error, baseUrl, lastUpdatedAt, refresh } =
     useActionCatalog(POLL_MS);
+  const [selection, setSelection] = useState<ActionShapeSelection | null>(null);
+  const [busyToggle, setBusyToggle] = useState<string | null>(null);
+
+  async function toggleWritable(noun: NounActions, enabled: boolean) {
+    setBusyToggle(noun.noun);
+    try {
+      await setEntityTypeAgentWritable(noun.noun, enabled);
+      toast.success(
+        `${noun.noun} generic write actions ${enabled ? "enabled" : "disabled"}`,
+      );
+      refresh();
+    } catch (toggleError) {
+      toast.error(
+        toggleError instanceof Error
+          ? toggleError.message
+          : `Could not update ${noun.noun}`,
+      );
+    } finally {
+      setBusyToggle(null);
+    }
+  }
 
   if (!isAdmin) {
     return (
@@ -119,7 +148,14 @@ export function ActionCatalogClient() {
         ) : catalog ? (
           <div className="grid h-full grid-cols-1 lg:grid-cols-[1fr_22rem]">
             <div className="min-h-0 border-b border-border lg:border-b-0 lg:border-r">
-              <ActionCatalogGrid catalog={catalog} />
+              <ActionCatalogGrid
+                catalog={catalog}
+                busyToggle={busyToggle}
+                onToggleWritable={(noun, enabled) =>
+                  void toggleWritable(noun, enabled)
+                }
+                onInspect={setSelection}
+              />
             </div>
             <div className="min-h-0">
               <ActionBuilderPanel catalog={catalog} />
@@ -134,6 +170,12 @@ export function ActionCatalogClient() {
           </div>
         )}
       </div>
+      {selection ? (
+        <ActionShapePanel
+          selection={selection}
+          onClose={() => setSelection(null)}
+        />
+      ) : null}
     </div>
   );
 }

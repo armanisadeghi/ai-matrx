@@ -518,16 +518,14 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
               <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-pink-500/40 via-purple-500/40 to-blue-500/40 opacity-70 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
               <div className="pt-1">
                 <HierarchyCascade
-                  levels={["organization", "scope", "project", "task"]}
+                  levels={["organization", "scope", "task"]}
                   value={{
                     ...EMPTY_SELECTION,
                     organizationId: draft.organizationId || null,
-                    projectId: draft.projectId || null,
                     taskId: draft.taskId || null,
                   }}
                   onChange={(sel) => {
                     handleUpdate("organizationId", sel.organizationId);
-                    handleUpdate("projectId", sel.projectId);
                     handleUpdate("taskId", sel.taskId);
                   }}
                   layout="vertical"

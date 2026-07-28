@@ -406,7 +406,6 @@ export type Database = {
           name: string
           organization_id: string
           output_schema: Json | null
-          project_id: string | null
           rag_awareness_fragment: string | null
           rag_awareness_mode: string
           rag_awareness_refreshed_at: string | null
@@ -450,7 +449,6 @@ export type Database = {
           name: string
           organization_id: string
           output_schema?: Json | null
-          project_id?: string | null
           rag_awareness_fragment?: string | null
           rag_awareness_mode?: string
           rag_awareness_refreshed_at?: string | null
@@ -494,7 +492,6 @@ export type Database = {
           name?: string
           organization_id?: string
           output_schema?: Json | null
-          project_id?: string | null
           rag_awareness_fragment?: string | null
           rag_awareness_mode?: string
           rag_awareness_refreshed_at?: string | null
@@ -28290,6 +28287,7 @@ export type Database = {
       admin_entity_types_list: {
         Args: never
         Returns: {
+          agent_writable: boolean
           base_tier: number
           category: string
           content_role: string
@@ -28611,6 +28609,10 @@ export type Database = {
       }
       admin_set_entity_type_active: {
         Args: { p_is_active: boolean; p_token: string }
+        Returns: undefined
+      }
+      admin_set_entity_type_agent_writable: {
+        Args: { p_agent_writable: boolean; p_token: string }
         Returns: undefined
       }
       admin_set_scope_type_system: {

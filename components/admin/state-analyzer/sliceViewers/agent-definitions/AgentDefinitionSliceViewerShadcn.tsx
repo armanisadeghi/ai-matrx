@@ -372,7 +372,6 @@ export default function AgentDefinitionSliceViewerShadcn({
               <KvRow label="organizationId">
                 {record.organizationId ?? "null"}
               </KvRow>
-              <KvRow label="projectId">{record.projectId ?? "null"}</KvRow>
               <KvRow label="taskId">{record.taskId ?? "null"}</KvRow>
 
               <Separator className="my-1" />

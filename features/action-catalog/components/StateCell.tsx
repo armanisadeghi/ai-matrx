@@ -10,7 +10,7 @@
  *   no      → muted   (not applicable — not a writable/readable row)
  */
 
-import { Check, Clock, Minus } from "lucide-react";
+import { Braces, Check, Clock, Loader2, Minus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { ActionState } from "@/features/action-catalog/types";
@@ -40,9 +40,57 @@ const STATE_META: Record<
 };
 
 /** A dense grid cell — icon-only with a tooltip, tinted background. */
-export function StateCell({ state }: { state: ActionState }) {
+export function StateCell({
+  state,
+  toggleLabel,
+  inspectLabel,
+  busy = false,
+  onToggle,
+  onInspect,
+}: {
+  state: ActionState;
+  toggleLabel?: string;
+  inspectLabel?: string;
+  busy?: boolean;
+  onToggle?: () => void;
+  onInspect?: () => void;
+}) {
   const meta = STATE_META[state];
   const Icon = meta.Icon;
+  if (onToggle || onInspect) {
+    return (
+      <span className="flex h-6 w-full items-center gap-0.5">
+        <button
+          type="button"
+          title={toggleLabel ?? meta.label}
+          disabled={!onToggle || busy}
+          onClick={onToggle}
+          className={cn(
+            "inline-flex h-5 min-w-0 flex-1 items-center justify-center rounded-sm transition-colors",
+            meta.bg,
+            meta.text,
+            onToggle && "hover:ring-1 hover:ring-current",
+          )}
+        >
+          {busy ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Icon className="h-3.5 w-3.5" />
+          )}
+        </button>
+        {onInspect ? (
+          <button
+            type="button"
+            title={inspectLabel ?? "Inspect shape"}
+            onClick={onInspect}
+            className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <Braces className="h-3 w-3" />
+          </button>
+        ) : null}
+      </span>
+    );
+  }
   return (
     <span
       title={meta.label}
