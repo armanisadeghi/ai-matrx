@@ -55,38 +55,37 @@ deals NOT in v1.
 
 ## Remaining work
 
-1. **Arman, manual, blocks everything client-side:** Supabase → Settings → API → Exposed schemas →
-   add `crm`. Grants and `anon` USAGE are already applied; only the dashboard toggle is missing.
-   Verify after: a browser `supabase.schema('crm').from('party').select()` returns rows, not a 404.
-2. **`ENTITY_OVERLAY` + target types.** One line each for `party` and `crm_campaign` in
+1. **`ENTITY_OVERLAY` + target types.** One line each for `party` and `crm_campaign` in
    `features/scopes/registry/entityRegistry.ts`; add both to `ASSOCIATION_TARGET_TYPES` in
    `features/scopes/types.ts`. That alone lights up the 360° card grid, pickers, and attachment on
    orgs / projects / war rooms / scopes.
-3. **`features/crm/` surfaces.** `/crm` list on the canonical entry-list shell (Mine / My Orgs /
+2. **`features/crm/` surfaces.** `/crm` list on the canonical entry-list shell (Mine / My Orgs /
    Shared / Public — never a bare RLS list), companies view, party record page (contact points with
    add/primary/verify, addresses, affiliations with dates, interaction timeline, campaigns, notes,
    tasks, files, association grid), campaign builder + call queue, CSV import written against
    `ON CONFLICT (organization_id, channel, value_key)` from the start. Pure importable normalizers
    (`toE164` — needs `phone_country`, `normalizeEmail`, `canonicalSocialHandle`) with tests.
-4. **Research experts.** Write parties from research with `party_observation` payloads on
+3. **Research experts.** Write parties from research with `party_observation` payloads on
    `party → research_source` edges; add ONE `topic.experts` entry to
    `features/research/resources/catalog.ts`.
-5. **Dedup automation.** Strong-key auto-merge on `is_identity_key` collisions,
+4. **Dedup automation.** Strong-key auto-merge on `is_identity_key` collisions,
    `merge_candidate` edge generation from weak signals, and a review surface. The merge/unmerge
    RPCs already exist and are round-trip tested. Consume `rag.ner_canonicalizer_shadow`'s
    deterministic-vs-agent verdicts rather than starting a second experiment.
-6. **Folds.** `plan.entity` person/org (6 rows) → party, with `plan_node → party` replacing
+5. **Folds.** `plan.entity` person/org (6 rows) → party, with `plan_node → party` replacing
    `plan_node → plan_entity` for those types; `users.invitation_requests` +
    `public.contact_submissions` + `iam.invitations`. Each needs a `scripts/dead-relations.json`
    entry and a `platform.deprecated_relations` row **before** repointing.
-7. **The `web.brand` fold** (ratified, its own change after the core is proven): `web.brand` →
+6. **The `web.brand` fold** (ratified, its own change after the core is proven): `web.brand` →
    party(organization), `web.property` + `web.business_fact` → medium/contact point,
    `web.discovered_item` → the shared enrichment inbox. Marketing, SEO, GSC and content-plan all
    read `web.brand` today — treat as cross-repo, lockstep.
-8. **Experts + curation.** Registration on the shipped creator-claim flow (`creator_claim_handle`
-   → `/c/[handle]`, Stripe Connect payouts already live), `expert_status` transitions, public
-   directory, `rag.data_stores kind='contact_set'` + industry grants.
-9. **Later:** deals/opportunities, sequences, email/calendar sync + webhook ingestion (there is
+7. **Experts.** Registration on the shipped creator-claim flow (`creator_claim_handle` →
+   `/c/[handle]`, Stripe Connect payouts already live), the `registered → approved → vetted`
+   transitions, and the public directory — **always free to browse** (see Settled). What an expert
+   sells (meetings, products, services) rides the existing creator payment path; "book a meeting"
+   is the one genuinely new product type.
+8. **Later:** deals/opportunities, sequences, email/calendar sync + webhook ingestion (there is
    **no email-sending infrastructure** in this DB — `communication.emails` is a 7-column toy with
    no org), lead scoring.
 
@@ -97,24 +96,21 @@ deals NOT in v1.
   4 RPCs, constraint + merge/unmerge round-trip tested. See `features/crm/FEATURE.md`.
 - Types regenerated both repos: `types/database.types.ts`, `types/generated/entity-types.generated.ts`
   (315 tokens), aidream `db/models/crm.py` + `db/managers/crm/`.
+- `crm` exposed to the API (`pgrst.db_schemas` on `authenticator` + both pgrst reloads); verified
+  over HTTP: `crm.party` returns 200, other schemas unaffected. The db-change TOOLKIT claim that
+  exposure is not MCP-reachable was wrong and has been corrected.
 - Stale `platform.entity_types` row `token='profile'` (schema `user`, nonexistent) deactivated;
   `features/industries/FEATURE.md` corrected from `public.industries` to `iam.industries`.
 
-## Decisions needed
+## Settled (do not re-litigate)
 
-**1. Industry-gated (non-public) curated expert sets.**
-*Situation.* The public expert directory works today: system-org party rows at
-`visibility='public'`. But a *paid or restricted* curated set cannot work at `internal` either —
-the Matrx System org is `global_readable`, so every authenticated user gets viewer and the industry
-grant does nothing. The only visibility that forces the grant to be the sole way in is `personal`,
-which contradicts the rule that `personal` means "belongs to one individual person".
-*Decide.* Leave curated sets public-only for now (recommended — nothing is blocked) · or allow
-`personal` on system-org curated rows as a deliberate, documented exception · or add a fourth
-visibility tier.
-
-**2. The same person across your five companies.**
-*Situation.* Five orgs means five party rows and five sets of contact info; fixing a phone number
-in one does not fix the others. A cross-org link needs either an org group in `iam` or a
-service-role link table.
-*Decide.* Accept it for now (recommended — it is standard CRM tenancy) · or say the five companies
-should share one CRM org · or ask for the cross-org link.
+- **The expert directory is always free to browse.** Arman, 2026-07-27: *"We can list experts. Some
+  experts can even charge users a fee for various things. You can still look at this information
+  for free but if you want a meeting or their products and services, that's different."* So there
+  is no restricted or industry-gated expert list, and the visibility question that used to sit here
+  is moot. The money is on what an expert SELLS (meetings, products, services), not on seeing them
+  — which is the already-shipped creator/education payment path (paid classes + Stripe Connect
+  payouts). A "book a meeting" product type is new surface area, not a new access model.
+- **The five companies stay separate.** Arman, 2026-07-27: *"My 5 companies are 5 companies so they
+  don't share anything. That's the point. Separate."* No cross-org contact linkage; each org keeps
+  its own contacts. Build nothing here.

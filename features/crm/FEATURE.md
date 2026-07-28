@@ -127,8 +127,6 @@ attachments = `features/files` · tags/stages = `platform.categories` · the 360
 
 ## Not built yet
 
-- **PostgREST exposure for `crm` is NOT set** (Supabase → Settings → API → Exposed
-  schemas). Browser reads 404 until a human adds it. Grants and `anon` USAGE are done.
 - No UI: `/crm` list, party record page, campaign builder, call queue, CSV import.
 - No `ENTITY_OVERLAY` entry and no `ASSOCIATION_TARGET_TYPES` addition yet.
 - Research expert writing, dedup automation, the `web.brand` fold, expert

@@ -20,7 +20,23 @@
 | Ledger verifier | `pnpm check:migrations` (red box on unapplied/drifted) |
 
 ### The exposed-schema gotcha (easy to miss, breaks the FE silently)
-`pnpm db-types` only pulls the schemas hardcoded in its `--schema` flags — **read the list from `package.json`, don't trust any doc's copy** (it's ~32 schemas as of 2026-07 and grows; `platform`/`iam` ARE now type-generated). **Type generation ≠ PostgREST exposure:** gen-types uses the management API and can pull unexposed schemas, so having types proves nothing about runtime reachability. If the FE will read a table **directly via supabase-js**, its schema must be in the flag list AND PostgREST-exposed. **FE-callable RPCs must live in an exposed schema — `platform.*` functions are unreachable from supabase-js; put admin/FE RPC families in `public.`** (pattern: `assoc_*`, `admin_relationship_*`). When you move/create a table in a non-listed schema and the FE reads it directly, **add the schema to the `db-types` script AND to PostgREST's exposed schemas**, or the FE gets no types and 404s at runtime. ⛔ **PostgREST exposure is Supabase platform config — NOT reachable via the MCP** (it's not a role GUC; verified empty on `authenticator.rolconfig`). It must be set in the dashboard (Settings → API → Exposed schemas) or the management API. This **blocks** moving any FE-read table into a brand-new schema until the user/mgmt-API exposes it (see `db-move-table-schema`).
+`pnpm db-types` only pulls the schemas hardcoded in its `--schema` flags — **read the list from `package.json`, don't trust any doc's copy** (it's ~32 schemas as of 2026-07 and grows; `platform`/`iam` ARE now type-generated). **Type generation ≠ PostgREST exposure:** gen-types uses the management API and can pull unexposed schemas, so having types proves nothing about runtime reachability. If the FE will read a table **directly via supabase-js**, its schema must be in the flag list AND PostgREST-exposed. **FE-callable RPCs must live in an exposed schema — `platform.*` functions are unreachable from supabase-js; put admin/FE RPC families in `public.`** (pattern: `assoc_*`, `admin_relationship_*`). When you move/create a table in a non-listed schema and the FE reads it directly, **add the schema to the `db-types` script AND to PostgREST's exposed schemas**, or the FE gets no types and 404s at runtime. ✅ **PostgREST exposure IS agent-reachable — it is a role GUC on `authenticator`** (`pgrst.db_schemas`), corrected 2026-07-27 when `crm` was exposed this way. The older claim here ("not a role GUC; verified empty on `authenticator.rolconfig`") was wrong and cost a round trip. Exposing a schema is two steps, both MCP-applicable:
+```sql
+-- APPEND, never retype the list: a wrong value is a total API outage (PGRST002 / 503).
+do $$
+declare v_cur text; v_val text;
+begin
+  select cfg into v_cur from (select unnest(rolconfig) cfg from pg_roles where rolname='authenticator') s
+   where cfg like 'pgrst.db_schemas=%';
+  if v_cur is null then raise exception 'pgrst.db_schemas unset - refusing to invent one'; end if;
+  v_val := split_part(v_cur, '=', 2);
+  if v_val ~ '(^|,\s*)<new>(\s*,|$)' then return; end if;
+  execute format('alter role authenticator set pgrst.db_schemas = %L', v_val || ', <new>');
+end $$;
+notify pgrst, 'reload config';
+notify pgrst, 'reload schema';   -- config alone leaves the cache stale → PGRST205
+```
+Then **verify over HTTP, not in SQL** — `curl "$URL/rest/v1/<table>?select=id&limit=1" -H "apikey: $ANON" -H "Accept-Profile: <schema>"`. `PGRST106` = schema not exposed; `PGRST205` = exposed but schema cache stale (reload again); `200`/`401` = exposed and reachable. The dashboard (Settings → API → Exposed schemas) writes this same GUC, so either path works — but confirm the GUC, because a dashboard save that did not take looks identical to never having tried.
 
 **Its SQL-side twin — the schema `USAGE` grant.** Exposure (above) is platform config; USAGE is a role grant, and `ALTER TABLE … SET SCHEMA` carries the table's **grants** but **NOT** schema-level `USAGE` (USAGE belongs to the schema, not the table). A schema with table grants but no USAGE denies every `authenticated`/`anon` access — `permission denied for schema <x>` — which a wrapper RPC swallows into a **silent null** (`cx_canvas_upsert returned null`; canvas/code/legal/scraper all hit this). Every FE-reachable schema needs `GRANT USAGE ON SCHEMA <new> TO authenticated, anon, service_role;` — **MCP-applicable**, unlike exposure, and **separate** from it: a schema can be exposed yet USAGE-denied (silent null, not a 404). Audit signature = "tables granted but schema USAGE missing" (`db-move-table-schema` Step 3).
 

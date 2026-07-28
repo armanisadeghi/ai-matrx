@@ -531,7 +531,7 @@ export async function listBrandOptions(
 
 /** Every `web.page` column — ONE list so selects can never drift per call site. */
 export const PAGE_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, content_type_last, target_keyword, meta_title_desired, meta_description_desired, seo_metrics_desired, desired_values, latest_snapshot_id";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, canonical_page_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, content_type_last, target_keyword, meta_title_desired, meta_description_desired, seo_metrics_desired, desired_values, latest_snapshot_id";
 
 /** Every `web.snapshot` column — ONE list so selects can never drift per call site. */
 export const SNAPSHOT_COLUMNS =
@@ -2273,11 +2273,20 @@ export async function createManualPage(
 ): Promise<MarketingPage> {
   const normalized = normalisePageUrl(input.url);
   const digest = await pageUrlHash(normalized);
+  const pageId = crypto.randomUUID();
   const response = await (
     await authenticatedWebDb(supabase)
   )
     .from("page")
     .insert({
+      // A new page is its own canonical page. The DB trigger
+      // `web.default_page_canonical_identity` would fill this from `id` on its
+      // own, but `canonical_page_id` is NOT NULL with no column default, so the
+      // generated Insert type requires it — mint the id here and state the
+      // self-canonical intent explicitly rather than leaving it to a trigger the
+      // type system cannot see.
+      id: pageId,
+      canonical_page_id: pageId,
       organization_id: input.organizationId,
       site_id: input.siteId,
       url: normalized,
