@@ -2,10 +2,10 @@ import { Panel } from "react-resizable-panels";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
-import { ClientGroup } from "../_lib/ClientGroup";
-import { Handle } from "../_lib/Handle";
+import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
+import { Handle } from "@/features/resizable-panels/Handle";
 import { DemoTitle } from "../_lib/DemoTitle";
-import { readLayoutCookie } from "../_lib/readLayoutCookie";
+import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
 
 export const metadata = createRouteMetadata(
   "/demos/resizables/01-cookie-ssr",

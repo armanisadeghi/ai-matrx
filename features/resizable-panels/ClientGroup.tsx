@@ -1,5 +1,8 @@
 "use client";
 
+// Moved out of app/(dev)/demos/resizables/_lib/ into features/resizable-panels/
+// so the (dev) route group can be parked. (dev)-helper-leak audit, 2026-07-28.
+
 import { useEffect } from "react";
 import {
   Group,

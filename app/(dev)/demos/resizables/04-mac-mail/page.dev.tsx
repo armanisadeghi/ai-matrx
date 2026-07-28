@@ -14,11 +14,11 @@ import {
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { cn } from "@/styles/themes/utils";
-import { ClientGroup } from "../_lib/ClientGroup";
-import { Handle } from "../_lib/Handle";
-import { PanelControlProvider } from "../_lib/PanelControlProvider";
-import { RegisteredPanel } from "../_lib/RegisteredPanel";
-import { readLayoutCookie } from "../_lib/readLayoutCookie";
+import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
+import { Handle } from "@/features/resizable-panels/Handle";
+import { PanelControlProvider } from "@/features/resizable-panels/PanelControlProvider";
+import { RegisteredPanel } from "@/features/resizable-panels/RegisteredPanel";
+import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
 import { MailHeaderControls } from "./HeaderControls";
 
 export const metadata = createRouteMetadata("/demos/resizables/04-mac-mail", {

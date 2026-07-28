@@ -8,7 +8,7 @@ import {
   type Layout,
 } from "react-resizable-panels";
 import { Info } from "lucide-react";
-import { Handle } from "../_lib/Handle";
+import { Handle } from "@/features/resizable-panels/Handle";
 import { useMountState } from "./MountStateProvider";
 
 const GROUP_ID = "demo-05";

@@ -7,7 +7,7 @@ import {
   MenuTapButton,
   HistoryTapButton,
 } from "@/components/icons/tap-buttons";
-import { usePanelControls } from "../_lib/PanelControlProvider";
+import { usePanelControls } from "@/features/resizable-panels/PanelControlProvider";
 import { DemoTitle } from "../_lib/DemoTitle";
 
 export function MailHeaderControls() {

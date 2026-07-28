@@ -8,7 +8,7 @@ import {
   type LayoutStorage,
 } from "react-resizable-panels";
 import { PanelRight, PanelRightClose, Info } from "lucide-react";
-import { Handle } from "../_lib/Handle";
+import { Handle } from "@/features/resizable-panels/Handle";
 
 // Cookie-backed LayoutStorage adapter — useDefaultLayout reads/writes through
 // this so persistence round-trips through the same cookies the server can read.

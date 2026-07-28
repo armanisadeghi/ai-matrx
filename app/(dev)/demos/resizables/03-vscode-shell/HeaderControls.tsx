@@ -7,7 +7,7 @@ import {
   MessageTapButton,
   HistoryTapButton,
 } from "@/components/icons/tap-buttons";
-import { usePanelControls } from "../_lib/PanelControlProvider";
+import { usePanelControls } from "@/features/resizable-panels/PanelControlProvider";
 import { DemoTitle } from "../_lib/DemoTitle";
 
 // All tap targets are 44pt — they own their own visual breathing room.
