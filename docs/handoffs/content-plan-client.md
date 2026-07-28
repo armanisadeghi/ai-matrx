@@ -100,14 +100,10 @@ build-memory win if needed. Not changed; predates this feature.
    Setup pass on a site that HAS a linked CMS counterpart (only `dev-website`
    exists in the CMS project today, and it carries no domain — the linked path
    was proven with a temporary `settings.cms.site_id` override, then reverted).
-4. **Commit aidream's half of the archetype fixture.** `pnpm
-   check:archetype-expansion` passes and so does `.venv/bin/python -m pytest
-   aidream/services/content_plan/tests/test_archetype_expansion_fixture.py`
-   (20/20 both sides), but the two aidream files —
-   `aidream/services/content_plan/archetype-expansion-cases.json` and that test
-   — are written to disk and NOT committed (the authoring agent was isolated to
-   the matrx-frontend worktree). Until they land, this repo's copy has no
-   upstream to checksum against and the guard says so out loud.
+Both halves of the archetype twin contract are live on `origin/main` in their
+own repos and pass 20/20: `pnpm check:archetype-expansion` here, and
+`aidream/services/content_plan/tests/test_archetype_expansion_fixture.py`
+there (aidream `141d4012c`).
 
 ## Open items / cross-repo relays
 
