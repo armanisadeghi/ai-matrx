@@ -1,7 +1,6 @@
 "use client";
 
-import React, { Suspense, useMemo, useRef, useState } from "react";
-import dynamic from "next/dynamic";
+import React, { Suspense, lazy, useMemo, useRef, useState } from "react";
 import {
   Copy,
   FileSpreadsheet,
@@ -41,36 +40,30 @@ import {
 import { stringifyCompact } from "@/components/mardown-display/blocks/json/json-compact-stringify";
 import { CodeBlockWithContextAttach } from "@/features/canvas/materialization/CodeBlockWithContextAttach";
 
-// Lazy-loaded — these are heavy and most JSON blocks never reach beyond
-// the default Code view.
-const JsonTableView = dynamic(
+// Lazy-loaded — these views/dialogs only open on user action, and JsonBlock
+// itself lives inside the MarkdownStream ssr:false gate, so the boundaries
+// are in-gate `React.lazy` (build-cheap; no loadable-manifest entry), never
+// `next/dynamic`. See the code-splitting skill, rule 3.
+const JsonTableView = lazy(
   () => import("@/components/mardown-display/blocks/json/JsonTableView"),
-  { ssr: false, loading: () => <PaneFallback label="Loading table…" /> },
 );
-const JsonTreeViewer = dynamic(
-  () =>
-    import("@/components/official/json-explorer/JsonTreeViewer").then((m) => ({
-      default: m.JsonTreeViewer,
-    })),
-  { ssr: false, loading: () => <PaneFallback label="Loading tree…" /> },
+const JsonTreeViewer = lazy(() =>
+  import("@/components/official/json-explorer/JsonTreeViewer").then((m) => ({
+    default: m.JsonTreeViewer,
+  })),
 );
-const RawJsonExplorer = dynamic(
+const RawJsonExplorer = lazy(
   () => import("@/components/official/json-explorer/RawJsonExplorer"),
-  { ssr: false, loading: () => <PaneFallback label="Loading explorer…" /> },
 );
-const JsonToTableDialog = dynamic(
-  () =>
-    import("@/components/mardown-display/blocks/json/JsonToTableDialog").then(
-      (m) => ({ default: m.JsonToTableDialog }),
-    ),
-  { ssr: false, loading: () => null },
+const JsonToTableDialog = lazy(() =>
+  import("@/components/mardown-display/blocks/json/JsonToTableDialog").then(
+    (m) => ({ default: m.JsonToTableDialog }),
+  ),
 );
-const AppendToTableDialog = dynamic(
-  () =>
-    import("@/components/mardown-display/blocks/json/AppendToTableDialog").then(
-      (m) => ({ default: m.AppendToTableDialog }),
-    ),
-  { ssr: false, loading: () => null },
+const AppendToTableDialog = lazy(() =>
+  import("@/components/mardown-display/blocks/json/AppendToTableDialog").then(
+    (m) => ({ default: m.AppendToTableDialog }),
+  ),
 );
 
 function PaneFallback({ label = "Loading…" }: { label?: string }) {
@@ -443,40 +436,50 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
           <div className="bg-card">
             {mode === "tree" && (
               <div className="max-h-[600px] overflow-auto">
-                <JsonTreeViewer data={data} />
+                <Suspense fallback={<PaneFallback label="Loading tree…" />}>
+                  <JsonTreeViewer data={data} />
+                </Suspense>
               </div>
             )}
             {mode === "table" && tabular.isTabular && (
-              <JsonTableView
-                rows={tabular.rows}
-                columns={tabular.columns}
-                caption={tabularCaption}
-              />
+              <Suspense fallback={<PaneFallback label="Loading table…" />}>
+                <JsonTableView
+                  rows={tabular.rows}
+                  columns={tabular.columns}
+                  caption={tabularCaption}
+                />
+              </Suspense>
             )}
             {mode === "explorer" && (
               <div className="max-h-[600px] overflow-auto">
-                <RawJsonExplorer pageData={data} />
+                <Suspense fallback={<PaneFallback label="Loading explorer…" />}>
+                  <RawJsonExplorer pageData={data} />
+                </Suspense>
               </div>
             )}
           </div>
         </div>
       )}
       {saveNewOpen && tabular.isTabular && (
-        <JsonToTableDialog
-          open={saveNewOpen}
-          onOpenChange={setSaveNewOpen}
-          rows={tabular.rows}
-          columns={tabular.columns}
-          suggestedName={suggestedTableName}
-        />
+        <Suspense fallback={null}>
+          <JsonToTableDialog
+            open={saveNewOpen}
+            onOpenChange={setSaveNewOpen}
+            rows={tabular.rows}
+            columns={tabular.columns}
+            suggestedName={suggestedTableName}
+          />
+        </Suspense>
       )}
       {appendOpen && tabular.isTabular && (
-        <AppendToTableDialog
-          open={appendOpen}
-          onOpenChange={setAppendOpen}
-          rows={tabular.rows}
-          columns={tabular.columns}
-        />
+        <Suspense fallback={null}>
+          <AppendToTableDialog
+            open={appendOpen}
+            onOpenChange={setAppendOpen}
+            rows={tabular.rows}
+            columns={tabular.columns}
+          />
+        </Suspense>
       )}
     </div>
   );
