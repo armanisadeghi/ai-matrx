@@ -68,6 +68,7 @@ import { RESEARCH_REPORT_KIND_DEFINITIONS } from "../kinds/research-report";
 import { QUESTIONNAIRE_KIND_DEFINITIONS } from "../kinds/questionnaire";
 import { VIDEO_PROMPT_OPTIONS_KIND_DEFINITIONS } from "../kinds/video-prompt-options";
 import { KEYWORD_RESEARCH_KIND_DEFINITIONS } from "../kinds/keyword-research";
+import { VIDEO_TRANSCRIPT_RESEARCH_KIND_DEFINITIONS } from "../kinds/video-transcript-research";
 
 export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // Gold-mine sweep (Stage 6 pulled forward): kinds engineered from existing
@@ -87,6 +88,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   ...QUESTIONNAIRE_KIND_DEFINITIONS,
   ...VIDEO_PROMPT_OPTIONS_KIND_DEFINITIONS,
   ...KEYWORD_RESEARCH_KIND_DEFINITIONS,
+  ...VIDEO_TRANSCRIPT_RESEARCH_KIND_DEFINITIONS,
   {
     kind: "flashcard_set",
     schemaSource: "system",
@@ -558,7 +560,12 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
       fields: {
         name: { type: "string", required: true },
         // Arbitrary JSON Schema — contents ride residue (zero loss).
-        schema: { type: "inline_object", open: true, fields: {}, required: true },
+        schema: {
+          type: "inline_object",
+          open: true,
+          fields: {},
+          required: true,
+        },
         strict: { type: "boolean" },
         additionalDetails: { type: "inline_object", open: true, fields: {} },
       },

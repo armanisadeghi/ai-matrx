@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,7 @@ import {
   ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
+  Video,
 } from "lucide-react";
 import { RESEARCH_NAV_ITEMS } from "../../constants";
 import { Badge } from "@/components/ui/badge";
@@ -50,9 +51,28 @@ const ICON_MAP: Record<string, typeof LayoutDashboard> = {
   ListChecks,
   ListTree,
   Sparkles,
+  Video,
 };
 
 const COLLAPSE_STORAGE_KEY = "research:sidebar-collapsed";
+const COLLAPSE_CHANGE_EVENT = "research:sidebar-collapse-change";
+
+function subscribeCollapsed(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(COLLAPSE_CHANGE_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(COLLAPSE_CHANGE_EVENT, onStoreChange);
+  };
+}
+
+function getCollapsedSnapshot() {
+  try {
+    return localStorage.getItem(COLLAPSE_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 interface ResearchSidebarProps {
   topicId: string;
@@ -60,28 +80,19 @@ interface ResearchSidebarProps {
 
 export function ResearchSidebar({ topicId }: ResearchSidebarProps) {
   const pathname = usePathname();
-  // Default to expanded on the server; hydrate the persisted choice on mount so
-  // SSR and the first client render agree (no hydration mismatch).
-  const [collapsed, setCollapsed] = useState(false);
-
-  useEffect(() => {
-    try {
-      setCollapsed(localStorage.getItem(COLLAPSE_STORAGE_KEY) === "1");
-    } catch {
-      /* localStorage unavailable — keep default */
-    }
-  }, []);
+  const collapsed = useSyncExternalStore(
+    subscribeCollapsed,
+    getCollapsedSnapshot,
+    () => false,
+  );
 
   const toggleCollapsed = () => {
-    setCollapsed((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem(COLLAPSE_STORAGE_KEY, next ? "1" : "0");
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
+    try {
+      localStorage.setItem(COLLAPSE_STORAGE_KEY, collapsed ? "0" : "1");
+      window.dispatchEvent(new Event(COLLAPSE_CHANGE_EVENT));
+    } catch {
+      /* localStorage unavailable — remain expanded */
+    }
   };
 
   const primaryItems = RESEARCH_NAV_ITEMS.filter((i) => i.group === "primary");

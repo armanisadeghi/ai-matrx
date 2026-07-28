@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 315 active entity tokens. A token here is FK-valid for
+// 316 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -359,7 +359,8 @@ export type EntityTypeToken =
   | "workflow_template"
   | "workflow_trigger"
   | "workflow_trigger_fire"
-  | "working_document";
+  | "working_document"
+  | "youtube_video";
 
 /** Tokens flagged `reference_pickable` — offered in reference "Allowed types" choosers. */
 export type ReferencePickableEntityToken =
@@ -879,7 +880,8 @@ export type ScopeableEntityToken =
   | "workflow_run"
   | "workflow_template"
   | "workflow_trigger"
-  | "workflow_trigger_fire";
+  | "workflow_trigger_fire"
+  | "youtube_video";
 
 /** Tokens flagged `is_listed` — surfaced in list/nav UIs. */
 export type ListedEntityToken =
@@ -1229,6 +1231,7 @@ export const ENTITY_TYPE_METADATA = {
   "workflow_trigger": { token: "workflow_trigger", schema: "workflow", table: "trigger", label: "Workflow Trigger", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "workflow_trigger_fire": { token: "workflow_trigger_fire", schema: "workflow", table: "trigger_fire", label: "Workflow Trigger Fire", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "working_document": { token: "working_document", schema: "workbench", table: "working_documents", label: "Working Documents", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: true, titleColumn: "title", contentRole: "destination", referenceCategory: null },
+  "youtube_video": { token: "youtube_video", schema: "research", table: "youtube_video", label: "YouTube Video", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: "source", referenceCategory: null },
 } as const satisfies Record<EntityTypeToken, EntityTypeMeta>;
 
 /** Every token, sorted — the iteration/validation source. */
@@ -1548,6 +1551,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "workflow_trigger",
   "workflow_trigger_fire",
   "working_document",
+  "youtube_video",
 ];
 
 /**

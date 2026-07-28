@@ -6470,6 +6470,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -6649,6 +6673,57 @@ export interface paths {
         get: operations["get_youtube_video_research_youtube_videos__video_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/youtube/library/{video_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Youtube Library Video */
+        get: operations["get_youtube_library_video_research_youtube_library__video_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/youtube/videos/{video_id}/process": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Process Youtube Video */
+        post: operations["process_youtube_video_research_youtube_videos__video_id__process_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/youtube/videos/{video_id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enrich Youtube Video Comments */
+        post: operations["enrich_youtube_video_comments_research_youtube_videos__video_id__comments_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6899,6 +6974,74 @@ export interface paths {
          *     the user learns the limit is reached rather than seeing an empty result.
          */
         post: operations["find_keyword_videos_research_topics__topic_id__keywords__keyword_id__find_videos_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/topics/{topic_id}/youtube/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Search Topic Youtube */
+        post: operations["search_topic_youtube_research_topics__topic_id__youtube_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/topics/{topic_id}/youtube": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Topic Youtube Videos */
+        get: operations["list_topic_youtube_videos_research_topics__topic_id__youtube_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/topics/{topic_id}/youtube/add": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Topic Youtube Videos */
+        post: operations["add_topic_youtube_videos_research_topics__topic_id__youtube_add_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/topics/{topic_id}/youtube/process": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Process Topic Youtube Videos */
+        post: operations["process_topic_youtube_videos_research_topics__topic_id__youtube_process_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -16254,6 +16397,13 @@ export interface components {
             /** Source Type */
             source_type?: ("web" | "youtube" | "pdf" | "file" | "manual") | null;
         };
+        /** AddYouTubeVideosRequest */
+        AddYouTubeVideosRequest: {
+            /** Video Ids */
+            video_ids: string[];
+            /** Keyword Id */
+            keyword_id?: string | null;
+        };
         /** AdminOverview */
         AdminOverview: {
             /** Schema Ok */
@@ -22786,6 +22936,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -31055,6 +31232,27 @@ export interface components {
              */
             debug?: boolean;
         };
+        /** ProcessYouTubeVideosRequest */
+        ProcessYouTubeVideosRequest: {
+            /** Video Ids */
+            video_ids: string[];
+            /**
+             * Force
+             * @default false
+             */
+            force?: boolean;
+        };
+        /** ProcessYouTubeVideosResponse */
+        ProcessYouTubeVideosResponse: {
+            /** Queued */
+            queued?: string[];
+            /** Already Complete */
+            already_complete?: string[];
+            /** Already Processing */
+            already_processing?: string[];
+            /** Missing */
+            missing?: string[];
+        };
         /**
          * ProjectionResponse
          * @description Projection result — each row is a free-form subset of the requested fields.
@@ -39153,6 +39351,14 @@ export interface components {
              */
             timestamp_instruction?: string | null;
         };
+        /** YouTubeVideoActionRequest */
+        YouTubeVideoActionRequest: {
+            /**
+             * Force
+             * @default false
+             */
+            force?: boolean;
+        };
         /** YouTubeVideoCandidate */
         YouTubeVideoCandidate: {
             /** Video Id */
@@ -39194,6 +39400,120 @@ export interface components {
             raw?: {
                 [key: string]: unknown;
             };
+            /** Library Id */
+            library_id?: string | null;
+            /**
+             * Processing Status
+             * @default unprocessed
+             */
+            processing_status?: string;
+            /** Enrichment State */
+            enrichment_state?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Analysis Available
+             * @default false
+             */
+            analysis_available?: boolean;
+            /**
+             * Analysis Fallback Available
+             * @default false
+             */
+            analysis_fallback_available?: boolean;
+            /**
+             * Is In Topic
+             * @default false
+             */
+            is_in_topic?: boolean;
+            /** Topic Source Id */
+            topic_source_id?: string | null;
+        };
+        /** YouTubeVideoLibraryRecord */
+        YouTubeVideoLibraryRecord: {
+            /** Id */
+            id: string;
+            /** Youtube Video Id */
+            youtube_video_id: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Channel Id */
+            channel_id?: string | null;
+            /** Channel Title */
+            channel_title?: string | null;
+            /** Published At */
+            published_at?: string | null;
+            /** Duration */
+            duration?: string | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
+            /** View Count */
+            view_count?: number | null;
+            /** Like Count */
+            like_count?: number | null;
+            /** Comment Count */
+            comment_count?: number | null;
+            /** Channel Subscriber Count */
+            channel_subscriber_count?: number | null;
+            /** Channel Video Count */
+            channel_video_count?: number | null;
+            /**
+             * Processing Status
+             * @default unprocessed
+             * @enum {string}
+             */
+            processing_status?: "unprocessed" | "processing" | "completed" | "partial" | "failed";
+            /** Enrichment State */
+            enrichment_state?: {
+                [key: string]: unknown;
+            };
+            /** Analysis Data */
+            analysis_data?: {
+                [key: string]: unknown;
+            } | null;
+            /** Analysis Text */
+            analysis_text?: string | null;
+            /** Processing Error */
+            processing_error?: string | null;
+            /** Analysis Agent Id */
+            analysis_agent_id?: string | null;
+            /** Analysis Model */
+            analysis_model?: string | null;
+            /** Token Usage */
+            token_usage?: {
+                [key: string]: unknown;
+            };
+            /** Comments Data */
+            comments_data?: {
+                [key: string]: unknown;
+            };
+            /** Metadata Fetched At */
+            metadata_fetched_at?: string | null;
+            /** Comments Fetched At */
+            comments_fetched_at?: string | null;
+            /**
+             * First Discovered At
+             * Format: date-time
+             */
+            first_discovered_at: string;
+            /**
+             * Last Seen At
+             * Format: date-time
+             */
+            last_seen_at: string;
+            /**
+             * Is In Topic
+             * @default false
+             */
+            is_in_topic?: boolean;
+            /** Topic Source Id */
+            topic_source_id?: string | null;
         };
         /** DeletedResponse */
         aidream__api__routers__admin_app_logs__DeletedResponse: {
@@ -51036,6 +51356,41 @@ export interface operations {
             };
         };
     };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -51291,6 +51646,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["YouTubeVideoCandidate"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_youtube_library_video_research_youtube_library__video_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YouTubeVideoLibraryRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    process_youtube_video_research_youtube_videos__video_id__process_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YouTubeVideoActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessYouTubeVideosResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enrich_youtube_video_comments_research_youtube_videos__video_id__comments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YouTubeVideoActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YouTubeVideoLibraryRecord"];
                 };
             };
             /** @description Validation Error */
@@ -51774,6 +52230,142 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_topic_youtube_research_topics__topic_id__youtube_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YouTubeSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YouTubeSearchPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_topic_youtube_videos_research_topics__topic_id__youtube_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YouTubeVideoLibraryRecord"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_topic_youtube_videos_research_topics__topic_id__youtube_add_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddYouTubeVideosRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YouTubeVideoLibraryRecord"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    process_topic_youtube_videos_research_topics__topic_id__youtube_process_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProcessYouTubeVideosRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessYouTubeVideosResponse"];
                 };
             };
             /** @description Validation Error */

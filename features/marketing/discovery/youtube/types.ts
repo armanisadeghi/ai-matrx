@@ -5,6 +5,10 @@ export type YouTubeSearchRequest =
 export type YouTubeSearchPage = components["schemas"]["YouTubeSearchPage"];
 export type YouTubeVideoCandidate =
   components["schemas"]["YouTubeVideoCandidate"];
+export type YouTubeVideoLibraryRecord =
+  components["schemas"]["YouTubeVideoLibraryRecord"];
+export type ProcessYouTubeVideosResponse =
+  components["schemas"]["ProcessYouTubeVideosResponse"];
 
 export const DEFAULT_YOUTUBE_SEARCH: YouTubeSearchRequest = {
   query: "",

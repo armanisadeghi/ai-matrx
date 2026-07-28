@@ -1,14 +1,19 @@
 ---
 status: active
-updated: 2026-07-27
+updated: 2026-07-28
 repos: [matrx-frontend, aidream]
-vision: [features/research/docs/PIPELINE_FLOW.md, features/research/docs/VISION_AND_GAPS.md]
+vision:
+  [
+    features/research/docs/PIPELINE_FLOW.md,
+    features/research/docs/VISION_AND_GAPS.md,
+  ]
 ---
 
-# Research — per-keyword goals, video, and experts
+# Research — per-keyword goals and experts
 
-Two workstreams, both changing **what the AI agents receive**. Phase 1 (making
-incremental research visible and controllable) is shipped; this is what's next.
+The canonical YouTube research library is shipped. The remaining workstreams
+change **what the AI agents receive**: focused per-keyword goals and expert
+identification/curation.
 
 ---
 
@@ -42,8 +47,8 @@ incremental research visible and controllable) is shipped; this is what's next.
 > documentation package that we put together. Well, then **we're just wasting our
 > time, and we may as well not get it.**"
 
-Two tests every feature here must pass: *is it visible to the user?* and *does it
-reach the final document?* Fail either and the work should not be done at all.
+Two tests every feature here must pass: _is it visible to the user?_ and _does it
+reach the final document?_ Fail either and the work should not be done at all.
 
 ### Quotas are real, but must be explained
 
@@ -100,10 +105,10 @@ violated once and fixed (see Done); do not reintroduce it in any form — not a
 counter, not a progress bar, not "limited availability" copy that implies a
 number.
 
-Current scale context, in his words: *"Today, we're not officially in full
+Current scale context, in his words: _"Today, we're not officially in full
 production yet, so that will be no problem because we only have a few actual
 users other than me. But when we go full blown production, that will become an
-issue."*
+issue."_
 
 ### Industries — use what exists
 
@@ -143,6 +148,7 @@ agent receive" without reading aidream.
 `/Users/armanisadeghi/code/aidream/research/FEATURE.md`
 
 **Frontend**
+
 - Readiness ledger: `features/research/readiness.ts` (+ `__tests__/readiness.test.ts`)
 - Quota gate: `features/research/keywordQuota.ts`, `components/keywords/KeywordQuotaDialog.tsx`
 - Orchestra: `components/overview/orchestra/PipelineOrchestra.tsx`, `OrchestraNode.tsx`
@@ -156,6 +162,7 @@ agent receive" without reading aidream.
 - Media gallery: `features/research/components/media/MediaGallery.tsx`
 
 **Backend (`/Users/armanisadeghi/code/aidream/`)**
+
 - `research/service.py` — `run_initial_pass` + every skip gate
 - `research/search.py` — `execute_search`, `find_keyword_videos`
 - `research/analysis.py` — `analyze_source` (the lens gap lives here)
@@ -165,6 +172,7 @@ agent receive" without reading aidream.
 - `aidream/services/media_resolvers/youtube.py` — Gemini transcription
 
 **DB** (Supabase `txzxabzwovsujtloxrus`)
+
 - `research.rs_*` · `platform.associations` (source⇄keyword edges; `rs_keyword_source` no longer exists)
 - `iam.industries`, `iam.org_industries`, `iam.industry_curators`
 - `rag.data_store_grants` — **the exemplar for industry-gated assets**:
@@ -182,6 +190,7 @@ readiness ledger silently reads zero).
 ## 3. Current state
 
 ### Done
+
 - Readiness ledger + honest orchestra (amber `stale` ≠ failure `partial`) — `features/research/readiness.ts`
 - Keyword quota gate on both add-keyword paths — `features/research/keywordQuota.ts`
 - Report-supersession choice + visible synthesis version history — `components/synthesis/`
@@ -190,35 +199,50 @@ readiness ledger silently reads zero).
 - Per-keyword `find-videos` endpoint — `aidream/research/search.py#find_keyword_videos`
 - Budget exposure removed everywhere (endpoint, 429 body, stream message, DB grants)
 - Pipeline + agent-input trace — `features/research/docs/PIPELINE_FLOW.md`
+- **Canonical YouTube research library.** `research.youtube_video` stores one
+  global row per YouTube ID; every discovered ID is saved immediately, topic
+  membership is a canonical source→video association, and metadata/comments/
+  Gemini processing enrich that one row without duplicate paid work.
+- **Research YouTube surface.** `/research/topics/{topicId}/youtube` reuses the
+  polished discovery experience, dims already-linked results, supports
+  selection/batch add, lists the permanent topic library, and supports
+  selection/batch Gemini processing. Discovery cards and both preview modes
+  expose the same processing/comment controls.
+- **Structured analysis reaches synthesis.** The Gemini agent emits the strict
+  `video_transcript_research` Content IR contract; parse failures preserve the
+  full provider response in `analysis_text`. Completed global artifacts
+  materialize idempotently into the existing `rs_content`/`rs_analysis` spine,
+  so topic synthesis and documents consume them without a second model call.
 
 ### Partial
-- **Video search triggers.** Backend done; **no frontend at all**. Needs the topic
-  toggle (`search_params.include_youtube`) and the per-keyword button calling
-  `POST /research/topics/{id}/keywords/{kid}/find-videos`. Arman chose **both**.
-  Show **no quota numbers**.
-- **Video legibility.** A transcribed video is an anonymous `rs_content` row —
-  no channel, duration, or view count anywhere in research UI. Fails the
-  "if we don't show it, we're wasting our time" test.
+
+- **Video legibility outside the YouTube surface.** The dedicated Research
+  YouTube route and previews show channel, duration, views, thumbnail, and
+  processing state. The generic Sources and Content routes still render the
+  corresponding materialized rows as ordinary research records.
 
 ### Not started
+
 - **Per-keyword goals (workstream A)** — the whole focused-lens idea.
 - **Expert identification** — YouTube results already carry subscriber count,
   video count, view/like counts and channel identity. **Nothing consumes any of
-  it.** The Authority Ranker receives these fields but scores *trustworthiness*,
-  not *who is this person*.
+  it.** The Authority Ranker receives these fields but scores _trustworthiness_,
+  not _who is this person_.
 - **Expert channel library** (industry-gated, per Arman's decision).
-- **Media multi-select + batch processing** — `MediaGallery.tsx` has no selection
-  UI whatsoever.
+- **Scraped-page media multi-select** — the canonical topic YouTube library has
+  selection and batch processing, but `MediaGallery.tsx` still has no selection
+  UI for videos harvested from ordinary web pages.
 - **Non-YouTube video** — `trigger_transcription` hard-rejects anything not
   YouTube (`aidream/research/multisource.py:739`), so Vimeo/mp4 rows in
   `rs_media` have no processing path.
 
 ### Known issues / risks
+
 - **Tag consolidation sends full raw page bodies with NO truncation**
   (`aidream/research/tagging.py:56-96`). Page Summary caps at 100k; this doesn't
   cap at all. A large tag can blow context and cost. Same for the auto-tagger
   (`tagging.py:226` only warns).
-- **Keyword *update* mode drops the keyword** (`research/synthesis.py:249`) — the
+- **Keyword _update_ mode drops the keyword** (`research/synthesis.py:249`) — the
   Updater gets `previous_report` + `new_information` only. Relevant to workstream A.
 - **Topic update computes `all_search_text` and never uses it** (`synthesis.py:558`).
 - **Override precedence inverted** in `_synthesize_topic_update` (`synthesis.py:596`):
@@ -228,25 +252,20 @@ readiness ledger silently reads zero).
 - `MediaGallery.tsx` hand-rolls YouTube iframes instead of using
   `features/files/blocks/youtube/YouTubeEmbed`.
 - **`get_topic_overview` is not SECURITY DEFINER** — the readiness ledger reflects
-  what the *caller* can see, including `platform.associations` edges. Edges written
+  what the _caller_ can see, including `platform.associations` edges. Edges written
   without `organization_id` are invisible and silently read as "nothing pending".
 
 ---
 
 ## 4. Remaining work — in order
 
-1. **Video search triggers (frontend).** Topic toggle writing
-   `rs_topic.default_search_params.include_youtube`, plus a per-keyword "Find
-   videos" button. Borrow type/formatting from
-   `features/marketing/discovery/youtube/`. **Never render a quota number**; on
-   429 show the generic message the API returns.
+1. **Make video legible on generic Research routes.** Video sources and
+   transcripts already have a rich dedicated UI; carry that identity into the
+   generic Sources, `/content`, and source-detail surfaces. Reuse the canonical
+   `research.youtube_video` association and existing YouTube UI rather than
+   reading stale `raw_search_result` snapshots.
 
-2. **Make video legible.** Video sources and transcripts must look like video —
-   channel, duration, view/subscriber counts, thumbnail — on the sources list,
-   `/content`, and source detail. Data is already in
-   `rs_source.raw_search_result`. Reuse `formatters.ts` and `YouTubeEmbed`.
-
-3. **Per-keyword goals (workstream A).** A goal column on `rs_keyword`; captured
+2. **Per-keyword goals (workstream A).** A goal column on `rs_keyword`; captured
    at topic creation (the Suggest agent takes ONE field today and invents
    keywords — it must produce goals too) and on add-keyword. Thread into
    `PageSummaryInputs` and add `keyword_id` to `rs_analysis` so a source can hold
@@ -254,34 +273,34 @@ readiness ledger silently reads zero).
    **Read `PIPELINE_FLOW.md` §3 first** — this changes the analysis dedup key,
    which is what makes reuse work.
 
-4. **Expert identification.** An agent pass over video results producing
+3. **Expert identification.** An agent pass over video results producing
    first-class expert records on the topic (name, channel, reach signals, the
    videos they appear in) with their own surface and a report section. Build them
    absorbable by the coming contact system.
 
-5. **Expert channel library, industry-gated.** New table(s) — Arman expects them.
+4. **Expert channel library, industry-gated.** New table(s) — Arman expects them.
    Copy the `rag.data_store_grants` shape (`audience` + `industry_id` +
    `organization_id`) so entitlement rides the existing Industries spine rather
    than a second sharing mechanism. Writes via SECURITY DEFINER RPC, audited,
    per `features/industries/FEATURE.md` doctrine.
 
-6. **Media multi-select + batch transcribe.** Selection UI on `MediaGallery.tsx`
+5. **Scraped-page media multi-select + batch transcribe.** Selection UI on `MediaGallery.tsx`
    (copy the checkbox + bottom action-bar pattern from
    `features/transcript-studio/components/scribe/RecordingCardList.tsx`), plus a
    batch endpoint. Must map a media row back to its source.
 
-7. **Non-YouTube video.** Decide whether to support it; today it silently cannot
+6. **Non-YouTube video.** Decide whether to support it; today it silently cannot
    be processed at all.
 
 ---
 
 ## 5. Gotchas
 
-- **Three different things are called "YouTube."** (1) videos found during
-  keyword search via the Data API — costs budget; (2) videos harvested off
-  scraped pages into `rs_media` — free; (3) the standalone discovery search at
-  `/marketing/discovery/youtube` — costs budget and **cannot add to a topic**.
-  Always say which.
+- **Three discovery paths lead to one global video.** (1) topic YouTube search
+  via the Data API; (2) videos harvested from scraped pages into `rs_media`;
+  (3) standalone discovery at `/marketing/discovery/youtube`. Every actual
+  video ID belongs in `research.youtube_video`; topic association is explicit
+  from the Research YouTube surface.
 - **Transcription is not automatic for all videos.** `scrape_source`
   (`aidream/research/scraper.py:209`) routes `source_type='youtube'` to Gemini
   instead of fetching HTML — but only inside the scrape path, gated by
@@ -311,6 +330,6 @@ readiness ledger silently reads zero).
 entity/contact system (experts, leads, contacts). Research needs experts before
 that lands.
 
-*Decide:* build research experts as a research-local table now and migrate later,
+_Decide:_ build research experts as a research-local table now and migrate later,
 or wait for the entity system's schema so experts are born on it. Waiting blocks
 workstream B item 4; not waiting risks a migration.

@@ -16,6 +16,7 @@ import {
   SlidersHorizontal,
   ThumbsUp,
   Users,
+  ListPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
@@ -38,13 +39,18 @@ import {
   formatYouTubeDuration,
   youTubeEngagementRate,
 } from "./formatters";
-import { searchYouTube } from "./service";
+import {
+  addTopicYouTubeVideos,
+  searchTopicYouTube,
+  searchYouTube,
+} from "./service";
 import {
   DEFAULT_YOUTUBE_SEARCH,
   type YouTubeSearchPage,
   type YouTubeSearchRequest,
   type YouTubeVideoCandidate,
 } from "./types";
+import { YouTubeResearchActions } from "./YouTubeResearchActions";
 
 type FormState = YouTubeSearchRequest & {
   published_after: string;
@@ -99,13 +105,15 @@ function compactRequest(
   };
 }
 
-export function YouTubeDiscovery() {
+export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [page, setPage] = useState<YouTubeSearchPage | null>(null);
   const [selected, setSelected] = useState<YouTubeVideoCandidate | null>(null);
   const [advanced, setAdvanced] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [adding, setAdding] = useState(false);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -116,9 +124,13 @@ export function YouTubeDiscovery() {
     setLoading(true);
     setError(null);
     try {
-      const result = await searchYouTube(compactRequest(form, pageToken));
+      const request = compactRequest(form, pageToken);
+      const result = topicId
+        ? await searchTopicYouTube(topicId, request)
+        : await searchYouTube(request);
       setPage(result);
       setSelected(null);
+      setSelectedIds(new Set());
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (caught) {
       setError(
@@ -136,6 +148,46 @@ export function YouTubeDiscovery() {
     void runSearch();
   };
 
+  const toggleSelected = (videoId: string) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(videoId)) next.delete(videoId);
+      else next.add(videoId);
+      return next;
+    });
+  };
+
+  const addSelected = async (videoIds = [...selectedIds]) => {
+    if (!topicId || videoIds.length === 0 || adding) return;
+    setAdding(true);
+    setError(null);
+    try {
+      await addTopicYouTubeVideos(topicId, videoIds);
+      const added = new Set(videoIds);
+      setPage((current) =>
+        current
+          ? {
+              ...current,
+              results: current.results.map((video) =>
+                added.has(video.video_id)
+                  ? { ...video, is_in_topic: true }
+                  : video,
+              ),
+            }
+          : current,
+      );
+      setSelectedIds(new Set());
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "The selected videos could not be added.",
+      );
+    } finally {
+      setAdding(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-background text-foreground dark:bg-[#07090d] dark:text-zinc-100">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(239,68,68,0.08),transparent_32%),radial-gradient(circle_at_90%_20%,rgba(8,145,178,0.07),transparent_34%)] dark:bg-[radial-gradient(circle_at_10%_0%,rgba(239,68,68,0.13),transparent_32%),radial-gradient(circle_at_90%_20%,rgba(34,211,238,0.1),transparent_34%)]" />
@@ -147,11 +199,15 @@ export function YouTubeDiscovery() {
               YouTube intelligence
             </div>
             <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-5xl">
-              Find the signal in YouTube.
+              {topicId
+                ? "Build this topic’s YouTube library."
+                : "Find the signal in YouTube."}
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground dark:text-zinc-400 sm:text-base">
-              Search videos, inspect creator authority and engagement, and open
-              the strongest sources for deeper research.
+              Search videos, inspect creator authority and engagement, and{" "}
+              {topicId
+                ? "attach only the strongest sources to this research topic."
+                : "open the strongest sources for deeper research."}
             </p>
           </div>
           {page && (
@@ -334,6 +390,21 @@ export function YouTubeDiscovery() {
                   “{page.query}”
                 </span>
               </p>
+              {topicId && selectedIds.size > 0 && (
+                <Button
+                  type="button"
+                  onClick={() => void addSelected()}
+                  disabled={adding}
+                  className="rounded-xl bg-red-500 text-white hover:bg-red-400"
+                >
+                  {adding ? (
+                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <ListPlus className="mr-2 h-4 w-4" />
+                  )}
+                  Add {selectedIds.size} to research
+                </Button>
+              )}
             </div>
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {page.results.map((video, index) => (
@@ -342,6 +413,10 @@ export function YouTubeDiscovery() {
                   video={video}
                   eagerImage={index === 0}
                   onPreview={() => setSelected(video)}
+                  researchMode={Boolean(topicId)}
+                  isSelected={selectedIds.has(video.video_id)}
+                  onToggleSelected={() => toggleSelected(video.video_id)}
+                  onAdd={() => void addSelected([video.video_id])}
                 />
               ))}
             </div>
@@ -626,10 +701,18 @@ function VideoCard({
   video,
   eagerImage,
   onPreview,
+  researchMode,
+  isSelected,
+  onToggleSelected,
+  onAdd,
 }: {
   video: YouTubeVideoCandidate;
   eagerImage: boolean;
   onPreview: () => void;
+  researchMode: boolean;
+  isSelected: boolean;
+  onToggleSelected: () => void;
+  onAdd: () => void;
 }) {
   const engagement = youTubeEngagementRate(
     video.like_count,
@@ -638,7 +721,15 @@ function VideoCard({
   );
 
   return (
-    <article className="group overflow-hidden rounded-3xl border border-border bg-card transition duration-300 hover:-translate-y-1 hover:border-foreground/20 dark:border-white/10 dark:bg-zinc-950/75 dark:hover:border-white/20">
+    <article
+      className={`group overflow-hidden rounded-3xl border bg-card transition duration-300 hover:-translate-y-1 dark:bg-zinc-950/75 ${
+        video.is_in_topic
+          ? "border-emerald-500/30 opacity-65"
+          : isSelected
+            ? "border-red-500 ring-2 ring-red-500/15"
+            : "border-border hover:border-foreground/20 dark:border-white/10 dark:hover:border-white/20"
+      }`}
+    >
       <button
         type="button"
         onClick={onPreview}
@@ -664,6 +755,37 @@ function VideoCard({
         </span>
       </button>
       <div className="p-5">
+        {researchMode && (
+          <div className="mb-3 flex items-center justify-between gap-2">
+            {video.is_in_topic ? (
+              <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                Already in this topic
+              </span>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant={isSelected ? "default" : "outline"}
+                  size="sm"
+                  onClick={onToggleSelected}
+                  className="rounded-xl"
+                >
+                  {isSelected ? "Selected" : "Select"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={onAdd}
+                  className="rounded-xl"
+                >
+                  <ListPlus className="mr-1.5 h-3.5 w-3.5" />
+                  Add now
+                </Button>
+              </>
+            )}
+          </div>
+        )}
         <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-red-600 dark:text-red-400">
           {video.channel_title ?? "YouTube creator"}
         </p>
@@ -728,6 +850,11 @@ function VideoCard({
             className="h-10 w-10 rounded-xl border border-border bg-transparent px-0 dark:border-white/10"
           />
         </div>
+        <YouTubeResearchActions
+          videoId={video.video_id}
+          initialStatus={video.processing_status}
+          showAnalysis={false}
+        />
       </div>
     </article>
   );

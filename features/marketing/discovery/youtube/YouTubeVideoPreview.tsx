@@ -17,6 +17,7 @@ import { youTubeEmbedUrl, youTubeWatchUrl } from "@/lib/media/youtube";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { formatYouTubeCount, formatYouTubeDuration } from "./formatters";
 import type { YouTubeVideoCandidate } from "./types";
+import { YouTubeResearchActions } from "./YouTubeResearchActions";
 
 export function YouTubeVideoPreviewContent({
   video,
@@ -112,6 +113,10 @@ export function YouTubeVideoPreviewContent({
             className="rounded-xl"
           />
         </div>
+        <YouTubeResearchActions
+          videoId={video.video_id}
+          initialStatus={video.processing_status}
+        />
       </div>
     </>
   );

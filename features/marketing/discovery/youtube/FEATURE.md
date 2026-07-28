@@ -14,6 +14,7 @@ same enriched YouTube Data API primitive as the automated research pipeline.
 
 - UI: `YouTubeDiscovery.tsx`
 - API client: `service.ts`
+- Reusable processing/results UI: `YouTubeResearchActions.tsx`
 - API types and defaults: `types.ts`
 - Canonical route: `/marketing/discovery/youtube`
 - Direct preview: `/marketing/discovery/youtube/videos/[videoId]`
@@ -41,17 +42,28 @@ same enriched YouTube Data API primitive as the automated research pipeline.
 - Modal and direct-page previews share `YouTubeVideoPreviewContent`, use the
   privacy-enhanced YouTube embed primitive, and link between discovery and the
   durable direct route.
-- This surface is transient discovery. Persisting selected videos into research
-  remains a separate research action.
+- Every result is registered in the server's permanent global YouTube library
+  as soon as it is discovered. Analyze with Gemini and comment enrichment are
+  available on cards, modal previews, and direct preview pages. Completed
+  structured analysis renders through the canonical Content IR
+  `KindInstanceRender` path and the live `video_transcript_research` component;
+  a parse failure renders the saved raw fallback instead of losing the paid
+  response.
+- Topic association remains an explicit user choice on the Research YouTube
+  step. Discovery alone never silently adds a source to a topic.
 
 ## Current scope
 
 The surface provides the complete discovery experience: search, sort, filter,
-paginate, compare authority signals, preview, and open a result on YouTube. It
-does not yet add a selected video to a research project.
+paginate, compare authority signals, preview, trigger/reuse global analysis,
+enrich comments, and open a result on YouTube. Topic selection lives at
+`/research/topics/[topicId]/youtube`, which reuses the same search surface.
 
 ## Changelog
 
+- **2026-07-28** — Connected discovery and both preview forms to the canonical
+  permanent video library, Gemini processing, comment enrichment, processing
+  status polling, and the structured/fallback analysis renderer.
 - **2026-07-28** — Added each video's formatted duration to the shared preview
   metadata row alongside views and likes.
 - **2026-07-26** — Moved the complete feature from

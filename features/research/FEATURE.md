@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-07-25`
+**Last updated:** `2026-07-28`
 
 ---
 
@@ -18,7 +18,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 - `/research` — landing.
 - `/research/topics` · `/research/topics/new` — list + creation wizard.
-- `/research/topics/[topicId]` — live-run overview (the orchestra). Sub-routes: `sources`, `sources/[sourceId]`, `content`, `curate` (curation workbench — filter/sort/group + batch include/exclude), `keywords`, `keywords/[keywordId]` (per-keyword home: its synthesis + ranked search results), `analysis`, `synthesis`, `document`, `documents`, `tags`, `tags/[tagId]`, `context` (**Context Builder** — the resource catalog: pick what an agent reads, see the token cost, save it as a bundle, run any agent), `outputs` (**Outputs Studio** — publishing formats from the report + the domain-report launchpad), `media`, `costs`, `settings`, `agents`, `tasks`.
+- `/research/topics/[topicId]` — live-run overview (the orchestra). Sub-routes: `sources`, `sources/[sourceId]`, `content`, `curate` (curation workbench — filter/sort/group + batch include/exclude), `keywords`, `youtube` (topic-aware discovery + permanent video library + batch Gemini processing), `keywords/[keywordId]` (per-keyword home: its synthesis + ranked search results), `analysis`, `synthesis`, `document`, `documents`, `tags`, `tags/[tagId]`, `context` (**Context Builder** — the resource catalog: pick what an agent reads, see the token cost, save it as a bundle, run any agent), `outputs` (**Outputs Studio** — publishing formats from the report + the domain-report launchpad), `media`, `costs`, `settings`, `agents`, `tasks`.
 - `/research/topics/[topicId]/context?bundle=<slug>` — Context Builder with a saved bundle preloaded (and its agent preselected). How Outputs Studio hands over a domain report.
 - `/research/topics/new?mode=ai&topic=...` — AI-assisted creation with the subject prefilled; used by `/demos/matrx-entry` for the new workflow entryway handoff.
 - Admin surface: `app/(admin)/administration/knowledge/research-system/` (super-admin). Standardized `/research/admin` `FeatureAdminMap` not yet built — TODO.
@@ -48,6 +48,19 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 **Tables** (Supabase, `research` schema, `rs_` prefix): `rs_topic`, `rs_keyword`, `rs_source`, `rs_content`, `rs_analysis`, `rs_synthesis`, `rs_tag`, `rs_document`, `rs_media`, `rs_template`, plus the `rs_source_keywords` **view**. Normal feature tables (RLS-gated, client writes allowed) — none are protected-resources.
 
 **The junction tables are GONE.** `rs_keyword_source` and `rs_source_tag` no longer exist — source⇄keyword and source⇄tag are canonical `platform.associations` edges (`research_source → research_keyword` / `research_source → research_tag`), with the per-keyword search rank carried on the edge's `position`. `research.rs_source_keywords` is a **view** over that join and is the only place the old shape survives. Anything reading these relationships joins `platform.associations` (see `migrations/research_overview_readiness_ledger.sql` for the canonical predicate) — never a junction table.
+
+**YouTube library (2026-07-28).** `research.youtube_video` is a canonical
+system entity with one row per YouTube ID, shared across every topic/user so
+Gemini never processes the same immutable video twice. The Research YouTube
+step searches with all normal discovery controls, visibly dims results already
+attached to the topic, and lets the user select/add any subset. Topic membership
+is the existing `rs_source` plus a canonical
+`research_source → youtube_video` association. Cards and previews can start
+global Gemini analysis or comment enrichment. The Library view shows processing
+state and supports batch analysis. When a global analysis completes, the server
+materializes its transcript and structured findings into the existing
+`rs_content`/`rs_analysis` pipeline without a second model call, so synthesis
+and document generation consume it normally.
 
 **Project decoupling (2026-07-21 — system of record: `common-docs/projects/research-project-decoupling/FEATURE.md`).** A topic needs NO project. Tenancy/ownership = `organization_id` (from the app's canonical active-org context — never derived from a project) + `created_by`. The project relationship, when the user chooses one, is ONE optional canonical `platform.associations` edge `research_topic → project`, read/written exclusively through `features/scopes/service/associationsService` (via `service.ts#getTopicProjectLinks` / `setTopicProject` / `createTopic`'s `options.projectId`). "A project's topics" = association query → one batched `.in("id", …)` RLS-visible read (`getTopicsForProjects`) — never a column filter. An edge-write failure is loud + retryable and never invalidates the topic (`CreateTopicResult.projectLink`). The physical `rs_topic.project_id` column is a nullable, NON-AUTHORITATIVE leftover until the Phase-4 drop; `rowToResearchTopic` strips it from the domain type so no UI code can read it. The `_mirror_proj` trigger and `rs_topic_project_id_fkey` are GONE from the live DB (Phase 0) and must never be recreated.
 
@@ -96,7 +109,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 3. **Selectors + bundles** (`resources/selector.ts`, `research.rs_context_bundle`)
    — a bundle stores **rules**, not row ids: `{kind, mode, filter, order, limit}`.
    `mode: "explicit"` pins ids only when a human hand-picked them. `entity_id IS
-   NULL` = a template usable on any topic; `is_system` = shipped, read-only in
+NULL` = a template usable on any topic; `is_system` = shipped, read-only in
    the UI (Save as makes your own copy).
 4. **The resolver** (`resources/resolve.ts`) — the ONLY place that fetches
    bodies and the ONLY place that truncates, so the `ResolutionReport` can be

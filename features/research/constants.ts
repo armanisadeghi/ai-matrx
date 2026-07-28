@@ -271,6 +271,14 @@ export const RESEARCH_NAV_ITEMS: ResearchNavItem[] = [
     mobileVisible: true,
   },
   {
+    key: "youtube",
+    label: "YouTube",
+    icon: "Video",
+    href: (id) => `/research/topics/${id}/youtube`,
+    group: "primary",
+    mobileVisible: true,
+  },
+  {
     key: "sources",
     label: "Sources",
     icon: "Globe",

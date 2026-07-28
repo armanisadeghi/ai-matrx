@@ -38035,6 +38035,150 @@ export type Database = {
         }
         Relationships: []
       }
+      youtube_video: {
+        Row: {
+          analysis_agent_id: string | null
+          analysis_data: Json | null
+          analysis_model: string | null
+          analysis_schema_version: number
+          analysis_text: string | null
+          availability_status: string
+          canonical_url: string
+          channel_id: string | null
+          channel_subscriber_count: number | null
+          channel_title: string | null
+          channel_video_count: number | null
+          comment_count: number | null
+          comments_data: Json
+          comments_fetched_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          duration: string | null
+          duration_seconds: number | null
+          enrichment_state: Json
+          first_discovered_at: string
+          id: string
+          last_seen_at: string
+          like_count: number | null
+          metadata: Json
+          metadata_fetched_at: string | null
+          organization_id: string
+          processing_completed_at: string | null
+          processing_error: string | null
+          processing_lease_id: string | null
+          processing_started_at: string | null
+          processing_status: string
+          provider_data: Json
+          published_at: string | null
+          statistics: Json
+          thumbnail_url: string | null
+          title: string | null
+          token_usage: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+          view_count: number | null
+          visibility: Database["platform"]["Enums"]["visibility"]
+          youtube_video_id: string
+        }
+        Insert: {
+          analysis_agent_id?: string | null
+          analysis_data?: Json | null
+          analysis_model?: string | null
+          analysis_schema_version?: number
+          analysis_text?: string | null
+          availability_status?: string
+          canonical_url: string
+          channel_id?: string | null
+          channel_subscriber_count?: number | null
+          channel_title?: string | null
+          channel_video_count?: number | null
+          comment_count?: number | null
+          comments_data?: Json
+          comments_fetched_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          duration?: string | null
+          duration_seconds?: number | null
+          enrichment_state?: Json
+          first_discovered_at?: string
+          id?: string
+          last_seen_at?: string
+          like_count?: number | null
+          metadata?: Json
+          metadata_fetched_at?: string | null
+          organization_id: string
+          processing_completed_at?: string | null
+          processing_error?: string | null
+          processing_lease_id?: string | null
+          processing_started_at?: string | null
+          processing_status?: string
+          provider_data?: Json
+          published_at?: string | null
+          statistics?: Json
+          thumbnail_url?: string | null
+          title?: string | null
+          token_usage?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          view_count?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          youtube_video_id: string
+        }
+        Update: {
+          analysis_agent_id?: string | null
+          analysis_data?: Json | null
+          analysis_model?: string | null
+          analysis_schema_version?: number
+          analysis_text?: string | null
+          availability_status?: string
+          canonical_url?: string
+          channel_id?: string | null
+          channel_subscriber_count?: number | null
+          channel_title?: string | null
+          channel_video_count?: number | null
+          comment_count?: number | null
+          comments_data?: Json
+          comments_fetched_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          duration?: string | null
+          duration_seconds?: number | null
+          enrichment_state?: Json
+          first_discovered_at?: string
+          id?: string
+          last_seen_at?: string
+          like_count?: number | null
+          metadata?: Json
+          metadata_fetched_at?: string | null
+          organization_id?: string
+          processing_completed_at?: string | null
+          processing_error?: string | null
+          processing_lease_id?: string | null
+          processing_started_at?: string | null
+          processing_status?: string
+          provider_data?: Json
+          published_at?: string | null
+          statistics?: Json
+          thumbnail_url?: string | null
+          title?: string | null
+          token_usage?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          view_count?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          youtube_video_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       rs_source_keywords: {
