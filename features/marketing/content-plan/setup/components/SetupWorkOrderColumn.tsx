@@ -39,6 +39,7 @@ export function SetupWorkOrderColumn({
   readiness,
   counts,
   names,
+  userNamedKeys,
   dirtyKeys,
   onCountChange,
   onNamesChange,
@@ -49,7 +50,10 @@ export function SetupWorkOrderColumn({
   expanded: ExpandedArchetype;
   readiness: Readiness;
   counts: Record<string, number>;
+  /** Effective names — the user's paste, else the live plan's own child labels. */
   names: Record<string, string[]>;
+  /** Which of those the USER supplied (the rest came from the plan itself). */
+  userNamedKeys: Set<string>;
   dirtyKeys: Set<string>;
   onCountChange: (familyKey: string, next: number) => void;
   onNamesChange: (familyKey: string, next: string[] | null) => void;
@@ -213,7 +217,7 @@ export function SetupWorkOrderColumn({
 
                   {family.materialize === "pages" ? (
                     <div className="mt-1.5 flex items-center gap-2">
-                      {supplied ? (
+                      {supplied && userNamedKeys.has(family.key) ? (
                         <span className="inline-flex items-center gap-1 rounded bg-success/15 px-1.5 py-0.5 text-[11px] font-medium leading-none text-success">
                           {supplied.length} named
                           <button
@@ -223,6 +227,13 @@ export function SetupWorkOrderColumn({
                           >
                             <X className="h-3 w-3" />
                           </button>
+                        </span>
+                      ) : supplied ? (
+                        <span
+                          className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium leading-none text-muted-foreground"
+                          title="These names come from the pages already in the plan, so re-running this shape adopts them instead of adding placeholders beside them."
+                        >
+                          {supplied.length} from the plan
                         </span>
                       ) : null}
                       <button
@@ -234,6 +245,7 @@ export function SetupWorkOrderColumn({
                       >
                         <ListPlus className="h-3 w-3" />
                         {supplied ? "Edit names" : "Name them"}
+                        <span className="sr-only"> for {family.label}</span>
                       </button>
                     </div>
                   ) : null}

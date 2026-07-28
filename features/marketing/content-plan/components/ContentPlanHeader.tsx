@@ -117,13 +117,19 @@ export function ContentPlanHeader() {
         </SelectContent>
       </Select>
 
-      <div data-surface-value="view" className="ml-auto flex items-center">
+      {/* Five views + refresh do not fit beside the site picker at 375px.
+        The group scrolls rather than crushing every button to zero width —
+        shrink-0 is what stops the flex parent from doing that. */}
+      <div
+        data-surface-value="view"
+        className="ml-auto flex min-w-0 items-center overflow-x-auto scrollbar-none"
+      >
         {VIEW_ITEMS.map((item) => (
           <Button
             key={item.view}
             variant={view === item.view ? "secondary" : "ghost"}
             size="sm"
-            className="h-7 gap-1.5 px-2 text-xs"
+            className="h-7 shrink-0 gap-1.5 px-2 text-xs"
             onClick={() => setView(item.view)}
           >
             {item.icon}
@@ -133,7 +139,7 @@ export function ContentPlanHeader() {
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 w-7 p-0"
+          className="h-7 w-7 shrink-0 p-0"
           aria-label="Refresh plan"
           onClick={() =>
             void queryClient.invalidateQueries({ queryKey: planKeys.all })

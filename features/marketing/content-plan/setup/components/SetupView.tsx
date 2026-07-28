@@ -34,8 +34,10 @@ import { extractErrorMessage } from "@/utils/errors";
 import { planKeys, usePlanNodes } from "../../data/hooks";
 import { usePlanWorkspaceParams } from "../../hooks/usePlanWorkspaceParams";
 import { useContentPlanSites } from "../../components/ContentPlanHeader";
+import type { PlanNodeRow } from "../../types";
 import {
   expandArchetype,
+  slugify,
   ArchetypeError,
   type Archetype,
   type ExpandedArchetype,
@@ -85,6 +87,43 @@ function expandSafely(
           : extractErrorMessage(error),
     };
   }
+}
+
+/**
+ * The names a family's LIVE children already carry — the plan itself, read as
+ * the default for the paste box.
+ *
+ * This is what makes re-opening Setup idempotent WITHOUT storing names in a
+ * second place. The committed work order on the site records only
+ * `{key, counts, instantiated_at}` (byte-identical to what aidream writes), so
+ * "Services × 3" restores but "which three" does not. Regenerating placeholder
+ * names from the template would then offer to create `/services/service-1`
+ * beside the real `/services/hard-drive-shredding` that is already there.
+ *
+ * A child is only adopted when its label round-trips to its slug: identity is
+ * (parent, slug), and a name whose slug differs would not match the live row.
+ */
+function namesFromPlan(
+  archetype: Archetype | null,
+  liveNodes: PlanNodeRow[],
+): Record<string, string[]> {
+  if (!archetype) return {};
+  const out: Record<string, string[]> = {};
+  for (const family of archetype.families) {
+    if (family.materialize !== "pages") continue;
+    const hub = `/${family.slug ?? family.key}`;
+    const labels = liveNodes
+      .filter(
+        (node) =>
+          node.slug !== null &&
+          node.route === `${hub}/${node.slug}` &&
+          slugify(node.label) === node.slug,
+      )
+      .sort((a, b) => (a.route ?? "").localeCompare(b.route ?? ""))
+      .map((node) => node.label);
+    if (labels.length > 0) out[family.key] = labels;
+  }
+  return out;
 }
 
 export function SetupView() {
@@ -144,12 +183,16 @@ export function SetupView() {
             .map((family) => [family.key, committed.counts[family.key]]),
         )
       : {});
-  const names: Record<string, string[]> =
+  const nodeRows = nodes.data ?? [];
+  // Plan-derived names are the DEFAULT; anything the user pasted overrides
+  // them. Clearing a paste falls back to the plan, never to placeholders.
+  const userNames: Record<string, string[]> =
     (selected ? namesByArchetype[selected.key] : undefined) ?? {};
+  const planNames = namesFromPlan(selected, nodeRows);
+  const names: Record<string, string[]> = { ...planNames, ...userNames };
 
   const expansion = expandSafely(selected, counts, names);
   const expanded = expansion.expanded;
-  const nodeRows = nodes.data ?? [];
 
   const readiness = expanded
     ? buildReadiness({
@@ -182,7 +225,7 @@ export function SetupView() {
       if (typeof override === "number" && override !== family.count) {
         dirtyKeys.add(family.key);
       }
-      if (names[family.key]) dirtyKeys.add(family.key);
+      if (userNames[family.key]) dirtyKeys.add(family.key);
     }
   }
 
@@ -419,6 +462,7 @@ export function SetupView() {
               readiness={readiness}
               counts={counts}
               names={names}
+              userNamedKeys={new Set(Object.keys(userNames))}
               dirtyKeys={dirtyKeys}
               onCountChange={setCount}
               onNamesChange={setNames}

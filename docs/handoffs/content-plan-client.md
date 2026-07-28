@@ -61,15 +61,19 @@
   test)" (agent.definition 0315e53f-…, admin@admin.com);
   admin@admin.com added as `member` of the Titanium org (revoke if unwanted).
 
-**UNCOMMITTED (2026-07-26, awaiting Arman's review — review-queue row 0b49b353):
-the list-management layer** from his second punch list: tree toolbar (search
-keeping ancestors, status/type/keyword/reviewer filters with counts, sibling
-sorts, expand/collapse all, Pillars|Clusters|All level control, descendant-count
-badges) + a fourth `table` view (MatrxDataTable, every column sorts+filters,
-row→node sheet, `useListViewPrefs("content-plan-nodes")`). New files:
-`PlanTreeToolbar.tsx`, `PlanNodesTable.tsx`, `lib/tree-view.ts`.
-Browser-verified on prpinjectionmd (293 nodes); DB surface `view` description
-re-synced to include `table`.
+- **List-management layer** (tree toolbar + fourth `table` view) — shipped;
+  review-queue row 0b49b353 still awaiting Arman's look.
+- **Site Setup, the fifth view (`?view=setup`)** — shipped 2026-07-28 from the
+  four-way UI bake-off; the four throwaway `create-*` routes are deleted. Pick
+  an archetype, tune family counts (or paste the client's real service list),
+  see the exact routes diffed against the live plan, commit idempotently.
+  Live-verified end to end on datadestruction.com and read-only on
+  prpinjectionmd.com. The bake-off's three open questions are settled and
+  recorded in `features/marketing/content-plan/FEATURE.md` § Invariants — the
+  load-bearing one for future work: **the archetype expander is a twin of
+  aidream's canonical `services/content_plan/archetypes.py`, pinned by a shared
+  fixture and `pnpm check:archetype-expansion`. Change aidream first, copy the
+  fixture, then fix the twin.**
 
 The 2026-07-26 build-crisis restore (plan-tree preview + apply UX, commit
 "(3A)") passed Arman's build-risk review and is merged on main.
@@ -92,7 +96,18 @@ build-memory win if needed. Not changed; predates this feature.
    (`/sites/{id}/reconcile`, `/sites/{id}/dispositions`): plan-vs-reality
    badges (`realizes` edges) + the allgreen migration disposition view.
 3. Human checks wanted: the UI overhaul walkthrough (review queue), one real
-   drag-reparent on tree + map, 400+-node map smoothness on real data.
+   drag-reparent on tree + map, 400+-node map smoothness on real data, and a
+   Setup pass on a site that HAS a linked CMS counterpart (only `dev-website`
+   exists in the CMS project today, and it carries no domain — the linked path
+   was proven with a temporary `settings.cms.site_id` override, then reverted).
+4. **Commit aidream's half of the archetype fixture.** `pnpm
+   check:archetype-expansion` passes and so does `.venv/bin/python -m pytest
+   aidream/services/content_plan/tests/test_archetype_expansion_fixture.py`
+   (20/20 both sides), but the two aidream files —
+   `aidream/services/content_plan/archetype-expansion-cases.json` and that test
+   — are written to disk and NOT committed (the authoring agent was isolated to
+   the matrx-frontend worktree). Until they land, this repo's copy has no
+   upstream to checksum against and the guard says so out loud.
 
 ## Open items / cross-repo relays
 
