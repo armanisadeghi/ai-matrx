@@ -134,6 +134,15 @@ value metadata mirror the manifests.
 
 - **Self-join embeds MUST target the FK column** — `employer:primary_employer_party_id(...)`. `party!<fk-name>` and `party!<column>` resolve REVERSE (an array) at runtime; postgrest-js can't infer the column-target form, so the service pins it with `.returns<PartyListRow>()`.
 - List scopes are `mine` / `orgs` / `public` client-side predicates (`created_by` / `organization_id in my orgs` / `visibility='public'`). **`shared` needs a grant reader RPC** — do not fake it with a bare RLS read.
+- **Classification (record page):** stage + rating are FK columns
+  (`lifecycle_stage_id` / `rating_id`) set through `updateParty` with
+  `CategorySelect` (`features/scopes/components/CategorySelect.tsx`); roles are
+  `party → category` edges, role `member`, via `CategoryTagPicker`
+  (`features/scopes/components/CategoryTagPicker.tsx`) — never a direct
+  `platform.categories` read (`cat_list` only, inside those primitives).
+- **Trash:** the list's Trash view flips the `deleted_at` predicate with the
+  scope predicates intact; restore = `restoreParty`, erasure =
+  `purgeParty` → `crm_party_purge` behind a destructive confirm.
 - `party` + `crm_campaign` are registered in `ENTITY_OVERLAY`
   (`features/scopes/registry/entityRegistry.ts`) and `ASSOCIATION_TARGET_TYPES`
   (`features/scopes/types.ts`); notes use `commentsService` with
@@ -161,9 +170,7 @@ attachments = `features/files` · tags/stages = `platform.categories` · the 360
 ## Not built yet
 
 - Campaign builder, call queue, CSV import, merge review UI.
-- "Shared" list scope (needs a crm grant-reader RPC), lifecycle-stage /
-  role category pickers (`platform.categories` dimensions are seeded but unwired),
-  trash/restore surface for soft-deleted parties.
+- "Shared" list scope (needs a crm grant-reader RPC).
 - Research expert writing, dedup automation, the `web.brand` fold, expert
   registration — see [`docs/handoffs/crm-system.md`](../../docs/handoffs/crm-system.md).
 
@@ -171,6 +178,11 @@ attachments = `features/files` · tags/stages = `platform.categories` · the 360
 
 ## Change log
 
+- 2026-07-28 — Classification pickers live (stage/rating FK selects + role
+  edge tag picker on the record page; `CategorySelect` promoted to
+  `features/scopes/components/`, generic `CategoryTagPicker` extracted from the
+  flashcards FolderTagPicker). Trash view on `/crm` with restore +
+  RPC-backed permanent delete. Browser + DB verified.
 - 2026-07-28 — Added CRM to the main app menu with route, manager-window,
   new-person, and new-company actions. Replaced the route-local dialog with
   the reusable `PartyCreateForm` inside `crmCreatePartyWindow`, added the

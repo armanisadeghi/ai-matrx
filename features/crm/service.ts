@@ -142,10 +142,14 @@ export async function fetchPartyPage(
     .schema("crm")
     .from("party")
     .select(EMPLOYER_EMBED, { count: "exact" })
-    .is("deleted_at", null)
     // Merge losers stay live on purpose (unmerge needs them); the list shows
     // only canonical records.
     .is("canonical_id", null);
+  // Trash is the same list over the soft-deleted rows — scope still applies.
+  q =
+    query.view === "trash"
+      ? q.not("deleted_at", "is", null)
+      : q.is("deleted_at", null);
 
   // Scope — explicit, per THE VIEW LAW.
   const scope = query.scope;
@@ -230,8 +234,11 @@ export async function fetchPartyScopeCounts(
       .schema("crm")
       .from("party")
       .select("id", { count: "exact", head: true })
-      .is("deleted_at", null)
       .is("canonical_id", null);
+    q =
+      query.view === "trash"
+        ? q.not("deleted_at", "is", null)
+        : q.is("deleted_at", null);
     if (query.kind !== "all") q = q.eq("party_kind", query.kind);
     const term = sanitizeSearch(query.search);
     if (term) {
@@ -325,6 +332,25 @@ export async function deleteParty(id: string): Promise<void> {
     .from("party")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
+  if (error) throw pgError(error);
+}
+
+/** Undo a soft delete — the row returns to every active list. */
+export async function restoreParty(id: string): Promise<void> {
+  const { error } = await supabase
+    .schema("crm")
+    .from("party")
+    .update({ deleted_at: null })
+    .eq("id", id);
+  if (error) throw pgError(error);
+}
+
+/**
+ * TRUE erasure via `public.crm_party_purge` — admin-gated in the RPC; also
+ * clears `history.row_versions`, comments and user_entity_state. Irreversible.
+ */
+export async function purgeParty(id: string): Promise<void> {
+  const { error } = await supabase.rpc("crm_party_purge", { p_party: id });
   if (error) throw pgError(error);
 }
 

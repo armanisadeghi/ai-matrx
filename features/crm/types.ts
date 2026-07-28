@@ -157,6 +157,9 @@ export interface PartyListFilters {
   created_at?: DateBucket;
 }
 
+/** Active records vs the trash (soft-deleted, restorable). */
+export type PartyListView = "active" | "trash";
+
 export interface PartyListQuery {
   scope: import("@/lib/list-scope/types").ListScope;
   search: string;
@@ -164,6 +167,8 @@ export interface PartyListQuery {
   filters: PartyListFilters;
   /** One-based, matching the pagination UI. */
   page: number;
+  /** `trash` flips the deleted_at predicate — everything else still applies. */
+  view: PartyListView;
 }
 
 export const DEFAULT_PARTY_QUERY: PartyListQuery = {
@@ -172,6 +177,7 @@ export const DEFAULT_PARTY_QUERY: PartyListQuery = {
   kind: "all",
   filters: {},
   page: 1,
+  view: "active",
 };
 
 /** Sort keys the service whitelists (DB columns only — never rendered cells). */

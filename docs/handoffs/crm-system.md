@@ -12,8 +12,7 @@ words, an honest gap analysis, a map of the code, and a prioritized next-step li
 
 Supporting docs, in the order you'll want them:
 [`features/crm/FEATURE.md`](../../features/crm/FEATURE.md) (the DB contract and its gotchas) →
-`migrations/crm_01_schema.sql` + `migrations/crm_02_core.sql` (the DDL) →
-[`FOUND_DEFECTS.md`](../../FOUND_DEFECTS.md) (D112 is ours).
+`migrations/crm_01_schema.sql` + `migrations/crm_02_core.sql` (the DDL).
 
 ---
 
@@ -267,10 +266,6 @@ association grid). Mobile stacks to one column; no console errors; `pnpm type-ch
 - **List scopes.** `features/crm/types.ts:135` ships `CRM_LIST_SCOPES = ["mine","orgs","public"]`.
   **"Shared" is deliberately absent** — it needs a CRM grant-reader RPC and no generic one exists.
   The scope tabs render only what is wired, so nothing is broken; the tab is simply missing.
-- **Category dimensions are seeded but unwired.** `party_role`, `crm_lifecycle_stage` and
-  `crm_rating` have rows and the columns exist (`party.lifecycle_stage_id`, `party.rating_id`), but
-  **no picker renders them** — confirmed: no component under `features/crm/components/` references
-  those columns. So today you cannot tag a contact as a lead, or set a stage, from the UI.
 - **Experts.** `crm.party` carries `expert_status`, `claimed_by`, `claimed_at` and the CHECK for
   `registered|approved|vetted`. Nothing writes them; there is no registration flow and no public
   directory.
@@ -294,7 +289,6 @@ association grid). Mobile stacks to one column; no console errors; `pnpm type-ch
   `plan_node → plan_entity`; `users.invitation_requests` (8) + `public.contact_submissions` (4) +
   `iam.invitations`; and the larger **`web.brand` fold** (22 brands, 42 social properties,
   `web.business_fact`, `web.discovered_item`).
-- Trash/restore surface for soft-deleted parties.
 - Deals/opportunities, sequences, lead scoring.
 - **Email and calendar.** There is **no email-sending infrastructure in this database at all** —
   `communication.emails` is a 7-column toy with no `organization_id`. A cold email campaign needs
@@ -303,34 +297,28 @@ association grid). Mobile stacks to one column; no console errors; `pnpm type-ch
 
 ## 2.4 Known issues, risks and debt
 
-1. **D112 — list rows are mouse-only.** Verified on `/crm`: rows open via a click handler on a bare
-   `<tr>` with `role=null`, `tabindex=null`, and a plain-text name cell. Keyboard users cannot open
-   a record from **any** list page in the app, screen readers announce no affordance, and
-   cmd-click-open-in-new-tab works nowhere. **This is not a CRM defect** —
-   `features/agents/browse/components/AgentBrowseTable.tsx` has the identical shape. Filed rather
-   than patched so the fix lands once in the shared primitive. See `FOUND_DEFECTS.md` D112.
-2. **PostgREST self-join embeds.** `party!<fk-name>(...)` resolves **reverse** (an array) at
+1. **PostgREST self-join embeds.** `party!<fk-name>(...)` resolves **reverse** (an array) at
    runtime. The employer embed must target the FK **column**
    (`employer:primary_employer_party_id(...)`), and postgrest-js cannot infer the column form, so
    `features/crm/service.ts` pins it with `.returns<>()`. Pinned in `features/crm/FEATURE.md`.
-3. **Nothing is deployed.** All work is pushed to `main`, but Vercel only builds release-prefixed
+2. **Nothing is deployed.** All work is pushed to `main`, but Vercel only builds release-prefixed
    commits by design. Cutting a release ships every parallel session's commits too — that call was
    deliberately left to Arman. `./scripts/release.sh` when ready.
-4. **Parallel sessions sweep the working tree.** During this work another session's `release-admin`
+3. **Parallel sessions sweep the working tree.** During this work another session's `release-admin`
    commit picked up `migrations/crm_01_schema.sql` and reverted a `package.json` edit. **Re-verify
    your own edits are still present before committing**, especially `package.json`.
-5. **No seed data.** `crm.party` is empty (test rows were purged). The first person to open `/crm`
+4. **No seed data.** `crm.party` is empty (test rows were purged). The first person to open `/crm`
    creates the first rows.
-6. **Bulk writes into `party → data_store` are O(n) reachability refreshes.** Insert with the
+5. **Bulk writes into `party → data_store` are O(n) reachability refreshes.** Insert with the
    reachability trigger deferred, then call `platform.refresh_reachability` once. Adding 10,000
    experts row-by-row will crawl.
-7. **`crm.interaction` is one row per attendee.** A three-person meeting is three rows. A component
+6. **`crm.interaction` is one row per attendee.** A three-person meeting is three rows. A component
    defers access to exactly one parent, so a participants table would have to be its own entity.
    Deliberate, not an oversight.
-8. **Notes must pass `p_org_id`.** `cmt_add`'s org resolution is hardcoded for `task` only;
+7. **Notes must pass `p_org_id`.** `cmt_add`'s org resolution is hardcoded for `task` only;
    everything else silently lands the comment in the author's *personal* org. The CRM passes it
    explicitly — keep doing that.
-9. **`platform._mirror_fk_to_assoc` is forbidden platform-wide.** `crm._affiliation_edge()` is
+8. **`platform._mirror_fk_to_assoc` is forbidden platform-wide.** `crm._affiliation_edge()` is
    modelled on `plan._site_edge` instead. Do not "simplify" it onto the mirror function.
 
 ---
@@ -399,49 +387,44 @@ moved child id so unmerge replays exactly.
 
 # 4. Next steps, in order
 
-Each is independently shippable. 1–3 are small and make the existing screens genuinely usable.
+Each is independently shippable.
 
-1. **Wire the category pickers** (~half a day). `party_role`, `crm_lifecycle_stage` and
-   `crm_rating` are seeded and the columns exist, but nothing sets them. Add pickers to
-   `PartyIdentityCard.tsx` (stage + rating are FK columns on `party`; role is a
-   `party → category` association edge with `role='member'` through `associationsService`). Until
-   this lands, nobody can mark anyone a lead. Read categories through `public.cat_list`, never a
-   direct table read.
-2. **Fix D112 in the shared primitive** (~half a day, benefits the whole app). Render the title
-   cell as a real `next/link` using the entity registry's `hrefFor`, keeping the row click. Touches
-   `MatrxDataTable` and `AgentBrowseTable`; audit `AgentBrowseRows`/`AgentBrowseCards`.
-3. **Trash/restore for parties** (~half a day). Soft delete already works; there is no way to see
-   or restore a deleted contact.
-4. **CSV import** (~2 days). The single highest-value thing for real users — teams arrive with a
+**Done (2026-07-28):** category pickers (stage/rating FK selects + role edge tag picker on
+`PartyIdentityCard`, via the shared `CategorySelect` / `CategoryTagPicker` in
+`features/scopes/components/`), D112 title-cell links (`MatrxColumnDef.href`, fixed app-wide in
+`MatrxDataTable`), and the `/crm` Trash view (restore + `crm_party_purge` behind a destructive
+confirm). All browser + DB verified.
+
+1. **CSV import** (~2 days). The single highest-value thing for real users — teams arrive with a
    spreadsheet. Write it against `ON CONFLICT (organization_id, channel, value_key)` from the
    start, and reuse `normalizeMediumValue` from `features/crm/service.ts` so imported values match
    the DB CHECKs (lowercase email, E.164 phone).
-5. **Campaign builder + call queue** (~1 week). The tables are done. Build: create a campaign, add
+2. **Campaign builder + call queue** (~1 week). The tables are done. Build: create a campaign, add
    members from a filtered list, then a queue screen that claims the next member
    (`next_attempt_at`, `claimed_by`, `claimed_until`), shows their phone and history, and logs an
    interaction with an outcome. This is what makes it a cold-calling tool rather than a rolodex.
-6. **Dedup: auto-merge + candidate review** (~1 week). Auto-merge on `is_identity_key` collisions;
+3. **Dedup: auto-merge + candidate review** (~1 week). Auto-merge on `is_identity_key` collisions;
    generate `party → party` `merge_candidate` edges from weak signals; a review screen calling the
    existing `crm_merge_parties`. Reuse `rag.ner_canonicalizer_shadow`'s deterministic-vs-agent
    verdicts rather than starting a second experiment. Add `CHECK (source_id < target_id)` for
    symmetric roles or every candidate appears twice.
-7. **Research → experts** (~1 week). Write parties from research runs with `party_observation`
+4. **Research → experts** (~1 week). Write parties from research runs with `party_observation`
    payloads on `party → research_source` edges, and add ONE `topic.experts` entry to
    `features/research/resources/catalog.ts` (that catalog is built so one entry lights up the
    picker, budget meter and every saved bundle).
-8. **The folds** (~1 week). `plan.entity` person/org first (6 rows, cheap now, expensive later),
+5. **The folds** (~1 week). `plan.entity` person/org first (6 rows, cheap now, expensive later),
    then the three "person known only by email" tables. Each needs a `scripts/dead-relations.json`
    entry and a `platform.deprecated_relations` row **before** repointing.
-9. **`web.brand` fold** (~2 weeks, cross-repo, lockstep). Brand → party(organization);
+6. **`web.brand` fold** (~2 weeks, cross-repo, lockstep). Brand → party(organization);
    `web.property` + `web.business_fact` → medium/contact point; `web.discovered_item` → shared
    enrichment inbox. Marketing, SEO, GSC and content-plan all read `web.brand` today. Ratified by
    Arman as a planned phase — do it after the core is proven in production.
-10. **Experts** (~1–2 weeks). Registration on the shipped creator-claim flow
+7. **Experts** (~1–2 weeks). Registration on the shipped creator-claim flow
     (`creator_claim_handle` → `/c/[handle]`, Stripe Connect payouts already live), the
     `registered → approved → vetted` transitions, and the public directory — **always free to
     browse**. What an expert sells rides the existing creator payment path; "book a meeting" is the
     one genuinely new product type.
-11. **Later:** deals/opportunities, sequences, email + calendar sync and webhook ingestion, scoring.
+8. **Later:** deals/opportunities, sequences, email + calendar sync and webhook ingestion, scoring.
 
 ---
 

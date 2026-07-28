@@ -42,7 +42,7 @@ import {
   type PlanEntityRow,
   type PlanEntityType,
 } from "../types";
-import { CategorySelect } from "./CategorySelect";
+import { CategorySelect } from "@/features/scopes/components/CategorySelect";
 
 export function EntityManager({
   siteId,

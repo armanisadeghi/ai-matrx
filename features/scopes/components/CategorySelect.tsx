@@ -1,11 +1,14 @@
 "use client";
 
-/**
- * Small select over one platform.categories dimension via the CANONICAL
- * useCategories hook (cat_list RPC). Used for plan_page_type / plan_status /
- * plan_source_type pickers. Value is the category ID (the FK the plan
- * tables store), display is the category name.
- */
+// features/scopes/components/CategorySelect.tsx
+//
+// THE single-value picker over one `platform.categories` dimension, via the
+// canonical useCategories hook (cat_list RPC). Value is the category ID (the
+// FK the consuming table stores), display is the category name. Consumed by
+// content-plan (page type / status / source type) and CRM (lifecycle stage /
+// rating). Lives in features/scopes because scopes owns the categories
+// primitive — never fork a per-feature copy.
+
 import {
   Select,
   SelectContent,

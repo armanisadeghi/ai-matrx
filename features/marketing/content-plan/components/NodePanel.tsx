@@ -44,7 +44,7 @@ import {
   type PlanProfileRow,
   type TechnicalDepth,
 } from "../types";
-import { CategorySelect } from "./CategorySelect";
+import { CategorySelect } from "@/features/scopes/components/CategorySelect";
 import { KeywordPicker } from "./KeywordPicker";
 import { NodeAssociations } from "./NodeAssociations";
 import { AttributesEditor } from "./AttributesEditor";

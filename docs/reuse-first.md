@@ -111,6 +111,8 @@ delete yours and extend ours.
 | Overflow / hierarchical action menu | `AdvancedMenu` | `components/official/AdvancedMenu.tsx` |
 | Resolve Lucide / custom icon by name | `IconResolver` | `components/official/icons/IconResolver.tsx` |
 | 44×44 icon tap targets | `TapTargetButton` + `tap-buttons` | `components/icons/TapTargetButton.tsx`, `components/icons/tap-buttons.tsx` |
+| Single-value picker over a `platform.categories` dimension (FK columns) | `CategorySelect` | `features/scopes/components/CategorySelect.tsx` |
+| Tag an entity with categories via association edges (multi-select + inline create) | `CategoryTagPicker` | `features/scopes/components/CategoryTagPicker.tsx` |
 
 ### Components — markdown & content
 

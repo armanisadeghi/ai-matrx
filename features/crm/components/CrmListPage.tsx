@@ -14,7 +14,15 @@
 
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { MoreVertical, Plus, UserPlus, Building2, Contact } from "lucide-react";
+import {
+  MoreVertical,
+  Plus,
+  UserPlus,
+  Building2,
+  Contact,
+  Trash2,
+  ArchiveRestore,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type {
@@ -31,7 +39,7 @@ import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
 import { cn } from "@/lib/utils";
 import { usePartyList } from "../hooks/usePartyList";
-import { deleteParty } from "../service";
+import { deleteParty, purgeParty, restoreParty } from "../service";
 import type {
   DateBucket,
   PartyKind,
@@ -130,7 +138,64 @@ export function CrmListPage({
   const effectiveOrgId = useAppSelector(selectEffectiveOrganizationId);
   const openRow = (row: PartyListRow) => router.push(`/crm/${row.id}`);
 
+  const inTrash = list.query.view === "trash";
+
   const menuFor = (row: PartyListRow): (() => ItemMenuConfig) => {
+    if (inTrash) {
+      return () => ({
+        sections: [
+          {
+            id: "trash",
+            items: [
+              {
+                id: "restore",
+                label: "Restore",
+                onSelect: async () => {
+                  try {
+                    await restoreParty(row.id);
+                    list.removeRow(row.id);
+                    toast.success(`${row.display_name} restored`);
+                  } catch (e) {
+                    toast.error(
+                      e instanceof Error ? e.message : "Restore failed",
+                    );
+                  }
+                },
+              },
+            ],
+          },
+          {
+            id: "danger",
+            items: [
+              {
+                id: "purge",
+                label: "Delete permanently",
+                tone: "destructive",
+                onSelect: async () => {
+                  const ok = await confirm({
+                    title: `Permanently delete ${row.display_name}?`,
+                    description:
+                      "This erases the record, its history, notes and pins. It cannot be undone.",
+                    confirmLabel: "Delete permanently",
+                    variant: "destructive",
+                  });
+                  if (!ok) return;
+                  try {
+                    await purgeParty(row.id);
+                    list.removeRow(row.id);
+                    toast.success(`${row.display_name} permanently deleted`);
+                  } catch (e) {
+                    toast.error(
+                      e instanceof Error ? e.message : "Delete failed",
+                    );
+                  }
+                },
+              },
+            ],
+          },
+        ],
+      });
+    }
     return () => ({
       sections: [
         {
@@ -290,7 +355,24 @@ export function CrmListPage({
               counts={list.counts}
               onChange={(scope) => list.setQuery({ scope })}
             />
-            <div className="ml-auto">{newButtons}</div>
+            <div className="ml-auto flex items-center gap-1.5">
+              <Button
+                size="sm"
+                variant={inTrash ? "secondary" : "ghost"}
+                className="h-7 gap-1 px-2 text-xs"
+                onClick={() =>
+                  list.setQuery({ view: inTrash ? "active" : "trash" })
+                }
+              >
+                {inTrash ? (
+                  <ArchiveRestore className="h-3.5 w-3.5" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
+                {inTrash ? "Back to records" : "Trash"}
+              </Button>
+              {!inTrash && newButtons}
+            </div>
           </div>
           {list.error && (
             <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
@@ -385,13 +467,22 @@ export function CrmListPage({
               showRow: false,
               showToolbar: false,
             }}
-            emptyState={{
-              icon: <Plus className="h-5 w-5" />,
-              title: "No records here",
-              description:
-                "Nothing matches this scope and filter combination. Create the first one.",
-              action: newButtons,
-            }}
+            emptyState={
+              inTrash
+                ? {
+                    icon: <Trash2 className="h-5 w-5" />,
+                    title: "Trash is empty",
+                    description:
+                      "Deleted records land here and can be restored or permanently deleted.",
+                  }
+                : {
+                    icon: <Plus className="h-5 w-5" />,
+                    title: "No records here",
+                    description:
+                      "Nothing matches this scope and filter combination. Create the first one.",
+                    action: newButtons,
+                  }
+            }
           />
         </div>
       </div>

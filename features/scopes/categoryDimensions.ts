@@ -28,6 +28,12 @@ export const CATEGORY_DIMENSIONS = {
   planPersonRole: "plan_person_role",
   /** Content Planning — plan.entity.source_type_id. System seeds, public. */
   planSourceType: "plan_source_type",
+  /** CRM — party roles (expert/lead/vendor/…): party → category edge, role 'member'. System seeds, public. */
+  partyRole: "party_role",
+  /** CRM — crm.party.lifecycle_stage_id (FK column). System seeds, public. */
+  crmLifecycleStage: "crm_lifecycle_stage",
+  /** CRM — crm.party.rating_id (FK column). System seeds, public. */
+  crmRating: "crm_rating",
 } as const;
 
 export type KnownCategoryDimension =

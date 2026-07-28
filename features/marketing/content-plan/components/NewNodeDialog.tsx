@@ -38,7 +38,7 @@ import {
   type PlanNodeRow,
   type PlanNodeType,
 } from "../types";
-import { CategorySelect } from "./CategorySelect";
+import { CategorySelect } from "@/features/scopes/components/CategorySelect";
 
 export function NewNodeDialog({
   siteId,

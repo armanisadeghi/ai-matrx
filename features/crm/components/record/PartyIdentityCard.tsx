@@ -7,9 +7,12 @@
 
 import { useState } from "react";
 import { toast } from "@/lib/toast";
-import { IdCard, PhoneOff } from "lucide-react";
+import { IdCard, PhoneOff, UserRound } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { CategorySelect } from "@/features/scopes/components/CategorySelect";
+import { CategoryTagPicker } from "@/features/scopes/components/CategoryTagPicker";
+import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { updateParty } from "../../service";
 import type { PartyListRow, PartyUpdate } from "../../types";
 import { SectionCard } from "./SectionCard";
@@ -155,6 +158,20 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
     await onChanged();
   };
 
+  // Stage + rating are FK columns on crm.party; roles are party → category
+  // association edges (role 'member') — the split FEATURE.md mandates.
+  const commitCategoryFk = async (
+    key: "lifecycle_stage_id" | "rating_id",
+    next: string | null,
+  ) => {
+    try {
+      await updateParty(party.id, { [key]: next });
+      await onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Save failed");
+    }
+  };
+
   const toggleDnc = async (next: boolean) => {
     try {
       await updateParty(party.id, {
@@ -178,6 +195,53 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
             onCommit={(next) => commitField(spec.key, next)}
           />
         ))}
+
+        {/* Classification — the CRM stance on this record. */}
+        <div className="mt-1.5 space-y-1.5 border-t border-border pt-2">
+          <div className="flex items-center gap-2">
+            <span className="w-24 shrink-0 text-right text-xs text-muted-foreground">
+              Stage
+            </span>
+            <div className="min-w-0 flex-1">
+              <CategorySelect
+                dimension={CATEGORY_DIMENSIONS.crmLifecycleStage}
+                value={party.lifecycle_stage_id}
+                onChange={(id) => void commitCategoryFk("lifecycle_stage_id", id)}
+                placeholder="Set stage"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-24 shrink-0 text-right text-xs text-muted-foreground">
+              Rating
+            </span>
+            <div className="min-w-0 flex-1">
+              <CategorySelect
+                dimension={CATEGORY_DIMENSIONS.crmRating}
+                value={party.rating_id}
+                onChange={(id) => void commitCategoryFk("rating_id", id)}
+                placeholder="Set rating"
+              />
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="w-24 shrink-0 pt-1.5 text-right text-xs text-muted-foreground">
+              Roles
+            </span>
+            <div className="min-w-0 flex-1">
+              <CategoryTagPicker
+                entityType="party"
+                entityId={party.id}
+                dimension={CATEGORY_DIMENSIONS.partyRole}
+                edgeRole="member"
+                orgId={party.organization_id}
+                addLabel="Add role"
+                icon={UserRound}
+                emptyText="No roles defined."
+              />
+            </div>
+          </div>
+        </div>
 
         <div className="mt-1.5 flex items-center gap-2 border-t border-border pt-2">
           <PhoneOff

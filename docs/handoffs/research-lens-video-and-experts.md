@@ -326,10 +326,13 @@ readiness ledger silently reads zero).
 
 ## 6. Decisions needed
 
-**Expert record scope.** A separate planning task is designing a platform-wide
-entity/contact system (experts, leads, contacts). Research needs experts before
-that lands.
-
-_Decide:_ build research experts as a research-local table now and migrate later,
-or wait for the entity system's schema so experts are born on it. Waiting blocks
-workstream B item 4; not waiting risks a migration.
+**Expert record scope — RESOLVED (2026-07-28).** The platform entity/contact
+system shipped: `crm.party` is live with `expert_status`
+(`registered → approved → vetted`), the `party_role` category dimension
+(seeded, includes Expert), and the `party_observation` edge payload kind for
+`party → research_source` provenance. **Experts are born on `crm.party` — do
+NOT build a research-local expert table.** The exact write recipe is
+[`docs/handoffs/crm-system.md`](./crm-system.md) step "Research → experts"
+(emit a content-IR kind from the extraction agent; the apply step writes
+`crm.party` rows + observation edges + a `topic.experts` entry in
+`features/research/resources/catalog.ts`). Workstream B item 4 is unblocked.
