@@ -28,7 +28,11 @@ import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { ToolResultCard } from "../_shared-entity/ToolResultCard";
 import { SerpToolInline } from "../seo-shared/SerpToolInline";
 import { KeywordDataInlineBody } from "./KeywordDataBody";
-import { RankReceiptBody, type RankRunArgs } from "./RankReceiptBody";
+import {
+  RankReceiptBody,
+  isAiAnswerRun,
+  type RankRunArgs,
+} from "./RankReceiptBody";
 import {
   resolveSeoVariant,
   seoVariantSub,
@@ -60,6 +64,8 @@ export function rankRunArgs(props: ToolRendererProps): RankRunArgs {
     language: getArg<string>(entry, "language"),
     device: getArg<string>(entry, "device"),
     location: getArg<string>(entry, "location"),
+    engine: getArg<string>(entry, "engine"),
+    searchType: getArg<string>(entry, "search_type"),
   };
 }
 
@@ -91,11 +97,19 @@ export const SeoInline: React.FC<ToolRendererProps> = (props) => {
     ? () => onOpenOverlay(`tool-group-${toolGroupId ?? "default"}`)
     : undefined;
 
+  // A collect_rank run against an AI answer engine is not a SERP rank check —
+  // the keyword is a prompt and the observations are citations. Say so.
+  const rankArgs = variant.kind === "rank" ? rankRunArgs(props) : null;
+  const title =
+    rankArgs && isAiAnswerRun(rankArgs)
+      ? "AI answer check recorded"
+      : seoVariantTitle(variant);
+
   return (
     <ToolResultCard
       icon={variantIcon(variant)}
       iconClassName={SEO_ICON_TINT}
-      title={seoVariantTitle(variant)}
+      title={title}
       sub={seoVariantSub(variant)}
       expanded={expanded}
       onToggleExpanded={onToggleExpanded}
@@ -115,7 +129,7 @@ export const SeoInline: React.FC<ToolRendererProps> = (props) => {
         <KeywordDataInlineBody data={variant.data} onOpenOverlay={openFullView} />
       )}
       {variant.kind === "rank" && (
-        <RankReceiptBody receipt={variant.receipt} args={rankRunArgs(props)} />
+        <RankReceiptBody receipt={variant.receipt} args={rankArgs ?? {}} />
       )}
     </ToolResultCard>
   );

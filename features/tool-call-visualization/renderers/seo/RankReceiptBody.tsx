@@ -25,6 +25,30 @@ export interface RankRunArgs {
   language?: string;
   device?: string;
   location?: string;
+  /**
+   * AI answer engine (chat_gpt / claude / gemini / perplexity). When set, the
+   * run is NOT a classic SERP rank check — the keyword is a PROMPT and the
+   * observations are citations / brand mentions. Added to the tool in v6.
+   */
+  engine?: string;
+  /** `organic` (default) or Google `local_pack`. Added to the tool in v6. */
+  searchType?: string;
+}
+
+/** True when this run measured an AI answer engine rather than a SERP. */
+export function isAiAnswerRun(args: RankRunArgs): boolean {
+  return !!args.engine;
+}
+
+const ENGINE_LABELS: Record<string, string> = {
+  chat_gpt: "ChatGPT",
+  claude: "Claude",
+  gemini: "Gemini",
+  perplexity: "Perplexity",
+};
+
+function engineLabel(engine: string): string {
+  return ENGINE_LABELS[engine] ?? engine;
 }
 
 function Stat({
@@ -82,6 +106,16 @@ export function RankReceiptBody({
               → {args.targetDomain}
             </span>
           )}
+          {args.engine && (
+            <span className="rounded-md border border-primary/40 px-1.5 py-0.5 text-[11px] font-medium text-primary">
+              {engineLabel(args.engine)}
+            </span>
+          )}
+          {args.searchType && args.searchType !== "organic" && (
+            <span className="rounded-md border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+              {args.searchType.replace(/_/g, " ")}
+            </span>
+          )}
           {args.provider && (
             <span className="rounded-md border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
               {args.provider}
@@ -92,7 +126,7 @@ export function RankReceiptBody({
 
       <div className="flex flex-wrap items-start gap-x-8 gap-y-3 px-4 py-3">
         <Stat
-          label="New observations"
+          label={isAiAnswerRun(args) ? "New citations" : "New observations"}
           value={receipt.created_observations.toLocaleString()}
         />
         <Stat
