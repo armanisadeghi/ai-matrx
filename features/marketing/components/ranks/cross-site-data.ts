@@ -30,7 +30,9 @@ async function webDb() {
   return supabase.schema("web");
 }
 
-export interface CrossSiteRankRow {
+// Type alias (not interface) so rows are assignable to the surface scope's
+// Record<string, unknown> without a cast.
+export type CrossSiteRankRow = {
   target_id: string;
   site_id: string | null;
   site_name: string | null;
@@ -52,7 +54,7 @@ export interface CrossSiteRankRow {
   last_checked_at: string | null;
   /** Oldest→newest organic ranks inside the history window (sparkline). */
   history: Array<{ observed_at: string; organic_rank: number | null }>;
-}
+};
 
 /** User-facing tracking mode from stored target/observation facts. */
 function describeTracking(engine: string, searchType: string): string {

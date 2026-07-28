@@ -93,6 +93,15 @@ describe("surfaceFromPathname — marketing tree", () => {
     );
   });
 
+  it("resolves the cross-site ranks hub — without stealing the per-site ranks vertical", () => {
+    expect(surfaceFromPathname("/marketing/ranks")).toBe(
+      "matrx-user/marketing-ranks-hub",
+    );
+    expect(surfaceFromPathname(`${SITE}/ranks`)).toBe(
+      "matrx-user/marketing-ranks",
+    );
+  });
+
   it("legacy flat site shims fall back to the hub (they client-redirect)", () => {
     expect(surfaceFromPathname(`/marketing/sites/${S}`)).toBe(
       "matrx-user/marketing",

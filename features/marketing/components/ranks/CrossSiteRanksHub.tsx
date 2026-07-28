@@ -24,8 +24,11 @@ import {
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
 import {
   listCrossSiteRankPortfolio,
+  RANK_HISTORY_DAYS,
   type CrossSiteRankRow,
 } from "@/features/marketing/components/ranks/cross-site-data";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingRanksHubScope } from "@/features/surfaces/manifests/marketing-ranks-hub.manifest";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   humanLines,
@@ -171,7 +174,21 @@ export function CrossSiteRanksHub() {
   ];
 
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-ranks-hub"
+      getScope={() =>
+        createMarketingRanksHubScope({
+          portfolio_summary: summary,
+          rank_portfolio: rows,
+          history_window_days: RANK_HISTORY_DAYS,
+          portfolio_load_error: portfolio.isError
+            ? portfolio.error instanceof Error
+              ? portfolio.error.message
+              : String(portfolio.error)
+            : undefined,
+        })
+      }
+    >
       <RouteHeader
         left={
           <h1 className="ml-2 truncate text-sm font-medium text-foreground">
@@ -188,12 +205,17 @@ export function CrossSiteRanksHub() {
           />
         }
       />
-      <main className="h-full overflow-hidden bg-textured px-3 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
+      <main
+        data-surface-value="rank_portfolio"
+        className="h-full overflow-hidden bg-textured px-3 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4"
+      >
         {portfolio.isError ? (
-          <QueryError
-            error={portfolio.error}
-            onRetry={() => void portfolio.refetch()}
-          />
+          <div data-surface-value="portfolio_load_error" className="h-full">
+            <QueryError
+              error={portfolio.error}
+              onRetry={() => void portfolio.refetch()}
+            />
+          </div>
         ) : (
           <MatrxDataTable<CrossSiteRankRow>
             data={rows}
@@ -205,7 +227,10 @@ export function CrossSiteRanksHub() {
               searchPlaceholder: "Search keywords, sites, domains…",
               anyOf: { columnIds: ["keyword", "site_name"] },
               leading: (
-                <span className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground">
+                <span
+                  data-surface-value="portfolio_summary"
+                  className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground"
+                >
                   {isNavigating ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   ) : null}
@@ -273,6 +298,6 @@ export function CrossSiteRanksHub() {
           />
         )}
       </main>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

@@ -150,10 +150,10 @@ build-out, and `www.aimatrx.com/marketing`, `/marketing/campaigns`, and
    registered in `features/surfaces/manifests/` so agents know what page they are
    on. Reserved routes have none. Correct for now (nothing to declare), but the
    surface manifest is part of "done" for each one — see
-   `.claude/skills/surface-authoring`. **This now specifically includes the
-   shipped `/marketing/ranks` hub** — the existing `marketing-ranks` manifest is
-   per-site (inherits brand/site context) and does not fit the cross-site hub;
-   it needs its own `matrx-user/marketing-ranks-hub`-style surface + DB sync.
+   `.claude/skills/surface-authoring`. (2026-07-28: the shipped `/marketing/ranks`
+   hub got its surface — `matrx-user/marketing-ranks-hub`, standalone manifest +
+   route-resolver case + `CrossSiteRanksHub` emitter, DB synced and verified live;
+   readiness `partial` until the live non-matching-name binding test runs.)
 
 2. **Access asymmetry visible on `/marketing/ranks`:** `seo.rank_target` rows
    can be readable where their `web.site` row is not, so some rows show a raw
@@ -287,10 +287,10 @@ Check `pnpm dev:status` first — several servers usually run already.
 and the `/marketing/ranks` ship are DONE — see §2.1/Done. Ranks is the reference
 implementation for "how we ship a reserved route": build the real page at the
 same URL, delete the registry row, drop `status` from the nav entry, add a
-FEATURE.md change-log line. Its surface manifest is still owed — §2.2.1.)
+FEATURE.md change-log line. Its surface manifest shipped 2026-07-28 — §2.2.1.)
 
-1. **Register the cross-site ranks surface manifest** (§2.2.1) and decide the
-   access-asymmetry question (§2.2.2).
+1. **Decide the access-asymmetry question (§2.2.2).** (The cross-site ranks
+   surface manifest is DONE — §2.2.1.)
 
 2. **Then `/marketing/campaigns`.** It is the highest-leverage reserved surface
    because every other channel (social, email, ads, outreach) reports into it —

@@ -78,7 +78,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "hub_view",
     label: "Hub view",
     description:
-      "Which hub-level view the user is on: `map` (/marketing), `brands`, `sites`, `connections`, or `cost`. Empty on hub routes that have no emitter yet (e.g. ranks, keyword research) — treat that as 'view unknown', never as 'no view open'.",
+      "Which hub-level view the user is on: `map` (/marketing), `brands`, `sites`, `connections`, or `cost`. Empty on hub routes that have no emitter yet (the reserved Coming Soon routes, e.g. campaigns, analytics) — treat that as 'view unknown', never as 'no view open'.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 12,
@@ -247,7 +247,7 @@ export const marketingManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing",
   readiness: "partial",
   readinessNote:
-    "The five hub views that own data (pillar map, brands, sites, connections, cost) are fully declared, grouped, and emitted. Every OTHER hub-level route that resolves here is a reserved Coming Soon placeholder rendering <MarketingComingSoon> with no data at all — /marketing/ranks, /marketing/analytics, /marketing/campaigns, /marketing/competitors, /marketing/content-studio, /marketing/reports, /marketing/social, /marketing/email — so none of them warrants a surface until it grows real data (audited 2026-07-27). The two hub-level routes that DO own data already have their own surfaces: /marketing/keyword-research (matrx-user/keyword-research) and /marketing/batches (matrx-user/marketing-batches). Real rank tracking lives on the site-scoped route and has its own surface, matrx-user/marketing-ranks.",
+    "The five hub views that own data (pillar map, brands, sites, connections, cost) are fully declared, grouped, and emitted. Every OTHER hub-level route that resolves here is a reserved Coming Soon placeholder rendering <MarketingComingSoon> with no data at all — /marketing/analytics, /marketing/campaigns, /marketing/competitors, /marketing/content-studio, /marketing/reports, /marketing/social, /marketing/email — so none of them warrants a surface until it grows real data (audited 2026-07-27). The three hub-level routes that DO own data have their own surfaces: /marketing/keyword-research (matrx-user/keyword-research), /marketing/batches (matrx-user/marketing-batches), and /marketing/ranks (matrx-user/marketing-ranks-hub, the cross-site rank hub shipped 2026-07-28). Site-scoped rank tracking has its own surface, matrx-user/marketing-ranks.",
   label: "Marketing Hub",
   urlPattern: "/marketing",
   intro: `<surface_intro>
