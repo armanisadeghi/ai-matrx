@@ -79,17 +79,17 @@ export default function AdminRouteSidebarMenu({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-background text-foreground">
-      <div className="px-2 pb-2">
-        <div className="px-2 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground">
+      <div className="px-1 pb-2">
+        <div className="px-1.5 py-2 text-xs uppercase tracking-[0.12em] text-foreground">
           Overview
         </div>
         <Link
           href="/administration"
           aria-current={pathname === "/administration" ? "page" : undefined}
           className={cn(
-            "flex min-h-8 items-center gap-3 rounded px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
+            "flex min-h-8 items-center gap-3 rounded px-1.5 py-1.5 text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
             pathname === "/administration" &&
-              "bg-accent font-semibold text-accent-foreground",
+              "bg-accent text-accent-foreground",
           )}
         >
           <IconResolver
@@ -100,7 +100,7 @@ export default function AdminRouteSidebarMenu({
         </Link>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 scrollbar-thin-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto px-1 scrollbar-thin-auto">
         {adminNavigationRegistry.map((domain) => {
           const domainActive = activeDomain?.name === domain.name;
           return (
@@ -109,7 +109,7 @@ export default function AdminRouteSidebarMenu({
               className="group/admin-domain border-t border-border"
               open={domainActive || undefined}
             >
-              <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 px-2 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground [&::-webkit-details-marker]:hidden">
+              <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 px-1.5 py-2 text-xs uppercase tracking-[0.12em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground [&::-webkit-details-marker]:hidden">
                 <span className="min-w-0 flex-1 truncate">{domain.name}</span>
                 <IconResolver
                   iconName="ChevronDown"
@@ -127,9 +127,8 @@ export default function AdminRouteSidebarMenu({
                         href={item.link}
                         aria-current={active ? "page" : undefined}
                         className={cn(
-                          "flex min-h-8 items-center gap-3 rounded px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
-                          active &&
-                            "bg-accent font-semibold text-accent-foreground",
+                          "flex min-h-8 items-center gap-3 rounded px-1.5 py-1.5 text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
+                          active && "bg-accent text-accent-foreground",
                         )}
                       >
                         <IconResolver

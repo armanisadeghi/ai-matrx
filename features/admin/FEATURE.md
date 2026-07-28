@@ -106,6 +106,9 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 - Administration sidebar chrome uses semantic theme colors (`background`,
   `foreground`, `accent`, `accent-foreground`, `border`). Destination rows must
   not use `muted-foreground`, which makes working navigation look disabled.
+- Administration sidebar labels use normal font weight, including the active
+  destination. Active state is communicated through semantic color and
+  background only; do not bold navigation text.
 - Domain navigation uses static paths such as `/administration/compute`; `?domain=` routing and catch-all domain pages are forbidden.
 - Every `/administration` destination and owned detail route must equal or descend from its declared domain root. `pnpm check:admin-catalog --strict` enforces this.
 - Every Administration page pattern is declared exactly once as either a destination link or an `ownedRoutes` entry. Parent-prefix inference is forbidden because it hides new pages.
@@ -152,6 +155,8 @@ redirect to the canonical nested route tree through
 
 ## Change log
 
+- `2026-07-27` — Codex: tightened the Administration sidebar's left inset and
+  removed bold/medium font weights from headers, destinations, and active rows.
 - `2026-07-27` — Codex: flattened the Administration route sidebar to all-caps
   domain headers plus real clickable destinations, removed duplicate
   `Browse <domain>` and registry-section label layers, and restored semantic
