@@ -30,15 +30,7 @@
  * even when the sniff fails, so manual override always works.
  */
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ComponentType,
-} from "react";
-import dynamic from "next/dynamic";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, Download as DownloadIcon, Loader2 } from "lucide-react";
 import { getFilePreviewProfile, sniffTextBytes } from "@/features/files/utils/file-types";
 import type { PreviewKind, TextSniffResult } from "@/features/files/utils/file-types";
@@ -48,11 +40,13 @@ import { convertTabToEditor } from "../redux/tabsSlice";
 import { languageFromFilename } from "../styles/file-icon";
 import type { EditorFile } from "../types";
 import type { FilesystemAdapter } from "../adapters/FilesystemAdapter";
-import type { BinaryFilePdfPreviewProps } from "./BinaryFilePdfPreview";
+// The shared previewKind → previewer switch — one dispatch module for all
+// preview surfaces (light previewers static, heavy engines in-gate lazy).
+// The PDF blob arm renders the canonical PdfDocumentRenderer directly, which
+// absorbed the former BinaryFilePdfPreview adapter.
+import { PreviewerSwitch } from "@/features/files/components/core/FilePreview/PreviewerSwitch";
 
-// Shared loading state for every code-split previewer in this viewer. Keeps
-// the file under 1 KB of preview-related JSX so that opening a sandbox tab
-// for a *non-binary* file never pulls in any preview chunks at all.
+// Loading state shown while a heavy previewer chunk (e.g. react-pdf) loads.
 function PreviewerSkeleton() {
   return (
     <div className="flex h-full w-full items-center justify-center">
@@ -60,46 +54,6 @@ function PreviewerSkeleton() {
     </div>
   );
 }
-
-/**
- * The cloud-files PDF previewer is fileId-coupled (`useFileBlob(fileId)`),
- * so we can't reuse it here. We ship our own thin react-pdf wrapper that
- * accepts a Blob/URL directly. Lazy-loaded so non-PDF previews never pay
- * the ~400KB react-pdf + worker bundle cost.
- */
-const SandboxPdfPreview = dynamic(
-  () => import("./BinaryFilePdfPreview").then((m) => m.BinaryFilePdfPreview),
-  {
-    ssr: false,
-    loading: PreviewerSkeleton,
-  },
-) as ComponentType<BinaryFilePdfPreviewProps>;
-
-// All preview primitives are code-split so this viewer's base chunk
-// stays empty until a tab actually needs a specific renderer. Each
-// chunk is shared with the cloud-files FilePreview, so once one
-// surface has loaded e.g. ImagePreview, every other surface in the
-// app uses the cached module instantly.
-const ImagePreview = dynamic(
-  () =>
-    import("@/features/files/components/core/FilePreview/previewers/ImagePreview"),
-  { ssr: false, loading: PreviewerSkeleton },
-);
-const VideoPreview = dynamic(
-  () =>
-    import("@/features/files/components/core/FilePreview/previewers/VideoPreview"),
-  { ssr: false, loading: PreviewerSkeleton },
-);
-const AudioPreview = dynamic(
-  () =>
-    import("@/features/files/components/core/FilePreview/previewers/AudioPreview"),
-  { ssr: false, loading: PreviewerSkeleton },
-);
-const GenericPreview = dynamic(
-  () =>
-    import("@/features/files/components/core/FilePreview/previewers/GenericPreview"),
-  { ssr: false, loading: PreviewerSkeleton },
-);
 
 interface BinaryFileViewerProps {
   tab: EditorFile;
@@ -327,65 +281,45 @@ function BinaryPreviewer({
   onViewAsText,
   viewAsTextBusy,
 }: PreviewerProps) {
-  switch (kind) {
-    case "image":
-    // SVG normally flows through `useOpenFile`'s text path and never reaches
-    // this viewer. If something does route an SVG here, the signed-URL
-    // `<img>` rendering still works fine — fall through to ImagePreview.
-    case "svg":
-      return (
-        <ImagePreview url={url} fileName={fileName} className="h-full w-full" />
-      );
-    case "video":
-      return (
-        <VideoPreview url={url} mimeType={mime} className="h-full w-full" />
-      );
-    case "audio":
-      return (
-        <AudioPreview
-          url={url}
-          fileName={fileName}
-          mimeType={mime}
-          className="h-full w-full"
-        />
-      );
-    case "pdf":
-      return blob ? (
-        <SandboxPdfPreview
-          blob={blob}
-          url={url}
-          fileName={fileName}
-          className="h-full w-full"
-        />
-      ) : null;
-    default: {
-      // Pick the user-facing message based on the byte sniff. A high-
-      // confidence text sniff means the message becomes a positive
-      // ("This file looks like text") with the button as the obvious
-      // primary action; a failed sniff hides the message but still
-      // offers the manual override so genuinely-binary edge cases stay
-      // workable.
-      const looksText = textSniff?.isText === true;
-      const message = looksText
-        ? "This file looks like text. Open it in the editor?"
-        : textSniff
-          ? "This file may be binary. View as text to inspect anyway."
-          : undefined;
-      return (
-        <GenericPreview
-          fileName={fileName}
-          fileSize={fileSize}
-          onDownload={onDownload}
-          onViewAsText={onViewAsText}
-          viewAsTextLabel={looksText ? "View as text" : "Try as text"}
-          viewAsTextPrimary={looksText}
-          viewAsTextBusy={viewAsTextBusy}
-          message={message}
-          className="h-full w-full"
-        />
-      );
-    }
-  }
+  // Both are set together on load success; the loading/error branches in
+  // BinaryFileViewer return before this component renders.
+  if (!blob || !url) return null;
+
+  // Pick the user-facing message based on the byte sniff (generic kind
+  // only). A high-confidence text sniff means the message becomes a
+  // positive ("This file looks like text") with the button as the obvious
+  // primary action; a failed sniff hides the message but still offers the
+  // manual override so genuinely-binary edge cases stay workable.
+  const looksText = textSniff?.isText === true;
+  const message = looksText
+    ? "This file looks like text. Open it in the editor?"
+    : textSniff
+      ? "This file may be binary. View as text to inspect anyway."
+      : undefined;
+
+  // SVG normally flows through `useOpenFile`'s text path and never reaches
+  // this viewer. If something does route an SVG here, PreviewerSwitch's
+  // blob-source svg arm renders it via the `<img>` path (no fileId, so no
+  // Source toggle) — same behavior as the old fall-through to ImagePreview.
+  return (
+    <PreviewerSwitch
+      source={{ kind: "blob", blob, url }}
+      previewKind={kind}
+      fileName={fileName}
+      fileSize={fileSize}
+      mimeType={mime}
+      className="h-full w-full"
+      loadingFallback={<PreviewerSkeleton />}
+      generic={{
+        onDownload,
+        onViewAsText,
+        viewAsTextLabel: looksText ? "View as text" : "Try as text",
+        viewAsTextPrimary: looksText,
+        viewAsTextBusy,
+        message,
+      }}
+    />
+  );
 }
 
 // ─── helpers ────────────────────────────────────────────────────────────────

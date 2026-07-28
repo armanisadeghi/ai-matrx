@@ -22,59 +22,19 @@
 
 "use client";
 
-import React, { useMemo, useState } from "react";
-import dynamic from "next/dynamic";
+import React, { useMemo } from "react";
 import { Download, ExternalLink, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFile } from "@/features/files/handler/hooks/useFile";
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { PreviewerSwitch } from "@/features/files/components/core/FilePreview/PreviewerSwitch";
 import {
   getFilePreviewProfile,
   type PreviewKind,
 } from "@/features/files/utils/file-types";
 import type { OurFileMatch } from "@/lib/media/our-file-sources";
-
-// Reuse the exact same code-split previewer bodies that the full FilePreview
-// pane uses — one source of truth per file type. Each is `ssr: false` (signed
-// URLs / blob caches / browser APIs) with a uniform skeleton.
-const previewerSkeleton = () => <InlineSkeleton />;
-const SvgPreview = dynamic(
-  () =>
-    import("@/features/files/components/core/FilePreview/previewers/SvgPreview"),
-  { ssr: false, loading: previewerSkeleton },
-);
-const PdfPreview = dynamic(
-  () =>
-    import("@/features/files/components/core/FilePreview/previewers/PdfPreview"),
-  { ssr: false, loading: previewerSkeleton },
-);
-const MarkdownPreview = dynamic(
-  () =>
-    import("@/features/files/components/core/FilePreview/previewers/MarkdownPreview"),
-  { ssr: false, loading: previewerSkeleton },
-);
-const DataPreview = dynamic(
-  () =>
-    import("@/features/files/components/core/FilePreview/previewers/DataPreview"),
-  { ssr: false, loading: previewerSkeleton },
-);
-const CodePreview = dynamic(
-  () =>
-    import("@/features/files/components/core/FilePreview/previewers/CodePreview"),
-  { ssr: false, loading: previewerSkeleton },
-);
-const HtmlPreview = dynamic(
-  () =>
-    import("@/features/files/components/core/FilePreview/previewers/HtmlPreview"),
-  { ssr: false, loading: previewerSkeleton },
-);
-const TextPreview = dynamic(
-  () =>
-    import("@/features/files/components/core/FilePreview/previewers/TextPreview"),
-  { ssr: false, loading: previewerSkeleton },
-);
 
 export interface UniversalInlineFileProps {
   /** Proven-ours match (source + recovered fileId + sniffed mime). */
@@ -148,7 +108,13 @@ export function UniversalInlineFile({
       return (
         <div className={cn(PREVIEW_FRAME, DOC_HEIGHT)}>
           {mediaUrl ? (
-            <SvgPreview url={mediaUrl} fileName={fileName} fileId={fileId} />
+            <PreviewerSwitch
+              source={{ kind: "fileId", fileId }}
+              previewKind="svg"
+              fileName={fileName}
+              url={mediaUrl}
+              loadingFallback={<InlineSkeleton />}
+            />
           ) : (
             <InlineSkeleton />
           )}
@@ -185,35 +151,20 @@ export function UniversalInlineFile({
       );
 
     case "pdf":
-      if (!fileId) break;
-      return (
-        <div className={cn(PREVIEW_FRAME, DOC_HEIGHT)}>
-          <PdfPreview fileId={fileId} />
-        </div>
-      );
-
     case "markdown":
-      if (!fileId) break;
-      return (
-        <div className={cn(PREVIEW_FRAME, DOC_HEIGHT)}>
-          <MarkdownPreview fileId={fileId} />
-        </div>
-      );
-
     case "data":
     case "spreadsheet":
-      if (!fileId) break;
-      return (
-        <div className={cn(PREVIEW_FRAME, DOC_HEIGHT)}>
-          <DataPreview fileId={fileId} fileName={fileName} />
-        </div>
-      );
-
     case "code":
+    case "text":
       if (!fileId) break;
       return (
         <div className={cn(PREVIEW_FRAME, DOC_HEIGHT)}>
-          <CodePreview fileId={fileId} fileName={fileName} />
+          <PreviewerSwitch
+            source={{ kind: "fileId", fileId }}
+            previewKind={kind}
+            fileName={fileName}
+            loadingFallback={<InlineSkeleton />}
+          />
         </div>
       );
 
@@ -222,18 +173,16 @@ export function UniversalInlineFile({
       return (
         <div className={cn(PREVIEW_FRAME, DOC_HEIGHT)}>
           {mediaUrl ? (
-            <HtmlPreview url={mediaUrl} fileId={fileId} fileName={fileName} />
+            <PreviewerSwitch
+              source={{ kind: "fileId", fileId }}
+              previewKind="html"
+              fileName={fileName}
+              url={mediaUrl}
+              loadingFallback={<InlineSkeleton />}
+            />
           ) : (
             <InlineSkeleton />
           )}
-        </div>
-      );
-
-    case "text":
-      if (!fileId) break;
-      return (
-        <div className={cn(PREVIEW_FRAME, DOC_HEIGHT)}>
-          <TextPreview fileId={fileId} />
         </div>
       );
 

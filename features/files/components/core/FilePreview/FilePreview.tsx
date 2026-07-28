@@ -2,24 +2,14 @@
  * features/files/components/core/FilePreview/FilePreview.tsx
  *
  * Preview registry — picks the right previewer for a file based on
- * mime-type + category. **Every previewer is code-split** via `next/dynamic`
- * so this shell ships nothing but the dispatch logic + the action bar. The
- * heavy previewers (PDF, Markdown, Data/Spreadsheet, Code) carry hundreds of
- * KBs of deps; the "light" ones (Image, SVG, Video, Audio, Text, Generic)
- * are tiny on their own, but splitting them too keeps the principle
- * uniform — a Page that only ever shows images never pays for the
- * audio/video/text/generic chunks, and a Page that only shows PDFs never
- * pays for image renderers. The fall-out is small (one Suspense flash on
- * first open of a given kind) vs the gain of a near-empty base chunk.
- *
- * Cache behavior: Next.js's `dynamic()` keeps the module-level reference
- * after the first load, so re-opening the same kind is instant — no
- * re-fetch, no second skeleton flash.
+ * mime-type + category. The previewKind → previewer mapping lives in the
+ * shared `PreviewerSwitch` (light previewers static, heavy engines behind
+ * in-gate `React.lazy` edges) so all three preview surfaces share ONE
+ * dispatch module instead of per-site `dynamic()` fan-outs.
  */
 
 "use client";
 
-import dynamic from "next/dynamic";
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -36,79 +26,7 @@ import { requestEdit } from "@/features/files/components/core/FileEditor/CloudFi
 import { getVirtualSource } from "@/features/files/virtual-sources/registry";
 import { PreviewerActionBar } from "./PreviewerActionBar/PreviewerActionBar";
 import { buildPreviewActions } from "./preview-actions";
-
-// Shared loading state for every code-split previewer. A single centered
-// pulsing bar — deliberately content-agnostic so all kinds feel uniform
-// while their chunks finish loading. Lives at module scope to avoid
-// creating a new component identity on each render of FilePreview.
-function PreviewerSkeleton() {
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-muted/20">
-      <div className="h-6 w-40 animate-pulse rounded bg-muted" />
-    </div>
-  );
-}
-
-// All previewers are code-split. `ssr: false` because the consuming
-// FilePreview is itself a Client Component (signed URLs, blob caches,
-// browser-only APIs) — there's nothing useful to render on the server.
-//
-// Bundle weight notes (approximate, gzipped):
-//   - PdfPreview        : react-pdf + pdf.js worker — ~1 MB
-//   - MarkdownPreview   : react-markdown + remark/rehype + KaTeX — ~250 KB
-//   - DataPreview       : SheetJS (XLSX) + PapaParse — ~600 KB
-//   - CodePreview       : react-syntax-highlighter (Prism) — ~150 KB
-//   - SvgPreview        : tiny, but lazy-fetches blob bytes for source view
-//   - ImagePreview / VideoPreview / AudioPreview / TextPreview / GenericPreview
-//                       : trivial on their own, split for uniformity so the
-//                         base chunk never imports any preview body.
-const ImagePreview = dynamic(() => import("./previewers/ImagePreview"), {
-  ssr: false,
-  loading: PreviewerSkeleton,
-});
-const SvgPreview = dynamic(() => import("./previewers/SvgPreview"), {
-  ssr: false,
-  loading: PreviewerSkeleton,
-});
-const VideoPreview = dynamic(() => import("./previewers/VideoPreview"), {
-  ssr: false,
-  loading: PreviewerSkeleton,
-});
-const AudioPreview = dynamic(() => import("./previewers/AudioPreview"), {
-  ssr: false,
-  loading: PreviewerSkeleton,
-});
-const TextPreview = dynamic(() => import("./previewers/TextPreview"), {
-  ssr: false,
-  loading: PreviewerSkeleton,
-});
-const GenericPreview = dynamic(() => import("./previewers/GenericPreview"), {
-  ssr: false,
-  loading: PreviewerSkeleton,
-});
-const PdfPreview = dynamic(() => import("./previewers/PdfPreview"), {
-  ssr: false,
-  loading: PreviewerSkeleton,
-});
-const MarkdownPreview = dynamic(() => import("./previewers/MarkdownPreview"), {
-  ssr: false,
-  loading: PreviewerSkeleton,
-});
-const DataPreview = dynamic(() => import("./previewers/DataPreview"), {
-  ssr: false,
-  loading: PreviewerSkeleton,
-});
-const CodePreview = dynamic(() => import("./previewers/CodePreview"), {
-  ssr: false,
-  loading: PreviewerSkeleton,
-});
-// HTML splits out from CodePreview — saved web pages get a sandboxed-iframe
-// Rendered view by default, with a Source toggle for the raw markup. Showing
-// the source was the wrong default for HTML files.
-const HtmlPreview = dynamic(() => import("./previewers/HtmlPreview"), {
-  ssr: false,
-  loading: PreviewerSkeleton,
-});
+import { PreviewerSwitch } from "./PreviewerSwitch";
 
 // ---------------------------------------------------------------------------
 // DEBUG layering visualization — paired with the corresponding rings in
@@ -346,16 +264,18 @@ export function FilePreview({
 
   if (!capability.canPreview || !capability.sizeOk) {
     return (
-      <GenericPreview
+      <PreviewerSwitch
+        source={{ kind: "fileId", fileId }}
+        previewKind="generic"
         fileName={file.fileName}
         fileSize={file.fileSize}
-        onDownload={() => void actions.download()}
-        message={
-          !capability.sizeOk
-            ? "This file is too large to preview inline."
-            : undefined
-        }
         className={className}
+        generic={{
+          onDownload: () => void actions.download(),
+          message: !capability.sizeOk
+            ? "This file is too large to preview inline."
+            : undefined,
+        }}
       />
     );
   }
@@ -374,72 +294,24 @@ export function FilePreview({
     );
   }
 
-  let body: React.ReactNode;
-  switch (capability.previewKind) {
-    case "image":
-      body = <ImagePreview url={url} fileName={file.fileName} />;
-      break;
-    // SVG is split out from the generic image path so the user gets the
-    // transparency grid and the Rendered/Source toggle. Falling through to
-    // ImagePreview would hide both and is the wrong default for vector
-    // markup.
-    case "svg":
-      body = <SvgPreview url={url} fileName={file.fileName} fileId={fileId} />;
-      break;
-    case "video":
-      body = (
-        <VideoPreview url={url} mimeType={file.mimeType} label={file.fileName} />
-      );
-      break;
-    case "audio":
-      body = (
-        <AudioPreview
-          url={url}
-          fileName={file.fileName}
-          mimeType={file.mimeType}
-        />
-      );
-      break;
-    // Fetch-based previewers receive `fileId` so they can pull the bytes
-    // through the Python `/files/{id}/download` endpoint via `useFileBlob`.
-    // That sidesteps the AWS S3 CORS block — the signed URL works in
-    // `<img>` / `<video>` / `<audio>` tags (no CORS preflight) but
-    // `fetch(signedUrl)` returns 403 until the S3 bucket policy is fixed.
-    case "pdf":
-      body = (
-        <PdfPreview
-          fileId={fileId}
-          pageNumber={pageNumber}
-          onPageChange={onPageChange}
-        />
-      );
-      break;
-    case "markdown":
-      body = <MarkdownPreview fileId={fileId} />;
-      break;
-    case "data":
-    case "spreadsheet":
-      body = <DataPreview fileId={fileId} fileName={file.fileName} />;
-      break;
-    case "code":
-      body = <CodePreview fileId={fileId} fileName={file.fileName} />;
-      break;
-    case "html":
-      body = <HtmlPreview url={url} fileId={fileId} fileName={file.fileName} />;
-      break;
-    case "text":
-      body = <TextPreview fileId={fileId} />;
-      break;
-    case "generic":
-    default:
-      body = (
-        <GenericPreview
-          fileName={file.fileName}
-          fileSize={file.fileSize}
-          onDownload={() => void actions.download()}
-        />
-      );
-  }
+  // Fetch-based previewers receive `fileId` (through PreviewerSwitch) so
+  // they can pull the bytes via the Python `/files/{id}/download` endpoint —
+  // sidestepping the AWS S3 CORS block: the signed URL works in `<img>` /
+  // `<video>` / `<audio>` tags (no CORS preflight) but `fetch(signedUrl)`
+  // returns 403 until the S3 bucket policy is fixed.
+  const body = (
+    <PreviewerSwitch
+      source={{ kind: "fileId", fileId }}
+      previewKind={capability.previewKind}
+      fileName={file.fileName}
+      fileSize={file.fileSize}
+      mimeType={file.mimeType}
+      url={url}
+      pageNumber={pageNumber}
+      onPageChange={onPageChange}
+      generic={{ onDownload: () => void actions.download() }}
+    />
+  );
 
   return (
     <div
