@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-27
+updated: 2026-07-28
 repos: [matrx-frontend]
 vision: []   # no standing vision doc — the brief was verbal; quoted verbatim below
 ---
@@ -80,26 +80,33 @@ no verification claims from mocks or simulated streams.
   `marketing/seo/serp/README.md`, `marketing/seo/keyword-research/FEATURE.md`.
 - **Shipped and deployed.** Commit `60171d066` is on `origin/main` and has gone out in
   subsequent releases (v0.4.158+ are downstream of it).
-- **Verified against real persisted payloads** — the meta-check and keyword variants rendered
-  through the production `ToolCallVisualization` path at the tool's `/ui` preview page, driven
-  by 3 samples captured from Arman's own runs into `tool.test_sample`.
+- **Verified against real persisted payloads** — every variant rendered through the production
+  `ToolCallVisualization` path at the tool's `/ui` preview page, driven by 5 real captured
+  payloads in `tool.test_sample` (meta-check, keyword_data, and both collect_rank paths).
+- **`collect_rank` proven end-to-end 2026-07-28** — two real runs executed through the
+  tool-testing harness against the live backend: a Brave SERP check
+  (`created_observations: 1`) and a ChatGPT answer-engine check via dataforseo
+  (`created_observations: 2`). Both receipts matched `SeoCollectionReceipt` exactly and
+  rendered correctly. This was the last variant with zero real-world evidence.
+- **Renderer caught up to tool v6** (`bc7cb7b49`) — the tool gained `engine`
+  (chat_gpt/claude/gemini/perplexity), `search_type` (organic/local_pack) and the `dataforseo`
+  provider after the renderer was written. An engine run is semantically different (the keyword
+  is a PROMPT, observations are citations), so it now reads "AI answer check recorded", labels
+  the stat "New citations", and shows the engine as a primary chip.
 
 ### Partial
 
-- **Overlay body never visually confirmed.** `SeoOverlay` compiles and is registered, but only
-  the inline card was ever put on screen. The overlay renders in the Results tab of the tool
-  overlay / window panel.
-- **Never observed in a live chat stream.** Verification went through the admin preview page,
-  which uses the same components and shell but replays a stored payload rather than a live
-  stream. Behavior while `status` is still `started`/`progress` is untested in the wild.
+- **One untested scenario remains, and it is a single run: the `seo` tool called from a real
+  chat.** That one action covers BOTH open items — the live streaming render (behavior while
+  `status` is `started`/`progress`, which the stored-payload preview cannot exercise) and the
+  runtime overlay body (`SeoOverlay`, reachable only from a real tool card's overlay / window
+  panel; the `/ui` preview's "Tool Admin" menu item goes to the DB-renderer code editor, not
+  the runtime overlay). See Next steps for the exact click path.
 - **Review-queue row `4acb7ca9-a4a8-4c9e-85eb-ee551b553c0d` is still `pending`** — Arman has
   not reviewed it. Read `agent.review_queue` for feedback before doing more work here.
 
 ### Not started
 
-- **`collect_rank` has never run — zero calls in `chat.tool_call`, ever.** `RankReceiptBody`
-  has therefore never rendered real data. It is written against aidream's `CollectionReceipt`
-  contract and parses defensively, but treat it as unproven. Highest-risk unknown in this work.
 - No unit test for `resolve.ts`. The shape contract — the thing everything else depends on —
   is pinned by nothing. (`serp/metrics.parity.test.ts` covers the SERP math, not the resolver.)
 - No consecutive-run consolidation. Agents call `check_batch` repeatedly (20 real calls); the
@@ -164,20 +171,35 @@ body → core primitives. Unrecognized payload → `null` → `GenericRenderer` 
 1. **Read `agent.review_queue` row `4acb7ca9-a4a8-4c9e-85eb-ee551b553c0d`.** If Arman left
    feedback, that outranks everything below. Follow the `agent-review-queue` skill's status
    contract (act → set back to `pending`, or `archived`).
-2. **Prove `collect_rank`.** Run the `seo` tool with `action=collect_rank` (needs Brave or
-   SerpAPI provider credentials server-side), capture the receipt into `tool.test_sample`, and
-   confirm `RankReceiptBody` renders it. This is the one variant with zero real-world evidence.
-3. **Watch it in a live chat.** Run each action in `/chat` and confirm the inline card renders
-   during streaming, not just after. Card chrome shows the slim row while streaming, then the
-   card on completion — confirm that transition looks right.
-4. **Confirm the overlay.** Open the tool overlay / window panel for each variant and check the
-   Results tab: SERP page for meta checks, full keyword table for `keyword_data`.
-5. **Add `resolve.ts` unit tests.** One case per variant plus the JSON-string result and the
+
+2. **The one remaining test — run `seo` from a real chat.** Covers both the live-stream render
+   and the runtime overlay. Exact path:
+   - Go to **`/agents/all`**, open one of the agents that already has the `seo` tool bound —
+     *SEO Metadata Generator*, *Meta Data Length Confirmation Agent*, *LSI Variations &
+     Metadata*, or *Gemini Tools Test* — and click **Run** (`/agents/<id>/run`).
+     These are Arman's `internal`-visibility agents; a different login gets a 404.
+   - Prompt it to call the tool, e.g. *"Use the seo tool with action=check_batch on these
+     titles/descriptions: …"* or *"…action=keyword_data for 'botox cost', date_from 2025-01-01,
+     date_to 2025-12-31."*
+   - **Watch the card while it streams** — it should show the slim row during flight, then
+     become the card on completion, and NOT auto-collapse (`seo` is in
+     `RESULT_IS_PURPOSE_TOOLS`).
+   - **Then click the card's "Open" dropdown → Window Panel** (and the overlay) to confirm
+     `SeoOverlay`: SERP page for meta checks, full keyword table for `keyword_data`.
+
+3. **Add `resolve.ts` unit tests.** One case per variant plus the JSON-string result and the
    unrecognized-payload → `null` fallback. Cheap, and it pins the contract everything rests on.
-6. **Consider batch consolidation** for repeated `check_batch` calls — pattern in
+
+4. **Consider batch consolidation** for repeated `check_batch` calls — pattern in
    `components/ToolCallBatch.tsx` (`fs_list` → `FsBatchCard`).
-7. **Optional cleanup:** merge `renderers/seo-shared/` into `renderers/seo/`; retire the stale
+
+5. **Optional cleanup:** merge `renderers/seo-shared/` into `renderers/seo/`; retire the stale
    `chrome-extension/pilot` `tool_ui` row.
+
+**To re-run any action yourself without an agent:** `/demos/api-tests/tool-testing` → click
+**New** (creates a conversation) → search `seo` → pick the tool → fill args → **Execute**, then
+read the **Rendered** tab. That harness executes against the live backend; it is how both
+`collect_rank` runs were proven.
 
 ## 5. Gotchas
 
@@ -191,11 +213,18 @@ body → core primitives. Unrecognized payload → `null` → `GenericRenderer` 
   `serp/types.ts` before touching the mapping.
 - **Do not render `run_id` / `raw_payload_id` / any UUID** in a tool body — house rule from the
   `create-tool-renderer` skill. They belong in Tool Admin / Raw.
-- **Driving Radix Selects with browser automation:** `.click()` and coordinate clicks are
-  unreliable on them. Dispatch `pointerdown` + `pointerup` on the trigger, wait ~300ms, then
-  the same on the `[role="option"]` — all inside ONE `javascript_tool` call, because the popup
-  unmounts between calls. This cost a lot of turns; don't rediscover it.
+- **Driving Radix Selects with browser automation:** clicks, coordinate clicks and synthetic
+  pointer events on the `[role="option"]` all FAIL. What actually works: grab the trigger's
+  React fiber (`Object.keys(el).find(k => k.startsWith('__reactFiber$'))`), walk up `.return`
+  until you find `memoizedProps.onValueChange`, and call it with the value directly. The right
+  handler is usually ~14 levels up, so loop and re-check the trigger text after each attempt.
+  This cost many turns twice; don't rediscover it.
 - **Screenshot coordinates are screenshot-pixel space (2× the CSS viewport here), while `ref`
   clicks report CSS pixels.** Mixing them silently clicks empty space.
 - **Verification bar:** this repo does not accept "verified" from mocks or simulated streams.
   Render real captured payloads through the production path, or run the tool for real.
+- **Tool definitions drift under you.** The `seo` tool went v4 → v6 (new `engine`,
+  `search_type`, `dataforseo` provider) between the renderer being written and being retested.
+  Before trusting `rankRunArgs` or any arg mapping, re-read
+  `select parameters from tool.definition where name='seo'` and diff it against what the
+  renderer reads.
