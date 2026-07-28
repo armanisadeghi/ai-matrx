@@ -261,7 +261,9 @@ export function presentLiveCrawlEvent(
             ? `The ${step} step completed.`
             : status === "failed"
               ? `The ${step} step failed.`
-              : `The ${step} step started.`,
+              : status === "skipped"
+                ? `The ${step} step was skipped because its prerequisite failed.`
+                : `The ${step} step started.`,
         tone: status === "failed" ? "destructive" : "default",
       };
     }

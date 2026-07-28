@@ -12,16 +12,16 @@ the `/marketing` hub, `/marketing/tools`, the shell nav (generated —
 `marketingNavChildren()`), and the route metadata. One declaration, four
 surfaces; they cannot drift.
 
-| Pillar | Live today | Reserved (coming soon) |
-| --- | --- | --- |
-| Brands & Websites | `/marketing/brands`, `/marketing/sites` | `/marketing/local` |
-| Strategy & Planning | `/marketing/content-plan` | `/marketing/campaigns`, `/calendar`, `/audience` |
-| Discovery, Search & Visibility | `/marketing/keyword-research`, `/marketing/discovery/youtube` | `/marketing/ranks`, `/marketing/ai-visibility` |
-| Content & Channels | — | `/marketing/content-studio`, `/social`, `/email`, `/ads`, `/outreach` |
-| Market Intelligence | — | `/marketing/competitors`, `/marketing/monitoring` |
-| Measurement | `/marketing/cost` | `/marketing/analytics`, `/marketing/reports` |
-| SEO Tools | `/marketing/tools` → the PUBLIC analyzers on `/seo/*` | — |
-| Data & Operations | `/marketing/connections`, `/marketing/batches` | `/marketing/automations` |
+| Pillar                         | Live today                                                    | Reserved (coming soon)                                                |
+| ------------------------------ | ------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Brands & Websites              | `/marketing/brands`, `/marketing/sites`                       | `/marketing/local`                                                    |
+| Strategy & Planning            | `/marketing/content-plan`                                     | `/marketing/campaigns`, `/calendar`, `/audience`                      |
+| Discovery, Search & Visibility | `/marketing/keyword-research`, `/marketing/discovery/youtube` | `/marketing/ranks`, `/marketing/ai-visibility`                        |
+| Content & Channels             | —                                                             | `/marketing/content-studio`, `/social`, `/email`, `/ads`, `/outreach` |
+| Market Intelligence            | —                                                             | `/marketing/competitors`, `/marketing/monitoring`                     |
+| Measurement                    | `/marketing/cost`                                             | `/marketing/analytics`, `/marketing/reports`                          |
+| SEO Tools                      | `/marketing/tools` → the PUBLIC analyzers on `/seo/*`         | —                                                                     |
+| Data & Operations              | `/marketing/connections`, `/marketing/batches`                | `/marketing/automations`                                              |
 
 ### Rules
 
@@ -241,6 +241,12 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-07-28 — Codex: initialization now distinguishes root failures from
+  dependent skips. The progress contract accepts `skipped`, renders it
+  neutrally, and preserves the prerequisite message; one homepage 429 no
+  longer appears as three failed application steps. The parser also reads
+  counts from the backend's canonical nested `counts` object instead of only
+  undocumented top-level fields.
 - 2026-07-27 — Codex: **anchor-text policy and cross-page internal-link compliance.** The page Internal Links evidence card now switches between URL rollups and collapsed anchor-text trees (anchor → pages → link counts), authors a normalized list of acceptable inbound anchors through the existing merge-safe `web.page.desired_values.accepted_anchor_texts` slice, reports acceptable/unacceptable percentages and exact source pages, and resolves each internal target's policy on outbound edges so source pages highlight anchor mismatches and show acceptable replacements. Link evidence is current-snapshot only rather than inflated by historical crawl rows. Export now offers condensed anchor/page CSV, issues-only CSV, a simple text issue list, and full analysis JSON alongside the existing Copy/Copy-for-AI pair. Reused `TextArrayInput`, `DesiredSection`, `SegmentedControl`, `ExportMenu`, React Query invalidation, and the canonical `web.link_edge`/`web.page` direct-Supabase path; no table or migration was added.
 - 2026-07-27 — Claude: **module build-out.** Marketing now covers eight pillars with 16 RESERVED routes (campaigns, calendar, audience, local, ranks, ai-visibility, content-studio, social, email, ads, outreach, competitors, monitoring, analytics, reports, automations) rendering the new shared `MarketingComingSoon`, each tracked in `lib/coming-soon/registry.ts`. Added the public `MarketingLanding` + server-side guest/authed branch in the module layout (guests never hit a login wall) and registered it in `MODULE_LANDING_DIRECTORY`. The shell sidebar is now GENERATED from `MARKETING_PILLARS` (`marketingNavChildren()`), as is reserved-route metadata — hub, menu, and metadata can no longer drift. Admin map covers all 16.
 - 2026-07-27 — Codex: **site-overview context-menu reference wiring.** The canonical site cockpit now mounts the v3 `NonEditableContextMenu` over the whole read-only workspace with the complete live `matrx-user/marketing-site` scope, raw-document Export/Download, and the real `web_site` entity for Attach To + Share. Opening the inline identity editor suppresses that outer menu and gives each controlled text field its own `EditableContextMenu`, so selection, Cut/Paste, Save, content insertion, and inline-agent edits target the exact field without nested menus double-opening. This is the reference pattern for the remaining Marketing rollout: one read-only surface wrapper, field-specific editable wrappers only while an editor is active.

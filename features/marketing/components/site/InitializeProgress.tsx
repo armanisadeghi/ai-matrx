@@ -1,6 +1,12 @@
 "use client";
 
-import { Check, Circle, Loader2, TriangleAlert } from "lucide-react";
+import {
+  Check,
+  Circle,
+  CircleMinus,
+  Loader2,
+  TriangleAlert,
+} from "lucide-react";
 import { INITIALIZE_STEP_NAMES } from "@/features/marketing/crawler/direct-client";
 import {
   INITIALIZE_STEP_LABELS,
@@ -32,7 +38,11 @@ export function InitializeProgress({
           <span
             key={step}
             className="inline-flex items-center gap-1.5 text-xs"
-            title={state.status === "failed" ? (state.message ?? "") : undefined}
+            title={
+              state.status === "failed" || state.status === "skipped"
+                ? (state.message ?? "")
+                : undefined
+            }
           >
             {showIndeterminate || state.status === "pending" ? (
               <Circle className="h-3 w-3 text-muted-foreground/40" />
@@ -40,6 +50,8 @@ export function InitializeProgress({
               <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
             ) : state.status === "done" ? (
               <Check className="h-3.5 w-3.5 text-emerald-500" />
+            ) : state.status === "skipped" ? (
+              <CircleMinus className="h-3.5 w-3.5 text-muted-foreground" />
             ) : (
               <TriangleAlert className="h-3.5 w-3.5 text-destructive" />
             )}

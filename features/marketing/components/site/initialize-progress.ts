@@ -17,10 +17,7 @@ import {
 import { marketingKeys } from "@/features/marketing/data/hooks";
 
 export type InitializeStepUiStatus =
-  | "pending"
-  | "running"
-  | "done"
-  | "failed";
+  "pending" | "running" | "done" | "failed" | "skipped";
 
 export interface InitializeStepUiState {
   status: InitializeStepUiStatus;
@@ -60,11 +57,17 @@ export function applyInitializeStepEvent(
       ? { status: "running", count: prior.count, message: null }
       : event.status === "complete"
         ? { status: "done", count: event.count ?? prior.count, message: null }
-        : {
-            status: "failed",
-            count: prior.count,
-            message: event.message ?? "Step failed",
-          };
+        : event.status === "failed"
+          ? {
+              status: "failed",
+              count: prior.count,
+              message: event.message ?? "Step failed",
+            }
+          : {
+              status: "skipped",
+              count: prior.count,
+              message: event.message ?? "Step skipped",
+            };
   return { ...state, [event.step]: next };
 }
 

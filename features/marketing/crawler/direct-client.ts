@@ -156,14 +156,15 @@ export const INITIALIZE_STEP_NAMES = [
 
 export type InitializeStepName = (typeof INITIALIZE_STEP_NAMES)[number];
 
-export type InitializeStepStatus = "started" | "complete" | "failed";
+export type InitializeStepStatus =
+  "started" | "complete" | "failed" | "skipped";
 
 export interface InitializeStepEvent {
   step: InitializeStepName;
   status: InitializeStepStatus;
   /** Item count reported by the step's completion payload, when present. */
   count: number | null;
-  /** Human-readable failure message, when status === "failed". */
+  /** Human-readable terminal message for failed or skipped steps. */
   message: string | null;
   errorType: string | null;
 }
@@ -189,6 +190,20 @@ function firstString(...values: unknown[]): string | null {
   return null;
 }
 
+function initializeStepCount(event: CrawlLiveEvent): number | null {
+  const counts = isJsonRecord(event.counts) ? event.counts : {};
+  return firstNumber(
+    event.count,
+    event.found,
+    event.captured,
+    event.discovered,
+    counts.written,
+    counts.captured,
+    counts.found,
+    counts.media,
+  );
+}
+
 /**
  * Narrow a live crawl event to the granular initialize-step contract
  * (`{event_type: "initialize_step", step, status, ...}`). Returns null for
@@ -201,18 +216,18 @@ export function initializeStepFromEvent(
   if (!event || event.event_type !== "initialize_step") return null;
   const { step, status } = event as { step?: unknown; status?: unknown };
   if (!isInitializeStepName(step)) return null;
-  if (status !== "started" && status !== "complete" && status !== "failed") {
+  if (
+    status !== "started" &&
+    status !== "complete" &&
+    status !== "failed" &&
+    status !== "skipped"
+  ) {
     return null;
   }
   return {
     step,
     status,
-    count: firstNumber(
-      event.count,
-      event.found,
-      event.captured,
-      event.discovered,
-    ),
+    count: initializeStepCount(event),
     message: firstString(event.user_message, event.message, event.error),
     errorType: firstString(event.error_type),
   };

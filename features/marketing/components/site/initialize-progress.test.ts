@@ -10,7 +10,11 @@ import {
 import { marketingKeys } from "@/features/marketing/data/hooks";
 
 const liveEvent = (extra: Record<string, unknown>): CrawlLiveEvent =>
-  ({ event_type: "initialize_step", run_id: "run-1", ...extra }) as CrawlLiveEvent;
+  ({
+    event_type: "initialize_step",
+    run_id: "run-1",
+    ...extra,
+  }) as CrawlLiveEvent;
 
 describe("initializeStepFromEvent", () => {
   it("parses the documented granular contract", () => {
@@ -35,7 +39,11 @@ describe("initializeStepFromEvent", () => {
     ).toBe(4);
     expect(
       initializeStepFromEvent(
-        liveEvent({ step: "sitemaps", status: "complete", found: 7 }),
+        liveEvent({
+          step: "sitemaps",
+          status: "complete",
+          counts: { found: 7, urls: 411 },
+        }),
       )?.count,
     ).toBe(7);
   });
@@ -108,6 +116,21 @@ describe("applyInitializeStepEvent", () => {
       status: "failed",
       count: null,
       message: "404 on robots.txt",
+    });
+  });
+
+  it("records prerequisite skips without turning them into failures", () => {
+    const state = applyInitializeStepEvent(emptyInitializeSteps(), {
+      step: "screenshots",
+      status: "skipped",
+      count: null,
+      message: "Skipped because the homepage fetch failed.",
+      errorType: null,
+    });
+    expect(state.screenshots).toEqual({
+      status: "skipped",
+      count: null,
+      message: "Skipped because the homepage fetch failed.",
     });
   });
 });
