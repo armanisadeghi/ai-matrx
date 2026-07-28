@@ -44,12 +44,14 @@ import { cn } from "@/utils/cn";
 import { useVault, useVaultDefinitions } from "../vault-hooks";
 import {
   credentialIdentity,
+  fieldLabelOf,
   identityFieldOf,
   primarySecretFieldOf,
   IDENTITY_TILE_CLASS,
 } from "../credential-identity";
 import {
   FAMILY_LABELS,
+  VAULT_LABELS,
   type CredentialDefinition,
   type CredentialFamily,
   type VaultItem,
@@ -83,7 +85,8 @@ export function VaultWorkspace({
   scope: controlledScope,
   onScopeChange,
 }: VaultWorkspaceProps) {
-  const orgAdmin = principal.type === "organization" ? Boolean(canManage) : true;
+  const orgAdmin =
+    principal.type === "organization" ? Boolean(canManage) : true;
   // The personal surface offers Mine / Shared with me; the organization
   // surface is always its own scope (an org page showing another person's
   // shared personal items would be a category error).
@@ -176,8 +179,8 @@ export function VaultWorkspace({
             <span className="font-medium text-foreground">
               Members can use organization credentials without revealing them.
             </span>{" "}
-            Values are encrypted at rest and only resolved inside trusted
-            server operations. Admins manage access, rotation, and deletion.
+            Values are encrypted at rest and only resolved inside trusted server
+            operations. Admins manage access, rotation, and deletion.
           </p>
         </div>
       )}
@@ -238,7 +241,9 @@ export function VaultWorkspace({
         {familiesPresent.length > 1 && (
           <Select
             value={family}
-            onValueChange={(next) => setFamily(next as "all" | CredentialFamily)}
+            onValueChange={(next) =>
+              setFamily(next as "all" | CredentialFamily)
+            }
           >
             <SelectTrigger
               className="h-9 w-auto min-w-32 shrink-0"
@@ -341,10 +346,10 @@ export function VaultWorkspace({
                 />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-base font-semibold leading-tight">
+                <span className="block whitespace-normal break-words text-base font-semibold leading-tight">
                   {selected?.display_name}
                 </span>
-                <span className="block truncate text-xs font-normal text-muted-foreground">
+                <span className="mt-1 block whitespace-normal break-words text-xs font-normal text-muted-foreground">
                   {[selectedIdentity?.kindLabel, selectedIdentity?.subtitle]
                     .filter(Boolean)
                     .join(" · ")}
@@ -355,6 +360,7 @@ export function VaultWorkspace({
           <CredenzaBody className="max-h-[70dvh] overflow-y-auto px-4 pb-6 md:px-0">
             {selected && (
               <VaultItemDetail
+                key={selected.id}
                 item={selected}
                 principal={principal}
                 definitions={defsByKey}
@@ -398,9 +404,9 @@ function familyOf(
 
 /**
  * One credential, the way a password manager shows one: identity tile, the
- * name, what it is and who it signs in as, and direct reveal/copy on the two
- * fields that matter. The whole card opens the detail; the value controls sit
- * above that hit area so copying never navigates.
+ * name, type, and every stored field. Nothing is collapsed into “more” and
+ * nothing is truncated: metadata wraps, while values have exactly two states
+ * — Hidden or fully shown.
  */
 function VaultItemCard({
   item,
@@ -415,28 +421,35 @@ function VaultItemCard({
   const Icon = identity.icon;
   const identityField = identityFieldOf(item);
   const secretField = primarySecretFieldOf(item);
-  const extraFields = item.fields.filter(
-    (f) => f.is_active && f.id !== identityField?.id && f.id !== secretField?.id,
+  const primaryIds = new Set(
+    [identityField?.id, secretField?.id].filter((id): id is string =>
+      Boolean(id),
+    ),
+  );
+  const orderedFields = [
+    ...(identityField ? [identityField] : []),
+    ...(secretField ? [secretField] : []),
+    ...item.fields.filter((field) => !primaryIds.has(field.id)),
+  ];
+  const fieldLabels = new Map(
+    (definition?.payload.fields ?? []).map((field) => [
+      field.field_key,
+      field.label,
+    ]),
   );
 
   return (
     <div className="group relative min-w-0 rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/40 hover:bg-accent/30 focus-within:border-primary/40">
-      {/* Whole-card hit area, painted above the static text and below the
-          value controls so a copy click never opens the item. */}
-      <button
-        type="button"
-        onClick={onOpen}
-        className="absolute inset-0 z-10 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label={`Open ${item.display_name}`}
-      />
-
       <div className="flex min-w-0 items-start gap-2.5">
         <span className={cn(IDENTITY_TILE_CLASS, "mt-0.5 h-9 w-9")}>
           <Icon className={cn("h-4.5 w-4.5", identity.iconClass)} />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <p className="min-w-0 truncate text-sm font-semibold text-foreground">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            {VAULT_LABELS.credentialName}
+          </p>
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+            <p className="min-w-0 whitespace-normal break-words text-sm font-semibold text-foreground">
               {item.display_name}
             </p>
             {item.status !== "active" && (
@@ -449,11 +462,16 @@ function VaultItemCard({
             )}
           </div>
           {(identity.kindLabel || identity.subtitle) && (
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">
-              {[identity.kindLabel, identity.subtitle]
-                .filter(Boolean)
-                .join(" · ")}
-            </p>
+            <div className="mt-1">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                {VAULT_LABELS.credentialType}
+              </p>
+              <p className="whitespace-normal break-words text-xs text-muted-foreground">
+                {[identity.kindLabel, identity.subtitle]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            </div>
           )}
         </div>
         {item.organization_id && item.access_mode === "restricted" && (
@@ -463,62 +481,78 @@ function VaultItemCard({
         )}
       </div>
 
-      {(identityField || secretField) && (
-        <div className="mt-2 space-y-0.5 border-t border-border/60 pt-2">
-          {identityField && (
+      {orderedFields.length > 0 && (
+        <div className="mt-2 space-y-2 border-t border-border/60 pt-2">
+          {orderedFields.map((field) => (
             <CardFieldRow
+              key={field.id}
               item={item}
-              field={identityField}
-              label="Username"
-              tone="identity"
+              field={field}
+              label={fieldLabels.get(field.field_key) ?? null}
             />
-          )}
-          {secretField && (
-            <CardFieldRow
-              item={item}
-              field={secretField}
-              label="Secret"
-              tone="secret"
-            />
-          )}
-          {extraFields.length > 0 && (
-            <p className="pt-0.5 text-[11px] text-muted-foreground">
-              +{extraFields.length} more field
-              {extraFields.length === 1 ? "" : "s"}
-            </p>
-          )}
+          ))}
         </div>
       )}
+      <div className="mt-2 flex justify-end">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={onOpen}
+          aria-label={`Open ${item.display_name}`}
+        >
+          Open credential
+        </Button>
+      </div>
     </div>
   );
 }
 
 /**
- * A value line on the card. The controls sit at z-20 — above the card's
- * whole-surface open button — so reveal and copy work without navigating.
+ * A value line on the card. Values remain independently revealable/copyable;
+ * opening the full credential is a separate, explicit card action.
  */
 function CardFieldRow({
   item,
   field,
   label,
-  tone,
 }: {
   item: VaultItem;
   field: import("../types").VaultField;
-  label: string;
-  tone: "identity" | "secret";
+  label: string | null;
 }) {
+  const displayLabel = fieldLabelOf(field, label);
   return (
-    <div className="flex min-w-0 items-center gap-2">
-      <span className="sr-only">{label}</span>
-      <SecretValue
-        item={item}
-        field={field}
-        className={cn(
-          "relative z-20 min-w-0 flex-1",
-          tone === "identity" && "opacity-90",
+    <div className="min-w-0 rounded-md bg-muted/30 p-2">
+      <dl className="grid min-w-0 gap-x-3 gap-y-1.5 text-xs sm:grid-cols-[7rem_minmax(0,1fr)]">
+        <dt className="font-medium text-muted-foreground">
+          {VAULT_LABELS.fieldName}
+        </dt>
+        <dd className="flex min-w-0 flex-wrap items-center gap-1.5 whitespace-normal break-words text-foreground">
+          {displayLabel}
+          {!field.is_active && (
+            <Badge variant="outline" className="font-normal">
+              Inactive
+            </Badge>
+          )}
+        </dd>
+        {field.env_key && (
+          <>
+            <dt className="font-medium text-muted-foreground">
+              {VAULT_LABELS.runtimeKey}
+            </dt>
+            <dd className="min-w-0 whitespace-normal break-all font-mono text-foreground">
+              {field.env_key}
+            </dd>
+          </>
         )}
-      />
+        <dt className="font-medium text-muted-foreground">
+          {VAULT_LABELS.value}
+        </dt>
+        <dd className="min-w-0">
+          <SecretValue item={item} field={field} className="min-w-0" />
+        </dd>
+      </dl>
     </div>
   );
 }
@@ -565,7 +599,12 @@ function VaultEmptyState({
         <p className="mx-auto mt-1 max-w-xs text-xs text-muted-foreground">
           Nothing here matches your search or type filter.
         </p>
-        <Button variant="outline" size="sm" className="mt-3" onClick={onClearFilters}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-3"
+          onClick={onClearFilters}
+        >
           Clear filters
         </Button>
       </div>

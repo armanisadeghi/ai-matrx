@@ -34,16 +34,11 @@ import type { VaultField, VaultItem } from "../types";
  * everyone, at every capability level, forever.
  */
 export function canShowField(item: VaultItem, field: VaultField): boolean {
+  if (!field.is_active) return false;
   if (field.handling === "visible") return item.capabilities.can_use === true;
-  if (field.handling === "revealable") return item.capabilities.can_reveal === true;
+  if (field.handling === "revealable")
+    return item.capabilities.can_reveal === true;
   return false;
-}
-
-/** The masked placeholder. A real hint beats generic dots when we have one. */
-function maskFor(field: VaultField): string {
-  return field.value_hint && field.value_hint.trim().length > 0
-    ? field.value_hint
-    : "••••••••••••";
 }
 
 /**
@@ -198,7 +193,7 @@ export function SecretValue({
   const controls = secret.sealed ? (
     // Sealed: a lock and nothing else. There is no unseal control to hide.
     <span
-      className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium text-muted-foreground"
+      className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium text-muted-foreground"
       title="Sealed — this value can never be shown to a human. Only trusted server execution can use it."
     >
       <Lock className="h-3.5 w-3.5" />
@@ -207,27 +202,30 @@ export function SecretValue({
   ) : secret.allowed ? (
     <>
       <Button
-        size="icon"
-        variant="ghost"
-        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+        size="sm"
+        variant="outline"
+        className="h-8 shrink-0 px-2.5 text-xs"
         disabled={secret.working}
         onClick={() => secret.toggle()}
-        aria-label={revealed ? `Hide ${field.field_key}` : `Show ${field.field_key}`}
+        aria-label={
+          revealed ? `Hide ${field.field_key}` : `Show ${field.field_key}`
+        }
         title={revealed ? "Hide" : "Show"}
       >
         {secret.working && !revealed ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
         ) : revealed ? (
-          <EyeOff className="h-4 w-4" />
+          <EyeOff className="mr-1.5 h-3.5 w-3.5" />
         ) : (
-          <Eye className="h-4 w-4" />
+          <Eye className="mr-1.5 h-3.5 w-3.5" />
         )}
+        {revealed ? "Hide" : "Show"}
       </Button>
       <Button
-        size="icon"
-        variant="ghost"
+        size="sm"
+        variant="outline"
         className={cn(
-          "h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground",
+          "h-8 shrink-0 px-2.5 text-xs",
           secret.copied && "text-success hover:text-success",
         )}
         disabled={secret.working}
@@ -236,10 +234,11 @@ export function SecretValue({
         title="Copy"
       >
         {secret.copied ? (
-          <Check className="h-4 w-4" />
+          <Check className="mr-1.5 h-3.5 w-3.5" />
         ) : (
-          <Copy className="h-4 w-4" />
+          <Copy className="mr-1.5 h-3.5 w-3.5" />
         )}
+        {secret.copied ? "Copied" : "Copy"}
       </Button>
     </>
   ) : null;
@@ -254,17 +253,18 @@ export function SecretValue({
   }
 
   return (
-    <div className={cn("flex items-center gap-1", className)}>
+    <div className={cn("flex flex-wrap items-center gap-2", className)}>
       <p
         className={cn(
-          "min-w-0 flex-1 truncate font-mono text-[13px] leading-6",
+          "min-w-0 flex-1 whitespace-pre-wrap break-all font-mono text-[13px] leading-6",
           revealed ? "text-foreground" : "text-muted-foreground",
         )}
-        // Revealed plaintext is deliberately selectable; the mask is not
-        // meaningful text, so it is hidden from assistive tech.
-        aria-hidden={!revealed}
       >
-        {revealed ? secret.value : maskFor(field)}
+        {revealed
+          ? secret.value
+          : field.is_active
+            ? "Hidden"
+            : "Hidden — field is inactive"}
       </p>
       {showCountdown && revealed && secondsLeft !== null && (
         <span

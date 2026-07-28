@@ -306,10 +306,10 @@ export function credentialIdentity(
   const host = firstUrl ? hostOfUrl(firstUrl) : null;
   const identityField = identityFieldOf(item);
 
-  // Priority: who it signs in as > where it signs in > what it is called in a
-  // container. The name is already on the line above, so never repeat it.
+  // Value hints are deliberately excluded. A partially masked username is
+  // neither hidden nor fully shown, and the vault UI has one rule everywhere:
+  // explicit Hidden state or the complete transient value.
   const subtitleCandidates = [
-    identityField?.handling === "visible" ? identityField.value_hint : null,
     host,
     item.fields.find((f) => f.env_key)?.env_key ?? null,
     item.description,

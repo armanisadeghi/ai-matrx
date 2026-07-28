@@ -46,6 +46,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import {
   Credenza,
   CredenzaBody,
@@ -58,8 +59,10 @@ import { parseEnvAssignment } from "../utils";
 import {
   FAMILY_LABELS,
   FIELD_KEY_RE,
+  HANDLING_LABELS,
   URI_MATCH_MODE_LABELS,
   VALID_KEY_RE,
+  VAULT_LABELS,
   WEBSITE_LOGIN_DEFINITION_KEY,
   effectiveFields,
   toPrincipalIn,
@@ -357,26 +360,39 @@ function AssignConfirmation({
 
       <dl className="space-y-1 rounded-md border border-border bg-card p-3 text-xs">
         <div className="flex items-baseline gap-2">
-          <dt className="w-20 shrink-0 text-muted-foreground">Name</dt>
-          <dd className="min-w-0 flex-1 truncate">{result.display_name}</dd>
+          <dt className="w-28 shrink-0 text-muted-foreground">
+            {VAULT_LABELS.credentialName}
+          </dt>
+          <dd className="min-w-0 flex-1 whitespace-normal break-words">
+            {result.display_name}
+          </dd>
         </div>
         <div className="flex items-baseline gap-2">
-          <dt className="w-20 shrink-0 text-muted-foreground">Type</dt>
-          <dd className="min-w-0 flex-1 truncate font-mono">
+          <dt className="w-28 shrink-0 text-muted-foreground">
+            {VAULT_LABELS.credentialType}
+          </dt>
+          <dd className="min-w-0 flex-1 whitespace-normal break-all font-mono">
             {result.definition_key}
           </dd>
         </div>
         <div className="flex items-baseline gap-2">
-          <dt className="w-20 shrink-0 text-muted-foreground">Item</dt>
-          <dd className="min-w-0 flex-1 truncate font-mono">{result.id}</dd>
+          <dt className="w-28 shrink-0 text-muted-foreground">Credential ID</dt>
+          <dd className="min-w-0 flex-1 whitespace-normal break-all font-mono">
+            {result.id}
+          </dd>
         </div>
       </dl>
 
       {result.generated ? (
         <div className="space-y-1 rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
           <div className="flex items-center gap-2">
-            <p className="text-xs font-semibold">Password generated privately</p>
-            <Badge variant="outline" className="border-amber-500/40 text-[10px]">
+            <p className="text-xs font-semibold">
+              Password generated privately
+            </p>
+            <Badge
+              variant="outline"
+              className="border-amber-500/40 text-[10px]"
+            >
               Not shown to you
             </Badge>
           </div>
@@ -467,8 +483,8 @@ function DefinitionPicker({
 
       {definitions.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted-foreground">
-          The credential catalog is empty or still loading — use Custom to
-          build one from generic fields.
+          The credential catalog is empty or still loading — use Custom to build
+          one from generic fields.
         </p>
       ) : grouped.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted-foreground">
@@ -489,18 +505,21 @@ function DefinitionPicker({
                     onClick={() => onPick(def)}
                     className="min-w-0 rounded-md border border-border bg-card p-2.5 text-left transition-colors hover:border-primary/40 hover:bg-accent/40"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="min-w-0 truncate text-sm font-medium">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="min-w-0 whitespace-normal break-words text-sm font-medium">
                         {def.payload.label}
                       </p>
                       {def.payload.provider_key && (
-                        <Badge variant="outline" className="shrink-0 font-normal">
+                        <Badge
+                          variant="outline"
+                          className="shrink-0 font-normal"
+                        >
                           preset
                         </Badge>
                       )}
                     </div>
                     {def.payload.description && (
-                      <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                      <p className="mt-0.5 whitespace-normal break-words text-xs text-muted-foreground">
                         {def.payload.description}
                       </p>
                     )}
@@ -595,7 +614,9 @@ function DefinitionForm({
 
   const urls = loginUrls.map((u) => u.trim()).filter(Boolean);
   const assigning = mode === "assign";
-  const canGenerate = drafts.some((d) => d.def.field_key === GENERATED_FIELD_KEY);
+  const canGenerate = drafts.some(
+    (d) => d.def.field_key === GENERATED_FIELD_KEY,
+  );
   const generating = assigning && canGenerate && passwordMode === "generate";
   const isGeneratedField = (fieldKey: string) =>
     generating && fieldKey === GENERATED_FIELD_KEY;
@@ -743,7 +764,7 @@ function DefinitionForm({
       )}
 
       <div className="space-y-1.5">
-        <Label htmlFor="vault-create-name">Name</Label>
+        <Label htmlFor="vault-create-name">{VAULT_LABELS.credentialName}</Label>
         <Input
           id="vault-create-name"
           value={displayName}
@@ -752,7 +773,9 @@ function DefinitionForm({
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="vault-create-description">Description (optional)</Label>
+        <Label htmlFor="vault-create-description">
+          {VAULT_LABELS.description} (optional)
+        </Label>
         <Input
           id="vault-create-description"
           value={description}
@@ -828,14 +851,18 @@ function DefinitionForm({
           {urls.length > 0 && (
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="space-y-1">
-                <Label className="text-xs">When it matches</Label>
+                <Label className="text-xs">
+                  {VAULT_LABELS.browserMatchRule}
+                </Label>
                 <Select
                   value={uriMatchMode}
-                  onValueChange={(next) => setUriMatchMode(next as UriMatchMode)}
+                  onValueChange={(next) =>
+                    setUriMatchMode(next as UriMatchMode)
+                  }
                 >
                   <SelectTrigger
                     className="h-7 text-xs"
-                    aria-label="URL match rule"
+                    aria-label={VAULT_LABELS.browserMatchRule}
                   >
                     <SelectValue />
                   </SelectTrigger>
@@ -876,7 +903,12 @@ function DefinitionForm({
                 <span className="text-xs text-muted-foreground">optional</span>
               )}
               <Badge variant="outline" className="font-normal">
-                {draft.def.handling ?? "revealable"}
+                {
+                  HANDLING_LABELS[
+                    (draft.def.handling ??
+                      "revealable") as NonNullable<VaultHandling>
+                  ]
+                }
               </Badge>
             </div>
             {draft.def.description && (
@@ -893,7 +925,11 @@ function DefinitionForm({
               <>
                 <Input
                   id={`vault-field-${draft.def.field_key}`}
-                  type={(draft.def.handling ?? "revealable") === "visible" ? "text" : "password"}
+                  type={
+                    (draft.def.handling ?? "revealable") === "visible"
+                      ? "text"
+                      : "password"
+                  }
                   value={draft.value}
                   onChange={(e) => setDraft(index, { value: e.target.value })}
                   placeholder={draft.def.placeholder_example ?? ""}
@@ -906,17 +942,26 @@ function DefinitionForm({
                       htmlFor={`vault-env-${draft.def.field_key}`}
                       className="shrink-0 text-xs text-muted-foreground"
                     >
-                      Env key
+                      {VAULT_LABELS.runtimeKey}
                     </Label>
                     <Input
                       id={`vault-env-${draft.def.field_key}`}
                       value={draft.envKey}
-                      onChange={(e) => setDraft(index, { envKey: e.target.value })}
-                      placeholder="OPTIONAL_ENV_ALIAS"
+                      onChange={(e) =>
+                        setDraft(index, { envKey: e.target.value })
+                      }
+                      placeholder="DATA_FOR_SEO_EMAIL"
                       className="h-8 font-mono text-xs"
-                      aria-invalid={Boolean(draft.envKey) && !VALID_KEY_RE.test(draft.envKey)}
+                      aria-invalid={
+                        Boolean(draft.envKey) &&
+                        !VALID_KEY_RE.test(draft.envKey)
+                      }
                     />
                   </div>
+                  <p className="basis-full text-[11px] text-muted-foreground">
+                    Workflows find this value by its runtime key. Catalog
+                    credentials provide it automatically when required.
+                  </p>
                   <label
                     className="flex items-center gap-2 text-xs text-muted-foreground"
                     title={
@@ -925,11 +970,13 @@ function DefinitionForm({
                         : "Name the environment key first — a sandbox variable needs a name."
                     }
                   >
-                    Sandbox
+                    {VAULT_LABELS.sandboxAccess}
                     <Switch
                       checked={draft.inject && Boolean(draft.envKey)}
                       disabled={!draft.envKey}
-                      onCheckedChange={(checked) => setDraft(index, { inject: checked })}
+                      onCheckedChange={(checked) =>
+                        setDraft(index, { inject: checked })
+                      }
                       aria-label={`Inject ${draft.def.label} into sandboxes`}
                     />
                   </label>
@@ -951,7 +998,10 @@ function DefinitionForm({
         <div className="space-y-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
           <div className="flex items-center gap-2">
             <p className="text-xs font-semibold">Notes and other details</p>
-            <Badge variant="outline" className="border-amber-500/40 text-[10px]">
+            <Badge
+              variant="outline"
+              className="border-amber-500/40 text-[10px]"
+            >
               Not encrypted
             </Badge>
           </div>
@@ -961,7 +1011,10 @@ function DefinitionForm({
 
           {extraMetaDefs.map((def) => (
             <div key={def.field_key} className="space-y-1">
-              <Label htmlFor={`vault-meta-${def.field_key}`} className="text-xs">
+              <Label
+                htmlFor={`vault-meta-${def.field_key}`}
+                className="text-xs"
+              >
                 {def.label}
               </Label>
               <Input
@@ -1025,7 +1078,7 @@ function DefinitionForm({
 // ── Custom builder ────────────────────────────────────────────────────────
 
 interface CustomFieldDraft {
-  fieldKey: string;
+  fieldName: string;
   value: string;
   envKey: string;
   handling: VaultHandling;
@@ -1033,12 +1086,15 @@ interface CustomFieldDraft {
 }
 
 const EMPTY_CUSTOM_FIELD: CustomFieldDraft = {
-  fieldKey: "",
+  fieldName: "",
   value: "",
   envKey: "",
   handling: "revealable",
   inject: false,
 };
+
+const customFieldKey = (field: CustomFieldDraft): string =>
+  sanitizeFieldName(field.fieldName);
 
 function CustomBuilder({
   principal,
@@ -1067,7 +1123,9 @@ function CustomBuilder({
     );
 
   const assigning = mode === "assign";
-  const canGenerate = fields.some((f) => f.fieldKey === GENERATED_FIELD_KEY);
+  const canGenerate = fields.some(
+    (field) => customFieldKey(field) === GENERATED_FIELD_KEY,
+  );
   const generating = assigning && canGenerate && passwordMode === "generate";
   const isGeneratedField = (fieldKey: string) =>
     generating && fieldKey === GENERATED_FIELD_KEY;
@@ -1078,21 +1136,21 @@ function CustomBuilder({
     fields.length > 0 &&
     fields.every(
       (f) =>
-        FIELD_KEY_RE.test(f.fieldKey) &&
-        (f.value.length > 0 || isGeneratedField(f.fieldKey)) &&
+        FIELD_KEY_RE.test(customFieldKey(f)) &&
+        (f.value.length > 0 || isGeneratedField(customFieldKey(f))) &&
         (!f.envKey || VALID_KEY_RE.test(f.envKey)) &&
         // Sandbox injection without an env key can never take effect and the
         // server refuses it — don't let the dialog build that request.
         (!f.inject || Boolean(f.envKey)),
     ) &&
-    new Set(fields.map((f) => f.fieldKey)).size === fields.length &&
+    new Set(fields.map(customFieldKey)).size === fields.length &&
     (!assigning || EMAIL_RE.test(recipient));
 
   const buildFields = (): VaultFieldIn[] =>
     fields
-      .filter((f) => !isGeneratedField(f.fieldKey))
+      .filter((f) => !isGeneratedField(customFieldKey(f)))
       .map((f) => ({
-        field_key: f.fieldKey,
+        field_key: customFieldKey(f),
         value: f.value,
         env_key: f.envKey || null,
         handling: f.handling,
@@ -1147,7 +1205,7 @@ function CustomBuilder({
       )}
 
       <div className="space-y-1.5">
-        <Label htmlFor="vault-custom-name">Name</Label>
+        <Label htmlFor="vault-custom-name">{VAULT_LABELS.credentialName}</Label>
         <Input
           id="vault-custom-name"
           value={displayName}
@@ -1156,7 +1214,9 @@ function CustomBuilder({
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="vault-custom-description">Description (optional)</Label>
+        <Label htmlFor="vault-custom-description">
+          {VAULT_LABELS.description} (optional)
+        </Label>
         <Input
           id="vault-custom-description"
           value={description}
@@ -1167,26 +1227,38 @@ function CustomBuilder({
 
       <div className="space-y-3">
         {fields.map((field, index) => (
-          <div key={index} className="space-y-2 rounded-md border border-border p-3">
+          <div
+            key={index}
+            className="space-y-2 rounded-md border border-border p-3"
+          >
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="space-y-1">
-                <Label className="text-xs">Field key</Label>
+                <Label className="text-xs">{VAULT_LABELS.fieldName}</Label>
                 <Input
-                  value={field.fieldKey}
+                  value={field.fieldName}
                   onChange={(e) =>
                     setField(index, {
-                      fieldKey: e.target.value.toLowerCase(),
+                      fieldName: e.target.value,
                     })
                   }
-                  placeholder="api_key"
-                  className="h-8 font-mono text-xs"
+                  placeholder="API login"
+                  className="h-8 text-xs"
                   aria-invalid={
-                    Boolean(field.fieldKey) && !FIELD_KEY_RE.test(field.fieldKey)
+                    Boolean(field.fieldName) &&
+                    !FIELD_KEY_RE.test(customFieldKey(field))
                   }
                 />
+                {field.fieldName && (
+                  <p className="whitespace-normal break-all text-[11px] text-muted-foreground">
+                    {VAULT_LABELS.internalFieldId}:{" "}
+                    <code className="font-mono">
+                      {customFieldKey(field) || "invalid"}
+                    </code>
+                  </p>
+                )}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Env key (optional)</Label>
+                <Label className="text-xs">{VAULT_LABELS.runtimeKey}</Label>
                 <Input
                   value={field.envKey}
                   onChange={(e) => setField(index, { envKey: e.target.value })}
@@ -1200,22 +1272,27 @@ function CustomBuilder({
                       setField(index, {
                         envKey: parsed.key,
                         value: parsed.value,
-                        fieldKey:
-                          field.fieldKey ||
-                          parsed.key.toLowerCase().replace(/^[^a-z]+/, "") ||
+                        fieldName:
+                          field.fieldName ||
+                          parsed.key.replaceAll("_", " ") ||
                           "value",
                       });
                     }
                   }}
-                  placeholder="MY_API_KEY"
+                  placeholder="DATA_FOR_SEO_EMAIL"
                   className="h-8 font-mono text-xs"
-                  aria-invalid={Boolean(field.envKey) && !VALID_KEY_RE.test(field.envKey)}
+                  aria-invalid={
+                    Boolean(field.envKey) && !VALID_KEY_RE.test(field.envKey)
+                  }
                 />
+                <p className="text-[11px] text-muted-foreground">
+                  Required when a workflow finds this value by name.
+                </p>
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Value</Label>
-              {isGeneratedField(field.fieldKey) ? (
+              <Label className="text-xs">{VAULT_LABELS.value}</Label>
+              {isGeneratedField(customFieldKey(field)) ? (
                 <p className="rounded border border-dashed border-border p-2 text-xs text-muted-foreground">
                   Matrx will generate this value on the server and store it on
                   the recipient&apos;s item. You will never see it.
@@ -1239,13 +1316,22 @@ function CustomBuilder({
                     setField(index, { handling: next as VaultHandling })
                   }
                 >
-                  <SelectTrigger className="h-8 w-32 text-xs" aria-label="Handling">
+                  <SelectTrigger
+                    className="h-auto min-h-8 min-w-56 whitespace-normal text-left text-xs"
+                    aria-label={VAULT_LABELS.valueAccess}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="visible">Visible</SelectItem>
-                    <SelectItem value="revealable">Revealable</SelectItem>
-                    <SelectItem value="sealed">Sealed</SelectItem>
+                    <SelectItem value="visible">
+                      {HANDLING_LABELS.visible}
+                    </SelectItem>
+                    <SelectItem value="revealable">
+                      {HANDLING_LABELS.revealable}
+                    </SelectItem>
+                    <SelectItem value="sealed">
+                      {HANDLING_LABELS.sealed}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <label
@@ -1256,11 +1342,13 @@ function CustomBuilder({
                       : "Name the environment key first — a sandbox variable needs a name."
                   }
                 >
-                  Sandbox
+                  {VAULT_LABELS.sandboxAccess}
                   <Switch
                     checked={field.inject && Boolean(field.envKey)}
                     disabled={!field.envKey}
-                    onCheckedChange={(checked) => setField(index, { inject: checked })}
+                    onCheckedChange={(checked) =>
+                      setField(index, { inject: checked })
+                    }
                     aria-label="Inject into sandboxes"
                   />
                 </label>
@@ -1272,7 +1360,9 @@ function CustomBuilder({
                   size="icon"
                   className="h-7 w-7"
                   onClick={() =>
-                    setFields((current) => current.filter((_, i) => i !== index))
+                    setFields((current) =>
+                      current.filter((_, i) => i !== index),
+                    )
                   }
                   aria-label="Remove field"
                 >
@@ -1289,7 +1379,9 @@ function CustomBuilder({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => setFields((current) => [...current, { ...EMPTY_CUSTOM_FIELD }])}
+          onClick={() =>
+            setFields((current) => [...current, { ...EMPTY_CUSTOM_FIELD }])
+          }
         >
           <Plus className="mr-2 h-4 w-4" />
           Add field

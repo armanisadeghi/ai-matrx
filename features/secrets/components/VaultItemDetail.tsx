@@ -22,8 +22,6 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
-  RotateCcw,
-  Settings2,
   Trash2,
   TriangleAlert,
   UserPlus,
@@ -54,8 +52,13 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
 import { useUserOrganizations } from "@/features/organizations/hooks";
+import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 
-import { useVaultAudit, useVaultGrants, type VaultActions } from "../vault-hooks";
+import {
+  useVaultAudit,
+  useVaultGrants,
+  type VaultActions,
+} from "../vault-hooks";
 import { resolveVaultFields } from "../vault-service";
 import {
   envAliasIsRedundant,
@@ -70,6 +73,8 @@ import {
   PROMOTABLE_URL_FIELD_KEYS,
   URI_MATCH_MODE_LABELS,
   VALID_KEY_RE,
+  VAULT_LABELS,
+  WEBSITE_LOGIN_DEFINITION_KEY,
   type CredentialDefinition,
   type UriMatchMode,
   type VaultAccessMode,
@@ -88,16 +93,7 @@ interface VaultItemDetailProps {
   onClose: () => void;
 }
 
-type Panel =
-  | "none"
-  | "share"
-  | "give"
-  | "transfer"
-  | "fork"
-  | "rotate"
-  | "add-field"
-  | "audit"
-  | "destination";
+type Panel = "none" | "share" | "give" | "transfer" | "fork" | "audit";
 
 export function VaultItemDetail({
   item,
@@ -111,8 +107,11 @@ export function VaultItemDetail({
   const definition = definitions.get(item.definition_key);
   const [panel, setPanel] = useState<Panel>("none");
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [renaming, setRenaming] = useState(false);
+  const [editingCredential, setEditingCredential] = useState(false);
   const [nameDraft, setNameDraft] = useState(item.display_name);
+  const [descriptionDraft, setDescriptionDraft] = useState(
+    item.description ?? "",
+  );
 
   const fieldLabels = new Map<string, string>(
     (definition?.payload.fields ?? []).map((f) => [f.field_key, f.label]),
@@ -123,7 +122,9 @@ export function VaultItemDetail({
   const identityField = identityFieldOf(item);
   const secretField = primarySecretFieldOf(item);
   const primaryIds = new Set(
-    [identityField?.id, secretField?.id].filter((id): id is string => Boolean(id)),
+    [identityField?.id, secretField?.id].filter((id): id is string =>
+      Boolean(id),
+    ),
   );
   const otherFields = item.fields.filter((f) => !primaryIds.has(f.id));
 
@@ -136,6 +137,7 @@ export function VaultItemDetail({
       emphasis={emphasis}
       busy={busy}
       actions={actions}
+      editMode={editingCredential}
     />
   );
 
@@ -169,85 +171,112 @@ export function VaultItemDetail({
 
   return (
     <div className="space-y-3">
-      {/* Header metadata — the name and type live in the dialog title, so this
-          row carries only what the title cannot: provenance and lifecycle. */}
-      {renaming ? (
-        <div className="flex items-center gap-2">
-          <Input
-            value={nameDraft}
-            onChange={(e) => setNameDraft(e.target.value)}
-            className="h-9"
-            autoFocus
-          />
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <dl className="grid min-w-0 flex-1 gap-x-4 gap-y-2 text-xs sm:grid-cols-2">
+          <div>
+            <dt className="font-medium text-muted-foreground">
+              {VAULT_LABELS.credentialType}
+            </dt>
+            <dd className="mt-0.5 whitespace-normal break-words text-foreground">
+              {definition?.payload.label ?? item.definition_key}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-medium text-muted-foreground">Status</dt>
+            <dd className="mt-0.5 capitalize text-foreground">
+              {item.status.replaceAll("_", " ")}
+            </dd>
+          </div>
+          {item.organization_id && (
+            <div>
+              <dt className="font-medium text-muted-foreground">
+                {VAULT_LABELS.access}
+              </dt>
+              <dd className="mt-0.5 text-foreground">
+                {item.access_mode === "all_members"
+                  ? "All organization members"
+                  : "Only selected members"}
+              </dd>
+            </div>
+          )}
+          {item.description && !editingCredential && (
+            <div className="sm:col-span-2">
+              <dt className="font-medium text-muted-foreground">
+                {VAULT_LABELS.description}
+              </dt>
+              <dd className="mt-0.5 whitespace-pre-wrap break-words text-foreground">
+                {item.description}
+              </dd>
+            </div>
+          )}
+        </dl>
+        {caps.can_edit && (
           <Button
-            size="icon"
-            className="h-9 w-9 shrink-0"
-            disabled={busy || !nameDraft.trim()}
-            onClick={async () => {
-              await actions.updateItem(item.id, { display_name: nameDraft.trim() });
-              setRenaming(false);
-            }}
-            aria-label="Save name"
-          >
-            <Check className="h-4 w-4" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-9 w-9 shrink-0"
+            size="sm"
+            variant={editingCredential ? "default" : "outline"}
+            className="h-8 shrink-0"
             onClick={() => {
               setNameDraft(item.display_name);
-              setRenaming(false);
+              setDescriptionDraft(item.description ?? "");
+              setEditingCredential((current) => !current);
             }}
-            aria-label="Cancel rename"
           >
-            <X className="h-4 w-4" />
+            {editingCredential ? (
+              <Check className="mr-1.5 h-3.5 w-3.5" />
+            ) : (
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            {editingCredential ? "Done editing" : "Edit credential"}
           </Button>
-        </div>
-      ) : (
-        (item.provider_key ||
-          item.status !== "active" ||
-          item.organization_id ||
-          item.description ||
-          caps.can_edit) && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            {item.provider_key && (
-              <Badge variant="outline" className="font-normal">
-                {item.provider_key}
-              </Badge>
-            )}
-            {item.status !== "active" && (
-              <Badge
-                variant="outline"
-                className="border-warning/40 font-normal capitalize text-warning"
-              >
-                {item.status.replaceAll("_", " ")}
-              </Badge>
-            )}
-            {item.organization_id && (
-              <Badge variant="outline" className="gap-1 font-normal">
-                <Building2 className="h-3 w-3" />
-                {item.access_mode === "all_members" ? "All members" : "Restricted"}
-              </Badge>
-            )}
-            {item.description && (
-              <span className="min-w-0 truncate text-xs text-muted-foreground">
-                {item.description}
-              </span>
-            )}
-            {caps.can_edit && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="ml-auto h-7 px-2 text-xs text-muted-foreground"
-                onClick={() => setRenaming(true)}
-              >
-                <Pencil className="mr-1.5 h-3 w-3" />
-                Rename
-              </Button>
-            )}
+        )}
+      </div>
+
+      {editingCredential && (
+        <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+          <p className="text-sm font-semibold">Credential details</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor={`credential-name-${item.id}`}>
+                {VAULT_LABELS.credentialName}
+              </Label>
+              <Input
+                id={`credential-name-${item.id}`}
+                value={nameDraft}
+                onChange={(event) => setNameDraft(event.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor={`credential-description-${item.id}`}>
+                {VAULT_LABELS.description}
+              </Label>
+              <Input
+                id={`credential-description-${item.id}`}
+                value={descriptionDraft}
+                onChange={(event) => setDescriptionDraft(event.target.value)}
+                placeholder="What is this credential used for?"
+              />
+            </div>
           </div>
-        )
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              disabled={
+                busy ||
+                !nameDraft.trim() ||
+                (nameDraft.trim() === item.display_name &&
+                  descriptionDraft.trim() === (item.description ?? ""))
+              }
+              onClick={() =>
+                void actions.updateItem(item.id, {
+                  display_name: nameDraft.trim(),
+                  description: descriptionDraft.trim() || null,
+                })
+              }
+            >
+              Save credential details
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* The credential itself — always first, always the loudest thing here */}
@@ -271,10 +300,22 @@ export function VaultItemDetail({
           )}
         </div>
       )}
+      {editingCredential && (
+        <AddFieldPanel
+          busy={busy}
+          onAdd={(field) => actions.addField(item.id, field)}
+        />
+      )}
 
       {/* Destination — after the credential, because for an API key it is a
           footnote and only for a website login is it part of the identity. */}
-      <DestinationSection item={item} busy={busy} actions={actions} caps={caps} />
+      <DestinationSection
+        item={item}
+        busy={busy}
+        actions={actions}
+        caps={caps}
+        editMode={editingCredential}
+      />
 
       {/* Notes and other details — deliberately plaintext, loudly labelled */}
       <NotEncryptedSection
@@ -282,29 +323,12 @@ export function VaultItemDetail({
         busy={busy}
         actions={actions}
         canEdit={caps.can_edit === true}
+        editMode={editingCredential}
       />
 
       {/* Action bar — the three everyday actions stay in reach; the rare and
           irreversible ones live one deliberate click away. */}
       <div className="flex flex-wrap items-center gap-1 border-t border-border pt-3">
-        {caps.can_edit && (
-          <ActionToggle
-            panel="add-field"
-            current={panel}
-            setPanel={setPanel}
-            icon={Plus}
-            label="Add field"
-          />
-        )}
-        {caps.can_edit && item.fields.length > 0 && (
-          <ActionToggle
-            panel="rotate"
-            current={panel}
-            setPanel={setPanel}
-            icon={RotateCcw}
-            label="Rotate"
-          />
-        )}
         {caps.can_manage && (
           <ActionToggle
             panel="share"
@@ -332,43 +356,20 @@ export function VaultItemDetail({
                   {label}
                 </DropdownMenuItem>
               ))}
+              {caps.can_manage && (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onSelect={() => setConfirmDelete(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete credential
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-        {caps.can_manage && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="ml-auto h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            disabled={busy}
-            onClick={() => setConfirmDelete(true)}
-          >
-            <Trash2 className="mr-1.5 h-4 w-4" />
-            Delete
-          </Button>
-        )}
       </div>
 
-      {panel === "add-field" && (
-        <AddFieldPanel
-          busy={busy}
-          onAdd={async (field) => {
-            await actions.addField(item.id, field);
-            setPanel("none");
-          }}
-        />
-      )}
-      {panel === "rotate" && (
-        <RotatePanel
-          item={item}
-          fieldLabels={fieldLabels}
-          busy={busy}
-          onRotate={async (values) => {
-            await actions.rotate(item.id, values);
-            setPanel("none");
-          }}
-        />
-      )}
       {panel === "share" && (
         <SharePanel item={item} busy={busy} actions={actions} />
       )}
@@ -467,6 +468,7 @@ function FieldRow({
   emphasis,
   busy,
   actions,
+  editMode,
 }: {
   item: VaultItem;
   field: VaultField;
@@ -475,17 +477,20 @@ function FieldRow({
   emphasis: boolean;
   busy: boolean;
   actions: VaultActions;
+  editMode: boolean;
 }) {
   const caps = item.capabilities;
-  const [editing, setEditing] = useState(false);
   const [valueDraft, setValueDraft] = useState("");
-  const [metaOpen, setMetaOpen] = useState(false);
   const [envDraft, setEnvDraft] = useState(field.env_key ?? "");
   const [descDraft, setDescDraft] = useState(field.description ?? "");
   const [confirmSeal, setConfirmSeal] = useState(false);
 
   const displayLabel = fieldLabelOf(field, label);
   const showEnvAlias = !envAliasIsRedundant(field);
+  const fieldTextChanged =
+    Boolean(valueDraft) ||
+    envDraft !== (field.env_key ?? "") ||
+    descDraft !== (field.description ?? "");
 
   return (
     <div
@@ -496,205 +501,154 @@ function FieldRow({
           : "border-border/70 bg-card/50 px-3 py-2",
       )}
     >
-      <div className="flex min-w-0 items-center gap-1.5">
-        <span
-          className={cn(
-            "min-w-0 truncate font-medium",
-            emphasis ? "text-[13px] text-foreground" : "text-xs text-muted-foreground",
-          )}
-        >
+      <dl
+        className={cn(
+          "grid min-w-0 gap-x-4 gap-y-2 text-xs sm:grid-cols-[8rem_minmax(0,1fr)]",
+          emphasis && "text-[13px]",
+        )}
+      >
+        <dt className="font-medium text-muted-foreground">
+          {VAULT_LABELS.fieldName}
+        </dt>
+        <dd className="flex min-w-0 flex-wrap items-center gap-1.5 whitespace-normal break-words text-foreground">
           {displayLabel}
-        </span>
+          {!field.editable && (
+            <Badge variant="outline" className="font-normal">
+              Managed
+            </Badge>
+          )}
+          {!field.is_active && (
+            <Badge variant="outline" className="font-normal">
+              Inactive
+            </Badge>
+          )}
+        </dd>
         {showEnvAlias && (
-          <code className="shrink-0 rounded bg-muted px-1 py-px font-mono text-[11px] text-muted-foreground">
-            {field.env_key}
-          </code>
+          <>
+            <dt className="font-medium text-muted-foreground">
+              {VAULT_LABELS.runtimeKey}
+            </dt>
+            <dd className="min-w-0 whitespace-normal break-all text-foreground">
+              <code className="font-mono">{field.env_key}</code>
+            </dd>
+          </>
         )}
-        {/* `revealable` is the default and needs no chip — only the states
-            that change what a human may do with the value are called out. */}
-        {field.handling === "visible" && (
-          <Badge variant="outline" className="shrink-0 font-normal">
-            {HANDLING_LABELS.visible}
-          </Badge>
-        )}
-        {!field.editable && (
-          <Badge variant="outline" className="shrink-0 font-normal">
-            Managed
-          </Badge>
-        )}
-        {field.inject_into_sandbox && (
-          <Badge variant="outline" className="shrink-0 font-normal">
-            Sandbox
-          </Badge>
-        )}
-
-        <span className="ml-auto flex shrink-0 items-center gap-0.5">
-          {caps.can_edit && field.editable && (
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
-              onClick={() => setEditing((v) => !v)}
-              aria-label={`Replace ${displayLabel}`}
-              title="Replace value"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-          )}
-          {caps.can_edit && (
-            <Button
-              size="icon"
-              variant="ghost"
-              className={cn(
-                "h-7 w-7 text-muted-foreground hover:text-foreground",
-                metaOpen && "bg-accent text-accent-foreground",
-              )}
-              aria-pressed={metaOpen}
-              onClick={() => setMetaOpen((v) => !v)}
-              aria-label={`Settings for ${displayLabel}`}
-              title="Field settings"
-            >
-              <Settings2 className="h-3.5 w-3.5" />
-            </Button>
-          )}
-          {caps.can_edit && (
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive"
-              disabled={busy}
-              onClick={() => void actions.deleteField(item.id, field.id)}
-              aria-label={`Delete ${displayLabel}`}
-              title="Delete field"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          )}
-        </span>
-      </div>
-
-      {/* THE control — identical here, on the list card, and anywhere else a
-          value is shown. Masked until asked; sealed shows a lock and nothing. */}
-      <SecretValue
-        item={item}
-        field={field}
-        showCountdown
-        className={cn("mt-0.5", emphasis && "mt-1")}
-      />
-
-      {field.description && (
-        <p className="mt-1 text-xs text-muted-foreground">{field.description}</p>
-      )}
-
-      {editing && (
-        <div className="mt-2 flex items-center gap-2">
-          <Input
-            type="password"
-            value={valueDraft}
-            onChange={(e) => setValueDraft(e.target.value)}
-            placeholder="New value"
-            className="h-9 font-mono text-sm"
-            autoComplete="off"
+        <dt className="font-medium text-muted-foreground">
+          {VAULT_LABELS.value}
+        </dt>
+        <dd className="min-w-0">
+          {/* THE control — identical here, on the list card, and anywhere
+              else a value is shown. Hidden until asked; sealed stays locked. */}
+          <SecretValue
+            item={item}
+            field={field}
+            showCountdown
+            className="min-w-0"
           />
-          <Button
-            size="sm"
-            className="h-9"
-            disabled={busy || !valueDraft}
-            onClick={async () => {
-              await actions.updateFieldValue(item.id, field.id, valueDraft);
-              setValueDraft("");
-              setEditing(false);
-            }}
-          >
-            Save
-          </Button>
-        </div>
-      )}
+        </dd>
+        <dt className="font-medium text-muted-foreground">
+          {VAULT_LABELS.sandboxAccess}
+        </dt>
+        <dd className="text-foreground">
+          {field.inject_into_sandbox ? "Enabled" : "Disabled"}
+        </dd>
+        {field.description && (
+          <>
+            <dt className="font-medium text-muted-foreground">
+              {VAULT_LABELS.description}
+            </dt>
+            <dd className="whitespace-pre-wrap break-words text-foreground">
+              {field.description}
+            </dd>
+          </>
+        )}
+      </dl>
 
-      {metaOpen && caps.can_edit && (
-        <div className="mt-2 space-y-2 rounded-md bg-muted/40 p-2.5">
+      {editMode && caps.can_edit && (
+        <div className="mt-3 space-y-3 rounded-md border border-border bg-muted/40 p-3">
+          <p className="text-xs font-semibold">Edit {displayLabel}</p>
+          {field.editable && (
+            <div className="space-y-1">
+              <Label htmlFor={`replacement-value-${field.id}`}>
+                Replace stored value
+              </Label>
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  id={`replacement-value-${field.id}`}
+                  type="password"
+                  value={valueDraft}
+                  onChange={(event) => setValueDraft(event.target.value)}
+                  placeholder="Enter the complete new value"
+                  className="min-w-48 flex-1 font-mono text-sm"
+                  autoComplete="off"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                The current value is never placed into an editable input.
+              </p>
+            </div>
+          )}
           {/* A sandbox env is a NAME->value map: with no env key the value has
               nowhere to land, so injection is impossible rather than merely
               unconfigured. The server refuses that state outright (422); the
               switch is disabled here so the user is pointed at the fix — set
               an env key below — instead of hitting an error. Flipping this on
               used to "succeed" and silently do nothing forever. */}
-          <label
-            className="flex items-center justify-between gap-2 text-xs text-muted-foreground"
-            title={
-              field.env_key
-                ? undefined
-                : "Set an env key below first — a sandbox variable needs a name."
-            }
-          >
-            Inject into sandboxes{field.env_key ? "" : " (set an env key first)"}
-            <Switch
-              checked={field.inject_into_sandbox}
-              disabled={busy || !field.env_key}
-              onCheckedChange={(checked) =>
-                void actions.setInject(item.id, field.id, checked)
-              }
-              aria-label="Inject into sandboxes"
+          <div className="min-w-0 space-y-1">
+            <Label className="text-xs">{VAULT_LABELS.runtimeKey}</Label>
+            <Input
+              value={envDraft}
+              onChange={(e) => setEnvDraft(e.target.value)}
+              placeholder="DATA_FOR_SEO_EMAIL"
+              className="h-8 font-mono text-xs"
+              aria-invalid={Boolean(envDraft) && !VALID_KEY_RE.test(envDraft)}
             />
-          </label>
-          <div className="flex items-end gap-2">
-            <div className="min-w-0 flex-1 space-y-1">
-              <Label className="text-xs">Env key</Label>
-              <Input
-                value={envDraft}
-                onChange={(e) => setEnvDraft(e.target.value)}
-                placeholder="MY_API_KEY"
-                className="h-8 font-mono text-xs"
-                aria-invalid={Boolean(envDraft) && !VALID_KEY_RE.test(envDraft)}
-              />
-            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Workflows find this value by its runtime key. Leave it empty only
+            when the credential is stored for manual viewing and copying.
+          </p>
+          <div className="min-w-0 space-y-1">
+            <Label className="text-xs">{VAULT_LABELS.description}</Label>
+            <Input
+              value={descDraft}
+              onChange={(e) => setDescDraft(e.target.value)}
+              placeholder="What is this field?"
+              className="h-8 text-xs"
+            />
+          </div>
+          <div className="flex justify-end">
             <Button
               size="sm"
-              variant="outline"
               disabled={
                 busy ||
-                (Boolean(envDraft) && !VALID_KEY_RE.test(envDraft)) ||
-                envDraft === (field.env_key ?? "")
+                !fieldTextChanged ||
+                (Boolean(envDraft) && !VALID_KEY_RE.test(envDraft))
               }
-              onClick={() =>
-                void actions.updateFieldMeta(
-                  item.id,
-                  field.id,
-                  envDraft
-                    ? { env_key: envDraft }
-                    : { clear_env_key: true },
-                )
-              }
+              onClick={async () => {
+                if (valueDraft) {
+                  await actions.updateFieldValue(item.id, field.id, valueDraft);
+                  setValueDraft("");
+                }
+                if (
+                  envDraft !== (field.env_key ?? "") ||
+                  descDraft !== (field.description ?? "")
+                ) {
+                  await actions.updateFieldMeta(item.id, field.id, {
+                    ...(envDraft
+                      ? { env_key: envDraft }
+                      : { clear_env_key: true }),
+                    description: descDraft || null,
+                  });
+                }
+              }}
             >
-              {envDraft ? "Save" : "Clear"}
+              Save field changes
             </Button>
           </div>
-          <div className="flex items-end gap-2">
-            <div className="min-w-0 flex-1 space-y-1">
-              <Label className="text-xs">Description</Label>
-              <Input
-                value={descDraft}
-                onChange={(e) => setDescDraft(e.target.value)}
-                placeholder="What is this field?"
-                className="h-8 text-xs"
-              />
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={busy || descDraft === (field.description ?? "")}
-              onClick={() =>
-                void actions.updateFieldMeta(item.id, field.id, {
-                  description: descDraft || null,
-                })
-              }
-            >
-              Save
-            </Button>
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
-              Active
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="flex items-center justify-between gap-2 rounded border border-border bg-background p-2 text-xs">
+              <span>{VAULT_LABELS.fieldStatus}</span>
               <Switch
                 checked={field.is_active}
                 disabled={busy}
@@ -703,17 +657,42 @@ function FieldRow({
                     is_active: checked,
                   })
                 }
-                aria-label="Field active"
+                aria-label={VAULT_LABELS.fieldStatus}
               />
             </label>
+            <label
+              className="flex items-center justify-between gap-2 rounded border border-border bg-background p-2 text-xs"
+              title={
+                field.env_key
+                  ? undefined
+                  : "Set a runtime key first — a sandbox variable needs a name."
+              }
+            >
+              <span>
+                {VAULT_LABELS.sandboxAccess}
+                {field.env_key ? "" : " — runtime key required"}
+              </span>
+              <Switch
+                checked={field.inject_into_sandbox}
+                disabled={busy || !field.env_key}
+                onCheckedChange={(checked) =>
+                  void actions.setInject(item.id, field.id, checked)
+                }
+                aria-label={VAULT_LABELS.sandboxAccess}
+              />
+            </label>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
             {field.handling === "sealed" ? (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1 whitespace-normal text-xs text-muted-foreground">
                 <Lock className="h-3 w-3" />
-                Sealed — can never be shown to a human again
+                {HANDLING_LABELS.sealed}
               </span>
             ) : (
-              <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground">Handling</Label>
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                <Label className="text-xs text-muted-foreground">
+                  {VAULT_LABELS.valueAccess}
+                </Label>
                 <Select
                   value={field.handling}
                   onValueChange={(next) => {
@@ -727,17 +706,37 @@ function FieldRow({
                     });
                   }}
                 >
-                  <SelectTrigger className="h-8 w-32 text-xs" aria-label="Handling">
+                  <SelectTrigger
+                    className="h-auto min-h-8 min-w-56 flex-1 whitespace-normal text-left text-xs"
+                    aria-label={VAULT_LABELS.valueAccess}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="visible">Visible</SelectItem>
-                    <SelectItem value="revealable">Revealable</SelectItem>
-                    <SelectItem value="sealed">Sealed</SelectItem>
+                    <SelectItem value="visible">
+                      {HANDLING_LABELS.visible}
+                    </SelectItem>
+                    <SelectItem value="revealable">
+                      {HANDLING_LABELS.revealable}
+                    </SelectItem>
+                    <SelectItem value="sealed">
+                      {HANDLING_LABELS.sealed}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             )}
+          </div>
+          <div className="flex justify-end border-t border-border pt-3">
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={busy}
+              onClick={() => void actions.deleteField(item.id, field.id)}
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              Delete field
+            </Button>
           </div>
         </div>
       )}
@@ -750,9 +749,9 @@ function FieldRow({
         title="Seal this value"
         description={
           <>
-            Sealing <b>{field.env_key ?? field.field_key}</b> cannot be undone
-            — sealed values can never be shown to a human again. Trusted
-            server execution can still use them.
+            Sealing <b>{field.env_key ?? field.field_key}</b> cannot be undone —
+            sealed values can never be shown to a human again. Trusted server
+            execution can still use them.
           </>
         }
         confirmLabel="Seal permanently"
@@ -788,11 +787,12 @@ function AddFieldPanel({
     description: string | null;
   }) => Promise<void>;
 }) {
-  const [fieldKey, setFieldKey] = useState("");
+  const [fieldName, setFieldName] = useState("");
   const [value, setValue] = useState("");
   const [envKey, setEnvKey] = useState("");
   const [handling, setHandling] = useState<VaultHandling>("revealable");
   const [inject, setInject] = useState(false);
+  const fieldKey = sanitizeFieldName(fieldName);
 
   const valid =
     FIELD_KEY_RE.test(fieldKey) &&
@@ -803,28 +803,37 @@ function AddFieldPanel({
     <div className="space-y-2 rounded-md bg-muted/40 p-3">
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="space-y-1">
-          <Label className="text-xs">Field key</Label>
+          <Label className="text-xs">{VAULT_LABELS.fieldName}</Label>
           <Input
-            value={fieldKey}
-            onChange={(e) => setFieldKey(e.target.value.toLowerCase())}
-            placeholder="api_key"
-            className="h-8 font-mono text-xs"
-            aria-invalid={Boolean(fieldKey) && !FIELD_KEY_RE.test(fieldKey)}
+            value={fieldName}
+            onChange={(e) => setFieldName(e.target.value)}
+            placeholder="API login"
+            className="h-8 text-xs"
+            aria-invalid={Boolean(fieldName) && !FIELD_KEY_RE.test(fieldKey)}
           />
+          {fieldName && (
+            <p className="whitespace-normal break-all text-[11px] text-muted-foreground">
+              {VAULT_LABELS.internalFieldId}:{" "}
+              <code className="font-mono">{fieldKey || "invalid"}</code>
+            </p>
+          )}
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">Env key (optional)</Label>
+          <Label className="text-xs">{VAULT_LABELS.runtimeKey}</Label>
           <Input
             value={envKey}
             onChange={(e) => setEnvKey(e.target.value)}
-            placeholder="MY_API_KEY"
+            placeholder="DATA_FOR_SEO_EMAIL"
             className="h-8 font-mono text-xs"
             aria-invalid={Boolean(envKey) && !VALID_KEY_RE.test(envKey)}
           />
+          <p className="text-[11px] text-muted-foreground">
+            Required when a workflow finds this value by name.
+          </p>
         </div>
       </div>
       <div className="space-y-1">
-        <Label className="text-xs">Value</Label>
+        <Label className="text-xs">{VAULT_LABELS.value}</Label>
         <Input
           type={handling === "visible" ? "text" : "password"}
           value={value}
@@ -836,14 +845,22 @@ function AddFieldPanel({
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
-          <Select value={handling} onValueChange={(v) => setHandling(v as VaultHandling)}>
-            <SelectTrigger className="h-8 w-32 text-xs" aria-label="Handling">
+          <Select
+            value={handling}
+            onValueChange={(v) => setHandling(v as VaultHandling)}
+          >
+            <SelectTrigger
+              className="h-auto min-h-8 min-w-56 whitespace-normal text-left text-xs"
+              aria-label={VAULT_LABELS.valueAccess}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="visible">Visible</SelectItem>
-              <SelectItem value="revealable">Revealable</SelectItem>
-              <SelectItem value="sealed">Sealed</SelectItem>
+              <SelectItem value="visible">{HANDLING_LABELS.visible}</SelectItem>
+              <SelectItem value="revealable">
+                {HANDLING_LABELS.revealable}
+              </SelectItem>
+              <SelectItem value="sealed">{HANDLING_LABELS.sealed}</SelectItem>
             </SelectContent>
           </Select>
           <label
@@ -854,7 +871,7 @@ function AddFieldPanel({
                 : "Sandbox injection needs an env key — a container variable must have a name."
             }
           >
-            Sandbox
+            {VAULT_LABELS.sandboxAccess}
             <Switch
               checked={inject && Boolean(envKey)}
               disabled={!envKey}
@@ -880,67 +897,12 @@ function AddFieldPanel({
             })
           }
         >
-          {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-          Add field
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// ── Rotate ────────────────────────────────────────────────────────────────
-
-function RotatePanel({
-  item,
-  fieldLabels,
-  busy,
-  onRotate,
-}: {
-  item: VaultItem;
-  fieldLabels: Map<string, string>;
-  busy: boolean;
-  onRotate: (values: Record<string, string>) => Promise<void>;
-}) {
-  const editable = item.fields.filter((f) => f.editable);
-  const [values, setValues] = useState<Record<string, string>>({});
-  const filled = Object.entries(values).filter(([, v]) => v.length > 0);
-
-  return (
-    <div className="space-y-2 rounded-md bg-muted/40 p-3">
-      <p className="text-xs text-muted-foreground">
-        Enter new values for the fields you are rotating — untouched fields
-        keep their current value. Every consumer of this credential picks up
-        the rotation immediately.
-      </p>
-      {editable.map((field) => (
-        <div key={field.id} className="space-y-1">
-          <Label className="text-xs">
-            {fieldLabels.get(field.field_key) ?? field.env_key ?? field.field_key}
-          </Label>
-          <Input
-            type="password"
-            value={values[field.field_key] ?? ""}
-            onChange={(e) =>
-              setValues((current) => ({ ...current, [field.field_key]: e.target.value }))
-            }
-            placeholder={field.value_hint || "New value"}
-            className="h-8 font-mono text-xs"
-            autoComplete="off"
-          />
-        </div>
-      ))}
-      <div className="flex justify-end">
-        <Button
-          size="sm"
-          disabled={busy || filled.length === 0}
-          onClick={() => void onRotate(Object.fromEntries(filled))}
-        >
           {busy ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <RotateCcw className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 h-4 w-4" />
           )}
-          Rotate {filled.length > 0 ? `${filled.length} field${filled.length === 1 ? "" : "s"}` : ""}
+          Add field
         </Button>
       </div>
     </div>
@@ -961,11 +923,13 @@ function DestinationSection({
   busy,
   actions,
   caps,
+  editMode,
 }: {
   item: VaultItem;
   busy: boolean;
   actions: VaultActions;
   caps: VaultItem["capabilities"];
+  editMode: boolean;
 }) {
   const [adding, setAdding] = useState(false);
   const [urlDraft, setUrlDraft] = useState("");
@@ -1016,39 +980,29 @@ function DestinationSection({
       await actions.updateItem(item.id, {
         login_urls: [...item.login_urls, url],
       });
-      toast.success("Login URL added — this item can now be matched in the browser");
+      toast.success(
+        "Login URL added — this item can now be matched in the browser",
+      );
     } finally {
       setPromoting(null);
     }
   };
 
   const hasDestination = item.login_urls.length > 0;
-  if (!hasDestination && !caps.can_edit && promotable.length === 0) return null;
-
-  // An API key or an env value has no destination and never will. Showing it a
-  // full card — above the credential, as this used to — buried the thing the
-  // user actually opened the item for. Until there IS a destination, it is one
-  // quiet line.
-  if (!hasDestination && promotable.length === 0 && !adding) {
-    return (
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => setAdding(true)}
-        className="flex w-full items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground disabled:opacity-60"
-      >
-        <Globe className="h-3.5 w-3.5 shrink-0" />
-        Add a login URL to let Matrx fill this login in a browser
-        <Plus className="ml-auto h-3.5 w-3.5 shrink-0" />
-      </button>
-    );
-  }
+  const supportsDestination =
+    item.definition_key === WEBSITE_LOGIN_DEFINITION_KEY ||
+    hasDestination ||
+    promotable.length > 0;
+  // Website destinations do not belong on API keys or environment values.
+  // The definition decides whether this section exists; users no longer have
+  // to interpret a generic credential editor that mixes both concepts.
+  if (!supportsDestination) return null;
 
   return (
     <div className="space-y-2 rounded-lg border border-border bg-card p-3">
       <div className="flex items-center gap-2">
         <Globe className="h-3.5 w-3.5 text-primary" />
-        <p className="text-xs font-semibold">Destination</p>
+        <p className="text-xs font-semibold">Website destination</p>
       </div>
 
       {hasDestination ? (
@@ -1058,8 +1012,10 @@ function DestinationSection({
               key={url}
               className="flex items-center gap-2 rounded border border-border bg-background px-2 py-1 text-xs"
             >
-              <span className="min-w-0 flex-1 truncate font-mono">{url}</span>
-              {caps.can_edit && (
+              <span className="min-w-0 flex-1 whitespace-normal break-all font-mono">
+                {url}
+              </span>
+              {editMode && caps.can_edit && (
                 <button
                   type="button"
                   className="shrink-0 text-muted-foreground hover:text-destructive"
@@ -1080,7 +1036,28 @@ function DestinationSection({
         </p>
       )}
 
-      {caps.can_edit && (
+      {!editMode && hasDestination && (
+        <dl className="grid gap-2 text-xs sm:grid-cols-2">
+          <div>
+            <dt className="font-medium text-muted-foreground">
+              {VAULT_LABELS.browserMatchRule}
+            </dt>
+            <dd className="mt-0.5 text-foreground">
+              {URI_MATCH_MODE_LABELS[item.uri_match_mode as UriMatchMode]}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-medium text-muted-foreground">
+              {VAULT_LABELS.browserFill}
+            </dt>
+            <dd className="mt-0.5 text-foreground">
+              {item.browser_fill_enabled ? "Enabled" : "Disabled"}
+            </dd>
+          </div>
+        </dl>
+      )}
+
+      {editMode && caps.can_edit && (
         <>
           {adding ? (
             <div className="flex items-center gap-2">
@@ -1160,11 +1137,13 @@ function DestinationSection({
 
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label className="text-xs">When it matches</Label>
+              <Label className="text-xs">{VAULT_LABELS.browserMatchRule}</Label>
               <Select
                 value={item.uri_match_mode}
                 onValueChange={(v) =>
-                  void actions.updateItem(item.id, { uri_match_mode: v as UriMatchMode })
+                  void actions.updateItem(item.id, {
+                    uri_match_mode: v as UriMatchMode,
+                  })
                 }
               >
                 <SelectTrigger className="h-7 text-xs">
@@ -1181,7 +1160,7 @@ function DestinationSection({
                 </SelectContent>
               </Select>
             </div>
-            <label className="flex items-end gap-2 pb-1">
+            <label className="flex items-end gap-2 rounded border border-border bg-background p-2">
               <Switch
                 checked={item.browser_fill_enabled}
                 disabled={busy || !hasDestination}
@@ -1191,9 +1170,7 @@ function DestinationSection({
                   })
                 }
               />
-              <span className="text-xs">
-                Let Matrx fill this login in the browser
-              </span>
+              <span className="text-xs">{VAULT_LABELS.browserFill}</span>
             </label>
           </div>
           {!hasDestination && (
@@ -1219,17 +1196,21 @@ function NotEncryptedSection({
   busy,
   actions,
   canEdit,
+  editMode,
 }: {
   item: VaultItem;
   busy: boolean;
   actions: VaultActions;
   canEdit: boolean;
+  editMode: boolean;
 }) {
-  const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item.notes ?? "");
+  const [detailDrafts, setDetailDrafts] = useState(
+    item.non_secret_fields.map((entry) => ({ ...entry })),
+  );
 
   const hasContent = Boolean(item.notes) || item.non_secret_fields.length > 0;
-  if (!hasContent && !canEdit) return null;
+  if (!hasContent && (!canEdit || !editMode)) return null;
 
   return (
     <div className="space-y-2 rounded-lg border border-warning/30 bg-warning/5 p-3">
@@ -1252,79 +1233,143 @@ function NotEncryptedSection({
           {item.non_secret_fields.map((entry) => (
             <div
               key={entry.key}
-              className="flex items-baseline gap-2 rounded border border-border bg-background px-2 py-1 text-xs"
+              className="grid gap-1 rounded border border-border bg-background px-2 py-1 text-xs sm:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)]"
             >
-              <dt className="shrink-0 text-muted-foreground">{entry.label}</dt>
-              <dd className="min-w-0 flex-1 truncate">{entry.value}</dd>
+              <dt className="font-medium text-muted-foreground">
+                {entry.label}
+              </dt>
+              <dd className="min-w-0 whitespace-pre-wrap break-all">
+                {entry.value}
+              </dd>
             </div>
           ))}
         </dl>
       )}
 
-      {editing ? (
-        <div className="space-y-1.5">
-          <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            rows={4}
-            className="w-full rounded border border-border bg-background p-2 text-xs"
-            placeholder="Anything that is not a secret — account numbers, support contacts, reminders."
-          />
-          <div className="flex justify-end gap-1.5">
+      {editMode && canEdit ? (
+        <div className="space-y-3 border-t border-warning/30 pt-3">
+          <div className="space-y-1.5">
+            <Label htmlFor={`vault-notes-${item.id}`}>
+              {VAULT_LABELS.notes}
+            </Label>
+            <textarea
+              id={`vault-notes-${item.id}`}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              rows={4}
+              className="w-full rounded border border-border bg-background p-2 text-xs"
+              placeholder="Anything that is not a secret — account numbers, support contacts, reminders."
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>{VAULT_LABELS.otherDetails}</Label>
+            {detailDrafts.map((entry, index) => (
+              <div
+                key={`${entry.key}-${index}`}
+                className="grid gap-2 rounded border border-border bg-background p-2 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_auto]"
+              >
+                <Input
+                  aria-label={`${VAULT_LABELS.fieldName} ${index + 1}`}
+                  value={entry.label}
+                  onChange={(event) =>
+                    setDetailDrafts((current) =>
+                      current.map((value, currentIndex) =>
+                        currentIndex === index
+                          ? {
+                              ...value,
+                              label: event.target.value,
+                              key:
+                                sanitizeFieldName(event.target.value) ||
+                                value.key,
+                            }
+                          : value,
+                      ),
+                    )
+                  }
+                  placeholder={VAULT_LABELS.fieldName}
+                />
+                <Input
+                  aria-label={`${VAULT_LABELS.value} ${index + 1}`}
+                  value={entry.value}
+                  onChange={(event) =>
+                    setDetailDrafts((current) =>
+                      current.map((value, currentIndex) =>
+                        currentIndex === index
+                          ? { ...value, value: event.target.value }
+                          : value,
+                      ),
+                    )
+                  }
+                  placeholder={VAULT_LABELS.value}
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() =>
+                    setDetailDrafts((current) =>
+                      current.filter(
+                        (_, currentIndex) => currentIndex !== index,
+                      ),
+                    )
+                  }
+                >
+                  <X className="mr-1.5 h-3.5 w-3.5" />
+                  Remove
+                </Button>
+              </div>
+            ))}
             <Button
               size="sm"
-              variant="ghost"
-              className="h-7"
-              onClick={() => {
-                setDraft(item.notes ?? "");
-                setEditing(false);
-              }}
+              variant="outline"
+              onClick={() =>
+                setDetailDrafts((current) => [
+                  ...current,
+                  {
+                    key: `detail_${current.length + 1}`,
+                    label: "",
+                    value: "",
+                  },
+                ])
+              }
             >
-              Cancel
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              Add other detail
             </Button>
+          </div>
+          <div className="flex justify-end">
             <Button
               size="sm"
-              className="h-7"
               disabled={busy}
               onClick={async () => {
                 const next = draft.trim();
-                await actions.updateItem(
-                  item.id,
-                  next ? { notes: next } : { clear_notes: true },
-                );
-                setEditing(false);
+                await actions.updateItem(item.id, {
+                  non_secret_fields: detailDrafts
+                    .map((entry) => ({
+                      key: sanitizeFieldName(entry.label) || entry.key,
+                      label: entry.label.trim(),
+                      value: entry.value,
+                    }))
+                    .filter((entry) => entry.label && entry.value),
+                  ...(next ? { notes: next } : { clear_notes: true }),
+                });
               }}
             >
-              Save notes
+              Save notes and other details
             </Button>
           </div>
         </div>
       ) : (
-        <>
-          {item.notes ? (
-            <p className="whitespace-pre-wrap rounded border border-border bg-background p-2 text-xs">
+        item.notes && (
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">
+              {VAULT_LABELS.notes}
+            </p>
+            <p className="mt-1 whitespace-pre-wrap break-words rounded border border-border bg-background p-2 text-xs">
               {item.notes}
             </p>
-          ) : (
-            canEdit && (
-              <p className="text-xs text-muted-foreground">No notes yet.</p>
-            )
-          )}
-          {canEdit && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7"
-              onClick={() => {
-                setDraft(item.notes ?? "");
-                setEditing(true);
-              }}
-            >
-              <Pencil className="mr-1.5 h-3 w-3" />
-              {item.notes ? "Edit notes" : "Add notes"}
-            </Button>
-          )}
-        </>
+          </div>
+        )
       )}
     </div>
   );
@@ -1388,7 +1433,9 @@ function SharePanel({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all_members">All organization members</SelectItem>
+              <SelectItem value="all_members">
+                All organization members
+              </SelectItem>
               <SelectItem value="restricted">Only selected members</SelectItem>
             </SelectContent>
           </Select>
@@ -1427,7 +1474,11 @@ function SharePanel({
                 disabled={busy || !email.trim()}
                 onClick={() => void addRecipient()}
               >
-                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Share"}
+                {busy ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  "Share"
+                )}
               </Button>
             </div>
             <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -1460,7 +1511,7 @@ function SharePanel({
                   key={grant.id}
                   className="flex items-center gap-2 rounded border border-border bg-background p-2 text-xs"
                 >
-                  <span className="min-w-0 flex-1 truncate">
+                  <span className="min-w-0 flex-1 whitespace-normal break-all">
                     {grant.email || grant.user_id}
                   </span>
                   <label className="flex shrink-0 items-center gap-1 text-muted-foreground">
@@ -1622,11 +1673,18 @@ function PrincipalPicker({
       <p className="text-xs text-muted-foreground">{note}</p>
       <div className="flex flex-wrap items-center gap-2">
         <Select value={target} onValueChange={setTarget}>
-          <SelectTrigger className="h-8 min-w-48 flex-1 text-xs" aria-label="Destination">
-            <SelectValue placeholder={loading ? "Loading…" : "Choose a destination"} />
+          <SelectTrigger
+            className="h-8 min-w-48 flex-1 text-xs"
+            aria-label="Destination"
+          >
+            <SelectValue
+              placeholder={loading ? "Loading…" : "Choose a destination"}
+            />
           </SelectTrigger>
           <SelectContent>
-            {allowPersonal && <SelectItem value="__personal__">My personal vault</SelectItem>}
+            {allowPersonal && (
+              <SelectItem value="__personal__">My personal vault</SelectItem>
+            )}
             {targets.map((org) => (
               <SelectItem key={org.id} value={org.id}>
                 {org.name}
@@ -1718,7 +1776,9 @@ function AuditPanel({ itemId }: { itemId: string }) {
               <span className="shrink-0 tabular-nums text-muted-foreground">
                 {new Date(entry.created_at).toLocaleString()}
               </span>
-              <span className="font-medium capitalize">{entry.action.replaceAll("_", " ")}</span>
+              <span className="font-medium capitalize">
+                {entry.action.replaceAll("_", " ")}
+              </span>
               {typeof entry.metadata?.["field_key"] === "string" && (
                 <code className="text-muted-foreground">
                   {String(entry.metadata["field_key"])}

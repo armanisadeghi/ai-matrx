@@ -178,8 +178,7 @@ export type VaultAccessMode = VaultShareRequest["access_mode"];
 // ── Principal (frontend view descriptor) ──────────────────────────────────
 
 export type VaultPrincipal =
-  | { type: "user" }
-  | { type: "organization"; organizationId: string };
+  { type: "user" } | { type: "organization"; organizationId: string };
 
 export function toPrincipalIn(principal: VaultPrincipal): VaultPrincipalIn {
   return principal.type === "organization"
@@ -204,6 +203,31 @@ export const VAULT_SCOPE_LABELS = {
   organization: "Organization",
 } as const;
 
+/**
+ * Canonical human-facing vault vocabulary. Every personal and organization
+ * surface imports these labels so the same concept never acquires a second
+ * name in a card, dialog, or editor.
+ */
+export const VAULT_LABELS = {
+  credentialName: "Credential name",
+  credentialType: "Credential type",
+  description: "Description",
+  fieldName: "Field name",
+  internalFieldId: "Internal field ID",
+  runtimeKey: "Runtime key",
+  value: "Value",
+  valueAccess: "Who can reveal this value",
+  sandboxAccess: "Available in sandboxes",
+  fieldStatus: "Field status",
+  loginUrls: "Login URLs",
+  browserMatchRule: "Browser match rule",
+  browserFill: "Browser fill",
+  notes: "Notes",
+  otherDetails: "Other details",
+  access: "Access",
+  activity: "Activity",
+} as const;
+
 /** The owning principal a scope writes to. "Shared with me" owns nothing —
  *  creating from that scope is meaningless, so the UI hides create there. */
 export function scopeToPrincipal(scope: VaultScope): VaultPrincipal | null {
@@ -216,7 +240,8 @@ export function scopeToPrincipal(scope: VaultScope): VaultPrincipal | null {
 
 // ── Direct-Supabase masked rows (explicit column lists — see service) ─────
 
-type CredentialItemsRow = Database["users"]["Tables"]["credential_items"]["Row"];
+type CredentialItemsRow =
+  Database["users"]["Tables"]["credential_items"]["Row"];
 type UserSecretsRow = Database["users"]["Tables"]["user_secrets"]["Row"];
 
 /** Masked item metadata columns the browser may select. NEVER `select *`.
@@ -272,7 +297,9 @@ export type VaultFieldMaskedRow = Pick<
 
 // ── Catalog definitions (payload schema reused from Remote Catalogs) ──────
 
-export type CredentialDefinitionPayload = z.infer<typeof credentialDefinitionSchema>;
+export type CredentialDefinitionPayload = z.infer<
+  typeof credentialDefinitionSchema
+>;
 export type CredentialFieldDef = z.infer<typeof credentialFieldSchema>;
 
 export interface CredentialDefinition {
@@ -302,10 +329,10 @@ export const FAMILY_LABELS: Record<CredentialFamily, string> = {
   signing_files: "Signing & files",
 };
 
-export const HANDLING_LABELS: Record<string, string> = {
-  visible: "Visible",
-  revealable: "Revealable",
-  sealed: "Sealed",
+export const HANDLING_LABELS: Record<NonNullable<VaultHandling>, string> = {
+  visible: "Anyone with use access",
+  revealable: "Only people with reveal access",
+  sealed: "No person — trusted automation only",
 };
 
 /** The legacy single-field type every backfilled env row uses. */

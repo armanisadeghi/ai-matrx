@@ -110,6 +110,26 @@ worked example.
   Matching is enforced SERVER-side on every call (`/api/vault/browser-login/*`)
   — the client never decides what may be filled.
 
+## Shared UI contract (2026-07-28)
+
+Personal and organization credentials render through the same
+`VaultWorkspace`; their vocabulary and interaction model may not diverge.
+
+- Every datum is a labeled pair. Canonical labels live in `VAULT_LABELS`;
+  screens import them instead of inventing nearby synonyms.
+- Text metadata wraps and is shown in full. The vault may not use truncation,
+  line-clamping, or “+N more” collapsing.
+- A protected value has exactly two human-visible states: **Hidden**, or the
+  complete transiently revealed value. `value_hint` is transport metadata and
+  must never be rendered as a partial mask.
+- A credential has one **Edit credential** mode. Name, description, field
+  replacement, runtime-key metadata, access, status, notes, URLs, and other
+  details are edited inside it; independent rename/rotate/edit-note controls
+  are forbidden.
+- Website metadata renders only for `website_login`, an item with existing
+  login URLs, or a legacy credential whose URL can be promoted. A generic API
+  or environment credential must not be presented as a website login.
+
 ## Files and entry points
 
 | File                                                                           | Role                                                                                                                                                                                                                                                                                             |
@@ -120,7 +140,7 @@ worked example.
 | [`vault-hooks.ts`](./vault-hooks.ts)                                           | THE hook set: `useVault` (list + all mutations + toasts/busy), `useVaultDefinitions`, `useVaultAudit`, `useTransientSecret`.                                                                                                                                                                     |
 | [`components/VaultWorkspace.tsx`](./components/VaultWorkspace.tsx)             | List/search/family-filter, item cards, detail + create + import dialogs (Credenza = Dialog/Drawer responsive).                                                                                                                                                                                   |
 | [`components/VaultCreateDialog.tsx`](./components/VaultCreateDialog.tsx)       | Catalog picker (family groups, search, presets) + definition-driven form + Custom builder (with `KEY=value` paste-to-fill).                                                                                                                                                                      |
-| [`components/VaultItemDetail.tsx`](./components/VaultItemDetail.tsx)           | Fields (reveal/copy/edit/inject/delete, add field), rename, rotate, share (org access-mode + member grants; personal email grants via `lookup_user_by_email`), transfer, fork, soft delete, audit trail.                                                                                         |
+| [`components/VaultItemDetail.tsx`](./components/VaultItemDetail.tsx)           | Labeled fields with hidden/full reveal and one credential edit mode (name, description, field values/metadata, notes, URLs, other details), plus share, transfer, fork, soft delete, and audit trail.                                                                                            |
 | [`components/VaultEnvImportDialog.tsx`](./components/VaultEnvImportDialog.tsx) | Bulk `.env` paste/upload → `POST /api/vault/items/import-env`.                                                                                                                                                                                                                                   |
 | [`utils.ts`](./utils.ts)                                                       | `parseEnvAssignment` — single dotenv-line parser (paste-to-fill).                                                                                                                                                                                                                                |
 
@@ -166,6 +186,7 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
 
 ## Change Log
 
+- **2026-07-28** — Rebuilt the shared personal/organization vault presentation: canonical labels, full wrapping with no truncation/collapsing, hidden-or-complete value display with partial hints removed, one credential edit mode replacing scattered edit/rename/rotate controls, and website metadata limited to actual website credentials.
 - **2026-07-26** — Closed the silent sandbox-injection gap: every sandbox switch (item detail, add-field, both create dialogs) is disabled until the field has an env key, the create dialogs surface it as a validation problem, and no build path can send `inject_into_sandbox=true` with a null alias. Backed by an aidream write refusal + a DB CHECK.
 - **2026-07-26** — Sharing, ownership, and destination-login build (ratified plan): Mine / Shared-with-me / Organization scopes, each a deliberate query; per-recipient grant CRUD replacing the destructive save-the-whole-list share panel; give-ownership to another user by exact email; create-for-someone with server-side password generation; plaintext destination metadata with the loud Not-encrypted section, browser-fill toggle, and one-click promotion of an encrypted `site_url`/`panel_url` into `login_urls`. Also pinned `--default-non-nullable false` in aidream's type generator — openapi-typescript v7 had started marking every defaulted property required, churning ~1800 lines and breaking partial-patch call sites.
 - **2026-07-23** — Phase 4 MCP/OAuth cutover: MCP tokens moved to sealed vault items; browser token paths deleted; refresh/persist/disconnect run in aidream `/api/mcp-connections/*`. Live finding: the legacy pgcrypto store NEVER held a token (its shared key was never configured) — all 4 connections stamped `expired` for re-auth.
