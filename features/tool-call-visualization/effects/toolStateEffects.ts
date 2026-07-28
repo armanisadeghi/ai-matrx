@@ -167,6 +167,43 @@ const TOOL_STATE_EFFECTS: ToolStateEffect[] = [
       })();
     },
   },
+  {
+    // Agent edited a db-authored TOOL RENDERER in-session (the `toolcomp_*`
+    // component-builder tools writing `tool_ui` rows). SAME stale-cache class as
+    // the kind-components effect above, DIFFERENT cache: `DbToolRendererImpl`
+    // seeds its compiled renderer into local state on mount and never
+    // re-fetches, so the warm `toolRendererCache` strands the OLD renderer on
+    // screen until a hard refresh. Bust the cache for the edited tool + bump its
+    // repaint version so mounted cards (the live chat card AND the admin
+    // preview) re-resolve.
+    //
+    // The cache is keyed by the TARGET tool name (the tool the renderer renders
+    // FOR) — which only `toolcomp_create_component` returns today. The
+    // update/patch/settings tools return `component_id` only (aidream contract
+    // gap), so with no `tool_name` we fall back to a blanket bust — correct, and
+    // renderer edits are rare + human-driven. Dynamic import mirrors the
+    // kind-components effect (stay out of the stream processor's init graph).
+    id: "tool-renderers",
+    tools: new Set([
+      "toolcomp_create_component",
+      "toolcomp_update_code",
+      "toolcomp_patch_code",
+      "toolcomp_update_settings",
+    ]),
+    run({ result }) {
+      const toolName = asObject(result)?.tool_name;
+      void (async () => {
+        const cache = await import(
+          "@/features/tool-call-visualization/db-renderer/toolRendererCache"
+        );
+        if (typeof toolName === "string" && toolName) {
+          cache.invalidateToolRenderer(toolName);
+        } else {
+          cache.invalidateAllToolRenderers();
+        }
+      })();
+    },
+  },
 ];
 
 // ─── The runner ──────────────────────────────────────────────────────────────

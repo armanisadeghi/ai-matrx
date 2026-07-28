@@ -41,6 +41,42 @@ const inflight = new Map<string, Promise<ToolComponent | null>>();
 // even if the renderer code fails to compile and we fall back to generic.
 const metaStore = new Map<string, ToolRendererMeta>();
 
+// ─── Repaint signal ──────────────────────────────────────────────────────────
+// `DbToolRendererImpl` seeds its compiled renderer into local state on mount and
+// then never re-fetches (fetch-once guard). So busting the module cache above is
+// invisible to an ALREADY-MOUNTED card — it keeps rendering the STALE compiled
+// renderer until a hard page refresh. That's the exact bug an agent hits when it
+// edits a tool's renderer mid-session (the `toolcomp_*` tools). The admin editor
+// works around it by bumping a React `key` to force a remount, but a live chat
+// card has no such handle.
+//
+// A per-tool version (plus a wholesale `epoch` for blanket busts) lets a mounted
+// card subscribe via `useToolRendererVersion` and re-resolve from the busted
+// cache. Mirrors content-ir's per-kind `useContentIrKindVersion` repaint.
+const versions = new Map<string, number>();
+let epoch = 0;
+const listeners = new Set<() => void>();
+
+function notifyRepaint(): void {
+  // useSyncExternalStore no-ops any subscriber whose snapshot is unchanged, so
+  // a targeted (single-tool) bump only re-renders that tool's cards even though
+  // every subscriber is notified.
+  for (const cb of listeners) cb();
+}
+
+/** Subscribe to renderer-cache repaints. Returns an unsubscribe fn. */
+export function subscribeToolRenderer(onChange: () => void): () => void {
+  listeners.add(onChange);
+  return () => {
+    listeners.delete(onChange);
+  };
+}
+
+/** Monotonic repaint version for a tool — per-tool bump + wholesale epoch. */
+export function getToolRendererVersion(toolName: string): number {
+  return (versions.get(toolName) ?? 0) + epoch;
+}
+
 /** Returns the cached compiled component for a tool, or null if not cached. */
 export function getCachedToolRenderer(toolName: string): ToolComponent | null {
   return positive.get(toolName) ?? null;
@@ -174,10 +210,35 @@ export function prefetchToolRenderer(toolName: string): void {
   void loadToolRenderer(toolName);
 }
 
-/** Drop a tool from every cache (e.g. after an admin edits its code). */
+/**
+ * Drop ONE tool from every cache and repaint its mounted cards (e.g. after an
+ * admin edits its code, or an agent edits its renderer mid-session). The version
+ * bump is what makes an already-mounted `DbToolRendererImpl` re-resolve — the
+ * cache deletes alone are invisible to it.
+ */
 export function invalidateToolRenderer(toolName: string): void {
   positive.delete(toolName);
   negative.delete(toolName);
   inflight.delete(toolName);
   metaStore.delete(toolName);
+  versions.set(toolName, (versions.get(toolName) ?? 0) + 1);
+  notifyRepaint();
+}
+
+/**
+ * Blanket bust: drop EVERY cached renderer and repaint all mounted cards. Used
+ * when a renderer was edited but the caller doesn't know which tool it was for
+ * (the `toolcomp_update_code` / `_patch_code` / `_update_settings` results carry
+ * only `component_id`, not the target `tool_name`). Correct but heavier than the
+ * targeted path — every open tool card re-fetches + recompiles — so it's the
+ * fallback, not the default; prefer `invalidateToolRenderer(toolName)` when the
+ * tool name is known.
+ */
+export function invalidateAllToolRenderers(): void {
+  positive.clear();
+  negative.clear();
+  inflight.clear();
+  metaStore.clear();
+  epoch += 1;
+  notifyRepaint();
 }
