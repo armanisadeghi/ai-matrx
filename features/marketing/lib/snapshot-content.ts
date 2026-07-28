@@ -113,12 +113,17 @@ export function parseSnapshotExtracted(
 
 export interface ParsedSnapshotImage {
   src: string | null;
+  srcset: string[];
+  sizes: string | null;
   /** `null` = alt attribute absent; `""` = explicitly empty (decorative). */
   alt: string | null;
   width: number | null;
   height: number | null;
   loading: string | null;
+  decoding: string | null;
+  fetchPriority: string | null;
   title: string | null;
+  featured: boolean;
 }
 
 export interface ParsedSnapshotImages {
@@ -157,11 +162,20 @@ export function parseSnapshotImages(images: Json): ParsedSnapshotImages {
     return [
       {
         src: optionalString(entry, "src"),
+        srcset: Array.isArray(entry.srcset)
+          ? entry.srcset.filter(
+              (value): value is string => typeof value === "string",
+            )
+          : [],
+        sizes: optionalString(entry, "sizes"),
         alt: optionalString(entry, "alt"),
         width: finiteNumber(entry, "width"),
         height: finiteNumber(entry, "height"),
         loading: optionalString(entry, "loading"),
+        decoding: optionalString(entry, "decoding"),
+        fetchPriority: optionalString(entry, "fetchpriority"),
         title: optionalString(entry, "title"),
+        featured: entry.featured === true,
       },
     ];
   });
@@ -175,6 +189,18 @@ export function parseSnapshotImages(images: Json): ParsedSnapshotImages {
 export interface ParsedSnapshotStructuredData {
   schemaTypes: string[];
   hasPayload: boolean;
+  blocks: Array<{
+    source: string;
+    types: string[];
+    data: Record<string, Json>;
+  }>;
+  jsonLd: Json[];
+  jsonLdRaw: string[];
+  microdata: Array<Record<string, Json>>;
+  rdfa: Array<Record<string, Json>>;
+  microformats: Array<Record<string, Json>>;
+  parseErrors: Array<Record<string, Json>>;
+  blocksTruncated: boolean;
 }
 
 /** Normalize `web.snapshot.structured_data` into reportable schema evidence. */
@@ -182,7 +208,18 @@ export function parseSnapshotStructuredData(
   structuredData: Json,
 ): ParsedSnapshotStructuredData {
   if (!isJsonRecord(structuredData)) {
-    return { schemaTypes: [], hasPayload: false };
+    return {
+      schemaTypes: [],
+      hasPayload: false,
+      blocks: [],
+      jsonLd: [],
+      jsonLdRaw: [],
+      microdata: [],
+      rdfa: [],
+      microformats: [],
+      parseErrors: [],
+      blocksTruncated: false,
+    };
   }
   const schemaTypes = Array.isArray(structuredData.schema_types)
     ? structuredData.schema_types.filter(
@@ -191,13 +228,240 @@ export function parseSnapshotStructuredData(
     : [];
   const schemaOrg = structuredData.schema_org;
   const hasPayload =
-    schemaOrg !== null &&
-    (Array.isArray(schemaOrg)
-      ? schemaOrg.length > 0
-      : typeof schemaOrg === "object"
-        ? Object.keys(schemaOrg).length > 0
-        : false);
-  return { schemaTypes, hasPayload };
+    (schemaOrg !== null &&
+      (Array.isArray(schemaOrg)
+        ? schemaOrg.length > 0
+        : typeof schemaOrg === "object"
+          ? Object.keys(schemaOrg).length > 0
+          : false)) ||
+    (Array.isArray(structuredData.json_ld) &&
+      structuredData.json_ld.length > 0) ||
+    (Array.isArray(structuredData.json_ld_raw) &&
+      structuredData.json_ld_raw.length > 0) ||
+    (Array.isArray(structuredData.microdata) &&
+      structuredData.microdata.length > 0) ||
+    (Array.isArray(structuredData.rdfa) && structuredData.rdfa.length > 0) ||
+    (Array.isArray(structuredData.microformats) &&
+      structuredData.microformats.length > 0);
+  const records = (value: Json | undefined): Array<Record<string, Json>> =>
+    Array.isArray(value)
+      ? value.filter((entry): entry is Record<string, Json> =>
+          isJsonRecord(entry),
+        )
+      : [];
+  const blocks = records(structuredData.blocks).map((block) => ({
+    source: optionalString(block, "source") ?? "structured",
+    types: Array.isArray(block.types)
+      ? block.types.filter(
+          (value): value is string =>
+            typeof value === "string" && Boolean(value),
+        )
+      : [],
+    data: isJsonRecord(block.data) ? block.data : {},
+  }));
+  return {
+    schemaTypes,
+    hasPayload,
+    blocks,
+    jsonLd: Array.isArray(structuredData.json_ld)
+      ? structuredData.json_ld
+      : schemaOrg !== null && schemaOrg !== undefined
+        ? [schemaOrg]
+        : [],
+    jsonLdRaw: Array.isArray(structuredData.json_ld_raw)
+      ? structuredData.json_ld_raw.filter(
+          (value): value is string => typeof value === "string",
+        )
+      : [],
+    microdata: records(structuredData.microdata),
+    rdfa: records(structuredData.rdfa),
+    microformats: records(structuredData.microformats),
+    parseErrors: records(structuredData.parse_errors),
+    blocksTruncated: structuredData.blocks_truncated === true,
+  };
+}
+
+export interface ParsedSnapshotResource {
+  kind: string;
+  url: string;
+  tag: string | null;
+  sourceAttribute: string | null;
+  rel: string | null;
+  mimeType: string | null;
+  attributes: Record<string, Json>;
+}
+
+export interface ParsedSnapshotResources {
+  count: number;
+  counts: Record<string, number>;
+  items: ParsedSnapshotResource[];
+  truncated: boolean;
+}
+
+/** Normalize the complete DOM-declared resource inventory in `extracted`. */
+export function parseSnapshotResources(
+  extracted: Json,
+): ParsedSnapshotResources {
+  if (!isJsonRecord(extracted) || !isJsonRecord(extracted.resources)) {
+    return { count: 0, counts: {}, items: [], truncated: false };
+  }
+  const resources = extracted.resources;
+  const counts: Record<string, number> = {};
+  if (isJsonRecord(resources.counts)) {
+    for (const [key, value] of Object.entries(resources.counts)) {
+      if (typeof value === "number" && Number.isFinite(value)) {
+        counts[key] = value;
+      }
+    }
+  }
+  const items = Array.isArray(resources.items)
+    ? resources.items.flatMap((entry): ParsedSnapshotResource[] => {
+        if (!isJsonRecord(entry)) return [];
+        const url = optionalString(entry, "url");
+        if (!url) return [];
+        return [
+          {
+            kind: optionalString(entry, "kind") ?? "other",
+            url,
+            tag: optionalString(entry, "tag"),
+            sourceAttribute: optionalString(entry, "source_attribute"),
+            rel: optionalString(entry, "rel"),
+            mimeType: optionalString(entry, "mime_type"),
+            attributes: isJsonRecord(entry.attributes) ? entry.attributes : {},
+          },
+        ];
+      })
+    : [];
+  return {
+    count: finiteNumber(resources, "count") ?? items.length,
+    counts,
+    items,
+    truncated: resources.truncated === true,
+  };
+}
+
+export interface ParsedSnapshotPageIdentity {
+  featuredImage: string | null;
+  featuredImageSource: string | null;
+  cms: string | null;
+  generator: string | null;
+  applicationName: string | null;
+  siteName: string | null;
+  author: string | null;
+  publishedAt: string | null;
+  modifiedAt: string | null;
+  pageTypes: string[];
+  themeColor: string | null;
+  htmlLang: string | null;
+  locale: string | null;
+  contentSection: string | null;
+  shortlink: string | null;
+  ampUrl: string | null;
+  manifestUrl: string | null;
+  apiUrls: string[];
+  feedUrls: string[];
+  bodyClasses: string[];
+  platformSignals: string[];
+  platformDetails: Record<string, Json>;
+}
+
+function imageValueUrl(value: Json | undefined): string | null {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = imageValueUrl(item);
+      if (found) return found;
+    }
+  }
+  if (isJsonRecord(value)) {
+    for (const key of ["contentUrl", "url", "@id", "thumbnailUrl"]) {
+      const found = imageValueUrl(value[key]);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function findNamedImage(value: Json | undefined, key: string): string | null {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findNamedImage(item, key);
+      if (found) return found;
+    }
+  }
+  if (isJsonRecord(value)) {
+    if (value[key] !== undefined) {
+      const direct = imageValueUrl(value[key]);
+      if (direct) return direct;
+    }
+    for (const child of Object.values(value)) {
+      const found = findNamedImage(child, key);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/** Normalize crawler-derived page identity and backfill old JSON-LD captures. */
+export function parseSnapshotPageIdentity(
+  extracted: Json,
+  structuredData: Json,
+): ParsedSnapshotPageIdentity {
+  const identity =
+    isJsonRecord(extracted) && isJsonRecord(extracted.page_identity)
+      ? extracted.page_identity
+      : {};
+  const structured = isJsonRecord(structuredData) ? structuredData : {};
+  const pageTypes = Array.isArray(identity.page_types)
+    ? identity.page_types.filter(
+        (value): value is string => typeof value === "string" && Boolean(value),
+      )
+    : [];
+  return {
+    featuredImage:
+      optionalString(identity, "featured_image") ??
+      findNamedImage(structured.schema_org, "primaryImageOfPage") ??
+      findNamedImage(structured.schema_org, "image"),
+    featuredImageSource: optionalString(identity, "featured_image_source"),
+    cms: optionalString(identity, "cms"),
+    generator: optionalString(identity, "generator"),
+    applicationName: optionalString(identity, "application_name"),
+    siteName: optionalString(identity, "site_name"),
+    author: optionalString(identity, "author"),
+    publishedAt: optionalString(identity, "published_at"),
+    modifiedAt: optionalString(identity, "modified_at"),
+    pageTypes,
+    themeColor: optionalString(identity, "theme_color"),
+    htmlLang: optionalString(identity, "html_lang"),
+    locale: optionalString(identity, "locale"),
+    contentSection: optionalString(identity, "content_section"),
+    shortlink: optionalString(identity, "shortlink"),
+    ampUrl: optionalString(identity, "amp_url"),
+    manifestUrl: optionalString(identity, "manifest_url"),
+    apiUrls: Array.isArray(identity.api_urls)
+      ? identity.api_urls.filter(
+          (value): value is string => typeof value === "string",
+        )
+      : [],
+    feedUrls: Array.isArray(identity.feed_urls)
+      ? identity.feed_urls.filter(
+          (value): value is string => typeof value === "string",
+        )
+      : [],
+    bodyClasses: Array.isArray(identity.body_classes)
+      ? identity.body_classes.filter(
+          (value): value is string => typeof value === "string",
+        )
+      : [],
+    platformSignals: Array.isArray(identity.platform_signals)
+      ? identity.platform_signals.filter(
+          (value): value is string => typeof value === "string",
+        )
+      : [],
+    platformDetails: isJsonRecord(identity.platform_details)
+      ? identity.platform_details
+      : {},
+  };
 }
 
 export interface ParsedSnapshotPerformance {

@@ -181,7 +181,7 @@ export function MetricCell({
    * `webCopy` from `features/marketing/lib/copy-payloads`. Not shown when
    * `href` is set (the cell is itself a navigation link).
    */
-  copy?: Pick<CopyButtonsProps, "label" | "human" | "agent">;
+  copy?: Pick<CopyButtonsProps, "label" | "human" | "agent" | "json">;
 }) {
   const className = cn(
     "group/metric relative min-w-0",
@@ -316,7 +316,7 @@ export function SectionCard({
    * Copy + Copy-for-AI pair for this card (agent-copy doctrine: every section
    * is copyable). Build with `webCopy` from `features/marketing/lib/copy-payloads`.
    */
-  copy?: Pick<CopyButtonsProps, "label" | "human" | "agent">;
+  copy?: Pick<CopyButtonsProps, "label" | "human" | "agent" | "json">;
   children: React.ReactNode;
   className?: string;
   /** Adds a compact disclosure control without changing existing callers. */

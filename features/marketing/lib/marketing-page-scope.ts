@@ -31,9 +31,14 @@ import {
   parseSnapshotHeadings,
   parseSnapshotImages,
   parseSnapshotLinksSummary,
+  parseSnapshotPageIdentity,
+  parseSnapshotResources,
 } from "@/features/marketing/lib/snapshot-content";
 import { parseStoredSeoMetrics } from "@/features/marketing/seo/serp/metrics";
-import { parseStoredAuditMetrics, socialInputFromRawTags } from "@/features/marketing/seo/audit/stored";
+import {
+  parseStoredAuditMetrics,
+  socialInputFromRawTags,
+} from "@/features/marketing/seo/audit/stored";
 import {
   evaluateIndexability,
   type IndexabilityEvaluation,
@@ -261,7 +266,9 @@ export function buildMarketingPageScope(input: {
       : null;
   const headings = snapshot ? parseSnapshotHeadings(snapshot.headings).all : [];
   const head = snapshot ? parseSnapshotHeadTags(snapshot.head_tags) : null;
-  const extracted = snapshot ? parseSnapshotExtracted(snapshot.extracted) : null;
+  const extracted = snapshot
+    ? parseSnapshotExtracted(snapshot.extracted)
+    : null;
   const observedMetrics = snapshot
     ? parseStoredSeoMetrics(snapshot.seo_metrics)
     : null;
@@ -271,9 +278,9 @@ export function buildMarketingPageScope(input: {
   // entirely when the user has set none of them.
   const hasIntent = Boolean(
     page.target_keyword ||
-      page.meta_title_desired ||
-      page.meta_description_desired ||
-      desiredMetrics,
+    page.meta_title_desired ||
+    page.meta_description_desired ||
+    desiredMetrics,
   );
   const pageIntent = hasIntent
     ? {
@@ -320,6 +327,12 @@ export function buildMarketingPageScope(input: {
     ? parseSnapshotLinksSummary(snapshot.links_summary)
     : null;
   const images = snapshot ? parseSnapshotImages(snapshot.images) : null;
+  const pageIdentity = snapshot
+    ? parseSnapshotPageIdentity(snapshot.extracted, snapshot.structured_data)
+    : null;
+  const resources = snapshot
+    ? parseSnapshotResources(snapshot.extracted)
+    : null;
   const contentStats =
     snapshot && extracted && links && images
       ? {
@@ -463,9 +476,43 @@ export function buildMarketingPageScope(input: {
     http_status: page.http_status_last ?? undefined,
     structured_data: snapshot
       ? ((snapshot.structured_data ?? undefined) as
-          | Record<string, unknown>
-          | undefined)
+          Record<string, unknown> | undefined)
       : undefined,
+    page_identity: pageIdentity
+      ? {
+          featured_image: pageIdentity.featuredImage,
+          featured_image_source: pageIdentity.featuredImageSource,
+          cms: pageIdentity.cms,
+          generator: pageIdentity.generator,
+          application_name: pageIdentity.applicationName,
+          site_name: pageIdentity.siteName,
+          author: pageIdentity.author,
+          published_at: pageIdentity.publishedAt,
+          modified_at: pageIdentity.modifiedAt,
+          page_types: pageIdentity.pageTypes,
+          theme_color: pageIdentity.themeColor,
+          html_lang: pageIdentity.htmlLang,
+          locale: pageIdentity.locale,
+          content_section: pageIdentity.contentSection,
+          shortlink: pageIdentity.shortlink,
+          amp_url: pageIdentity.ampUrl,
+          manifest_url: pageIdentity.manifestUrl,
+          api_urls: pageIdentity.apiUrls,
+          feed_urls: pageIdentity.feedUrls,
+          body_classes: pageIdentity.bodyClasses,
+          platform_signals: pageIdentity.platformSignals,
+          platform_details: pageIdentity.platformDetails,
+        }
+      : undefined,
+    resources:
+      resources && (resources.count > 0 || resources.items.length > 0)
+        ? {
+            count: resources.count,
+            counts: resources.counts,
+            items: resources.items,
+            truncated: resources.truncated,
+          }
+        : undefined,
     perf: snapshot
       ? ((snapshot.perf ?? undefined) as Record<string, unknown> | undefined)
       : undefined,
@@ -482,11 +529,14 @@ export function buildMarketingPageScope(input: {
     image_plan: imagePlan && imagePlan.length > 0 ? imagePlan : undefined,
     findings:
       findingsRows && findingsRows.length > 0 ? [...findingsRows] : undefined,
-    gsc_queries: gscQueries && gscQueries.length > 0 ? [...gscQueries] : undefined,
+    gsc_queries:
+      gscQueries && gscQueries.length > 0 ? [...gscQueries] : undefined,
     inbound_links:
       inboundLinks && inboundLinks.length > 0 ? [...inboundLinks] : undefined,
     outbound_links:
-      outboundLinks && outboundLinks.length > 0 ? [...outboundLinks] : undefined,
+      outboundLinks && outboundLinks.length > 0
+        ? [...outboundLinks]
+        : undefined,
     backlinks: backlinks ?? undefined,
     page_tasks: pageTasks && pageTasks.length > 0 ? [...pageTasks] : undefined,
     attached_items: attachedItems ?? undefined,

@@ -85,8 +85,7 @@ const groups: SurfaceValueGroup[] = [
     key: "performance",
     label: "Performance & analytics",
     sortOrder: 700,
-    description:
-      "Search Console, PageSpeed, and GA4 evidence for this page.",
+    description: "Search Console, PageSpeed, and GA4 evidence for this page.",
   },
   {
     key: "attachments",
@@ -387,11 +386,35 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "structured_data",
     label: "Structured data",
     description:
-      "Observed schema.org structured data from the latest snapshot: detected schema_types plus the raw payload evidence. Empty when uncrawled or the page declares none.",
+      "Complete structured-data evidence from the latest snapshot: every parsed and original JSON-LD script, normalized entity blocks, schema types, microdata, RDFa, microformats, and parse errors. Empty when uncrawled or the page declares none.",
     valueType: "object",
     alwaysAvailable: false,
-    typicalCharCount: 1500,
+    typicalCharCount: 20000,
+    autoContext: false,
     sortOrder: 645,
+    group: "observed_seo",
+  },
+  {
+    name: "page_identity",
+    label: "Page identity",
+    description:
+      "Observed page-identifying signals from the latest snapshot: featured image and its source, CMS/generator, WordPress or Shopify identifiers, template/platform evidence, application/site name, author, dates, schema types, locale, and related API/shortlink URLs.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 700,
+    sortOrder: 642,
+    group: "observed_seo",
+  },
+  {
+    name: "resources",
+    label: "Page resources",
+    description:
+      "Complete DOM- and structured-metadata-declared resource inventory from the latest snapshot: images and responsive variants, video/audio, embeds, scripts, stylesheets, fonts, icons, manifests, tracks, and linked documents. Includes grouped counts and truncation evidence.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 20000,
+    autoContext: false,
+    sortOrder: 647,
     group: "observed_seo",
   },
   {
@@ -409,10 +432,11 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "images",
     label: "Images",
     description:
-      "Observed image evidence from the latest snapshot. Currently the scraper stores counts only ({ count, missing_alt }); a per-image inventory lands here when the crawler starts persisting it. Empty when uncrawled.",
+      "Observed image evidence from the latest snapshot: total/missing-alt counts plus the per-image inventory (src/srcset, alt, dimensions, loading/decoding/fetch priority, title, featured-image marker). Empty when uncrawled; older snapshots may contain counts only.",
     valueType: "object",
     alwaysAvailable: false,
-    typicalCharCount: 60,
+    typicalCharCount: 8000,
+    autoContext: false,
     sortOrder: 655,
     group: "observed_seo",
   },
@@ -713,7 +737,7 @@ export const marketingPageManifest: SurfaceManifest = {
 The inherited brand_context and site_context values give you the client and website this page belongs to — read them for framing before working on the page itself.
 You are on the Marketing page workspace: one canonical URL of a managed website, with the evidence of what it currently serves and the user's editorial intent for what it should become.
 Two kinds of values live here and must never be confused: OBSERVED values (observed_title, observed_description, observed_seo_metrics) are immutable crawl evidence of the live site; DESIRED values (desired_title, desired_description, desired_seo_metrics) are the user's editorial targets stored on the page. When asked to improve metadata, you propose DESIRED values — you never alter or invent observed evidence.
-Beyond metadata, the surface also carries visual captures (screenshots), analysis evidence (Page Analyzer keyword picture, page score, open findings + findings rows), performance evidence (Search Console metrics + top queries, PageSpeed Insights, GA4, internal links, backlinks), and the user's AUTHORING layer: draft_content (the markdown body the page SHOULD have), desired_values (per-area desired state: social card, canonical/robots, heading-structure plan, image plan), the keyword_batch (library keywords attached to this page alongside the primary target_keyword), and page_tasks (work linked to this page).
+Beyond metadata, the surface carries complete crawl evidence: page_identity (featured image, CMS/platform identifiers, author/dates), structured_data (all raw and normalized JSON-LD/microdata/RDFa/microformats), resources (the full declared asset inventory), images, and visual captures. Large raw evidence values remain explicitly bindable but are not auto-added to every agent context. It also carries analysis evidence (Page Analyzer keyword picture, page score, open findings + findings rows), performance evidence (Search Console metrics + top queries, PageSpeed Insights, GA4, internal links, backlinks), and the user's AUTHORING layer: draft_content (the markdown body the page SHOULD have), desired_values (per-area desired state: social card, canonical/robots, heading-structure plan, image plan), the keyword_batch (library keywords attached to this page alongside the primary target_keyword), and page_tasks (work linked to this page).
 SEO metrics are deterministic (shared pixel-width table between browser and scraper): trust the provided pixel_width / ok flags instead of estimating lengths, and validate any candidate you generate with the seo tool before presenting it.
 </surface_intro>`,
   groups,
@@ -824,6 +848,8 @@ export function createMarketingPageScope(values: {
   indexability?: Record<string, unknown>;
   social_card?: Record<string, unknown>;
   structured_data?: Record<string, unknown>;
+  page_identity?: Record<string, unknown>;
+  resources?: Record<string, unknown>;
   perf?: Record<string, unknown>;
   images?: Record<string, unknown>;
   url_quality_issues?: Array<Record<string, unknown>>;

@@ -3,7 +3,9 @@ import {
   parseSnapshotHeadings,
   parseSnapshotImages,
   parseSnapshotLinksSummary,
+  parseSnapshotPageIdentity,
   parseSnapshotPerformance,
+  parseSnapshotResources,
   parseSnapshotStructuredData,
 } from "@/features/marketing/lib/snapshot-content";
 
@@ -99,11 +101,88 @@ describe("parseSnapshotStructuredData", () => {
     ).toEqual({
       schemaTypes: ["Organization", "WebSite"],
       hasPayload: true,
+      blocks: [],
+      jsonLd: [{ "@type": "Organization" }],
+      jsonLdRaw: [],
+      microdata: [],
+      rdfa: [],
+      microformats: [],
+      parseErrors: [],
+      blocksTruncated: false,
     });
     expect(parseSnapshotStructuredData(null)).toEqual({
       schemaTypes: [],
       hasPayload: false,
+      blocks: [],
+      jsonLd: [],
+      jsonLdRaw: [],
+      microdata: [],
+      rdfa: [],
+      microformats: [],
+      parseErrors: [],
+      blocksTruncated: false,
     });
+  });
+});
+
+describe("parseSnapshotResources", () => {
+  it("reads grouped resource inventory evidence", () => {
+    expect(
+      parseSnapshotResources({
+        resources: {
+          count: 2,
+          counts: { image: 1, video: 1 },
+          items: [
+            { kind: "image", url: "/hero.jpg", tag: "img" },
+            {
+              kind: "video",
+              url: "https://youtube.com/embed/a",
+              tag: "iframe",
+              attributes: { provider: "youtube" },
+            },
+          ],
+          truncated: false,
+        },
+      }),
+    ).toMatchObject({
+      count: 2,
+      counts: { image: 1, video: 1 },
+      truncated: false,
+      items: [
+        { kind: "image", url: "/hero.jpg", tag: "img" },
+        {
+          kind: "video",
+          url: "https://youtube.com/embed/a",
+          tag: "iframe",
+        },
+      ],
+    });
+  });
+});
+
+describe("parseSnapshotPageIdentity", () => {
+  it("prefers persisted identity and backfills old primary images", () => {
+    expect(
+      parseSnapshotPageIdentity(
+        { page_identity: { cms: "wordpress", featured_image: "/hero.jpg" } },
+        {},
+      ),
+    ).toMatchObject({ cms: "wordpress", featuredImage: "/hero.jpg" });
+    expect(
+      parseSnapshotPageIdentity(
+        {},
+        {
+          schema_org: {
+            "@graph": [
+              {
+                "@type": "WebPage",
+                primaryImageOfPage: { url: "https://example.com/primary.jpg" },
+              },
+            ],
+          },
+        },
+      ).featuredImage,
+    ).toBe("https://example.com/primary.jpg");
   });
 });
 
@@ -140,11 +219,16 @@ describe("parseSnapshotImages", () => {
       items: [
         {
           src: "/hero.webp",
+          srcset: ["/hero-small.webp", "/hero.webp"],
+          sizes: "100vw",
           alt: "Hero",
           width: 1200,
           height: 630,
           loading: "lazy",
+          decoding: "async",
+          fetchpriority: "high",
           title: "Hero image",
+          featured: true,
         },
         { src: "/logo.svg" },
         "not-a-record",
@@ -154,19 +238,29 @@ describe("parseSnapshotImages", () => {
     expect(parsed.items).toEqual([
       {
         src: "/hero.webp",
+        srcset: ["/hero-small.webp", "/hero.webp"],
+        sizes: "100vw",
         alt: "Hero",
         width: 1200,
         height: 630,
         loading: "lazy",
+        decoding: "async",
+        fetchPriority: "high",
         title: "Hero image",
+        featured: true,
       },
       {
         src: "/logo.svg",
+        srcset: [],
+        sizes: null,
         alt: null,
         width: null,
         height: null,
         loading: null,
+        decoding: null,
+        fetchPriority: null,
         title: null,
+        featured: false,
       },
     ]);
     expect(
@@ -175,11 +269,16 @@ describe("parseSnapshotImages", () => {
     ).toEqual([
       {
         src: "/a.png",
+        srcset: [],
+        sizes: null,
         alt: "",
         width: null,
         height: null,
         loading: null,
+        decoding: null,
+        fetchPriority: null,
         title: null,
+        featured: false,
       },
     ]);
   });
