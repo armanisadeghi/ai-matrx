@@ -1,0 +1,914 @@
+{
+  "$comment": "Language-neutral drift fixture for ARCHETYPE EXPANSION — the ONE pin holding the two implementations together: aidream/services/content_plan/archetypes.py (CANONICAL, Python: parse_archetype_map + expand_archetype) and matrx-frontend/features/marketing/content-plan/setup/archetypes.ts (browser twin, TS). Both must run every case identically, because the frontend previews and writes plan.node rows locally while the chat tool writes them server-side — a divergence means the preview a human approved is not what lands. `nodes` is the depth-first walk of the expanded tree in WRITE order (parents before children); it deliberately pins slug/node_type/page_type/brief/attributes rather than route, because the Python spec model carries no route (routes are pinned separately in `routes`, which BOTH sides compute the same way plan._node_shape does). `foundation` order is significant: tokens, header, footer, nav_entries, then assets in declaration order; items resolving to 0 are DROPPED. `declared_as` keeps the raw declaration so a UI can show that 2 came from \"=services.count\". Precedence pinned by cases 2-3: `names` overrides the archetype default count, an explicit `counts` entry overrides both, and a supplied name list longer than the count is truncated. error_cases pin that malformed config is LOUD in both languages (a half-parsed archetype silently drops the counts that are the whole point); they assert substrings that both implementations genuinely contain — never exact message text, which is language-specific. Extra/unknown config keys are REJECTED on both sides (Python: model_config extra='forbid').",
+  "expand_cases": [
+    {
+      "name": "defaults_count_refs_and_count_only",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "description": "Fixture archetype — not a real builtin.",
+        "page_estimate": "8-12",
+        "core": [
+          { "label": "Home", "node_type": "home", "page_type": "homepage" },
+          {
+            "label": "About",
+            "slug": "about",
+            "page_type": "about-page",
+            "brief": ["Who we are"]
+          }
+        ],
+        "families": [
+          {
+            "key": "services",
+            "label": "Services",
+            "page_type": "pillar-page",
+            "child_page_type": "service-page",
+            "count": 2,
+            "child_label_template": "Service {n}",
+            "child_slug_template": "service-{n}",
+            "child_brief": ["What it is", "Who it is for"]
+          },
+          {
+            "key": "blog",
+            "label": "Blog",
+            "page_type": "index-page",
+            "child_page_type": "article",
+            "count": 3,
+            "materialize": "count_only"
+          }
+        ],
+        "foundation": {
+          "tokens": true,
+          "header": 1,
+          "footer": 0,
+          "nav_entries": "=services.count",
+          "assets": { "logo": 1, "service_icon": "=services.count", "banner": 0 }
+        }
+      },
+      "counts": null,
+      "names": null,
+      "expect": {
+        "counts": { "services": 2, "blog": 3 },
+        "routes": [
+          "/",
+          "/about",
+          "/blog",
+          "/services",
+          "/services/service-1",
+          "/services/service-2"
+        ],
+        "page_count": 6,
+        "families": [
+          {
+            "key": "services",
+            "label": "Services",
+            "route": "/services",
+            "count": 2,
+            "materialize": "pages",
+            "child_page_type": "service-page",
+            "child_labels": ["Service 1", "Service 2"]
+          },
+          {
+            "key": "blog",
+            "label": "Blog",
+            "route": "/blog",
+            "count": 3,
+            "materialize": "count_only",
+            "child_page_type": "article",
+            "child_labels": []
+          }
+        ],
+        "foundation": [
+          {
+            "key": "tokens",
+            "kind": "tokens",
+            "label": "Design tokens / theme",
+            "required": 1,
+            "declared_as": "true"
+          },
+          {
+            "key": "header",
+            "kind": "component",
+            "label": "Header component",
+            "required": 1,
+            "declared_as": "1"
+          },
+          {
+            "key": "nav_entries",
+            "kind": "nav",
+            "label": "Primary navigation entries",
+            "required": 2,
+            "declared_as": "=services.count"
+          },
+          {
+            "key": "asset:logo",
+            "kind": "asset",
+            "label": "Asset — logo",
+            "required": 1,
+            "declared_as": "1"
+          },
+          {
+            "key": "asset:service_icon",
+            "kind": "asset",
+            "label": "Asset — service_icon",
+            "required": 2,
+            "declared_as": "=services.count"
+          }
+        ],
+        "nodes": [
+          {
+            "depth": 0,
+            "slug": null,
+            "label": "Home",
+            "node_type": "home",
+            "page_type": "homepage",
+            "brief": [],
+            "attributes": { "archetype": { "source": "demo", "role": "core" } }
+          },
+          {
+            "depth": 1,
+            "slug": "about",
+            "label": "About",
+            "node_type": "article",
+            "page_type": "about-page",
+            "brief": ["Who we are"],
+            "attributes": { "archetype": { "source": "demo", "role": "core" } }
+          },
+          {
+            "depth": 1,
+            "slug": "services",
+            "label": "Services",
+            "node_type": "index",
+            "page_type": "pillar-page",
+            "brief": [],
+            "attributes": {
+              "archetype": {
+                "source": "demo",
+                "role": "family_hub",
+                "family": "services",
+                "target_count": 2,
+                "materialize": "pages"
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "slug": "service-1",
+            "label": "Service 1",
+            "node_type": "article",
+            "page_type": "service-page",
+            "brief": ["What it is", "Who it is for"],
+            "attributes": {
+              "archetype": {
+                "source": "demo",
+                "role": "family_child",
+                "family": "services"
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "slug": "service-2",
+            "label": "Service 2",
+            "node_type": "article",
+            "page_type": "service-page",
+            "brief": ["What it is", "Who it is for"],
+            "attributes": {
+              "archetype": {
+                "source": "demo",
+                "role": "family_child",
+                "family": "services"
+              }
+            }
+          },
+          {
+            "depth": 1,
+            "slug": "blog",
+            "label": "Blog",
+            "node_type": "index",
+            "page_type": "index-page",
+            "brief": [],
+            "attributes": {
+              "archetype": {
+                "source": "demo",
+                "role": "family_hub",
+                "family": "blog",
+                "target_count": 3,
+                "materialize": "count_only"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "names_set_count_and_slugs",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "core": [
+          { "label": "Home", "node_type": "home", "page_type": "homepage" }
+        ],
+        "families": [
+          {
+            "key": "services",
+            "label": "Services",
+            "page_type": "pillar-page",
+            "child_page_type": "service-page",
+            "count": 2,
+            "child_label_template": "Service {n}",
+            "child_slug_template": "service-{n}"
+          }
+        ],
+        "foundation": { "nav_entries": "=services.count" }
+      },
+      "counts": null,
+      "names": {
+        "services": [
+          "Water Damage Restoration",
+          "Mold Remediation",
+          "Fire & Smoke Cleanup"
+        ]
+      },
+      "expect": {
+        "counts": { "services": 3 },
+        "routes": [
+          "/",
+          "/services",
+          "/services/fire-smoke-cleanup",
+          "/services/mold-remediation",
+          "/services/water-damage-restoration"
+        ],
+        "page_count": 5,
+        "families": [
+          {
+            "key": "services",
+            "label": "Services",
+            "route": "/services",
+            "count": 3,
+            "materialize": "pages",
+            "child_page_type": "service-page",
+            "child_labels": [
+              "Water Damage Restoration",
+              "Mold Remediation",
+              "Fire & Smoke Cleanup"
+            ]
+          }
+        ],
+        "foundation": [
+          {
+            "key": "nav_entries",
+            "kind": "nav",
+            "label": "Primary navigation entries",
+            "required": 3,
+            "declared_as": "=services.count"
+          }
+        ],
+        "nodes": [
+          {
+            "depth": 0,
+            "slug": null,
+            "label": "Home",
+            "node_type": "home",
+            "page_type": "homepage",
+            "brief": [],
+            "attributes": { "archetype": { "source": "demo", "role": "core" } }
+          },
+          {
+            "depth": 1,
+            "slug": "services",
+            "label": "Services",
+            "node_type": "index",
+            "page_type": "pillar-page",
+            "brief": [],
+            "attributes": {
+              "archetype": {
+                "source": "demo",
+                "role": "family_hub",
+                "family": "services",
+                "target_count": 3,
+                "materialize": "pages"
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "slug": "water-damage-restoration",
+            "label": "Water Damage Restoration",
+            "node_type": "article",
+            "page_type": "service-page",
+            "brief": [],
+            "attributes": {
+              "archetype": {
+                "source": "demo",
+                "role": "family_child",
+                "family": "services"
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "slug": "mold-remediation",
+            "label": "Mold Remediation",
+            "node_type": "article",
+            "page_type": "service-page",
+            "brief": [],
+            "attributes": {
+              "archetype": {
+                "source": "demo",
+                "role": "family_child",
+                "family": "services"
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "slug": "fire-smoke-cleanup",
+            "label": "Fire & Smoke Cleanup",
+            "node_type": "article",
+            "page_type": "service-page",
+            "brief": [],
+            "attributes": {
+              "archetype": {
+                "source": "demo",
+                "role": "family_child",
+                "family": "services"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "explicit_count_wins_over_names_and_truncates",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "core": [
+          { "label": "Home", "node_type": "home", "page_type": "homepage" }
+        ],
+        "families": [
+          {
+            "key": "services",
+            "label": "Services",
+            "page_type": "pillar-page",
+            "child_page_type": "service-page",
+            "count": 2
+          }
+        ]
+      },
+      "counts": { "services": 1 },
+      "names": {
+        "services": ["Water Damage Restoration", "Mold Remediation"]
+      },
+      "expect": {
+        "counts": { "services": 1 },
+        "routes": ["/", "/services", "/services/water-damage-restoration"],
+        "page_count": 3,
+        "families": [
+          {
+            "key": "services",
+            "label": "Services",
+            "route": "/services",
+            "count": 1,
+            "materialize": "pages",
+            "child_page_type": "service-page",
+            "child_labels": ["Water Damage Restoration"]
+          }
+        ],
+        "foundation": [],
+        "nodes": [
+          {
+            "depth": 0,
+            "slug": null,
+            "label": "Home",
+            "node_type": "home",
+            "page_type": "homepage",
+            "brief": [],
+            "attributes": { "archetype": { "source": "demo", "role": "core" } }
+          },
+          {
+            "depth": 1,
+            "slug": "services",
+            "label": "Services",
+            "node_type": "index",
+            "page_type": "pillar-page",
+            "brief": [],
+            "attributes": {
+              "archetype": {
+                "source": "demo",
+                "role": "family_hub",
+                "family": "services",
+                "target_count": 1,
+                "materialize": "pages"
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "slug": "water-damage-restoration",
+            "label": "Water Damage Restoration",
+            "node_type": "article",
+            "page_type": "service-page",
+            "brief": [],
+            "attributes": {
+              "archetype": {
+                "source": "demo",
+                "role": "family_child",
+                "family": "services"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "colliding_names_get_suffixed_slugs",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "core": [
+          { "label": "Home", "node_type": "home", "page_type": "homepage" }
+        ],
+        "families": [
+          {
+            "key": "services",
+            "label": "Services",
+            "page_type": "pillar-page",
+            "child_page_type": "service-page",
+            "count": 0
+          }
+        ]
+      },
+      "counts": null,
+      "names": { "services": ["Roof Repair", "Roof  Repair!"] },
+      "expect": {
+        "counts": { "services": 2 },
+        "routes": [
+          "/",
+          "/services",
+          "/services/roof-repair",
+          "/services/roof-repair-2"
+        ],
+        "page_count": 4,
+        "families": [
+          {
+            "key": "services",
+            "label": "Services",
+            "route": "/services",
+            "count": 2,
+            "materialize": "pages",
+            "child_page_type": "service-page",
+            "child_labels": ["Roof Repair", "Roof  Repair!"]
+          }
+        ],
+        "foundation": [],
+        "nodes": [
+          {
+            "depth": 0,
+            "slug": null,
+            "label": "Home",
+            "node_type": "home",
+            "page_type": "homepage",
+            "brief": [],
+            "attributes": { "archetype": { "source": "demo", "role": "core" } }
+          },
+          {
+            "depth": 1,
+            "slug": "services",
+            "label": "Services",
+            "node_type": "index",
+            "page_type": "pillar-page",
+            "brief": [],
+            "attributes": {
+              "archetype": {
+                "source": "demo",
+                "role": "family_hub",
+                "family": "services",
+                "target_count": 2,
+                "materialize": "pages"
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "slug": "roof-repair",
+            "label": "Roof Repair",
+            "node_type": "article",
+            "page_type": "service-page",
+            "brief": [],
+            "attributes": {
+              "archetype": {
+                "source": "demo",
+                "role": "family_child",
+                "family": "services"
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "slug": "roof-repair-2",
+            "label": "Roof  Repair!",
+            "node_type": "article",
+            "page_type": "service-page",
+            "brief": [],
+            "attributes": {
+              "archetype": {
+                "source": "demo",
+                "role": "family_child",
+                "family": "services"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "zero_count_keeps_hub_and_drops_derived_foundation",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "core": [
+          { "label": "Home", "node_type": "home", "page_type": "homepage" }
+        ],
+        "families": [
+          {
+            "key": "services",
+            "label": "Services",
+            "page_type": "pillar-page",
+            "child_page_type": "service-page",
+            "count": 4
+          }
+        ],
+        "foundation": {
+          "tokens": true,
+          "nav_entries": "=services.count",
+          "assets": { "service_icon": "=services.count" }
+        }
+      },
+      "counts": { "services": 0 },
+      "names": null,
+      "expect": {
+        "counts": { "services": 0 },
+        "routes": ["/", "/services"],
+        "page_count": 2,
+        "families": [
+          {
+            "key": "services",
+            "label": "Services",
+            "route": "/services",
+            "count": 0,
+            "materialize": "pages",
+            "child_page_type": "service-page",
+            "child_labels": []
+          }
+        ],
+        "foundation": [
+          {
+            "key": "tokens",
+            "kind": "tokens",
+            "label": "Design tokens / theme",
+            "required": 1,
+            "declared_as": "true"
+          }
+        ],
+        "nodes": [
+          {
+            "depth": 0,
+            "slug": null,
+            "label": "Home",
+            "node_type": "home",
+            "page_type": "homepage",
+            "brief": [],
+            "attributes": { "archetype": { "source": "demo", "role": "core" } }
+          },
+          {
+            "depth": 1,
+            "slug": "services",
+            "label": "Services",
+            "node_type": "index",
+            "page_type": "pillar-page",
+            "brief": [],
+            "attributes": {
+              "archetype": {
+                "source": "demo",
+                "role": "family_hub",
+                "family": "services",
+                "target_count": 0,
+                "materialize": "pages"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "custom_slug_and_node_types",
+      "archetype_key": "clinic",
+      "archetype": {
+        "label": "Clinic",
+        "core": [
+          { "label": "Home", "node_type": "home", "page_type": "homepage" }
+        ],
+        "families": [
+          {
+            "key": "treatments",
+            "label": "Treatments",
+            "slug": "what-we-treat",
+            "node_type": "pillar",
+            "page_type": "pillar-page",
+            "child_node_type": "cluster",
+            "child_page_type": "service-page",
+            "count": 1,
+            "child_label_template": "{label} option {n}",
+            "child_slug_template": "{key}-option-{n}"
+          }
+        ]
+      },
+      "counts": null,
+      "names": null,
+      "expect": {
+        "counts": { "treatments": 1 },
+        "routes": [
+          "/",
+          "/what-we-treat",
+          "/what-we-treat/treatments-option-1"
+        ],
+        "page_count": 3,
+        "families": [
+          {
+            "key": "treatments",
+            "label": "Treatments",
+            "route": "/what-we-treat",
+            "count": 1,
+            "materialize": "pages",
+            "child_page_type": "service-page",
+            "child_labels": ["Treatments option 1"]
+          }
+        ],
+        "foundation": [],
+        "nodes": [
+          {
+            "depth": 0,
+            "slug": null,
+            "label": "Home",
+            "node_type": "home",
+            "page_type": "homepage",
+            "brief": [],
+            "attributes": {
+              "archetype": { "source": "clinic", "role": "core" }
+            }
+          },
+          {
+            "depth": 1,
+            "slug": "what-we-treat",
+            "label": "Treatments",
+            "node_type": "pillar",
+            "page_type": "pillar-page",
+            "brief": [],
+            "attributes": {
+              "archetype": {
+                "source": "clinic",
+                "role": "family_hub",
+                "family": "treatments",
+                "target_count": 1,
+                "materialize": "pages"
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "slug": "treatments-option-1",
+            "label": "Treatments option 1",
+            "node_type": "cluster",
+            "page_type": "service-page",
+            "brief": [],
+            "attributes": {
+              "archetype": {
+                "source": "clinic",
+                "role": "family_child",
+                "family": "treatments"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "unknown_node_type_coerces_to_article",
+      "$note": "An unrecognised node_type is a LOUD RECOVERY, not a refusal: aidream's coerce_node_type falls back to 'article' and screams. The twin must land the same tree — a client that refused here would preview nothing for a plan the server happily writes.",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "core": [
+          { "label": "Home", "node_type": "home" },
+          { "label": "Landing", "slug": "landing", "node_type": "megapage" }
+        ],
+        "families": []
+      },
+      "counts": null,
+      "names": null,
+      "expect": {
+        "counts": {},
+        "routes": ["/", "/landing"],
+        "page_count": 2,
+        "families": [],
+        "foundation": [],
+        "nodes": [
+          {
+            "depth": 0,
+            "slug": null,
+            "label": "Home",
+            "node_type": "home",
+            "page_type": null,
+            "brief": [],
+            "attributes": { "archetype": { "source": "demo", "role": "core" } }
+          },
+          {
+            "depth": 1,
+            "slug": "landing",
+            "label": "Landing",
+            "node_type": "article",
+            "page_type": null,
+            "brief": [],
+            "attributes": { "archetype": { "source": "demo", "role": "core" } }
+          }
+        ]
+      }
+    }
+  ],
+  "error_cases": [
+    {
+      "name": "counts_override_unknown_family",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "core": [{ "label": "Home", "node_type": "home" }],
+        "families": [{ "key": "services", "label": "Services" }]
+      },
+      "counts": { "widgets": 3 },
+      "names": null,
+      "expect_error_mentions": ["widgets"]
+    },
+    {
+      "name": "names_override_unknown_family",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "core": [{ "label": "Home", "node_type": "home" }],
+        "families": [{ "key": "services", "label": "Services" }]
+      },
+      "counts": null,
+      "names": { "widgets": ["A"] },
+      "expect_error_mentions": ["widgets"]
+    },
+    {
+      "name": "count_reference_to_missing_family",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "core": [{ "label": "Home", "node_type": "home" }],
+        "families": [{ "key": "services", "label": "Services", "count": 2 }],
+        "foundation": { "nav_entries": "=missing.count" }
+      },
+      "counts": null,
+      "names": null,
+      "expect_error_mentions": ["missing"]
+    },
+    {
+      "name": "count_reference_is_not_the_grammar",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "core": [{ "label": "Home", "node_type": "home" }],
+        "families": [{ "key": "services", "label": "Services", "count": 2 }],
+        "foundation": { "nav_entries": "services * 2" }
+      },
+      "counts": null,
+      "names": null,
+      "expect_error_mentions": ["services * 2"]
+    },
+    {
+      "name": "no_home_page",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "core": [{ "label": "About", "slug": "about" }],
+        "families": []
+      },
+      "counts": null,
+      "names": null,
+      "expect_error_mentions": ["home"]
+    },
+    {
+      "name": "two_home_pages",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "core": [
+          { "label": "Home", "node_type": "home" },
+          { "label": "Home again", "node_type": "home" }
+        ],
+        "families": []
+      },
+      "counts": null,
+      "names": null,
+      "expect_error_mentions": ["home"]
+    },
+    {
+      "name": "core_page_without_slug",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "core": [
+          { "label": "Home", "node_type": "home" },
+          { "label": "Reviews" }
+        ],
+        "families": []
+      },
+      "counts": null,
+      "names": null,
+      "expect_error_mentions": ["Reviews"]
+    },
+    {
+      "name": "negative_count_override",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "core": [{ "label": "Home", "node_type": "home" }],
+        "families": [{ "key": "services", "label": "Services", "count": 2 }]
+      },
+      "counts": { "services": -1 },
+      "names": null,
+      "expect_error_mentions": ["services"]
+    },
+    {
+      "name": "duplicate_family_keys",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "core": [{ "label": "Home", "node_type": "home" }],
+        "families": [
+          { "key": "services", "label": "Services" },
+          { "key": "services", "label": "Services again" }
+        ]
+      },
+      "counts": null,
+      "names": null,
+      "expect_error_mentions": ["services"]
+    },
+    {
+      "name": "unknown_materialize_mode",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "core": [{ "label": "Home", "node_type": "home" }],
+        "families": [
+          {
+            "key": "services",
+            "label": "Services",
+            "materialize": "maybe"
+          }
+        ]
+      },
+      "counts": null,
+      "names": null,
+      "expect_error_mentions": ["maybe"]
+    },
+    {
+      "name": "unknown_family_config_key_is_rejected",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "core": [{ "label": "Home", "node_type": "home" }],
+        "families": [
+          { "key": "services", "label": "Services", "gizmo": 1 }
+        ]
+      },
+      "counts": null,
+      "names": null,
+      "expect_error_mentions": ["gizmo"]
+    },
+    {
+      "name": "unknown_archetype_config_key_is_rejected",
+      "archetype_key": "demo",
+      "archetype": {
+        "label": "Demo shape",
+        "gizmo": 1,
+        "core": [{ "label": "Home", "node_type": "home" }],
+        "families": []
+      },
+      "counts": null,
+      "names": null,
+      "expect_error_mentions": ["gizmo"]
+    },
+    {
+      "name": "archetypes_blob_must_be_an_object",
+      "archetype_key": "demo",
+      "archetype_map_raw": [{ "label": "Demo shape" }],
+      "counts": null,
+      "names": null,
+      "expect_error_mentions": ["archetypes"]
+    }
+  ]
+}
