@@ -1,8 +1,18 @@
 ---
 status: active
-updated: 2026-07-08
+updated: 2026-07-28
 repos: [matrx-frontend, aidream]
 ---
+
+> **2026-07-28 re-verification (code + live DB).** Facts below marked STALE have moved. Net deltas:
+> - **Read-only builder SHIPPED** (Redux-gated: `selectAgentIsReadOnly`, `AgentBuilderReadOnlyFrame`, save-button duplicate prompt). Gaps remain: write thunks (`saveAgentField`/`saveAgent`, `features/agents/redux/agent-definition/thunks.ts:514,656`) have no access guard (RLS-only, silent), autosave draft-recovery (`useAgentAutoSave.ts:39-62`) runs regardless of access, `isEditable` hardcoded `true` in `AgentBuilderClient.tsx:56,68`, and `AgentSettingsForm`/`ApplySchemaDialog`/row actions bypass the gate.
+> - **`agx_get_execution_full` is now `SECURITY DEFINER`** (not INVOKER as stated in §Resources) gated `iam.has_access(...,'viewer') OR (agent_type='builtin' AND is_active)` — and **GRANTED TO `anon`**, so any anonymous visitor can read builtin agents' `settings/model_id/tools/custom_tools`. Model violation unless Decision #1 blesses a builtin carve-out. Browser still calls it from `launch-agent-execution.thunk.ts:409-431`.
+> - **OAuth-transfer caveat RESOLVED:** `chat.conversation`/`chat.message` carry real FKs to `auth.users` (`created_by`/`updated_by`) — guest conversation threads are covered by `transfer_guest_data_to_user`.
+> - **`get_agent_public` + `lib/agents/publicAgent.ts` still have ZERO callers** — dead code; `/p/chat/a/[id]` resolves agents client-side from Redux lists, so an anon guest silently falls back to `DEFAULT_AGENT_CONFIG` (arbitrary-agent guest run is effectively broken today).
+> - **Registry broadly enabled:** 29 types now `is_link_shareable=true` with public columns (§7 largely done at the policy layer; renderers still thin). Live usage: 69 share links (67 file, 2 agent).
+> - **aidream:** guest model fallback (`swap_model_for_auth_tier`) shipped. Still open: no server-side guest run quota on `/ai/agents/{id}` (FE `check_guest_execution_limit` is enforced only on the agent-APP path; `/p/chat` checks nothing), and body `tools`/`tools_replace` still honored for fingerprint guests.
+> - **SEO (§3): nothing landed.** No `robots` directive and no `is_verified` gate in `p/[slug]` metadata, sitemap still education-scoped, no SSR text hero, no review queue. Live DB: 58 published+public apps, **0 verified** — the sitemap would be empty until someone verifies.
+> - Naming drift: forkable type is `quiz_session` (code/registry), not `quiz_sessions`. Fork UI exists on `/s/[token]` via `DuplicateToEditButton`; auto-fork-after-signup (§5) and expiry/max-uses in the canonical `ShareLinkPanel` (§6) still missing — note the files-lane `ShareLinkDialog` already exposes expiry/max-uses/permission-level and should be the pattern donor.
 
 # Sharing & Guest-Use — remaining work
 
