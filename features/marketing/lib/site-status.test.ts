@@ -1,4 +1,7 @@
-import { siteConnectionStatuses } from "@/features/marketing/lib/site-status";
+import {
+  parseInitialization,
+  siteConnectionStatuses,
+} from "@/features/marketing/lib/site-status";
 
 const CONNECTED_GSC_INTEGRATIONS = {
   marketing: {
@@ -53,5 +56,32 @@ describe("siteConnectionStatuses — Search Console sync state", () => {
     });
     expect(status.state).toBe("off");
     expect(status.detail).toBe("Not connected");
+  });
+});
+
+describe("parseInitialization — errors versus non-blocking notices", () => {
+  it("keeps warnings visible without counting them as failed steps", () => {
+    const parsed = parseInitialization({
+      initialization: {
+        homepage: "ok",
+        errors: [],
+        warnings: [
+          {
+            step: "screenshots",
+            error_type: "ScreenshotPruneError",
+            message: "One superseded screenshot could not be soft-deleted",
+          },
+        ],
+      },
+    });
+
+    expect(parsed.stepErrors).toEqual([]);
+    expect(parsed.stepWarnings).toEqual([
+      {
+        step: "screenshots",
+        errorType: "ScreenshotPruneError",
+        message: "One superseded screenshot could not be soft-deleted",
+      },
+    ]);
   });
 });

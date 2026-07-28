@@ -165,7 +165,7 @@ export function SiteOverview() {
       // failures in site.initialization.errors. Read the fresh row and scream
       // about any failed step (toast + Error Inspector), never a false green.
       const fresh = await getSite(site.id);
-      const { stepErrors } = parseInitialization(fresh);
+      const { stepErrors, stepWarnings } = parseInitialization(fresh);
       if (stepErrors.length) {
         const summary = stepErrors
           .map((stepError) => stepError.step)
@@ -192,7 +192,15 @@ export function SiteOverview() {
           }
         }
       } else {
-        toast.success("Site initialized");
+        if (stepWarnings.length) {
+          toast.warning("Site initialized with notices", {
+            description: stepWarnings
+              .map((stepWarning) => stepWarning.step)
+              .join(", "),
+          });
+        } else {
+          toast.success("Site initialized");
+        }
         setInitPhase("idle");
       }
     } catch (error) {
@@ -308,25 +316,35 @@ export function SiteOverview() {
 
   const initIssuesCopy = webCopy({
     kind: "web-site-initialization",
-    label: "Initialization issues",
+    label: "Initialization issues and notices",
     description:
-      "Per-step failures recorded by the last site initialization run (site.initialization.errors).",
-    surface: `Initialization issues — ${site.domain}`,
+      "Per-step failures and non-blocking notices recorded by the last site initialization run.",
+    surface: `Initialization status — ${site.domain}`,
     data: {
       site_id: site.id,
       initialized_at: site.initialized_at,
       initialization: site.initialization,
       stepErrors: init.stepErrors,
+      stepWarnings: init.stepWarnings,
     },
     lines: [
       ["Site", site.domain],
       ["Failed steps", init.stepErrors.length],
+      ["Notices", init.stepWarnings.length],
       ...init.stepErrors.map((stepError): [string, string] => [
         stepError.step,
         `${stepError.errorType ? `${stepError.errorType}: ` : ""}${stepError.message}`,
       ]),
+      ...init.stepWarnings.map((stepWarning): [string, string] => [
+        `${stepWarning.step} notice`,
+        `${stepWarning.errorType ? `${stepWarning.errorType}: ` : ""}${stepWarning.message}`,
+      ]),
     ],
-    attributes: { site_id: site.id, failed_steps: init.stepErrors.length },
+    attributes: {
+      site_id: site.id,
+      failed_steps: init.stepErrors.length,
+      notices: init.stepWarnings.length,
+    },
   });
 
   // Overview is where the five site-level manifest values actually load, so
@@ -364,6 +382,7 @@ export function SiteOverview() {
             screenshots_captured: liveInit.screenshotsCaptured,
             discovered_total: liveInit.discoveredTotal,
             step_errors: liveInit.stepErrors,
+            step_warnings: liveInit.stepWarnings,
           }
         : undefined,
       open_findings_total: liveMetrics?.openFindings,
@@ -460,8 +479,11 @@ export function SiteOverview() {
                   </Button>
                 </div>
                 <ul className="mt-2 space-y-2">
-                  {init.stepErrors.map((stepError) => (
-                    <li key={stepError.step} className="text-xs leading-5">
+                  {init.stepErrors.map((stepError, index) => (
+                    <li
+                      key={`${stepError.step}-${index}`}
+                      className="text-xs leading-5"
+                    >
                       <span className="font-semibold capitalize text-foreground">
                         {stepError.step}
                       </span>
@@ -472,6 +494,40 @@ export function SiteOverview() {
                       ) : null}
                       <p className="break-words text-muted-foreground">
                         {stepError.message}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {init.stepWarnings.length ? (
+              <section className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3">
+                <div className="flex items-center gap-2">
+                  <TriangleAlert className="h-4 w-4 text-amber-600" />
+                  <h2 className="text-sm font-semibold text-foreground">
+                    Initialization notices — {init.stepWarnings.length}
+                  </h2>
+                  <span className="ml-auto">
+                    <CopyButtons size="icon" {...initIssuesCopy} />
+                  </span>
+                </div>
+                <ul className="mt-2 space-y-2">
+                  {init.stepWarnings.map((stepWarning, index) => (
+                    <li
+                      key={`${stepWarning.step}-${index}`}
+                      className="text-xs leading-5"
+                    >
+                      <span className="font-semibold capitalize text-foreground">
+                        {stepWarning.step}
+                      </span>
+                      {stepWarning.errorType ? (
+                        <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">
+                          {stepWarning.errorType}
+                        </span>
+                      ) : null}
+                      <p className="break-words text-muted-foreground">
+                        {stepWarning.message}
                       </p>
                     </li>
                   ))}

@@ -35,6 +35,7 @@ export interface ParsedInitialization {
   screenshotsCaptured: number | null;
   discoveredTotal: number | null;
   stepErrors: InitializationStepError[];
+  stepWarnings: InitializationStepError[];
 }
 
 function numberOrNull(value: unknown): number | null {
@@ -52,7 +53,7 @@ export function cleanServerErrorMessage(raw: string): string {
         line &&
         !/^-{4,}$/.test(line) &&
         !line.startsWith("Traceback") &&
-        !line.startsWith("File \"") &&
+        !line.startsWith('File "') &&
         !line.startsWith("...("),
     );
   return lines.slice(0, 4).join(" · ") || raw.slice(0, 200);
@@ -62,12 +63,20 @@ function parseStepErrors(value: unknown): InitializationStepError[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((entry) => {
     if (typeof entry === "string") {
-      return [{ step: "unknown", errorType: null, message: cleanServerErrorMessage(entry) }];
+      return [
+        {
+          step: "unknown",
+          errorType: null,
+          message: cleanServerErrorMessage(entry),
+        },
+      ];
     }
     if (typeof entry === "object" && entry !== null && !Array.isArray(entry)) {
       const record = entry as { [key: string]: unknown };
       const message =
-        typeof record.message === "string" ? record.message : JSON.stringify(record);
+        typeof record.message === "string"
+          ? record.message
+          : JSON.stringify(record);
       return [
         {
           step: typeof record.step === "string" ? record.step : "unknown",
@@ -100,6 +109,7 @@ export function parseInitialization(
       ? discoveredCounts.reduce((sum, count) => sum + count, 0)
       : null,
     stepErrors: parseStepErrors(root.errors),
+    stepWarnings: parseStepErrors(root.warnings),
   };
 }
 
@@ -122,13 +132,21 @@ export function siteConnectionStatuses(
           state: "attention",
           detail: `Initialized with ${init.stepErrors.length} failed step${init.stepErrors.length === 1 ? "" : "s"} (${init.stepErrors.map((error) => error.step).join(", ")})`,
         }
-      : {
-          key: "initialized",
-          label: "Init",
-          name: "Site initialized",
-          state: "connected",
-          detail: "Homepage, sitemaps, and basics captured",
-        }
+      : init.stepWarnings.length
+        ? {
+            key: "initialized",
+            label: "Init",
+            name: "Site initialized",
+            state: "attention",
+            detail: `Initialized with ${init.stepWarnings.length} non-blocking notice${init.stepWarnings.length === 1 ? "" : "s"}`,
+          }
+        : {
+            key: "initialized",
+            label: "Init",
+            name: "Site initialized",
+            state: "connected",
+            detail: "Homepage, sitemaps, and basics captured",
+          }
     : {
         key: "initialized",
         label: "Init",
@@ -206,7 +224,9 @@ export function siteConnectionStatuses(
       "CMS",
       "CMS connection",
       providerReferenceStatus(integrations.cms, true, false),
-      integrations.cms.kind ? "Configured kind, not connected" : "Not configured",
+      integrations.cms.kind
+        ? "Configured kind, not connected"
+        : "Not configured",
     ),
   ];
 }
