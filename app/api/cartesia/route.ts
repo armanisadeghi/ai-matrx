@@ -34,9 +34,20 @@ export async function GET(request: NextRequest) {
       cartesiaVersion: CARTESIA_API_VERSION as unknown as "2024-06-10",
     });
 
-    const resp = await cartesia.auth.accessToken({ grants: { tts: true } });
+    // Max TTL (1h). The client primitive (lib/cartesia/accessToken.ts)
+    // caches against expiresAt and refresh-retries on rejection, so the
+    // exact TTL is not load-bearing — longer just means fewer mints.
+    const EXPIRES_IN_SEC = 3600;
+    const mintedAt = Date.now();
+    const resp = await cartesia.auth.accessToken({
+      grants: { tts: true, stt: true },
+      expiresIn: EXPIRES_IN_SEC,
+    });
 
-    return NextResponse.json(resp);
+    return NextResponse.json({
+      token: resp.token,
+      expiresAt: mintedAt + EXPIRES_IN_SEC * 1000,
+    });
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "Token generation failed";

@@ -103,9 +103,9 @@ All 10,676 rows null. FE is ready (link graph, External view, HTTP column). Fix 
 
 File-picker consolidation done; `FolderPicker`/`SaveAsDialog` still use the old `PickerShell` dialog. Decide: extend `FilesResourcePicker` with folder-select mode or keep a dedicated folder surface, then retire `PickerShell`.
 
-### D113 — Cartesia API key is exposed client-side (`NEXT_PUBLIC_CARTESIA_API_KEY`) (2026-07-28)
+### D114 — ROTATE exposed provider keys + prune NEXT_PUBLIC secret env vars. Arman action (2026-07-28)
 
-`lib/cartesia/client.ts` builds the Cartesia client from `NEXT_PUBLIC_CARTESIA_API_KEY` — the real key is inlined into the browser bundle, readable in devtools, usable for arbitrary TTS/voice-clone billing. Fix: mint scoped short-lived credentials via the token broker (`lib/api/broker/`, `token-broker-client` skill) or route Cartesia calls through aidream. Found while fixing D74b.
+The D113 fix stops NEW bundles from carrying keys, but past production bundles shipped `NEXT_PUBLIC_CARTESIA_API_KEY` and `NEXT_PUBLIC_OPENAI_API_KEY` — treat both as compromised and **rotate them at the provider**, then set the Cartesia key as server-only `CARTESIA_API_KEY` (already read by `/api/cartesia*`). Also prune the ~20 unreferenced `NEXT_PUBLIC_*` secret env vars in `.env.local`/Vercel (Anthropic, Gemini, Groq, Deepgram, Replicate, Stability, Cerebras, Fireworks, xAI, GetImg, ModelLabs, News, Comfy, Deploy, Picovoice, Stream secret, TensorDock, Unsplash secret) — unreferenced code can't bundle them, but the naming invites the next leak; rename server-side ones without the prefix, delete dead ones.
 
 ### D76 — app-wide: "state update on a component that hasn't mounted yet" on `/scraper` and `/` (2026-07-19)
 
@@ -173,6 +173,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 One line per fix — title, date, pointer. History lives in git.
 
+- **D113** — no Cartesia key in the browser: ONE token primitive (`lib/cartesia/accessToken.ts` — lazy, cached, dedupe, refresh-retry-once) + ONE ws connector (`connection.ts`); all 8 hooks/adapters ported; voices list/clone/create moved to authed server routes (`/api/cartesia/voices*`); raw-key `client.ts`/`tts-service.ts`/`AudioPlayground` deleted; `NEXT_PUBLIC_OPENAI_API_KEY`/`NEXT_PUBLIC_GOOGLE_API_KEY` bundle refs also removed. Rotation = D114. 2026-07-28.
 - **D107** — closed by Arman's attribution: the OOM fix was eliminating bad edge lazy imports (v0.4.137 revert), NOT the memory ceiling; `turbopackMemoryLimit` restored to 40GiB. 2026-07-28.
 - **D104** — shared `PublicFooter` (Privacy/Terms/Contact) mounted in `(public)/layout.tsx` + `app/page.tsx` (`components/matrx/PublicFooter.tsx`). 2026-07-28.
 - **D106.1-3** — research context builder save/load drift: `parseBindings` round-trips `delivery`+`strategy`; agent selection lifted + persisted (`features/research/service/resources.ts`, `ContextBuilder.tsx`). 2026-07-28.

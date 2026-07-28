@@ -38,15 +38,14 @@
 "use client";
 
 import { useEffect, useId, useRef, useCallback, useState } from "react";
-import { CartesiaClient } from "@cartesia/cartesia-js";
 import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
+import { connectCartesiaTts } from "@/lib/cartesia/connection";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
 import { toast } from "@/lib/toast";
 import { chunkTextForSpeech } from "../utils/chunk-text-for-speech";
 import {
   buildGenerationConfig,
-  CARTESIA_API_VERSION,
   resolveVoiceId,
   TTS_MODEL_ID,
   TTS_STREAMING_BUFFER_SEC,
@@ -94,7 +93,7 @@ export interface UseCartesiaStreamingSpeakerOptions {
   dictionarySurfaceKey?: string;
 }
 
-type CartesiaWs = ReturnType<CartesiaClient["tts"]["websocket"]>;
+type CartesiaWs = Awaited<ReturnType<typeof connectCartesiaTts>>["ws"];
 
 /**
  * Minimum buffered chars before the FIRST live-stream send when no sentence
@@ -326,38 +325,16 @@ export function useCartesiaStreamingSpeaker({
   );
 
   /**
-   * Fetches a token, opens the WebSocket, and ensures a SinkAwarePlayer exists.
-   * Idempotent — subsequent calls are no-ops once the WS is open.
+   * Opens the WebSocket (auth handled by connectCartesiaTts) and ensures a
+   * SinkAwarePlayer exists. Idempotent — subsequent calls are no-ops once the
+   * WS is open.
    */
   const ensureConnection = useCallback(async () => {
     if (websocketRef.current) return;
 
-    setPhaseIfMounted("fetching-token");
-    let tokenData: { token: string };
-    try {
-      const res = await fetch("/api/cartesia");
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `Token fetch failed: ${res.status}`);
-      }
-      tokenData = await res.json();
-    } catch (err) {
-      setPhaseIfMounted("error");
-      throw err;
-    }
-
     setPhaseIfMounted("connecting");
     try {
-      const client = new CartesiaClient({
-        cartesiaVersion: CARTESIA_API_VERSION as unknown as "2024-06-10",
-      });
-      const ws = client.tts.websocket({
-        container: "raw",
-        encoding: "pcm_f32le",
-        sampleRate: 44100,
-      });
-
-      const ctx = await ws.connect({ accessToken: tokenData.token });
+      const { ws, ctx } = await connectCartesiaTts();
       ctx.on("close", () => {
         websocketRef.current = null;
         setPhaseIfMounted("idle");

@@ -1,6 +1,6 @@
 'use client';
 import {useState, useEffect, useCallback, useRef} from 'react';
-import cartesia from "@/lib/cartesia/client";
+import {connectCartesiaTts} from "@/lib/cartesia/connection";
 import {
     OutputContainer,
     AudioEncoding,
@@ -81,11 +81,6 @@ export function useCartesia(
         language = Language.EN,
         bufferDuration = 1,
     }: UseCartesiaProps = {}): UseCartesiaResult {
-    // MATRX-EXCEPTION: `cartesia.tts` is typed as the base `Tts` class in the
-    // installed @cartesia/cartesia-js — `.websocket(...)` (called below) only
-    // exists on `StreamingTTSClient`/the runtime object, not the declared
-    // type (SDK type/version drift). Once past that call, the resolved
-    // handle is the fully-typed `Websocket` class.
     const [websocket, setWebsocket] = useState<CartesiaWebsocket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [messages, setMessages] = useState<string[]>([]);
@@ -109,16 +104,21 @@ export function useCartesia(
 
     // Initialize websocket connection
     useEffect(() => {
-        // MATRX-EXCEPTION: see the `websocket` state declaration above —
-        // `.websocket(...)` isn't on the declared `Tts` type.
-        const ws: CartesiaWebsocket = cartesia.tts.websocket({
+        let cancelled = false;
+        let connectedWs: CartesiaWebsocket | null = null;
+
+        connectCartesiaTts({
             container: config.container,
             encoding: config.encoding,
             sampleRate: config.sampleRate ?? 44100,
-        });
-        
-        ws.connect()
-            .then(() => {
+        })
+            .then(({ws}) => {
+                if (cancelled) {
+                    // Cleanup already ran — don't leak the socket or set state.
+                    ws.disconnect();
+                    return;
+                }
+                connectedWs = ws;
                 setIsConnected(true);
                 setWebsocket(ws);
                 // Create the player but don't start AudioContext yet
@@ -126,14 +126,16 @@ export function useCartesia(
                     playerRef.current = new SinkAwarePlayer({bufferDuration: config.bufferDuration ?? 1});
                 }
             })
-            .catch((err: Error) => {
+            .catch((err: unknown) => {
+                if (cancelled) return;
                 console.error(`Failed to connect to Cartesia: ${err}`);
-                setError(err);
+                setError(err instanceof Error ? err : new Error('Failed to connect to Cartesia'));
             });
 
         return () => {
-            if (ws) {
-                ws.disconnect();
+            cancelled = true;
+            if (connectedWs) {
+                connectedWs.disconnect();
             }
             // Only stop if play() has been called — the player throws 'AudioContext not initialized' otherwise
             if (playerRef.current && hasPlayedRef.current) {

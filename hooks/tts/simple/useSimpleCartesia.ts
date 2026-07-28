@@ -1,21 +1,22 @@
 "use client";
-import { CartesiaClient } from "@cartesia/cartesia-js";
+import type CartesiaWebsocket from "@cartesia/cartesia-js/wrapper/Websocket";
 import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Emotion } from "@/components/audio/VoiceConfigSelects";
+import { connectCartesiaTts } from "@/lib/cartesia/connection";
 import {
     buildGenerationConfig,
-    CARTESIA_API_VERSION,
     READING_VOICE_ID,
     TTS_MODEL_ID,
     TTS_PLAYBACK_BUFFER_SEC,
 } from "@/lib/cartesia/config";
 
-type ConnectionState = "idle" | "fetching-token" | "connecting" | "ready" | "disconnected";
+type ConnectionState = "connecting" | "ready" | "disconnected";
 
 export function useSimpleCartesia() {
-    const websocketRef = useRef<ReturnType<typeof CartesiaClient.prototype.tts.websocket> | null>(null);
-    const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
+    const websocketRef = useRef<CartesiaWebsocket | null>(null);
+    // The hook connects on mount, so "connecting" is the true initial state.
+    const [connectionState, setConnectionState] = useState<ConnectionState>("connecting");
     const [playerState, setPlayerState] = useState<"idle" | "playing">("idle");
     const [script, setScript] = useState("Hi. This is AI Matrix.");
     const [voiceId, setVoiceId] = useState(READING_VOICE_ID);
@@ -24,41 +25,20 @@ export function useSimpleCartesia() {
     const [speed, setSpeed] = useState<number>(0);
     const [modelId, setModelId] = useState(TTS_MODEL_ID);
 
-    const connect = useCallback(async () => {
-        try {
-            setConnectionState("fetching-token");
-            const res = await fetch("/api/cartesia");
-            if (!res.ok) {
-                const body = await res.json().catch(() => ({}));
-                throw new Error(body.error || `Token fetch failed: ${res.status}`);
-            }
-            const data = await res.json();
-            setConnectionState("connecting");
-            const cartesia = new CartesiaClient({
-                // MATRX-EXCEPTION: the installed @cartesia/cartesia-js SDK
-                // hard-pins `cartesiaVersion` to the literal "2024-06-10" —
-                // its type lags the released API version we intentionally
-                // pin to (see lib/cartesia/config.ts). Vendor type
-                // limitation, not a contract we control.
-                cartesiaVersion: CARTESIA_API_VERSION as unknown as "2024-06-10",
-            });
-            websocketRef.current = cartesia.tts.websocket({
-                container: "raw",
-                encoding: "pcm_f32le",
-                sampleRate: 44100,
-            });
-            const ctx = await websocketRef.current?.connect({
-                accessToken: data.token,
-            });
-            setConnectionState("ready");
-            ctx.on("close", () => {
+    const connect = useCallback(() => {
+        connectCartesiaTts()
+            .then(({ ws, ctx }) => {
+                websocketRef.current = ws;
+                setConnectionState("ready");
+                ctx.on("close", () => {
+                    setConnectionState("disconnected");
+                    websocketRef.current = null;
+                });
+            })
+            .catch((error: unknown) => {
+                console.error("[useSimpleCartesia] Connection failed:", error);
                 setConnectionState("disconnected");
-                websocketRef.current = null;
             });
-        } catch (error) {
-            console.error("[useSimpleCartesia] Connection failed:", error);
-            setConnectionState("disconnected");
-        }
     }, []);
 
     useEffect(() => {

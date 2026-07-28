@@ -10,14 +10,13 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { CartesiaClient } from '@cartesia/cartesia-js';
 import { SinkAwarePlayer } from '@/features/audio/sinkAwarePlayer';
+import { connectCartesiaTts } from '@/lib/cartesia/connection';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { selectVoicePreferences } from '@/lib/redux/preferences/userPreferenceSelectors';
 import { parseMarkdownToText } from '@/utils/markdown-processors/parse-markdown-for-speech';
 import {
   buildGenerationConfig,
-  CARTESIA_API_VERSION,
   resolveVoiceId,
   TTS_MODEL_ID,
   TTS_PLAYBACK_BUFFER_SEC,
@@ -58,7 +57,7 @@ export function useCartesiaSpeaker({
   // Last spoken text — labels this utterance's row in the Audio panel.
   const [lastText, setLastText] = useState('');
 
-  const websocketRef = useRef<ReturnType<typeof CartesiaClient.prototype.tts.websocket> | null>(null);
+  const websocketRef = useRef<Awaited<ReturnType<typeof connectCartesiaTts>>['ws'] | null>(null);
   const playerRef = useRef<SinkAwarePlayer | null>(null);
   const hasPlayedRef = useRef(false);
   const mountedRef = useRef(true);
@@ -85,34 +84,10 @@ export function useCartesiaSpeaker({
   const ensureConnection = useCallback(async () => {
     if (websocketRef.current) return;
 
-    if (mountedRef.current) setPhase('fetching-token');
-
-    let data: { token: string };
-    try {
-      const res = await fetch('/api/cartesia');
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `Token fetch failed: ${res.status}`);
-      }
-      data = await res.json();
-    } catch (err) {
-      if (mountedRef.current) setPhase('error');
-      throw err;
-    }
-
     if (mountedRef.current) setPhase('connecting');
 
     try {
-      const client = new CartesiaClient({
-        cartesiaVersion: CARTESIA_API_VERSION as unknown as '2024-06-10',
-      });
-      const ws = client.tts.websocket({
-        container: 'raw',
-        encoding: 'pcm_f32le',
-        sampleRate: 44100,
-      });
-
-      const ctx = await ws.connect({ accessToken: data.token });
+      const { ws, ctx } = await connectCartesiaTts();
       ctx.on('close', () => {
         websocketRef.current = null;
         if (mountedRef.current) setPhase('idle');

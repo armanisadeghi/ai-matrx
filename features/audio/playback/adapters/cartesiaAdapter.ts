@@ -12,11 +12,10 @@
  * synthesis `speed` at enqueue time by the consumer instead.
  */
 
-import { CartesiaClient } from "@cartesia/cartesia-js";
 import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
+import { connectCartesiaTts } from "@/lib/cartesia/connection";
 import {
   buildGenerationConfig,
-  CARTESIA_API_VERSION,
   TTS_MODEL_ID,
   TTS_PLAYBACK_BUFFER_SEC,
 } from "@/lib/cartesia/config";
@@ -78,23 +77,8 @@ export const cartesiaAdapter: PlaybackAdapter = {
       throw new Error("Nothing to speak");
     }
 
-    // Token → WebSocket
-    const res = await fetch("/api/cartesia");
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || `Token fetch failed: ${res.status}`);
-    }
-    const { token } = (await res.json()) as { token: string };
-
-    const client = new CartesiaClient({
-      cartesiaVersion: CARTESIA_API_VERSION as unknown as "2024-06-10",
-    });
-    const ws = client.tts.websocket({
-      container: "raw",
-      encoding: "pcm_f32le",
-      sampleRate: 44100,
-    });
-    await ws.connect({ accessToken: token });
+    // Auth + WebSocket via the single Cartesia connection chokepoint.
+    const { ws } = await connectCartesiaTts();
 
     let stopped = false;
     const player = new SinkAwarePlayer({

@@ -23,7 +23,6 @@ export default function SimpleTtsPlayer() {
         <div className="flex flex-col items-center justify-center h-full gap-4 max-w-screen-sm mx-auto">
             <div className="w-full h-8 flex justify-left items-center gap-2">
                 <div className="px-1 text-gray-700 dark:text-gray-300">
-                    {connectionState === "fetching-token" && "Connecting audio stream..."}
                     {connectionState === "connecting" && "Connecting audio stream..."}
                     {connectionState === "ready" && "Ready!"}
                     {connectionState === "disconnected" && "Disconnected - Cartesia disconnects websockets after 5 min of inactivity"}

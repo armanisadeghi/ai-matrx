@@ -14,7 +14,7 @@
 import type { Cartesia } from "@cartesia/cartesia-js";
 import Source from "@cartesia/cartesia-js/wrapper/source";
 import type { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
-import cartesia from "@/lib/cartesia/client";
+import { connectCartesiaTts } from "@/lib/cartesia/connection";
 import {
   AudioEncoding,
   Language,
@@ -145,12 +145,11 @@ export async function runTtsTest(
 
   callbacks.onPhase("connecting");
   const t0 = performance.now();
-  const ws = cartesia.tts.websocket({
+  const { ws } = await connectCartesiaTts({
     container: OutputContainer.Raw,
     encoding: AudioEncoding.PCM_F32LE,
     sampleRate: 44100,
   });
-  await ws.connect();
   metrics.connectMs = Math.round(performance.now() - t0);
   emit();
 

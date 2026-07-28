@@ -1,7 +1,13 @@
 import OpenAI from "openai";
 
+// SECURITY (2026-07-28, D113 class): this module previously inlined
+// NEXT_PUBLIC_OPENAI_API_KEY into the browser bundle. Its only consumers are
+// the retired legacy flashcard chat (underscore-private, non-routable
+// app/(transitional)/_flash-cards + _flashcard folders). No key ships in the
+// bundle anymore; any runtime use of this legacy client now fails loudly.
+// Real AI calls go through aidream — never a browser-held provider key.
 export const openai = new OpenAI({
-    apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+    apiKey: "legacy-flashcard-chat-retired-use-aidream",
     dangerouslyAllowBrowser: true,
 });
 

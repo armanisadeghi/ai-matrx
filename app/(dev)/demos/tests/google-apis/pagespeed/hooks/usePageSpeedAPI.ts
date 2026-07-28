@@ -30,12 +30,9 @@ export function usePageSpeedAPI() {
                     params.append("category", category);
                 });
 
-                // Add API key if available (optional but recommended for higher quota)
-                const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
-                if (apiKey) {
-                    params.append("key", apiKey);
-                }
-
+                // Keyless request (works, lower quota). SECURITY (D113 class,
+                // 2026-07-28): never bundle a NEXT_PUBLIC Google key here — a
+                // keyed PSI path belongs server-side (aidream owns platform PSI).
                 const response = await fetch(`${PAGESPEED_API_ENDPOINT}?${params.toString()}`);
 
                 if (!response.ok) {
