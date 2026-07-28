@@ -63,7 +63,10 @@ import {
   describeBackendFailure,
   type BackendFailureExplanation,
 } from "@/lib/api/errors";
-import { diagnoseGoogleConnection } from "@/features/marketing/google/health";
+import {
+  dedupeGoogleConnectionsForPicker,
+  diagnoseGoogleConnection,
+} from "@/features/marketing/google/health";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { cn } from "@/lib/utils";
 import {
@@ -926,6 +929,12 @@ function ProviderReferenceFields({
       resource.connection_id === value.credentialRef &&
       resource.resource_type === resourceType,
   );
+  // One entry per Google identity: a personal + an org connection to the
+  // same Google account are the same authorization — never two choices.
+  const pickerConnections = dedupeGoogleConnectionsForPicker(
+    connections,
+    value.credentialRef,
+  );
 
   return (
     <>
@@ -946,14 +955,11 @@ function ProviderReferenceFields({
             <SelectValue placeholder="Select a connected account" />
           </SelectTrigger>
           <SelectContent>
-            {connections.map((connection) => (
+            {pickerConnections.map((connection) => (
               <SelectItem key={connection.id} value={connection.id}>
                 {connection.account_name ||
                   connection.account_email ||
                   "Google account"}
-                {connection.owner_type === "organization"
-                  ? " · Organization"
-                  : " · Personal"}
                 {connection.health === "connected"
                   ? ""
                   : ` · ${diagnoseGoogleConnection(connection).label}`}

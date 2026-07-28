@@ -103,3 +103,53 @@ export function googleConnectionDiagnostics(
     ["Last recorded error", connection.last_error ?? "none"],
   ];
 }
+
+/**
+ * Collapse duplicate picker entries for the SAME Google account.
+ *
+ * A personal connection and an org-shared connection to the same Google
+ * account (same `provider_subject`) are the same authorization at Google —
+ * the server resolves them interchangeably ("they both should resolve the
+ * same damn thing"). Showing both as separate choices is noise and reads as
+ * two different things. This keeps ONE entry per Google identity:
+ *
+ *   1. the currently-selected connection (never hide the bound row),
+ *   2. else a healthy one over an unhealthy one,
+ *   3. else an organization-owned one over a personal one,
+ *   4. else the most recently updated (input order).
+ *
+ * Distinct Google accounts always stay distinct entries.
+ */
+export function dedupeGoogleConnectionsForPicker(
+  connections: GoogleConnectionSummary[],
+  selectedConnectionId?: string | null,
+): GoogleConnectionSummary[] {
+  const groups = new Map<string, GoogleConnectionSummary[]>();
+  for (const connection of connections) {
+    const key = connection.provider_subject || connection.id;
+    const group = groups.get(key);
+    if (group) group.push(connection);
+    else groups.set(key, [connection]);
+  }
+  const result: GoogleConnectionSummary[] = [];
+  for (const group of groups.values()) {
+    const selected = selectedConnectionId
+      ? group.find((connection) => connection.id === selectedConnectionId)
+      : undefined;
+    if (selected) {
+      result.push(selected);
+      continue;
+    }
+    const preferred =
+      group.find(
+        (connection) =>
+          connection.health === "connected" &&
+          connection.owner_type === "organization",
+      ) ??
+      group.find((connection) => connection.health === "connected") ??
+      group.find((connection) => connection.owner_type === "organization") ??
+      group[0];
+    result.push(preferred);
+  }
+  return result;
+}

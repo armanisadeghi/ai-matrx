@@ -2,7 +2,11 @@
  * Connection health must state the CAUSE, and must never call a credential-less
  * row "connected" — the exact state behind the 2026-07-25 silent GSC failures.
  */
-import { diagnoseGoogleConnection, googleConnectionDiagnostics } from "./health";
+import {
+  dedupeGoogleConnectionsForPicker,
+  diagnoseGoogleConnection,
+  googleConnectionDiagnostics,
+} from "./health";
 import type { GoogleConnectionSummary } from "./types";
 
 function connection(
@@ -101,5 +105,57 @@ describe("googleConnectionDiagnostics", () => {
     expect(rows.get("Stored status")).toBe("connected");
     expect(rows.get("Derived health")).toBe("needs_reauth");
     expect([...rows.keys()]).not.toContain("Refresh token");
+  });
+});
+
+describe("dedupeGoogleConnectionsForPicker", () => {
+  it("collapses a personal + org connection to the SAME Google account into one entry", () => {
+    const personal = connection({ id: "conn-personal" });
+    const org = connection({
+      id: "conn-org",
+      owner_type: "organization",
+      owner_user_id: null,
+      organization_id: "org-1",
+    });
+    const deduped = dedupeGoogleConnectionsForPicker([personal, org]);
+    expect(deduped).toHaveLength(1);
+    expect(deduped[0].id).toBe("conn-org"); // healthy org-owned preferred
+  });
+
+  it("never hides the currently-bound connection", () => {
+    const personal = connection({ id: "conn-personal" });
+    const org = connection({
+      id: "conn-org",
+      owner_type: "organization",
+      owner_user_id: null,
+      organization_id: "org-1",
+    });
+    const deduped = dedupeGoogleConnectionsForPicker(
+      [personal, org],
+      "conn-personal",
+    );
+    expect(deduped).toHaveLength(1);
+    expect(deduped[0].id).toBe("conn-personal");
+  });
+
+  it("prefers a healthy connection over an unhealthy org one", () => {
+    const broken = connection({
+      id: "conn-broken",
+      owner_type: "organization",
+      owner_user_id: null,
+      organization_id: "org-1",
+      health: "needs_reauth",
+      credential_present: false,
+    });
+    const healthy = connection({ id: "conn-healthy" });
+    const deduped = dedupeGoogleConnectionsForPicker([broken, healthy]);
+    expect(deduped).toHaveLength(1);
+    expect(deduped[0].id).toBe("conn-healthy");
+  });
+
+  it("keeps distinct Google accounts as distinct entries", () => {
+    const a = connection({ id: "conn-a", provider_subject: "subject-a" });
+    const b = connection({ id: "conn-b", provider_subject: "subject-b" });
+    expect(dedupeGoogleConnectionsForPicker([a, b])).toHaveLength(2);
   });
 });
