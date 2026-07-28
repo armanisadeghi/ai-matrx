@@ -1,35 +1,19 @@
 "use client";
 
+// Thin shell over ONE dynamic edge (Method C, code-splitting skill): the
+// admin singletons always render together for admins, so they live statically
+// inside AdminFeatureProviderCore behind this single boundary instead of four
+// sibling dynamics. Non-admins never fetch the chunk.
+
 import dynamic from "next/dynamic";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 
-const AdminIndicatorWrapper = dynamic(
-  () => import("@/components/admin/controls/AdminIndicatorWrapper"),
+const AdminFeatureProviderCore = dynamic(
+  () => import("./AdminFeatureProviderCore"),
   { ssr: false, loading: () => null },
 );
-
-const AppleKeyExpiryNotifier = dynamic(
-  () => import("@/components/admin/AppleKeyExpiryNotifier"),
-  { ssr: false, loading: () => null },
-);
-
-const DebugIndicatorManager = dynamic(
-  () =>
-    import("@/components/debug/DebugIndicatorManager").then((m) => ({
-      default: m.DebugIndicatorManager,
-    })),
-  { ssr: false, loading: () => null },
-);
-
-const DevPerfOverlay =
-  process.env.NODE_ENV === "development"
-    ? dynamic(() => import("@/features/shell/components/dev/DevPerfOverlay"), {
-        ssr: false,
-        loading: () => null,
-      })
-    : () => null;
 
 export default function AdminFeatureProvider() {
   const isAdmin = useAppSelector(selectIsSuperAdmin);
@@ -37,12 +21,5 @@ export default function AdminFeatureProvider() {
 
   if (!isAdmin) return null;
 
-  return (
-    <>
-      <AdminIndicatorWrapper />
-      <AppleKeyExpiryNotifier />
-      <DebugIndicatorManager />
-      {isDebugMode && <DevPerfOverlay />}
-    </>
-  );
+  return <AdminFeatureProviderCore isDebugMode={isDebugMode} />;
 }
