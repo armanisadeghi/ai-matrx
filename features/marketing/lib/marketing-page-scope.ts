@@ -212,8 +212,13 @@ export function buildMarketingPageScope(input: {
   keywordBatch?: readonly Record<string, unknown>[] | null;
   /** Open findings rows as listed on the workspace, when loaded. */
   findingsRows?: readonly Record<string, unknown>[] | null;
-  /** GSC top-query rows (usePageTopQueries), when loaded. */
+  /** Per-query GSC breakdown rows for the default 28-day window
+   * (usePageQueryStats), when loaded. */
   gscQueries?: readonly Record<string, unknown>[] | null;
+  /** The target-keyword performance evidence bundle
+   * (PageTargetPerformanceCard's resolved query, read from the shared
+   * react-query cache — no duplicate fetch), when the pane has resolved. */
+  targetPerformance?: Record<string, unknown> | null;
   /** Inbound / outbound internal-link rows, when loaded. */
   inboundLinks?: readonly Record<string, unknown>[] | null;
   outboundLinks?: readonly Record<string, unknown>[] | null;
@@ -250,6 +255,7 @@ export function buildMarketingPageScope(input: {
     keywordBatch,
     findingsRows,
     gscQueries,
+    targetPerformance,
     inboundLinks,
     outboundLinks,
     backlinks,
@@ -454,6 +460,7 @@ export function buildMarketingPageScope(input: {
     has_desktop_capture: availability?.hasDesktopCapture,
     has_mobile_capture: availability?.hasMobileCapture,
     gsc_metrics_28d: gscMetrics ?? undefined,
+    target_performance: targetPerformance ?? undefined,
     pagespeed,
     ga4_metrics: ga4,
     sitemap_memberships: memberships,

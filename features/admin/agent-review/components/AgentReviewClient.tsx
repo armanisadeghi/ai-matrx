@@ -21,6 +21,11 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_AGENT_REVIEW_SURFACE_NAME,
+  createAdminAgentReviewScope,
+} from "@/features/surfaces/manifests/admin-agent-review.manifest";
 import {
   REVIEW_STATUS_LABELS,
   type ReviewQueueRow,
@@ -260,12 +265,41 @@ export default function AgentReviewClient() {
 
   const archived = grouped.get("archived") ?? [];
 
+  // Surface emitter — matrx-admin/agent-review. Built at trigger time from
+  // live queue state (counts per status + a row sample). No status change or
+  // feedback save is ever implied here; those stay explicit button presses.
+  const getSurfaceScope = () =>
+    createAdminAgentReviewScope({
+      queue_row_count: rows?.length ?? 0,
+      pending_count: grouped.get("pending")?.length ?? 0,
+      changes_requested_count: grouped.get("changes_requested")?.length ?? 0,
+      approved_count: grouped.get("approved")?.length ?? 0,
+      archived_count: archived.length,
+      show_archived: showArchived,
+      queue_sample: (rows ?? []).slice(0, 20).map((row) => ({
+        id: row.id,
+        title: row.title,
+        url: row.url,
+        status: row.status as ReviewStatus,
+        source: row.source,
+        instructions: row.instructions,
+        feedback: row.feedback,
+        created_at: row.created_at,
+      })),
+      queue_load_error: error ?? undefined,
+    });
+
   // The queue grows without bound, so the page MUST own a scroll container:
   // `.shell-main` is a fixed-height, overflow-hidden box, so a plain
   // `max-w-4xl` page simply clipped everything below the fold and no amount of
   // scrolling reached it. Same shape as the other admin clients (header
   // pinned, list scrolls) — see SharedKnowledgeAdminClient.
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_AGENT_REVIEW_SURFACE_NAME}
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
     <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden">
       <div className="mx-auto flex w-full max-w-4xl items-center gap-2 px-4 pt-4 pb-3">
         <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
@@ -342,5 +376,6 @@ export default function AgentReviewClient() {
         </div>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

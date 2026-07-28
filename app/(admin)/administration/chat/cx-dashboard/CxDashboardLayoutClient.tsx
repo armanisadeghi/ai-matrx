@@ -11,6 +11,32 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { CxDashboardErrorBoundary } from "@/features/cx-dashboard/components/CxDashboardErrorBoundary";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_CX_DASHBOARD_SURFACE_NAME,
+  createAdminCxDashboardScope,
+} from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
+
+const BASE_PATH = "/administration/chat/cx-dashboard";
+
+function sectionFromPathname(pathname: string):
+  | "overview"
+  | "conversations"
+  | "conversation_detail"
+  | "requests"
+  | "request_detail"
+  | "usage"
+  | "errors" {
+  const rest = pathname.slice(BASE_PATH.length).replace(/^\/+/, "");
+  if (!rest) return "overview";
+  if (rest.startsWith("conversations/")) return "conversation_detail";
+  if (rest.startsWith("conversations")) return "conversations";
+  if (rest.startsWith("requests/")) return "request_detail";
+  if (rest.startsWith("requests")) return "requests";
+  if (rest.startsWith("usage")) return "usage";
+  if (rest.startsWith("errors")) return "errors";
+  return "overview";
+}
 
 const NAV_ITEMS = [
   {
@@ -47,37 +73,46 @@ export function CxDashboardLayoutClient({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const section = sectionFromPathname(pathname);
 
   return (
-    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
-      <div className="flex-shrink-0 border-b border-border bg-card/50 px-4">
-        <nav className="flex items-center gap-1 h-9 overflow-x-auto">
-          {NAV_ITEMS.map((item) => {
-            const isActive = item.exact
-              ? pathname === item.href
-              : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                )}
-              >
-                <item.icon className="w-3.5 h-3.5" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_CX_DASHBOARD_SURFACE_NAME}
+      getScope={() =>
+        createAdminCxDashboardScope({ dashboard_section: section })
+      }
+      isEditable={false}
+    >
+      <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
+        <div className="flex-shrink-0 border-b border-border bg-card/50 px-4">
+          <nav className="flex items-center gap-1 h-9 overflow-x-auto">
+            {NAV_ITEMS.map((item) => {
+              const isActive = item.exact
+                ? pathname === item.href
+                : pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                  )}
+                >
+                  <item.icon className="w-3.5 h-3.5" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
 
-      <div className="flex-1 overflow-auto">
-        <CxDashboardErrorBoundary>{children}</CxDashboardErrorBoundary>
+        <div className="flex-1 overflow-auto">
+          <CxDashboardErrorBoundary>{children}</CxDashboardErrorBoundary>
+        </div>
       </div>
-    </div>
+    </SurfaceRuntimeProvider>
   );
 }

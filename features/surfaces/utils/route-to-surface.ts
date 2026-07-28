@@ -137,11 +137,59 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     surface: "matrx-admin/ai-models",
   },
   { prefix: "/administration/database", surface: "matrx-admin/database" },
-  // TODO(admin wave): this catch-all attributes EVERY other admin route to
-  // system-agents. Narrow it to /administration/agents/system-agents once the
-  // remaining ~29 matrx-admin surfaces have manifests.
-  { prefix: "/administration", surface: "matrx-admin/system-agents" },
-  { prefix: "/admin", surface: "matrx-admin/system-agents" },
+  {
+    prefix: "/administration/agents/system-agents",
+    surface: "matrx-admin/system-agents",
+  },
+  {
+    prefix: "/administration/agents/agent-apps",
+    surface: "matrx-admin/agent-apps",
+  },
+  { prefix: "/administration/agents/bundles", surface: "matrx-admin/bundles" },
+  {
+    prefix: "/administration/agents/mcp-servers",
+    surface: "matrx-admin/mcp-servers",
+  },
+  { prefix: "/administration/agents/lookups", surface: "matrx-admin/lookups" },
+  // users family: specific children BEFORE the /administration/users hub.
+  {
+    prefix: "/administration/users/feedback",
+    surface: "matrx-admin/feedback",
+  },
+  { prefix: "/administration/users/email", surface: "matrx-admin/email" },
+  {
+    prefix: "/administration/users/agent-review",
+    surface: "matrx-admin/agent-review",
+  },
+  { prefix: "/administration/users", surface: "matrx-admin/users" },
+  {
+    prefix: "/administration/chat/cx-dashboard",
+    surface: "matrx-admin/cx-dashboard",
+  },
+  {
+    prefix: "/administration/compute/server-logs",
+    surface: "matrx-admin/server-logs",
+  },
+  {
+    prefix: "/administration/compute/sandbox",
+    surface: "matrx-admin/sandbox",
+  },
+  {
+    prefix: "/administration/ui/official-components",
+    surface: "matrx-admin/official-components",
+  },
+  {
+    prefix: "/administration/applications",
+    surface: "matrx-admin/applications",
+  },
+  {
+    prefix: "/administration/automation/scheduling",
+    surface: "matrx-admin/scheduling",
+  },
+  // NO /administration catch-all: an unmapped admin route resolves to null
+  // (caller omits client.surface) rather than lying that it is system-agents.
+  // Register a manifest + a specific prefix here when an admin family gets
+  // its surface. The old catch-all mis-attributed every admin route.
 ] as const;
 
 /**

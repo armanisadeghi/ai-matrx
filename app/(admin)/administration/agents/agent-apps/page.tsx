@@ -27,6 +27,11 @@ import {
   type AgentAppAdminView,
   type AgentAppCategoryRow,
 } from "@/lib/services/agent-apps-admin-service";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_AGENT_APPS_SURFACE_NAME,
+  createAdminAgentAppsScope,
+} from "@/features/surfaces/manifests/admin-agent-apps.manifest";
 
 const TILES = [
   {
@@ -122,7 +127,32 @@ export default function AgentAppsAdminDashboardPage() {
   const getAppHref = (app: { id: string }) =>
     `/administration/agents/agent-apps/edit/${app.id}`;
 
+  const getScope = () =>
+    createAdminAgentAppsScope({
+      admin_section: "dashboard",
+      dashboard_total_apps: counts.apps,
+      dashboard_published_count: published,
+      dashboard_featured_count: featured,
+      dashboard_verified_count: verified,
+      dashboard_featured_apps: featuredApps.map((a) => ({
+        id: a.id,
+        name: a.name,
+        slug: a.slug,
+        status: a.status,
+      })),
+      dashboard_recent_apps: recentlyUpdated.map((a) => ({
+        id: a.id,
+        name: a.name,
+        slug: a.slug,
+        status: a.status,
+      })),
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
+      getScope={getScope}
+    >
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-shrink-0 p-4 border-b border-border bg-card">
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -331,5 +361,6 @@ export default function AgentAppsAdminDashboardPage() {
         </div>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

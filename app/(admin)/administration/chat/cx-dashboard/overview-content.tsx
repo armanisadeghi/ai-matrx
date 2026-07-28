@@ -43,6 +43,11 @@ import {
   formatDuration,
 } from "@/features/cx-dashboard/utils/format";
 import type { CxOverviewKpis } from "@/features/cx-dashboard/types/cxDashboardTypes";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_CX_DASHBOARD_SURFACE_NAME,
+  createAdminCxDashboardScope,
+} from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
 
 const COLORS = [
   "hsl(215, 70%, 55%)",
@@ -70,6 +75,20 @@ export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
   });
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_CX_DASHBOARD_SURFACE_NAME}
+      getScope={() =>
+        createAdminCxDashboardScope({
+          dashboard_section: "overview",
+          overview_kpis: kpis,
+          overview_total_conversations: kpis.total_conversations,
+          overview_total_cost: kpis.total_cost,
+          overview_error_count: kpis.error_count,
+          overview_error_rate: kpis.error_rate,
+        })
+      }
+      isEditable={false}
+    >
     <div className="p-4 space-y-4">
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
@@ -330,5 +349,6 @@ export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
       {/* Raw KPIs debug viewer */}
       <CxJsonViewer data={kpis} label="Raw KPI Data (Debug)" />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

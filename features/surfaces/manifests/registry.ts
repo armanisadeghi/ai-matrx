@@ -132,6 +132,20 @@ import { adminSystemAgentsManifest } from "./admin-system-agents.manifest";
 import { adminDatabaseManifest } from "./admin-database.manifest";
 import { adminAiModelsManifest } from "./admin-ai-models.manifest";
 import { adminToolRegistryManifest } from "./admin-tool-registry.manifest";
+import { adminUsersManifest } from "./admin-users.manifest";
+import { adminFeedbackManifest } from "./admin-feedback.manifest";
+import { adminEmailManifest } from "./admin-email.manifest";
+import { adminAgentReviewManifest } from "./admin-agent-review.manifest";
+import { adminCxDashboardManifest } from "./admin-cx-dashboard.manifest";
+import { adminServerLogsManifest } from "./admin-server-logs.manifest";
+import { adminSandboxManifest } from "./admin-sandbox.manifest";
+import { adminOfficialComponentsManifest } from "./admin-official-components.manifest";
+import { adminApplicationsManifest } from "./admin-applications.manifest";
+import { adminSchedulingManifest } from "./admin-scheduling.manifest";
+import { adminAgentAppsManifest } from "./admin-agent-apps.manifest";
+import { adminBundlesManifest } from "./admin-bundles.manifest";
+import { adminMcpServersManifest } from "./admin-mcp-servers.manifest";
+import { adminLookupsManifest } from "./admin-lookups.manifest";
 import { knowledgeManifest } from "./knowledge.manifest";
 import { shapesManifest } from "./shapes.manifest";
 import { crmManifest } from "./crm.manifest";
@@ -256,6 +270,20 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   adminDatabaseManifest,
   adminAiModelsManifest,
   adminToolRegistryManifest,
+  adminUsersManifest,
+  adminFeedbackManifest,
+  adminEmailManifest,
+  adminAgentReviewManifest,
+  adminCxDashboardManifest,
+  adminServerLogsManifest,
+  adminSandboxManifest,
+  adminOfficialComponentsManifest,
+  adminApplicationsManifest,
+  adminSchedulingManifest,
+  adminAgentAppsManifest,
+  adminBundlesManifest,
+  adminMcpServersManifest,
+  adminLookupsManifest,
   knowledgeManifest,
   shapesManifest,
   crmManifest,

@@ -285,7 +285,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "image_plan",
     label: "Image plan",
     description:
-      "The planned images for this page (from desired_values.image_plan): per entry a description, alt text, placement, status (planned|generated|placed), and the generated image's file_id when produced. Empty array when no images are planned.",
+      "The planned images for this page (from desired_values.image_plan): per entry a description, alt text, placement, style preset (or custom style text) fed to the image pipeline, status (planned|generated|placed), and the generated image's file_id when produced. Empty array when no images are planned.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 900,
@@ -650,11 +650,22 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "gsc_queries",
     label: "GSC top queries",
     description:
-      "The top real Search Console queries already reaching this page (bounded list): per query its clicks, impressions, and average position. Empty array when GSC is not connected or reports nothing.",
+      "Per-query Search Console breakdown for this page over the default 28-day window (bounded list, up to 50 rows, strongest first): per query its clicks, impressions, and average position. The page's Search Console pane lets the user pick a wider range (90d/12m/all) interactively; this value always reflects the 28-day default. Empty array when GSC is not connected or reports nothing for the window.",
     valueType: "array",
     alwaysAvailable: false,
-    typicalCharCount: 700,
+    typicalCharCount: 2200,
     sortOrder: 472,
+    group: "performance",
+  },
+  {
+    name: "target_performance",
+    label: "Target keyword performance",
+    description:
+      "How this page ACTUALLY performs for its target keyword, resolved once the target-performance pane has loaded: SERP rank observations (organic + AI-answer targets, each with the exact ranking/cited URL — reveals cannibalization when it's a different page of the site), Search Console clicks/impressions/position for the query on this page, the site-wide top page for the query, and the latest AI-answer citation evidence. Empty/undefined when no target keyword is set or the pane has not resolved yet in this session.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 1400,
+    sortOrder: 473,
     group: "performance",
   },
   {
@@ -737,7 +748,7 @@ export const marketingPageManifest: SurfaceManifest = {
 The inherited brand_context and site_context values give you the client and website this page belongs to — read them for framing before working on the page itself.
 You are on the Marketing page workspace: one canonical URL of a managed website, with the evidence of what it currently serves and the user's editorial intent for what it should become.
 Two kinds of values live here and must never be confused: OBSERVED values (observed_title, observed_description, observed_seo_metrics) are immutable crawl evidence of the live site; DESIRED values (desired_title, desired_description, desired_seo_metrics) are the user's editorial targets stored on the page. When asked to improve metadata, you propose DESIRED values — you never alter or invent observed evidence.
-Beyond metadata, the surface carries complete crawl evidence: page_identity (featured image, CMS/platform identifiers, author/dates), structured_data (all raw and normalized JSON-LD/microdata/RDFa/microformats), resources (the full declared asset inventory), images, and visual captures. Large raw evidence values remain explicitly bindable but are not auto-added to every agent context. It also carries analysis evidence (Page Analyzer keyword picture, page score, open findings + findings rows), performance evidence (Search Console metrics + top queries, PageSpeed Insights, GA4, internal links, backlinks), and the user's AUTHORING layer: draft_content (the markdown body the page SHOULD have), desired_values (per-area desired state: social card, canonical/robots, heading-structure plan, image plan), the keyword_batch (library keywords attached to this page alongside the primary target_keyword), and page_tasks (work linked to this page).
+Beyond metadata, the surface carries complete crawl evidence: page_identity (featured image, CMS/platform identifiers, author/dates), structured_data (all raw and normalized JSON-LD/microdata/RDFa/microformats), resources (the full declared asset inventory), images, and visual captures. Large raw evidence values remain explicitly bindable but are not auto-added to every agent context. It also carries analysis evidence (Page Analyzer keyword picture, page score, open findings + findings rows), performance evidence (Search Console metrics + the default-28d per-query breakdown in gsc_queries, target_performance — SERP rank + AI-answer citation evidence specifically for the target keyword, PageSpeed Insights, GA4, internal links, backlinks), and the user's AUTHORING layer: draft_content (the markdown body the page SHOULD have), desired_values (per-area desired state: social card, canonical/robots, heading-structure plan, image plan — each planned image also carries an optional style preset), the keyword_batch (library keywords attached to this page alongside the primary target_keyword), and page_tasks (work linked to this page).
 SEO metrics are deterministic (shared pixel-width table between browser and scraper): trust the provided pixel_width / ok flags instead of estimating lengths, and validate any candidate you generate with the seo tool before presenting it.
 </surface_intro>`,
   groups,
@@ -873,6 +884,7 @@ export function createMarketingPageScope(values: {
   failed_checks?: number;
   gsc_metrics_28d?: Record<string, unknown>;
   gsc_queries?: Array<Record<string, unknown>>;
+  target_performance?: Record<string, unknown>;
   inbound_links?: Array<Record<string, unknown>>;
   outbound_links?: Array<Record<string, unknown>>;
   backlinks?: Record<string, unknown>;

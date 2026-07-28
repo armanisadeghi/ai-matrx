@@ -43,6 +43,7 @@ import {
   Ban,
 } from 'lucide-react';
 import MatrxMiniLoader from '@/components/loaders/MatrxMiniLoader';
+import { confirm as confirmDialog } from '@/components/dialogs/confirm/ConfirmDialogHost';
 import {
   fetchAgentAppRateLimits,
   unblockAgentAppRateLimit,
@@ -62,6 +63,7 @@ interface ColumnFilters {
 export function RateLimitsClient() {
   const [rateLimits, setRateLimits] = useState<AgentAppRateLimitRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unblockingId, setUnblockingId] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>('last_execution_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const { toast } = useToast();
@@ -224,9 +226,15 @@ export function RateLimitsClient() {
     columnFilters.blocked !== 'blocked';
 
   const handleUnblock = async (limit: AgentAppRateLimitRow) => {
-    if (!confirm(`Unblock this ${limit.user_id ? 'user' : limit.ip_address ? 'IP' : 'fingerprint'}?`))
-      return;
+    if (unblockingId) return;
+    const ok = await confirmDialog({
+      title: 'Unblock rate limit',
+      description: `Unblock this ${limit.user_id ? 'user' : limit.ip_address ? 'IP' : 'fingerprint'}?`,
+      confirmLabel: 'Unblock',
+    });
+    if (!ok) return;
 
+    setUnblockingId(limit.id);
     try {
       await unblockAgentAppRateLimit(limit.id);
       loadData();
@@ -242,6 +250,8 @@ export function RateLimitsClient() {
         description: 'Failed to unblock rate limit',
         variant: 'destructive',
       });
+    } finally {
+      setUnblockingId(null);
     }
   };
 
@@ -606,7 +616,7 @@ export function RateLimitsClient() {
                     {limit.is_blocked ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="outline" size="sm" onClick={() => handleUnblock(limit)} className="h-7">
+                          <Button variant="outline" size="sm" onClick={() => handleUnblock(limit)} disabled={unblockingId !== null} className="h-7">
                             <Shield className="w-3 h-3 mr-1" />
                             Unblock
                           </Button>

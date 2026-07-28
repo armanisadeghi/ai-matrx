@@ -58,6 +58,11 @@ import {
   type AgentAppAdminView,
   type UpdateAgentAppAdminInput,
 } from "@/lib/services/agent-apps-admin-service";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_AGENT_APPS_SURFACE_NAME,
+  createAdminAgentAppsScope,
+} from "@/features/surfaces/manifests/admin-agent-apps.manifest";
 
 type SortField =
   | "name"
@@ -346,7 +351,43 @@ export default function AgentAppsAdminListPage() {
     );
   }
 
+  const getScope = () =>
+    createAdminAgentAppsScope({
+      admin_section: "apps",
+      apps_list_total_count: apps.length,
+      apps_list_filtered_count: filteredAndSortedApps.length,
+      apps_list_filters: {
+        name: columnFilters.name,
+        slug: columnFilters.slug,
+        status: Array.from(columnFilters.status),
+        category: Array.from(columnFilters.category),
+        featured: columnFilters.featured,
+        verified: columnFilters.verified,
+        creator: columnFilters.creator,
+      },
+      apps_list_sort: { field: sortField, direction: sortDirection },
+      apps_list_rows: filteredAndSortedApps.map((a) => ({
+        id: a.id,
+        name: a.name,
+        slug: a.slug,
+        status: a.status,
+        category: a.category,
+        creator_email: a.creator_email,
+        is_featured: a.is_featured,
+        is_verified: a.is_verified,
+        total_executions: a.total_executions,
+        unique_users_count: a.unique_users_count,
+        success_rate: a.success_rate,
+        total_cost: a.total_cost,
+        updated_at: a.updated_at,
+      })),
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
+      getScope={getScope}
+    >
     <TooltipProvider>
       <div className="flex flex-col h-full">
         <div className="flex-shrink-0 p-4 border-b bg-card space-y-3">
@@ -821,5 +862,6 @@ export default function AgentAppsAdminListPage() {
         </ScrollArea>
       </div>
     </TooltipProvider>
+    </SurfaceRuntimeProvider>
   );
 }

@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-27
+updated: 2026-07-28
 repos: [matrx-frontend, aidream]
 vision: []
 ---
@@ -37,16 +37,16 @@ Bug-fix policy: "For any issues like these, especially clear-cut fixes, proceed 
 
 1. **Left/right restructure + three-state toggle (the big one).** Every card splits into an evidence half (left) and a plan/entry half (right); a page-top toggle with three states — proposed names **Evidence | Plan | Studio** (split view; Arman has NOT ratified names) — controls which half renders; small screens default to a single pane. Approach: make each card export `evidence` and `plan` nodes (most cards already separate these — DesiredSection IS the plan half), then a layout shell maps the toggle state. Persist the toggle with `useListViewPrefs`-style local pref. Do this as a pane-per-subagent fleet like the 2026-07-27 pass.
 2. **aidream scraper: persist per-image inventory** into `web.snapshot.images.items` (`{src,alt,width,height,loading,title}`, cap ~100) — hand `_scraper-image-inventory-prompt.md` to the aidream agent. FE already parses+renders items when present (`parseSnapshotImages`).
-3. **Surface drift follow-up:** new values added by the 2026-07-27 pane pass (per-keyword GSC breakdown, target-performance data, image style) are NOT yet declared in the manifest/scope — run a completeness sweep (`surface-authoring` skill, `pnpm check:surface-drift`, re-sync).
-4. **CMS push** — the end state: push draft content/desired values from the workspace to the CMS. Not started; needs Arman's shaping.
-5. **Redirect-route hardening pattern**: `/marketing/pages/[pageId]` now guards anon + malformed ids; audit other web-schema server routes for the same 42501→500 class.
-6. **Task widget**: verify the "created but not linked" honesty fix live in prod (was a silent-success defect); window sometimes opens invisible (pre-existing window-panels bug; loud "Show it" toast recovers — root-cause fix still open).
+3. **CMS push** — the end state: push draft content/desired values from the workspace to the CMS. Not started; needs Arman's shaping.
+4. **Redirect-route hardening pattern**: `/marketing/pages/[pageId]` now guards anon + malformed ids; audit other web-schema server routes for the same 42501→500 class.
+5. **Task widget**: verify the "created but not linked" honesty fix live in prod (was a silent-success defect); window sometimes opens invisible (pre-existing window-panels bug; loud "Show it" toast recovers — root-cause fix still open).
 
 ## Done
 
 - Desired-values layer (`desired_values` jsonb + per-card editors), draft content (`web.page_content` + card), keyword batch (edges + board card), first-class tasks (cards + buttons), image plan card, associations grid + per-capture attach — see `features/marketing/components/pages/` and FEATURE.md change log 2026-07-27. Shipped v0.4.149/150, prod-verified.
 - Association readers honor `global_readable` system orgs (`iam.org_readable`) — keyword edges were invisible to all clients before.
 - 2026-07-27 pane fleet (top bar compaction + GSC rebuild w/ keyword breakdown + flexible ranges, target-keyword performance card, two-step image pipeline, image-inventory readiness, task-link honesty) — see git log of that date.
+- Surface completeness sweep after the pane pass (2026-07-28): `target_performance` declared + emitted, `gsc_queries` now sourced from the live range-aware hook, Locate anchors corrected, manifest re-verified + DB-synced — see marketing-page.manifest.ts + marketing-page-scope.ts.
 
 ## Decisions needed
 

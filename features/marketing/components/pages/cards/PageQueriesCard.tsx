@@ -165,7 +165,7 @@ export function PageQueriesCard({ page }: { page: MarketingPage }) {
       title="Queries reaching this page"
       copy={copy}
       collapsible
-      anchor="page_search_queries"
+      anchor="gsc_queries"
     >
       {body}
     </SectionCard>

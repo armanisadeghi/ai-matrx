@@ -16,7 +16,6 @@ import { SURFACE_ROUTE_MAPPINGS } from "@/features/surfaces/utils/route-to-surfa
 
 /** Explicit overrides where the route prefix alone is not the right pattern. */
 const URL_PATTERN_OVERRIDES: Readonly<Record<string, string>> = {
-  "matrx-admin/system-agents": "/administration",
   "matrx-user/chat": "/chat",
   "matrx-user/code-editor": "/code-editor",
   "matrx-user/transcript-scribe": "/transcripts/scribe/:sessionId",

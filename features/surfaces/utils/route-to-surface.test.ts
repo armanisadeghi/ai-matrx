@@ -183,3 +183,60 @@ describe("Agent surface resolution (nested [id])", () => {
     );
   });
 });
+
+describe("Admin surface resolution (post catch-all removal)", () => {
+  it("resolves registered admin families by specific prefix", () => {
+    expect(surfaceFromPathname("/administration/agents/system-agents")).toBe(
+      "matrx-admin/system-agents",
+    );
+    expect(
+      surfaceFromPathname("/administration/agents/system-agents/agents/abc"),
+    ).toBe("matrx-admin/system-agents");
+    expect(surfaceFromPathname("/administration/agents/agent-apps/apps")).toBe(
+      "matrx-admin/agent-apps",
+    );
+    expect(surfaceFromPathname("/administration/agents/mcp-tools")).toBe(
+      "matrx-admin/tool-registry",
+    );
+    expect(surfaceFromPathname("/administration/chat/cx-dashboard/usage")).toBe(
+      "matrx-admin/cx-dashboard",
+    );
+    expect(surfaceFromPathname("/administration/compute/server-logs/api")).toBe(
+      "matrx-admin/server-logs",
+    );
+    expect(surfaceFromPathname("/administration/applications/catalogs")).toBe(
+      "matrx-admin/applications",
+    );
+    expect(
+      surfaceFromPathname("/administration/automation/scheduling/runs"),
+    ).toBe("matrx-admin/scheduling");
+    expect(
+      surfaceFromPathname("/administration/ui/official-components"),
+    ).toBe("matrx-admin/official-components");
+  });
+
+  it("users children win over the users hub", () => {
+    expect(surfaceFromPathname("/administration/users/feedback")).toBe(
+      "matrx-admin/feedback",
+    );
+    expect(surfaceFromPathname("/administration/users/email")).toBe(
+      "matrx-admin/email",
+    );
+    expect(surfaceFromPathname("/administration/users/agent-review")).toBe(
+      "matrx-admin/agent-review",
+    );
+    expect(surfaceFromPathname("/administration/users/admins")).toBe(
+      "matrx-admin/users",
+    );
+    expect(surfaceFromPathname("/administration/users")).toBe(
+      "matrx-admin/users",
+    );
+  });
+
+  it("unmapped admin routes resolve to null, never to system-agents", () => {
+    expect(surfaceFromPathname("/administration")).toBeNull();
+    expect(surfaceFromPathname("/administration/utilities")).toBeNull();
+    expect(surfaceFromPathname("/administration/documentation")).toBeNull();
+    expect(surfaceFromPathname("/admin")).toBeNull();
+  });
+});

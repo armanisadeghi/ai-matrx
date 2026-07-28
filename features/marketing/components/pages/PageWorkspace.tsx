@@ -33,7 +33,7 @@ import {
   usePageOutboundLinks,
 } from "@/features/marketing/data/page-links";
 import { usePageOpenFindings } from "@/features/marketing/data/analysis-hooks";
-import { usePageTopQueries } from "@/features/marketing/seo/keyword/hooks";
+import { usePageQueryStats } from "@/features/marketing/seo/keyword/hooks";
 import { pageKeywordsQueryKey } from "@/features/marketing/data/page-keywords";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -89,7 +89,10 @@ import { PageAnalyzerCard } from "@/features/marketing/components/pages/cards/Pa
 import { PageDraftContentCard } from "@/features/marketing/components/pages/cards/PageDraftContentCard";
 import { PageTasksCard } from "@/features/marketing/components/pages/cards/PageTasksCard";
 import { PageKeywordsCard } from "@/features/marketing/components/pages/cards/PageKeywordsCard";
-import { PageTargetPerformanceCard } from "@/features/marketing/components/pages/cards/PageTargetPerformanceCard";
+import {
+  PageTargetPerformanceCard,
+  pageTargetPerformanceQueryKey,
+} from "@/features/marketing/components/pages/cards/PageTargetPerformanceCard";
 import { PageImagePlanCard } from "@/features/marketing/components/pages/cards/PageImagePlanCard";
 import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
 import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
@@ -124,7 +127,10 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   // surface value. These share react-query caches with the cards (same keys).
   const draftContent = usePageContent(site.id, pageId);
   const findingsRows = usePageOpenFindings(site.id, pageId, 10);
-  const topQueries = usePageTopQueries(pageId);
+  // Per-query GSC breakdown at the pane's default range/limit (28d, 50 rows)
+  // — same query key the Search Console pane uses at its initial range, so
+  // this shares the cache instead of duplicating the fetch once mounted.
+  const queryStats = usePageQueryStats(pageId, 28, 50);
   const outboundLinks = usePageOutboundLinks(
     site.id,
     pageId,
@@ -262,7 +268,15 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
       findingsRows:
         (findingsRows.data as unknown as Record<string, unknown>[]) ?? null,
       gscQueries:
-        (topQueries.data as unknown as Record<string, unknown>[]) ?? null,
+        (queryStats.data?.stats as unknown as Record<string, unknown>[]) ??
+        null,
+      // Read-only cache lookup — PageTargetPerformanceCard owns the fetch
+      // (enabled only once a target keyword is set); the scope reads the
+      // same react-query entry without a second subscription.
+      targetPerformance:
+        (queryClient.getQueryData(
+          pageTargetPerformanceQueryKey(page.id, page.target_keyword?.trim() ?? ""),
+        ) as Record<string, unknown> | undefined) ?? null,
       inboundLinks:
         (inboundLinks.data as unknown as Record<string, unknown>[]) ?? null,
       outboundLinks:

@@ -48,14 +48,14 @@ Refinements he added along the way — each is now doctrine, with the why:
 2. **Finish marketing:** site tabs overview / integrations / access / settings; brand-level pages (brands list, brand cockpit); `/marketing` root; content-plan. The Pages tab and `CrawlSubnav` sub-routes (URLs/Reports/Snapshots/Links/Logs — no copy layer yet) were owned by parallel sessions — verify current state before touching.
 3. **Audit rollup rearchitect:** `features/marketing/lib/audit-rollup.ts#buildSiteAuditRollup` hard-caps `topIssues` (14) and `worstPages` (10) *inside aggregation* — data is discarded, so no show-all is possible. Restructure to aggregate fully and truncate only at render (shared with score-trend computation — tread carefully).
 4. **App-wide rollout** beyond marketing, Sonnet fleets reading the skill: SKILL.md's remaining list (`tool-registry/mcp-admin`, `feedback`, `system-agents/*`, `agent-apps/*`) and onward.
-5. **Surface manifests for keywords + ranks** (none exist) via the `surface-authoring` skill; sync DB rows like backlinks (`scripts/emit-surface-sync-sql.ts` → apply the surface's slice via Supabase MCP).
-6. **Roadmap (design-gated, don't start without Arman):** `buildAgentPayload` auto-folding the active surface manifest's values into `<context>`; screenshot attach (`hooks/useScreenCapture.ts`); Copy-for-AI flipping from clipboard to live agent handoff (keep `kind` slugs stable — they become the tool vocabulary).
-7. **Release:** all work sits on `main` unreleased — ship via `./scripts/release.sh` when Arman approves the review items.
+5. **Roadmap (design-gated, don't start without Arman):** `buildAgentPayload` auto-folding the active surface manifest's values into `<context>`; screenshot attach (`hooks/useScreenCapture.ts`); Copy-for-AI flipping from clipboard to live agent handoff (keep `kind` slugs stable — they become the tool vocabulary).
+6. **Release:** all work sits on `main` unreleased — ship via `./scripts/release.sh` when Arman approves the review items.
 
 ## Done
 
 - Primitives + integrations built and browser-verified — see `components/agent-copy/` and the reference page above.
 - Backlinks page fully wired (all granularities, groomer, export, show-all) + its surface manifest enriched and live in `ui.ui_surface_value`.
+- Keyword + ranks surface manifests exist and are verified (`keyword-research`, `marketing-site-keywords`, `marketing-ranks` — built by the surface-canonical-fleet campaign).
 - Sonnet fleet shipped 11 marketing site tabs (keywords, ranks, coverage, findings, analysis, audit, links, crawls + detail, sitemaps, discovery, cost) — audit page browser-verified.
 - Skill + README updated with every doctrine refinement above.
 

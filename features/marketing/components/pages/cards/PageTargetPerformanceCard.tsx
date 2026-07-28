@@ -42,6 +42,8 @@ import type {
   AiAnswerEvidence,
   RankTargetEvidence,
 } from "@/features/marketing/seo/keyword/data";
+import type { PageQueryStat, ResolvedKeyword } from "@/features/marketing/seo/keyword/types";
+import type { SiteKeywordPerformanceRow } from "@/features/marketing/seo/keyword-research/types";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import type { MarketingPage } from "@/features/marketing/types";
 
@@ -145,13 +147,30 @@ function UrlMatchLine({
   );
 }
 
+/** Shared react-query cache key — read directly (no duplicate fetch) by
+ * `buildMarketingPageScope` so the surface scope emits the SAME evidence
+ * this card renders, once it has resolved. */
+export const pageTargetPerformanceQueryKey = (pageId: string, phrase: string) =>
+  ["marketing", "page-target-performance", pageId, phrase] as const;
+
+/** The full evidence bundle this card resolves — also the shape the
+ * `target_performance` surface value emits. */
+export interface PageTargetPerformanceEvidence {
+  resolved: ResolvedKeyword;
+  keywordId: string | null;
+  pageStat: (PageQueryStat & { firstDate: string | null; lastDate: string | null }) | null;
+  sitePerf: SiteKeywordPerformanceRow[];
+  rankTargets: RankTargetEvidence[];
+  aiAnswer: AiAnswerEvidence | null;
+}
+
 export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
   const openKeywordIntel = useOpenKeywordWindow();
   const phrase = page.target_keyword?.trim() ?? "";
   const siteDomain = hostnameOf(page.url);
 
   const evidence = useQuery({
-    queryKey: ["marketing", "page-target-performance", page.id, phrase],
+    queryKey: pageTargetPerformanceQueryKey(page.id, phrase),
     enabled: phrase.length > 0,
     queryFn: async ({ signal }) => {
       const resolved = await resolveKeyword(phrase, signal);
@@ -196,7 +215,7 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
       <SectionCard
         title="Target keyword performance"
         collapsible
-        anchor="target_keyword_data"
+        anchor="target_performance"
         headerExtra={headerExtra}
       >
         <div className="flex items-center gap-2 p-3">
@@ -274,7 +293,7 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
       title="Target keyword performance"
       copy={copy}
       collapsible
-      anchor="target_keyword_data"
+      anchor="target_performance"
       headerExtra={headerExtra}
     >
       <div className="grid gap-3 p-3">
