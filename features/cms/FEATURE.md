@@ -170,9 +170,42 @@ cascade: the log outlives the rows it describes.
 `CollectionItemFilter`. No generated types exist for this project (it's not
 `txzxabzwovsujtloxrus`) — these are hand-maintained; keep them in sync with live schema by hand.
 
-**C4 URL builder:** `features/cms/utils/pageUrls.ts` — TS twin of my-matrx's routing rules, derived
-directly from `my-matrx/pages/c/[client]/[[...slug]].js` (P1's committed `url-rules.json` fixture,
-the intended drift guard, had not landed as of 2026-07-09 — re-derive against it once it exists).
+**C4 URL builder:** `features/cms/utils/pageUrls.ts` — TS twin of my-matrx's routing rules. The
+drift guard has landed: `features/cms/utils/__tests__/url-rules.json` is a byte-identical copy of
+aidream's canonical `services/cms/url-rules.json`, and `pageUrls.test.ts` asserts every case against
+it. **Never edit one copy** — change the canonical file in aidream and re-copy, or one of the two
+suites goes red on purpose.
+
+### `client_pages.route` — the page's URL is a column, not a computation
+
+**Read this before writing anything that builds, stores, or matches a CMS page URL.**
+
+CMS migration 0028 added `public.client_pages.route text NOT NULL` — the page's full public path,
+leading slash, no trailing slash, **arbitrary depth**. Sites are no longer capped at 2 segments.
+
+- **`route` is trigger-computed. Never write it** — not in an insert row, not in an update field
+  map, not in a "repair" script. `public._client_page_route_of(slug, category, parent_route)` owns
+  it and cascades a change down to every descendant.
+- **Derivation, in order:** `parent_id` set → `parent.route + '/' + slug`; category null/empty →
+  `/{slug}`; category `'general'` (the column DEFAULT, meaning "the author named no category") →
+  `/{slug}`; `lower(category) = lower(slug)` (a category INDEX page IS the category) → `/{slug}`;
+  otherwise `/{category}/{slug}`.
+- **Three twins of that rule must agree exactly:** the DB function (canonical),
+  `aidream/services/cms/urls.py::client_page_route`, and `clientPageRoute()` in
+  `features/cms/utils/pageUrls.ts`. Change one, change all three plus `url-rules.json`.
+- **Slug is no longer unique per site.** `client_pages_client_id_slug_key` was DROPPED for
+  `client_pages_client_id_route_key UNIQUE (client_id, route)` — `/locations/austin/pricing` and
+  `/locations/dallas/pricing` legitimately share the leaf `pricing`. **Any uniqueness scan must scan
+  `route`**, never `slug` (the `promote` action in `app/api/cms/pages/route.ts` is the worked
+  example).
+- **Prefer the saved `route` over deriving it.** `clientPageUrl({ route })` uses it verbatim;
+  the derivation is only for callers with no saved row (unsaved editor buffer, promote candidate).
+- **`slug`, `category` and `parent_id` stay writable and each MOVES the live URL.** my-matrx's
+  `lib/render/clientSiteRenderer.js` retains the legacy 1-segment and 2-segment lookups as aliases,
+  so pre-0028 URLs still resolve after a move — but the canonical URL is `route`.
+- Agents see `route` on every page: as an attribute in `site_structure`
+  (`features/cms/utils/buildSiteStructureXml.ts`), in `pages_summary`, and in the cms-page surface's
+  `page_settings` / `page_layout`.
 
 ---
 
@@ -290,6 +323,15 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-07-27` — **`client_pages.route` adopted (CMS migration 0028): page URLs are no longer capped
+  at 2 segments.** `route` added to `ClientPage`/`ClientPageSummary`, to `LIST_COLUMNS`, to the
+  agent-facing `site_structure` XML / `pages_summary` / cms-page `page_settings`+`page_layout`.
+  `clientPageUrl` now prefers the saved `route` and falls back to the new `clientPageRoute()` twin of
+  `public._client_page_route_of` (`'general'` and category-equals-slug both collapse to `/{slug}`).
+  The `promote` uniqueness scan moved from `slug` to `route` — the DB constraint did too. `route` is
+  trigger-maintained and never written. `url-rules.json` was rewritten in aidream and re-copied here
+  byte-identical: 13 client-page cases (deep routes, saved-`route`-wins, `'general'`, category-index)
+  + 1 html-page case, all executing.
 - `2026-07-27` — **`matrx-user/cms` + `matrx-user/cms-site` driven from `stub` to `verified`.**
   Full completeness audit of `/cms` and `/cms/[siteId]` (+ Pages / Components / Collections /
   Settings): hub 3 → 7 own values in 3 curated groups; site 9 → 36 own values in 6 curated groups,

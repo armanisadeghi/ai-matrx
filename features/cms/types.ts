@@ -47,6 +47,12 @@ export interface ClientPage {
   id: string;
   client_id: string;
   slug: string;
+  /**
+   * Full public path — leading slash, no trailing slash, arbitrary depth
+   * (CMS migration 0028). Trigger-computed from slug + category + parent route:
+   * NEVER write it. Unique per site (`client_id, route`); `slug` alone is NOT.
+   */
+  route: string;
   title: string;
   html_content: string | null;
   html_content_draft: string | null;
@@ -111,6 +117,8 @@ export interface PromoteFromHtmlPageResult {
 export interface ClientPageSummary {
   id: string;
   slug: string;
+  /** Trigger-computed full public path (CMS migration 0028). Never written. */
+  route: string;
   title: string;
   category: string | null;
   page_type: string | null;

@@ -133,7 +133,7 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSite[] }) {
                                             {site && (
                                                 <>
                                                     <a
-                                                        href={clientPageUrl({ siteSlug: site.slug, slug: page.slug, category: page.category, domain: site.domain })}
+                                                        href={clientPageUrl({ siteSlug: site.slug, slug: page.slug, route: page.route, category: page.category, domain: site.domain })}
                                                         target="_blank"
                                                         rel="noreferrer"
                                                         className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary"
@@ -143,7 +143,7 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSite[] }) {
                                                     </a>
                                                     {page.has_draft && (
                                                         <a
-                                                            href={clientPageUrl({ siteSlug: site.slug, slug: page.slug, category: page.category, preview: true })}
+                                                            href={clientPageUrl({ siteSlug: site.slug, slug: page.slug, route: page.route, category: page.category, preview: true })}
                                                             target="_blank"
                                                             rel="noreferrer"
                                                             className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 hover:opacity-80"

@@ -76,6 +76,7 @@ function toPageEntry(page: ClientPageSummary): CmsSitePageEntry {
   return {
     id: page.id,
     slug: page.slug,
+    route: page.route,
     title: page.title,
     category: page.category,
     page_type: page.page_type,

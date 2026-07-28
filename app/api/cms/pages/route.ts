@@ -23,10 +23,11 @@ import {
   SLUG_RE,
   MAX_PROMOTE_HTML_BYTES,
 } from "@/features/html-pages/utils/promoteConvert";
+import { clientPageRoute } from "@/features/cms/utils/pageUrls";
 
 /** Summary columns for list view (no HTML content blobs) */
 const LIST_COLUMNS = `
-    id, client_id, slug, title, category, page_type,
+    id, client_id, slug, route, title, category, page_type,
     is_published, has_draft, is_home_page, show_in_nav,
     sort_order, excerpt, featured_image, author, tags,
     meta_title, meta_description,
@@ -170,6 +171,9 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        // `route` is NEVER written here: it is trigger-computed from
+        // slug + category + the parent's route (CMS migration 0028). Adding it
+        // to this row would fight the trigger and desync the live URL.
         const row: Record<string, unknown> = {
           client_id: siteId,
           slug,
@@ -311,11 +315,20 @@ export async function POST(request: NextRequest) {
           (typeof category === "string" && category.trim()) || "general";
 
         // Slug: explicit (validated, must be free) or derived + uniquified.
+        // Uniqueness is on the ROUTE, not the slug — CMS migration 0028 dropped
+        // `client_pages_client_id_slug_key` for
+        // `client_pages_client_id_route_key UNIQUE (client_id, route)`. Scanning
+        // slugs here would falsely reject promoting `about` into category `blog`
+        // (route `/blog/about`) just because a root `/about` exists. A promote
+        // never sets `parent_id`, so the candidate route derives from
+        // slug + category alone.
         const { data: siblingRows } = await db
           .from("client_pages")
-          .select("slug")
+          .select("route")
           .eq("client_id", siteId);
-        const taken = new Set((siblingRows ?? []).map((r) => r.slug));
+        const taken = new Set((siblingRows ?? []).map((r) => r.route));
+        const routeFor = (candidate: string) =>
+          clientPageRoute({ slug: candidate, category: resolvedCategory });
         let resolvedSlug: string;
         if (typeof slug === "string" && slug.trim()) {
           resolvedSlug = slug.trim();
@@ -325,16 +338,18 @@ export async function POST(request: NextRequest) {
               { status: 400 },
             );
           }
-          if (taken.has(resolvedSlug)) {
+          if (taken.has(routeFor(resolvedSlug))) {
             return NextResponse.json(
-              { error: `slug "${resolvedSlug}" already exists on this site` },
+              {
+                error: `a page already exists at "${routeFor(resolvedSlug)}" on this site`,
+              },
               { status: 409 },
             );
           }
         } else {
           const base = slugifyTitle(resolvedTitle);
           resolvedSlug = base;
-          for (let n = 2; taken.has(resolvedSlug); n++) {
+          for (let n = 2; taken.has(routeFor(resolvedSlug)); n++) {
             resolvedSlug = `${base}-${n}`;
           }
         }
@@ -458,6 +473,10 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        // `route` is deliberately absent: it is trigger-computed (CMS migration
+        // 0028) and must never be written. Note that `slug`, `category` and
+        // `parentId` ARE writable and each MOVES the live URL — the trigger
+        // recomputes `route` and cascades the new prefix to every descendant.
         const fieldMap: Record<string, string> = {
           slug: "slug",
           title: "title",

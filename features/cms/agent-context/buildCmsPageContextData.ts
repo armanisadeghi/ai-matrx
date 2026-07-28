@@ -21,7 +21,7 @@ import type {
   ClientPageSummary,
   ClientSite,
 } from "../types";
-import { clientPageUrl } from "../utils/pageUrls";
+import { clientPageRoute, clientPageUrl } from "../utils/pageUrls";
 import { buildSiteStructureXml } from "../utils/buildSiteStructureXml";
 
 export type CmsPageEditorTab =
@@ -148,6 +148,7 @@ export function buildCmsPageContextData(
     ? clientPageUrl({
         siteSlug: site.slug,
         slug: page.slug,
+        route: page.route,
         category: page.category,
       })
     : undefined;
@@ -155,10 +156,16 @@ export function buildCmsPageContextData(
     ? clientPageUrl({
         siteSlug: site.slug,
         slug: page.slug,
+        route: page.route,
         category: page.category,
         preview: true,
       })
     : undefined;
+
+  // The page's real public path. Saved pages carry the trigger-computed
+  // `route`; an unsaved buffer gets the same derivation the DB will apply.
+  const pageRoute =
+    page?.route ?? clientPageRoute({ slug, category: category || null });
 
   const tagList = tags
     .split(",")
@@ -210,6 +217,7 @@ export function buildCmsPageContextData(
     },
     page_settings: {
       slug,
+      route: pageRoute,
       category: category || "general",
       page_type: pageType || "standard",
       excerpt,
@@ -232,6 +240,7 @@ export function buildCmsPageContextData(
     page_id: page?.id,
     page_layout: page
       ? {
+          route: page.route,
           layout_type: page.layout_type,
           use_client_header: page.use_client_header,
           use_client_footer: page.use_client_footer,

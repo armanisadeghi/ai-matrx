@@ -93,6 +93,8 @@ const groups: SurfaceValueGroup[] = [
 export interface CmsSitePageEntry {
   id: string;
   slug: string;
+  /** Trigger-computed full public path (CMS migration 0028) — the page's real URL. */
+  route: string;
   title: string;
   category: string | null;
   page_type: string | null;

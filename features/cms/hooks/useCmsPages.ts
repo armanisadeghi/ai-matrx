@@ -63,6 +63,8 @@ export function useCmsPages(siteId: string | null) {
           {
             id: page.id,
             slug: page.slug,
+            // Trigger-computed on insert; the create response carries it.
+            route: page.route,
             title: page.title,
             category: page.category,
             page_type: page.page_type,

@@ -57,6 +57,9 @@ function renderPage(
 ): string {
   const attrs = [
     attr("id", p.id),
+    // The real public path (trigger-computed, arbitrary depth). `slug` is only
+    // the leaf and is NOT unique per site — agents must route by `route`.
+    attr("route", p.route),
     attr("slug", p.slug),
     attr("category", p.category ?? "general"),
   ];

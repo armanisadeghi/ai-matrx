@@ -345,6 +345,7 @@ export default function PageEditor({
     ? clientPageUrl({
         siteSlug: site.slug,
         slug: page.slug,
+        route: page.route,
         category: page.category,
         domain: site.domain,
       })
@@ -353,6 +354,7 @@ export default function PageEditor({
     ? clientPageUrl({
         siteSlug: site.slug,
         slug: page.slug,
+        route: page.route,
         category: page.category,
         preview: true,
       })
