@@ -182,25 +182,31 @@ export function ArtifactResultBar({
         >
           {/* Kind-specific destinations first — the ones users actually want. */}
           {artifact.kind === "working_document" && conversationId && (
-            <DropdownMenuItem onClick={openCanvas}>
+            <DropdownMenuItem onClick={openCanvas} className="gap-2">
               <Frame className="size-4" />
               Canvas
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem onClick={openEdit}>
+          <DropdownMenuItem onClick={openEdit} className="gap-2">
             <Pencil className="size-4" />
             Edit
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           {/* Canonical pair — every artifact bar has these. */}
           {onOpenWindowPanel && (
-            <DropdownMenuItem onClick={() => onOpenWindowPanel()}>
+            <DropdownMenuItem
+              onClick={() => onOpenWindowPanel()}
+              className="gap-2"
+            >
               <PanelRightOpen className="size-4" />
               Window Panel
             </DropdownMenuItem>
           )}
           {onOpenOverlay && (
-            <DropdownMenuItem onClick={() => onOpenOverlay()}>
+            <DropdownMenuItem
+              onClick={() => onOpenOverlay()}
+              className="gap-2"
+            >
               <Wrench className="size-4" />
               Tool Admin
             </DropdownMenuItem>
