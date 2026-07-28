@@ -12,7 +12,7 @@ import { useCmsVersions } from "@/features/cms/hooks/useCmsVersions";
 import { useCmsPageSurfaceScope } from "@/features/cms/hooks/useCmsPageSurfaceScope";
 import { CMS_PAGE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsPageContextMenuProps";
 import { createCmsPageExtraSections } from "@/features/cms/agent-context/cmsPageExtraSections";
-import { clientPageUrl } from "@/features/cms/utils/pageUrls";
+import { clientPageUrl, sitePreviewToken } from "@/features/cms/utils/pageUrls";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
@@ -357,6 +357,7 @@ export default function PageEditor({
         route: page.route,
         category: page.category,
         preview: true,
+        previewToken: sitePreviewToken(site),
       })
     : undefined;
 

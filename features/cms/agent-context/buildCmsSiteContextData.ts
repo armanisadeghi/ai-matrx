@@ -34,7 +34,7 @@ import type {
   SiteCollectionSummary,
 } from "../types";
 import { buildSiteStructureXml } from "../utils/buildSiteStructureXml";
-import { clientSiteRootUrl } from "../utils/pageUrls";
+import { clientSiteRootUrl, sitePreviewToken } from "../utils/pageUrls";
 import { cmsSiteSummaryEntry } from "./buildCmsHubContextData";
 
 /** Which tab of the site workspace the user is on. */
@@ -184,7 +184,7 @@ export function buildCmsSiteContextData(
     site_domain: site.domain ?? undefined,
     site_is_active: site.is_active,
     live_url: clientSiteRootUrl(site.slug),
-    preview_url: clientSiteRootUrl(site.slug, true),
+    preview_url: clientSiteRootUrl(site.slug, true, null, sitePreviewToken(site)),
     site_created_at: site.created_at,
     site_updated_at: site.updated_at,
     site_owner_user_id: site.owner_user_id ?? undefined,

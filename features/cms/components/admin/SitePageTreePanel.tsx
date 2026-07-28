@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { CmsPageService } from '../../services/cmsService';
-import { clientPageUrl, clientSiteRootUrl } from '../../utils/pageUrls';
+import { clientPageUrl, clientSiteRootUrl, sitePreviewToken } from '../../utils/pageUrls';
 import type { ClientPageSummary, ClientSite } from '../../types';
 import {
     Select,
@@ -143,7 +143,7 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSite[] }) {
                                                     </a>
                                                     {page.has_draft && (
                                                         <a
-                                                            href={clientPageUrl({ siteSlug: site.slug, slug: page.slug, route: page.route, category: page.category, preview: true })}
+                                                            href={clientPageUrl({ siteSlug: site.slug, slug: page.slug, route: page.route, category: page.category, preview: true, previewToken: sitePreviewToken(site) })}
                                                             target="_blank"
                                                             rel="noreferrer"
                                                             className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 hover:opacity-80"

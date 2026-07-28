@@ -99,8 +99,31 @@ export interface ClientPageUrlParams {
   /** Used only when `route` is absent. The parent page's own `route`. */
   parentRoute?: string | null;
   preview?: boolean;
+  /**
+   * `client_sites.settings.preview_token` — sites carrying one gate their
+   * previews (my-matrx `lib/previewGate.js`); the minted link appends `pt` so
+   * it opens without a login. Tokenless sites ignore this. Use
+   * `sitePreviewToken(site)` to extract it.
+   */
+  previewToken?: string | null;
   /** `client_sites.domain` (normalized). Set → live URL is domain-rooted. */
   domain?: string | null;
+}
+
+/**
+ * Pull the preview token off a site row's `settings` blob, if the caller had
+ * `settings` fetched. Absent settings → undefined → the preview link still
+ * works for logged-in admins (the gate's cookie path), it just re-challenges.
+ */
+export function sitePreviewToken(site: { settings?: unknown } | null | undefined): string | undefined {
+  const settings = site?.settings;
+  if (!settings || typeof settings !== "object") return undefined;
+  const token = (settings as Record<string, unknown>)["preview_token"];
+  return typeof token === "string" && token ? token : undefined;
+}
+
+function previewQs(previewToken?: string | null): string {
+  return previewToken ? `?preview=true&pt=${encodeURIComponent(previewToken)}` : "?preview=true";
 }
 
 export function clientPageUrl({
@@ -110,12 +133,13 @@ export function clientPageUrl({
   category,
   parentRoute,
   preview,
+  previewToken,
   domain,
 }: ClientPageUrlParams): string {
   const path = route?.trim() || clientPageRoute({ slug, category, parentRoute });
   // Preview always resolves on the platform /c/ host, never the custom domain.
   if (preview) {
-    return `${HTML_SITE_URL}/c/${siteSlug}${path}?preview=true`;
+    return `${HTML_SITE_URL}/c/${siteSlug}${path}${previewQs(previewToken)}`;
   }
   if (domain) {
     return `https://${domain}${path}`;
@@ -127,8 +151,13 @@ export function clientPageUrl({
  * The site root — resolves server-side to the home page's own URL via a
  * redirect. On a domain-mapped site the root is the domain itself.
  */
-export function clientSiteRootUrl(siteSlug: string, preview?: boolean, domain?: string | null): string {
-  if (preview) return `${HTML_SITE_URL}/c/${siteSlug}?preview=true`;
+export function clientSiteRootUrl(
+  siteSlug: string,
+  preview?: boolean,
+  domain?: string | null,
+  previewToken?: string | null,
+): string {
+  if (preview) return `${HTML_SITE_URL}/c/${siteSlug}${previewQs(previewToken)}`;
   return domain ? `https://${domain}` : `${HTML_SITE_URL}/c/${siteSlug}`;
 }
 

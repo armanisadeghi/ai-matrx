@@ -22,7 +22,7 @@
  */
 
 import type { ClientSite, ClientPageSummary, ClientComponent } from "../types";
-import { clientSiteRootUrl } from "./pageUrls";
+import { clientSiteRootUrl, sitePreviewToken } from "./pageUrls";
 
 const MAX_XML_CHARS = 12_000;
 
@@ -115,7 +115,7 @@ function render(
     attr("name", site.name),
     attr("policy", policy),
     attr("live", clientSiteRootUrl(site.slug)),
-    attr("preview", clientSiteRootUrl(site.slug, true)),
+    attr("preview", clientSiteRootUrl(site.slug, true, null, sitePreviewToken(site))),
   ];
   if (current?.kind === "site" && current.id === site.id) {
     siteAttrs.push('current="true"');
