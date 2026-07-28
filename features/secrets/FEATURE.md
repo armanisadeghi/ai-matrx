@@ -1,6 +1,6 @@
 # Secrets — Unified Credential Vault
 
-> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-07-26
+> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-07-28
 
 > Cross-repo implementation authority: `/Users/armanisadeghi/code/common-docs/projects/unified-credential-vault/PLAN.md` — read it before expanding this feature in ANY repository.
 >
@@ -57,8 +57,8 @@ personal vault:
 | `shared`       | my own `user_secret_grants` rows (`can_use`) → `in(id, thoseItemIds)` + `neq(user_id, me)` | Items OTHER people shared with me. Create/import are hidden here — the items are owned by someone else. |
 | `organization` | `eq(organization_id, org)`                                                                 | Unchanged.                                                                                              |
 
-The personal surface shows a Mine / Shared with me switcher; the organization
-surface is always its own scope.
+The personal surface shows a My credentials / Shared with me switcher; the
+organization surface is always its own scope.
 
 ## Sharing, ownership, and assignment (2026-07-26)
 
@@ -129,6 +129,21 @@ Personal and organization credentials render through the same
 - Website metadata renders only for `website_login`, an item with existing
   login URLs, or a legacy credential whose URL can be promoted. A generic API
   or environment credential must not be presented as a website login.
+- `/vault` uses the familiar password-manager master/detail shape: a left
+  navigation pane for scope and type, a compact middle credential list, and a
+  persistent right detail pane. Mobile opens the same detail component in a
+  responsive Credenza. Embedded settings/window/org hosts keep the compact
+  presentation of the same workspace because they do not own a full viewport.
+- A list row carries labeled identity only (credential name, credential type,
+  and login URLs when applicable). Encrypted fields are shown in the detail
+  pane, avoiding a card-grid wall of reveal controls.
+- New credential starts with four plain-purpose choices: Website login, API
+  key, Environment value, and Custom credential. The full catalog remains
+  searchable behind **Browse all**.
+- Website-login password fields offer browser-local cryptographic generation
+  plus explicit Show/Hide. Generated values remain only in the transient create
+  form, exactly like a typed value, and are never logged or persisted outside
+  the normal create request.
 
 ## Files and entry points
 
@@ -138,11 +153,11 @@ Personal and organization credentials render through the same
 | [`credential-identity.ts`](./credential-identity.ts)                           | Pure, metadata-only identity builder shared by Vault list/detail surfaces: icon/accent, human credential kind, host, and a deduplicated subtitle/meta line.                                                                                                                                      |
 | [`vault-service.ts`](./vault-service.ts)                                       | THE service: `/api/vault/*` client + direct-Supabase masked reads + catalog definition loader.                                                                                                                                                                                                   |
 | [`vault-hooks.ts`](./vault-hooks.ts)                                           | THE hook set: `useVault` (list + all mutations + toasts/busy), `useVaultDefinitions`, `useVaultAudit`, `useTransientSecret`.                                                                                                                                                                     |
-| [`components/VaultWorkspace.tsx`](./components/VaultWorkspace.tsx)             | List/search/family-filter, item cards, detail + create + import dialogs (Credenza = Dialog/Drawer responsive).                                                                                                                                                                                   |
-| [`components/VaultCreateDialog.tsx`](./components/VaultCreateDialog.tsx)       | Catalog picker (family groups, search, presets) + definition-driven form + Custom builder (with `KEY=value` paste-to-fill).                                                                                                                                                                      |
+| [`components/VaultWorkspace.tsx`](./components/VaultWorkspace.tsx)             | Full three-pane route workspace plus compact embedded presentation, both sharing the same list/search/family filters, detail, create, and import flows (Credenza = Dialog/Drawer responsive).                                                                                                    |
+| [`components/VaultCreateDialog.tsx`](./components/VaultCreateDialog.tsx)       | Basic-purpose picker first, searchable full catalog second, then definition-driven form + Custom builder (with `KEY=value` paste-to-fill); login passwords support local generation and Show/Hide.                                                                                               |
 | [`components/VaultItemDetail.tsx`](./components/VaultItemDetail.tsx)           | Labeled fields with hidden/full reveal and one credential edit mode (name, description, field values/metadata, notes, URLs, other details), plus share, transfer, fork, soft delete, and audit trail.                                                                                            |
 | [`components/VaultEnvImportDialog.tsx`](./components/VaultEnvImportDialog.tsx) | Bulk `.env` paste/upload → `POST /api/vault/items/import-env`.                                                                                                                                                                                                                                   |
-| [`utils.ts`](./utils.ts)                                                       | `parseEnvAssignment` — single dotenv-line parser (paste-to-fill).                                                                                                                                                                                                                                |
+| [`utils.ts`](./utils.ts)                                                       | `parseEnvAssignment` (single dotenv-line paste-to-fill) + `generateVaultPassword` (Web Crypto, unambiguous alphabet, all basic character groups).                                                                                                                                                |
 
 ## Invariants
 
@@ -180,12 +195,14 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
 - Disconnect (aidream `DELETE /api/mcp-connections/{server_id}`) clears the
   connection AND soft-deletes the owned vault item.
 
-## Known gaps (2026-07-23)
-
-- aidream `/api/vault/*` is implemented in the local repo but not yet deployed to prod — until deploy, value ops surface clear error toasts while the masked list keeps rendering from Supabase.
-
 ## Change Log
 
+- **2026-07-28** — Removed the obsolete pre-deployment warning after the Vault API and organization-aware browser-login matching shipped through aidream.
+- **2026-07-28** — Added the full-route three-pane password-manager workspace,
+  responsive detail dialog, basic-purpose-first creation flow, plain-language
+  purpose copy, browser-local password generation, and advanced runtime-field
+  disclosure while preserving the shared compact organization/settings/window
+  presentation.
 - **2026-07-28** — Rebuilt the shared personal/organization vault presentation: canonical labels, full wrapping with no truncation/collapsing, hidden-or-complete value display with partial hints removed, one credential edit mode replacing scattered edit/rename/rotate controls, and website metadata limited to actual website credentials.
 - **2026-07-26** — Closed the silent sandbox-injection gap: every sandbox switch (item detail, add-field, both create dialogs) is disabled until the field has an env key, the create dialogs surface it as a validation problem, and no build path can send `inject_into_sandbox=true` with a null alias. Backed by an aidream write refusal + a DB CHECK.
 - **2026-07-26** — Sharing, ownership, and destination-login build (ratified plan): Mine / Shared-with-me / Organization scopes, each a deliberate query; per-recipient grant CRUD replacing the destructive save-the-whole-list share panel; give-ownership to another user by exact email; create-for-someone with server-side password generation; plaintext destination metadata with the loud Not-encrypted section, browser-fill toggle, and one-click promotion of an encrypted `site_url`/`panel_url` into `login_urls`. Also pinned `--default-non-nullable false` in aidream's type generator — openapi-typescript v7 had started marking every defaulted property required, churning ~1800 lines and breaking partial-patch call sites.
