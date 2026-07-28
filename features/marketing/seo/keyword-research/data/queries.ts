@@ -14,10 +14,18 @@ import type {
   KeywordEdgeView,
   KeywordWithMarket,
 } from "../types";
+import type { KeywordResearchArtifact } from "@/types/python-generated/stream-events";
+import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
+import { isRecord } from "@/features/content-ir/kinds/legacy-bridge-utils";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
   return supabase.schema("seo");
+}
+
+async function contentIrDb() {
+  await requireAuthenticatedSupabaseSession(supabase);
+  return supabase.schema("content_ir");
 }
 
 function cleanSearch(value: string): string {
@@ -50,6 +58,124 @@ export async function listKeywordsWithMarket(options: {
   );
   if (response.error) throw response.error;
   return (response.data ?? []) as KeywordWithMarket[];
+}
+
+/** Resolve a bounded research cluster by exact normalized phrase. */
+export async function listKeywordsWithMarketByPhrases(
+  phrases: string[],
+  signal?: AbortSignal,
+): Promise<KeywordWithMarket[]> {
+  const normalized = Array.from(
+    new Set(phrases.map(normalizeKeywordPhrase).filter(Boolean)),
+  );
+  if (normalized.length === 0) return [];
+  const response = await (await seoDb())
+    .from("keyword")
+    .select("*, keyword_market(*)")
+    .in("normalized_phrase", normalized)
+    .is("deleted_at", null)
+    .abortSignal(signal ?? new AbortController().signal);
+  if (response.error) throw response.error;
+  return (response.data ?? []) as KeywordWithMarket[];
+}
+
+export interface SavedKeywordResearch {
+  id: string;
+  createdAt: string;
+  artifact: KeywordResearchArtifact;
+}
+
+function jsonRecord(value: unknown): Record<string, unknown> | null {
+  return isRecord(value) ? value : null;
+}
+
+function parseKeywordResearchArtifact(
+  value: unknown,
+): KeywordResearchArtifact | null {
+  const record = jsonRecord(value);
+  if (!record || typeof record.primary_keyword !== "string") return null;
+  const keyword_lists = Array.isArray(record.keyword_lists)
+    ? record.keyword_lists.flatMap((candidate) => {
+        const list = jsonRecord(candidate);
+        if (!list || typeof list.label !== "string") return [];
+        const keywords = Array.isArray(list.keywords)
+          ? list.keywords.filter(
+              (keyword): keyword is string => typeof keyword === "string",
+            )
+          : [];
+        return [{ label: list.label, keywords }];
+      })
+    : [];
+  return { primary_keyword: record.primary_keyword, keyword_lists };
+}
+
+/**
+ * Latest durable relationship-research artifact for this org + keyword.
+ * Reads the canonical internal `content_ir.kind_instance`, not a paid compute
+ * endpoint or creator-private command ledger, so every authorized org member
+ * sees the same already-saved result.
+ */
+export async function getLatestSavedKeywordResearch(
+  organizationId: string,
+  phrase: string,
+  signal?: AbortSignal,
+): Promise<SavedKeywordResearch | null> {
+  const db = await contentIrDb();
+  const definition = await db
+    .from("kind_definition")
+    .select("id")
+    .eq("kind", "keyword_relationship_research")
+    .eq("is_active", true)
+    .is("deleted_at", null)
+    .limit(1)
+    .maybeSingle();
+  if (definition.error) throw definition.error;
+  if (!definition.data) return null;
+
+  const exact = await db
+    .from("kind_instance")
+    .select("id, created_at, data")
+    .eq("organization_id", organizationId)
+    .eq("kind_definition_id", definition.data.id)
+    .eq("data->>primary_keyword", phrase.trim())
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .abortSignal(signal ?? new AbortController().signal)
+    .maybeSingle();
+  if (exact.error) throw exact.error;
+  const exactArtifact = parseKeywordResearchArtifact(exact.data?.data);
+  if (exact.data && exactArtifact) {
+    return {
+      id: exact.data.id,
+      createdAt: exact.data.created_at,
+      artifact: exactArtifact,
+    };
+  }
+
+  // Case/whitespace-normalized fallback for keywords saved before the current
+  // page phrase spelling was settled.
+  const response = await db
+    .from("kind_instance")
+    .select("id, created_at, data")
+    .eq("organization_id", organizationId)
+    .eq("kind_definition_id", definition.data.id)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(50)
+    .abortSignal(signal ?? new AbortController().signal);
+  if (response.error) throw response.error;
+  const target = normalizeKeywordPhrase(phrase);
+  for (const row of response.data ?? []) {
+    const artifact = parseKeywordResearchArtifact(row.data);
+    if (
+      artifact &&
+      normalizeKeywordPhrase(artifact.primary_keyword) === target
+    ) {
+      return { id: row.id, createdAt: row.created_at, artifact };
+    }
+  }
+  return null;
 }
 
 /** All edges touching a keyword, annotated with the partner phrase. */

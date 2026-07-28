@@ -55,6 +55,11 @@ export interface KeywordInputProps {
   className?: string;
   /** The Keyword Intelligence window sets this false — it IS the destination. */
   showIntelButton?: boolean;
+  /** Submit the settled phrase (normally Enter). Highlighted suggestions are
+   * selected first; pressing Enter again submits the selected phrase. */
+  onSubmit?: (phrase: string) => void;
+  /** Hide resolution chips for compact, repeat-entry surfaces such as batches. */
+  showDetails?: boolean;
 }
 
 export function KeywordInput({
@@ -67,6 +72,8 @@ export function KeywordInput({
   disabled,
   className,
   showIntelButton = true,
+  onSubmit,
+  showDetails = true,
 }: KeywordInputProps) {
   const openKeywordWindow = useOpenKeywordWindow();
   const [focused, setFocused] = useState(false);
@@ -151,16 +158,18 @@ export function KeywordInput({
             setHighlight(-1);
           }}
           onKeyDown={(event) => {
-            if (!open) return;
-            if (event.key === "ArrowDown") {
+            if (open && event.key === "ArrowDown") {
               event.preventDefault();
               setHighlight((h) => (h + 1) % items.length);
-            } else if (event.key === "ArrowUp") {
+            } else if (open && event.key === "ArrowUp") {
               event.preventDefault();
               setHighlight((h) => (h <= 0 ? items.length - 1 : h - 1));
-            } else if (event.key === "Enter" && highlight >= 0) {
+            } else if (open && event.key === "Enter" && highlight >= 0) {
               event.preventDefault();
               pick(items[highlight].phrase);
+            } else if (event.key === "Enter" && onSubmit && value.trim()) {
+              event.preventDefault();
+              onSubmit(value.trim());
             } else if (event.key === "Escape") {
               setFocused(false);
             }
@@ -236,7 +245,7 @@ export function KeywordInput({
         </div>
       ) : null}
 
-      {value.trim() ? (
+      {showDetails && value.trim() ? (
         <div className="mt-1.5 min-h-4">
           {resolved.isFetching && !settled ? (
             <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">

@@ -14,10 +14,9 @@
  */
 
 import { useState } from "react";
-import { ArrowUpFromDot, BrainCircuit, Loader2, Plus, Tags, X } from "lucide-react";
+import { ArrowUpFromDot, BrainCircuit, Loader2, Tags, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
-import { Button } from "@/components/ui/button";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { KeywordInput } from "@/features/marketing/seo/keyword/KeywordInput";
@@ -33,16 +32,15 @@ import {
   ensureKeywordId,
   fetchKeywordsByIds,
   listPageKeywordEdges,
+  pageKeywordsQueryKey,
   PAGE_KEYWORD_SUPPORTING_ROLE,
   removePageKeyword,
 } from "@/features/marketing/data/page-keywords";
+import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 import type { KeywordSuggestion } from "@/features/marketing/seo/keyword/types";
 import type { MarketingPage } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import { PageTaskButton } from "@/features/marketing/components/pages/PageTaskButton";
-
-export const pageKeywordsQueryKey = (pageId: string) =>
-  ["marketing", "page-keywords", pageId] as const;
 
 interface BoardKeyword {
   keywordId: string;
@@ -67,6 +65,7 @@ export function PageKeywordsCard({
   const intentMutation = useUpdatePageIntent();
   const [draftPhrase, setDraftPhrase] = useState("");
   const [busyKeywordId, setBusyKeywordId] = useState<string | null>(null);
+  const [pendingPhrases, setPendingPhrases] = useState<string[]>([]);
 
   const board = useQuery({
     queryKey: pageKeywordsQueryKey(page.id),
@@ -111,15 +110,43 @@ export function PageKeywordsCard({
       );
     },
     onSuccess: () => {
-      setDraftPhrase("");
       void invalidate();
     },
-    onError: (error) => {
+    onError: (error, phrase) => {
       toast.error("Could not attach keyword", {
-        description: extractErrorMessage(error),
+        description: `“${phrase}”: ${extractErrorMessage(error)}`,
       });
     },
+    onSettled: (_data, _error, phrase) => {
+      const normalized = normalizeKeywordPhrase(phrase);
+      setPendingPhrases((current) =>
+        current.filter(
+          (candidate) => normalizeKeywordPhrase(candidate) !== normalized,
+        ),
+      );
+    },
   });
+
+  const submitSupportingKeyword = (phrase: string) => {
+    const trimmed = phrase.trim();
+    const normalized = normalizeKeywordPhrase(trimmed);
+    if (!normalized) return;
+    const alreadyAttached =
+      normalized === normalizeKeywordPhrase(primaryPhrase) ||
+      supporting.some(
+        (entry) => normalizeKeywordPhrase(entry.phrase) === normalized,
+      ) ||
+      pendingPhrases.some(
+        (candidate) => normalizeKeywordPhrase(candidate) === normalized,
+      );
+    setDraftPhrase("");
+    if (alreadyAttached) {
+      toast.info(`“${trimmed}” is already in this keyword batch`);
+      return;
+    }
+    setPendingPhrases((current) => [...current, trimmed]);
+    addMutation.mutate(trimmed);
+  };
 
   const remove = async (entry: BoardKeyword) => {
     setBusyKeywordId(entry.keywordId);
@@ -264,7 +291,9 @@ export function PageKeywordsCard({
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : null}
           </div>
-          {supporting.length === 0 && !board.isLoading ? (
+          {supporting.length === 0 &&
+          pendingPhrases.length === 0 &&
+          !board.isLoading ? (
             <p className="text-xs text-muted-foreground">
               No supporting keywords attached yet. Add them below — the Page
               Analyzer also attaches what it discovers.
@@ -334,39 +363,33 @@ export function PageKeywordsCard({
                   </span>
                 );
               })}
+              {pendingPhrases.map((phrase) => (
+                <span
+                  key={`pending:${normalizeKeywordPhrase(phrase)}`}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground"
+                >
+                  {phrase}
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                </span>
+              ))}
             </div>
           )}
         </div>
 
-        <div className="flex items-end gap-2">
-          <div className="min-w-0 flex-1">
-            <KeywordInput
-              value={draftPhrase}
-              onChange={setDraftPhrase}
-              scope={{
-                organizationId: page.organization_id,
-                siteId: page.site_id,
-                pageId: page.id,
-                brandId,
-              }}
-              suggestions={suggestions}
-              placeholder="Add a supporting keyword"
-            />
-          </div>
-          <Button
-            size="sm"
-            className="h-9"
-            disabled={!draftPhrase.trim() || addMutation.isPending}
-            onClick={() => addMutation.mutate(draftPhrase)}
-          >
-            {addMutation.isPending ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
-            )}
-            Attach
-          </Button>
-        </div>
+        <KeywordInput
+          value={draftPhrase}
+          onChange={setDraftPhrase}
+          onSubmit={submitSupportingKeyword}
+          showDetails={false}
+          scope={{
+            organizationId: page.organization_id,
+            siteId: page.site_id,
+            pageId: page.id,
+            brandId,
+          }}
+          suggestions={suggestions}
+          placeholder="Type a supporting keyword and press Enter"
+        />
       </div>
     </SectionCard>
   );

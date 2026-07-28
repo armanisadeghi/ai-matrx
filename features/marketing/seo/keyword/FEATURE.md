@@ -13,7 +13,7 @@ keyword payload for AI — call `buildKeywordBrief`.**
 
 | Part | File | What it is |
 |---|---|---|
-| `KeywordInput` | `KeywordInput.tsx` | THE canonical keyword input: live library resolution, data chips underneath, contextual + library suggestion dropdown (source-tagged: GSC / Analyzer / Library), Keyword Intelligence launcher. Controlled; callers own save. |
+| `KeywordInput` | `KeywordInput.tsx` | THE canonical keyword input: live library resolution, data chips underneath, contextual + library suggestion dropdown (source-tagged: GSC / Analyzer / Library), Keyword Intelligence launcher. Controlled; callers own save. Repeat-entry surfaces use `onSubmit` + `showDetails={false}` for type→Enter batching without a second-line lookup jump. |
 | `KeywordIntelPanel` | `KeywordIntelPanel.tsx` | The full dossier: Overview (market + 13-column classification), Relationships (edge navigation re-targets the panel), Site (v_site_keyword_performance), Rankings (rank targets + live check + track), SERP (stored landscape as a Google-style results page, own site highlighted), Research (full pipeline, live kind components). |
 | `keywordWindow` overlay | `features/window-panels/windows/seo/KeywordWindow.tsx` + `features/overlays/openers/keywordWindow.tsx` | The panel as a floating window. Open from anywhere: `useOpenKeywordWindow({ phrase, organizationId, siteId, pageId, brandId, tab })`. A site binding always travels with its owning organization; site-scoped compute tabs stay off without both. `?panels=keyword`. |
 | `buildKeywordBrief` | `keyword-brief.ts` | The condensed keyword+data payload (`{ data, lines }`) for Copy-for-AI envelopes and agent payloads. |
@@ -52,9 +52,19 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
   unknown-keyword save nudge), `PageQueriesCard` (adopt-as-target + launcher),
   ranks add-target form + row launchers, site-keywords row launchers,
   content-plan `KeywordPicker` (market chips + launcher; still id-based).
+- Page-bound Research results are selection surfaces: hierarchy chips and
+  intent-classification cards share one checkbox state and attach through
+  `addPageSupportingKeywords`. The primary phrase is never selectable.
+- Research opens saved org-visible `content_ir.kind_instance` data in place
+  before offering a rerun. Do not replace this with creator-private run-ledger
+  state or a link to another page.
 
 ## Change Log
 
+- 2026-07-28 — Codex: page-bound research now restores saved hierarchy +
+  persisted keyword classification in place, keeps both live phases mounted,
+  and adds shared checkbox → supporting-keyword attachment. `KeywordInput`
+  gained compact Enter-submit mode for rapid supporting-keyword entry.
 - 2026-07-27 — Codex: made site-bound keyword operations organization-safe
   end to end (window persistence, research, volume refresh, rank mutations,
   content-plan/page/site launchers).

@@ -22,10 +22,14 @@ import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { SEO_KEYWORD_TOKEN } from "@/features/marketing/content-plan/types";
 import type { KeywordWithMarket } from "@/features/marketing/seo/keyword-research/types";
+import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
+import { extractErrorMessage } from "@/utils/errors";
 
 export const WEB_PAGE_TOKEN = "web_page";
 export const PAGE_KEYWORD_SUPPORTING_ROLE = "supporting";
 export const PAGE_KEYWORD_PRIMARY_ROLE = "primary";
+export const pageKeywordsQueryKey = (pageId: string) =>
+  ["marketing", "page-keywords", pageId] as const;
 
 function unwrap<T>(result: ScopesRpcResult<T>): T {
   if (!result.ok) {
@@ -98,6 +102,44 @@ export async function addPageSupportingKeyword(
       ...(orgId ? { orgId } : {}),
     }),
   );
+}
+
+export interface PageKeywordBatchAddResult {
+  attached: string[];
+  failed: { phrase: string; error: string }[];
+}
+
+/** Attach a deduplicated phrase batch through the same canonical keyword
+ * upsert + association chokepoint used by single-entry UI. */
+export async function addPageSupportingKeywords(
+  pageId: string,
+  phrases: string[],
+  orgId?: string,
+): Promise<PageKeywordBatchAddResult> {
+  const unique = new Map<string, string>();
+  for (const phrase of phrases) {
+    const trimmed = phrase.trim();
+    const normalized = normalizeKeywordPhrase(trimmed);
+    if (normalized && !unique.has(normalized)) unique.set(normalized, trimmed);
+  }
+  const outcomes = await Promise.allSettled(
+    [...unique.values()].map(async (phrase) => {
+      const keywordId = await ensureKeywordId(phrase);
+      await addPageSupportingKeyword(pageId, keywordId, orgId);
+      return phrase;
+    }),
+  );
+  const attached: string[] = [];
+  const failed: PageKeywordBatchAddResult["failed"] = [];
+  outcomes.forEach((outcome, index) => {
+    const phrase = [...unique.values()][index];
+    if (outcome.status === "fulfilled") {
+      attached.push(outcome.value);
+    } else {
+      failed.push({ phrase, error: extractErrorMessage(outcome.reason) });
+    }
+  });
+  return { attached, failed };
 }
 
 export async function removePageKeyword(

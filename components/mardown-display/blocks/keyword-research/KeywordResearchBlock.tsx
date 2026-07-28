@@ -27,9 +27,14 @@ import type {
   KeywordListData,
   KeywordRelationshipResearchData,
 } from "@/features/content-ir/kinds/keyword-research";
+import { Checkbox } from "@/components/ui/checkbox";
+import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 
 export interface KeywordResearchBlockProps {
   serverData?: unknown;
+  selectedPhrases?: ReadonlySet<string>;
+  disabledPhrases?: ReadonlySet<string>;
+  onKeywordSelectionChange?: (phrase: string, selected: boolean) => void;
 }
 
 function isList(value: unknown): value is KeywordListData {
@@ -69,7 +74,17 @@ function listIcon(label: string | null): ReactNode {
   return <Tags className={className} />;
 }
 
-function KeywordListCard({ list }: { list: KeywordListData }) {
+function KeywordListCard({
+  list,
+  selectedPhrases,
+  disabledPhrases,
+  onKeywordSelectionChange,
+}: {
+  list: KeywordListData;
+  selectedPhrases?: ReadonlySet<string>;
+  disabledPhrases?: ReadonlySet<string>;
+  onKeywordSelectionChange?: (phrase: string, selected: boolean) => void;
+}) {
   return (
     <div className="rounded-lg border border-border bg-card p-3">
       <div className="mb-2 flex items-center gap-2">
@@ -85,14 +100,28 @@ function KeywordListCard({ list }: { list: KeywordListData }) {
         )}
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {list.keywords.map((keyword, index) => (
-          <span
-            key={`${index}-${keyword}`}
-            className="animate-in fade-in rounded-full border border-border bg-background px-2 py-0.5 text-xs text-foreground"
-          >
-            {keyword}
-          </span>
-        ))}
+        {list.keywords.map((keyword, index) => {
+          const key = normalizeKeywordPhrase(keyword);
+          const selectable =
+            Boolean(onKeywordSelectionChange) && !disabledPhrases?.has(key);
+          return (
+            <label
+              key={`${index}-${keyword}`}
+              className="animate-in fade-in inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2 py-0.5 text-xs text-foreground"
+            >
+              {selectable ? (
+                <Checkbox
+                  checked={selectedPhrases?.has(key) ?? false}
+                  onCheckedChange={(checked) =>
+                    onKeywordSelectionChange?.(keyword, checked === true)
+                  }
+                  aria-label={`Select ${keyword} as a supporting keyword`}
+                />
+              ) : null}
+              <span>{keyword}</span>
+            </label>
+          );
+        })}
         {list.keywords.length === 0 && (
           <span className="text-xs text-muted-foreground">Collecting…</span>
         )}
@@ -103,6 +132,9 @@ function KeywordListCard({ list }: { list: KeywordListData }) {
 
 export default function KeywordResearchBlock({
   serverData,
+  selectedPhrases,
+  disabledPhrases,
+  onKeywordSelectionChange,
 }: KeywordResearchBlockProps) {
   const data = readKeywordResearchData(serverData);
   if (!data) return null;
@@ -128,7 +160,13 @@ export default function KeywordResearchBlock({
       </div>
       <div className="grid gap-2 md:grid-cols-2">
         {data.lists.map((list, index) => (
-          <KeywordListCard key={index} list={list} />
+          <KeywordListCard
+            key={index}
+            list={list}
+            selectedPhrases={selectedPhrases}
+            disabledPhrases={disabledPhrases}
+            onKeywordSelectionChange={onKeywordSelectionChange}
+          />
         ))}
       </div>
     </div>

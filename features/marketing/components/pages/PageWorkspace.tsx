@@ -34,7 +34,7 @@ import {
 } from "@/features/marketing/data/page-links";
 import { usePageOpenFindings } from "@/features/marketing/data/analysis-hooks";
 import { usePageTopQueries } from "@/features/marketing/seo/keyword/hooks";
-import { pageKeywordsQueryKey } from "@/features/marketing/components/pages/cards/PageKeywordsCard";
+import { pageKeywordsQueryKey } from "@/features/marketing/data/page-keywords";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   fetchTasksForEntity,

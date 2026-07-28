@@ -19,6 +19,10 @@ market enrichment remain explicit compute operations.
   `features/marketing/data/backlinks-queries.ts`). Universal tables are world-readable:
   `seo.keyword` (+ embedded `keyword_market`) and `seo.keyword_edge` (+ partner-phrase
   lookup). Never route these reads through Python.
+  Saved relationship artifacts read directly from the org-internal
+  `content_ir.kind_instance` written by the pipeline; classification cards are
+  reconstructed from the canonical `seo.keyword` columns. This is the durable,
+  cross-org-member panel state — never substitute creator-private run history.
 - **Compute goes to aidream via `callApi`** (`useKeywordResearch.ts`):
   - `POST /seo/keywords/research` — the whole pipeline server-side: LSI agent →
     content_ir artifact → `fn_ingest_keyword_research` → batched volume fetch →
@@ -84,7 +88,11 @@ before adding any keyword field or per-keyword display anywhere.
   abort-safe reloads; phase-bucketed stream buffers + `streamKey` for the live feed.
 - `components/LiveResearchFeed.tsx` — live kind-component rendering of the agent
   streams (see the two-lane rule above); the canonical non-chat consumer of
-  `useLiveJsonRegion`.
+  `useLiveJsonRegion`. It retains each region's last valid parsed payload so
+  phase completion or a later phase can never blank earlier results.
+- `components/SavedResearchFeed.tsx` — durable in-place rendering of the saved
+  hierarchy plus persisted classification rows through the same selectable
+  blocks used by the live feed.
 - `components/KeywordResearchLauncher.tsx` — **THE canonical research runner**
   (input → live feed → summary), presentational over a caller-owned
   `useKeywordResearch()` instance. Consumed by the workbench AND
@@ -116,6 +124,12 @@ before adding any keyword field or per-keyword display anywhere.
 
 ## Change Log
 
+- 2026-07-28 — **Saved-state restore + page supporting-keyword selection.**
+  Keyword Intelligence reads the latest org-internal research artifact before
+  offering a rerun, renders hierarchy and persisted classification together,
+  and page-bound panels add checkbox-selected phrases through the canonical
+  supporting-keyword batch writer. Live parse regions retain their last valid
+  data across phase transitions/completion.
 - 2026-07-28 — **Credential preflight + truthful persistent failure UI.** The backend
   now resolves the same personal→organization DataForSEO credential hierarchy before
   creating a durable research run or spending either agent call. The hook consumes

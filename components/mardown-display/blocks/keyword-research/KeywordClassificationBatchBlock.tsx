@@ -23,9 +23,14 @@ import {
   KeywordConfidenceMeter,
   KeywordIntentChip,
 } from "@/features/marketing/seo/keyword-research/components/KeywordMetrics";
+import { Checkbox } from "@/components/ui/checkbox";
+import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 
 export interface KeywordClassificationBatchBlockProps {
   serverData?: unknown;
+  selectedPhrases?: ReadonlySet<string>;
+  disabledPhrases?: ReadonlySet<string>;
+  onKeywordSelectionChange?: (phrase: string, selected: boolean) => void;
 }
 
 function isCard(value: unknown): value is KeywordClassificationCardData {
@@ -69,13 +74,31 @@ function humanize(value: string): string {
 
 function ClassificationCard({
   card,
+  selectedPhrases,
+  disabledPhrases,
+  onKeywordSelectionChange,
 }: {
   card: KeywordClassificationCardData;
+  selectedPhrases?: ReadonlySet<string>;
+  disabledPhrases?: ReadonlySet<string>;
+  onKeywordSelectionChange?: (phrase: string, selected: boolean) => void;
 }) {
   const intent = card.facts.intent_class ?? null;
+  const key = normalizeKeywordPhrase(card.phrase);
+  const selectable =
+    Boolean(onKeywordSelectionChange) && !disabledPhrases?.has(key);
   return (
     <div className="animate-in fade-in rounded-lg border border-border bg-card p-2.5">
       <div className="flex items-center gap-2">
+        {selectable ? (
+          <Checkbox
+            checked={selectedPhrases?.has(key) ?? false}
+            onCheckedChange={(checked) =>
+              onKeywordSelectionChange?.(card.phrase, checked === true)
+            }
+            aria-label={`Select ${card.phrase} as a supporting keyword`}
+          />
+        ) : null}
         <span className="truncate text-sm font-medium text-foreground">
           {card.phrase}
         </span>
@@ -124,6 +147,9 @@ function ClassificationCard({
 
 export default function KeywordClassificationBatchBlock({
   serverData,
+  selectedPhrases,
+  disabledPhrases,
+  onKeywordSelectionChange,
 }: KeywordClassificationBatchBlockProps) {
   const data = readKeywordClassificationData(serverData);
   if (!data) return null;
@@ -152,7 +178,13 @@ export default function KeywordClassificationBatchBlock({
       </div>
       <div className="grid gap-1.5 lg:grid-cols-2">
         {data.results.map((card, index) => (
-          <ClassificationCard key={`${index}-${card.phrase}`} card={card} />
+          <ClassificationCard
+            key={`${index}-${card.phrase}`}
+            card={card}
+            selectedPhrases={selectedPhrases}
+            disabledPhrases={disabledPhrases}
+            onKeywordSelectionChange={onKeywordSelectionChange}
+          />
         ))}
         {data.results.length === 0 && (
           <span className="text-xs text-muted-foreground">

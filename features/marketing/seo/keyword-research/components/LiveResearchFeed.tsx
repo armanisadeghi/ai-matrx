@@ -14,7 +14,7 @@
  * `splitKeywordClassificationSegments` gives each its own region/session.
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useLiveJsonRegion } from "@/features/content-ir/react/useLiveJsonRegion";
 import type {
   KeywordClassificationBatchData,
@@ -35,25 +35,50 @@ export interface LiveResearchFeedProps {
   researchDone: boolean;
   classificationText: string;
   classificationDone: boolean;
+  selectedPhrases?: ReadonlySet<string>;
+  disabledPhrases?: ReadonlySet<string>;
+  onKeywordSelectionChange?: (phrase: string, selected: boolean) => void;
 }
 
 function LiveResearchRegion({
   identity,
   text,
   done,
+  selectedPhrases,
+  disabledPhrases,
+  onKeywordSelectionChange,
 }: {
   identity: string;
   text: string;
   done: boolean;
+  selectedPhrases?: ReadonlySet<string>;
+  disabledPhrases?: ReadonlySet<string>;
+  onKeywordSelectionChange?: (phrase: string, selected: boolean) => void;
 }) {
   const { envelope } = useLiveJsonRegion(identity, text, {
     expectedRootKind: "keyword_relationship_research",
     done,
   });
-  if (!envelope) return null;
-  const serverData = keywordResearchServerDataFromEnvelope(envelope);
+  const currentData = envelope
+    ? keywordResearchServerDataFromEnvelope(envelope)
+    : undefined;
+  const [latest, setLatest] = useState<{
+    text: string;
+    data: KeywordRelationshipResearchData | null;
+  }>({ text: "", data: null });
+  if (currentData && latest.text !== text) {
+    setLatest({ text, data: currentData });
+  }
+  const serverData = currentData ?? latest.data;
   if (!serverData) return null;
-  return <KeywordResearchBlock serverData={finalizeResearch(serverData, done)} />;
+  return (
+    <KeywordResearchBlock
+      serverData={finalizeResearch(serverData, done)}
+      selectedPhrases={selectedPhrases}
+      disabledPhrases={disabledPhrases}
+      onKeywordSelectionChange={onKeywordSelectionChange}
+    />
+  );
 }
 
 /**
@@ -90,21 +115,39 @@ function LiveClassificationRegion({
   identity,
   text,
   done,
+  selectedPhrases,
+  disabledPhrases,
+  onKeywordSelectionChange,
 }: {
   identity: string;
   text: string;
   done: boolean;
+  selectedPhrases?: ReadonlySet<string>;
+  disabledPhrases?: ReadonlySet<string>;
+  onKeywordSelectionChange?: (phrase: string, selected: boolean) => void;
 }) {
   const { envelope } = useLiveJsonRegion(identity, text, {
     expectedRootKind: "keyword_classification_batch_v1",
     done,
   });
-  if (!envelope) return null;
-  const serverData = keywordClassificationServerDataFromEnvelope(envelope);
+  const currentData = envelope
+    ? keywordClassificationServerDataFromEnvelope(envelope)
+    : undefined;
+  const [latest, setLatest] = useState<{
+    text: string;
+    data: KeywordClassificationBatchData | null;
+  }>({ text: "", data: null });
+  if (currentData && latest.text !== text) {
+    setLatest({ text, data: currentData });
+  }
+  const serverData = currentData ?? latest.data;
   if (!serverData) return null;
   return (
     <KeywordClassificationBatchBlock
       serverData={finalizeClassification(serverData, done)}
+      selectedPhrases={selectedPhrases}
+      disabledPhrases={disabledPhrases}
+      onKeywordSelectionChange={onKeywordSelectionChange}
     />
   );
 }
@@ -115,6 +158,9 @@ export default function LiveResearchFeed({
   researchDone,
   classificationText,
   classificationDone,
+  selectedPhrases,
+  disabledPhrases,
+  onKeywordSelectionChange,
 }: LiveResearchFeedProps) {
   const classificationSegments = useMemo(
     () => splitKeywordClassificationSegments(classificationText),
@@ -132,6 +178,9 @@ export default function LiveResearchFeed({
           identity={`${streamKey}:research`}
           text={researchText}
           done={researchDone}
+          selectedPhrases={selectedPhrases}
+          disabledPhrases={disabledPhrases}
+          onKeywordSelectionChange={onKeywordSelectionChange}
         />
       )}
       {classificationSegments.map((segment, index) => (
@@ -142,6 +191,9 @@ export default function LiveResearchFeed({
           // A segment is closed the moment the NEXT batch root opens; the
           // last one closes when classification itself finishes.
           done={index < classificationSegments.length - 1 || classificationDone}
+          selectedPhrases={selectedPhrases}
+          disabledPhrases={disabledPhrases}
+          onKeywordSelectionChange={onKeywordSelectionChange}
         />
       ))}
     </div>

@@ -10,35 +10,129 @@
  * kind-component streaming the workbench uses. No forked stream consumer.
  */
 
-import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { FlaskConical, Loader2, Play } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FlaskConical, Loader2, Plus, Play } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { seoKeywordKeys } from "./hooks";
 import { useKeywordResearch } from "@/features/marketing/seo/keyword-research/useKeywordResearch";
 import LiveResearchFeed from "@/features/marketing/seo/keyword-research/components/LiveResearchFeed";
-import { marketingRoutes } from "@/features/marketing/lib/routes";
+import SavedResearchFeed from "@/features/marketing/seo/keyword-research/components/SavedResearchFeed";
+import { getLatestSavedKeywordResearch } from "@/features/marketing/seo/keyword-research/data/queries";
+import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
+import {
+  addPageSupportingKeywords,
+  pageKeywordsQueryKey,
+} from "@/features/marketing/data/page-keywords";
+import { toast } from "@/lib/toast";
 
 export function KeywordResearchTab({
   phrase,
   organizationId,
+  pageId,
 }: {
   phrase: string;
   organizationId?: string | null;
+  pageId?: string | null;
 }) {
   const research = useKeywordResearch(organizationId);
   const { run } = research;
   const running = run.status === "running";
   const queryClient = useQueryClient();
+  const [selectedByKey, setSelectedByKey] = useState<Record<string, string>>({});
+  const selectedPhrases = new Set(Object.keys(selectedByKey));
+  const disabledPhrases = new Set([normalizeKeywordPhrase(phrase)]);
+  const saved = useQuery({
+    queryKey: [
+      "seo",
+      "keyword-research",
+      "saved",
+      organizationId ?? null,
+      normalizeKeywordPhrase(phrase),
+    ],
+    queryFn: ({ signal }) =>
+      organizationId
+        ? getLatestSavedKeywordResearch(organizationId, phrase, signal)
+        : Promise.resolve(null),
+    enabled: Boolean(organizationId && phrase.trim()),
+  });
+  const visibleArtifact = run.result?.artifact ?? saved.data?.artifact ?? null;
+  const hasLiveOutput = Boolean(
+    run.streamKey &&
+      ((run.researchOutput ?? "").trim() ||
+        (run.classificationOutput ?? "").trim()),
+  );
+
+  const toggleKeyword = (candidate: string, selected: boolean) => {
+    const key = normalizeKeywordPhrase(candidate);
+    if (!key || disabledPhrases.has(key)) return;
+    setSelectedByKey((current) => {
+      if (selected) return { ...current, [key]: candidate.trim() };
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const addSelected = useMutation({
+    mutationFn: () => {
+      if (!pageId) throw new Error("A page binding is required.");
+      return addPageSupportingKeywords(
+        pageId,
+        Object.values(selectedByKey),
+        organizationId ?? undefined,
+      );
+    },
+    onSuccess: (result) => {
+      if (pageId) {
+        void queryClient.invalidateQueries({
+          queryKey: pageKeywordsQueryKey(pageId),
+        });
+      }
+      if (result.attached.length > 0) {
+        toast.success(
+          `${result.attached.length} supporting keyword${result.attached.length === 1 ? "" : "s"} added`,
+        );
+      }
+      if (result.failed.length > 0) {
+        toast.error(
+          `${result.failed.length} keyword${result.failed.length === 1 ? "" : "s"} could not be added`,
+          { description: result.failed.map((item) => item.phrase).join(", ") },
+        );
+      }
+      const failedKeys = new Set(
+        result.failed.map((item) => normalizeKeywordPhrase(item.phrase)),
+      );
+      setSelectedByKey((current) =>
+        Object.fromEntries(
+          Object.entries(current).filter(([key]) => failedKeys.has(key)),
+        ),
+      );
+    },
+    onError: (error) => {
+      toast.error("Could not add supporting keywords", {
+        description: error instanceof Error ? error.message : String(error),
+      });
+    },
+  });
 
   // A finished run wrote keyword/market/edge/classification rows — make every
   // keyword-primitive consumer (chips, Overview, Relationships) see them.
   useEffect(() => {
     if (run.status === "done") {
       void queryClient.invalidateQueries({ queryKey: seoKeywordKeys.all });
+      void queryClient.invalidateQueries({
+        queryKey: [
+          "seo",
+          "keyword-research",
+          "saved",
+          organizationId ?? null,
+          normalizeKeywordPhrase(phrase),
+        ],
+      });
     }
-  }, [run.status, queryClient]);
+  }, [run.status, queryClient, organizationId, phrase]);
 
   return (
     <div className="grid gap-3">
@@ -60,17 +154,35 @@ export function KeywordResearchTab({
         <Button
           size="sm"
           className="h-8 shrink-0"
-          disabled={running || !phrase.trim()}
+          disabled={running || saved.isLoading || !phrase.trim()}
+          title={
+            saved.data
+              ? "Saved results are shown below. Run again only when you need refreshed research."
+              : undefined
+          }
           onClick={() => void research.runResearch(phrase)}
         >
-          {running ? (
+          {running || saved.isLoading ? (
             <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
           ) : (
             <Play className="mr-1.5 h-3.5 w-3.5" />
           )}
-          {running ? "Running" : "Run research"}
+          {running
+            ? "Running"
+            : saved.isLoading
+              ? "Loading saved"
+              : saved.data
+                ? "Run again"
+                : "Run research"}
         </Button>
       </div>
+
+      {saved.data && run.status === "idle" ? (
+        <p className="text-[11px] text-muted-foreground">
+          Showing saved research from{" "}
+          {new Date(saved.data.createdAt).toLocaleString()}.
+        </p>
+      ) : null}
 
       {run.status !== "idle" ? (
         <div className="rounded-lg border border-border p-3">
@@ -84,30 +196,51 @@ export function KeywordResearchTab({
         </div>
       ) : null}
 
-      {run.streamKey ? (
+      {pageId && selectedPhrases.size > 0 ? (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-2.5">
+          <span className="text-xs text-foreground">
+            {selectedPhrases.size} selected
+          </span>
+          <Button
+            size="sm"
+            className="h-8"
+            disabled={addSelected.isPending}
+            onClick={() => addSelected.mutate()}
+          >
+            {addSelected.isPending ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            Add as supporting
+          </Button>
+        </div>
+      ) : null}
+
+      {hasLiveOutput && run.streamKey ? (
         <LiveResearchFeed
           streamKey={run.streamKey}
           researchText={run.researchOutput ?? ""}
           researchDone={run.researchDone ?? false}
           classificationText={run.classificationOutput ?? ""}
           classificationDone={run.classificationDone ?? false}
+          selectedPhrases={pageId ? selectedPhrases : undefined}
+          disabledPhrases={pageId ? disabledPhrases : undefined}
+          onKeywordSelectionChange={pageId ? toggleKeyword : undefined}
+        />
+      ) : visibleArtifact ? (
+        <SavedResearchFeed
+          artifact={visibleArtifact}
+          selectedPhrases={pageId ? selectedPhrases : undefined}
+          disabledPhrases={pageId ? disabledPhrases : undefined}
+          onKeywordSelectionChange={pageId ? toggleKeyword : undefined}
         />
       ) : null}
 
       {run.status === "done" ? (
         <p className="text-[11px] text-muted-foreground">
-          Research persisted to the keyword library. Explore the full cluster in
-          the{" "}
-          <a
-            href={marketingRoutes.keywordResearch()}
-            target="_blank"
-            rel="noreferrer"
-            className="text-primary hover:underline"
-          >
-            Keyword Research workbench
-          </a>
-          , or revisit the Overview and Relationships tabs — they now reflect
-          the new data.
+          Research is saved to the keyword library and remains available here.
+          Select any additional phrases above to attach them to this page.
         </p>
       ) : null}
     </div>

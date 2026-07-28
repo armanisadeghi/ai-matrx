@@ -343,8 +343,10 @@ export function KeywordIntelPanel({
           )
         ) : (
           <KeywordResearchTab
+            key={phrase}
             phrase={phrase}
             organizationId={scope?.organizationId}
+            pageId={scope?.pageId}
           />
         )}
       </div>
