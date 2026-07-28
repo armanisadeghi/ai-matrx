@@ -192,9 +192,15 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         // agentStart is a covered v2 surface; agents-blocks is NOT, so
         // applyAiApiVersion leaves the block-mode path on v1 automatically.
         executeUrl = `${BACKEND_URL}${applyAiApiVersion(startEndpoint, aiApiVersion)}`;
+        // AgentStartRequest requires a client-generated conversation_id +
+        // is_new — omitting them 422s on every send (the guest-chat outage
+        // of 2026-07-28). The server echoes the id back via header/stream
+        // event, which remains the write path for dbConversationId.
         requestBody = {
           user_input: userInput,
           store: true,
+          conversation_id: crypto.randomUUID(),
+          is_new: true,
           variables: Object.keys(variables).length > 0 ? variables : undefined,
           config_overrides:
             Object.keys(configOverrides).length > 0
@@ -375,7 +381,12 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         });
       } else {
         console.error("Agent execution error:", err);
-        const errorMessage = err.message || "Execution failed";
+        // A CORS-unreadable response (e.g. a gateway 502 without CORS
+        // headers) surfaces as TypeError "Failed to fetch" — translate it.
+        const errorMessage =
+          err instanceof TypeError && /fetch/i.test(err.message)
+            ? "Could not reach the AI server. Please try again in a moment."
+            : err.message || "Execution failed";
         setError({ type: "execution_error", message: errorMessage });
         updateMessage(assistantMessageId, {
           status: "error",

@@ -37,6 +37,27 @@ interface ChatContainerProps {
   className?: string;
 }
 
+/**
+ * Loud recovery: send-flow failures (config bails, network/CORS errors)
+ * previously vanished on the welcome screen because state.error was never
+ * rendered. Every layout now shows this banner above the input.
+ */
+function SendErrorBanner({
+  error,
+}: {
+  error: { type: string; message: string } | null;
+}) {
+  if (!error) return null;
+  return (
+    <div
+      role="alert"
+      className="mb-2 px-3 py-2 rounded-lg border border-destructive/30 bg-destructive/10 text-sm text-destructive"
+    >
+      {error.message}
+    </div>
+  );
+}
+
 // ============================================================================
 // CHAT CONTAINER
 // ============================================================================
@@ -388,6 +409,7 @@ export function ChatContainer({ className = "" }: ChatContainerProps) {
                 onSubmit={handleSubmit}
                 seamless
               />
+              <SendErrorBanner error={state.error} />
               <div className="rounded-b-2xl bg-background">
                 <ChatInputWithControls
                   onSubmit={handleSubmit}
@@ -472,6 +494,7 @@ export function ChatContainer({ className = "" }: ChatContainerProps) {
               )}
 
               <div>
+                <SendErrorBanner error={state.error} />
                 <ChatInputWithControls
                   onSubmit={handleSubmit}
                   disabled={isExecuting}
@@ -602,6 +625,7 @@ export function ChatContainer({ className = "" }: ChatContainerProps) {
               />
             </div>
           )}
+          <SendErrorBanner error={state.error} />
           <div
             className={`bg-background ${
               hasVariables && useGuidedVars ? "rounded-b-2xl" : "rounded-2xl"
