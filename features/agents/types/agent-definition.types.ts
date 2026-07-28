@@ -388,7 +388,6 @@ export interface AgentListRow {
   is_favorite: boolean;
   user_id: string;
   organization_id: string;
-  project_id: string;
   task_id: string;
   source_agent_id: string;
   created_at: string;

@@ -28948,7 +28948,6 @@ export type Database = {
           model_id: string
           name: string
           organization_id: string
-          project_id: string
           shared_by_email: string
           source_agent_id: string
           tags: string[]
@@ -28973,7 +28972,6 @@ export type Database = {
           model_id: string
           name: string
           organization_id: string
-          project_id: string
           shared_by_email: string
           source_agent_id: string
           tags: string[]
@@ -29330,7 +29328,6 @@ export type Database = {
           model_id: string
           name: string
           organization_id: string
-          project_id: string
           shared_by_email: string
           source_agent_id: string
           tags: string[]

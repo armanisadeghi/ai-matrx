@@ -251,6 +251,7 @@ model overrides.
 - **Ephemeral conversations cannot call `/ai/conversations/{id}` on turn 2** — they must call `/ai/chat` with full accumulated history (there is no DB row to target).
 - **Client never sees the system prompt or instructions.** Those are server-owned engineer secrets. The client only gets variable + context slot definitions on agent load.
 - **Drift between a usage and the live agent is surfaced (Find Usages window + weekly scan + severity-tinted AgentsListHeader link), never auto-resolved.** Remediation is one-click, opt-in, permission-gated. See **Find Usages & Drift** above.
+- **Agent/project linkage is association-only.** `agent.definition` has no `project_id`; creation/duplication RPCs must not write one, and list/search/access RPCs must not read or expose one. Resolve project context through `platform.associations`.
 - **Never send while the mic is recording or finishing transcription.** Mid-voice submit drops the trailing audio and leaves the recorder running. Gate send (button + Enter) on `isRecording || isTranscribing` via `AgentMicrophoneButton.onRecordingStateChange` — wired in `SmartAgentInput*` and sibling composers.
 
 ---
@@ -262,6 +263,7 @@ model overrides.
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ## Change Log
+- `2026-07-28` — **Removed the final seven live RPC dependencies on `agent.definition.project_id`.** Agent creation from templates and both duplication paths no longer insert the retired column; access, compatibility list, full-list, and search routines no longer select or expose it. The manual `AgentListRow` mirror and regenerated Supabase contracts now match the association-only project model.
 - `2026-07-28` — **Agent browsing and drift-alert access no longer depend on the retired `project_id` column.** The live `agx_list_scoped` return contract/read and stale `platform.entity_relationships` agent→project FK edge were removed together; scope counts/facets and direct drift-alert RLS reads now resolve against the canonical agent row while agent/project linkage remains association-backed.
 - `2026-07-27` — **Conversation project context is association-backed.** Load and fork hydration no longer expect the forbidden physical `chat.conversation.project_id` FK; the backend restores optional project context from canonical `conversation → project` edges and the fork RPC copies those edges through `assoc_link`.
 - `2026-07-27` — **Integer model controls remain integers end to end.** The shared model-control parser and the legacy hook now preserve explicit catalog types when a control has no default, fixing `max_output_tokens` being misclassified as a float and rendered with a `0.01` slider step. The shared `NumberInput` additionally forces integer sliders to whole-number steps/values, and `LLMParamsGrid` now reuses that primitive instead of maintaining a duplicate renderer.
