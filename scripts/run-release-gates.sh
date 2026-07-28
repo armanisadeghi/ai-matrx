@@ -37,6 +37,10 @@ done
 
 if $STRICT; then
     declare -a GATES=(
+        # First, cheapest, and the one local tsc can't see: the COMMITTED tree
+        # must resolve every import — a tracked file importing an untracked one
+        # builds locally and dies on Vercel (v0.4.194, 2026-07-28).
+        "Untracked-import breakage|bash scripts/check-untracked-imports.sh"
         "TypeScript type-check|pnpm type-check"
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts --strict"
         "Doc claims vs live config|pnpm exec tsx scripts/check-doc-claims.ts --strict"
@@ -54,6 +58,10 @@ if $STRICT; then
 else
     # Non-strict variants still print the full loud report; they exit 0.
     declare -a GATES=(
+        # First, cheapest, and the one local tsc can't see: the COMMITTED tree
+        # must resolve every import — a tracked file importing an untracked one
+        # builds locally and dies on Vercel (v0.4.194, 2026-07-28).
+        "Untracked-import breakage|bash scripts/check-untracked-imports.sh"
         # Arman ruling 2026-07-28 (D64/D65): type errors SCREAM here on every
         # release but never stop the build (ignoreBuildErrors stays true).
         "TypeScript type-check|pnpm type-check"
