@@ -305,10 +305,25 @@ prioritizes.
 
 ## 5. Gotchas
 
-1. **Committed ≠ deployed.** `./scripts/release.sh` applies pending FE migrations
-   and pushes; Vercel deploys on push to `main`. Verify against
-   `https://www.aimatrx.com` (note: `aimatrx.com` 308s to `www`), not localhost.
-   A Vercel build takes 10–25 minutes.
+1. **Pushed ≠ deployed — verify against Vercel's deployment list, not `git push`.**
+   This repo takes commits from many concurrent agent sessions, often minutes
+   apart. Vercel **cancels the in-flight production build whenever a newer
+   commit lands**, and a build takes 10–25 minutes. When the push rate exceeds
+   the build time, *no* build completes and production silently freezes on the
+   last one that survived — every later commit shows as `CANCELED`.
+
+   Observed on 2026-07-27: production sat on `release: v0.4.166` while six
+   consecutive deployments (including `b97f5dcc2`, the landing-derivation fix)
+   were canceled in a row. Separately, `release: v0.4.161` ended in `ERROR` —
+   its content only reached production several releases later via a descendant.
+
+   **So:** a green `git push` proves nothing. Check the deployment list
+   (Vercel MCP `list_deployments`, project `prj_ZIeMm2FW8RgOAO9BJgQ2YQcXpwrH`,
+   team `team_zWxJHqDHuRr1kpl9Hu9oON3g`) and confirm a `READY` deploy whose
+   commit is your commit or a descendant of it. Then hit
+   `https://www.aimatrx.com` (note: `aimatrx.com` 308s to `www`) and assert on a
+   string that exists ONLY in your new build — picking a marker the old build
+   also contained will report a false success.
 
 2. **Never move a reserved URL.** Its permanence is the promise. If a name is
    wrong, change the label — not the href.
