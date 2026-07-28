@@ -171,6 +171,7 @@ Org/Owner/Access columns appear only when scope ≠ `mine` — inside "Mine" eve
 - **The table is CONTROLLED.** Sort and pagination are server operations over the whole result set. A column whose filter cannot be served by `agx_list_scoped` is declared `filter: false` rather than rendering a control that quietly filters only the current page — that is the exact defect in the `/transcripts` table.
 - **Every `ORDER BY` ends in `id`.** A non-total order silently drops rows across pages; that bug already cost this table 59 of 365 agents once (`agx_get_list_stable_pagination.sql`).
 - **Scope tabs show server totals**, never `rows.length`.
+- **Project linkage is association-backed.** `agx_list_scoped` never returns or reads a physical `agent.definition.project_id`; optional agent/project context lives in `platform.associations`.
 - **Coming Soon entries are registered**, never bare strings — see `lib/coming-soon/`.
 - Static top chrome clears the glass header with `pt-[calc(var(--shell-header-h)+…)]`; only the list body scrolls behind it.
 
@@ -198,6 +199,11 @@ hostile at 2,000.
 
 ## Change log
 
+- **2026-07-28** — Removed the stale `project_id` return/read from
+  `agx_list_scoped` and the obsolete agent→project FK-containment registry edge.
+  This restores list, scope-count, facet, and drift-alert reads after
+  `agent.definition.project_id` was retired; agent/project links remain on
+  canonical associations.
 - **2026-07-26 (round 3)** — Promoted to `/agents/all`; old gallery moved to
   `/agents/classic` behind a dismissible notice. `agx_list_scoped` v3: one
   jsonb filter bag, every column sortable + filterable, date buckets, facets

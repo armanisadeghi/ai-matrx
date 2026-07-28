@@ -29281,7 +29281,6 @@ export type Database = {
           organization_id: string
           organization_name: string
           owner_email: string
-          project_id: string
           source_agent_id: string
           tags: string[]
           task_id: string
