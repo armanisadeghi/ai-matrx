@@ -1,27 +1,41 @@
+// app/(public)/seo/page.tsx
+//
+// PUBLIC index of the SEO tool suite (anonymous lead-gen — must render
+// without a session). The tool list itself is declared ONCE in
+// features/marketing/lib/marketing-nav.ts (MARKETING_PUBLIC_TOOL_CATEGORIES);
+// this page only renders it. Planned tools are non-links until they ship —
+// their /seo/* hrefs are reserved but the routes do not exist yet.
+
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
+  Braces,
   Brain,
+  ClipboardCheck,
   Clock,
-  Code2,
   Eye,
+  FileSearch,
   FileText,
   Globe,
+  Image,
   Layers,
   Link2,
   PartyPopper,
+  PenLine,
   PenTool,
   Search,
-  Share2,
-  ShieldCheck,
   Star,
   TrendingUp,
   Zap,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import {
+  MARKETING_PUBLIC_TOOL_CATEGORIES,
+  type MarketingNavEntry,
+} from "@/features/marketing/lib/marketing-nav";
 
 export const metadata: Metadata = {
   title: "SEO Tools — AI Matrx",
@@ -29,26 +43,35 @@ export const metadata: Metadata = {
     "A complete suite of AI-powered and scraping-based SEO tools. Analyze meta tags, audit content, research keywords, check backlinks, and more.",
 };
 
-type ToolStatus = "live" | "coming-soon";
-
 type AccentKey = "primary" | "secondary" | "success" | "warning";
 
-interface Tool {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.FC<{ className?: string }>;
-  href: string;
-  status: ToolStatus;
-}
+/** Presentation-only: category key → accent. Data lives in marketing-nav.ts. */
+const CATEGORY_ACCENTS: Record<string, AccentKey> = {
+  "on-page": "primary",
+  content: "secondary",
+  keywords: "success",
+  technical: "warning",
+};
 
-interface Category {
-  id: string;
-  title: string;
-  subtitle: string;
-  accent: AccentKey;
-  tools: Tool[];
-}
+/** Presentation-only: iconName → Lucide component. */
+const ICONS: Record<string, React.FC<{ className?: string }>> = {
+  FileText,
+  Image,
+  ClipboardCheck,
+  Layers,
+  Braces,
+  Brain,
+  PenTool,
+  PenLine,
+  Eye,
+  Search,
+  TrendingUp,
+  BarChart3,
+  Link2,
+  FileSearch,
+  Zap,
+  Globe,
+};
 
 const accentStyles: Record<
   AccentKey,
@@ -95,197 +118,19 @@ const accentStyles: Record<
   },
 };
 
-const categories: Category[] = [
-  {
-    id: "on-page",
-    title: "On-Page Analysis",
-    subtitle: "Inspect and score every element Google reads on your pages",
-    accent: "primary",
-    tools: [
-      {
-        id: "metadata",
-        title: "Meta Width Calculator",
-        description:
-          "Calculate pixel widths and character counts for titles and descriptions with a live Google SERP preview.",
-        icon: FileText,
-        href: "/seo/metadata",
-        status: "live",
-      },
-      {
-        id: "social-preview",
-        title: "Social Card Preview",
-        description:
-          "Preview exactly how your link renders on X, Facebook, and LinkedIn — with instant checks on your Open Graph and Twitter card tags.",
-        icon: Share2,
-        href: "/seo/social-preview",
-        status: "live",
-      },
-      {
-        id: "page-audit",
-        title: "Page SEO Audit",
-        description:
-          "Scrape any URL and get an instant on-page audit — title, description, headings, canonical, robots directives, and more.",
-        icon: ShieldCheck,
-        href: "/seo/page-audit",
-        status: "live",
-      },
-      {
-        id: "heading-structure",
-        title: "Heading Structure Analyzer",
-        description:
-          "Visualize the H1–H6 hierarchy of any page and flag structural issues that hurt crawlability.",
-        icon: Layers,
-        href: "/seo/heading-structure",
-        status: "coming-soon",
-      },
-      {
-        id: "structured-data",
-        title: "Structured Data Validator",
-        description:
-          "Parse JSON-LD and microdata on any page and validate against Google's rich result requirements.",
-        icon: Code2,
-        href: "/seo/structured-data",
-        status: "live",
-      },
-    ],
-  },
-  {
-    id: "content",
-    title: "AI Content Intelligence",
-    subtitle: "Let an LLM analyze, score, and improve your content",
-    accent: "secondary",
-    tools: [
-      {
-        id: "content-score",
-        title: "Content Quality Scorer",
-        description:
-          "AI reads your page and scores readability, depth, E-E-A-T signals, and topical coverage against the top 10 SERP results.",
-        icon: Brain,
-        href: "/seo/content-score",
-        status: "coming-soon",
-      },
-      {
-        id: "content-brief",
-        title: "Content Brief Generator",
-        description:
-          "Provide a keyword, and the AI builds a complete content brief — target audience, outline, FAQs, and internal link suggestions.",
-        icon: PenTool,
-        href: "/seo/content-brief",
-        status: "coming-soon",
-      },
-      {
-        id: "meta-writer",
-        title: "AI Meta Tag Writer",
-        description:
-          "Paste your page content or URL, and the AI drafts optimized title and description variants ranked by predicted CTR.",
-        icon: PartyPopper,
-        href: "/seo/meta-writer",
-        status: "coming-soon",
-      },
-      {
-        id: "readability",
-        title: "Readability Analyzer",
-        description:
-          "Score content across Flesch-Kincaid, Gunning Fog, and SMOG indexes, with sentence-level suggestions from an LLM.",
-        icon: Eye,
-        href: "/seo/readability",
-        status: "coming-soon",
-      },
-    ],
-  },
-  {
-    id: "keywords",
-    title: "Keyword Research",
-    subtitle: "Find, cluster, and prioritize the terms that drive traffic",
-    accent: "success",
-    tools: [
-      {
-        id: "keyword-clustering",
-        title: "AI Keyword Clusterer",
-        description:
-          "Paste a list of keywords and the AI groups them by semantic intent, making it easy to plan pages and content hubs.",
-        icon: Layers,
-        href: "/seo/keyword-clustering",
-        status: "coming-soon",
-      },
-      {
-        id: "serp-analysis",
-        title: "SERP Intent Analyzer",
-        description:
-          "Scrape the top 10 results for any keyword and use an LLM to identify the dominant search intent and content format.",
-        icon: Search,
-        href: "/seo/serp-analysis",
-        status: "coming-soon",
-      },
-      {
-        id: "lsi-keywords",
-        title: "Keyword Research & Relationships",
-        description:
-          "AI maps a keyword's parents, children, variants and related terms, then pulls live search volume, CPC and demand trends.",
-        icon: TrendingUp,
-        href: "/marketing/keyword-research",
-        status: "live",
-      },
-      {
-        id: "title-optimizer",
-        title: "Title Tag Optimizer",
-        description:
-          "A/B-test headline variants with predicted CTR scoring. LLM rewrites your titles for clarity, keyword placement, and length.",
-        icon: BarChart3,
-        href: "/seo/title-optimizer",
-        status: "coming-soon",
-      },
-    ],
-  },
-  {
-    id: "technical",
-    title: "Technical SEO",
-    subtitle: "Diagnose infrastructure issues that block rankings",
-    accent: "warning",
-    tools: [
-      {
-        id: "redirect-tracer",
-        title: "Redirect Chain Tracer",
-        description:
-          "Follow every redirect hop from a URL and surface chain loops, unnecessary hops, and mixed-protocol issues.",
-        icon: Link2,
-        href: "/seo/redirect-tracer",
-        status: "coming-soon",
-      },
-      {
-        id: "robots-tester",
-        title: "Robots.txt Tester",
-        description:
-          "Fetch and parse any site's robots.txt, then test whether specific URLs are allowed or blocked by each rule.",
-        icon: ShieldCheck,
-        href: "/seo/robots-tester",
-        status: "live",
-      },
-      {
-        id: "page-speed",
-        title: "Core Web Vitals Analyzer",
-        description:
-          "Measure LCP, CLS, and INP with an AI summary of the biggest opportunities to improve your CWV scores.",
-        icon: Zap,
-        href: "/seo/page-speed",
-        status: "coming-soon",
-      },
-      {
-        id: "hreflang",
-        title: "Hreflang Validator",
-        description:
-          "Scrape a URL and validate all hreflang tags — check for missing reciprocals, incorrect locale codes, and self-referencing issues.",
-        icon: Globe,
-        href: "/seo/hreflang",
-        status: "coming-soon",
-      },
-    ],
-  },
-];
+function isLiveTool(tool: MarketingNavEntry): boolean {
+  return tool.status !== "coming-soon";
+}
 
-function ToolCard({ tool, accent }: { tool: Tool; accent: AccentKey }) {
-  const Icon = tool.icon;
-  const isLive = tool.status === "live";
+function ToolCard({
+  tool,
+  accent,
+}: {
+  tool: MarketingNavEntry;
+  accent: AccentKey;
+}) {
+  const Icon = ICONS[tool.iconName] ?? Search;
+  const isLive = isLiveTool(tool);
   const a = accentStyles[accent];
 
   const inner = (
@@ -335,7 +180,7 @@ function ToolCard({ tool, accent }: { tool: Tool; accent: AccentKey }) {
               : "text-foreground",
           )}
         >
-          {tool.title}
+          {tool.label}
         </h3>
         <p className="text-xs leading-relaxed text-foreground">
           {tool.description}
@@ -355,7 +200,7 @@ function ToolCard({ tool, accent }: { tool: Tool; accent: AccentKey }) {
     <Link
       href={tool.href}
       className="ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring block h-full min-h-0 rounded-2xl"
-      aria-label={`Open ${tool.title}`}
+      aria-label={`Open ${tool.label}`}
     >
       {inner}
     </Link>
@@ -367,9 +212,10 @@ function ToolCard({ tool, accent }: { tool: Tool; accent: AccentKey }) {
 }
 
 export default function SeoLandingPage() {
+  const categories = MARKETING_PUBLIC_TOOL_CATEGORIES;
   const totalTools = categories.reduce((sum, c) => sum + c.tools.length, 0);
   const liveTools = categories.reduce(
-    (sum, c) => sum + c.tools.filter((t) => t.status === "live").length,
+    (sum, c) => sum + c.tools.filter(isLiveTool).length,
     0,
   );
 
@@ -422,7 +268,7 @@ export default function SeoLandingPage() {
                 {
                   icon: Brain,
                   accent: "secondary" as const,
-                  value: 4,
+                  value: categories.length,
                   label: "Categories",
                 },
               ] as const
@@ -453,12 +299,11 @@ export default function SeoLandingPage() {
 
       <div className="mx-auto max-w-[1200px] space-y-8 px-6 py-8 pb-20 xl:px-8">
         {categories.map((category) => {
-          const liveCt = category.tools.filter(
-            (t) => t.status === "live",
-          ).length;
-          const a = accentStyles[category.accent];
+          const liveCt = category.tools.filter(isLiveTool).length;
+          const accent = CATEGORY_ACCENTS[category.key] ?? "primary";
+          const a = accentStyles[accent];
           return (
-            <section key={category.id}>
+            <section key={category.key}>
               <div className="mb-6 flex items-start justify-between gap-4">
                 <div>
                   <div className="mb-1 flex items-center gap-2">
@@ -471,7 +316,7 @@ export default function SeoLandingPage() {
                         a.heading,
                       )}
                     >
-                      {category.title}
+                      {category.label}
                     </h2>
                   </div>
                   <p className="text-sm text-muted-foreground">
@@ -490,11 +335,7 @@ export default function SeoLandingPage() {
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {category.tools.map((tool) => (
-                  <ToolCard
-                    key={tool.id}
-                    tool={tool}
-                    accent={category.accent}
-                  />
+                  <ToolCard key={tool.href} tool={tool} accent={accent} />
                 ))}
               </div>
             </section>

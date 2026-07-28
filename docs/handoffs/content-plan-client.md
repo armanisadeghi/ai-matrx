@@ -1,3 +1,10 @@
+---
+status: active
+updated: 2026-07-28
+repos: [matrx-frontend]
+vision: [/Users/armanisadeghi/code/common-docs/systems/content-planning/FEATURE.md]
+---
+
 # Handoff — Content Planning client (the `plan` schema UI)
 
 > **System of record:** `common-docs/systems/content-planning/FEATURE.md` — read it FIRST.

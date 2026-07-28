@@ -117,15 +117,6 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     stage: "planned",
     surfaces: ["/marketing hub card", "/marketing/local route"],
   },
-  "marketing.rank-tracking": {
-    id: "marketing.rank-tracking",
-    label: "Rank Tracking (cross-site)",
-    owner: "marketing",
-    promise:
-      "Track rank movement across every brand and site in one view with alerts — today ranks only exist per site under a brand.",
-    stage: "planned",
-    surfaces: ["/marketing hub card", "/marketing/ranks route"],
-  },
   "marketing.ai-visibility": {
     id: "marketing.ai-visibility",
     label: "AI Visibility",
@@ -224,6 +215,108 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "Run trigger-based marketing workflows: on a new crawl finding, on a rank drop, on a brand mention, on a published page.",
     stage: "planned",
     surfaces: ["/marketing hub card", "/marketing/automations route"],
+  },
+  // Planned PUBLIC analyzers advertised on the /seo tool index. Declared in
+  // features/marketing/lib/marketing-nav.ts (MARKETING_PUBLIC_TOOL_CATEGORIES);
+  // each ships at its already-advertised /seo/* URL.
+  "marketing.tools.heading-structure": {
+    id: "marketing.tools.heading-structure",
+    label: "Heading Structure Analyzer",
+    owner: "marketing",
+    promise:
+      "Visualize the H1–H6 hierarchy of any page and flag structural issues that hurt crawlability.",
+    stage: "planned",
+    surfaces: ["/seo public tools index"],
+  },
+  "marketing.tools.content-score": {
+    id: "marketing.tools.content-score",
+    label: "Content Quality Scorer",
+    owner: "marketing",
+    promise:
+      "AI reads your page and scores readability, depth, E-E-A-T signals, and topical coverage against the top 10 SERP results.",
+    stage: "planned",
+    surfaces: ["/seo public tools index"],
+  },
+  "marketing.tools.content-brief": {
+    id: "marketing.tools.content-brief",
+    label: "Content Brief Generator",
+    owner: "marketing",
+    promise:
+      "Provide a keyword and the AI builds a complete content brief — target audience, outline, FAQs, and internal link suggestions.",
+    stage: "planned",
+    surfaces: ["/seo public tools index"],
+  },
+  "marketing.tools.meta-writer": {
+    id: "marketing.tools.meta-writer",
+    label: "AI Meta Tag Writer",
+    owner: "marketing",
+    promise:
+      "Paste your page content or URL and the AI drafts optimized title and description variants ranked by predicted CTR.",
+    stage: "planned",
+    surfaces: ["/seo public tools index"],
+  },
+  "marketing.tools.readability": {
+    id: "marketing.tools.readability",
+    label: "Readability Analyzer",
+    owner: "marketing",
+    promise:
+      "Score content across Flesch-Kincaid, Gunning Fog, and SMOG indexes, with sentence-level suggestions from an LLM.",
+    stage: "planned",
+    surfaces: ["/seo public tools index"],
+  },
+  "marketing.tools.keyword-clustering": {
+    id: "marketing.tools.keyword-clustering",
+    label: "AI Keyword Clusterer",
+    owner: "marketing",
+    promise:
+      "Paste a list of keywords and the AI groups them by semantic intent, making it easy to plan pages and content hubs.",
+    stage: "planned",
+    surfaces: ["/seo public tools index"],
+  },
+  "marketing.tools.serp-analysis": {
+    id: "marketing.tools.serp-analysis",
+    label: "SERP Intent Analyzer",
+    owner: "marketing",
+    promise:
+      "Scrape the top 10 results for any keyword and use an LLM to identify the dominant search intent and content format.",
+    stage: "planned",
+    surfaces: ["/seo public tools index"],
+  },
+  "marketing.tools.title-optimizer": {
+    id: "marketing.tools.title-optimizer",
+    label: "Title Tag Optimizer",
+    owner: "marketing",
+    promise:
+      "A/B-test headline variants with predicted CTR scoring — the LLM rewrites titles for clarity, keyword placement, and length.",
+    stage: "planned",
+    surfaces: ["/seo public tools index"],
+  },
+  "marketing.tools.redirect-tracer": {
+    id: "marketing.tools.redirect-tracer",
+    label: "Redirect Chain Tracer",
+    owner: "marketing",
+    promise:
+      "Follow every redirect hop from a URL and surface chain loops, unnecessary hops, and mixed-protocol issues.",
+    stage: "planned",
+    surfaces: ["/seo public tools index"],
+  },
+  "marketing.tools.page-speed": {
+    id: "marketing.tools.page-speed",
+    label: "Core Web Vitals Analyzer",
+    owner: "marketing",
+    promise:
+      "Measure LCP, CLS, and INP with an AI summary of the biggest opportunities to improve Core Web Vitals.",
+    stage: "planned",
+    surfaces: ["/seo public tools index"],
+  },
+  "marketing.tools.hreflang": {
+    id: "marketing.tools.hreflang",
+    label: "Hreflang Validator",
+    owner: "marketing",
+    promise:
+      "Validate all hreflang tags on a URL — missing reciprocals, incorrect locale codes, and self-referencing issues.",
+    stage: "planned",
+    surfaces: ["/seo public tools index"],
   },
 };
 

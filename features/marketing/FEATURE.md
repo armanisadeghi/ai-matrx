@@ -16,7 +16,7 @@ surfaces; they cannot drift.
 | ------------------------------ | ------------------------------------------------------------- | --------------------------------------------------------------------- |
 | Brands & Websites              | `/marketing/brands`, `/marketing/sites`                       | `/marketing/local`                                                    |
 | Strategy & Planning            | `/marketing/content-plan`                                     | `/marketing/campaigns`, `/calendar`, `/audience`                      |
-| Discovery, Search & Visibility | `/marketing/keyword-research`, `/marketing/discovery/youtube` | `/marketing/ranks`, `/marketing/ai-visibility`                        |
+| Discovery, Search & Visibility | `/marketing/keyword-research`, `/marketing/discovery/youtube`, `/marketing/ranks` | `/marketing/ai-visibility`                        |
 | Content & Channels             | —                                                             | `/marketing/content-studio`, `/social`, `/email`, `/ads`, `/outreach` |
 | Market Intelligence            | —                                                             | `/marketing/competitors`, `/marketing/monitoring`                     |
 | Measurement                    | `/marketing/cost`                                             | `/marketing/analytics`, `/marketing/reports`                          |
@@ -241,6 +241,8 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-07-28 — Claude: **shipped `/marketing/ranks` (cross-site rank hub)** — the first reserved route to go live, at its permanent URL. `CrossSiteRanksHub` + `cross-site-data.ts` (direct-Supabase bounded reads over `seo.rank_target`/`rank_observation` + batched `web.site` enrichment; loud caps), MatrxDataTable local mode with full Copy/Copy-for-AI, row click → the per-site Ranks workspace. Registry row `marketing.rank-tracking` deleted; nav entry live. OPEN: no surface manifest yet (per-site `marketing-ranks` manifest doesn't fit a cross-site hub), and `seo.rank_target` rows can be readable where their `web.site` row is not (UUID shown as site name — access asymmetry, see brand-coverage handoff).
+- 2026-07-28 — Claude: **public SEO tool suite single-sourced.** `MARKETING_PUBLIC_TOOL_CATEGORIES` in `marketing-nav.ts` now declares the full public suite (live + planned, categorized); `MARKETING_PUBLIC_TOOLS` is derived (live only) and `app/(public)/seo/page.tsx` renders the shared declaration instead of its own hand-written list. The 11 advertised-but-untracked "coming soon" analyzers are now registered `marketing.tools.*` promises in `lib/coming-soon/registry.ts`.
 - 2026-07-28 — Codex: completed page-observation evidence end to end. The
   crawler now persists every raw/parsed JSON-LD script, microdata, RDFa,
   microformats, per-image details, all DOM- and structured-metadata-declared

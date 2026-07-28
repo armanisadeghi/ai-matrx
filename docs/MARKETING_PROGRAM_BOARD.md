@@ -15,8 +15,10 @@ One page that tells any agent (or Arman) what this program is, what's in motion,
 
 | Need                                               | Go to                                                                                                                            |
 | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| **Access model, RLS, visibility — read before touching any of it** | [docs/handoffs/marketing-access-and-rls-performance.md](handoffs/marketing-access-and-rls-performance.md) |
+| **Access model, RLS, visibility — read before touching any of it** | [docs/handoffs/marketing-brand-coverage-program.md](handoffs/marketing-brand-coverage-program.md) (Access model section — the former access-and-rls handoff is merged there) |
 | Full work order, remaining items, decisions needed | [docs/handoffs/marketing-brand-coverage-program.md](handoffs/marketing-brand-coverage-program.md)                                |
+| Module shape: pillars, reserved routes, nav, landing | [docs/handoffs/marketing-module.md](handoffs/marketing-module.md)                                                                |
+| Page workspace authoring layer | [docs/handoffs/marketing-page-workspace-evolution.md](handoffs/marketing-page-workspace-evolution.md)                            |
 | Feature truth (invariants, CRUD map, data model)   | [features/marketing/FEATURE.md](../features/marketing/FEATURE.md)                                                                |
 | Scraper twin (commands, contracts, deployment env) | aidream `packages/matrx-scraper/matrx_scraper/web_crawl/FEATURE.md`                                                              |
 | Copy/Copy-for-AI pattern                           | `features/marketing/lib/copy-payloads.ts` + the `agent-copy` skill; exemplar `components/pages/PageWorkspace.tsx`                |
@@ -30,24 +32,20 @@ One page that tells any agent (or Arman) what this program is, what's in motion,
 
 ## In motion
 
-- **Claude (main session):** Reverted a tenant-isolation breach I caused (v0.4.3): a `force_public_visibility` trigger + `USING(true)` policies + public-by-default creation made every agency's marketing data readable by all users. Canonical RLS regenerated from the registry; verified an outsider is denied on site/brand/page/snapshot/gsc_stat/crawl_session. OPEN: (a) per-row `has_access` on components costs ~0.2ms/row (771ms for All Green's 4,020 pages, ~5s on 26k gsc_page_stat) — this is the original timeout cause and needs a PLATFORM-level fix, not a marketing hack; (b) I granted arman@titaniumsuccess.com org-admin on 3 orgs — needs Arman's ruling to keep or revoke.
-
-- **Claude (section-canonicalization session):** done for now — page-audit system + URL quality + site `.../audit` dashboard all shipped (handoff Done). NOTE for next release: aidream local commits add `audit_metrics` (incl. url section) stamping to the scraper; after deploy, re-run `scripts/marketing/backfill-snapshot-metrics.ts` to fill gap-window snapshots.
-- **Arman:** GSC unblock — confirm `AIDREAM_URL` + `AIDREAM_SERVICE_TOKEN` env on the scraper service, reconnect Google at `/marketing/connections`, hit Sync. Then the full E2E on All Green Recycling.
+- **Claude (marketing consolidation session, 2026-07-28):** merged the access-and-rls handoff into the brand-coverage program doc, groomed the marketing doc family, collapsing the duplicate public-tools index onto `marketing-nav.ts`, shipping `/marketing/ranks` (cross-site rank hub).
 
 ## Up next (in order)
 
-1. Fresh initialize on All Green (should clear the stale error panel — needs Arman or editor access).
-2. GSC E2E once Arman reconnects (gsc_page_stat rows + pages Clicks/Impr/Pos + coverage Google cells).
-3. Social routes (`brands/[id]/socials/...`) — property rows already created by discovery promotion.
-4. Soft-delete restore-on-upsert sweep server-side (handoff item; the class rule is written there).
+1. Component-RLS performance decision (Arman) — the platform-level fix for the per-row `has_access` cost; full context in the handoff's Decisions section. **GSC is UNBLOCKED and synced** (70,945 `gsc_page_stat` rows across 7 sites through 2026-07-26, verified in DB 2026-07-28) — the old GSC-unblock lines here are done.
+2. Social routes (`brands/[id]/socials/...`) — property rows already created by discovery promotion.
+3. Soft-delete restore-on-upsert sweep server-side (handoff item; the class rule is written there).
+4. `/marketing/campaigns` — the highest-leverage reserved surface (schema design needs Arman; see marketing-module handoff).
 
 ## Parking lot — grab one, note your name, go
 
 Small, delegatable, not worth stopping the main line. Move to "In motion" when you take one; delete when shipped (record it in the handoff's Done).
 
 - **Header overlap at 1500–1700px:** Marketing's 13-mode pill renders over the site name. Fix in the shared shell primitive `features/shell/components/header/RouteModeNav.tsx` / `EntityModeHeader.tsx`; test with the marketing site shell (longest mode list).
-- **`/marketing` overview page** is a redirect to `/brands` — build the real workspace overview (list-first, per the feature-entry doctrine).
 - **Access page grantee picker:** `/access` takes raw UUIDs; needs the platform user/org picker instead.
 - **Brand-move human click-through:** SiteEditorDialog's Brand dropdown (`web.move_site_brand`) needs one human test — automation can't drive that Radix Select.
 - **Duplicate test brands/sites** ("Titanium Success" ×2, "AI Matrx" ×2) now visible to everyone via public view — Arman deletes via UI, or an agent with his go-ahead.

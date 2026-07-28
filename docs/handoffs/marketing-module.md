@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-27
+updated: 2026-07-28
 repos: [matrx-frontend]
 vision: [features/marketing/FEATURE.md, .claude/skills/module-landing-pages/SKILL.md, lib/coming-soon/FEATURE.md]
 ---
@@ -9,8 +9,19 @@ vision: [features/marketing/FEATURE.md, .claude/skills/module-landing-pages/SKIL
 
 You are picking up a module that was **structurally repaired and then given its
 full intended shape**. The repair is shipped and verified in production. The
-shape is declared and reserved; most of it is not built. This document is
-everything you need — no other context exists.
+shape is declared and reserved; most of it is not built.
+
+**This doc owns the module SHAPE (pillars, reserved routes, nav, landing).
+Sibling handoffs own the deep verticals — read the one for the area you touch:**
+
+| Area | Doc |
+| --- | --- |
+| Websites vertical (brands, crawls, coverage, GSC) **+ the `web.*` access model** | [marketing-brand-coverage-program.md](marketing-brand-coverage-program.md) |
+| Page workspace authoring layer (desired values, drafts, keywords, tasks) | [marketing-page-workspace-evolution.md](marketing-page-workspace-evolution.md) |
+| Content Plan client (`plan` schema UI) | [content-plan-client.md](content-plan-client.md) · server: aidream `docs/handoffs/content-plan-server.md` · SoR `common-docs/systems/content-planning/FEATURE.md` |
+| SEO vertical server side (rank/keyword/backlink collection, providers, budgets) | aidream `docs/handoffs/seo-vertical.md` + `aidream/docs/seo/MASTER_CAPABILITY_LIST.md` |
+| `seo` chat-tool renderer | [seo-tool-renderer.md](seo-tool-renderer.md) |
+| Live coordination board + parking lot | [../MARKETING_PROGRAM_BOARD.md](../MARKETING_PROGRAM_BOARD.md) |
 
 ---
 
@@ -126,30 +137,30 @@ to end clean structured setup for this major feature 'marketing'."**
 | Landing registered on `/features` | `MODULE_LANDING_DIRECTORY` |
 | Landing sub-areas GENERATED from the same source | `listMarketingLandingAreas()` — status derived from whether a pillar has any live entry; href prefers a built surface |
 | Admin map covers all 16 reserved routes | `app/(core)/marketing/admin/page.tsx` |
+| **`/marketing/ranks` SHIPPED (2026-07-28)** — 15 reserved routes remain | `CrossSiteRanksHub.tsx` + `cross-site-data.ts`; registry row deleted |
+| Public `/seo` index single-sourced (2026-07-28); 11 planned analyzers registered as `marketing.tools.*` promises | `MARKETING_PUBLIC_TOOL_CATEGORIES` in `marketing-nav.ts` |
 
-**Deployed:** everything in §2.1 through the "Done" line of the first commit is
-live in production. The build-out (reserved routes, landing, generated nav) is
-committed on `main` — **check `git log` and Vercel to confirm it deployed**; see
-§5 gotcha 1.
+**Deployed:** CONFIRMED 2026-07-28 — releases v0.4.189–191 shipped after the
+build-out, and `www.aimatrx.com/marketing`, `/marketing/campaigns`, and
+`/marketing/ranks` all return 200 in production.
 
 ### 2.2 Partial — started, specifically unfinished
 
-1. **`/marketing/tools` and `/seo` (the public hub page) are two indexes of the
-   same five analyzers.** `app/(public)/seo/page.tsx` has its own hand-written
-   list. Collapse `(public)/seo/page.tsx` onto `MARKETING_PUBLIC_TOOLS` from
-   `marketing-nav.ts`.
-
-2. **Rank tracking exists per-site, not cross-site.**
-   `features/marketing/components/ranks/` + the per-site route are live under a
-   brand. `/marketing/ranks` (the cross-brand hub) is reserved. Building it is
-   mostly aggregation over data that already exists — the cheapest reserved
-   route to ship, and a good first task.
-
-3. **No surface manifests for the reserved routes.** Live Marketing surfaces are
+1. **No surface manifests for the reserved routes.** Live Marketing surfaces are
    registered in `features/surfaces/manifests/` so agents know what page they are
    on. Reserved routes have none. Correct for now (nothing to declare), but the
    surface manifest is part of "done" for each one — see
-   `.claude/skills/surface-authoring`.
+   `.claude/skills/surface-authoring`. **This now specifically includes the
+   shipped `/marketing/ranks` hub** — the existing `marketing-ranks` manifest is
+   per-site (inherits brand/site context) and does not fit the cross-site hub;
+   it needs its own `matrx-user/marketing-ranks-hub`-style surface + DB sync.
+
+2. **Access asymmetry visible on `/marketing/ranks`:** `seo.rank_target` rows
+   can be readable where their `web.site` row is not, so some rows show a raw
+   site UUID instead of a name (observed live with All Green's targets). The
+   display is honest, but the underlying `seo` vs `web` access mismatch belongs
+   to the access-model decision in
+   [marketing-brand-coverage-program.md](marketing-brand-coverage-program.md).
 
 ### 2.3 Not started
 
@@ -163,13 +174,8 @@ that text is the spec, and it is what the user has already been shown.
 
 ### 2.4 Known issues and risks
 
-1. **`pnpm type-check` was NOT globally green when this was written.** Residual
-   errors live in `features/cms/agent-context/buildCmsSiteContextData.ts` and
-   `features/html-pages/` — files a **concurrent session was actively editing**
-   while this work happened. Zero errors were in Marketing files (verified across
-   three separate passes, scoped to `features/marketing`, `app/(core)/marketing`,
-   `features/shell`, `features/auth`, `lib/coming-soon`). **Re-run
-   `pnpm type-check` yourself before assuming anything.**
+1. **`pnpm type-check` is globally green** (re-verified 2026-07-28, exit 0) —
+   the concurrent-session CMS errors noted earlier are resolved.
 
 2. **This repo has multiple agents working simultaneously.** During this work
    another session renamed a function inside a file mid-edit
@@ -277,18 +283,16 @@ Check `pnpm dev:status` first — several servers usually run already.
 
 ## 4. Next steps, in order
 
-1. **Re-run `pnpm type-check` and confirm production deployed.** Both were
-   affected by concurrent sessions (§2.4.1, §5.1). Do this before anything else.
+(2026-07-28: type-check/deploy verification, the duplicate tool index collapse,
+and the `/marketing/ranks` ship are DONE — see §2.1/Done. Ranks is the reference
+implementation for "how we ship a reserved route": build the real page at the
+same URL, delete the registry row, drop `status` from the nav entry, add a
+FEATURE.md change-log line. Its surface manifest is still owed — §2.2.1.)
 
-2. **Collapse the duplicate tool index (§2.2.1).** Point
-   `app/(public)/seo/page.tsx` at `MARKETING_PUBLIC_TOOLS`.
+1. **Register the cross-site ranks surface manifest** (§2.2.1) and decide the
+   access-asymmetry question (§2.2.2).
 
-3. **Ship `/marketing/ranks` (cross-site rank tracking).** The cheapest reserved
-   route — the data already exists per-site under a brand. Aggregate it, delete
-   `marketing.rank-tracking` from the registry, drop `status` from its nav entry.
-   This is the reference implementation for "how we ship a reserved route."
-
-4. **Then `/marketing/campaigns`.** It is the highest-leverage reserved surface
+2. **Then `/marketing/campaigns`.** It is the highest-leverage reserved surface
    because every other channel (social, email, ads, outreach) reports into it —
    building the campaign entity first prevents four incompatible designs. Needs a
    migration; ask Arman before designing the schema.

@@ -1,9 +1,11 @@
-// Reserved Marketing route. Body, copy, and status come from the shared
-// placeholder — see features/marketing/components/MarketingComingSoon.tsx.
-// The promise is tracked as `marketing.rank-tracking` in lib/coming-soon/registry.ts.
+import { Suspense } from "react";
+import { CrossSiteRanksHub } from "@/features/marketing/components/ranks/CrossSiteRanksHub";
+import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 
-import { MarketingComingSoon } from "@/features/marketing/components/MarketingComingSoon";
-
-export default function Page() {
-  return <MarketingComingSoon comingSoonId="marketing.rank-tracking" />;
+export default function MarketingRanksPage() {
+  return (
+    <Suspense fallback={<LoadingSurface label="Loading rank portfolio…" />}>
+      <CrossSiteRanksHub />
+    </Suspense>
+  );
 }
