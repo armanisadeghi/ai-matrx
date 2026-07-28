@@ -106,6 +106,10 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
       header: "Name",
       filter: "text",
       editable: "string",
+      // D112: the title cell is a REAL link (keyboard, SR, middle-click) —
+      // same destination as the whole-row click. Inline rename moves to the
+      // hover pencil the primitive renders beside a linked editable cell.
+      href: (row) => `/agents/${row.id}/run`,
       cell: (row) => (
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate font-medium">{row.name}</span>

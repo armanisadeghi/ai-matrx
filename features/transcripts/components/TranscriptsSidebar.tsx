@@ -274,10 +274,17 @@ export function TranscriptsSidebar({
                     </div>
                   </div>
                 ) : (
-                  <button
-                    type="button"
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setActiveTranscript(transcript)}
-                    className="w-full p-3 text-left"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setActiveTranscript(transcript);
+                      }
+                    }}
+                    className="w-full p-3 text-left cursor-pointer"
                   >
                     <div className="flex items-start gap-2">
                       <div className="mt-0.5 text-gray-500 dark:text-gray-400">
@@ -341,7 +348,7 @@ export function TranscriptsSidebar({
                         )}
                       </div>
                     </div>
-                  </button>
+                  </div>
                 )}
               </div>
             ))

@@ -15,6 +15,7 @@
 // zones — star | name | category | tags | updated | kebab. It reads like a
 // table without table chrome, which is the point of a compact view.
 
+import Link from "next/link";
 import { Star, Archive, MoreVertical } from "lucide-react";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
@@ -87,15 +88,21 @@ export function AgentBrowseRows({
             />
           </button>
 
-          <span
+          {/* D112: the name is a REAL link — keyboard focus, SR semantics,
+              cmd/middle-click — while the whole-row click stays a mouse
+              convenience. stopPropagation keeps the row handler from
+              double-firing on link clicks. */}
+          <Link
+            href={`/agents/${row.id}/run`}
+            onClick={(e) => e.stopPropagation()}
             className={cn(
-              "min-w-0 flex-1 truncate font-medium",
+              "min-w-0 flex-1 truncate rounded font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring",
               compact ? "text-xs" : "text-sm",
             )}
             title={row.name}
           >
             {row.name}
-          </span>
+          </Link>
 
           {row.is_archived && (
             <Archive className="h-3 w-3 shrink-0 text-muted-foreground" />

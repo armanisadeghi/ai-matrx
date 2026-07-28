@@ -48,6 +48,16 @@ export interface MatrxColumnDef<T> {
    */
   editOptions?: Array<{ value: string; label: string }>;
   /**
+   * Row link for the primary/title cell (D112): renders the cell content as a
+   * real `next/link` anchor, so the row is reachable by keyboard, announced as
+   * a link by screen readers, and cmd/middle-clickable into a new tab. The
+   * whole-row `onRowOpen` click stays as a mouse convenience; clicks on the
+   * anchor never double-fire it. Combine with `editable` and the link renders
+   * with a hover/focus pencil that opens the inline editor instead of
+   * click-text-to-edit.
+   */
+  href?: (row: T) => string | undefined;
+  /**
    * Built-in cell kinds. `"uuid"` / `"fk"` use MatrxUuidCell (short + copy +
    * optional open). `"auto"` (default) detects UUID-shaped strings.
    */

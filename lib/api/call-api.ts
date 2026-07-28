@@ -712,6 +712,59 @@ function maybeLogRequest(
 // SECTION 12 — ERROR NORMALIZATION
 // ============================================================================
 
+/**
+ * Extract the richest human-readable message from a structured server error
+ * body (D102). aidream 4xx validation errors look like
+ * `{ error, user_message, details: [{ field, message, help }] }`; FastAPI's
+ * default is `{ detail: string | [{ msg }] }`. Preference order:
+ * `user_message` → `message` → joined `details[].message` → FastAPI `detail`.
+ * Returns undefined for non-object / unrecognized bodies so callers fall back
+ * to the bare status line.
+ */
+function extractServerErrorMessage(serverDetail: unknown): string | undefined {
+  if (typeof serverDetail !== "object" || serverDetail === null) {
+    return undefined;
+  }
+  const body = serverDetail as Record<string, unknown>;
+
+  if (typeof body.user_message === "string" && body.user_message.trim()) {
+    return body.user_message;
+  }
+  if (typeof body.message === "string" && body.message.trim()) {
+    return body.message;
+  }
+  if (Array.isArray(body.details)) {
+    const messages = body.details
+      .map((d: unknown) => {
+        if (typeof d !== "object" || d === null) return undefined;
+        const detail = d as Record<string, unknown>;
+        const message =
+          typeof detail.message === "string" ? detail.message : undefined;
+        const field =
+          typeof detail.field === "string" ? detail.field : undefined;
+        if (!message) return undefined;
+        return field ? `${field}: ${message}` : message;
+      })
+      .filter((m): m is string => typeof m === "string" && m.length > 0);
+    if (messages.length > 0) return messages.join("; ");
+  }
+  // FastAPI default validation shape: { detail: string | [{ msg, loc }] }
+  if (typeof body.detail === "string" && body.detail.trim()) {
+    return body.detail;
+  }
+  if (Array.isArray(body.detail)) {
+    const messages = body.detail
+      .map((d: unknown) => {
+        if (typeof d !== "object" || d === null) return undefined;
+        const detail = d as Record<string, unknown>;
+        return typeof detail.msg === "string" ? detail.msg : undefined;
+      })
+      .filter((m): m is string => typeof m === "string" && m.length > 0);
+    if (messages.length > 0) return messages.join("; ");
+  }
+  return undefined;
+}
+
 function normalizeError(err: unknown): ApiCallError {
   if (err instanceof DOMException && err.name === "AbortError") {
     return { type: "abort_error", message: "Request was cancelled." };
@@ -841,7 +894,9 @@ async function executeJsonRequest<T>(
   const conversationId = response.headers.get("X-Conversation-ID") ?? undefined;
 
   if (!response.ok) {
-    const serverDetail = await response.json().catch(() => undefined);
+    const serverDetail: unknown = await response
+      .json()
+      .catch(() => undefined);
     return {
       requestId,
       conversationId,
@@ -850,7 +905,9 @@ async function executeJsonRequest<T>(
           response.status >= 400 && response.status < 500
             ? "validation_error"
             : "http_error",
-        message: `HTTP ${response.status}`,
+        message:
+          extractServerErrorMessage(serverDetail) ??
+          `HTTP ${response.status}`,
         status: response.status,
         serverDetail,
       },
@@ -896,10 +953,16 @@ async function executeStreamingRequest(
   );
 
   if (!response.ok) {
-    const serverDetail = await response.json().catch(() => undefined);
+    const serverDetail: unknown = await response
+      .json()
+      .catch(() => undefined);
     const error: ApiCallError = {
-      type: "http_error",
-      message: `HTTP ${response.status}`,
+      type:
+        response.status >= 400 && response.status < 500
+          ? "validation_error"
+          : "http_error",
+      message:
+        extractServerErrorMessage(serverDetail) ?? `HTTP ${response.status}`,
       status: response.status,
       serverDetail,
     };

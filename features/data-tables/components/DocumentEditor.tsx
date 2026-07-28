@@ -41,6 +41,7 @@ import { defaultDocumentPageStyle } from "../document-page-style";
 import { useDocumentRealtime } from "../hooks/useDocumentRealtime";
 import { useUniverDarkModeSync } from "../hooks/useUniverDarkModeSync";
 import { sanitizeUniverDocSnapshot } from "../utils/sanitizeUniverDocSnapshot";
+import { isSnapshotMutation } from "../utils/isSnapshotMutation";
 import { disposeUniverInstance } from "../utils/disposeUniverInstance";
 import { RemoteCursorsLayer } from "./RemoteCursorsLayer";
 import {
@@ -224,7 +225,10 @@ export default function DocumentEditor({
         // Command stream → debounced autosave. Registered for the lifetime of
         // the instance; viewer-mode (editable=false) is honored at fire time
         // via editableRef so a later edit-permission grant needs no remount.
-        apiRef.current.onCommandExecuted(() => {
+        // D97: only snapshot-affecting MUTATIONs mark the doc dirty —
+        // scroll / selection / viewport commands must never trigger a save.
+        apiRef.current.onCommandExecuted((command) => {
+          if (!isSnapshotMutation(command)) return;
           if (!editableRef.current) return;
           setSaveStatus("dirty");
           if (saveTimerRef.current) clearTimeout(saveTimerRef.current);

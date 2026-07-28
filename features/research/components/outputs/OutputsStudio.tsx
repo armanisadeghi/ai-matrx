@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  Sparkles,
+  PackageOpen,
   Mic,
   FileText,
   Presentation,
@@ -135,14 +135,19 @@ export default function OutputsStudio() {
   // not been seeded must still generate a podcast), and says so out loud rather
   // than silently rendering "no report yet".
   const [reportMarkdown, setReportMarkdown] = useState("");
-  const [reportLoading, setReportLoading] = useState(true);
-  const [bundleFallback, setBundleFallback] = useState(false);
+  // Loading + fallback are DERIVED from the fetch lifecycle (keyed by which
+  // topic the last completed fetch / fallback was for) — no synchronous
+  // setState inside the effect.
+  const [reportLoadedFor, setReportLoadedFor] = useState<string | null>(null);
+  const [bundleFallbackFor, setBundleFallbackFor] = useState<string | null>(
+    null,
+  );
+  const reportLoading = Boolean(topicId) && reportLoadedFor !== topicId;
+  const bundleFallback = Boolean(topicId) && bundleFallbackFor === topicId;
 
   useEffect(() => {
     if (!topicId) return undefined;
     let cancelled = false;
-    setReportLoading(true);
-    setBundleFallback(false);
     void (async () => {
       try {
         const bundle = await getBundleBySlug(REPORT_ONLY_BUNDLE_SLUG).catch(
@@ -157,8 +162,8 @@ export default function OutputsStudio() {
             setReportMarkdown(md);
             return;
           }
-        } else {
-          setBundleFallback(true);
+        } else if (!cancelled) {
+          setBundleFallbackFor(topicId);
         }
 
         // Direct read — the pre-bundle path, kept as the safety net only.
@@ -182,7 +187,7 @@ export default function OutputsStudio() {
         }
         setReportMarkdown(md);
       } finally {
-        if (!cancelled) setReportLoading(false);
+        if (!cancelled) setReportLoadedFor(topicId);
       }
     })();
     return () => {
@@ -211,7 +216,7 @@ export default function OutputsStudio() {
     <div className="h-full overflow-y-auto">
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 space-y-4">
         <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          <PackageOpen className="h-3.5 w-3.5 text-primary" />
           <span className="text-xs font-medium text-foreground/80">
             Outputs Studio
           </span>
@@ -561,7 +566,7 @@ function PodcastOutputCard({
               onClick={handleGenerate}
               disabled={!hasReport}
             >
-              <Sparkles className="h-3.5 w-3.5" />
+              <Mic className="h-3.5 w-3.5" />
               Generate podcast
             </Button>
             {state.status === "error" && state.error && (
@@ -683,7 +688,6 @@ function PersistedEpisode({ asset }: { asset: OutputAsset }) {
     <div className="rounded-lg border border-border/40 bg-background/40 overflow-hidden">
       <div className="flex items-center gap-2.5 px-2.5 py-2">
         {cover ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={cover}
             alt=""
@@ -782,7 +786,6 @@ function PersistedEpisode({ asset }: { asset: OutputAsset }) {
               </span>
               <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
                 {extraStills.map((url, i) => (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     key={i}
                     src={url}
@@ -905,7 +908,7 @@ function BlogOutputCard({
             onClick={handleGenerate}
             disabled={!hasReport}
           >
-            <Sparkles className="h-3.5 w-3.5" />
+            <FileText className="h-3.5 w-3.5" />
             Generate blog
           </Button>
         )}
@@ -1114,7 +1117,7 @@ function SlidesOutputCard({
           onClick={handleGenerate}
           disabled={!hasReport}
         >
-          <Sparkles className="h-3.5 w-3.5" />
+          <Presentation className="h-3.5 w-3.5" />
           Generate slides
         </Button>
       )}
@@ -1259,7 +1262,7 @@ function SeoOutputCard({
           onClick={handleGenerate}
           disabled={!hasReport}
         >
-          <Sparkles className="h-3.5 w-3.5" />
+          <SearchIcon className="h-3.5 w-3.5" />
           Generate SEO package
         </Button>
       )}

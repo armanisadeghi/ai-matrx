@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import Link from "next/link";
 import { Eraser, PanelRight, Search, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -650,7 +651,13 @@ export function MatrxDataTable<T>({
                   <tr
                     key={id}
                     data-state={isSelected ? "selected" : undefined}
-                    onClick={() => openDetail(row)}
+                    onClick={(e) => {
+                      // A click that started on a real link (the D112 title
+                      // anchor, an FK cell link) must not ALSO fire the
+                      // row-open — the anchor owns that navigation.
+                      if ((e.target as HTMLElement).closest("a")) return;
+                      openDetail(row);
+                    }}
                     className={cn(
                       // bg-card is a visual no-op (the container is bg-card) but
                       // gives the frozen first cell an OPAQUE background to
@@ -674,6 +681,7 @@ export function MatrxDataTable<T>({
                       const display = renderCell(displayRow, col, index);
                       const editable = Boolean(editEnabled && col.editable);
                       const dirty = Boolean(rowEdits && field in rowEdits);
+                      const cellHref = col.href?.(row) ?? undefined;
                       return (
                         <td
                           key={columnId(col)}
@@ -701,7 +709,16 @@ export function MatrxDataTable<T>({
                               display={display}
                               dirty={dirty}
                               onCommit={(next) => commitCell(id, field, next)}
+                              href={cellHref}
                             />
+                          ) : cellHref ? (
+                            <Link
+                              href={cellHref}
+                              onClick={(e) => e.stopPropagation()}
+                              className="block w-full min-w-0 rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                              {display}
+                            </Link>
                           ) : (
                             display
                           )}

@@ -8,7 +8,7 @@
 // saved to pc_articles via `articleService`. Regenerating replaces the row
 // (unique (episode_id, kind)).
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 import { useRunAgent } from "@/features/agents/run/useRunAgent";
 import { articleService } from "@/features/podcasts/articleService";
@@ -68,18 +68,17 @@ export function useEpisodeArticles(
     {},
   );
   const [busy, setBusy] = useState<Partial<Record<PcArticleKind, boolean>>>({});
-  const [loading, setLoading] = useState(true);
   const episodeId = episode?.id ?? null;
-  const articleRef = useRef(articles);
-  articleRef.current = articles;
+  // Loading is DERIVED from the fetch lifecycle (which episode the last
+  // completed fetch was for), never set synchronously inside the effect.
+  const [loadedForEpisodeId, setLoadedForEpisodeId] = useState<string | null>(
+    null,
+  );
+  const loading = episodeId !== null && loadedForEpisodeId !== episodeId;
 
   useEffect(() => {
+    if (!episodeId) return undefined;
     let cancelled = false;
-    if (!episodeId) {
-      setLoading(false);
-      return undefined;
-    }
-    setLoading(true);
     void articleService
       .fetchByEpisode(episodeId)
       .then((rows) => {
@@ -89,7 +88,9 @@ export function useEpisodeArticles(
         setArticles(byKind);
       })
       .catch(() => undefined)
-      .finally(() => !cancelled && setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoadedForEpisodeId(episodeId);
+      });
     return () => {
       cancelled = true;
     };
@@ -164,7 +165,7 @@ export function useEpisodeArticles(
 
   const togglePublish = useCallback(
     async (kind: PcArticleKind) => {
-      const article = articleRef.current[kind];
+      const article = articles[kind];
       if (!article) return;
       const next = article.status === "published" ? "draft" : "published";
       try {
@@ -175,7 +176,7 @@ export function useEpisodeArticles(
         toast.error(e instanceof Error ? e.message : "Couldn't update.");
       }
     },
-    [],
+    [articles],
   );
 
   return { articles, drafts, busy, loading, generate, togglePublish };

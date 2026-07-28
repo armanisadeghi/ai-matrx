@@ -170,7 +170,13 @@ function FileRow({
         )}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        onClick={onActivate}
+        onClick={(e) => {
+          // Belt-and-suspenders vs D72: never treat a click that landed
+          // inside the row-actions toolbar as a row activation, and never
+          // let a mid-hover hit-test race reach onShare via the row path.
+          if ((e.target as HTMLElement).closest("[data-row-actions]")) return;
+          onActivate();
+        }}
         {...attributes}
         {...listeners}
       >
@@ -437,7 +443,11 @@ function FolderRow({
         )}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        onClick={onActivate}
+        onClick={(e) => {
+          // Belt-and-suspenders vs D72 — see FileRow above.
+          if ((e.target as HTMLElement).closest("[data-row-actions]")) return;
+          onActivate();
+        }}
         {...attributes}
         {...listeners}
       >
@@ -603,9 +613,13 @@ interface RowActionsProps {
 function RowActions({ visible, onShare, onCopyLink, fileId }: RowActionsProps) {
   return (
     <div
+      data-row-actions=""
       className={cn(
         "ml-auto flex items-center gap-1 pr-1 transition-opacity",
-        visible ? "opacity-100" : "opacity-0",
+        // pointer-events-none while hidden (D72): the toolbar stays mounted
+        // so hover transitions never shift hit areas mid-click, and its
+        // invisible buttons can never swallow a click meant for the row.
+        visible ? "opacity-100" : "pointer-events-none opacity-0",
       )}
     >
       <button
@@ -658,9 +672,13 @@ function FolderRowActions({
   const folderActions = useFolderActions(folderId);
   return (
     <div
+      data-row-actions=""
       className={cn(
         "ml-auto flex items-center gap-1 pr-1 transition-opacity",
-        visible ? "opacity-100" : "opacity-0",
+        // pointer-events-none while hidden (D72): the toolbar stays mounted
+        // so hover transitions never shift hit areas mid-click, and its
+        // invisible buttons can never swallow a click meant for the row.
+        visible ? "opacity-100" : "pointer-events-none opacity-0",
       )}
     >
       <button

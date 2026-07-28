@@ -199,6 +199,14 @@ hostile at 2,000.
 
 ## Change log
 
+- **2026-07-28 (D112)** — Rows are no longer mouse-only. `MatrxDataTable`
+  columns gained `href`: the title cell renders a real `next/link` (keyboard
+  focus, SR link semantics, cmd/middle-click new tab) while the whole-row
+  click stays a mouse convenience (row `onClick` ignores clicks on anchors).
+  On a linked EDITABLE cell (Name), inline edit moves from click-text-to-edit
+  to a hover/focus pencil beside the link. Dense view's name is a real link
+  too; cards already were.
+
 - **2026-07-28** — Removed the stale `project_id` return/read from
   `agx_list_scoped` and the obsolete agent→project FK-containment registry edge.
   This restores list, scope-count, facet, and drift-alert reads after

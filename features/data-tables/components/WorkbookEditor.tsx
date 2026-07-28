@@ -43,6 +43,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useWorkbookRealtime } from "../hooks/useWorkbookRealtime";
 import { useUniverDarkModeSync } from "../hooks/useUniverDarkModeSync";
 import { disposeUniverInstance } from "../utils/disposeUniverInstance";
+import { isSnapshotMutation } from "../utils/isSnapshotMutation";
 import { RemoteCursorsLayer } from "./RemoteCursorsLayer";
 import { WorkbookCursorOverlay } from "./WorkbookCursorOverlay";
 import { getLatestSnapshot, saveSnapshot } from "../workbook-service";
@@ -252,7 +253,10 @@ export default function WorkbookEditor({
         // Command stream → debounced autosave. Registered for the lifetime of
         // the instance; viewer-mode (editable=false) is honored at fire time
         // via editableRef so a later edit-permission grant needs no remount.
-        apiRef.current.onCommandExecuted(() => {
+        // D97: only snapshot-affecting MUTATIONs mark the workbook dirty —
+        // scroll / selection / viewport commands must never trigger a save.
+        apiRef.current.onCommandExecuted((command) => {
+          if (!isSnapshotMutation(command)) return;
           if (!editableRef.current) return;
           setSaveStatus("dirty");
           if (saveTimerRef.current) clearTimeout(saveTimerRef.current);

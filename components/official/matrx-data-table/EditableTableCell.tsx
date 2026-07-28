@@ -7,7 +7,8 @@
  */
 
 import { useState } from "react";
-import { Check, X } from "lucide-react";
+import Link from "next/link";
+import { Check, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -35,7 +36,50 @@ interface EditableTableCellProps {
   dirty?: boolean;
   onCommit: (next: unknown) => void;
   className?: string;
+  /**
+   * D112: when the cell doubles as the row's title link, the display renders
+   * as a real anchor (keyboard focus, SR semantics, middle-click) and editing
+   * moves to a hover/focus-revealed pencil instead of click-text-to-edit.
+   */
+  href?: string;
 }
+
+/** The link + hover-pencil shell shared by the string and popover editors. */
+function LinkedCellShell({
+  href,
+  display,
+  dirty,
+  className,
+  editButton,
+}: {
+  href: string;
+  display: React.ReactNode;
+  dirty?: boolean;
+  className?: string;
+  editButton: React.ReactNode;
+}) {
+  return (
+    <span
+      className={cn(
+        "group/cell-link flex w-full min-w-0 items-center gap-1 rounded px-0.5",
+        dirty && "ring-1 ring-primary/40 bg-primary/5",
+        className,
+      )}
+    >
+      <Link
+        href={href}
+        onClick={(e) => e.stopPropagation()}
+        className="min-w-0 flex-1 truncate rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {display}
+      </Link>
+      {editButton}
+    </span>
+  );
+}
+
+const CELL_PENCIL_CLASS =
+  "shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted/60 focus-visible:opacity-100 group-hover/cell-link:opacity-100";
 
 export function EditableTableCell({
   value,
@@ -45,6 +89,7 @@ export function EditableTableCell({
   dirty,
   onCommit,
   className,
+  href,
 }: EditableTableCellProps) {
   const [open, setOpen] = useState(false);
 
@@ -56,26 +101,49 @@ export function EditableTableCell({
         dirty={dirty}
         onCommit={onCommit}
         className={className}
+        href={href}
       />
     );
   }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          onClick={(e) => e.stopPropagation()}
-          className={cn(
-            "w-full rounded px-0.5 text-left hover:bg-muted/60",
-            dirty && "ring-1 ring-primary/40 bg-primary/5",
-            className,
-          )}
-          title="Edit"
-        >
-          {display}
-        </button>
-      </PopoverTrigger>
+      {href ? (
+        <LinkedCellShell
+          href={href}
+          display={display}
+          dirty={dirty}
+          className={className}
+          editButton={
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                aria-label="Edit"
+                title="Edit"
+                onClick={(e) => e.stopPropagation()}
+                className={CELL_PENCIL_CLASS}
+              >
+                <Pencil className="h-3 w-3" />
+              </button>
+            </PopoverTrigger>
+          }
+        />
+      ) : (
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              "w-full rounded px-0.5 text-left hover:bg-muted/60",
+              dirty && "ring-1 ring-primary/40 bg-primary/5",
+              className,
+            )}
+            title="Edit"
+          >
+            {display}
+          </button>
+        </PopoverTrigger>
+      )}
       <PopoverContent
         align="start"
         className="w-56 p-2"
@@ -102,17 +170,44 @@ function InlineStringEditor({
   dirty,
   onCommit,
   className,
+  href,
 }: {
   value: string;
   display: React.ReactNode;
   dirty?: boolean;
   onCommit: (next: unknown) => void;
   className?: string;
+  href?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
 
   if (!editing) {
+    if (href) {
+      return (
+        <LinkedCellShell
+          href={href}
+          display={display}
+          dirty={dirty}
+          className={className}
+          editButton={
+            <button
+              type="button"
+              aria-label="Edit"
+              title="Edit"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDraft(value);
+                setEditing(true);
+              }}
+              className={CELL_PENCIL_CLASS}
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+          }
+        />
+      );
+    }
     return (
       <button
         type="button"

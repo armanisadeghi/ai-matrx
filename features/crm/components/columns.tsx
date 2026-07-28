@@ -47,6 +47,9 @@ export const PARTY_COLUMNS: MatrxColumnDef<PartyListRow>[] = [
     header: "Name",
     sortable: true,
     filter: "text",
+    // D112: real link on the title cell — keyboard/SR/middle-click reach the
+    // record; the whole-row click stays as a mouse convenience.
+    href: (row) => `/crm/${row.id}`,
     cell: (row) => (
       <div className="flex min-w-0 items-center gap-2">
         <span className="truncate text-sm font-medium text-foreground">

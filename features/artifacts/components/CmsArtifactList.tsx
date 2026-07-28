@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useRef, useState, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fetchUserArtifactsThunk } from "@/lib/redux/thunks/artifactThunks";
@@ -308,8 +308,26 @@ function ArtifactCard({
 export function CmsArtifactList() {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
+  const navigationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  const clearNavigationTimeout = () => {
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+      navigationTimeoutRef.current = null;
+    }
+  };
+
+  // Reset the navigation lock when the route actually changes (or on unmount).
+  useEffect(() => {
+    setNavigatingId(null);
+    clearNavigationTimeout();
+    return clearNavigationTimeout;
+  }, [pathname]);
 
   const fetchStatus = useAppSelector(selectArtifactFetchStatus);
   const fetchError = useAppSelector(selectArtifactFetchError);
@@ -344,6 +362,13 @@ export function CmsArtifactList() {
   const handleNavigate = (id: string) => {
     if (navigatingId) return;
     setNavigatingId(id);
+    // Hard fallback: if the navigation no-ops or fails (pathname never
+    // changes), release the lock so the list can't stay wedged (D73).
+    clearNavigationTimeout();
+    navigationTimeoutRef.current = setTimeout(() => {
+      navigationTimeoutRef.current = null;
+      setNavigatingId(null);
+    }, 6000);
     startTransition(() => router.push(`/artifacts/${id}`));
   };
 
@@ -358,7 +383,7 @@ export function CmsArtifactList() {
   const handleOpenEditor = (artifact: CxArtifactRecord) => {
     if (artifact.artifactType === "html_page" && artifact.externalId) {
       // We don't have the original markdown here — open the detail page instead
-      router.push(`/artifacts/${artifact.id}`);
+      handleNavigate(artifact.id);
     }
   };
 
