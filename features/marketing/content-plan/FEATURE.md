@@ -21,7 +21,7 @@ plan CRUD through it.
 
 ## Entry points
 
-- `/marketing/content-plan?site=<web.site id>&view=tree|map|entities` — the workspace
+- `/marketing/content-plan?site=<web.site id>&view=tree|table|map|entities` — the workspace
   (`app/(core)/marketing/content-plan/page.tsx`). Header chrome (site picker, view
   switch, refresh) injects into the shell PageHeader
   (`components/ContentPlanHeader.tsx`); state rides the URL
@@ -69,7 +69,34 @@ plan CRUD through it.
    drag-onto-row = reparent (ONE `parent_id` write; the DB recomputes the
    whole subtree — the client refetches, it never computes). Drop on the
    root strip = top-level. A cheap client cycle pre-check skips the obvious
-   no-op; the DB trigger stays the authority.
+   no-op; the DB trigger stays the authority. List management rides a
+   compact toolbar (`PlanTreeToolbar.tsx`; pure logic in
+   `lib/tree-view.ts`): search over label/route/slug (matches keep their
+   ancestors, non-matching ancestors render dimmed — shared
+   `filterWithAncestors` from `pillar-map/layouts.ts`), one filter popover
+   (status multi + type multi + keyword coverage + needs-reviewer, counts on
+   every option, active-count badge, clear-all), sibling-level sort (tree
+   order / label / priority / status pipeline order / recently updated —
+   never flattens the hierarchy), expand/collapse all, the
+   Pillars/Clusters/All level control (Pillars = the top-level overview,
+   computed from VISUAL depth so pillar-as-root plans work), collapsed rows
+   carry a descendant-count badge, and a live "N pages" / "M of N" count.
+   Home + pillar labels render semibold. While a search/filter is active the
+   collapse set is bypassed so every match is visible; all of it is
+   client-side over the already-loaded plan.
+1b. **Table view** (`PlanNodesTable.tsx`, `?view=table`): every planned URL
+   as one `MatrxDataTable` row — CONTROLLED mode over the canonical local
+   engine (`filterAndSortRows`) since the plan is fully client-loaded.
+   Columns: Label, Route (mono), Type, Status (dot + name), Priority,
+   Keyword (Bound/Missing), Pillar, Cluster, Depth, Reviewer
+   (default-hidden), Updated — every column sorts AND filters; finite
+   columns get real option lists with counts (status options in pipeline
+   order). Full-row click opens the node in the SAME NodePanel right sheet
+   the map uses (built-in inspector/window off — one detail surface).
+   Style persists via `useListViewPrefs("content-plan-nodes")` (sort,
+   direction, page size, hidden columns via the toolbar Columns picker;
+   bump its `version` when columns change); search/filters/page never
+   persist. Hiding a column drops its live filter/sort with it.
 2. **Node panel** (`NodePanel.tsx`): label/slug/type, page-type + status
    category pickers, priority, technical depth, needs-reviewer, brief
    (line-per-bullet), vertical attributes (schema-driven,
@@ -137,6 +164,19 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-26 — Claude: **list-management layer** — tree toolbar
+  (`PlanTreeToolbar.tsx` + pure `lib/tree-view.ts`): search with dimmed
+  ancestors, status/type/keyword/reviewer filter popover with counts +
+  badge, sibling-level sort (tree/label/priority/status-pipeline/updated),
+  expand/collapse all + Pillars/Clusters/All level control,
+  descendant-count badges on collapsed rows, node counts; new fourth view
+  `?view=table` (`PlanNodesTable.tsx` on `MatrxDataTable`, every column
+  sorts+filters with counted options, full-row click → NodePanel sheet,
+  style persisted via `useListViewPrefs("content-plan-nodes")`); `PlanView`
+  extended in the params hook, header switcher, and the surface manifest's
+  `view` union/description (DB mirror description not re-synced). All
+  client-side over loaded data; drag-reparent, draft overlay, mobile sheets,
+  resizable panels unchanged.
 - 2026-07-26 — Claude: **usability overhaul of the workspace UI** (no behavior
   changes). Tree|panel split is now a cookie-persisted resizable
   `react-resizable-panels` group (`panels:content-plan`, read server-side in

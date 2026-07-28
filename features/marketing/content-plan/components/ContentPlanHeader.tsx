@@ -8,7 +8,13 @@
  */
 import { useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ListTree, Map as MapIcon, RefreshCw, Users } from "lucide-react";
+import {
+  ListTree,
+  Map as MapIcon,
+  RefreshCw,
+  Table2,
+  Users,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +37,7 @@ import {
 
 const VIEW_ITEMS: { view: PlanView; label: string; icon: React.ReactNode }[] = [
   { view: "tree", label: "Tree", icon: <ListTree className="h-3.5 w-3.5" /> },
+  { view: "table", label: "Table", icon: <Table2 className="h-3.5 w-3.5" /> },
   { view: "map", label: "Map", icon: <MapIcon className="h-3.5 w-3.5" /> },
   {
     view: "entities",

@@ -3,12 +3,16 @@
 /**
  * features/marketing/content-plan/components/PlanTree.tsx
  *
- * The plan tree — every planned URL as an indented, collapsible row.
- * Drag a row and drop it ONTO another row to reparent (one `parent_id`
- * write; the DB recomputes the whole subtree's routes/labels — the client
- * renders what comes back, it never computes). Drop on the "root" strip to
- * make a node top-level. Cycle / cross-site / duplicate-slug violations are
- * DB errors surfaced verbatim by the caller.
+ * The plan tree — every planned URL as an indented, collapsible row, with a
+ * full list-management toolbar (PlanTreeToolbar): search (label/route/slug,
+ * ancestors kept but dimmed), status/type/keyword/reviewer filters,
+ * sibling-level sort, expand/collapse all, and the Pillars/Clusters/All
+ * level control (Pillars = the top-level overview). Drag a row and drop it
+ * ONTO another row to reparent (one `parent_id` write; the DB recomputes the
+ * whole subtree's routes/labels — the client renders what comes back, it
+ * never computes). Drop on the "root" strip to make a node top-level.
+ * Cycle / cross-site / duplicate-slug violations are DB errors surfaced
+ * verbatim by the caller. Pure list logic: ../lib/tree-view.ts.
  */
 import { useMemo, useState } from "react";
 import {
@@ -26,11 +30,27 @@ import {
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
+import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { cn } from "@/lib/utils";
 
 import { NODE_TYPE_LABELS, planStatusColor } from "../constants";
+import {
+  collapseAllTargets,
+  collapseTargetsForLevel,
+  countActiveTreeFilters,
+  countDescendants,
+  EMPTY_TREE_FILTERS,
+  nodeMatchesTreeQuery,
+  sortPlanTreeSiblings,
+  type TreeFilters,
+  type TreeLevel,
+  type TreeSortMode,
+} from "../lib/tree-view";
 import type { PlanNodeRow, PlanNodeTreeItem, PlanNodeType } from "../types";
 import { buildPlanTree } from "../types";
+import { filterWithAncestors } from "./pillar-map/layouts";
+import { PlanTreeToolbar, type TreeStatusOption } from "./PlanTreeToolbar";
 
 interface FlatRow {
   node: PlanNodeRow;
@@ -40,7 +60,7 @@ interface FlatRow {
 
 function flatten(
   items: PlanNodeTreeItem[],
-  collapsed: Set<string>,
+  collapsed: ReadonlySet<string>,
   depth = 0,
   out: FlatRow[] = [],
 ): FlatRow[] {
@@ -52,6 +72,9 @@ function flatten(
   }
   return out;
 }
+
+/** While a search/filter is active every ancestor chain stays open. */
+const NOTHING_COLLAPSED: ReadonlySet<string> = new Set();
 
 export interface PlanTreeProps {
   nodes: PlanNodeRow[];
@@ -72,17 +95,82 @@ export function PlanTree({
 }: PlanTreeProps) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<TreeFilters>(EMPTY_TREE_FILTERS);
+  const [sortMode, setSortMode] = useState<TreeSortMode>("tree");
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
 
-  const tree = useMemo(() => buildPlanTree(nodes), [nodes]);
-  const rows = useMemo(() => flatten(tree, collapsed), [tree, collapsed]);
+  // Same dimension the workbench/map read — React Query dedupes the fetch.
+  const statusCategories = useCategories({
+    dimension: CATEGORY_DIMENSIONS.planStatus,
+  });
+  const statusOrderById = useMemo(() => {
+    const map = new Map<string, number>();
+    statusCategories.categories.forEach((category, index) => {
+      map.set(category.id, index);
+    });
+    return map;
+  }, [statusCategories.categories]);
+
+  const searchLower = search.trim().toLowerCase();
+  const queryActive = searchLower !== "" || countActiveTreeFilters(filters) > 0;
+
+  // Matching nodes keep their ancestors (rendered dimmed) so the tree stays
+  // coherent — same shared pure helper the pillar map uses.
+  const { rows: visibleNodes, dimmed } = useMemo(() => {
+    if (!queryActive) {
+      return { rows: nodes, dimmed: new Set<string>() };
+    }
+    return filterWithAncestors(nodes, (node) =>
+      nodeMatchesTreeQuery(node, filters, searchLower),
+    );
+  }, [nodes, filters, searchLower, queryActive]);
+
+  const tree = useMemo(
+    () =>
+      sortPlanTreeSiblings(
+        buildPlanTree(visibleNodes),
+        sortMode,
+        statusOrderById,
+      ),
+    [visibleNodes, sortMode, statusOrderById],
+  );
+  const descendantCounts = useMemo(() => countDescendants(tree), [tree]);
+  const rows = useMemo(
+    () => flatten(tree, queryActive ? NOTHING_COLLAPSED : collapsed),
+    [tree, collapsed, queryActive],
+  );
   const byId = useMemo(() => {
     const map = new Map<string, PlanNodeRow>();
     for (const node of nodes) map.set(node.id, node);
     return map;
   }, [nodes]);
+
+  const statusOptions = useMemo<TreeStatusOption[]>(() => {
+    const counts = new Map<string, number>();
+    for (const node of nodes) {
+      const key = node.status_id ?? "";
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return statusCategories.categories.map((category) => ({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      count: counts.get(category.id) ?? 0,
+    }));
+  }, [nodes, statusCategories.categories]);
+
+  const typeCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const node of nodes) {
+      counts.set(node.node_type, (counts.get(node.node_type) ?? 0) + 1);
+    }
+    return counts;
+  }, [nodes]);
+
+  const matchedCount = visibleNodes.length - dimmed.size;
 
   const toggleCollapse = (id: string) => {
     setCollapsed((previous) => {
@@ -92,6 +180,18 @@ export function PlanTree({
       return next;
     });
   };
+
+  // Level presets and expand/collapse-all work off the FULL tree so a later
+  // filter change never resurrects nodes the user meant to keep collapsed.
+  const applyLevel = (level: TreeLevel) => {
+    if (level === "all") {
+      setCollapsed(new Set());
+      return;
+    }
+    setCollapsed(collapseTargetsForLevel(buildPlanTree(nodes), level));
+  };
+  const expandAll = () => setCollapsed(new Set());
+  const collapseAll = () => setCollapsed(collapseAllTargets(buildPlanTree(nodes)));
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(String(event.active.id));
@@ -132,15 +232,35 @@ export function PlanTree({
       onDragEnd={handleDragEnd}
     >
       <div data-surface-value="plan_tree" className="flex h-full flex-col">
+        <PlanTreeToolbar
+          search={search}
+          onSearchChange={setSearch}
+          filters={filters}
+          onFiltersChange={setFilters}
+          sortMode={sortMode}
+          onSortModeChange={setSortMode}
+          statusOptions={statusOptions}
+          typeCounts={typeCounts}
+          totalCount={nodes.length}
+          matchedCount={matchedCount}
+          queryActive={queryActive}
+          onExpandAll={expandAll}
+          onCollapseAll={collapseAll}
+          onLevel={applyLevel}
+        />
         <RootDropStrip onAddRoot={() => onAddChild(null)} />
         <div className="min-h-0 flex-1 overflow-y-auto">
           {rows.length === 0 ? (
             <div className="px-4 py-8 text-center">
               <p className="text-sm font-medium text-foreground">
-                No nodes planned yet
+                {nodes.length === 0
+                  ? "No nodes planned yet"
+                  : "No pages match"}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Add the first pillar or the home node.
+                {nodes.length === 0
+                  ? "Add the first pillar or the home node."
+                  : "Adjust the search or clear the filters above."}
               </p>
             </div>
           ) : (
@@ -149,7 +269,9 @@ export function PlanTree({
                 key={row.node.id}
                 row={row}
                 selected={row.node.id === selectedId}
-                collapsed={collapsed.has(row.node.id)}
+                collapsed={!queryActive && collapsed.has(row.node.id)}
+                dimmed={dimmed.has(row.node.id)}
+                descendantCount={descendantCounts.get(row.node.id) ?? 0}
                 statusSlug={statusSlugById.get(row.node.status_id ?? "")}
                 dragging={row.node.id === activeId}
                 onSelect={() => onSelect(row.node.id)}
@@ -200,6 +322,8 @@ function TreeRow({
   row,
   selected,
   collapsed,
+  dimmed,
+  descendantCount,
   statusSlug,
   dragging,
   onSelect,
@@ -209,6 +333,8 @@ function TreeRow({
   row: FlatRow;
   selected: boolean;
   collapsed: boolean;
+  dimmed: boolean;
+  descendantCount: number;
   statusSlug: string | undefined;
   dragging: boolean;
   onSelect: () => void;
@@ -221,6 +347,11 @@ function TreeRow({
     setNodeRef: setDragRef,
   } = useDraggable({ id: row.node.id });
   const { isOver, setNodeRef: setDropRef } = useDroppable({ id: row.node.id });
+
+  // Home and pillars are the plan's first-class structure — they read
+  // heavier than clusters/articles at every state.
+  const topLevelType =
+    row.node.node_type === "home" || row.node.node_type === "pillar";
 
   return (
     <div
@@ -260,7 +391,12 @@ function TreeRow({
         ref={setDragRef}
         {...attributes}
         {...listeners}
-        className="flex min-w-0 flex-1 cursor-grab items-start gap-1.5"
+        className={cn(
+          "flex min-w-0 flex-1 cursor-grab items-start gap-1.5",
+          // Non-matching ancestors of a search/filter hit: kept for
+          // coherence, visibly secondary, still fully interactive.
+          dimmed && "opacity-50",
+        )}
         onClick={onSelect}
       >
         <span
@@ -272,13 +408,22 @@ function TreeRow({
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <span
-              className={cn(
-                "min-w-0 break-words text-sm leading-snug text-foreground",
-                selected ? "font-semibold" : "font-medium",
-              )}
-            >
-              {row.node.label}
+            <span className="min-w-0 break-words text-sm leading-snug text-foreground">
+              <span
+                className={cn(
+                  selected || topLevelType ? "font-semibold" : "font-medium",
+                )}
+              >
+                {row.node.label}
+              </span>
+              {collapsed && descendantCount > 0 ? (
+                <span
+                  className="ml-1.5 inline-block rounded-full bg-muted px-1.5 align-middle text-[10px] font-medium tabular-nums leading-4 text-muted-foreground"
+                  title={`${descendantCount} pages inside`}
+                >
+                  {descendantCount}
+                </span>
+              ) : null}
             </span>
             <span className="mt-px shrink-0 rounded bg-muted px-1 py-px text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
               {NODE_TYPE_LABELS[row.node.node_type as PlanNodeType] ??
