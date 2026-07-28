@@ -460,6 +460,8 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- 2026-07-28 — D97 fixed: DocumentEditor/WorkbookEditor autosave gated by isSnapshotMutation (CommandType.MUTATION + denylist); scrolling no longer writes snapshots.
+
 - `2026-07-24` — **`/data/[id]` layout + cell cleanup.** Three changes.
   (1) **One identity control.** The route header showed the table name AND an in-body full-width
   `Select` card repeated it — the exact duplication the route-header rules forbid. Both are

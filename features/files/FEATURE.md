@@ -486,6 +486,8 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 
 ## Change log
 
+- 2026-07-28 — D72 fixed: desktop FileTableRow hidden action toolbars now pointer-events-none + row onClick ignores [data-row-actions] targets, closing the accidental-share-link race.
+
 - **2026-07-24 — Cross-organization user-library upload regression closed at the shared boundary.** `Shared Assets/**` and `Private Assets/**` are personal-organization folder namespaces, independent of whichever organization happens to be active in the shell; public visibility no longer causes ambient organization metadata to collide with those existing folder rows. Buffered XHR upload failures now feed the system Error Inspector with the structured backend detail and request id, matching the fetch client instead of producing only a generic toast.
 - **2026-07-23 — Cloud file picker thumbnails restored with bounded pagination.** The Smart Agent / canonical `FilesResourcePicker` had explicitly disabled both asset and source fallback, forcing image files to generic icons in list and grid view. It now renders owned images through `MediaThumbnail`'s handler-backed, self-healing source fallback and mounts only 12 files per segment at a time through the existing `useInfiniteWindow` primitive. The sentinel/button reveals another 12 on demand, so image selection is visual without triggering signing work for the full tree.
 - **2026-07-22 — Canonical multi-service environment selection.** The shell's main

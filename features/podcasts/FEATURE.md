@@ -97,6 +97,8 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-07-28 — D99 fixed: useEpisodeArticles render-phase ref write removed; loading derived from fetch lifecycle.
+
 - **2026-07-24 — Podcast generation supports durable source-entity identity.**
   The generic request type carries an optional context anchor. Research Outputs
   Studio sends its `research_topic` ID, so the podcast pipeline cannot switch
