@@ -19,8 +19,9 @@ Each node carries a `facet` (`domain | practice_area | jurisdiction | specialty`
 
 | Table | Holds |
 |---|---|
-| `public.industries` | taxonomy nodes (slug, name, facet, parent_id, default_template_id, …) |
-| `public.org_industries` | M2M: an org belongs to ≥ 0 industries (is_primary) |
+| `iam.industries` | taxonomy nodes (slug, name, facet, parent_id, default_template_id, …) |
+| `iam.org_industries` | M2M: an org belongs to ≥ 0 industries (is_primary) |
+| `iam.industry_curators` | who may curate a given industry node |
 
 Reads are PostgREST-exposed (anon-readable taxonomy, drives public pages later). **Writes go only through SECURITY DEFINER RPCs**, audited to `public.library_audit_log`:
 

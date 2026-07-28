@@ -225,8 +225,9 @@ readiness ledger silently reads zero).
   `agent_config → explicit arg`, the reverse of every other call site.
 - **`rs_content.linked_transcript_id` is a dead column** — defined in models and
   both TS type files, written and read by nothing. Use it or drop it.
-- **`features/industries/FEATURE.md` says `public.industries`; the tables are in
-  `iam`.** It also omits `iam.industry_curators`. Verify schema in the DB, not the doc.
+- **Industry sharing is working as designed — do not "harden" it.** Curated
+  industry content is reachable by any org that opts into that industry; the
+  opt-in IS the control. There is no access defect here.
 - `MediaGallery.tsx` hand-rolls YouTube iframes instead of using
   `features/files/blocks/youtube/YouTubeEmbed`.
 - **`get_topic_overview` is not SECURITY DEFINER** — the readiness ledger reflects
