@@ -45,7 +45,10 @@ export default function AdminRouteSidebarMenu({
           )}
         >
           <span className="shell-nav-icon">
-            <IconResolver iconName="ShieldCheck" className="h-[18px] w-[18px]" />
+            <IconResolver
+              iconName="ShieldCheck"
+              className="h-[18px] w-[18px]"
+            />
           </span>
           <span className="shell-nav-label">Administration</span>
         </Link>
@@ -75,90 +78,71 @@ export default function AdminRouteSidebarMenu({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <Link
-        href="/administration"
-        className={cn(
-          navRow,
-          pathname === "/administration" && "shell-active-pill",
-        )}
-      >
-        <span className="shell-nav-icon">
-          <IconResolver iconName="ShieldCheck" className="h-[18px] w-[18px]" />
-        </span>
-        <span className="shell-nav-label">Administration</span>
-      </Link>
+    <div className="flex min-h-0 flex-1 flex-col bg-background text-foreground">
+      <div className="px-2 pb-2">
+        <div className="px-2 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground">
+          Overview
+        </div>
+        <Link
+          href="/administration"
+          aria-current={pathname === "/administration" ? "page" : undefined}
+          className={cn(
+            "flex min-h-8 items-center gap-3 rounded px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
+            pathname === "/administration" &&
+              "bg-accent font-semibold text-accent-foreground",
+          )}
+        >
+          <IconResolver
+            iconName="LayoutDashboard"
+            className="h-[18px] w-[18px] shrink-0"
+          />
+          <span className="min-w-0 flex-1 truncate">Dashboard</span>
+        </Link>
+      </div>
 
-      <div className="mt-1 min-h-0 flex-1 overflow-y-auto pr-0.5 scrollbar-thin-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 scrollbar-thin-auto">
         {adminNavigationRegistry.map((domain) => {
           const domainActive = activeDomain?.name === domain.name;
           return (
             <details
               key={domain.name}
-              className="group/admin-domain mb-0.5"
+              className="group/admin-domain border-t border-border"
               open={domainActive || undefined}
             >
-              <summary
-                className={cn(
-                  navRow,
-                  "list-none [&::-webkit-details-marker]:hidden",
-                  domainActive && "shell-active-pill",
-                )}
-              >
-                <span className="shell-nav-icon">
-                  <IconResolver
-                    iconName={domain.iconName}
-                    className="h-[18px] w-[18px]"
-                  />
-                </span>
-                <span className="shell-nav-label min-w-0 flex-1 truncate">
-                  {domain.name}
-                </span>
+              <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 px-2 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground [&::-webkit-details-marker]:hidden">
+                <span className="min-w-0 flex-1 truncate">{domain.name}</span>
                 <IconResolver
-                  iconName="ChevronRight"
-                  className="mr-1 h-3.5 w-3.5 shrink-0 transition-transform group-open/admin-domain:rotate-90"
+                  iconName="ChevronDown"
+                  className="h-4 w-4 shrink-0 transition-transform group-open/admin-domain:rotate-180"
                 />
               </summary>
 
-              <div className="mb-1 ml-3 border-l border-border/60 pl-2">
-                <Link
-                  href={adminDomainHref(domain)}
-                  className="shell-tactile-subtle block rounded px-2 py-1 text-[11px] font-medium text-primary"
-                >
-                  Browse {domain.name}
-                </Link>
-                {domain.sections.map((section) => (
-                  <div key={section.name} className="py-1">
-                    <div className="flex items-center gap-1.5 px-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      <IconResolver
-                        iconName={section.iconName}
-                        className="h-3 w-3"
-                      />
-                      <span className="truncate">{section.name}</span>
-                    </div>
-                    {section.destinations.map((item) => {
-                      const active = destinationOwnsPathname(item, pathname);
-                      return (
-                        <Link
-                          key={item.link}
-                          href={item.link}
-                          aria-current={active ? "page" : undefined}
-                          className={cn(
-                            "shell-tactile-subtle flex min-h-7 items-center gap-1.5 rounded px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground",
-                            active &&
-                              "bg-[var(--shell-pill-bg)] font-semibold text-[var(--shell-pill-text)]",
-                          )}
-                        >
-                          <IconResolver
-                            iconName={item.iconName}
-                            className="h-3.5 w-3.5 shrink-0"
-                          />
-                          <span className="truncate">{item.title}</span>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                ))}
+              <div className="pb-2">
+                {domain.sections.flatMap((section) =>
+                  section.destinations.map((item) => {
+                    const active = destinationOwnsPathname(item, pathname);
+                    return (
+                      <Link
+                        key={item.link}
+                        href={item.link}
+                        aria-current={active ? "page" : undefined}
+                        className={cn(
+                          "flex min-h-8 items-center gap-3 rounded px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
+                          active &&
+                            "bg-accent font-semibold text-accent-foreground",
+                        )}
+                      >
+                        <IconResolver
+                          iconName={item.iconName}
+                          className="h-[18px] w-[18px] shrink-0"
+                        />
+                        <span className="min-w-0 flex-1 truncate">
+                          {item.title}
+                        </span>
+                      </Link>
+                    );
+                  }),
+                )}
               </div>
             </details>
           );

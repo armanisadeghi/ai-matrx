@@ -97,6 +97,15 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 ## Invariants & gotchas
 
 - `admin-navigation.ts` is the only hierarchy. Never create a second dashboard, sidebar, or mobile grouping object.
+- The expanded Administration route sidebar has exactly two visual levels:
+  separated all-caps domain headers and full-size clickable destination rows.
+  Registry sections remain useful for directories and search, but must not add
+  a third, non-clickable label layer to the space-constrained sidebar. Do not
+  add `Browse <domain>` filler links; the domain's real root destination is
+  already rendered from the registry.
+- Administration sidebar chrome uses semantic theme colors (`background`,
+  `foreground`, `accent`, `accent-foreground`, `border`). Destination rows must
+  not use `muted-foreground`, which makes working navigation look disabled.
 - Domain navigation uses static paths such as `/administration/compute`; `?domain=` routing and catch-all domain pages are forbidden.
 - Every `/administration` destination and owned detail route must equal or descend from its declared domain root. `pnpm check:admin-catalog --strict` enforces this.
 - Every Administration page pattern is declared exactly once as either a destination link or an `ownedRoutes` entry. Parent-prefix inference is forbidden because it hides new pages.
@@ -143,6 +152,10 @@ redirect to the canonical nested route tree through
 
 ## Change log
 
+- `2026-07-27` — Codex: flattened the Administration route sidebar to all-caps
+  domain headers plus real clickable destinations, removed duplicate
+  `Browse <domain>` and registry-section label layers, and restored semantic
+  foreground/background navigation colors.
 - `2026-07-23` — Codex: replaced query-parameter domain views with real static domain routes, physically nested all administration pages, added legacy redirects, rendered direct dashboard links, and enforced domain-root ownership in the catalog check.
 - `2026-07-22` — Codex: registered the Organizations & Memberships destination inside Users & Access.
 - `2026-07-21` — Codex: introduced the canonical three-level registry, migrated all admin navigation surfaces, added AppShell route-menu injection, and made exact non-blocking release drift detection loud.
