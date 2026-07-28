@@ -16,8 +16,8 @@ import dynamic from "next/dynamic";
 import { useQueryClient } from "@tanstack/react-query";
 import { Panel, type Layout } from "react-resizable-panels";
 
-import { ClientGroup } from "@/app/(dev)/demos/resizables/_lib/ClientGroup";
-import { Handle } from "@/app/(dev)/demos/resizables/_lib/Handle";
+import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
+import { Handle } from "@/features/resizable-panels/Handle";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";

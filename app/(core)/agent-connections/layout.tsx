@@ -1,4 +1,4 @@
-import { readLayoutCookie } from "@/app/(dev)/demos/resizables/_lib/readLayoutCookie";
+import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
 import { AgentConnectionsRouteShell } from "@/features/agent-connections/components/AgentConnectionsRouteShell";
 import { createRouteMetadata } from "@/utils/route-metadata";
 

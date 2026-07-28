@@ -1,5 +1,5 @@
 import { getAgent } from "@/lib/agents/data";
-import { readLayoutCookie } from "@/app/(dev)/demos/resizables/_lib/readLayoutCookie";
+import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
 import {
   SurfacesAdminShell,
   SURFACES_ADMIN_COOKIE,

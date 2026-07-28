@@ -6,7 +6,7 @@ import {
   ViewTapButton,
   TestTubeTapButton,
 } from "@/components/icons/tap-buttons";
-import { usePanelControls } from "@/app/(dev)/demos/resizables/_lib/PanelControlProvider";
+import { usePanelControls } from "@/features/resizable-panels/PanelControlProvider";
 import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
 
 /**

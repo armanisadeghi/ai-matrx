@@ -7,7 +7,7 @@
 
 import { redirect } from "next/navigation";
 
-import { readLayoutCookie } from "@/app/(dev)/demos/resizables/_lib/readLayoutCookie";
+import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ContentPlanHeader } from "@/features/marketing/content-plan/components/ContentPlanHeader";
 import { ContentPlanWorkbench } from "@/features/marketing/content-plan/components/ContentPlanWorkbench";

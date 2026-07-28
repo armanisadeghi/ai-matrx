@@ -1,7 +1,7 @@
 "use client";
 
 import { PanelLeftTapButton } from "@/components/icons/tap-buttons";
-import { usePanelControls } from "@/app/(dev)/demos/resizables/_lib/PanelControlProvider";
+import { usePanelControls } from "@/features/resizable-panels/PanelControlProvider";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
