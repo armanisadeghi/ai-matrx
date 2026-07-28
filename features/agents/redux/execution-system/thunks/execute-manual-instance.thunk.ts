@@ -83,11 +83,9 @@ import type {
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { MessageRecord } from "../messages/messages.slice";
 import { isSyntheticAgentId } from "@/features/agents/redux/agent-definition/synthetic-id";
-import {
-  extractContentBlocks,
-  extractFlatText,
-  selectMessageCount,
-} from "../messages/messages.selectors";
+import { selectMessageCount } from "../messages/messages.selectors";
+// Shared with the ephemeral agent-run path — see utils/wire-transcript.ts.
+import { recordsToMessages } from "../utils/wire-transcript";
 import { generateRequestId } from "../utils/ids";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import {
@@ -182,29 +180,6 @@ const MAX_LIFETIME_MS = 600_000;
 // =============================================================================
 // Turn Conversion Utilities
 // =============================================================================
-
-/**
- * Converts `MessageRecord[]` to the wire format the chat endpoint expects.
- * Each record becomes `{ role, content }` where content is a `MessagePart[]`.
- * Falls back to a single text block synthesised from flat text when a record
- * has no structured blocks yet (e.g. an optimistic user message that hasn't
- * been promoted to the server cx_message id).
- */
-function recordsToMessages(
-  records: MessageRecord[],
-): Array<{ role: string; content: unknown }> {
-  return records.map((record) => {
-    const blocks = extractContentBlocks(record);
-    if (blocks.length > 0) {
-      return { role: record.role, content: blocks };
-    }
-    const text = extractFlatText(record);
-    return {
-      role: record.role,
-      content: [{ type: "text", text }],
-    };
-  });
-}
 
 /**
  * Extracts plain text from a system message's content field. Agent definition

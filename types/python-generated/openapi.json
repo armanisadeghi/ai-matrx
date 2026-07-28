@@ -46368,6 +46368,14 @@
             "title": "Allow Context Create",
             "default": false
           },
+          "prior_messages": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessageInput"
+            },
+            "type": "array",
+            "title": "Prior Messages",
+            "default": []
+          },
           "is_version": {
             "type": "boolean",
             "title": "Is Version",

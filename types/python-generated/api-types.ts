@@ -16829,6 +16829,11 @@ export interface components {
              */
             allow_context_create?: boolean;
             /**
+             * Prior Messages
+             * @default []
+             */
+            prior_messages?: components["schemas"]["ChatMessageInput"][];
+            /**
              * Is Version
              * @default false
              */

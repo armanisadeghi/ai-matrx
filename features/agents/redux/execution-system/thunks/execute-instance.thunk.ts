@@ -79,6 +79,7 @@ import {
 } from "../active-requests/active-requests.slice";
 import { addOptimisticUserMessage } from "../messages/messages.slice";
 import { selectMessageCount } from "../messages/messages.selectors";
+import { selectWireTranscript } from "../utils/wire-transcript";
 import { v4 as uuidv4 } from "uuid";
 import {
   runAiStream,
@@ -654,19 +655,30 @@ export const executeInstance = createAsyncThunk<
       const baseUrl = backend.baseUrl;
       const headers = backend.headers;
 
-      // Multi-turn routing: if there's any prior history (committed turns from a
-      // previous send or rehydrated from the database), continue via the
-      // /conversations/{id} endpoint. Otherwise start a fresh agent run via
+      // Multi-turn routing: a PERSISTED conversation with prior history
+      // continues via /conversations/{id}; everything else starts at
       // /agents/{id}. We read from the pre-dispatch `state` snapshot captured
       // at the top of this thunk, NOT `getState()`, so the optimistic user
       // message we just added above doesn't flip a fresh turn-1 into a
       // continuation.
-      const isContinuation = selectMessageCount(conversationId)(state) > 0;
+      const hasPriorTurns = selectMessageCount(conversationId)(state) > 0;
 
       // Ephemeral conversations stream without writing any cx_* rows. The
       // client id still goes on the wire (correlation); `store:false` is what
       // keeps the server from writing anything.
       const isEphemeral = instance.isEphemeral === true;
+
+      // An ephemeral conversation has NO server row, so it can NEVER continue
+      // via /ai/conversations/{id} — that route requires the row and 404s.
+      // Every ephemeral turn re-enters /ai/agents/{id}; the server owns the
+      // agent, and we replay the transcript as `prior_messages` (read from the
+      // PRE-dispatch snapshot, so this turn's optimistic user bubble is
+      // excluded — it travels as user_input).
+      const isContinuation = hasPriorTurns && !isEphemeral;
+      const priorMessages =
+        isEphemeral && hasPriorTurns
+          ? selectWireTranscript(state, conversationId)
+          : undefined;
 
       // (Optimistic user bubble + request status were dispatched up-front,
       // before the tool-injection await, so the message renders in the column
@@ -765,10 +777,12 @@ export const executeInstance = createAsyncThunk<
           ...(payload.memory_model && { memory_model: payload.memory_model }),
           ...(payload.memory_scope && { memory_scope: payload.memory_scope }),
           ...(pendingBypass && { cache_bypass: pendingBypass }),
-          ...(isEphemeral && { store: false }),
+          // No `store` here: this branch is persisted-only by construction
+          // (isContinuation excludes ephemeral), and TypeScript proves it —
+          // an ephemeral run can never reach /ai/conversations/{id}.
         };
       } else {
-        // Turn 1: POST /ai/agents/{id}
+        // Turn 1, or ANY turn of an ephemeral run: POST /ai/agents/{id}
         //
         // Agent-vs-version routing: when the instance was launched from a
         // version-pinned shortcut/app (`initialAgentVersionId` set), we
@@ -788,6 +802,7 @@ export const executeInstance = createAsyncThunk<
         routedPayload = {
           ...payload,
           ...buildAgentStartLifecycleFields(conversationId, isEphemeral),
+          ...(priorMessages?.length && { prior_messages: priorMessages }),
           ...(pinnedVersionId && { is_version: true }),
           ...(pendingBypass && { cache_bypass: pendingBypass }),
         } as Record<string, unknown>;
