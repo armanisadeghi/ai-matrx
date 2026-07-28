@@ -44,7 +44,8 @@ export type ShellNavPanelActionId =
   | "open-pick-lists-panel"
   | "open-preferences-panel"
   | "open-json-truncator-panel"
-  | "open-character-counter-panel";
+  | "open-character-counter-panel"
+  | "open-crm-manager-panel";
 
 export interface NavWindowPanelActionDef {
   tileId: string;
@@ -261,6 +262,12 @@ export const NAV_WINDOW_PANEL_ACTIONS: Record<
     label: "Character Counter Window",
     iconName: NAV_WINDOW_PANEL_ICON,
     href: "/free/character-counter",
+  },
+  "open-crm-manager-panel": {
+    tileId: "tile.crm-manager",
+    label: "CRM Manager Window",
+    iconName: NAV_WINDOW_PANEL_ICON,
+    href: "/crm",
   },
 };
 

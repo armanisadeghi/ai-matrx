@@ -36,6 +36,8 @@ export type ShellNavActionId =
   | "create-document"
   | "create-workbook"
   | "create-picklist"
+  | "create-crm-person"
+  | "create-crm-company"
   | "manage-favorites";
 
 export const DEFAULT_ADMIN_SURFACES: AdminNavSurface[] = [
@@ -836,6 +838,51 @@ export const primaryNavItems: ShellNavItem[] = [
         href: "/files/all",
         iconName: NAV_WINDOW_PANEL_ICON,
         panelAction: "open-file-upload-panel",
+      },
+    ],
+  },
+  {
+    label: "CRM",
+    href: "/crm",
+    iconName: "Users",
+    section: "primary",
+    profileMenu: false,
+    dashboard: false,
+    description: "Manage people, companies, and their contact history",
+    color: "teal",
+    guestHidden: true,
+    children: [
+      {
+        label: "People & Companies",
+        href: "/crm",
+        iconName: "Users",
+        description:
+          "Manage people, companies, contact methods, and relationship history",
+        color: "teal",
+        profileMenu: true,
+        dashboard: true,
+        guestHidden: true,
+      },
+      {
+        label: "CRM Manager Window",
+        href: "/crm",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-crm-manager-panel",
+        guestHidden: true,
+      },
+      {
+        label: "New Person",
+        href: "/crm",
+        iconName: "Plus",
+        action: "create-crm-person",
+        guestHidden: true,
+      },
+      {
+        label: "New Company",
+        href: "/crm",
+        iconName: "Plus",
+        action: "create-crm-company",
+        guestHidden: true,
       },
     ],
   },

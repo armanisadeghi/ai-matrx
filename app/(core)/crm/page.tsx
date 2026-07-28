@@ -3,6 +3,8 @@ import { Contact } from "lucide-react";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { CrmListPage } from "@/features/crm/components/CrmListPage";
+import { CRM_SURFACE_NAME } from "@/features/surfaces/manifests/crm.manifest";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 
 /**
  * /crm — the CRM entry list: People and Companies (crm.party), table-first,
@@ -21,7 +23,9 @@ export default async function CrmRoute() {
       <PageHeader>
         <div className="flex w-full min-w-0 items-center gap-2 px-1">
           <Contact className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="text-sm font-semibold text-foreground">CRM</span>
+          <span className="text-sm font-semibold text-foreground">
+            {getSurfaceDisplayLabel(CRM_SURFACE_NAME)}
+          </span>
         </div>
       </PageHeader>
       <CrmListPage />

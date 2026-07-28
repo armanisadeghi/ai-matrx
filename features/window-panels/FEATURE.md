@@ -40,6 +40,11 @@ lib/redux/slices/
 
 ## Change Log
 
+- 2026-07-28 — Added the CRM window pair: `crmManagerWindow` hosts the full
+  scoped route experience, while `crmCreatePartyWindow` hosts the shared
+  person/company capture core. Both use the canonical overlay IDs, lazy
+  controller render blocks, metadata/catalogue entries, typed openers,
+  adaptive mobile presentation, and Tools-grid launch paths.
 - 2026-07-24 — Fixed the platform-wide narrow-window drag failure: pointer resize now honors each `WindowPanel`'s declared `minWidth` / `minHeight` instead of shrinking every window to the hook's 180×80 fallback, which could let header control clusters consume the entire draggable title bar.
 - 2026-07-23 — Added `drillDeckContextWindow`, the compact Surface-A sibling to the full Miller `contextSwitcherWindow`. Both canonical context selectors now have standard WindowPanel and adaptive popover hosts; the Drill Deck window uses the shared active-context engine, canonical content-only body slot, mobile drawer metadata, typed opener, lazy controller block, and Tools-grid launcher.
 - 2026-07-20 — Reconnected refresh preservation as a local-first, tab-scoped workspace cache. Exact `(overlayId, instanceId)` identity, staged lazy restores, close tombstones, serialized writes, viewport/tray normalization, account isolation, bounded JSON allowlists, and synchronous pagehide/close mirrors replace the disconnected `window_sessions` manager. Preservation is default-deny per audited registry entry; screenshots remain memory-only.

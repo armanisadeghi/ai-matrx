@@ -58,6 +58,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/notes", surface: "matrx-user/notes" },
   { prefix: "/messages", surface: "matrx-user/messages" },
   { prefix: "/tasks", surface: "matrx-user/tasks" },
+  { prefix: "/crm", surface: "matrx-user/crm" },
   // Only the my-cloud tab renders real image rows; the other /images
   // routes are static explainers/stubs and deliberately map to nothing.
   { prefix: "/images/my-cloud", surface: "matrx-user/images" },
@@ -189,7 +190,11 @@ function resolveMarketingSurface(stripped: string): string | null {
         return "matrx-user/marketing-page";
       }
       // Crawl detail (+ urls/logs/snapshots/links/reports subtree).
-      if (vertical === "crawls" && segments.length >= 7 && segments[6] !== "new") {
+      if (
+        vertical === "crawls" &&
+        segments.length >= 7 &&
+        segments[6] !== "new"
+      ) {
         return "matrx-user/marketing-crawl";
       }
       return (

@@ -377,6 +377,14 @@ const CreatorHubWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/creator/CreatorHubWindow"),
   { ssr: false },
 );
+const CrmManagerWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/crm/CrmManagerWindow"),
+  { ssr: false },
+);
+const CrmCreatePartyWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/crm/CrmCreatePartyWindow"),
+  { ssr: false },
+);
 const CodeEditorWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/code/CodeEditorWindow").then(
@@ -1064,6 +1072,12 @@ export default function OverlayController() {
       selectIsOverlayOpen(s, "drillDeckContextWindow"),
     ),
     creatorHub: useAppSelector((s) => selectIsOverlayOpen(s, "creatorHub")),
+    crmManagerWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "crmManagerWindow"),
+    ),
+    crmCreatePartyWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "crmCreatePartyWindow"),
+    ),
     cropStudioWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "cropStudioWindow"),
     ),
@@ -1392,6 +1406,12 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     creatorHub: useAppSelector((s) =>
       selectOverlayData(s, "creatorHub"),
+    ) as Record<string, unknown> | null,
+    crmManagerWindow: useAppSelector((s) =>
+      selectOverlayData(s, "crmManagerWindow"),
+    ) as Record<string, unknown> | null,
+    crmCreatePartyWindow: useAppSelector((s) =>
+      selectOverlayData(s, "crmCreatePartyWindow"),
     ) as Record<string, unknown> | null,
     cropStudioWindow: useAppSelector((s) =>
       selectOverlayData(s, "cropStudioWindow"),
@@ -2939,6 +2959,38 @@ export default function OverlayController() {
               typeof data?.initialTab === "string"
                 ? (data.initialTab as CreatorHubTabId)
                 : undefined
+            }
+          />
+        );
+      })()}
+
+      {/* crmManagerWindow */}
+      {isOpenById.crmManagerWindow ? (
+        <CrmManagerWindow
+          isOpen
+          onClose={() =>
+            dispatch(closeOverlay({ overlayId: "crmManagerWindow" }))
+          }
+        />
+      ) : null}
+
+      {/* crmCreatePartyWindow */}
+      {(() => {
+        if (!isOpenById.crmCreatePartyWindow) return null;
+        const data = dataById.crmCreatePartyWindow;
+        const initialKind =
+          data?.initialKind === "person" || data?.initialKind === "organization"
+            ? data.initialKind
+            : undefined;
+        return (
+          <CrmCreatePartyWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "crmCreatePartyWindow" }))
+            }
+            initialKind={initialKind}
+            initialOrgId={
+              typeof data?.initialOrgId === "string" ? data.initialOrgId : null
             }
           />
         );

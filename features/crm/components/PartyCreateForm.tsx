@@ -1,46 +1,46 @@
 "use client";
 
-// features/crm/components/NewPartyDialog.tsx
-//
-// Create a person or a company. Email/phone are optional quick-adds — each
-// one runs the canonical find-or-create-medium → link flow (never a column
-// on the party; that is the failure this schema exists to prevent).
-
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "@/lib/toast";
 import { Building2, User } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  CRM_CREATE_PARTY_SURFACE_NAME,
+  createCrmCreatePartyScope,
+  crmCreatePartyManifest,
+} from "@/features/surfaces/manifests/crm-create-party.manifest";
+import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
 import { addContactPoint, createParty } from "../service";
 import type { PartyKind } from "../types";
 
-interface Props {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  orgId: string | null;
-  defaultKind?: PartyKind;
-  onCreated?: () => void;
+const LABELS = surfaceValueLabels(crmCreatePartyManifest);
+
+export interface PartyCreateFormProps {
+  initialKind?: PartyKind;
+  initialOrgId?: string | null;
+  onCancel: () => void;
+  onCreated: (partyId: string) => void;
 }
 
-export function NewPartyDialog({
-  open,
-  onOpenChange,
-  orgId,
-  defaultKind = "person",
+/**
+ * Canonical CRM party capture core. Presentation shells (currently the
+ * WindowPanel) own close/navigation; this core owns the live draft and writes.
+ */
+export function PartyCreateForm({
+  initialKind = "person",
+  initialOrgId,
+  onCancel,
   onCreated,
-}: Props) {
-  const router = useRouter();
-  const [kind, setKind] = useState<PartyKind>(defaultKind);
+}: PartyCreateFormProps) {
+  const effectiveOrgId = useAppSelector(selectEffectiveOrganizationId);
+  const orgId = initialOrgId ?? effectiveOrgId;
+  const [kind, setKind] = useState<PartyKind>(initialKind);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -54,15 +54,17 @@ export function NewPartyDialog({
     kind === "person"
       ? [firstName.trim(), lastName.trim()].filter(Boolean).join(" ")
       : companyName.trim();
-
-  const reset = () => {
-    setFirstName("");
-    setLastName("");
-    setCompanyName("");
-    setJobTitle("");
-    setDomain("");
-    setEmail("");
-    setPhone("");
+  const formValid = Boolean(orgId && displayName);
+  const partyDraft = {
+    party_kind: kind,
+    display_name: displayName,
+    first_name: firstName,
+    last_name: lastName,
+    company_name: companyName,
+    job_title: jobTitle,
+    primary_domain: domain,
+    email,
+    phone,
   };
 
   const submit = async () => {
@@ -71,9 +73,12 @@ export function NewPartyDialog({
       return;
     }
     if (!displayName) {
-      toast.error(kind === "person" ? "A name is required" : "A company name is required");
+      toast.error(
+        kind === "person" ? "A name is required" : "A company name is required",
+      );
       return;
     }
+
     setSaving(true);
     try {
       const party = await createParty({
@@ -86,45 +91,36 @@ export function NewPartyDialog({
         primaryDomain: kind === "organization" ? domain : undefined,
       });
 
-      // Quick-add contact methods — each one is medium-first, then the link.
       const contactErrors: string[] = [];
-      if (email.trim()) {
+      for (const entry of [
+        { channel: "email" as const, value: email },
+        { channel: "phone" as const, value: phone },
+      ]) {
+        if (!entry.value.trim()) continue;
         try {
           await addContactPoint({
             partyId: party.id,
             orgId,
-            channel: "email",
-            value: email,
+            channel: entry.channel,
+            value: entry.value,
             makePrimary: true,
           });
-        } catch (e) {
-          contactErrors.push(e instanceof Error ? e.message : String(e));
+        } catch (error) {
+          contactErrors.push(
+            error instanceof Error ? error.message : String(error),
+          );
         }
       }
-      if (phone.trim()) {
-        try {
-          await addContactPoint({
-            partyId: party.id,
-            orgId,
-            channel: "phone",
-            value: phone,
-            makePrimary: true,
-          });
-        } catch (e) {
-          contactErrors.push(e instanceof Error ? e.message : String(e));
-        }
-      }
+
       for (const message of contactErrors) {
         toast.error(`Record created, but a contact method failed: ${message}`);
       }
-
       toast.success(`${displayName} created`);
-      onCreated?.();
-      reset();
-      onOpenChange(false);
-      router.push(`/crm/${party.id}`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to create record");
+      onCreated(party.id);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to create record",
+      );
     } finally {
       setSaving(false);
     }
@@ -135,7 +131,7 @@ export function NewPartyDialog({
       type="button"
       onClick={() => setKind(value)}
       className={cn(
-        "inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md border text-xs font-medium transition-colors",
+        "inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-md border text-xs font-medium transition-colors",
         kind === value
           ? "border-primary bg-primary text-primary-foreground"
           : "border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -147,15 +143,20 @@ export function NewPartyDialog({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {kind === "person" ? "New person" : "New company"}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-3">
+    <SurfaceRuntimeProvider
+      surfaceName={CRM_CREATE_PARTY_SURFACE_NAME}
+      getScope={() =>
+        createCrmCreatePartyScope({
+          organization_id: orgId ?? undefined,
+          ...partyDraft,
+          party_draft: partyDraft,
+          form_valid: formValid,
+          is_saving: saving,
+        })
+      }
+    >
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
           <div className="flex gap-2">
             {kindButton("person", "Person", User)}
             {kindButton("organization", "Company", Building2)}
@@ -166,35 +167,38 @@ export function NewPartyDialog({
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label htmlFor="crm-first" className="text-xs">
-                    First name
+                    {LABELS.first_name}
                   </Label>
                   <Input
                     id="crm-first"
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    onChange={(event) => setFirstName(event.target.value)}
                     autoFocus
+                    data-surface-value="first_name"
                   />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="crm-last" className="text-xs">
-                    Last name
+                    {LABELS.last_name}
                   </Label>
                   <Input
                     id="crm-last"
                     value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    onChange={(event) => setLastName(event.target.value)}
+                    data-surface-value="last_name"
                   />
                 </div>
               </div>
               <div className="space-y-1">
                 <Label htmlFor="crm-title" className="text-xs">
-                  Job title
+                  {LABELS.job_title}
                 </Label>
                 <Input
                   id="crm-title"
                   value={jobTitle}
-                  onChange={(e) => setJobTitle(e.target.value)}
+                  onChange={(event) => setJobTitle(event.target.value)}
                   placeholder="Optional"
+                  data-surface-value="job_title"
                 />
               </div>
             </>
@@ -202,24 +206,26 @@ export function NewPartyDialog({
             <>
               <div className="space-y-1">
                 <Label htmlFor="crm-company" className="text-xs">
-                  Company name
+                  {LABELS.company_name}
                 </Label>
                 <Input
                   id="crm-company"
                   value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
+                  onChange={(event) => setCompanyName(event.target.value)}
                   autoFocus
+                  data-surface-value="company_name"
                 />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="crm-domain" className="text-xs">
-                  Domain
+                  {LABELS.primary_domain}
                 </Label>
                 <Input
                   id="crm-domain"
                   value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
+                  onChange={(event) => setDomain(event.target.value)}
                   placeholder="acme.com (optional)"
+                  data-surface-value="primary_domain"
                 />
               </div>
             </>
@@ -228,45 +234,47 @@ export function NewPartyDialog({
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <Label htmlFor="crm-email" className="text-xs">
-                Email
+                {LABELS.email}
               </Label>
               <Input
                 id="crm-email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(event) => setEmail(event.target.value)}
                 placeholder="Optional"
+                data-surface-value="email"
               />
             </div>
             <div className="space-y-1">
               <Label htmlFor="crm-phone" className="text-xs">
-                Phone
+                {LABELS.phone}
               </Label>
               <Input
                 id="crm-phone"
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(event) => setPhone(event.target.value)}
                 placeholder="+1 310 555 1234"
+                data-surface-value="phone"
               />
             </div>
           </div>
         </div>
 
-        <DialogFooter>
+        <div className="flex shrink-0 justify-end gap-2 border-t border-border/60 bg-muted/20 px-4 py-2">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onOpenChange(false)}
+            onClick={onCancel}
             disabled={saving}
           >
             Cancel
           </Button>
-          <Button size="sm" onClick={submit} disabled={saving || !displayName}>
-            {saving ? "Creating…" : "Create"}
+          <Button size="sm" onClick={submit} disabled={saving || !formValid}>
+            {saving ? "Creating…" : "Create record"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </SurfaceRuntimeProvider>
   );
 }

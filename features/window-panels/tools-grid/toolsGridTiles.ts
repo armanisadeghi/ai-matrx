@@ -37,6 +37,7 @@ import {
   Building2,
   CheckSquare,
   Clapperboard,
+  Contact,
   Cpu,
   Crop,
   Crown,
@@ -746,6 +747,22 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     category: "dupes",
     gate: "admin",
     overlayId: "quickTasksWindow",
+  },
+  {
+    id: "tile.crm-manager",
+    label: "CRM Manager",
+    icon: Contact,
+    category: "dupes",
+    gate: "admin",
+    overlayId: "crmManagerWindow",
+  },
+  {
+    id: "tile.crm-create-party",
+    label: "Create CRM Record",
+    icon: Contact,
+    category: "general",
+    overlayId: "crmCreatePartyWindow",
+    seedData: () => ({ initialKind: "person", initialOrgId: null }),
   },
 
   // ── Creator ──────────────────────────────────────────────────────────────

@@ -330,6 +330,16 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  crmManagerWindow: {
+    label: "CRM Manager",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  crmCreatePartyWindow: {
+    label: "Create CRM Record",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   cropStudioWindow: {
     label: "Crop Studio Window",
     instanceMode: "singleton",

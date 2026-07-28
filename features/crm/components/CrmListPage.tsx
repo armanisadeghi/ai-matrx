@@ -12,7 +12,6 @@
 //     query (search, filters, page, scope) deliberately does not
 //   * ONE "…" menu per row carrying every record action
 
-import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { MoreVertical, Plus, UserPlus, Building2, Contact } from "lucide-react";
@@ -41,7 +40,12 @@ import type {
 } from "../types";
 import { CRM_LIST_SCOPES, DATE_BUCKETS } from "../types";
 import { PARTY_COLUMNS } from "./columns";
-import { NewPartyDialog } from "./NewPartyDialog";
+import { useOpenCrmCreatePartyWindow } from "@/features/overlays/openers/crmCreatePartyWindow";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  CRM_SURFACE_NAME,
+  createCrmScope,
+} from "@/features/surfaces/manifests/crm.manifest";
 
 const SURFACE_KEY = "crm-parties";
 const SURFACE_DEFAULTS = {
@@ -103,26 +107,27 @@ function toTableFilters(filters: PartyListFilters): ColumnFiltersState {
   return out;
 }
 
-export function CrmListPage() {
+export interface CrmListPageProps {
+  presentation?: "route" | "window";
+  surfaceName?: string;
+}
+
+export function CrmListPage({
+  presentation = "route",
+  surfaceName = CRM_SURFACE_NAME,
+}: CrmListPageProps) {
   const router = useRouter();
+  const openCreateParty = useOpenCrmCreatePartyWindow();
   const { prefs, setPrefs } = useListViewPrefs(SURFACE_KEY, SURFACE_DEFAULTS);
 
-  const sortOpts = useMemo(
-    () => ({
-      sort: prefs.sort,
-      direction: prefs.direction,
-      pageSize: prefs.pageSize,
-    }),
-    [prefs.sort, prefs.direction, prefs.pageSize],
-  );
-
-  const list = usePartyList(sortOpts);
+  const list = usePartyList({
+    sort: prefs.sort,
+    direction: prefs.direction,
+    pageSize: prefs.pageSize,
+  });
   // New records land in the active org (falls back to the personal org while
   // none is explicitly selected). Access never depends on it — only stamping.
   const effectiveOrgId = useAppSelector(selectEffectiveOrganizationId);
-  const [newOpen, setNewOpen] = useState(false);
-  const [newKind, setNewKind] = useState<PartyKind>("person");
-
   const openRow = (row: PartyListRow) => router.push(`/crm/${row.id}`);
 
   const menuFor = (row: PartyListRow): (() => ItemMenuConfig) => {
@@ -173,9 +178,7 @@ export function CrmListPage() {
                   list.removeRow(row.id);
                   toast.success(`${row.display_name} deleted`);
                 } catch (e) {
-                  toast.error(
-                    e instanceof Error ? e.message : "Delete failed",
-                  );
+                  toast.error(e instanceof Error ? e.message : "Delete failed");
                 }
               },
             },
@@ -206,8 +209,14 @@ export function CrmListPage() {
         variant="outline"
         className="h-7 gap-1 px-2 text-xs"
         onClick={() => {
-          setNewKind("organization");
-          setNewOpen(true);
+          openCreateParty({
+            initialKind: "organization",
+            initialOrgId:
+              list.query.scope.kind === "orgs" &&
+              list.query.scope.organizationId
+                ? list.query.scope.organizationId
+                : effectiveOrgId,
+          });
         }}
       >
         <Building2 className="h-3.5 w-3.5" />
@@ -217,8 +226,14 @@ export function CrmListPage() {
         size="sm"
         className="h-7 gap-1 px-2 text-xs"
         onClick={() => {
-          setNewKind("person");
-          setNewOpen(true);
+          openCreateParty({
+            initialKind: "person",
+            initialOrgId:
+              list.query.scope.kind === "orgs" &&
+              list.query.scope.organizationId
+                ? list.query.scope.organizationId
+                : effectiveOrgId,
+          });
         }}
       >
         <UserPlus className="h-3.5 w-3.5" />
@@ -228,133 +243,158 @@ export function CrmListPage() {
   );
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      {/* Static interactive chrome must clear the glass header; only the list
-          body scrolls behind it. Never a hardcoded pt-12. */}
-      <div className="shrink-0 px-3 pt-[calc(var(--shell-header-h)+0.375rem)]">
-        <div className="flex flex-wrap items-center gap-2">
-          <BrowseScopeTabs
-            scope={list.query.scope}
-            scopes={CRM_LIST_SCOPES}
-            counts={list.counts}
-            onChange={(scope) => list.setQuery({ scope })}
-          />
-          <div className="ml-auto">{newButtons}</div>
-        </div>
-        {list.error && (
-          <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
-            {list.error}
-          </div>
-        )}
-      </div>
-
-      <div className="min-h-0 flex-1 px-3 pb-2 pt-2">
-        <MatrxDataTable<PartyListRow>
-          data={list.rows}
-          columns={PARTY_COLUMNS}
-          getRowId={(row) => row.id}
-          isLoading={list.isLoading}
-          isFetching={list.isFetching}
-          zebra
-          pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}
+    <SurfaceRuntimeProvider
+      surfaceName={surfaceName}
+      getScope={() =>
+        createCrmScope({
+          scope_kind: list.query.scope.kind,
+          selected_organization_id:
+            list.query.scope.kind === "orgs"
+              ? (list.query.scope.organizationId ?? undefined)
+              : undefined,
+          search_query: list.query.search,
+          party_kind_filter: list.query.kind,
+          column_filters: list.query.filters,
+          sort_key: prefs.sort,
+          sort_direction: prefs.direction,
+          page_number: list.query.page,
+          page_size: prefs.pageSize,
+          visible_records: list.rows,
+          visible_record_ids: list.rows.map((row) => row.id),
+          visible_record_count: list.rows.length,
+          total_record_count: list.total,
+          scope_counts: list.counts,
+          available_organizations: Object.entries(list.ctx?.orgNames ?? {}).map(
+            ([id, name]) => ({ id, name }),
+          ),
+          is_loading: list.isLoading || list.isFetching,
+          load_error: list.error ?? undefined,
+        })
+      }
+    >
+      <div className="flex h-full flex-col overflow-hidden">
+        {/* Static interactive chrome must clear the glass header; only the list
+            body scrolls behind it. Never a hardcoded pt-12. */}
+        <div
           className={cn(
-            prefs.density === "compact" && "text-xs [&_td]:py-1 [&_th]:py-1",
+            "shrink-0 px-3",
+            presentation === "route"
+              ? "pt-[calc(var(--shell-header-h)+0.375rem)]"
+              : "pt-2",
           )}
-          query={{
-            mode: "controlled",
-            totalItems: list.total,
-            state: {
-              page: list.query.page,
-              pageSize: prefs.pageSize,
-              search: list.query.search,
-              anyOf: "",
-              columnFilters: toTableFilters(list.query.filters),
-              sort: { id: prefs.sort, direction: prefs.direction },
-            },
-            onStateChange: onTableState,
-          }}
-          toolbar={{
-            search: true,
-            searchPlaceholder: "Search name, company, domain, title…",
-            facets: [
-              {
-                type: "button-group",
-                id: "kind",
-                value: list.query.kind,
-                defaultValue: "all",
-                options: [
-                  { value: "all", label: "All" },
-                  {
-                    value: "person",
-                    label: "People",
-                    icon: <Contact className="h-3.5 w-3.5" />,
-                  },
-                  {
-                    value: "organization",
-                    label: "Companies",
-                    icon: <Building2 className="h-3.5 w-3.5" />,
-                  },
-                ],
-                onChange: (value) => {
-                  if (
-                    value === "all" ||
-                    value === "person" ||
-                    value === "organization"
-                  ) {
-                    list.setQuery({ kind: value });
-                  }
-                },
-              },
-            ],
-          }}
-          // Row click opens the record; the "…" menu is the ONE row affordance.
-          detail={{ enabled: false }}
-          window={{ enabled: false }}
-          onRowOpen={openRow}
-          rowActions={(row) => (
-            <ItemMenu config={menuFor(row)} align="end">
-              <button
-                type="button"
-                aria-label={`Actions for ${row.display_name}`}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreVertical className="h-4 w-4" />
-              </button>
-            </ItemMenu>
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <BrowseScopeTabs
+              scope={list.query.scope}
+              scopes={CRM_LIST_SCOPES}
+              counts={list.counts}
+              onChange={(scope) => list.setQuery({ scope })}
+            />
+            <div className="ml-auto">{newButtons}</div>
+          </div>
+          {list.error && (
+            <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+              {list.error}
+            </div>
           )}
-          copy={{
-            label: "CRM record",
-            listLabel: "CRM records",
-            location: "/crm",
-            rowKind: "crm-party",
-            listKind: "crm-party-list",
-            humanRow: (row) =>
-              `${row.display_name} (${row.party_kind === "person" ? "person" : "company"})${row.job_title ? ` — ${row.job_title}` : ""}${row.employer ? ` @ ${row.employer.display_name}` : ""}`,
-            showRow: false,
-            showToolbar: false,
-          }}
-          emptyState={{
-            icon: <Plus className="h-5 w-5" />,
-            title: "No records here",
-            description:
-              "Nothing matches this scope and filter combination. Create the first one.",
-            action: newButtons,
-          }}
-        />
-      </div>
+        </div>
 
-      <NewPartyDialog
-        open={newOpen}
-        onOpenChange={setNewOpen}
-        orgId={
-          list.query.scope.kind === "orgs" && list.query.scope.organizationId
-            ? list.query.scope.organizationId
-            : effectiveOrgId
-        }
-        defaultKind={newKind}
-        onCreated={list.refresh}
-      />
-    </div>
+        <div className="min-h-0 flex-1 px-3 pb-2 pt-2">
+          <MatrxDataTable<PartyListRow>
+            data={list.rows}
+            columns={PARTY_COLUMNS}
+            getRowId={(row) => row.id}
+            isLoading={list.isLoading}
+            isFetching={list.isFetching}
+            zebra
+            pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}
+            className={cn(
+              prefs.density === "compact" && "text-xs [&_td]:py-1 [&_th]:py-1",
+            )}
+            query={{
+              mode: "controlled",
+              totalItems: list.total,
+              state: {
+                page: list.query.page,
+                pageSize: prefs.pageSize,
+                search: list.query.search,
+                anyOf: "",
+                columnFilters: toTableFilters(list.query.filters),
+                sort: { id: prefs.sort, direction: prefs.direction },
+              },
+              onStateChange: onTableState,
+            }}
+            toolbar={{
+              search: true,
+              searchPlaceholder: "Search name, company, domain, title…",
+              facets: [
+                {
+                  type: "button-group",
+                  id: "kind",
+                  value: list.query.kind,
+                  defaultValue: "all",
+                  options: [
+                    { value: "all", label: "All" },
+                    {
+                      value: "person",
+                      label: "People",
+                      icon: <Contact className="h-3.5 w-3.5" />,
+                    },
+                    {
+                      value: "organization",
+                      label: "Companies",
+                      icon: <Building2 className="h-3.5 w-3.5" />,
+                    },
+                  ],
+                  onChange: (value) => {
+                    if (
+                      value === "all" ||
+                      value === "person" ||
+                      value === "organization"
+                    ) {
+                      list.setQuery({ kind: value });
+                    }
+                  },
+                },
+              ],
+            }}
+            // Row click opens the record; the "…" menu is the ONE row affordance.
+            detail={{ enabled: false }}
+            window={{ enabled: false }}
+            onRowOpen={openRow}
+            rowActions={(row) => (
+              <ItemMenu config={menuFor(row)} align="end">
+                <button
+                  type="button"
+                  aria-label={`Actions for ${row.display_name}`}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+              </ItemMenu>
+            )}
+            copy={{
+              label: "CRM record",
+              listLabel: "CRM records",
+              location: "/crm",
+              rowKind: "crm-party",
+              listKind: "crm-party-list",
+              humanRow: (row) =>
+                `${row.display_name} (${row.party_kind === "person" ? "person" : "company"})${row.job_title ? ` — ${row.job_title}` : ""}${row.employer ? ` @ ${row.employer.display_name}` : ""}`,
+              showRow: false,
+              showToolbar: false,
+            }}
+            emptyState={{
+              icon: <Plus className="h-5 w-5" />,
+              title: "No records here",
+              description:
+                "Nothing matches this scope and filter combination. Create the first one.",
+              action: newButtons,
+            }}
+          />
+        </div>
+      </div>
+    </SurfaceRuntimeProvider>
   );
 }

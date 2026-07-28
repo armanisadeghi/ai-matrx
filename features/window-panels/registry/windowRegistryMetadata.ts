@@ -205,6 +205,25 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "quick_tasks" },
   },
 
+  // ── CRM ───────────────────────────────────────────────────────────────────
+  {
+    slug: "crm-manager-window",
+    overlayId: "crmManagerWindow",
+    kind: "window",
+    label: "CRM Manager",
+    defaultData: {},
+    mobilePresentation: "fullscreen",
+  },
+  {
+    slug: "crm-create-party-window",
+    overlayId: "crmCreatePartyWindow",
+    kind: "window",
+    label: "Create CRM Record",
+    defaultData: { initialKind: "person", initialOrgId: null },
+    ephemeral: true,
+    mobilePresentation: "drawer",
+  },
+
   // ── Task Editor ─────────────────────────────────────────────────────────
   {
     slug: "task-editor-window",

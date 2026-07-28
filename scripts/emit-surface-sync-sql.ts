@@ -2,7 +2,8 @@
  * Emit the SQL to mirror ALL_MANIFESTS into the `ui` schema — the complete
  * agent-shell twin of `manifest-sync.service.ts`'s upsert path.
  *
- * Prints, to stdout:
+ * Prints, to stdout (all manifests by default, or only repeated
+ * `--surface <name>` selections):
  *   1. A guard SELECT listing any manifest surfaces missing a ui_surface row
  *      (run it FIRST — seed missing rows before applying the upserts).
  *   2. An upsert for every SurfaceValue (incl. auto_context).
@@ -35,7 +36,43 @@ function sqlStringOrNull(s: string | null | undefined): string {
 }
 
 function main() {
-  const manifests = getAllManifests();
+  const allManifests = getAllManifests();
+  const requestedSurfaceNames = new Set<string>();
+  const args = process.argv.slice(2);
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--surface") {
+      const name = args[index + 1];
+      if (!name || name.startsWith("--")) {
+        throw new Error("--surface requires a surface name");
+      }
+      requestedSurfaceNames.add(name);
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith("--surface=")) {
+      const name = arg.slice("--surface=".length).trim();
+      if (!name) throw new Error("--surface requires a surface name");
+      requestedSurfaceNames.add(name);
+      continue;
+    }
+    throw new Error(`Unknown argument: ${arg}`);
+  }
+
+  const manifests =
+    requestedSurfaceNames.size === 0
+      ? allManifests
+      : allManifests.filter((manifest) =>
+          requestedSurfaceNames.has(manifest.surfaceName),
+        );
+  const unresolvedNames = [...requestedSurfaceNames].filter(
+    (name) => !manifests.some((manifest) => manifest.surfaceName === name),
+  );
+  if (unresolvedNames.length > 0) {
+    throw new Error(
+      `Unknown surface manifest${unresolvedNames.length === 1 ? "" : "s"}: ${unresolvedNames.join(", ")}`,
+    );
+  }
   const surfaceNames = manifests.map((m) => m.surfaceName);
 
   const valueRows: string[] = [];
@@ -95,7 +132,9 @@ function main() {
   console.log(
     `SELECT s.name FROM (VALUES ${surfaceNames
       .map((n) => `(${sqlString(n)})`)
-      .join(", ")}) AS s(name) LEFT JOIN ui.ui_surface u ON u.name = s.name WHERE u.name IS NULL;`,
+      .join(
+        ", ",
+      )}) AS s(name) LEFT JOIN ui.ui_surface u ON u.name = s.name WHERE u.name IS NULL;`,
   );
   console.log("");
   console.log("-- Upsert all manifest values");

@@ -78,6 +78,8 @@ export const OVERLAY_IDS = [
   "drillDeckContextWindow",
   "createProjectWindow",
   "creatorHub",
+  "crmManagerWindow",
+  "crmCreatePartyWindow",
   "cropStudioWindow",
   "curatedIconPickerWindow",
   "dictionarySelectorWindow",

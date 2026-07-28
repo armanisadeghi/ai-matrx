@@ -35,6 +35,7 @@ import { toast } from "@/lib/toast";
 import { useOpenCreateProjectWindow } from "@/features/window-panels/windows/projects/useOpenCreateProjectWindow";
 import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
 import { useOpenFavoritesManagerWindow } from "@/features/overlays/openers/favoritesManagerWindow";
+import { useOpenCrmCreatePartyWindow } from "@/features/overlays/openers/crmCreatePartyWindow";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { isServiceFailure } from "@/features/data-tables/types";
@@ -48,6 +49,7 @@ export function useNavActions(): ShellNavActionHandlers {
   const openCreateProject = useOpenCreateProjectWindow();
   const openPicklistManager = useOpenStructuredListManagerV2Window();
   const openFavoritesManager = useOpenFavoritesManagerWindow();
+  const openCrmCreateParty = useOpenCrmCreatePartyWindow();
 
   return {
     "create-project": () => {
@@ -62,9 +64,8 @@ export function useNavActions(): ShellNavActionHandlers {
       // raises its own error toast on failure (returns null). The war-room
       // engine is the heaviest graph in the app — loaded here, on click only.
       void (async () => {
-        const { createWarRoomSession } = await import(
-          "@/features/war-room/redux/thunks"
-        );
+        const { createWarRoomSession } =
+          await import("@/features/war-room/redux/thunks");
         const session = await dispatch(createWarRoomSession());
         if (session) router.push(`/war-room/${session.id}`);
       })();
@@ -74,9 +75,8 @@ export function useNavActions(): ShellNavActionHandlers {
       // in-page "New Note" button behavior (create-then-open).
       void (async () => {
         try {
-          const { createNewNote } = await import(
-            "@/features/notes/redux/thunks"
-          );
+          const { createNewNote } =
+            await import("@/features/notes/redux/thunks");
           const note = await dispatch(createNewNote({})).unwrap();
           if (note?.id) router.push(`/notes/${note.id}`);
         } catch {
@@ -88,9 +88,8 @@ export function useNavActions(): ShellNavActionHandlers {
       // Mirrors the /documents page "New" button: create a blank cloud doc,
       // then open it.
       void (async () => {
-        const { createDocument } = await import(
-          "@/features/data-tables/document-service"
-        );
+        const { createDocument } =
+          await import("@/features/data-tables/document-service");
         const res = await createDocument({ name: "Untitled document" });
         if (isServiceFailure(res)) {
           toast.error(res.error ?? "Couldn't create the document");
@@ -103,9 +102,8 @@ export function useNavActions(): ShellNavActionHandlers {
       // Mirrors the /workbooks page "New" button: create a blank workbook,
       // then open it.
       void (async () => {
-        const { createWorkbook } = await import(
-          "@/features/data-tables/workbook-service"
-        );
+        const { createWorkbook } =
+          await import("@/features/data-tables/workbook-service");
         const res = await createWorkbook({ name: "Untitled workbook" });
         if (isServiceFailure(res)) {
           toast.error(res.error ?? "Couldn't create the workbook");
@@ -118,6 +116,12 @@ export function useNavActions(): ShellNavActionHandlers {
       // Opens the canonical Pick List manager (browse view) where lists are
       // created and edited.
       openPicklistManager({});
+    },
+    "create-crm-person": () => {
+      openCrmCreateParty({ initialKind: "person" });
+    },
+    "create-crm-company": () => {
+      openCrmCreateParty({ initialKind: "organization" });
     },
     "manage-favorites": () => {
       // Opens the Manage Favorites window (check app areas to pin/unpin).

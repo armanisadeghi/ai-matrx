@@ -1,6 +1,6 @@
 # FEATURE.md — `crm`
 
-**Status:** `db-core live · first UI live at /crm` · **Tier:** `1` · **Last updated:** `2026-07-27`
+**Status:** `db-core live · route + WindowPanels live` · **Tier:** `1` · **Last updated:** `2026-07-28`
 
 ---
 
@@ -23,10 +23,10 @@ first-class. "Company" here means **our users' clients**, never `iam.organizatio
 **A medium is not a contact point.**
 
 - **`crm.contact_medium`** — ONE row per normalized value per org. Owns everything
-  intrinsic to the *value*: verification, MX, bounce type/count, complaint,
+  intrinsic to the _value_: verification, MX, bounce type/count, complaint,
   unsubscribe, DNC state, suppression.
-- **`crm.party_contact_point`** — says *who* uses that medium, *how* (purpose),
-  and *since when*.
+- **`crm.party_contact_point`** — says _who_ uses that medium, _how_ (purpose),
+  and _since when_.
 
 Why: Acme's switchboard is reachable for 40 contacts and `info@acme.com` sits on the
 company plus six people. Storing deliverability per party means a DNC scrub or a hard
@@ -41,17 +41,17 @@ schema exists to prevent.
 
 ## Tables (schema `crm`, live 2026-07-27)
 
-| Table | Variant | Versioned | Holds |
-|---|---|---|---|
-| `party` | entity | ✅ | person or company; identity, curation, per-org stance |
-| `contact_medium` | entity | ❌ | one row per value per org; deliverability + suppression |
-| `party_contact_point` | component of `party` | ❌ | who uses a medium, purpose, validity |
-| `address` | component of `party` | ❌ | structured postal + geo |
-| `affiliation` | component of `party` | ✅ | person ↔ company employment, with dates |
-| `interaction` | component of `party` | ❌ | calls/emails/meetings, planned AND completed |
-| `campaign` | entity | ✅ | a named audience or cold campaign |
-| `campaign_member` | component of `campaign` | ❌ | per-member state, attempts, dialer claim |
-| `party_merge` | component of `party` | ❌ | the exact unmerge record |
+| Table                 | Variant                 | Versioned | Holds                                                   |
+| --------------------- | ----------------------- | --------- | ------------------------------------------------------- |
+| `party`               | entity                  | ✅        | person or company; identity, curation, per-org stance   |
+| `contact_medium`      | entity                  | ❌        | one row per value per org; deliverability + suppression |
+| `party_contact_point` | component of `party`    | ❌        | who uses a medium, purpose, validity                    |
+| `address`             | component of `party`    | ❌        | structured postal + geo                                 |
+| `affiliation`         | component of `party`    | ✅        | person ↔ company employment, with dates                 |
+| `interaction`         | component of `party`    | ❌        | calls/emails/meetings, planned AND completed            |
+| `campaign`            | entity                  | ✅        | a named audience or cold campaign                       |
+| `campaign_member`     | component of `campaign` | ❌        | per-member state, attempts, dialer claim                |
+| `party_merge`         | component of `party`    | ❌        | the exact unmerge record                                |
 
 `party_kind ('person','organization')` is the **only** closed set. Expert, lead,
 vendor, journalist, competitor, customer are **roles** — `platform.categories` rows in
@@ -83,12 +83,12 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
   Partial unique indexes cannot be `DEFERRABLE`, so a naive "set new, clear old" 23505s.
 - **Components inherit org from their parent** via `crm._inherit_parent_org()`
   (trigger `_a_org_from_parent`, named to sort before `_stamp_*`). Without it
-  `_stamp_org_default` derives org from the *creator's personal org* and silently lands
+  `_stamp_org_default` derives org from the _creator's personal org_ and silently lands
   a contact point in a different org than its party.
 - **Merge never destroys anything.** `public.crm_merge_parties` repoints children whose
   move would not collide, records every moved id in `crm.party_merge.moved`, and sets
   `canonical_id` on the loser — which stays live. `crm_unmerge_parties` replays that
-  record exactly. Children that *would* collide stay on the loser on purpose.
+  record exactly. Children that _would_ collide stay on the loser on purpose.
 - **`last_touch_at` is deliberately NOT stored on `party`.** `party` is versioned; a
   cold-call floor would snapshot the whole row into `history.row_versions` on every
   dial. Derive it from `crm.interaction` (indexed `(party_id, occurred_at desc)`).
@@ -96,7 +96,7 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
   `history.row_versions`, `platform.comments`, and `platform.user_entity_state`. A
   purge that only deletes the live row is not a purge.
 - **Category dimensions are seeded `visibility='public'`.** At `internal` under the
-  system org they are invisible to every customer org (empty pickers) *and* every
+  system org they are invisible to every customer org (empty pickers) _and_ every
   `party → category` edge write fails 42501, because `assoc_add` requires
   `has_access(target,'viewer')`.
 - **`text` + a CHECK, never `char(n)`** for `phone_country` / `country_code`: `char` is
@@ -107,17 +107,31 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
 ## Entry points
 
 **Routes:** `/crm` (list: People + Companies, `app/(core)/crm/page.tsx`) ·
-`/crm/[partyId]` (record page). Both consume `features/crm/`:
+`/crm/[partyId]` (record page) · `/crm/admin` (the feature admin map).
+The main app menu links to the route, opens the manager window, and opens
+person/company capture directly. All consume `features/crm/`:
 
-| File | Role |
-|---|---|
-| `types.ts` | Row aliases derived from `types/database.types.ts` (never hand-mirrored), joined embed shapes, closed vocabularies, `CRM_LIST_SCOPES` |
-| `service.ts` | ALL crm reads/writes — direct `supabase.schema("crm")`, scope predicates (THE VIEW LAW), `normalizeMediumValue`, medium find-or-create, the RPC calls |
-| `hooks/usePartyList.ts` · `hooks/usePartyDetail.ts` | Query state + generation-guarded fetch |
-| `components/CrmListPage.tsx` | List assembly on the canonical entity-list primitives (`MatrxDataTable` controlled, `BrowseScopeTabs`, `useListViewPrefs("crm-parties")`, `ItemMenu`) |
-| `components/record/PartyRecordPage.tsx` | The 360°: identity, contact, addresses, employment (both directions), activity, notes (`platform.comments`), Files/Tasks via `AssociationCardGrid` |
+| File                                                | Role                                                                                                                                                  |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `types.ts`                                          | Row aliases derived from `types/database.types.ts` (never hand-mirrored), joined embed shapes, closed vocabularies, `CRM_LIST_SCOPES`                 |
+| `service.ts`                                        | ALL crm reads/writes — direct `supabase.schema("crm")`, scope predicates (THE VIEW LAW), `normalizeMediumValue`, medium find-or-create, the RPC calls |
+| `hooks/usePartyList.ts` · `hooks/usePartyDetail.ts` | Query state + generation-guarded fetch                                                                                                                |
+| `components/CrmListPage.tsx`                        | List assembly on the canonical entity-list primitives (`MatrxDataTable` controlled, `BrowseScopeTabs`, `useListViewPrefs("crm-parties")`, `ItemMenu`) |
+| `components/PartyCreateForm.tsx`                    | Shared person/company capture core; used by `crmCreatePartyWindow` and writes optional email/phone through the canonical medium/contact-point flow    |
+| `components/record/PartyRecordPage.tsx`             | The 360°: identity, contact, addresses, employment (both directions), activity, notes (`platform.comments`), Files/Tasks via `AssociationCardGrid`    |
+
+**WindowPanels:** `crmManagerWindow` is the full scoped list route inside
+WindowPanel chrome; `crmCreatePartyWindow` is the compact create flow. Both are
+registered through the overlay controller, metadata registry, catalogue,
+Tools-grid, and typed openers.
+
+**UI surfaces:** code-first manifests declare `matrx-user/crm`,
+`matrx-user/crm-manager`, and `matrx-user/crm-create-party`. The route and
+both windows emit live scopes through `SurfaceRuntimeProvider`; DB rows and
+value metadata mirror the manifests.
 
 **Frontend gotchas (paid for once):**
+
 - **Self-join embeds MUST target the FK column** — `employer:primary_employer_party_id(...)`. `party!<fk-name>` and `party!<column>` resolve REVERSE (an array) at runtime; postgrest-js can't infer the column-target form, so the service pins it with `.returns<PartyListRow>()`.
 - List scopes are `mine` / `orgs` / `public` client-side predicates (`created_by` / `organization_id in my orgs` / `visibility='public'`). **`shared` needs a grant reader RPC** — do not fake it with a bare RLS read.
 - `party` + `crm_campaign` are registered in `ENTITY_OVERLAY`
@@ -157,6 +171,11 @@ attachments = `features/files` · tags/stages = `platform.categories` · the 360
 
 ## Change log
 
+- 2026-07-28 — Added CRM to the main app menu with route, manager-window,
+  new-person, and new-company actions. Replaced the route-local dialog with
+  the reusable `PartyCreateForm` inside `crmCreatePartyWindow`, added the
+  route-equivalent `crmManagerWindow`, declared/synced all three UI surfaces,
+  and added `/crm/admin` as the canonical feature map.
 - 2026-07-27 — First UI: `/crm` list (scoped, table-first, server-side
   sort/filter/paging via PostgREST) + `/crm/[partyId]` record page; data layer
   `features/crm/` (types/service/hooks); `party` + `crm_campaign` registry

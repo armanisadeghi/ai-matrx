@@ -134,6 +134,9 @@ import { adminAiModelsManifest } from "./admin-ai-models.manifest";
 import { adminToolRegistryManifest } from "./admin-tool-registry.manifest";
 import { knowledgeManifest } from "./knowledge.manifest";
 import { shapesManifest } from "./shapes.manifest";
+import { crmManifest } from "./crm.manifest";
+import { crmManagerManifest } from "./crm-manager.manifest";
+import { crmCreatePartyManifest } from "./crm-create-party.manifest";
 
 /**
  * Manifests exactly as authored. Do NOT consume directly — generic baselines
@@ -255,6 +258,9 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   adminToolRegistryManifest,
   knowledgeManifest,
   shapesManifest,
+  crmManifest,
+  crmManagerManifest,
+  crmCreatePartyManifest,
 ];
 
 // ---------------------------------------------------------------------------
@@ -459,8 +465,7 @@ function resolveManifest(m: SurfaceManifest): ResolvedSurfaceManifest {
     const parentName = ancestry[i];
     const key = `${RESERVED_GROUP_KEYS.inheritedPrefix}${parentName}`;
     if (!usedGroupKeys.has(key)) continue;
-    const parentLabel =
-      RAW_INDEX.get(parentName)?.label ?? parentName;
+    const parentLabel = RAW_INDEX.get(parentName)?.label ?? parentName;
     groups.push({
       key,
       label: `Inherited from ${parentLabel}`,
