@@ -195,20 +195,25 @@ export function useCmsFoundation(siteDomain: string | null) {
         );
       }
 
-      const [components, assets] = await Promise.all([
+      // `/api/cms/sites` action=list returns a SUMMARY row — no theme_config,
+      // no navigation — despite being typed `ClientSite[]`. Reading them off
+      // the list row silently reported "0 nav entries, no theme" for a site
+      // that has both. Fetch the full row for the ONE site we matched.
+      const [full, components, assets] = await Promise.all([
+        CmsSiteService.getSite(match.id),
         CmsComponentService.listComponents(match.id),
         CmsAssetService.listAssets(match.id),
       ]);
       const active = components.filter((component) => component.is_active);
-      const [navCount, navDetail] = navEntryCount(match.navigation);
-      const themeKeys = isRecord(match.theme_config)
-        ? Object.keys(match.theme_config).length
+      const [navCount, navDetail] = navEntryCount(full.navigation);
+      const themeKeys = isRecord(full.theme_config)
+        ? Object.keys(full.theme_config).length
         : 0;
 
       return {
         linked: true,
         reason: null,
-        cmsSiteName: match.name,
+        cmsSiteName: full.name,
         tokens: themeKeys > 0 ? 1 : 0,
         header: active.filter((c) => c.component_type === "header").length,
         footer: active.filter((c) => c.component_type === "footer").length,
