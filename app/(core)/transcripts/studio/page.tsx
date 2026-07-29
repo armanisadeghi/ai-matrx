@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { createClient } from "@/utils/supabase/server";
 import { listSessionsServer } from "@/features/transcript-studio/service/studioService";
 import { StudioHydrator } from "@/features/transcript-studio/route/StudioHydrator";
@@ -21,6 +23,13 @@ export default async function TranscriptStudioPage({
   searchParams,
 }: PageProps) {
   const { session: initialSessionId } = await searchParams;
+
+  // Guests bounce to the public `/transcripts` landing (same convention as
+  // the processor page) — the studio workspace has nothing to show them.
+  const { isAuthenticated } = await getServerAuth();
+  if (!isAuthenticated) {
+    redirect("/transcripts");
+  }
 
   const supabase = await createClient();
   const cookieStore = await cookies();

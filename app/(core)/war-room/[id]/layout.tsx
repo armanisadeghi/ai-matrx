@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 
@@ -36,10 +38,17 @@ export async function generateMetadata({
   });
 }
 
-export default function WarRoomSessionLayout({
+export default async function WarRoomSessionLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Guests bounce server-side to the /war-room marketing landing — the room
+  // shell can only hydrate for an authenticated user and would otherwise show
+  // a broken workspace.
+  const { isAuthenticated } = await getServerAuth();
+  if (!isAuthenticated) {
+    redirect("/war-room");
+  }
   return children;
 }

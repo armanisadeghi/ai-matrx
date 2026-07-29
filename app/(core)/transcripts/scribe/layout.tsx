@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { listSessionsServer } from "@/features/transcript-studio/service/studioService";
 import { StudioHydrator } from "@/features/transcript-studio/route/StudioHydrator";
 import { GlobalRecordingIndicator } from "@/features/transcript-studio/components/recording/GlobalRecordingIndicator";
@@ -27,6 +29,13 @@ export default async function ScribeLayout({
 }: {
   children: ReactNode;
 }) {
+  // Guests bounce to the public `/transcripts` landing (same convention as
+  // the processor page) — Scribe is a signed-in capture workspace.
+  const { isAuthenticated } = await getServerAuth();
+  if (!isAuthenticated) {
+    redirect("/transcripts");
+  }
+
   const supabase = await createClient();
 
   let seeds: Awaited<ReturnType<typeof listSessionsServer>> = [];
