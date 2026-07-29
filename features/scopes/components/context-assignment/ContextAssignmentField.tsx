@@ -89,10 +89,6 @@ import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayNa
 import { useOpenScopeEditWindow } from "@/features/overlays/openers/scopeEditWindow";
 import type { OrgNode, ScopeTypeNode } from "@/features/scopes/types";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
-import { createScope } from "@/features/agent-context/redux/scope/scopesSlice";
-import { quickCreateTask } from "@/features/tasks/services/taskService";
-import { createProject } from "@/features/projects/service";
-import { generateProjectSlug } from "@/features/projects/types";
 
 /** Sentinel org value: no org filter — show / span every organization.
  *  Default for assignment mode unless a `defaultOrganizationId` is passed. */
@@ -1131,6 +1127,8 @@ export function ContextAssignmentField({
     if (!v || !targetOrgId) return;
     if (writeMode === "live") {
       try {
+        const { createScope } =
+          await import("@/features/agent-context/redux/scope/scopesSlice");
         const created = await dispatch(
           createScope({ org_id: targetOrgId, type_id: typeId, name: v }),
         ).unwrap();
@@ -1161,6 +1159,8 @@ export function ContextAssignmentField({
     if (!v) return;
     if (writeMode === "live") {
       try {
+        const { quickCreateTask } =
+          await import("@/features/tasks/services/taskService");
         const t = await quickCreateTask(v);
         if (!t) throw new Error("Task creation returned nothing");
         invalidateAssignableData("tasks");
@@ -1205,6 +1205,9 @@ export function ContextAssignmentField({
     const targetOrgId = org?.id ?? [...selOrgs][0] ?? null;
     if (writeMode === "live") {
       try {
+        const { createProject } = await import("@/features/projects/service");
+        const { generateProjectSlug } =
+          await import("@/features/projects/types");
         const result = await createProject({
           name: v,
           slug: generateProjectSlug(v),

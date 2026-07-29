@@ -53,7 +53,6 @@ import {
   addTab,
   setNoteField,
 } from "./slice";
-import { permanentlyDeleteNote, emptyTrash } from "../service/notesService";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -686,6 +685,7 @@ export const restoreNote = createAsyncThunk<void, string>(
 export const permanentlyDeleteNoteThunk = createAsyncThunk<void, string>(
   "notes/permanentlyDeleteNote",
   async (noteId, { dispatch }) => {
+    const { permanentlyDeleteNote } = await import("../service/notesService");
     await permanentlyDeleteNote(noteId);
     dispatch(removeNote(noteId));
   },
@@ -697,6 +697,7 @@ export const permanentlyDeleteNoteThunk = createAsyncThunk<void, string>(
 export const emptyTrashThunk = createAsyncThunk<number, void>(
   "notes/emptyTrash",
   async (_, { dispatch, getState }) => {
+    const { emptyTrash } = await import("../service/notesService");
     const count = await emptyTrash();
     if (count === 0) return 0;
     const notes = (getState() as RootState).notes?.notes ?? {};
