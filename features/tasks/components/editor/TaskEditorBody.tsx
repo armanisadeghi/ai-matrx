@@ -470,13 +470,13 @@ export function TaskEditorBody({
               onKeyUp={syncDescriptionSelection}
               onMouseUp={syncDescriptionSelection}
               floatingLabel="Description"
-              autoGrow
-              minHeight={compact ? 72 : 120}
-              maxHeight={compact ? 220 : 400}
+              autoGrow={compact}
+              minHeight={compact ? 72 : 240}
+              maxHeight={compact ? 220 : undefined}
               showCopyButton={!compact}
               className={cn(
-                "resize-none border-border/60 bg-card/40 text-sm",
-                compact && "rounded-none border-x-0",
+                "border-border/60 bg-card/40 text-sm",
+                compact && "resize-none rounded-none border-x-0",
               )}
               wrapperClassName="w-full"
               style={{ fontSize: "16px" }}

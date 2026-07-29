@@ -322,6 +322,7 @@ export const ProTextarea = React.forwardRef<
       floatingLabel,
       id: idProp,
       placeholder,
+      style,
       ...props
     },
     ref,
@@ -891,8 +892,11 @@ export const ProTextarea = React.forwardRef<
                 className,
               )}
               style={{
-                minHeight: minHeight ? `${minHeight}px` : undefined,
-                maxHeight: maxHeight ? `${maxHeight}px` : undefined,
+                ...style,
+                minHeight:
+                  minHeight !== undefined ? `${minHeight}px` : style?.minHeight,
+                maxHeight:
+                  maxHeight !== undefined ? `${maxHeight}px` : style?.maxHeight,
               }}
               value={value}
               onChange={onChange}
