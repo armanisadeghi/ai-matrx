@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { KeywordIntelPanel } from "@/features/marketing/seo/keyword/KeywordIntelPanel";
@@ -46,30 +46,49 @@ function KeywordWindowInner({
   initialBrandId,
   initialTab,
 }: Omit<KeywordWindowProps, "isOpen">) {
-  // Live state mirror for persistence — a ref (not state) so the window shell
-  // doesn't re-render on every keystroke/tab switch inside the panel.
-  const stateRef = useRef<{ phrase: string; activeTab: KeywordIntelTab }>({
+  // Debounced state mirror for persistence. State (not a ref) because the
+  // WindowPanel save effect keys on the collector's identity — a ref-backed
+  // collector never re-stages, so a reload would restore a stale phrase/tab.
+  // The debounce keeps the window shell from re-rendering per keystroke.
+  const [persistedState, setPersistedState] = useState<{
+    phrase: string;
+    activeTab: KeywordIntelTab;
+  }>({
     phrase: initialPhrase ?? "",
     activeTab: isKeywordIntelTab(initialTab) ? initialTab : "overview",
   });
+  const stateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleStateChange = useCallback(
     (state: { phrase: string; activeTab: KeywordIntelTab }) => {
-      stateRef.current = state;
+      if (stateTimerRef.current) clearTimeout(stateTimerRef.current);
+      stateTimerRef.current = setTimeout(() => setPersistedState(state), 400);
+    },
+    [],
+  );
+  useEffect(
+    () => () => {
+      if (stateTimerRef.current) clearTimeout(stateTimerRef.current);
     },
     [],
   );
 
   const collectData = useCallback(
     (): Record<string, unknown> => ({
-      phrase: stateRef.current.phrase,
-      activeTab: stateRef.current.activeTab,
+      phrase: persistedState.phrase,
+      activeTab: persistedState.activeTab,
       organizationId: initialOrganizationId ?? "",
       siteId: initialSiteId ?? "",
       pageId: initialPageId ?? "",
       brandId: initialBrandId ?? "",
     }),
-    [initialOrganizationId, initialSiteId, initialPageId, initialBrandId],
+    [
+      persistedState,
+      initialOrganizationId,
+      initialSiteId,
+      initialPageId,
+      initialBrandId,
+    ],
   );
 
   return (

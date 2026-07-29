@@ -65,6 +65,12 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
 
 ## Change Log
 
+- 2026-07-29 — Claude: both keyword windows now preserve/restore across
+  reload — `keywordWindow` (phrase + activeTab + org/site/page/brand scope)
+  and `keywordResearchWindow` (primaryKeyword; never autoRun) gained registry
+  `preservation` entries, and their collectors re-stage on change (debounced
+  state, not ref) so the restored phrase keys the saved org-visible
+  `content_ir.kind_instance` research restore on every reopen.
 - 2026-07-28 — Codex: page-bound research now restores saved hierarchy +
   persisted keyword classification in place, keeps both live phases mounted,
   and adds shared checkbox → supporting-keyword attachment. `KeywordInput`

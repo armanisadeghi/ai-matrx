@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Loader2, Search } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useKeywordResearch } from "@/features/marketing/seo/keyword-research/useKeywordResearch";
@@ -99,18 +99,31 @@ function KeywordResearchWindowInner({
     useKeywordResearch();
   const [explorerOpen, setExplorerOpen] = useState(true);
 
-  // Live keyword mirror for persistence — ref, not state: the window shell
-  // must not re-render per keystroke inside the launcher.
-  const keywordRef = useRef(initialKeyword ?? "");
+  // Debounced keyword mirror for persistence. State (not a ref) because the
+  // WindowPanel save effect keys on the collector's identity — a ref-backed
+  // collector never re-stages, so a reload would restore a stale phrase.
+  // The debounce keeps the window shell from re-rendering per keystroke.
+  const [persistedKeyword, setPersistedKeyword] = useState(initialKeyword ?? "");
+  const keywordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleKeywordChange = useCallback((keyword: string) => {
-    keywordRef.current = keyword;
+    if (keywordTimerRef.current) clearTimeout(keywordTimerRef.current);
+    keywordTimerRef.current = setTimeout(
+      () => setPersistedKeyword(keyword),
+      400,
+    );
   }, []);
+  useEffect(
+    () => () => {
+      if (keywordTimerRef.current) clearTimeout(keywordTimerRef.current);
+    },
+    [],
+  );
   const collectData = useCallback(
     (): Record<string, unknown> => ({
-      primaryKeyword: keywordRef.current,
+      primaryKeyword: persistedKeyword,
       autoRun: false, // a restored window never re-fires the research
     }),
-    [],
+    [persistedKeyword],
   );
 
   const rows = useMemo(() => {

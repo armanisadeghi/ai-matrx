@@ -1243,6 +1243,11 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     defaultData: { primaryKeyword: "", autoRun: false },
     mobilePresentation: "fullscreen",
     urlSync: { key: "keyword_research" },
+    // The phrase keys the durable saved-research restore (org-visible
+    // content_ir.kind_instance) — a reloaded window must come back with the
+    // keyword it was researching. `autoRun` is deliberately NOT preserved:
+    // a restored window never re-fires the paid pipeline.
+    preservation: { dataKeys: ["primaryKeyword"] },
   },
 
   // ── Keyword Intelligence ──────────────────────────────────────────────────
@@ -1258,10 +1263,25 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     label: "Keyword Intelligence",
     defaultData: {
       phrase: "",
+      organizationId: "",
       siteId: "",
       pageId: "",
       brandId: "",
       activeTab: "overview",
+    },
+    // Phrase + scope key every durable read in the panel (saved research,
+    // site performance, ranks) — a reloaded window restores the same dossier,
+    // including the Research tab's saved org-visible artifact. The site
+    // binding always travels with its owning organization.
+    preservation: {
+      dataKeys: [
+        "phrase",
+        "activeTab",
+        "organizationId",
+        "siteId",
+        "pageId",
+        "brandId",
+      ],
     },
     mobilePresentation: "fullscreen",
     urlSync: { key: "keyword" },
