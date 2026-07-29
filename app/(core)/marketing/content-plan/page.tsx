@@ -23,11 +23,17 @@ export default async function ContentPlanListPage({
     redirect("/login?next=/marketing/content-plan");
   }
 
-  // Legacy single-route URLs: /marketing/content-plan?site=<id>&view=<v>
+  // Legacy single-route URLs: /marketing/content-plan?site=<id>&view=<v>.
+  // Whitelist both values — a malformed ?site= falls through to the list
+  // instead of producing a mangled destination URL.
   const params = await searchParams;
   const legacySite = typeof params.site === "string" ? params.site : null;
-  if (legacySite) {
-    const view = typeof params.view === "string" ? `?view=${params.view}` : "";
+  if (legacySite && /^[0-9a-f-]{36}$/i.test(legacySite)) {
+    const VIEWS = ["tree", "table", "map", "entities", "setup"];
+    const view =
+      typeof params.view === "string" && VIEWS.includes(params.view)
+        ? `?view=${params.view}`
+        : "";
     redirect(`/marketing/content-plan/${legacySite}${view}`);
   }
 

@@ -54,6 +54,7 @@ import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
 
 import { planStatusColor } from "../constants";
+import { countBy, formatUpdated, withCounts } from "../utils";
 import { usePlanSiteStats } from "../data/hooks";
 import type { PlanSiteStats } from "../data/service";
 import { useContentPlanSites } from "./ContentPlanHeader";
@@ -93,46 +94,13 @@ function planVertical(settings: MarketingSite["settings"]): string | null {
   return typeof vertical === "string" && vertical.length > 0 ? vertical : null;
 }
 
-function formatUpdated(iso: string | null): string {
-  if (!iso) return "—";
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "—";
-  const sameYear = date.getFullYear() === new Date().getFullYear();
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    ...(sameYear ? {} : { year: "numeric" }),
-  });
-}
 
-function countBy<T>(
-  rows: readonly T[],
-  key: (row: T) => string,
-): Map<string, number> {
-  const counts = new Map<string, number>();
-  for (const row of rows) {
-    const value = key(row);
-    if (!value) continue;
-    counts.set(value, (counts.get(value) ?? 0) + 1);
-  }
-  return counts;
-}
 
-function withCounts(
-  options: Array<{ value: string; label: string }>,
-  counts: ReadonlyMap<string, number>,
-): Array<{ value: string; label: string }> {
-  return options.map((option) => ({
-    value: option.value,
-    label: `${option.label} (${counts.get(option.value) ?? 0})`,
-  }));
-}
 
 export function PlanSitesList() {
   const router = useRouter();
   const { sites, orgSites } = useContentPlanSites();
   const stats = usePlanSiteStats();
-  const [menuRowId, setMenuRowId] = useState<string | null>(null);
 
   const { prefs, setPrefs } = useListViewPrefs(
     "content-plan-sites",
@@ -436,21 +404,16 @@ export function PlanSitesList() {
         accessorFn: () => "",
         sortable: false,
         filter: false,
+        // Uncontrolled ItemMenu — controlled open state in column deps forced
+        // a whole-table re-filter on every menu open/close (review finding).
         cell: (row) => (
-          <ItemMenu
-            config={() => buildRowMenu(row)}
-            open={menuRowId === row.id}
-            onOpenChange={(open) => setMenuRowId(open ? row.id : null)}
-          >
+          <ItemMenu config={() => buildRowMenu(row)}>
             <Button
               variant="ghost"
               size="sm"
               className="h-7 w-7 p-0"
               aria-label="Row actions"
-              onClick={(event) => {
-                event.stopPropagation();
-                setMenuRowId(row.id);
-              }}
+              onClick={(event) => event.stopPropagation()}
             >
               <MoreVertical className="h-4 w-4" />
             </Button>
@@ -460,7 +423,7 @@ export function PlanSitesList() {
         align: "center",
       },
     ];
-  }, [rows, statusMetaById, publishedCount, menuRowId, openWorkspace]);
+  }, [rows, statusMetaById, publishedCount, openWorkspace]);
 
   const hiddenColumns = prefs.hiddenColumns ?? [];
   const visibleColumns = useMemo(

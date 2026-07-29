@@ -34,7 +34,7 @@ import {
   useReparentPlanNode,
   useUpdatePlanNode,
 } from "../data/hooks";
-import { usePlanDeepen } from "../hooks/useContentPlanAi";
+import type { PlanDeepenController } from "../hooks/useContentPlanAi";
 import {
   PLAN_NODE_TYPES,
   TECHNICAL_DEPTHS,
@@ -56,17 +56,21 @@ export function NodePanel({
   entities,
   profiles,
   onDeleted,
+  deepen,
 }: {
   node: PlanNodeRow;
   siteId: string;
   entities: PlanEntityRow[];
   profiles: PlanProfileRow[];
   onDeleted: () => void;
+  /** Workbench-owned so an in-flight run survives node switches (the panel
+   * remounts per node via key={node.id}). */
+  deepen: PlanDeepenController;
 }) {
   const update = useUpdatePlanNode(siteId);
   const remove = useDeletePlanNode(siteId);
-  const deepen = usePlanDeepen(siteId);
   const deepening = deepen.run.status === "running";
+  const deepeningThisNode = deepening && deepen.nodeId === node.id;
 
   const [draft, setDraft] = useState<PlanNodeUpdate>({});
   // Raw textarea text for brief — split into the string[] draft only on
@@ -157,18 +161,20 @@ export function NodePanel({
           className="h-7 gap-1.5 px-2 text-xs"
           disabled={deepening}
           title={
-            deepening
+            deepeningThisNode
               ? (deepen.run.stage ?? "Deepening…")
-              : "AI: research this page and write its brief + sources"
+              : deepening
+                ? "Another node is being deepened — one run at a time"
+                : "AI: research this page and write its brief + sources"
           }
           onClick={() => void deepen.start(node.id)}
         >
-          {deepening ? (
+          {deepeningThisNode ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
             <Sparkles className="h-3.5 w-3.5" />
           )}
-          {deepening ? "Deepening…" : "Deepen"}
+          {deepeningThisNode ? "Deepening…" : "Deepen"}
         </Button>
         <Button
           size="sm"

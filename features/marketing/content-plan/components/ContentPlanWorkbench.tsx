@@ -37,7 +37,7 @@ import {
   useReparentPlanNode,
 } from "../data/hooks";
 import { updatePlanNode } from "../data/service";
-import { usePlanGenerate } from "../hooks/useContentPlanAi";
+import { usePlanDeepen, usePlanGenerate } from "../hooks/useContentPlanAi";
 import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
 import { PlanGenerateBar } from "./PlanGenerateBar";
 import type { PlanNodeRow } from "../types";
@@ -94,6 +94,9 @@ export function ContentPlanWorkbench({
   const profiles = usePlanProfiles(site?.organization_id ?? null);
   const reparent = useReparentPlanNode(siteId ?? "none");
   const generate = usePlanGenerate(siteId);
+  // Owned here (not in NodePanel) so an in-flight deepen survives the
+  // panel's per-node remount when the user selects another node.
+  const deepen = usePlanDeepen(siteId);
 
   const statusCategories = useCategories({
     dimension: CATEGORY_DIMENSIONS.planStatus,
@@ -317,6 +320,7 @@ export function ContentPlanWorkbench({
                       entities={entities.data ?? []}
                       profiles={profiles.data ?? []}
                       onDeleted={() => setSelectedNodeId(null)}
+                      deepen={deepen}
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center p-6">
@@ -362,6 +366,7 @@ export function ContentPlanWorkbench({
                   entities={entities.data ?? []}
                   profiles={profiles.data ?? []}
                   onDeleted={() => setSelectedNodeId(null)}
+                  deepen={deepen}
                 />
               ) : null}
             </SheetContent>

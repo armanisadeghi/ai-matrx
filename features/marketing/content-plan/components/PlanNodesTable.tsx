@@ -39,6 +39,7 @@ import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice
 import { cn } from "@/lib/utils";
 
 import { NODE_TYPE_LABELS, planStatusColor } from "../constants";
+import { countBy, formatUpdated, withCounts } from "../utils";
 import type { PlanNodeRow, PlanNodeType } from "../types";
 
 /** Bump `version` when a column is added/removed (lib/list-views backfill contract). */
@@ -63,37 +64,8 @@ const COLUMN_LABELS: Record<string, string> = {
   updated: "Updated",
 };
 
-function countBy<T>(rows: readonly T[], key: (row: T) => string): Map<string, number> {
-  const counts = new Map<string, number>();
-  for (const row of rows) {
-    const value = key(row);
-    if (!value) continue;
-    counts.set(value, (counts.get(value) ?? 0) + 1);
-  }
-  return counts;
-}
 
-function withCounts(
-  options: Array<{ value: string; label: string }>,
-  counts: ReadonlyMap<string, number>,
-): Array<{ value: string; label: string }> {
-  return options.map((option) => ({
-    value: option.value,
-    label: `${option.label} (${counts.get(option.value) ?? 0})`,
-  }));
-}
 
-function formatUpdated(iso: string | null): string {
-  if (!iso) return "—";
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "—";
-  const sameYear = date.getFullYear() === new Date().getFullYear();
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    ...(sameYear ? {} : { year: "numeric" }),
-  });
-}
 
 export interface PlanNodesTableProps {
   nodes: PlanNodeRow[];

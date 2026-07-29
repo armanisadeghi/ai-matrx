@@ -57,6 +57,10 @@ export function usePlanGenerate(siteId: string | null) {
   const queryClient = useQueryClient();
   const [run, setRun] = useState<PlanAiRunState>(IDLE);
   const inFlight = useRef(false);
+  // Coalesce mid-stream refetches: a 150-node run may emit one `data` event
+  // per node — one invalidation per ~750ms keeps the tree live without a
+  // refetch storm (the post-stream invalidation below is the backstop).
+  const lastInvalidate = useRef(0);
 
   const start = useCallback(
     async (options?: { maxNodes?: number; guidance?: string }) => {
@@ -83,9 +87,13 @@ export function usePlanGenerate(siteId: string | null) {
             }
             if (event.event === "data") {
               // Nodes may land mid-stream (apply=true) — show them live.
-              void queryClient.invalidateQueries({
-                queryKey: planKeys.nodes(siteId),
-              });
+              const now = Date.now();
+              if (now - lastInvalidate.current > 750) {
+                lastInvalidate.current = now;
+                void queryClient.invalidateQueries({
+                  queryKey: planKeys.nodes(siteId),
+                });
+              }
             }
             if (event.event === "error") {
               streamFailure = describeBackendFailure(
@@ -122,6 +130,9 @@ export function usePlanGenerate(siteId: string | null) {
 
   return { run, start, reset: () => setRun(IDLE) };
 }
+
+/** What NodePanel receives — the workbench owns the hook instance. */
+export type PlanDeepenController = ReturnType<typeof usePlanDeepen>;
 
 /** Deepen ONE node: server writes brief lines + sources onto it. */
 export function usePlanDeepen(siteId: string | null) {
