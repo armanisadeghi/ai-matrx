@@ -13,15 +13,11 @@
 import { useState } from "react";
 import {
   AlertCircle,
-  Building2,
   KeyRound,
-  List,
   Plus,
   Search,
-  Share2,
   ShieldCheck,
   Upload,
-  UserRound,
   X,
 } from "lucide-react";
 
@@ -29,7 +25,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMediaQuery } from "@/hooks/use-media-query";
 import {
   Select,
   SelectContent,
@@ -46,11 +41,7 @@ import {
 } from "@/components/ui/credenza-modal/credenza";
 import { cn } from "@/utils/cn";
 
-import {
-  useVault,
-  useVaultDefinitions,
-  type VaultActions,
-} from "../vault-hooks";
+import { useVault, useVaultDefinitions } from "../vault-hooks";
 import {
   credentialIdentity,
   fieldLabelOf,
@@ -80,7 +71,6 @@ export interface VaultWorkspaceProps {
   /** Optional controlled selection/scope, so a host that persists its own
    *  position (the window panel) can restore it. Omit both and the workspace
    *  manages them internally, which is what the page surfaces do. */
-  presentation?: "full" | "compact";
   selectedItemId?: string | null;
   onSelectedItemIdChange?: (id: string | null) => void;
   scope?: string;
@@ -90,7 +80,6 @@ export interface VaultWorkspaceProps {
 export function VaultWorkspace({
   principal,
   canManage,
-  presentation = "compact",
   selectedItemId,
   onSelectedItemIdChange,
   scope: controlledScope,
@@ -122,7 +111,6 @@ export function VaultWorkspace({
 
   const vault = useVault(scope, { orgAdmin });
   const { definitions } = useVaultDefinitions();
-  const desktopWorkspace = useMediaQuery("(min-width: 1024px)");
 
   const defsByKey = new Map(definitions.map((d) => [d.key, d]));
 
@@ -175,376 +163,12 @@ export function VaultWorkspace({
   const selected = selectedId
     ? (vault.items.find((i) => i.id === selectedId) ?? null)
     : null;
-  const detailItem =
-    presentation === "full" ? (selected ?? filtered[0] ?? null) : selected;
-  const selectedIdentity = detailItem
-    ? credentialIdentity(detailItem, defsByKey.get(detailItem.definition_key))
+  const selectedIdentity = selected
+    ? credentialIdentity(selected, defsByKey.get(selected.definition_key))
     : null;
   const SelectedIcon = selectedIdentity?.icon ?? KeyRound;
 
   const filtering = query.length > 0 || family !== "all";
-
-  if (presentation === "full") {
-    return (
-      <div className="h-full min-h-0 p-3 md:p-4">
-        <div className="grid h-full min-h-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm lg:grid-cols-[13rem_21rem_minmax(0,1fr)]">
-          <aside className="hidden min-h-0 flex-col border-r border-border bg-muted/30 lg:flex">
-            <div className="border-b border-border p-3">
-              <div className="flex items-center gap-2">
-                <span className={cn(IDENTITY_TILE_CLASS, "h-8 w-8")}>
-                  {principal.type === "organization" ? (
-                    <Building2 className="h-4 w-4 text-primary" />
-                  ) : (
-                    <UserRound className="h-4 w-4 text-primary" />
-                  )}
-                </span>
-                <dl className="min-w-0">
-                  <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Vault owner
-                  </dt>
-                  <dd className="whitespace-normal break-words text-sm font-semibold text-foreground">
-                    {principal.type === "organization"
-                      ? "Organization"
-                      : "Personal"}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-
-            <nav
-              className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2"
-              aria-label="Vault views"
-            >
-              <p className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Credentials
-              </p>
-              {principal.type === "user" ? (
-                <>
-                  <VaultNavButton
-                    active={personalScope === "mine"}
-                    icon={List}
-                    label="My credentials"
-                    count={personalScope === "mine" ? vault.items.length : null}
-                    onClick={() => {
-                      setPersonalScope("mine");
-                      setSelectedId(null);
-                    }}
-                  />
-                  <VaultNavButton
-                    active={personalScope === "shared"}
-                    icon={Share2}
-                    label="Shared with me"
-                    count={
-                      personalScope === "shared" ? vault.items.length : null
-                    }
-                    onClick={() => {
-                      setPersonalScope("shared");
-                      setSelectedId(null);
-                    }}
-                  />
-                </>
-              ) : (
-                <VaultNavButton
-                  active
-                  icon={Building2}
-                  label="Organization credentials"
-                  count={vault.items.length}
-                  onClick={() => undefined}
-                />
-              )}
-
-              <p className="px-2 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Credential types
-              </p>
-              <VaultNavButton
-                active={family === "all"}
-                icon={KeyRound}
-                label="All types"
-                count={vault.items.length}
-                onClick={() => {
-                  setFamily("all");
-                  setSelectedId(null);
-                }}
-              />
-              {familiesPresent.map((fam) => (
-                <VaultNavButton
-                  key={fam}
-                  active={family === fam}
-                  icon={KeyRound}
-                  label={FAMILY_LABELS[fam]}
-                  count={
-                    vault.items.filter(
-                      (item) => familyOf(item, defsByKey) === fam,
-                    ).length
-                  }
-                  onClick={() => {
-                    setFamily(fam);
-                    setSelectedId(null);
-                  }}
-                />
-              ))}
-            </nav>
-
-            {principal.type === "organization" && (
-              <div className="border-t border-border p-3">
-                <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                  <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                  <p>Members can use approved values without revealing them.</p>
-                </div>
-              </div>
-            )}
-          </aside>
-
-          <section className="flex min-h-0 min-w-0 flex-col border-r border-border">
-            <div className="space-y-2 border-b border-border p-3">
-              <div className="flex flex-wrap items-center gap-2 lg:hidden">
-                {principal.type === "user" && (
-                  <div
-                    role="tablist"
-                    aria-label="Vault scope"
-                    className="inline-flex rounded-lg border border-border bg-muted/50 p-0.5"
-                  >
-                    {(["mine", "shared"] as const).map((value) => (
-                      <button
-                        key={value}
-                        type="button"
-                        role="tab"
-                        aria-selected={personalScope === value}
-                        onClick={() => {
-                          setPersonalScope(value);
-                          setSelectedId(null);
-                        }}
-                        className={cn(
-                          "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                          personalScope === value
-                            ? "bg-card text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        {value === "mine" ? "My credentials" : "Shared with me"}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {familiesPresent.length > 1 && (
-                  <Select
-                    value={family}
-                    onValueChange={(next) => {
-                      setFamily(next as "all" | CredentialFamily);
-                      setSelectedId(null);
-                    }}
-                  >
-                    <SelectTrigger
-                      className="h-8 w-auto min-w-32"
-                      aria-label="Filter by credential type"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All types</SelectItem>
-                      {familiesPresent.map((fam) => (
-                        <SelectItem key={fam} value={fam}>
-                          {FAMILY_LABELS[fam]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className="relative min-w-0 flex-1">
-                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search credentials"
-                    className="h-9 pl-8 pr-8"
-                    aria-label="Search credentials"
-                  />
-                  {search && (
-                    <button
-                      type="button"
-                      onClick={() => setSearch("")}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
-                      aria-label="Clear search"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-                {canCreate && (
-                  <Button
-                    size="sm"
-                    className="h-9 shrink-0"
-                    onClick={() => setCreateOpen(true)}
-                    disabled={vault.busy}
-                  >
-                    <Plus className="mr-1.5 h-4 w-4" />
-                    <span className="hidden sm:inline">New credential</span>
-                    <span className="sm:hidden">New</span>
-                  </Button>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs text-muted-foreground">
-                  {filtered.length}
-                  {filtered.length === vault.items.length
-                    ? ""
-                    : ` of ${vault.items.length}`}{" "}
-                  credential{filtered.length === 1 ? "" : "s"}
-                </p>
-                {canCreate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => setImportOpen(true)}
-                    disabled={vault.busy}
-                  >
-                    <Upload className="mr-1.5 h-3.5 w-3.5" />
-                    Import .env
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {vault.error && (
-              <div className="m-3 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                {vault.error}
-              </div>
-            )}
-
-            <div className="min-h-0 flex-1 overflow-y-auto p-2">
-              {vault.loading ? (
-                <VaultWorkspaceListSkeleton />
-              ) : filtered.length === 0 ? (
-                <VaultEmptyState
-                  filtering={filtering}
-                  isShared={isShared}
-                  canCreate={canCreate}
-                  onClearFilters={() => {
-                    setSearch("");
-                    setFamily("all");
-                  }}
-                  onCreate={() => setCreateOpen(true)}
-                />
-              ) : (
-                <div
-                  className="space-y-1"
-                  role="listbox"
-                  aria-label="Credentials"
-                >
-                  {filtered.map((item) => (
-                    <VaultWorkspaceListRow
-                      key={item.id}
-                      item={item}
-                      definition={defsByKey.get(item.definition_key)}
-                      selected={detailItem?.id === item.id}
-                      onOpen={() => setSelectedId(item.id)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section className="hidden min-h-0 min-w-0 flex-col lg:flex">
-            {detailItem ? (
-              <>
-                <div className="flex min-w-0 items-start gap-3 border-b border-border p-4">
-                  <span className={cn(IDENTITY_TILE_CLASS, "h-10 w-10")}>
-                    <SelectedIcon
-                      className={cn("h-5 w-5", selectedIdentity?.iconClass)}
-                    />
-                  </span>
-                  <dl className="min-w-0 flex-1">
-                    <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                      {VAULT_LABELS.credentialName}
-                    </dt>
-                    <dd className="whitespace-normal break-words text-base font-semibold text-foreground">
-                      {detailItem.display_name}
-                    </dd>
-                    <dt className="mt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                      {VAULT_LABELS.credentialType}
-                    </dt>
-                    <dd className="whitespace-normal break-words text-xs text-muted-foreground">
-                      {[selectedIdentity?.kindLabel, selectedIdentity?.subtitle]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </dd>
-                  </dl>
-                </div>
-                <div className="min-h-0 flex-1 overflow-y-auto p-4">
-                  <VaultItemDetail
-                    key={detailItem.id}
-                    item={detailItem}
-                    principal={principal}
-                    definitions={defsByKey}
-                    busy={vault.busy}
-                    actions={vault.actions}
-                    onClose={() => setSelectedId(null)}
-                  />
-                </div>
-              </>
-            ) : (
-              <div className="flex h-full items-center justify-center p-8 text-center">
-                <div>
-                  <span
-                    className={cn(IDENTITY_TILE_CLASS, "mx-auto h-11 w-11")}
-                  >
-                    <KeyRound className="h-5 w-5 text-muted-foreground" />
-                  </span>
-                  <p className="mt-3 text-sm font-medium">
-                    Select a credential
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Its labeled fields and actions will appear here.
-                  </p>
-                </div>
-              </div>
-            )}
-          </section>
-        </div>
-
-        <VaultDetailDialog
-          open={selected !== null && !desktopWorkspace}
-          selected={selected}
-          selectedIdentity={
-            selected
-              ? credentialIdentity(
-                  selected,
-                  defsByKey.get(selected.definition_key),
-                )
-              : null
-          }
-          principal={principal}
-          definitions={defsByKey}
-          busy={vault.busy}
-          actions={vault.actions}
-          onClose={() => setSelectedId(null)}
-        />
-
-        <VaultCreateDialog
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-          principal={principal}
-          definitions={definitions}
-          busy={vault.busy}
-          onCreate={vault.actions.createItem}
-          onAssign={vault.actions.assign}
-        />
-        <VaultEnvImportDialog
-          open={importOpen}
-          onOpenChange={setImportOpen}
-          busy={vault.busy}
-          onImport={vault.actions.importEnv}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-3">
@@ -768,203 +392,6 @@ export function VaultWorkspace({
         onImport={vault.actions.importEnv}
       />
     </div>
-  );
-}
-
-function VaultNavButton({
-  active,
-  icon: Icon,
-  label,
-  count,
-  onClick,
-}: {
-  active: boolean;
-  icon: typeof KeyRound;
-  label: string;
-  count: number | null;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      aria-current={active ? "page" : undefined}
-      onClick={onClick}
-      className={cn(
-        "flex w-full items-start gap-2 rounded-md px-2 py-2 text-left text-xs transition-colors",
-        active
-          ? "bg-primary/10 font-medium text-foreground"
-          : "text-muted-foreground hover:bg-accent hover:text-foreground",
-      )}
-    >
-      <Icon
-        className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", active && "text-primary")}
-      />
-      <span className="min-w-0 flex-1 whitespace-normal break-words">
-        {label}
-      </span>
-      {count !== null && (
-        <span className="shrink-0 text-[10px] text-muted-foreground">
-          {count}
-        </span>
-      )}
-    </button>
-  );
-}
-
-function VaultWorkspaceListRow({
-  item,
-  definition,
-  selected,
-  onOpen,
-}: {
-  item: VaultItem;
-  definition: CredentialDefinition | undefined;
-  selected: boolean;
-  onOpen: () => void;
-}) {
-  const identity = credentialIdentity(item, definition);
-  const Icon = identity.icon;
-
-  return (
-    <button
-      type="button"
-      role="option"
-      aria-selected={selected}
-      onClick={onOpen}
-      className={cn(
-        "flex w-full min-w-0 items-start gap-2.5 rounded-lg border p-3 text-left transition-colors",
-        selected
-          ? "border-primary/40 bg-primary/5"
-          : "border-transparent hover:border-border hover:bg-accent/50",
-      )}
-    >
-      <span className={cn(IDENTITY_TILE_CLASS, "mt-0.5 h-9 w-9")}>
-        <Icon className={cn("h-4.5 w-4.5", identity.iconClass)} />
-      </span>
-      <dl className="min-w-0 flex-1">
-        <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          {VAULT_LABELS.credentialName}
-        </dt>
-        <dd className="whitespace-normal break-words text-sm font-semibold text-foreground">
-          {item.display_name}
-        </dd>
-        <dt className="mt-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          {VAULT_LABELS.credentialType}
-        </dt>
-        <dd className="whitespace-normal break-words text-xs text-muted-foreground">
-          {identity.kindLabel}
-        </dd>
-        {item.login_urls.length > 0 && (
-          <>
-            <dt className="mt-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              {VAULT_LABELS.loginUrls}
-            </dt>
-            <dd className="whitespace-normal break-all text-xs text-muted-foreground">
-              {item.login_urls.join(", ")}
-            </dd>
-          </>
-        )}
-      </dl>
-      {item.status !== "active" && (
-        <Badge
-          variant="outline"
-          className="shrink-0 border-warning/40 font-normal capitalize text-warning"
-        >
-          {item.status.replaceAll("_", " ")}
-        </Badge>
-      )}
-    </button>
-  );
-}
-
-function VaultWorkspaceListSkeleton() {
-  return (
-    <div className="space-y-1">
-      {[0, 1, 2, 3, 4, 5].map((i) => (
-        <div
-          key={i}
-          className="flex items-start gap-2.5 rounded-lg border border-transparent p-3"
-        >
-          <Skeleton className="mt-0.5 h-9 w-9 rounded-md" />
-          <div className="min-w-0 flex-1 space-y-2">
-            <Skeleton className="h-3.5 w-2/3" />
-            <Skeleton className="h-3 w-1/3" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function VaultDetailDialog({
-  open,
-  selected,
-  selectedIdentity,
-  principal,
-  definitions,
-  busy,
-  actions,
-  onClose,
-}: {
-  open: boolean;
-  selected: VaultItem | null;
-  selectedIdentity: ReturnType<typeof credentialIdentity> | null;
-  principal: VaultPrincipal;
-  definitions: Map<string, CredentialDefinition>;
-  busy: boolean;
-  actions: VaultActions;
-  onClose: () => void;
-}) {
-  const SelectedIcon = selectedIdentity?.icon ?? KeyRound;
-
-  return (
-    <Credenza
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) onClose();
-      }}
-    >
-      <CredenzaContent className="md:max-w-2xl">
-        <CredenzaHeader>
-          <CredenzaTitle className="flex min-w-0 items-center gap-2.5 pr-6 text-left">
-            <span className={cn(IDENTITY_TILE_CLASS, "h-9 w-9")}>
-              <SelectedIcon
-                className={cn("h-4.5 w-4.5", selectedIdentity?.iconClass)}
-              />
-            </span>
-            <dl className="min-w-0 flex-1">
-              <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                {VAULT_LABELS.credentialName}
-              </dt>
-              <dd className="whitespace-normal break-words text-base font-semibold leading-tight">
-                {selected?.display_name}
-              </dd>
-              <dt className="mt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                {VAULT_LABELS.credentialType}
-              </dt>
-              <dd className="whitespace-normal break-words text-xs font-normal text-muted-foreground">
-                {[selectedIdentity?.kindLabel, selectedIdentity?.subtitle]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </dd>
-            </dl>
-          </CredenzaTitle>
-        </CredenzaHeader>
-        <CredenzaBody className="max-h-[70dvh] overflow-y-auto px-4 pb-6 md:px-0">
-          {selected && (
-            <VaultItemDetail
-              key={selected.id}
-              item={selected}
-              principal={principal}
-              definitions={definitions}
-              busy={busy}
-              actions={actions}
-              onClose={onClose}
-            />
-          )}
-        </CredenzaBody>
-      </CredenzaContent>
-    </Credenza>
   );
 }
 
