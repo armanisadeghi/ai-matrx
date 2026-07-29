@@ -1,8 +1,9 @@
 import React from "react";
-import { PublicProviders } from "./PublicProviders";
+
 import { PublicHeader } from "@/components/matrx/PublicHeader";
 import { PublicFooter } from "@/components/matrx/PublicFooter";
 import { CanvasSideSheet } from "@/features/canvas/core/CanvasSideSheet";
+import { Providers } from "@/app/Providers";
 
 export default function PublicLayout({
   children,
@@ -10,7 +11,7 @@ export default function PublicLayout({
   children: React.ReactNode;
 }) {
   return (
-    <PublicProviders>
+    <Providers>
       <div className="h-dvh flex flex-col overflow-hidden">
         <PublicHeader />
         <main className="flex-1 min-h-0 overflow-hidden">{children}</main>
@@ -22,6 +23,6 @@ export default function PublicLayout({
           statically import CanvasSideSheetImpl here (build-graph leak on
           every anonymous page; eslint bans it). */}
       <CanvasSideSheet />
-    </PublicProviders>
+    </Providers>
   );
 }
