@@ -26,9 +26,11 @@ import { getSurfaceAncestry } from "@/features/surfaces/manifests/registry";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import {
   isValueMappingMap,
+  sanitizeWritePolicyMap,
   type ValueMappingMap,
 } from "@/features/surfaces/types";
 import type { MappingLayer } from "@/features/surfaces/utils/merge-value-mappings";
+import type { WritePolicyMap } from "@/features/surfaces/types";
 import type { Json, Tables } from "@/types/database.types";
 import { createClient } from "@/utils/supabase/client";
 import { ensureSharedWithOrg } from "@/utils/permissions/service";
@@ -58,6 +60,8 @@ export interface AgentSurfaceBinding {
   projectId: string | null;
   taskId: string | null;
   valueMappings: ValueMappingMap;
+  /** Per-write-target applyPolicy overrides (surface_binding payload v2). */
+  writePolicies: WritePolicyMap;
   createdAt: string;
 }
 
@@ -70,6 +74,7 @@ interface MenuSurfaceBindingRow {
   project_id: string | null;
   task_id: string | null;
   value_mappings: unknown;
+  write_policies: unknown;
   created_at: string;
   /** Tier-encoded edge role — the ONLY reliable tier signal (assoc_add stamps
    * an access org on EVERY edge, so `organization_id` alone cannot identify
@@ -170,12 +175,14 @@ function fromRow(row: MenuSurfaceBindingRow): AgentSurfaceBinding {
     valueMappings: isValueMappingMap(row.value_mappings)
       ? (row.value_mappings as ValueMappingMap)
       : {},
+    writePolicies: sanitizeWritePolicyMap(row.write_policies),
     createdAt: row.created_at,
   };
 }
 
 const MENU_SURFACE_COLUMNS =
-  "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, created_at, role";
+  "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, write_policies, created_at, role";
+
 
 // ---------------------------------------------------------------------------
 // Writes
@@ -188,6 +195,14 @@ export interface BindAgentToSurfaceArgs {
   surfaceName: string;
   scope: BindAgentToSurfaceScope;
   valueMappings: ValueMappingMap;
+  /**
+   * Per-write-target applyPolicy overrides for this binding. The SURFACE's
+   * per-target default (`SurfaceWriteTarget.applyPolicy`) stands unless the
+   * binding names the target here — this is where the user controls the
+   * manual/ask/auto behavior of the agents THEY bound. Optional; omitted =
+   * surface defaults.
+   */
+  writePolicies?: WritePolicyMap;
   /**
    * Org required by `assoc_add` for access checks. Prefer the explicit
    * organization scope; otherwise pass the caller's personal/active org so
@@ -212,7 +227,8 @@ export interface BoundAgentSurface {
 export async function bindAgentToSurface(
   args: BindAgentToSurfaceArgs,
 ): Promise<BoundAgentSurface> {
-  const { agentId, surfaceName, scope, valueMappings, accessOrgId } = args;
+  const { agentId, surfaceName, scope, valueMappings, writePolicies, accessOrgId } =
+    args;
 
   if (!accessOrgId) {
     throw new Error(
@@ -338,7 +354,12 @@ export async function bindAgentToSurface(
     role: bindingRoleForScope(scope),
     metadata,
     payloadKind: "surface_binding",
-    payload: { value_mappings: valueMappings as unknown as Json },
+    payload: {
+      value_mappings: valueMappings as unknown as Json,
+      ...(writePolicies && Object.keys(writePolicies).length > 0
+        ? { write_policies: writePolicies as unknown as Json }
+        : {}),
+    },
   });
 
   if (!result.ok) {
@@ -366,14 +387,16 @@ export async function upsertAgentSurfaceBinding(args: {
   surfaceName: string;
   scope: ScopeInput;
   valueMappings: ValueMappingMap;
+  writePolicies?: WritePolicyMap;
 }): Promise<AgentSurfaceBinding> {
-  const { agentId, surfaceName, scope, valueMappings } = args;
+  const { agentId, surfaceName, scope, valueMappings, writePolicies } = args;
   const accessOrgId = await ensureOrgId(scope.organizationId ?? null);
   const saved = await bindAgentToSurface({
     agentId,
     surfaceName,
     scope,
     valueMappings,
+    writePolicies,
     accessOrgId,
   });
   return {
@@ -385,6 +408,7 @@ export async function upsertAgentSurfaceBinding(args: {
     projectId: scope.projectId ?? null,
     taskId: scope.taskId ?? null,
     valueMappings,
+    writePolicies: writePolicies ? sanitizeWritePolicyMap(writePolicies) : {},
     createdAt: new Date().toISOString(),
   };
 }
@@ -477,6 +501,13 @@ export interface BulkUpsertBindingInput {
   surfaceName: string;
   scope: ScopeInput;
   valueMappings: ValueMappingMap;
+  /**
+   * Per-write-target applyPolicy overrides. The upsert REPLACES the edge
+   * payload wholesale, so batch callers MUST pass the surface's full map
+   * (existing overrides merged with the edit) — omitting this clears every
+   * stored override for the binding.
+   */
+  writePolicies?: WritePolicyMap;
 }
 
 export interface BulkUpsertResult {
@@ -496,6 +527,7 @@ export async function bulkUpsertAgentSurfaceBindings(args: {
         surfaceName: b.surfaceName,
         scope: b.scope,
         valueMappings: b.valueMappings,
+        writePolicies: b.writePolicies,
       }),
     ),
   );
@@ -561,7 +593,13 @@ export async function fetchSurfaceBindingLayers(
 
   const rows = ((data ?? []) as unknown as MenuSurfaceBindingRow[])
     .map(fromRow)
-    .filter((r) => Object.keys(r.valueMappings).length > 0);
+    // A binding that maps nothing but overrides a write policy is still a
+    // real layer — dropping it would silently discard the user's choice.
+    .filter(
+      (r) =>
+        Object.keys(r.valueMappings).length > 0 ||
+        Object.keys(r.writePolicies).length > 0,
+    );
 
   const layers: MappingLayer[] = [];
   for (const surface of chain) {
@@ -579,6 +617,7 @@ export async function fetchSurfaceBindingLayers(
       layers.push({
         name: `binding:${prefix}global`,
         mappings: globalRow.valueMappings,
+        writePolicies: globalRow.writePolicies,
       });
     }
     const orgRows = forSurface
@@ -590,6 +629,7 @@ export async function fetchSurfaceBindingLayers(
       layers.push({
         name: `binding:${prefix}org:${organizationId.slice(0, 8)}`,
         mappings: row.valueMappings,
+        writePolicies: row.writePolicies,
       });
     }
     const userRow = forSurface.find((r) => r.userId !== null);
@@ -597,6 +637,7 @@ export async function fetchSurfaceBindingLayers(
       layers.push({
         name: `binding:${prefix}user`,
         mappings: userRow.valueMappings,
+        writePolicies: userRow.writePolicies,
       });
     }
   }

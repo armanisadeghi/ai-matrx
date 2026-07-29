@@ -80326,6 +80326,61 @@
         "title": "ManifestValueEntry",
         "description": "One declared surface value binding (``ui.ui_surface_value``).\n\n``auto_context=True`` → a surface-emitted value for this name is\nautomatically presented to the agent as context. ``False`` → bindable-only:\nconsumed exclusively through an explicit agent slot/variable mapping."
       },
+      "ManifestWriteTargetEntry": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "value_type": {
+            "type": "string",
+            "title": "Value Type",
+            "default": "string"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "default": "draft"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "apply_policy": {
+            "type": "string",
+            "title": "Apply Policy",
+            "default": "manual"
+          },
+          "updates_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updates Value"
+          },
+          "group_key": {
+            "type": "string",
+            "title": "Group Key",
+            "default": "general"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order",
+            "default": 1000
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ManifestWriteTargetEntry",
+        "description": "One thing an agent may WRITE into this surface.\n\nThe read half (``values``) tells an agent what the page shows. This tells\nit what the page ACCEPTS. ``mode`` is the part an agent must respect:\n\n  ``draft``  — staged into the page's editor; the USER still saves it.\n  ``entity`` — persisted immediately through the page's own write path.\n  ``ui``     — ephemeral UI state (selection, focus); nothing persists.\n\n``updates_value`` names the declared value this target writes, when there\nis a 1:1 read twin — that pair IS the evidence loop (read it, change it,\nread it back)."
+      },
       "ManualCredentialsRequest": {
         "properties": {
           "auth_method": {
@@ -100086,6 +100141,14 @@
             },
             "type": "array",
             "title": "Groups",
+            "default": []
+          },
+          "write_targets": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestWriteTargetEntry"
+            },
+            "type": "array",
+            "title": "Write Targets",
             "default": []
           },
           "intro": {

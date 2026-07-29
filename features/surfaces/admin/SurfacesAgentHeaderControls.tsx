@@ -4,7 +4,7 @@ import {
   PanelLeftTapButton,
   RobotTapButton,
   ViewTapButton,
-  TestTubeTapButton,
+  ShieldCheckTapButton,
 } from "@/components/icons/tap-buttons";
 import { usePanelControls } from "@/features/resizable-panels/PanelControlProvider";
 import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
@@ -33,7 +33,7 @@ export function SurfacesAgentHeaderControls({
   const surfacesCollapsed = isCollapsed("surfaces-list");
   const agentCollapsed = isCollapsed("agent");
   const detailsCollapsed = isCollapsed("surface-details");
-  const playgroundCollapsed = isCollapsed("playground");
+  const agentAccessCollapsed = isCollapsed("agent-access");
 
   return (
     <div className="flex items-center w-full min-w-0 gap-0 p-0">
@@ -73,13 +73,15 @@ export function SurfacesAgentHeaderControls({
             detailsCollapsed ? "Show surface details" : "Hide surface details"
           }
         />
-        <TestTubeTapButton
-          onClick={() => toggle("playground")}
-          variant={playgroundCollapsed ? "transparent" : "glass"}
+        <ShieldCheckTapButton
+          onClick={() => toggle("agent-access")}
+          variant={agentAccessCollapsed ? "transparent" : "glass"}
           ariaLabel={
-            playgroundCollapsed ? "Show playground" : "Hide playground"
+            agentAccessCollapsed ? "Show agent access" : "Hide agent access"
           }
-          tooltip={playgroundCollapsed ? "Show playground" : "Hide playground"}
+          tooltip={
+            agentAccessCollapsed ? "Show agent access" : "Hide agent access"
+          }
         />
       </div>
     </div>

@@ -20,7 +20,9 @@
     }
   },
 
-  "lowestTierDefault": [],
+  "lowestTierDefault": [
+    { "file": "migrations/working_document_shareable.sql", "justification": "Working documents are personal user-authored scratch documents by design; this migration makes the existing access-kernel fallback explicit without changing behavior. Users may deliberately share them afterward.", "addedBy": "codex (baseline merge)", "date": "2026-07-29" }
+  ],
   "activeOrgAccess": [],
   "handRolledLadder": [
     { "file": "features/admin/relationships/components/RelationshipRulesClient.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
@@ -36,7 +38,7 @@
     { "file": "features/sharing/components/PermissionsList.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
     { "file": "features/sharing/components/tabs/ShareWithOrgTab.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
     { "file": "features/sharing/components/tabs/ShareWithUserTab.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
-    { "file": "features/tasks/services/taskService.ts", "line": 739, "justification": "cosmetic UI union, no access decision — level is a pass-through param to share_resource_with_user RPC, never compared", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "features/tasks/services/taskService.ts", "line": 742, "justification": "cosmetic UI union, no access decision — level is a pass-through param to share_resource_with_user RPC, never compared", "addedBy": "claude", "date": "2026-07-22" },
     { "file": "lib/redux/slices/agentCacheSlice.ts", "line": 48, "justification": "cosmetic UI union, no access decision — display-only shared-cache metadata field", "addedBy": "claude", "date": "2026-07-22" }
   ],
   "bareRlsList": [

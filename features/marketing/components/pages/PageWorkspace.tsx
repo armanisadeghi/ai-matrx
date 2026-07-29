@@ -46,6 +46,7 @@ import { useAssociations } from "@/features/scopes/hooks/useAssociations";
 import { usePageAnalyzer } from "@/features/marketing/components/pages/usePageAnalyzer";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { MarketingPageWriteTargets } from "@/features/marketing/components/pages/MarketingPageWriteTargets";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import {
   buildMarketingPageScope,
@@ -794,6 +795,11 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
       isEditable={false}
       getScope={getScope}
     >
+      {/* The write half of the surface contract: registers the live handlers
+          for the manifest's writeTargets so agent results (the bound LSI
+          metadata agent's kind components, chat blocks) can land values on
+          this page through its canonical services. */}
+      <MarketingPageWriteTargets page={page} />
       <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
         <div className="grid w-full gap-3">
           <section className="flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">

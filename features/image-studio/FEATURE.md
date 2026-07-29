@@ -252,6 +252,8 @@ via `?cloudFileId=` query params.
 
 ## Change Log
 
+- **2026-07-29** — Metadata description guidance now imports the canonical
+  SEO 70–160 character window instead of embedding another copy.
 - **2026-07-15** — Closed D47 by adding a single verified-backend capability registry. Text generation is visibly disabled on `/images/generate` and in `ImageAssetUploader`; undeployed face-detection, prompt-edit, and edit-suggestion controls are removed from the toolbars. Defensive handler guards remain, so none of the four missing routes can be reached by a real user click.
 - **2026-07-12** — **Killed the S3-signed-URL leak + state-destroying navigation in the variant tiles; routed download/share/view through canonical file primitives.** The preview API returns large variants as an ephemeral 5-minute `signed_url` (S3), which landed verbatim in `ProcessedVariant.dataUrl` → leaked into the tile `<img src>`, and a download `<a href={s3url} download>` is cross-origin so the browser ignored `download` and **navigated the tab to S3**, wiping the studio's in-memory state (back-button → blank studio). Fixes:
   - **Source boundary** — `useImageStudio.generate` now materializes any `signed_url` into a same-origin `blob:` URL before it enters state (`data:` passes through). No raw S3 URL ever reaches the DOM, download, or ZIP. Verified: a 1920×1005 variant that returns `signed_url` renders as `blob:`; `s3Anywhere === false` across `<img>`/anchors/DOM/clipboard.

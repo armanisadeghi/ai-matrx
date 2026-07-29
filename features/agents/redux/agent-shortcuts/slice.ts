@@ -44,6 +44,7 @@ function makeEmptyRecord(id: string): AgentShortcutRecord {
     surfaceName: null,
     scopeMappings: null,
     valueMappings: null,
+    writePolicies: null,
     contextMappings: null,
 
     // AgentExecutionConfig bundle defaults — keep in sync with

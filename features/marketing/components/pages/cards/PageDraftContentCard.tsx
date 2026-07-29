@@ -7,6 +7,11 @@
  * 1:1 `web.page_content` row via EXPLICIT save (Arman's ruling — no
  * autosave), with a dirty indicator and a navigate-away guard. The editor is
  * heavy client code — code-split behind ONE dynamic edge.
+ *
+ * Also the receiving end of the `page_draft_content` surface write target
+ * (mode "draft"): an agent's proposed body lands in this card's UNSAVED draft
+ * state — the user still reviews and saves. The handler lives here (not in
+ * MarketingPageWriteTargets) because this component owns that state.
  */
 
 import { useEffect, useState } from "react";
@@ -17,8 +22,17 @@ import { Button } from "@/components/ui/button";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { usePageContent, useSavePageContent } from "@/features/marketing/data/hooks";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { MARKETING_PAGE_SURFACE_NAME } from "@/features/marketing/lib/marketing-page-scope";
 import type { MarketingPage } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
+
+/** Wire value for the `page_draft_content` surface write target. */
+export interface PageDraftContentWrite {
+  markdown: string;
+  /** `"replace"` (default) swaps the staged draft; `"append"` adds after it. */
+  mode?: "replace" | "append";
+}
 
 const BasicContentEditorLazy = dynamic(
   () =>
@@ -39,8 +53,52 @@ export function PageDraftContentCard({ page }: { page: MarketingPage }) {
   const row = contentQuery.data ?? null;
   const serverContent = row?.content ?? "";
   const [draft, setDraft] = useState<string | null>(null);
+  // Bumped when a surface write stages content externally — the rich editor
+  // panes seed from `content` only on reset, so an external swap must bump
+  // the resetKey or the staged markdown never becomes visible.
+  const [stagedNonce, setStagedNonce] = useState(0);
   const value = draft ?? serverContent;
   const dirty = draft !== null && draft !== serverContent;
+
+  // The `page_draft_content` write target (mode "draft"): an agent's proposed
+  // body is STAGED into this card's unsaved-draft state — the user reviews and
+  // clicks Save draft; nothing persists here. The handler ref stays fresh, so
+  // reading `value` at call time is safe. Throws are surfaced loudly by the
+  // writeback runtime (toast + captured error).
+  useSurfaceWriteHandlers(MARKETING_PAGE_SURFACE_NAME, {
+    page_draft_content: (raw: unknown) => {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+        throw new Error(
+          "page_draft_content expects { markdown: string, mode?: 'replace' | 'append' }.",
+        );
+      }
+      const write = raw as Partial<PageDraftContentWrite>;
+      if (typeof write.markdown !== "string" || !write.markdown.trim()) {
+        throw new Error(
+          "page_draft_content: markdown must be a non-empty string.",
+        );
+      }
+      const mode = write.mode ?? "replace";
+      if (mode !== "replace" && mode !== "append") {
+        throw new Error(
+          `page_draft_content: mode must be 'replace' or 'append', got "${String(write.mode)}".`,
+        );
+      }
+      if (contentQuery.isLoading || contentQuery.isError) {
+        // Appending onto (or replacing) a draft we haven't loaded yet would
+        // silently clobber the user's saved content — refuse loudly instead.
+        throw new Error(
+          "page_draft_content: the current draft has not loaded yet — try again in a moment.",
+        );
+      }
+      setDraft(
+        mode === "append" && value.trim()
+          ? `${value.replace(/\s+$/, "")}\n\n${write.markdown}`
+          : write.markdown,
+      );
+      setStagedNonce((n) => n + 1);
+    },
+  });
 
   // Navigate-away guard — an unsaved draft must never silently vanish.
   useEffect(() => {
@@ -111,7 +169,7 @@ export function PageDraftContentCard({ page }: { page: MarketingPage }) {
               content={value}
               onChange={setDraft}
               placeholder="Write the content this page SHOULD have — markdown, saved on demand."
-              resetKey={`${page.id}:${row?.version ?? 0}`}
+              resetKey={`${page.id}:${row?.version ?? 0}:${stagedNonce}`}
             />
           </div>
         )}

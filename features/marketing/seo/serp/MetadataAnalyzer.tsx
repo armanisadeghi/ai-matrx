@@ -107,12 +107,16 @@ export function MetadataAnalyzer({
       if (extracted.title) setTitle(extracted.title);
       if (extracted.description) setDescription(extracted.description);
       if (!extracted.title && !extracted.description) {
-        toast.warning("Page scraped, but no meta title or description was found");
+        toast.warning(
+          "Page scraped, but no meta title or description was found",
+        );
       } else {
         toast.success("Metadata loaded from page");
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to fetch metadata");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to fetch metadata",
+      );
     }
   }
 
@@ -238,14 +242,16 @@ export function MetadataAnalyzer({
                       chars: titleEval.charCount,
                       charLimit: TITLE_LIMITS.maxChars,
                       pixels: titleEval.pixelWidth,
-                      pixelLimit: TITLE_LIMITS.displayPx,
+                      pixelLimit: TITLE_LIMITS.desktopPx,
                       ok: titleEval.ok,
                       desktopOk: titleEval.desktopOk,
                       mobileOk: titleEval.mobileOk,
                     }}
                   />
                 ) : null}
-                {title && description ? <Separator className="bg-border" /> : null}
+                {title && description ? (
+                  <Separator className="bg-border" />
+                ) : null}
                 {description ? (
                   <SerpFieldBars
                     field={{
@@ -253,7 +259,7 @@ export function MetadataAnalyzer({
                       chars: descEval.charCount,
                       charLimit: DESCRIPTION_LIMITS.maxChars,
                       pixels: descEval.pixelWidth,
-                      pixelLimit: DESCRIPTION_LIMITS.displayPx,
+                      pixelLimit: DESCRIPTION_LIMITS.desktopPx,
                       ok: descEval.ok,
                       desktopOk: descEval.desktopOk,
                       mobileOk: descEval.mobileOk,
@@ -307,9 +313,12 @@ export function MetadataAnalyzer({
           <Card className="overflow-hidden rounded-2xl shadow-sm">
             <div className={previewChromeClass}>
               <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs font-medium text-foreground">Desktop</span>
+              <span className="text-xs font-medium text-foreground">
+                Desktop
+              </span>
               <span className="ml-auto text-[10px] text-muted-foreground">
-                Max {TITLE_LIMITS.desktopPx}px title · {DESCRIPTION_LIMITS.desktopPx}
+                Max {TITLE_LIMITS.desktopPx}px title ·{" "}
+                {DESCRIPTION_LIMITS.desktopPx}
                 px description
               </span>
             </div>
@@ -329,10 +338,12 @@ export function MetadataAnalyzer({
           <Card className="overflow-hidden rounded-2xl shadow-sm">
             <div className={previewChromeClass}>
               <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs font-medium text-foreground">Mobile</span>
+              <span className="text-xs font-medium text-foreground">
+                Mobile
+              </span>
               <span className="ml-auto text-[10px] text-muted-foreground">
-                Max {TITLE_LIMITS.mobilePx}px title · {DESCRIPTION_LIMITS.mobilePx}px
-                description
+                Max {TITLE_LIMITS.mobilePx}px title ·{" "}
+                {DESCRIPTION_LIMITS.mobilePx}px description
               </span>
             </div>
             <CardContent className="border-0 p-0">
@@ -351,7 +362,9 @@ export function MetadataAnalyzer({
           {hasData ? (
             <Card className="overflow-hidden rounded-2xl shadow-sm">
               <CardHeader className="space-y-0 border-b border-border px-5 py-4">
-                <CardTitle className={sectionTitleClass}>Recommendations</CardTitle>
+                <CardTitle className={sectionTitleClass}>
+                  Recommendations
+                </CardTitle>
               </CardHeader>
               <CardContent className="px-5 py-4">
                 <MetaRecommendations

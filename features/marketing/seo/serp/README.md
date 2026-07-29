@@ -8,13 +8,18 @@ Presentational core — no Redux, no data fetching. Give it text, it renders.
 
 `char-widths.ts` + `metrics.ts` are an **exact mirror** of the Python
 implementation in aidream `packages/matrx-scraper/matrx_scraper/meta_metrics.py`
-— same character-width table, same limits (title 600/500px · 60/15ch, desc
-920/680px · 160/70ch), same issue strings. The same string yields the same
+— same character-width table, same limits (title 600px on desktop/mobile ·
+60/15ch, description 920px on desktop/mobile · 160/70ch), same issue strings.
+The same string yields the same
 number in the browser, in SSR, in a test, and in the scraper at crawl time.
 **Parity is enforced by `metrics.parity.test.ts`** against Python-generated
 fixtures (`__fixtures__/meta-metrics-parity.json`). Change a limit, a width, or
 an issue string → change BOTH implementations in the same unit of work and
 regenerate the fixture. Never re-declare a limit — import from `metrics.ts`.
+Google does not publish separate numeric title/description length limits; it
+truncates snippets to fit the device. Our product policy therefore uses the
+same allowance for both device evaluations while retaining both result fields
+for compatibility and future changes.
 
 ## Persisted metrics — contract v1
 
@@ -38,17 +43,17 @@ shape with `storedFieldToEvaluation()`. Contract doc:
 
 ## Files
 
-| File | What |
-|---|---|
-| `MetadataAnalyzer.tsx` | **The composite**: inputs (+ optional scrape-from-URL fetch), analysis bars, Google chrome + desktop + mobile previews, recommendations. Container-query responsive (`@container/serp`) — two-column when wide, stacked when narrow, works full-page or inside a window. Props: `initialUrl/Title/Description`, `enableFetch`, `onValuesChange`. |
-| `SerpResult.tsx` | One simulated Google result. `device` (`desktop`/`mobile`) × `density` (`full`/`compact`). Partial entries render gracefully — pass `placeholderTitle`/`placeholderDescription={null}` to omit a missing line. |
-| `SerpSearchChrome.tsx` | The Google results-page chrome (search box + tab row + "About N results"). |
-| `SerpValidation.tsx` | `SerpFieldBars` (char + pixel progress bars + device checks) and `SerpFieldChips` (compact `54c · 312px`). Semantic color tokens only. |
-| `MetaRecommendations.tsx` | The issues/success list for a title+description evaluation. `issuesOnly` + `compact` for inline embeds. |
-| `metrics.ts` | Limits, `evaluateMetaTitle`/`evaluateMetaDescription`, `measureSerpWidth`, stored-payload build/parse. |
-| `char-widths.ts` | The shared character-width table (mirror of Python). |
-| `extract-seo-from-scrape.ts` | Scrape-response → `{url, title, description}` extraction for the fetch button. |
-| `types.ts` | `SerpEntry` (normalized render shape) + tool server item shapes + normalizers. |
+| File                         | What                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `MetadataAnalyzer.tsx`       | **The composite**: inputs (+ optional scrape-from-URL fetch), analysis bars, Google chrome + desktop + mobile previews, recommendations. Container-query responsive (`@container/serp`) — two-column when wide, stacked when narrow, works full-page or inside a window. Props: `initialUrl/Title/Description`, `enableFetch`, `onValuesChange`. |
+| `SerpResult.tsx`             | One simulated Google result. `device` (`desktop`/`mobile`) × `density` (`full`/`compact`). Partial entries render gracefully — pass `placeholderTitle`/`placeholderDescription={null}` to omit a missing line.                                                                                                                                   |
+| `SerpSearchChrome.tsx`       | The Google results-page chrome (search box + tab row + "About N results").                                                                                                                                                                                                                                                                       |
+| `SerpValidation.tsx`         | `SerpFieldBars` (char + pixel progress bars + device checks) and `SerpFieldChips` (compact `54c · 312px`). Semantic color tokens only.                                                                                                                                                                                                           |
+| `MetaRecommendations.tsx`    | The issues/success list for a title+description evaluation. `issuesOnly` + `compact` for inline embeds.                                                                                                                                                                                                                                          |
+| `metrics.ts`                 | Limits, `evaluateMetaTitle`/`evaluateMetaDescription`, `measureSerpWidth`, stored-payload build/parse.                                                                                                                                                                                                                                           |
+| `char-widths.ts`             | The shared character-width table (mirror of Python).                                                                                                                                                                                                                                                                                             |
+| `extract-seo-from-scrape.ts` | Scrape-response → `{url, title, description}` extraction for the fetch button.                                                                                                                                                                                                                                                                   |
+| `types.ts`                   | `SerpEntry` (normalized render shape) + tool server item shapes + normalizers.                                                                                                                                                                                                                                                                   |
 
 ## Adding a new SEO surface
 

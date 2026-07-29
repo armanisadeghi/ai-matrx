@@ -6,9 +6,10 @@
  * surface values. The explorer rows are projected down to the fields the
  * manifest promises (phrase + market evidence + intent), never the raw row.
  *
- * The live agent token buffers (`researchOutput` / `classificationOutput`) are
- * deliberately NOT emitted: they are transient render buffers for the content-IR
- * live feed. The durable truth is `research_artifact` / `research_result`.
+ * The in-flight stream is deliberately NOT emitted. Live agent output lives in
+ * `activeRequests` under the adopted `run.requestId` and renders through the
+ * canonical pipeline; the durable truth an agent should read is
+ * `research_artifact` / `research_result`.
  */
 
 import { createKeywordResearchScope } from "@/features/surfaces/manifests/keyword-research.manifest";

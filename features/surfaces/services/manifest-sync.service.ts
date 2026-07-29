@@ -39,6 +39,7 @@ import type {
   SurfaceValueGroupsDrift,
   SurfaceValue,
   SurfaceValueDrift,
+  SurfaceWriteTarget,
   UnknownNamespace,
   ValueMapping,
 } from "@/features/surfaces/types";
@@ -56,6 +57,8 @@ type UiSurfaceAgentRoleRow =
   Database["ui"]["Tables"]["ui_surface_agent_role"]["Row"];
 type UiSurfaceAgentRoleInsert =
   Database["ui"]["Tables"]["ui_surface_agent_role"]["Insert"];
+type UiSurfaceWriteTargetInsert =
+  Database["ui"]["Tables"]["ui_surface_write_target"]["Insert"];
 
 const VALUE_TYPES = [
   "string",
@@ -168,6 +171,37 @@ function manifestRoleRowFor(
     allow_custom: r.allowCustom ?? true,
     auto_run: r.autoRun ?? "user-choice",
     sort_order: r.sortOrder ?? 1000,
+  };
+}
+
+/**
+ * The WRITE half of the manifest, mirrored to the DB so the SERVER can see it.
+ *
+ * Read values told an agent what a surface SHOWS. Without this, nothing
+ * server-side knew what a surface ACCEPTS — so an agent bound to a surface
+ * could read the page and had no way to learn it was allowed to change
+ * anything. That is the missing half of the 360 loop; this row is what closes
+ * it (aidream reads these into the surface manifest feed).
+ *
+ * Code stays truth: the row is a projection, never edited by hand.
+ */
+function manifestWriteTargetRowFor(
+  surfaceName: string,
+  t: SurfaceWriteTarget,
+): UiSurfaceWriteTargetInsert {
+  return {
+    surface_name: surfaceName,
+    name: t.name,
+    label: t.label,
+    description: t.description,
+    value_type: t.valueType,
+    mode: t.mode,
+    // Default "manual" is the SAFE default and is written explicitly: a target
+    // that omits the field must never drift into agent-writable.
+    apply_policy: t.applyPolicy ?? "manual",
+    updates_value: t.updatesValue ?? null,
+    group_key: t.group ?? "general",
+    sort_order: t.sortOrder ?? 1000,
   };
 }
 
@@ -598,6 +632,10 @@ export interface ApplyManifestSyncResult {
   deleted: { surfaceName: string; valueName: string }[];
   /** Agent roles inserted / updated. */
   roleUpserted: { surfaceName: string; roleName: string }[];
+  /** Write targets inserted / updated (the manifest's write half). */
+  writeTargetUpserted: { surfaceName: string; targetName: string }[];
+  /** Write targets deleted (only when `deleteStale: true`). */
+  writeTargetDeleted: { surfaceName: string; targetName: string }[];
   /** Agent roles deleted (only when `deleteStale: true`). */
   roleDeleted: { surfaceName: string; roleName: string }[];
   /** `ui_surface_agent_pref` rows swept by FK CASCADE when stale roles were deleted. */
@@ -788,6 +826,30 @@ export async function applyManifestSync(
     }
   }
 
+  // 3b2. Upsert all manifest WRITE TARGETS — what agents may write into each
+  //      surface. Same code-is-truth contract as values and roles.
+  const writeTargetRows: UiSurfaceWriteTargetInsert[] = [];
+  for (const manifest of targetManifests) {
+    for (const t of manifest.writeTargets ?? []) {
+      writeTargetRows.push(manifestWriteTargetRowFor(manifest.surfaceName, t));
+    }
+  }
+  const writeTargetUpserted: ApplyManifestSyncResult["writeTargetUpserted"] = [];
+  if (writeTargetRows.length > 0) {
+    const wtRes = await sb
+      .schema("ui")
+      .from("ui_surface_write_target")
+      .upsert(writeTargetRows, { onConflict: "surface_name,name" })
+      .select("surface_name, name");
+    if (wtRes.error) throw wtRes.error;
+    for (const row of wtRes.data ?? []) {
+      writeTargetUpserted.push({
+        surfaceName: row.surface_name,
+        targetName: row.name,
+      });
+    }
+  }
+
   // 3c. Mirror the canonical label + value_groups + url_pattern (and
   //     manifest-declared intro) onto ui_surface for registered manifests.
   //     `label` and `value_groups` are ALWAYS written — THE NAMING LAW makes
@@ -967,6 +1029,43 @@ export async function applyManifestSync(
   }
 
   // 5. Re-run drift for the post-sync report.
+  // 4c. Delete stale write targets — a target removed from a manifest must
+  //     stop being advertised to agents, or the server keeps offering a write
+  //     nothing can service.
+  const writeTargetDeleted: ApplyManifestSyncResult["writeTargetDeleted"] = [];
+  if (deleteStale) {
+    const allDbTargets = await sb
+      .schema("ui")
+      .from("ui_surface_write_target")
+      .select("surface_name, name");
+    if (allDbTargets.error) throw allDbTargets.error;
+
+    const managedForTargets = new Set(targetManifests.map((m) => m.surfaceName));
+    const manifestTargetKeys = new Set(
+      targetManifests.flatMap((m) =>
+        (m.writeTargets ?? []).map((t) => `${m.surfaceName}::${t.name}`),
+      ),
+    );
+    const targetsToDelete = (allDbTargets.data ?? []).filter(
+      (t) =>
+        managedForTargets.has(t.surface_name) &&
+        !manifestTargetKeys.has(`${t.surface_name}::${t.name}`),
+    );
+    for (const row of targetsToDelete) {
+      const del = await sb
+        .schema("ui")
+        .from("ui_surface_write_target")
+        .delete()
+        .eq("surface_name", row.surface_name)
+        .eq("name", row.name);
+      if (del.error) throw del.error;
+      writeTargetDeleted.push({
+        surfaceName: row.surface_name,
+        targetName: row.name,
+      });
+    }
+  }
+
   const driftAfter = await computeDriftReport(sb);
 
   return {
@@ -974,6 +1073,8 @@ export async function applyManifestSync(
     deleted,
     roleUpserted,
     roleDeleted,
+    writeTargetUpserted,
+    writeTargetDeleted,
     sweptPrefCount,
     skippedMissingSurface,
     urlPatternsUpdated,

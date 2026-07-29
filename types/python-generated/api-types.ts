@@ -28955,6 +28955,57 @@ export interface components {
             always_available?: boolean;
         };
         /**
+         * ManifestWriteTargetEntry
+         * @description One thing an agent may WRITE into this surface.
+         *
+         *     The read half (``values``) tells an agent what the page shows. This tells
+         *     it what the page ACCEPTS. ``mode`` is the part an agent must respect:
+         *
+         *       ``draft``  — staged into the page's editor; the USER still saves it.
+         *       ``entity`` — persisted immediately through the page's own write path.
+         *       ``ui``     — ephemeral UI state (selection, focus); nothing persists.
+         *
+         *     ``updates_value`` names the declared value this target writes, when there
+         *     is a 1:1 read twin — that pair IS the evidence loop (read it, change it,
+         *     read it back).
+         */
+        ManifestWriteTargetEntry: {
+            /** Name */
+            name: string;
+            /**
+             * Value Type
+             * @default string
+             */
+            value_type?: string;
+            /**
+             * Mode
+             * @default draft
+             */
+            mode?: string;
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /**
+             * Apply Policy
+             * @default manual
+             */
+            apply_policy?: string;
+            /** Updates Value */
+            updates_value?: string | null;
+            /**
+             * Group Key
+             * @default general
+             */
+            group_key?: string;
+            /**
+             * Sort Order
+             * @default 1000
+             */
+            sort_order?: number;
+        };
+        /**
          * ManualCredentialsRequest
          * @description Non-OAuth connection credentials (api_key / bearer / basic / headers /
          *     stdio_env). Values are written sealed + non-editable.
@@ -36389,6 +36440,11 @@ export interface components {
              * @default []
              */
             groups?: components["schemas"]["ManifestGroupEntry"][];
+            /**
+             * Write Targets
+             * @default []
+             */
+            write_targets?: components["schemas"]["ManifestWriteTargetEntry"][];
             /** Intro */
             intro?: string | null;
         };

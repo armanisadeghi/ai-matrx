@@ -338,6 +338,11 @@ function BindingForm({
             taskId: scope === AGENT_SCOPES.TASK ? (scopeId ?? null) : null,
           },
           valueMappings: mappings,
+          // Round-trip: the edge payload is replaced wholesale on save, so an
+          // edit of the mappings must carry the binding's existing per-target
+          // write-policy overrides or they'd be silently cleared. Policies are
+          // edited in the Agent access column, not this form.
+          writePolicies: existing?.writePolicies ?? undefined,
         }),
       ).unwrap();
       toast.success(existing ? "Binding updated" : "Binding created");

@@ -13,6 +13,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -168,6 +169,30 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * What may be written INTO this window. Declared here, serviced by the tab
+ * that owns the state (`KeywordResearchTab` via `useSurfaceWriteHandlers`),
+ * reached by any rendered block or agent result through
+ * `applySurfaceWrite("keyword_selection", …)`.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "keyword_selection",
+    label: "Keyword selection",
+    description:
+      "Select or deselect one researched keyword as a supporting keyword candidate for the bound page. Value is { phrase: string, selected: boolean }. Ephemeral: it moves the window's selection only — the user still presses Add as supporting to persist. Rejected when the window has no page binding, or for the primary keyword itself.",
+    valueType: "object",
+    mode: "ui",
+    // A strategist agent proposing which keywords to support is genuinely
+    // useful, and it changes what the user is about to attach to their page —
+    // so it asks. Nothing here is persisted by the write itself; the user still
+    // presses Add as supporting.
+    applyPolicy: "ask",
+    group: "keyword_relationships",
+    sortOrder: 610,
+  },
+];
+
 export const keywordIntelligenceManifest: SurfaceManifest = {
   surfaceName: "matrx-user/keyword-intelligence",
   label: "Keyword Intelligence",
@@ -187,6 +212,7 @@ Numbers here are provider evidence — never fabricate or extrapolate them.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("context"), surfaceSpecific),
+  writeTargets,
   agentRoles: [
     {
       name: "keyword_strategist",

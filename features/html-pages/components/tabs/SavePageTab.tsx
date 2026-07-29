@@ -19,6 +19,11 @@ import {
 } from "@/components/ui/tooltip";
 import { PreviewPlaceholder } from "../PreviewPlaceholder";
 import type { HtmlPreviewTabProps } from "../types";
+import {
+  countSeoCharacters,
+  DESCRIPTION_LIMITS,
+  TITLE_LIMITS,
+} from "@/features/marketing/seo/serp/metrics";
 import { EmbeddedImageStudio } from "@/features/image-studio/components/EmbeddedImageStudio";
 
 export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
@@ -183,9 +188,10 @@ export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
             />
             <div className="flex justify-between items-center mt-1">
               <span
-                className={`text-xs ${actions.getCharacterCountStatus(state.metadata.title, 50, 60).color}`}
+                className={`text-xs ${actions.getCharacterCountStatus(state.metadata.title, "title").color}`}
               >
-                {state.metadata.title.length}/60 characters
+                {countSeoCharacters(state.metadata.title)}/
+                {TITLE_LIMITS.maxChars} characters
               </span>
               <span className="text-xs text-gray-500 dark:text-gray-400">
                 {actions.getSEORecommendation(state.metadata.title, "title")}
@@ -211,9 +217,10 @@ export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
             />
             <div className="flex justify-between items-center mt-1">
               <span
-                className={`text-xs ${actions.getCharacterCountStatus(state.metadata.description, 140, 160).color}`}
+                className={`text-xs ${actions.getCharacterCountStatus(state.metadata.description, "description").color}`}
               >
-                {state.metadata.description.length}/160 characters
+                {countSeoCharacters(state.metadata.description)}/
+                {DESCRIPTION_LIMITS.maxChars} characters
               </span>
               <span className="text-xs text-gray-500 dark:text-gray-400">
                 {actions.getSEORecommendation(
@@ -263,18 +270,15 @@ export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
               label="Social Share Image"
               onSaved={(result) => {
                 if (result.primary?.publicUrl) {
-                  actions.setMetadataField(
-                    "ogImage",
-                    result.primary.publicUrl,
-                  );
+                  actions.setMetadataField("ogImage", result.primary.publicUrl);
                 }
               }}
               onCleared={() => actions.setMetadataField("ogImage", "")}
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Drop one image, crop it, and we generate four social sizes
-              (Open Graph 1200×630 · Facebook · Twitter · Instagram) — every
-              variant gets a permanent CDN URL you can copy below.
+              Drop one image, crop it, and we generate four social sizes (Open
+              Graph 1200×630 · Facebook · Twitter · Instagram) — every variant
+              gets a permanent CDN URL you can copy below.
             </p>
           </div>
 

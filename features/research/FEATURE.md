@@ -284,6 +284,9 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-07-29 — Outputs Studio title/description counters now import the
+  canonical SEO limits and code-point counter from
+  `features/marketing/seo/serp/metrics.ts`.
 - 2026-07-29 — Claude: media size/tier/aspect heuristics extracted to the shared core `lib/media/categorization.ts` (type-agnostic `CategorizableMedia` shape; consumed by marketing's Media surfaces too). `components/media/mediaDimensions.ts` + `mediaCategorization.ts` are now thin ResearchMedia adapters that delegate — behavior unchanged; change thresholds/heuristics ONLY in the shared core.
 - 2026-07-28 — D98 fixed: OutputsStudio loading derived from fetch lifecycle; banned Sparkles icon replaced; stale lint disables removed.
 

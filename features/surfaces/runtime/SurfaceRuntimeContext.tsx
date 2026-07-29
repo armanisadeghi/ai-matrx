@@ -139,6 +139,172 @@ export function useSurfaceRuntime(): SurfaceRuntimeValue | null {
   return useSyncExternalStore(subscribe, getSurfaceRuntime, getServerSnapshot);
 }
 
+// ---------------------------------------------------------------------------
+// Composable write handlers — a DEEP CHILD can service its surface's targets.
+// ---------------------------------------------------------------------------
+
+/**
+ * The provider's `getWriteHandlers` prop assumes ONE component owns both the
+ * surface and every write target on it. Real surfaces do not work that way: a
+ * window owns the surface and publishes its scope, while a tab several levels
+ * down owns the state a target writes. Threading that state up just to satisfy
+ * the prop is the kind of plumbing that gets skipped, and a declared target
+ * with no handler fails loudly at apply time.
+ *
+ * So handlers are additionally registered by NAME against a surface, from
+ * anywhere in the tree. `applySurfaceWrite` consults both sources; a
+ * registered handler wins over the provider's (the deeper, more specific
+ * owner registered it).
+ */
+const extraHandlers = new Map<
+  string,
+  Array<{ id: number; handlers: SurfaceWriteHandlers }>
+>();
+
+/** Handlers registered by descendants for `surfaceName`, most recent first. */
+export function getRegisteredWriteHandlers(
+  surfaceName: string,
+): SurfaceWriteHandlers {
+  const entries = extraHandlers.get(surfaceName);
+  if (!entries || entries.length === 0) return {};
+  const merged: SurfaceWriteHandlers = {};
+  // Later registrations win: iterate oldest→newest and overwrite.
+  for (const entry of entries) Object.assign(merged, entry.handlers);
+  return merged;
+}
+
+/**
+ * Register write handlers for the surface this component sits inside.
+ *
+ * ```ts
+ * useSurfaceWriteHandlers("matrx-user/keyword-intelligence", {
+ *   keyword_selection: (value) => toggleKeyword(value),
+ * });
+ * ```
+ *
+ * The handlers object is held in a ref, so an inline literal is fine — it does
+ * not thrash the registry. Handlers may throw; the writeback runtime wraps
+ * every call in a safe, loud envelope.
+ */
+export function useSurfaceWriteHandlers(
+  surfaceName: string | null,
+  handlers: SurfaceWriteHandlers,
+): void {
+  const handlersRef = useRef(handlers);
+  useEffect(() => {
+    handlersRef.current = handlers;
+  });
+
+  useEffect(() => {
+    if (!surfaceName) return;
+    const id = ++nextId;
+    // Indirect through the ref so the registered functions always call the
+    // LATEST closure (fresh page state), never the one from mount.
+    const proxied: SurfaceWriteHandlers = {};
+    for (const key of Object.keys(handlersRef.current)) {
+      proxied[key] = (value: unknown) => handlersRef.current[key]?.(value);
+    }
+    const list = extraHandlers.get(surfaceName) ?? [];
+    extraHandlers.set(surfaceName, [...list, { id, handlers: proxied }]);
+    emit();
+    return () => {
+      const current = extraHandlers.get(surfaceName) ?? [];
+      const next = current.filter((entry) => entry.id !== id);
+      if (next.length === 0) extraHandlers.delete(surfaceName);
+      else extraHandlers.set(surfaceName, next);
+      emit();
+    };
+    // The KEY SET is the registration identity — a stable set of target names
+    // registers once for the component's life, while values stay fresh via the
+    // ref above.
+  }, [surfaceName, Object.keys(handlers).sort().join("|")]);
+}
+
+// ---------------------------------------------------------------------------
+// Surface client-tool handlers — the ACTION twin of the write handlers above.
+// ---------------------------------------------------------------------------
+
+/**
+ * One handler per declared `SurfaceClientTool.name`. A handler executes the
+ * tool against the live page (moves focus, stages a draft, runs the page's
+ * canonical write) and returns the tool OUTPUT the agent receives (any
+ * JSON-serializable value, or nothing). It may throw — the client-tool
+ * runtime (`surface-client-tools.ts`) wraps every call in a safe, loud
+ * envelope and never lets a throw escape to the delegation loop.
+ */
+export type SurfaceClientToolHandlers = Record<
+  string,
+  (input: unknown) => Promise<unknown> | unknown
+>;
+
+const extraClientToolHandlers = new Map<
+  string,
+  Array<{ id: number; handlers: SurfaceClientToolHandlers }>
+>();
+
+/**
+ * Client-tool handlers registered by descendants for `surfaceName`, most
+ * recent registration winning per name (mirror of
+ * `getRegisteredWriteHandlers`).
+ */
+export function getRegisteredSurfaceClientTools(
+  surfaceName: string,
+): SurfaceClientToolHandlers {
+  const entries = extraClientToolHandlers.get(surfaceName);
+  if (!entries || entries.length === 0) return {};
+  const merged: SurfaceClientToolHandlers = {};
+  // Later registrations win: iterate oldest→newest and overwrite.
+  for (const entry of entries) Object.assign(merged, entry.handlers);
+  return merged;
+}
+
+/**
+ * Register client-tool handlers for the surface this component sits inside —
+ * the exact registration shape of `useSurfaceWriteHandlers`, for the tools
+ * the surface declares in `SurfaceManifest.clientTools`.
+ *
+ * ```ts
+ * useSurfaceClientTools("matrx-user/content-plan", {
+ *   content_plan_focus_node: (input) => focusNode(input),
+ * });
+ * ```
+ *
+ * The handlers object is held in a ref, so an inline literal is fine and the
+ * registered functions always call the LATEST closure (fresh page state).
+ * Handlers may throw; the client-tool runtime wraps every call in a safe,
+ * loud envelope.
+ */
+export function useSurfaceClientTools(
+  surfaceName: string | null,
+  handlers: SurfaceClientToolHandlers,
+): void {
+  const handlersRef = useRef(handlers);
+  useEffect(() => {
+    handlersRef.current = handlers;
+  });
+
+  useEffect(() => {
+    if (!surfaceName) return;
+    const id = ++nextId;
+    const proxied: SurfaceClientToolHandlers = {};
+    for (const key of Object.keys(handlersRef.current)) {
+      proxied[key] = (input: unknown) => handlersRef.current[key]?.(input);
+    }
+    const list = extraClientToolHandlers.get(surfaceName) ?? [];
+    extraClientToolHandlers.set(surfaceName, [...list, { id, handlers: proxied }]);
+    emit();
+    return () => {
+      const current = extraClientToolHandlers.get(surfaceName) ?? [];
+      const next = current.filter((entry) => entry.id !== id);
+      if (next.length === 0) extraClientToolHandlers.delete(surfaceName);
+      else extraClientToolHandlers.set(surfaceName, next);
+      emit();
+    };
+    // The KEY SET is the registration identity — same contract as
+    // useSurfaceWriteHandlers above.
+  }, [surfaceName, Object.keys(handlers).sort().join("|")]);
+}
+
 /**
  * Nesting depth of the current provider subtree. Each SurfaceRuntimeProvider
  * publishes `ownDepth = parentDepth + 1` so nested providers always register

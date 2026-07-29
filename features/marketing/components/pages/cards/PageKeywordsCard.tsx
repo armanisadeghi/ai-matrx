@@ -24,31 +24,21 @@ import {
   formatSearchVolume,
   KeywordCompetitionBadge,
 } from "@/features/marketing/seo/keyword-research/components/KeywordMetrics";
-import { pickKeywordMarket } from "@/features/marketing/seo/keyword/data";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { useUpdatePageIntent } from "@/features/marketing/data/hooks";
 import {
   addPageSupportingKeyword,
   ensureKeywordId,
-  fetchKeywordsByIds,
-  listPageKeywordEdges,
+  fetchPageKeywordBoard,
   pageKeywordsQueryKey,
-  PAGE_KEYWORD_SUPPORTING_ROLE,
   removePageKeyword,
+  type PageKeywordBoardEntry,
 } from "@/features/marketing/data/page-keywords";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 import type { KeywordSuggestion } from "@/features/marketing/seo/keyword/types";
 import type { MarketingPage } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import { PageTaskButton } from "@/features/marketing/components/pages/PageTaskButton";
-
-interface BoardKeyword {
-  keywordId: string;
-  phrase: string;
-  role: string;
-  volume: number | null;
-  competition: string | null;
-}
 
 export function PageKeywordsCard({
   page,
@@ -69,25 +59,7 @@ export function PageKeywordsCard({
 
   const board = useQuery({
     queryKey: pageKeywordsQueryKey(page.id),
-    queryFn: async (): Promise<BoardKeyword[]> => {
-      const edges = await listPageKeywordEdges(page.id);
-      const rows = await fetchKeywordsByIds(edges.map((edge) => edge.otherId));
-      const byId = new Map(rows.map((row) => [row.id, row]));
-      return edges
-        .map((edge): BoardKeyword | null => {
-          const row = byId.get(edge.otherId);
-          if (!row) return null;
-          const market = pickKeywordMarket(row.keyword_market);
-          return {
-            keywordId: row.id,
-            phrase: row.phrase,
-            role: edge.role ?? PAGE_KEYWORD_SUPPORTING_ROLE,
-            volume: market?.search_volume ?? null,
-            competition: market?.competition ?? null,
-          };
-        })
-        .filter((entry): entry is BoardKeyword => entry !== null);
-    },
+    queryFn: () => fetchPageKeywordBoard(page.id),
   });
 
   const invalidate = () =>
@@ -148,7 +120,7 @@ export function PageKeywordsCard({
     addMutation.mutate(trimmed);
   };
 
-  const remove = async (entry: BoardKeyword) => {
+  const remove = async (entry: PageKeywordBoardEntry) => {
     setBusyKeywordId(entry.keywordId);
     try {
       await removePageKeyword(page.id, entry.keywordId, entry.role);
@@ -166,7 +138,7 @@ export function PageKeywordsCard({
    * Promote a supporting keyword to the page's primary (target_keyword). The
    * old primary is preserved in the supporting batch instead of vanishing.
    */
-  const promote = async (entry: BoardKeyword) => {
+  const promote = async (entry: PageKeywordBoardEntry) => {
     setBusyKeywordId(entry.keywordId);
     try {
       await intentMutation.mutateAsync({

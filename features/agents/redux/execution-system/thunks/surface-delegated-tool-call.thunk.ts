@@ -16,6 +16,9 @@
  *     handle resolves or posts not_found).
  *   - ui-first tools  → `dispatchUiFirstTool` (validates, runs the handler —
  *     which may await the user — then POSTs the result).
+ *   - surface client tools (`SurfaceManifest.clientTools`) →
+ *     `dispatchSurfaceClientTool` (runs the mounted page's registered handler
+ *     via `executeSurfaceClientTool`, then POSTs the result).
  *   - desktop tools (`local_*`, matrx-local executor) → NOT ours to answer.
  *     While a desktop is online we leave the ledger row in `delegated` — the
  *     matrx-local engine polls `GET /ai/user/pending_calls`, executes, POSTs
@@ -56,6 +59,8 @@ import { isWarRoomMasterToolName } from "@/features/agents/war-room-master-tools
 import { dispatchWarRoomMasterTool } from "@/features/agents/war-room-master-tools/dispatcher/dispatch-war-room-master-tool.thunk";
 import { isScribeToolName } from "@/features/agents/scribe-tools/tools/names";
 import { dispatchScribeTool } from "@/features/agents/scribe-tools/dispatcher/dispatch-scribe-tool.thunk";
+import { isDeclaredSurfaceClientToolName } from "@/features/surfaces/runtime/surface-client-tools";
+import { dispatchSurfaceClientTool } from "./dispatch-surface-client-tool.thunk";
 import { getLiveDesktopInstance } from "../client-capabilities/desktop-presence";
 import { watchDesktopDelegation } from "./watch-desktop-delegation.thunk";
 
@@ -207,6 +212,27 @@ export const surfaceDelegatedToolCall = (
       // no approval pause (playing the user's own recording is non-destructive).
       dispatch(
         dispatchScribeTool({
+          conversationId,
+          requestId,
+          callId,
+          toolName,
+          args: (data?.arguments as Record<string, unknown>) ?? {},
+        }),
+      );
+      return;
+    }
+
+    if (isDeclaredSurfaceClientToolName(toolName)) {
+      // SURFACE client tools (SurfaceManifest.clientTools). Armed automatically
+      // for any conversation launched while a declaring surface is mounted
+      // with a live handler (buildToolInjection reads the mounted stack). The
+      // dispatcher runs the page handler through the ONE surface client-tool
+      // runtime (deepest declaring surface wins) and POSTs the result — every
+      // contract break (surface unmounted since launch, handler gone, handler
+      // threw) comes back as a loud error result so the suspended loop never
+      // wedges.
+      dispatch(
+        dispatchSurfaceClientTool({
           conversationId,
           requestId,
           callId,

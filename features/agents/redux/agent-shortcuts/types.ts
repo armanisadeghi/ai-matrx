@@ -9,7 +9,10 @@ import type { VariablesPanelStyle } from "@/features/agents/components/inputs/va
 import type { JsonExtractionConfig } from "@/features/agents/types/instance.types";
 import type { Database } from "@/types/database.types";
 import type { FieldFlags } from "@/features/agents/redux/shared/field-flags";
-import type { ValueMappingMap } from "@/features/surfaces/types";
+import type {
+  ValueMappingMap,
+  WritePolicyMap,
+} from "@/features/surfaces/types";
 
 export type { ResultDisplayMode, ShortcutContext };
 
@@ -80,6 +83,16 @@ export interface AgentShortcut {
    * columns.
    */
   valueMappings: ValueMappingMap | null;
+  /**
+   * Per-write-target applyPolicy overrides — the shortcut is the STRONGEST
+   * layer of the same launch-time merge as binding `write_policies`.
+   * Stored (no DDL) INSIDE the `value_mappings` JSONB under the reserved
+   * `__write_policies` key; the converters are the ONE serializer pair
+   * (`parseShortcutWritePolicies` lifts, `packShortcutValueMappings` nests).
+   * Optional so partial record constructions don't have to name it; treat
+   * absent as null.
+   */
+  writePolicies?: WritePolicyMap | null;
   /** UI scope key → agent context-slot key. Parity with scopeMappings. */
   contextMappings: Record<string, string> | null;
 

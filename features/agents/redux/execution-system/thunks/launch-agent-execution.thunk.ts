@@ -26,7 +26,11 @@ import type {
 } from "@/features/agents/types/instance.types";
 import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
 import { toast } from "@/lib/toast";
-import type { ValueMapping, ValueMappingMap } from "@/features/surfaces/types";
+import type {
+  ValueMapping,
+  ValueMappingMap,
+  WritePolicyMap,
+} from "@/features/surfaces/types";
 import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/bind-agent-to-surface.service";
 import {
   mergeValueMappingLayers,
@@ -35,6 +39,7 @@ import {
 } from "@/features/surfaces/utils/merge-value-mappings";
 import { resolveShortcutMappings } from "@/features/agent-shortcuts/utils/resolveShortcutMappings";
 import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
+import { registerSurfaceWritePolicies } from "@/features/surfaces/runtime/surface-writeback";
 import { withSurfaceDocumentEvidence } from "@/features/surfaces/utils/document-evidence";
 import {
   promptForValues,
@@ -160,6 +165,8 @@ interface ShortcutMappingSource {
   valueMappings: ValueMappingMap | null;
   scopeMappings: Record<string, string> | null;
   contextMappings: Record<string, string> | null;
+  /** The shortcut's per-write-target overrides — strongest layer of the merge. */
+  writePolicies?: WritePolicyMap | null;
 }
 
 async function resolveLaunchMappingLayers(
@@ -173,14 +180,31 @@ async function resolveLaunchMappingLayers(
   }
   if (shortcut) {
     const shortcutMappings = resolveShortcutMappings(shortcut);
-    if (Object.keys(shortcutMappings).length > 0) {
-      layers.push({ name: "shortcut", mappings: shortcutMappings });
+    const shortcutPolicies = shortcut.writePolicies ?? null;
+    // A shortcut that ONLY overrides write policies is still the strongest
+    // layer — dropping it would discard the user's manual/ask/auto choice.
+    if (
+      Object.keys(shortcutMappings).length > 0 ||
+      (shortcutPolicies && Object.keys(shortcutPolicies).length > 0)
+    ) {
+      layers.push({
+        name: "shortcut",
+        mappings: shortcutMappings,
+        writePolicies: shortcutPolicies,
+      });
     }
   }
   if (layers.length === 0) return null;
 
   const result = mergeValueMappingLayers(layers);
-  if (Object.keys(result.merged).length === 0) return null;
+  // A binding that ONLY overrides write policies (no mappings) is still a
+  // result — dropping it would discard the user's manual/ask/auto choice.
+  if (
+    Object.keys(result.merged).length === 0 &&
+    Object.keys(result.writePolicies).length === 0
+  ) {
+    return null;
+  }
 
   for (const inert of result.inertLayers) {
     console.warn(
@@ -189,6 +213,30 @@ async function resolveLaunchMappingLayers(
     );
   }
   return result;
+}
+
+/**
+ * Register the run's binding-resolved write-policy overrides with the
+ * writeback runtime (the user's manual/ask/auto choice, made wherever they
+ * bound the agent). Keyed by (agent, surface) so a re-launch REPLACES the
+ * prior registration instead of stacking. The surface's own per-target
+ * default still floors `manual` — a binding can tighten, never open.
+ */
+function applyLaunchWritePolicies(
+  resolved: MergedValueMappings | null,
+  agentId: string,
+  surfaceName: string | null | undefined,
+): void {
+  // No surface ⇒ no targets these could ever apply to. No resolution ⇒ leave
+  // whatever stands (we learned nothing new about the binding).
+  if (!surfaceName || !resolved) return;
+  // Register even an EMPTY map: keyed replacement is how removing an override
+  // from the binding actually takes effect on relaunch (adversarial find D4).
+  registerSurfaceWritePolicies(
+    resolved.writePolicies,
+    `${agentId}::${surfaceName}`,
+    surfaceName,
+  );
 }
 
 async function prepareLaunchMappings(args: {
@@ -527,11 +575,19 @@ export const launchAgentExecution = createAsyncThunk<
           err,
         );
         const shortcutOnly = resolveShortcutMappings(shortcut);
+        const shortcutOnlyPolicies = shortcut.writePolicies ?? {};
         resolvedLayers =
-          Object.keys(shortcutOnly).length > 0
-            ? { merged: shortcutOnly, provenance: {}, inertLayers: [] }
+          Object.keys(shortcutOnly).length > 0 ||
+          Object.keys(shortcutOnlyPolicies).length > 0
+            ? {
+                merged: shortcutOnly,
+                provenance: {},
+                inertLayers: [],
+                writePolicies: shortcutOnlyPolicies,
+              }
             : null;
       }
+      applyLaunchWritePolicies(resolvedLayers, shortcut.agentId, surfaceName);
       if (resolvedLayers) {
         // Validation/prompt failures here are intentional launch aborts.
         shortcutSurfaceMappings = await prepareLaunchMappings({
@@ -677,6 +733,7 @@ export const launchAgentExecution = createAsyncThunk<
               err,
             );
           }
+          applyLaunchWritePolicies(resolvedLayers, agentId, surfaceName);
           if (resolvedLayers) {
             // Validation/prompt failures are intentional launch aborts.
             surfaceValueMappings = await prepareLaunchMappings({

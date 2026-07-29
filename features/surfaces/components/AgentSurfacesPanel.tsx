@@ -852,6 +852,13 @@ function BindingEditorDialog({
             taskId: scope === AGENT_SCOPES.TASK ? (scopeId ?? null) : null,
           },
           valueMappings: mappings,
+          // Round-trip: the edge payload is replaced wholesale, so an edit of
+          // the mappings must carry the binding's stored write-policy
+          // overrides or they'd be silently cleared.
+          writePolicies:
+            existing?.surfaceName === surfaceName
+              ? (existing?.writePolicies ?? undefined)
+              : undefined,
         }),
       ).unwrap();
 

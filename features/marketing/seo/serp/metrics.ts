@@ -3,10 +3,10 @@
  *
  * Measurement is DETERMINISTIC: a shared character-width table
  * (`char-widths.ts`) that is an exact mirror of the Python backend
- * (aidream `seo/utils/meta_calculators.py`). The same string produces the
- * same pixel width in the browser, during SSR, in a unit test, and in the
- * scraper's crawl-time computation — so persisted metrics, live previews,
- * and agent tool checks can never disagree.
+ * (aidream `packages/matrx-scraper/matrx_scraper/meta_metrics.py`). The same
+ * string produces the same pixel width in the browser, during SSR, in a unit
+ * test, and in the scraper's crawl-time computation — so persisted metrics,
+ * live previews, and agent tool checks can never disagree.
  *
  * History: this module originally measured via a browser canvas while Python
  * used the character table, which meant client and server widths could drift
@@ -14,8 +14,8 @@
  * copies of the limits in the frontend (580px / 600px / 600px…). Anything
  * that needs an SEO limit, a pixel measurement, or an evaluation imports it
  * from HERE — and any change to limits, table, or issue wording must land in
- * `meta_calculators.py` in the same unit of work (parity is unit-tested in
- * `metrics.parity.test.ts` against Python-generated fixtures).
+ * `matrx_scraper/meta_metrics.py` in the same unit of work (parity is
+ * unit-tested in `metrics.parity.test.ts` against Python-generated fixtures).
  */
 
 import { calculateTextWidth } from "./char-widths";
@@ -28,9 +28,7 @@ export const DESCRIPTION_FONT_PX = 13;
 /** Meta-title limits (mirror of `calculate_meta_title_metrics`). */
 export const TITLE_LIMITS = {
   desktopPx: 600,
-  mobilePx: 500,
-  /** Width used for the desktop progress bar / visual truncation. */
-  displayPx: 600,
+  mobilePx: 600,
   maxChars: 60,
   minChars: 15,
 } as const;
@@ -38,9 +36,7 @@ export const TITLE_LIMITS = {
 /** Meta-description limits (mirror of `calculate_meta_description_metrics`). */
 export const DESCRIPTION_LIMITS = {
   desktopPx: 920,
-  mobilePx: 680,
-  /** Width used for the desktop progress bar / visual truncation. */
-  displayPx: 920,
+  mobilePx: 920,
   maxChars: 160,
   minChars: 70,
 } as const;
@@ -72,12 +68,12 @@ export function measureSerpWidth(
 }
 
 /** Unicode code-point count — matches Python `len(str)`, not UTF-16 units. */
-function codePointCount(text: string): number {
+export function countSeoCharacters(text: string): number {
   return Array.from(text).length;
 }
 
 export function evaluateMetaTitle(title: string): MetaEvaluation {
-  const charCount = codePointCount(title);
+  const charCount = countSeoCharacters(title);
   if (!title.trim()) {
     return {
       pixelWidth: 0,
@@ -126,7 +122,7 @@ export function evaluateMetaTitle(title: string): MetaEvaluation {
 }
 
 export function evaluateMetaDescription(description: string): MetaEvaluation {
-  const charCount = codePointCount(description);
+  const charCount = countSeoCharacters(description);
   if (!description.trim()) {
     return {
       pixelWidth: 0,

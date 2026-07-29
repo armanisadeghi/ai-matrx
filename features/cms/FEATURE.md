@@ -21,6 +21,7 @@ build plan this feature is part of (project P5).
 ## Entry points
 
 **Routes**
+
 - `app/(core)/cms/page.tsx` — site list (owner-scoped)
 - `app/(core)/cms/[siteId]/page.tsx` — page list for a site
 - `app/(core)/cms/[siteId]/settings/page.tsx` — site settings + delete (danger zone)
@@ -34,13 +35,16 @@ build plan this feature is part of (project P5).
 - `app/(admin)/administration/knowledge/cms-agents/page.tsx` — **agent visibility surface** (super-admin gated by the `(admin)` layout): live activity feed, per-site page tree, agent-write-policy editor, validation-exception approvals queue
 
 **Services**
+
 - `features/cms/services/cmsService.ts` — `CmsSiteService` / `CmsPageService` / `CmsVersionService` / `CmsComponentService` / `CmsApprovalsService` / `CmsAssetService` / `CmsCollectionService`, all POST `{action}` dispatch against `/api/cms/*` (`CmsAssetService.deleteAsset` throws `AssetInUseError` carrying the live usage detail on a 409)
 
 **Hooks**
+
 - `features/cms/hooks/useCmsSites.ts`, `useCmsPages.ts`, `useCmsVersions.ts` — owner-scoped CRUD hooks
 - `features/cms/hooks/useCmsAdminActivity.ts` — polls the admin activity feed (8s interval)
 
 **API endpoints** (all single-POST `{action, ...}` dispatch, secret key `SUPABASE_HTML_SECRET_KEY` bypasses RLS — ownership enforced in app code)
+
 - `POST /api/cms/sites` — `list/get/create/update/delete` (owner-scoped) + `admin_list_sites/admin_update_policy/admin_list_activity` (requireSuperAdmin)
 - `POST /api/cms/pages` — `list/get/create/promote/update/save-draft/publish/discard-draft/rollback/delete` (owner-scoped) + `admin_list` (requireSuperAdmin). `promote` (W2-A) copies an owned `html_pages` row onto an owned site as a NEW draft page: converter split per the my-matrx `/p/[id]` renderer via `features/html-pages/utils/promoteConvert.ts` (TS twin of aidream `services/cms/convert.py`; both test byte-identically against the shared `promote-convert-fixtures.json` — change semantics ⇒ change both), content lands ONLY in `_draft` twins (never auto-published), provenance both directions (`client_pages.source_*` cols, CMS migration 0008 / `html_pages.context_metadata.promotions[]`), idempotent per `(client_id, source_html_page_id)` unless `forceNew`.
 - `POST /api/cms/components` — `list/get/create/update/delete` (owner-scoped)
@@ -54,10 +58,12 @@ build plan this feature is part of (project P5).
 - `POST /api/html-pages` — standalone `html_pages` CRUD (see `features/html-pages/README.md`)
 
 **Shared server helpers**
+
 - `app/api/cms/_lib/cmsDb.ts` — `getCmsClient()`, `verifySiteOwnership`, `verifyPageOwnership`, `verifyComponentOwnership`, `verifyAssetOwnership`, `verifyCollectionOwnership`
 - `app/api/cms/_lib/activityLog.ts` — `logCmsActivity()`, the C6 contract writer
 
 **Redux slice(s)**
+
 - None. This feature intentionally has no Redux slice — every route fetches directly via the service layer (small dataset, no cross-route shared state today). If a future addition needs shared state, extend an existing slice per repo doctrine before adding one.
 
 ---
@@ -68,15 +74,15 @@ Five `ui_surface` rows under `matrx-user/` give every CMS/HTML-page route a cano
 context menu with live agent context — see the `surface-authoring` and `surface-pro-rollout` skills
 for the general contract this section instantiates.
 
-| Surface | Route(s) | Menu | Notes |
-|---|---|---|---|
-| `matrx-user/cms` | `/cms` | `NonEditableContextMenu` (page + per-card) | List/entry hub — `owned_sites_summary`, no `site_structure`. **`readiness: verified`** |
-| `matrx-user/cms-site` | `/cms/[siteId]` + all four tabs | `NonEditableContextMenu` | Site workspace; first surface to emit `site_structure`. **Inherits `matrx-user/cms`** (the layout genuinely loads the switcher's site list). **`readiness: verified`** |
-| `matrx-user/cms-page` | `/cms/[siteId]/pages/[pageId]`, `.../pages/new` | `EditableContextMenu` + `ProTextarea` on HTML/CSS/JS tabs | **Primary editor** — `agentRoles`: `page_editor`, `seo_editor`, `publish_reviewer` |
-| `matrx-user/cms-component` | `/cms/[siteId]/components` | `EditableContextMenu` + `ProTextarea` (HTML/CSS) + `NonEditableContextMenu` (cards) | Shared header/footer editor |
-| `matrx-user/html-page` | `/cms/html-pages`, `/cms/html-pages/[pageId]` | `EditableContextMenu` (meta description `ProTextarea` + Monaco body) + `NonEditableContextMenu` (preview) | Standalone quick-publish — `html_pages_structure`, not `site_structure`; `agentRoles`: `html_page_editor` |
+| Surface                    | Route(s)                                        | Menu                                                                                                      | Notes                                                                                                                                                                  |
+| -------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `matrx-user/cms`           | `/cms`                                          | `NonEditableContextMenu` (page + per-card)                                                                | List/entry hub — `owned_sites_summary`, no `site_structure`. **`readiness: verified`**                                                                                 |
+| `matrx-user/cms-site`      | `/cms/[siteId]` + all four tabs                 | `NonEditableContextMenu`                                                                                  | Site workspace; first surface to emit `site_structure`. **Inherits `matrx-user/cms`** (the layout genuinely loads the switcher's site list). **`readiness: verified`** |
+| `matrx-user/cms-page`      | `/cms/[siteId]/pages/[pageId]`, `.../pages/new` | `EditableContextMenu` + `ProTextarea` on HTML/CSS/JS tabs                                                 | **Primary editor** — `agentRoles`: `page_editor`, `seo_editor`, `publish_reviewer`                                                                                     |
+| `matrx-user/cms-component` | `/cms/[siteId]/components`                      | `EditableContextMenu` + `ProTextarea` (HTML/CSS) + `NonEditableContextMenu` (cards)                       | Shared header/footer editor                                                                                                                                            |
+| `matrx-user/html-page`     | `/cms/html-pages`, `/cms/html-pages/[pageId]`   | `EditableContextMenu` (meta description `ProTextarea` + Monaco body) + `NonEditableContextMenu` (preview) | Standalone quick-publish — `html_pages_structure`, not `site_structure`; `agentRoles`: `html_page_editor`                                                              |
 
-**The framing idea:** every website surface (`cms-site`/`cms-page`/`cms-component`) emits the *same*
+**The framing idea:** every website surface (`cms-site`/`cms-page`/`cms-component`) emits the _same_
 compact `site_structure` XML — `features/cms/utils/buildSiteStructureXml.ts` (pure, size-capped at
 12KB, collapses non-current pages under load). `matrx-user/html-page` emits the smaller, distinct
 `html_pages_structure` (`features/html-pages/utils/buildHtmlPagesStructureXml.ts`) — a flat sibling
@@ -115,6 +121,7 @@ main AI Matrx DB (`txzxabzwovsujtloxrus`), separate Auth domain, separate RLS. N
 Supabase MCP at the wrong project for this feature.
 
 **Tables**
+
 - `client_sites` — one row per site. `settings` jsonb holds `agent_write_policy` (`blocked | draft_only | full`, F4) and `policy_overrides` — no dedicated columns.
 - `client_pages` — draft/publish twin columns (`*_draft`), `has_draft`, `is_published`, category/slug routing fields.
 - `client_components` — header/footer/etc., same draft-twin pattern.
@@ -222,12 +229,14 @@ leading slash, no trailing slash, **arbitrary depth**. Sites are no longer cappe
 ## Key flows
 
 ### 1. Human edits a page (owner-scoped)
+
 `app/(core)/cms/[siteId]/pages/[pageId]/page.tsx` → `CmsPageService.saveDraft/updatePage` →
 `POST /api/cms/pages {action: "save-draft"|"update"}` → ownership check
 (`verifyPageOwnership`) → DB write → `logCmsActivity(actor: "human")`. Publish goes through the
 `publish_page_draft` RPC the same way; discard likewise. Rollback goes through `version_restore`.
 
 ### 1b. Human reads / restores a version
+
 `PageEditor` "History" tab → `useCmsVersions` → `CmsVersionService.listVersions(rowId, entityType)` →
 `POST /api/cms/versions {action:"list"}` → ownership check → `version_list` RPC. `entityType`
 defaults to `client_page`, and `list` still accepts the legacy `pageId` param. Every change shows
@@ -242,6 +251,7 @@ action return** — matched field for field (`services/cms/dtos.py::VersionSumma
 Change one, change both.
 
 ### 2. Arman watches agent activity (visibility surface)
+
 `/administration/knowledge/cms-agents` → `CmsAgentsAdminClient` fetches `admin_list_sites` once, then each
 tab polls independently: `ActivityFeedPanel` polls `admin_list_activity` every 8s (filterable by
 site/entity/actor, agent rows visually distinct via `changes.actor`); `SitePageTreePanel` reads
@@ -249,6 +259,7 @@ site/entity/actor, agent rows visually distinct via `changes.actor`); `SitePageT
 on every request, independent of the `(admin)` layout gate.
 
 ### 3. Site delete (guarded, cascading)
+
 Settings page → `TextInputDialog` requires typing the exact slug → `CmsSiteService.deleteSite(id,
 force=false)` → route counts `client_pages`; if non-empty and not forced, 409s with `pageCount` →
 UI catches `SiteNotEmptyError`, re-prompts via `ConfirmDialog` with `force=true` → single cascading
@@ -256,6 +267,7 @@ UI catches `SiteNotEmptyError`, re-prompts via `ConfirmDialog` with `force=true`
 site it describes).
 
 ### 4. Agent-write-policy change (F4)
+
 `PolicyEditorPanel` → `CmsSiteService.adminUpdatePolicy(siteId, {agentWritePolicy})` →
 `admin_update_policy` merges into `client_sites.settings` (never overwrites the whole jsonb blob) →
 logged. **This route only edits the setting — enforcement is P1's service-layer hook
@@ -315,6 +327,7 @@ gate primitive), `toast` from `sonner`, `date-fns` `formatDistanceToNow`, the `(
 group's server-side super-admin layout gate.
 
 **Primitives introduced**
+
 - `app/api/cms/_lib/cmsDb.ts` / `activityLog.ts` (`getCmsClient`, ownership checks, `logCmsActivity`) — Why: was previously copy-pasted verbatim across 4 route files; extracted so every new `/api/cms/*` route (and the new admin/approvals routes) shares one client factory and one C6-shape writer instead of re-forking both. Considered extending: nothing existed to extend — this is the extraction itself.
 - `features/cms/utils/pageUrls.ts` (C4) — Why: no TS implementation of my-matrx's routing rules existed anywhere in this repo; the visibility surface needs it to link out to live/preview URLs. Considered extending: none — genuinely new, and explicitly named as a day-1 contract (C4) in the master plan.
 
@@ -333,6 +346,8 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-07-29` — CMS page metadata counters now consume the canonical SERP
+  code-point counter and limits; no CMS-local SEO thresholds remain.
 - `2026-07-29` — **Marketing "Push to CMS" support.** `CmsPageService.createPage` gained `parentId`
   (the route already accepted it — the trigger derives `parent.route + '/' + slug`) and both
   `createPage` + `saveDraft` gained an optional `provenance` object, which `/api/cms/pages`
@@ -360,7 +375,7 @@ UI-complete here but only take effect once P1's service layer reads them.
   The `promote` uniqueness scan moved from `slug` to `route` — the DB constraint did too. `route` is
   trigger-maintained and never written. `url-rules.json` was rewritten in aidream and re-copied here
   byte-identical: 13 client-page cases (deep routes, saved-`route`-wins, `'general'`, category-index)
-  + 1 html-page case, all executing.
+  - 1 html-page case, all executing.
 - `2026-07-27` — **`matrx-user/cms` + `matrx-user/cms-site` driven from `stub` to `verified`.**
   Full completeness audit of `/cms` and `/cms/[siteId]` (+ Pages / Components / Collections /
   Settings): hub 3 → 7 own values in 3 curated groups; site 9 → 36 own values in 6 curated groups,
@@ -511,8 +526,7 @@ UI-complete here but only take effect once P1's service layer reads them.
   (`page_id` → `row_id`, `published_by` → `actor_id`, new `entity_type`), so `ClientPageVersion` →
   `ClientEntityVersion` / `ClientEntityVersionDetail` (raw `data` snapshot + `pageVersionContent()`
   reader). `/api/cms/versions` takes an `entityType` token and enforces a per-entity `OWNERSHIP` map
-  (new `verifyAssetOwnership` / `verifyHtmlPageOwnership` in `_lib/cmsDb.ts`); an unknown token is a
-  400. Verified live end-to-end: site/page/component/html_page history reads, a raw-snapshot `get`,
+  (new `verifyAssetOwnership` / `verifyHtmlPageOwnership` in `_lib/cmsDb.ts`); an unknown token is a 400. Verified live end-to-end: site/page/component/html_page history reads, a raw-snapshot `get`,
   and 403 on every entity for rows the caller does not own. Also graveyarded the orphan CMS
   `dashboard_saved_views` (0 rows; the real one is on the main project).
 

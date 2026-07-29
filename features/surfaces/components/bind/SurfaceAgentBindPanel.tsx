@@ -42,6 +42,7 @@ import {
 import {
   bindAgentToSurface,
   listAgentSurfaceBindings,
+  type AgentSurfaceBinding,
 } from "@/features/surfaces/services/bind-agent-to-surface.service";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type {
@@ -112,14 +113,9 @@ export function SurfaceAgentBindPanel({
   const [busy, setBusy] = useState(false);
   const [guardOpen, setGuardOpen] = useState(false);
   const [seededForAgent, setSeededForAgent] = useState<string | null>(null);
-  const [assocBindings, setAssocBindings] = useState<
-    Array<{
-      id: string;
-      surfaceName: string;
-      userId: string | null;
-      valueMappings: ValueMappingMap;
-    }>
-  >([]);
+  const [assocBindings, setAssocBindings] = useState<AgentSurfaceBinding[]>(
+    [],
+  );
   const [bindingsLoadedFor, setBindingsLoadedFor] = useState<string | null>(
     null,
   );
@@ -291,11 +287,23 @@ export function SurfaceAgentBindPanel({
       // Explicit picker org when Org-scoped; otherwise personal/active org
       // only as assoc_add access key (tier still comes from bindScope).
       const accessOrgId = await ensureOrgId(bindScope.organizationId);
+      // Round-trip: the upsert replaces the edge payload wholesale — if this
+      // (agent, surface, tier) already has a binding, carry its stored
+      // write-policy overrides so a re-bind can't silently clear them.
+      const priorAtTier = assocBindings.find(
+        (b) =>
+          b.surfaceName === surfaceName &&
+          b.userId === bindScope.userId &&
+          b.organizationId === bindScope.organizationId &&
+          b.projectId === bindScope.projectId &&
+          b.taskId === bindScope.taskId,
+      );
       const saved = await bindAgentToSurface({
         agentId: bindAgentId,
         surfaceName,
         scope: bindScope,
         valueMappings: mappings,
+        writePolicies: priorAtTier?.writePolicies,
         accessOrgId,
       });
       toast.success(`Bound to ${displaySurface}`);

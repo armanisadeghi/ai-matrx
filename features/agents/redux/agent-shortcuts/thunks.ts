@@ -234,6 +234,8 @@ import {
   agentShortcutToInsert,
   agentShortcutToUpdate,
   parseValueMappings,
+  parseShortcutWritePolicies,
+  packShortcutValueMappings,
 } from "./converters";
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
@@ -324,6 +326,9 @@ export const buildAgentShortcutMenu = createAsyncThunk<
             (item as { surface_name?: string | null }).surface_name ?? null,
           scopeMappings: parseScopeMappings(item.scope_mappings),
           valueMappings: parseValueMappings(
+            (item as { value_mappings?: unknown }).value_mappings,
+          ),
+          writePolicies: parseShortcutWritePolicies(
             (item as { value_mappings?: unknown }).value_mappings,
           ),
           contextMappings: parseScopeMappings(item.context_mappings),
@@ -441,6 +446,9 @@ export const fetchShortcutsForContext = createAsyncThunk<
         valueMappings: parseValueMappings(
           (row as { value_mappings?: unknown }).value_mappings,
         ),
+        writePolicies: parseShortcutWritePolicies(
+          (row as { value_mappings?: unknown }).value_mappings,
+        ),
         contextMappings: parseScopeMappings(row.context_mappings),
 
         ...menuItemToConfigFields(row),
@@ -516,6 +524,16 @@ export const saveShortcut = createAsyncThunk<void, string, ThunkApi>(
       assignField(dirtyPartial, field, record[field]);
     }
 
+    // valueMappings + writePolicies share ONE JSONB column — when either is
+    // dirty, ship both from the record so the pack never clears a half.
+    if (
+      dirtyPartial.valueMappings !== undefined ||
+      dirtyPartial.writePolicies !== undefined
+    ) {
+      dirtyPartial.valueMappings = record.valueMappings;
+      dirtyPartial.writePolicies = record.writePolicies ?? null;
+    }
+
     const snapshot = { ...record._fieldHistory };
 
     dispatch(setShortcutLoading({ id: shortcutId, loading: true }));
@@ -559,12 +577,27 @@ export const saveShortcutField = createAsyncThunk<
     // Optimistic update
     dispatch(setShortcutField({ id: shortcutId, field, value }));
 
+    // valueMappings + writePolicies share ONE JSONB column — a single-field
+    // save of either must carry the other from the existing record or the
+    // pack clears it.
+    const patch: Partial<AgentShortcut> =
+      field === "valueMappings" || field === "writePolicies"
+        ? {
+            valueMappings:
+              field === "valueMappings"
+                ? (value as AgentShortcut["valueMappings"])
+                : (existing?.valueMappings ?? null),
+            writePolicies:
+              field === "writePolicies"
+                ? (value as AgentShortcut["writePolicies"])
+                : (existing?.writePolicies ?? null),
+          }
+        : ({ [field]: value } as Partial<AgentShortcut>);
+
     const { error } = await supabase
       .schema("agent")
       .from("shortcut")
-      .update(
-        agentShortcutToUpdate({ [field]: value } as Partial<AgentShortcut>),
-      )
+      .update(agentShortcutToUpdate(patch))
       .eq("id", shortcutId);
 
     if (error) {
@@ -832,6 +865,7 @@ export const syncUserShortcutToSlice = createAsyncThunk<
       surfaceName: item.surface_name ?? null,
       scopeMappings: item.scope_mappings,
       valueMappings: parseValueMappings(item.value_mappings),
+      writePolicies: parseShortcutWritePolicies(item.value_mappings),
       contextMappings: item.context_mappings,
       ...menuItemToConfigFields(item),
       isActive: item.is_active,
@@ -905,6 +939,7 @@ export function shortcutRowToFrontend(row: ShortcutApiRow): AgentShortcut {
     surfaceName: row.surface_name ?? null,
     scopeMappings: parseScopeMappings(row.scope_mappings),
     valueMappings: parseValueMappings(row.value_mappings),
+    writePolicies: parseShortcutWritePolicies(row.value_mappings),
     contextMappings: parseScopeMappings(row.context_mappings),
     ...menuItemToConfigFields(row),
     isActive: row.is_active,
@@ -937,8 +972,28 @@ function shortcutToApiBody(
   if (patch.surfaceName !== undefined) out.surface_name = patch.surfaceName;
   if (patch.scopeMappings !== undefined)
     out.scope_mappings = patch.scopeMappings as unknown;
-  if (patch.valueMappings !== undefined)
-    out.value_mappings = patch.valueMappings as unknown;
+  if (
+    patch.valueMappings !== undefined ||
+    patch.writePolicies !== undefined
+  ) {
+    // Shared-column pack — see agentShortcutToUpdate for the same rule.
+    if (
+      patch.valueMappings === undefined ||
+      patch.writePolicies === undefined
+    ) {
+      console.error(
+        "[agent-shortcuts] REST value_mappings patch is one-sided — valueMappings and writePolicies share one column; the missing half is being CLEARED. Pass both (updateShortcut fills them automatically).",
+        {
+          hasValueMappings: patch.valueMappings !== undefined,
+          hasWritePolicies: patch.writePolicies !== undefined,
+        },
+      );
+    }
+    out.value_mappings = packShortcutValueMappings(
+      patch.valueMappings ?? null,
+      patch.writePolicies ?? null,
+    ) as unknown;
+  }
   if (patch.contextMappings !== undefined)
     out.context_mappings = patch.contextMappings as unknown;
 
@@ -1044,6 +1099,25 @@ export const updateShortcut = createAsyncThunk<
   const { id, ...patch } = input;
 
   const existing = selectShortcutById(getState(), id);
+
+  // valueMappings + writePolicies share ONE JSONB column — a one-sided patch
+  // would clear the other half. Fill the missing half from the loaded record.
+  if (
+    (patch.valueMappings !== undefined) !== (patch.writePolicies !== undefined)
+  ) {
+    if (!existing) {
+      console.warn(
+        "[agent-shortcuts] updateShortcut: one-sided value_mappings patch with no loaded record — the missing half falls back to null and any stored value for it is cleared",
+        { id },
+      );
+    }
+    if (patch.valueMappings === undefined) {
+      patch.valueMappings = existing?.valueMappings ?? null;
+    }
+    if (patch.writePolicies === undefined) {
+      patch.writePolicies = existing?.writePolicies ?? null;
+    }
+  }
   const snapshot: ShortcutFieldSnapshot = existing
     ? (
         Object.keys(patch) as (keyof AgentShortcut)[]

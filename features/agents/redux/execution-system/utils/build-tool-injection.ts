@@ -53,6 +53,10 @@ import { isWarRoomMasterToolName } from "@/features/agents/war-room-master-tools
 import { getWarRoomMasterInlineToolDef } from "@/features/agents/war-room-master-tools/tools/tool-defs";
 import { isScribeToolName } from "@/features/agents/scribe-tools/tools/names";
 import { getScribeInlineToolDef } from "@/features/agents/scribe-tools/tools/tool-defs";
+import {
+  isDeclaredSurfaceClientToolName,
+  listLiveSurfaceClientTools,
+} from "@/features/surfaces/runtime/surface-client-tools";
 
 interface BuildOptions {
   mode?: "additive" | "replace";
@@ -133,7 +137,11 @@ export async function buildToolInjection(
     (name) =>
       !isWarRoomToolName(name) &&
       !isWarRoomMasterToolName(name) &&
-      !isScribeToolName(name),
+      !isScribeToolName(name) &&
+      // Surface client tools are never server-registered — they ride as
+      // inline specs from the mounted-surface walk below, so a name someone
+      // armed via the slice must not go out as `registered` (server reject).
+      !isDeclaredSurfaceClientToolName(name),
   );
 
   const widgetHandleId = selectWidgetHandleIdFor(state, conversationId);
@@ -183,6 +191,39 @@ export async function buildToolInjection(
     ...scribeInlineSpecs,
     ...addedToolSpecs,
   ];
+
+  // SURFACE client tools (SurfaceManifest.clientTools) — the action half of
+  // the surfaces 360 loop. Automatic: every tool that is declared + mounted +
+  // handled RIGHT NOW (the live provider stack) is offered as an inline spec,
+  // so an agent launched on a surface receives that surface's tools without
+  // per-conversation arming. Read fresh every turn — a page that mounted or
+  // wired a handler since launch takes effect on the next turn. Skipped under
+  // the disable-injection brake (it is an automatic, surface-driven
+  // injection, exactly what the brake exists to silence).
+  if (!disableInjection) {
+    const alreadyNamed = new Set(
+      allTools.map((t) => (t.kind === "agent" ? t.agent_id : t.name)),
+    );
+    for (const live of listLiveSurfaceClientTools()) {
+      if (!live.hasHandler) {
+        // Declared on a mounted surface but not wired — don't offer the agent
+        // a tool that can only fail. The loud failure belongs at the page
+        // (see surface-client-tools.ts), not in the model's tool list.
+        console.warn(
+          `[surface-client-tools] "${live.surfaceName}" declares client tool "${live.tool.name}" with no registered handler — not offered to the agent this turn.`,
+        );
+        continue;
+      }
+      if (alreadyNamed.has(live.tool.name)) continue;
+      alreadyNamed.add(live.tool.name);
+      allTools.push({
+        kind: "inline",
+        name: live.tool.name,
+        description: live.tool.description,
+        input_schema: live.tool.inputSchema,
+      });
+    }
+  }
 
   // ── 2. Client envelope — walk capability providers in parallel ──────────
   //

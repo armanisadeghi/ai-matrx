@@ -20,7 +20,8 @@
  * exactly what produced the two quarantined callers below.
  *
  * Existing callers, both debt awaiting removal, neither a precedent:
- * `features/marketing/seo/keyword-research/components/LiveResearchFeed.tsx`,
+ * (Both former external consumers were deleted 2026-07-29; this hook is now
+ * internal-only and ESLint-fenced by `matrx/no-bespoke-stream-renderer`.)
  * `features/flashcards/components/create/CreateFromTopic.tsx` (fallback beside
  * the correct Redux-primary read).
  *
