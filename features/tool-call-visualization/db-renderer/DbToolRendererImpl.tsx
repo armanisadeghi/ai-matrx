@@ -26,7 +26,6 @@ import {
   isKnownNoToolRenderer,
   loadToolRenderer,
 } from "./toolRendererCache";
-import { useToolRendererVersion } from "./useToolRendererVersion";
 
 export interface DbToolRendererImplProps extends ToolRendererProps {
   toolName: string;
@@ -49,21 +48,6 @@ export const DbToolRendererImpl: React.FC<DbToolRendererImplProps> = ({
       isKnownNoToolRenderer(toolName),
   );
   const fetchedRef = useRef(false);
-
-  // Repaint signal: bumps when this tool's renderer is edited in-session (agent
-  // `toolcomp_*` tools) or busted by an admin save. On a bump we forget what we
-  // resolved so the fetch effect below re-resolves from the busted cache — the
-  // module-cache delete alone is invisible to this already-mounted card.
-  const version = useToolRendererVersion(toolName);
-  const versionRef = useRef(version);
-  useEffect(() => {
-    if (versionRef.current === version) return;
-    versionRef.current = version;
-    fetchedRef.current = false;
-    const fresh = getCachedToolRenderer(toolName);
-    setComponent(() => fresh);
-    setResolved(fresh !== null || isKnownNoToolRenderer(toolName));
-  }, [version, toolName]);
 
   // Fire the fetch exactly once per mount when nothing is cached yet. The
   // shared in-flight promise in the cache dedups across sibling cards; the
