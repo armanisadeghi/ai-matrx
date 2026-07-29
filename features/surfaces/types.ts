@@ -204,6 +204,56 @@ export interface SurfaceProcessedDocumentEvidenceSource {
 export type SurfaceEvidenceSource = SurfaceProcessedDocumentEvidenceSource;
 
 // ---------------------------------------------------------------------------
+// SurfaceWriteTarget — a named write path INTO the surface (read/write v1).
+// ---------------------------------------------------------------------------
+
+/**
+ * A named field/state the surface declares agents (and agent-result
+ * components) may WRITE into — the write half of the manifest, beside the
+ * read-only `values`. Declared in code and consumed by the surface-writeback
+ * runtime (`features/surfaces/runtime/surface-writeback.ts`): the page
+ * registers a handler per target on its `SurfaceRuntimeProvider`, and any
+ * caller (a kind-component action button, an automated envelope apply) goes
+ * through `applySurfaceWrite(target, value)` — never a bespoke callback.
+ *
+ * Code-only in v1 (like `evidenceSources`): not yet mirrored to the DB.
+ * Mirroring (so server-side agents can see what a surface accepts) is the
+ * planned follow-up once the client seam is proven.
+ */
+export interface SurfaceWriteTarget {
+  /** lower_snake_case, unique within the surface (same regex as values). */
+  name: string;
+  /** The ONE canonical human label ("Node brief"). THE NAMING LAW applies. */
+  label: string;
+  /**
+   * What applying this target DOES — where the value lands, what shape it
+   * must be, and whether the user still has to confirm/save. 1-3 sentences.
+   */
+  description: string;
+  /** Shape of the value a caller must pass. */
+  valueType: SurfaceValueType;
+  /**
+   * The declared SurfaceValue this target updates, when there is a 1:1 read
+   * twin — the evidence loop (read the value, write the target). Omit for
+   * pure-action targets with no read twin.
+   */
+  updatesValue?: string;
+  /**
+   * Where the write lands:
+   * - `"draft"`  — staged into the page's editor/draft state; the USER still
+   *   reviews and saves. The preferred default (additive, reversible).
+   * - `"entity"` — persisted immediately through the page's canonical write
+   *   path (service → DB). Reserve for writes that are safe to land directly.
+   * - `"ui"`     — ephemeral UI state only (selection, view focus); nothing
+   *   is persisted and nothing needs saving.
+   */
+  mode: "draft" | "entity" | "ui";
+  /** Key of a declared SurfaceValueGroup (same rules as SurfaceValue.group). */
+  group?: string;
+  sortOrder?: number;
+}
+
+// ---------------------------------------------------------------------------
 // SurfaceManifest — what a single surface declares.
 // ---------------------------------------------------------------------------
 
@@ -290,6 +340,14 @@ export interface SurfaceManifest {
    * They inherit with the rest of the surface manifest.
    */
   evidenceSources?: readonly SurfaceEvidenceSource[];
+  /**
+   * The WRITE half of the surface (read/write manifests v1): named targets
+   * agent results and kind-component actions may write into via the
+   * surface-writeback runtime. Code-only for now (not mirrored to the DB).
+   * A declared target with no registered runtime handler fails LOUDLY at
+   * apply time — never silently.
+   */
+  writeTargets?: readonly SurfaceWriteTarget[];
   /**
    * Opt out of the automatic generic-baseline injection (`selection`,
    * `text_before`, `text_after`, `content`, `context`) performed in

@@ -24,6 +24,11 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
+import { createContentPlanNodeScope } from "@/features/surfaces/manifests/content-plan-node.manifest";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -35,6 +40,7 @@ import {
   useUpdatePlanNode,
 } from "../data/hooks";
 import type { PlanDeepenController } from "../hooks/useContentPlanAi";
+import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
 import {
   PLAN_NODE_TYPES,
   TECHNICAL_DEPTHS,
@@ -130,7 +136,117 @@ export function NodePanel({
     );
   };
 
+  // ── Surface: matrx-user/content-plan-node ──────────────────────────────
+  // While the panel is open this nested provider is the DEEPEST runtime, so
+  // agents launched here see the node's PARTS (draft-overlaid), and the
+  // surface's declared writeTargets resolve to the handlers below. Field
+  // writes STAGE into the draft — the user reviews and saves; save_node is
+  // the one entity-mode target (the same canonical write path as Save).
+  const { view } = usePlanWorkspaceParams();
+  const getScope = () =>
+    createContentPlanNodeScope({
+      view,
+      node_id: node.id,
+      node_label: current.label,
+      node_type: current.node_type,
+      node_needs_reviewer: current.needs_reviewer,
+      has_unsaved_edits: dirty,
+      node_slug: current.slug ?? undefined,
+      node_route: node.route ?? undefined,
+      node_parent_id: node.parent_id ?? undefined,
+      node_depth: node.depth ?? undefined,
+      node_pillar_label: node.pillar_label ?? undefined,
+      node_cluster_label: node.cluster_label ?? undefined,
+      node_page_type_id: current.page_type_id ?? undefined,
+      node_status_id: current.status_id ?? undefined,
+      node_priority: current.priority ?? undefined,
+      node_technical_depth: current.technical_depth ?? undefined,
+      node_primary_keyword_id: current.primary_keyword_id ?? undefined,
+      node_brief: current.brief ?? undefined,
+      node_attributes:
+        current.attributes &&
+        typeof current.attributes === "object" &&
+        !Array.isArray(current.attributes)
+          ? (current.attributes as Record<string, unknown>)
+          : undefined,
+      node_updated_at: node.updated_at ?? undefined,
+    });
+
+  const stage = (patch: PlanNodeUpdate) =>
+    setDraft((d) => ({ ...d, ...patch }));
+  const getWriteHandlers = (): SurfaceWriteHandlers => ({
+    node_label: (value) => stage({ label: expectString(value, "node_label") }),
+    node_slug: (value) =>
+      stage({ slug: expectStringOrNull(value, "node_slug") }),
+    node_type: (value) => {
+      const next = expectString(value, "node_type");
+      if (!PLAN_NODE_TYPES.includes(next as PlanNodeType)) {
+        throw new Error(
+          `node_type must be one of: ${PLAN_NODE_TYPES.join(", ")}`,
+        );
+      }
+      stage({ node_type: next as PlanNodeType });
+    },
+    node_status_id: (value) =>
+      stage({ status_id: expectStringOrNull(value, "node_status_id") }),
+    node_priority: (value) => {
+      if (value !== null && typeof value !== "number") {
+        throw new Error("node_priority must be a number or null");
+      }
+      stage({ priority: value });
+    },
+    node_technical_depth: (value) => {
+      const next = expectStringOrNull(value, "node_technical_depth");
+      if (next !== null && !TECHNICAL_DEPTHS.includes(next as TechnicalDepth)) {
+        throw new Error(
+          `node_technical_depth must be one of: ${TECHNICAL_DEPTHS.join(", ")} (or null)`,
+        );
+      }
+      stage({ technical_depth: next as TechnicalDepth | null });
+    },
+    node_needs_reviewer: (value) => {
+      if (typeof value !== "boolean") {
+        throw new Error("node_needs_reviewer must be a boolean");
+      }
+      stage({ needs_reviewer: value });
+    },
+    node_primary_keyword_id: (value) =>
+      stage({
+        primary_keyword_id: expectStringOrNull(
+          value,
+          "node_primary_keyword_id",
+        ),
+      }),
+    node_brief: (value) => {
+      if (
+        !Array.isArray(value) ||
+        value.some((line) => typeof line !== "string")
+      ) {
+        throw new Error("node_brief must be an array of strings");
+      }
+      stage({ brief: value });
+      setBriefText(value.join("\n"));
+    },
+    node_attributes: (value) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error("node_attributes must be an object");
+      }
+      stage({ attributes: value as PlanNodeUpdate["attributes"] });
+    },
+    save_node: async () => {
+      if (!dirty) throw new Error("Nothing to save — the draft is empty.");
+      await update.mutateAsync({ id: node.id, patch: draft });
+      setDraft({});
+      setBriefText(null);
+    },
+  });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/content-plan-node"
+      getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
+    >
     <div
       data-surface-value="selected_node"
       className="flex h-full flex-col bg-background"
@@ -394,7 +510,21 @@ export function NodePanel({
         onDeleted={onDeleted}
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
+}
+
+/** Write-handler input guards — a bad value throws; the writeback seam turns it into a safe error envelope. */
+function expectString(value: unknown, what: string): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`${what} must be a non-empty string`);
+  }
+  return value;
+}
+
+function expectStringOrNull(value: unknown, what: string): string | null {
+  if (value === null) return null;
+  return expectString(value, `${what} (when not null)`);
 }
 
 /**

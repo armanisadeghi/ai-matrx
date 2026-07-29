@@ -22,6 +22,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -254,17 +255,37 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Workspace-level writes — UI focus only. Field-level writes live on the
+ * child surfaces (`content-plan-node`, `content-plan-setup`), which shadow
+ * this surface while their panel/view is active (deepest wins).
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "select_node",
+    label: "Select node",
+    description:
+      "Opens the given plan node (UUID from plan_tree) in the node panel — same as the user clicking it. UI state only; nothing is written to the plan.",
+    valueType: "string",
+    updatesValue: "selected_node_id",
+    mode: "ui",
+    group: "plan_workspace",
+    sortOrder: 100,
+  },
+];
+
 export const contentPlanManifest: SurfaceManifest = {
   surfaceName: "matrx-user/content-plan",
   label: "Content Plan",
   readiness: "partial",
   readinessNote:
-    "Runtime emitter live (workbench getScope over loaded query data); agent roles declared but no default agents bound yet.",
-  urlPattern: "/marketing/content-plan",
+    "Runtime emitter live (workbench getScope over loaded query data); child surfaces (list/setup/entities/node) refine per view; no default agents bound yet; write targets code-only (not mirrored to DB).",
+  urlPattern: "/marketing/content-plan/[siteId]",
   intro: `<surface_intro>
 You are on the Content Plan workspace: the editable tree of every URL a managed website SHOULD have (pillars → clusters → articles), with per-node briefs, a primary keyword, topics, and the people/sources behind the content (E-E-A-T). The user sees, decides, and corrects here — agents do the bulk writing; plan rows land directly in the database and appear on refetch.
 Read site (or site_id) first to know which website is being planned, then plan_tree for the whole structure and node_counts_by_status for progress. selected_node is the node the user is focused on; selected_node_edges carries its topics, secondary keywords, and entity attachments when loaded.
 Hard rules: route, depth, pillar_label, and cluster_label are computed by database triggers — treat them as observed evidence, never invent or recompute them, and never propose writing them. The primary keyword is the node's primary_keyword_id column; secondary keywords are association edges. A site with a null brand cannot hold plan rows — the database rejects loudly by design; the fix is assigning a brand in Marketing, not working around the error.
+This surface is the plan-editor base (tree, table, and map are three projections of the same plan). The workspace's other views are their own surfaces with their own agents: Site Setup (content-plan-setup), the entity manager (content-plan-entities), the sites front door (content-plan-list), and the open node panel (content-plan-node — where field-level write targets live). The one write target here is select_node: opening a node in the panel, exactly as a user click would.
 Empty values mean the workspace is still loading, no site is selected, or the data genuinely does not exist yet — say so plainly instead of guessing.
 </surface_intro>`,
   groups,
@@ -272,6 +293,7 @@ Empty values mean the workspace is still loading, no site is selected, or the da
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
   agentRoles: [
     {
       name: "plan_architect",
@@ -281,15 +303,6 @@ Empty values mean the workspace is still loading, no site is selected, or the da
       kind: "single",
       defaultAgentId: null,
       sortOrder: 100,
-    },
-    {
-      name: "brief_writer",
-      label: "Brief writer",
-      description:
-        "Deepens the selected node's brief — concrete bullet points grounded in its keyword, topics, and place in the tree.",
-      kind: "single",
-      defaultAgentId: null,
-      sortOrder: 110,
     },
     {
       name: "eeat_curator",

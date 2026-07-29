@@ -86,6 +86,10 @@ import { marketingDiscoveryManifest } from "./marketing-discovery.manifest";
 import { marketingIntegrationsManifest } from "./marketing-integrations.manifest";
 import { marketingBatchesManifest } from "./marketing-batches.manifest";
 import { contentPlanManifest } from "./content-plan.manifest";
+import { contentPlanEntitiesManifest } from "./content-plan-entities.manifest";
+import { contentPlanListManifest } from "./content-plan-list.manifest";
+import { contentPlanNodeManifest } from "./content-plan-node.manifest";
+import { contentPlanSetupManifest } from "./content-plan-setup.manifest";
 import { agentsHubManifest } from "./agents-hub.manifest";
 import { organizationsManifest } from "./organizations.manifest";
 import { dashboardManifest } from "./dashboard.manifest";
@@ -221,7 +225,14 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   marketingIntegrationsManifest,
   marketingBatchesManifest,
   // Content planning (plan schema) — sibling of the marketing fleet.
+  // One workspace, five surfaces: the ?view= param is a different page with
+  // different agents (list front door, plan-editor base, setup, entities,
+  // and the open node panel — the first read/WRITE surface).
   contentPlanManifest,
+  contentPlanListManifest,
+  contentPlanSetupManifest,
+  contentPlanEntitiesManifest,
+  contentPlanNodeManifest,
   // 2026-07-24 fleet push — hub/list + workspace surfaces.
   agentsHubManifest,
   organizationsManifest,

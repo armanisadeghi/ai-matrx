@@ -101,6 +101,16 @@ async function main() {
       label: string;
       description: string;
     }>;
+    writeTargets?: ReadonlyArray<{
+      name: string;
+      label: string;
+      description: string;
+      valueType: string;
+      updatesValue?: string;
+      mode: string;
+      group?: string;
+      sortOrder?: number;
+    }>;
   }> = mod.ALL_MANIFESTS;
 
   const nsMod = await import(
@@ -293,6 +303,50 @@ async function main() {
       ) {
         errors.push(
           `Surface "${m.surfaceName}" value "${v.name}" has invalid sortOrder.`,
+        );
+      }
+    }
+
+    // 11. Write targets (read/write manifests v1) — same naming regime as
+    // values; `updatesValue` must reference a declared value (the evidence
+    // loop), `group` a declared group, `mode` one of draft|entity|ui.
+    const ALLOWED_WRITE_MODES = new Set(["draft", "entity", "ui"]);
+    const seenWriteTargets = new Set<string>();
+    for (const w of m.writeTargets ?? []) {
+      if (seenWriteTargets.has(w.name)) {
+        errors.push(
+          `Surface "${m.surfaceName}" declares duplicate write target "${w.name}".`,
+        );
+      }
+      seenWriteTargets.add(w.name);
+      if (!NAME_RE.test(w.name)) {
+        errors.push(
+          `Surface "${m.surfaceName}" write target "${w.name}" doesn't match /^[a-z][a-z0-9_]*$/.`,
+        );
+      }
+      if (!w.label?.trim() || !w.description?.trim()) {
+        errors.push(
+          `Surface "${m.surfaceName}" write target "${w.name}" needs a label and a description.`,
+        );
+      }
+      if (!ALLOWED_TYPES.has(w.valueType)) {
+        errors.push(
+          `Surface "${m.surfaceName}" write target "${w.name}" has invalid valueType "${w.valueType}".`,
+        );
+      }
+      if (!ALLOWED_WRITE_MODES.has(w.mode)) {
+        errors.push(
+          `Surface "${m.surfaceName}" write target "${w.name}" has invalid mode "${w.mode}" (expected "draft" | "entity" | "ui").`,
+        );
+      }
+      if (w.updatesValue && !seenValues.has(w.updatesValue)) {
+        errors.push(
+          `Surface "${m.surfaceName}" write target "${w.name}" updatesValue "${w.updatesValue}" which is not a declared value.`,
+        );
+      }
+      if (w.group && !groupKeys.has(w.group)) {
+        errors.push(
+          `Surface "${m.surfaceName}" write target "${w.name}" references undeclared group "${w.group}".`,
         );
       }
     }

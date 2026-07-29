@@ -55,13 +55,26 @@ plan CRUD through it.
 - `data/associations.ts` — plan edges via the canonical
   `associationsService` (assoc_add/assoc_remove RPCs); never a parallel path.
 - `data/hooks.ts` — TanStack Query hooks (`planKeys.*`).
-- Surface: `matrx-user/content-plan`
-  (`features/surfaces/manifests/content-plan.manifest.ts`; route mapping in
-  `features/surfaces/utils/route-to-surface.ts`). The workbench mounts
-  `SurfaceRuntimeProvider` and emits declared values at trigger time via
-  `lib/content-plan-scope.ts` (`buildContentPlanScope`) — already-loaded query
-  data only, never a fetch. Only `view` is `alwaysAvailable` (site identity
-  rides `?site=`, not a routed segment).
+- Surfaces: **FIVE**, because `?view=` is a different page with different
+  agents (manifests in `features/surfaces/manifests/content-plan*.manifest.ts`;
+  route mapping via `resolveMarketingSurface` in
+  `features/surfaces/utils/route-to-surface.ts` — list vs `[siteId]` split):
+  - `matrx-user/content-plan-list` — the front door (emitter + `open_site`
+    ui write target in `PlanSitesList`).
+  - `matrx-user/content-plan` — the plan-editor BASE (tree/table/map are
+    three projections of one plan) and inheritance parent. Workbench mounts
+    the provider (`buildContentPlanScope` over already-loaded query data,
+    never a fetch) + the `select_node` ui write target.
+  - `matrx-user/content-plan-setup` / `-entities` / `-node` — nested
+    providers inside SetupView / EntityManager / NodePanel (deepest wins
+    while active), all inheriting the base.
+  **`content-plan-node` is the platform's FIRST read/WRITE surface**: 10
+  draft-mode field targets (label/slug/type/status/priority/depth/reviewer/
+  keyword/brief/attributes stage into the panel draft — the user saves) +
+  `save_node` (entity mode). Agent results and kind-component buttons land
+  through `applySurfaceWrite` / the `apply_surface_write` kind action —
+  read `features/surfaces/FEATURE.md` § Surface writeback before touching
+  any of this.
 
 ## Data model (all live in Supabase, PostgREST-exposed)
 
@@ -305,6 +318,15 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-29 — Claude: **per-view surface family + surface writeback v1.**
+  Split the one workspace surface into five (list / base / setup / entities /
+  node — see Entry points); moved `brief_writer` to the node surface, added
+  `site_shaper` (setup) + `entity_curator` (entities). First consumer of the
+  new read/WRITE manifest layer: writeTargets declared per surface, handlers
+  registered on each view's `SurfaceRuntimeProvider`, all staged (draft/ui)
+  except `save_node`. Fixed dead route mapping (marketing resolver swallowed
+  `/marketing/content-plan` into `matrx-user/marketing`). DB mirror synced +
+  live-verified; all five views browser-verified error-free.
 - 2026-07-29 — Claude: **Concept library v2 twin + Setup pickers** (rulings
   2026-07-28; aidream migration `0295` live). Twin learned
   `nameOptions`/`hub`/`hubMember`, `ConceptSelection.name`,

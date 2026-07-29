@@ -116,7 +116,6 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     prefix: "/observational-memory",
     surface: "matrx-user/observational-memory",
   },
-  { prefix: "/marketing/content-plan", surface: "matrx-user/content-plan" },
   { prefix: "/scraper", surface: "matrx-user/scraper" },
   { prefix: "/gallery", surface: "matrx-user/gallery" },
   { prefix: "/feedback", surface: "matrx-user/feedback" },
@@ -226,6 +225,16 @@ function resolveMarketingSurface(stripped: string): string | null {
   // /marketing/batches[...]
   if (segments[1] === "batches") return "matrx-user/marketing-batches";
   if (segments[1] === "keyword-research") return "matrx-user/keyword-research";
+  // /marketing/content-plan (list) vs /marketing/content-plan/[siteId]
+  // (workspace). The workspace's ?view= refinements (setup/entities/node)
+  // are query/panel state the pathname cannot see — the page's live
+  // SurfaceRuntimeProvider carries the precise surface; this mapping is the
+  // pathname-only fallback.
+  if (segments[1] === "content-plan") {
+    return segments.length >= 3
+      ? "matrx-user/content-plan"
+      : "matrx-user/content-plan-list";
+  }
   // /marketing/ranks — the CROSS-SITE hub (per-site ranks resolve via the
   // site-vertical map below).
   if (segments[1] === "ranks") return "matrx-user/marketing-ranks-hub";

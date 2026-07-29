@@ -56,6 +56,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "marketing-crawler": "Marketing crawler",
   "redux-rejected": "Rejected action (thunk)",
   "content-ir": "Content IR parse/parity failure",
+  "surface-writeback": "Surface writeback contract break",
   "markdown-delimiters": "Runaway delimiter in rendered markdown",
 };
 

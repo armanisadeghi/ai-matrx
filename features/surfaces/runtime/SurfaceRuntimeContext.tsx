@@ -27,6 +27,17 @@ import { createContext, useContext, useEffect, useRef, type ReactNode } from "re
 import { useSyncExternalStore } from "react";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 
+/**
+ * One write handler per declared `SurfaceWriteTarget.name`. A handler applies
+ * the value into the page (draft state, canonical service write, or UI state
+ * per the target's declared `mode`) and may throw — the writeback runtime
+ * (`surface-writeback.ts`) wraps every call in a safe envelope.
+ */
+export type SurfaceWriteHandlers = Record<
+  string,
+  (value: unknown) => void | Promise<void>
+>;
+
 export interface SurfaceRuntimeValue {
   /**
    * Canonical `ui_surface.name` this page is emitting. Display labels are
@@ -41,6 +52,12 @@ export interface SurfaceRuntimeValue {
   getScope: () => SurfaceScopePayload | Promise<SurfaceScopePayload>;
   /** Pass-through for editable surfaces (default contracts). */
   isEditable?: boolean;
+  /**
+   * Live write handlers for this surface's declared `writeTargets` (the
+   * read/write manifest v1). Called only through `applySurfaceWrite` in
+   * `surface-writeback.ts` — never invoked directly by chrome or components.
+   */
+  getWriteHandlers?: () => SurfaceWriteHandlers;
 }
 
 type RegistryEntry = { id: number; depth: number; value: SurfaceRuntimeValue };
@@ -87,6 +104,19 @@ function getServerSnapshot(): SurfaceRuntimeValue | null {
 }
 
 /**
+ * All registered runtimes, DEEPEST first (ties broken by registration
+ * recency). The writeback runtime walks this to find the innermost surface
+ * that handles a given write target — e.g. the open node panel wins over the
+ * workspace behind it, but a workspace-level target still resolves while a
+ * panel is open.
+ */
+export function getSurfaceRuntimeStack(): readonly SurfaceRuntimeValue[] {
+  return [...stack]
+    .sort((a, b) => b.depth - a.depth || b.id - a.id)
+    .map((entry) => entry.value);
+}
+
+/**
  * Register a live runtime. Returns an unregister that only clears this entry
  * (safe under nested providers / remounts). `depth` is the provider's nesting
  * depth in the React tree (see `SurfaceRuntimeDepthContext`); deeper wins.
@@ -127,11 +157,14 @@ export function SurfaceRuntimeProvider({
   surfaceName,
   getScope,
   isEditable,
+  getWriteHandlers,
 }: SurfaceRuntimeValue & { children: ReactNode }) {
   const depth = useContext(SurfaceRuntimeDepthContext) + 1;
   const getScopeRef = useRef(getScope);
+  const getWriteHandlersRef = useRef(getWriteHandlers);
   useEffect(() => {
     getScopeRef.current = getScope;
+    getWriteHandlersRef.current = getWriteHandlers;
   });
 
   useEffect(() => {
@@ -140,6 +173,7 @@ export function SurfaceRuntimeProvider({
         surfaceName,
         isEditable,
         getScope: () => getScopeRef.current(),
+        getWriteHandlers: () => getWriteHandlersRef.current?.() ?? {},
       },
       depth,
     );

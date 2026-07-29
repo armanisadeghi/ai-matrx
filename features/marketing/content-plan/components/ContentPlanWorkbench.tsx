@@ -210,10 +210,32 @@ export function ContentPlanWorkbench({
     );
   }
 
+  // Workspace-level write handler (manifest writeTargets): select_node opens
+  // a plan node in the panel — the same UI move as a row/node click. The
+  // per-view surfaces (setup/entities/node panel) mount their own nested
+  // providers deeper in this tree and win resolution while active.
+  const getWriteHandlers = useCallback(
+    () => ({
+      select_node: (value: unknown) => {
+        if (typeof value !== "string" || !value.trim()) {
+          throw new Error("select_node expects a plan node UUID string");
+        }
+        if (!nodeById.has(value)) {
+          throw new Error(
+            `select_node: "${value}" is not a node in this plan (see plan_tree)`,
+          );
+        }
+        setSelectedNodeId(value);
+      },
+    }),
+    [nodeById],
+  );
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/content-plan"
       getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
     >
       <div className="flex h-full flex-col pt-[var(--shell-header-h)]">
         {site && !site.brand_id ? (

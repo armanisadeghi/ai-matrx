@@ -30,6 +30,11 @@ import { marketingKeys } from "@/features/marketing/data/hooks";
 import type { MarketingSite } from "@/features/marketing/types";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
+import { createContentPlanSetupScope } from "@/features/surfaces/manifests/content-plan-setup.manifest";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -435,6 +440,123 @@ export function SetupView() {
     }
   };
 
+  // ── Surface: matrx-user/content-plan-setup ─────────────────────────────
+  // Nested provider (deepest wins while this view renders): agents here see
+  // the shape/work-order/readiness picture, and the declared writeTargets
+  // stage into this component's own state — the preview updates, the USER
+  // commits. Registered only on the data-bearing render below (the
+  // error/empty early returns have nothing to declare).
+  const getSetupScope = () =>
+    createContentPlanSetupScope({
+      view: "setup",
+      archetype_options:
+        archetypes.length > 0
+          ? archetypes.map((item) => {
+              const exp = baseline.get(item.key);
+              return {
+                key: item.key,
+                label: exp?.label ?? item.key,
+                families: exp?.families.map((family) => ({
+                  key: family.key,
+                  label: family.label,
+                  route: family.route,
+                  default_count: family.count,
+                  materialize: family.materialize,
+                })),
+                omits: exp?.omits,
+              };
+            })
+          : undefined,
+      selected_archetype_key: selectedKey ?? undefined,
+      committed_archetype: committed
+        ? { key: committed.key, counts: committed.counts }
+        : undefined,
+      expansion_error: expansion.error ?? undefined,
+      family_counts: expanded ? counts : undefined,
+      family_names: Object.keys(names).length > 0 ? names : undefined,
+      route_preview_summary: preview
+        ? {
+            create: preview.counts.new,
+            exists: preview.counts.exists,
+            conflict: preview.counts.conflict,
+          }
+        : undefined,
+      route_preview_conflicts: preview
+        ? preview.rows
+            .filter((row) => row.state === "conflict")
+            .map((row) => ({
+              route: row.spec.route,
+              label: row.spec.label,
+              error: row.error,
+            }))
+        : undefined,
+      readiness_checklist: readiness
+        ? readiness.items.map((item) => ({
+            key: item.key,
+            group: item.group,
+            label: item.label,
+            state: item.state,
+            required: item.required,
+            actual: item.actual,
+            detail: item.detail,
+          }))
+        : undefined,
+      site_id: siteId ?? undefined,
+      site_domain: site ? (site.domain ?? site.name ?? undefined) : undefined,
+    });
+
+  const getSetupWriteHandlers = (): SurfaceWriteHandlers => ({
+    select_archetype: (value) => {
+      if (typeof value !== "string" || !value.trim()) {
+        throw new Error("select_archetype expects an archetype key string");
+      }
+      if (!archetypes.some((item) => item.key === value)) {
+        throw new Error(
+          `Unknown archetype "${value}" — pick a key from archetype_options`,
+        );
+      }
+      setPickedKey(value);
+      setResult(null);
+    },
+    set_family_counts: (value) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error(
+          "set_family_counts expects an object mapping family keys to numbers",
+        );
+      }
+      for (const [familyKey, count] of Object.entries(
+        value as Record<string, unknown>,
+      )) {
+        if (typeof count !== "number" || count < 0 || !Number.isFinite(count)) {
+          throw new Error(
+            `set_family_counts: "${familyKey}" must map to a non-negative number`,
+          );
+        }
+        setCount(familyKey, Math.floor(count));
+      }
+    },
+    set_family_names: (value) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error(
+          "set_family_names expects an object mapping family keys to string arrays",
+        );
+      }
+      for (const [familyKey, list] of Object.entries(
+        value as Record<string, unknown>,
+      )) {
+        if (
+          !Array.isArray(list) ||
+          list.some((name) => typeof name !== "string" || !name.trim())
+        ) {
+          throw new Error(
+            `set_family_names: "${familyKey}" must map to an array of non-empty strings`,
+          );
+        }
+        setNames(familyKey, list as string[]);
+      }
+    },
+  });
+
   // ── states ──────────────────────────────────────────────────────────────
   if (sites.isError) {
     return (
@@ -483,6 +605,11 @@ export function SetupView() {
   const loading = library.isLoading || nodes.isLoading;
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/content-plan-setup"
+      getScope={getSetupScope}
+      getWriteHandlers={getSetupWriteHandlers}
+    >
     <div className="flex h-full flex-col">
       {library.data && library.data.problems.length > 0 ? (
         <div className="border-b border-warning/40 bg-warning/10 px-3 py-1.5 text-xs text-foreground">
@@ -582,6 +709,7 @@ export function SetupView() {
         </div>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

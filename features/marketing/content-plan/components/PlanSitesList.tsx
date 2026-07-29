@@ -50,6 +50,11 @@ import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { MarketingSite } from "@/features/marketing/types";
+import { createContentPlanListScope } from "@/features/surfaces/manifests/content-plan-list.manifest";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { cn } from "@/lib/utils";
@@ -520,7 +525,52 @@ export function PlanSitesList() {
     );
   }
 
+  // Surface: matrx-user/content-plan-list — the portfolio view. Scope is the
+  // full row set (not the current table page); open_site is the one write
+  // target (pure navigation, same as a row click).
+  const getScope = () =>
+    createContentPlanListScope({
+      site_rows:
+        sites.data !== undefined && stats.data !== undefined
+          ? rows.map((row) => ({
+              id: row.id,
+              domain: row.site.domain,
+              name: row.site.name,
+              has_brand: row.site.brand_id !== null,
+              vertical: planVertical(row.site.settings),
+              pages_planned: row.stats?.totalNodes ?? 0,
+              pages_with_keyword: row.stats?.keywordBound ?? 0,
+              pages_published: publishedCount(row),
+              last_activity: row.stats?.lastUpdatedAt ?? null,
+            }))
+          : undefined,
+      site_total:
+        sites.data !== undefined && stats.data !== undefined
+          ? rows.length
+          : undefined,
+    });
+
+  const getWriteHandlers = (): SurfaceWriteHandlers => ({
+    open_site: (value) => {
+      if (typeof value !== "string" || !value.trim()) {
+        throw new Error("open_site expects a site UUID string");
+      }
+      const row = rows.find((candidate) => candidate.id === value);
+      if (!row) {
+        throw new Error(
+          `open_site: "${value}" is not a site in this list (see site_rows)`,
+        );
+      }
+      openWorkspace(row);
+    },
+  });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/content-plan-list"
+      getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
+    >
     <MatrxDataTable<PlanSiteRow>
       data={pageRows}
       columns={visibleColumns}
@@ -608,5 +658,6 @@ export function PlanSitesList() {
       }}
       className="p-2"
     />
+    </SurfaceRuntimeProvider>
   );
 }

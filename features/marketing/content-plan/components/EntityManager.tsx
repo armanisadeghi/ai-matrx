@@ -28,6 +28,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
+import { createContentPlanEntitiesScope } from "@/features/surfaces/manifests/content-plan-entities.manifest";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -61,7 +63,37 @@ export function EntityManager({
 
   const rows = entities.data ?? [];
 
+  // Surface: matrx-user/content-plan-entities — nested provider (deepest
+  // wins while this view renders). Agents here see the FULL roster; the
+  // workspace surface behind it keeps the site + plan context.
+  const getScope = () => {
+    const countsByType: Record<string, number> = {};
+    for (const entity of rows) {
+      countsByType[entity.entity_type] =
+        (countsByType[entity.entity_type] ?? 0) + 1;
+    }
+    return createContentPlanEntitiesScope({
+      view: "entities",
+      entities_detail:
+        entities.data !== undefined
+          ? rows.map((entity) => ({
+              id: entity.id,
+              label: entity.label,
+              entity_type: entity.entity_type,
+              source_type_id: entity.source_type_id,
+              attributes: entity.attributes,
+            }))
+          : undefined,
+      entity_counts_by_type:
+        entities.data !== undefined ? countsByType : undefined,
+    });
+  };
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/content-plan-entities"
+      getScope={getScope}
+    >
     <div
       data-surface-value="entities_summary"
       className="flex h-full flex-col overflow-y-auto"
@@ -202,6 +234,7 @@ export function EntityManager({
         }}
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

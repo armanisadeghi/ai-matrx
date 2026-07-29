@@ -36,6 +36,7 @@ import {
 // Side-effect: register the built-in capabilities. New handlers are added by
 // importing them here — the seam and the component contract never change.
 import "./handlers/trigger-agent";
+import "./handlers/apply-surface-write";
 
 export type RunKindAction = (
   key: string,

@@ -122,6 +122,14 @@ export type CapturedErrorSource =
    */
   | "content-ir"
   /**
+   * The surface-writeback seam (features/surfaces/runtime/surface-writeback):
+   * an agent result / kind-component action tried to write into the page and
+   * the contract broke — unknown target, declared target with no registered
+   * handler, or the page's apply handler threw. Every firing is a real defect
+   * in either the caller or the surface's write wiring.
+   */
+  | "surface-writeback"
+  /**
    * A runaway markdown delimiter reached a renderer: a stray/unpaired `$$`
    * that would have made remark-math swallow prose into a math node (KaTeX
    * then dumps it as red `.katex-error` text), or an unclosed `[` that would
