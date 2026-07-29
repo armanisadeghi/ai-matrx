@@ -95,10 +95,10 @@ function DocRow({
         <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
           {description}
         </p>
-        {enabled && (
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            {/* Immediate "see it" affordance — opens the doc in the non-blocking
-                right sidebar so the user never has to hunt for a window. */}
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          {enabled && (
+            /* Immediate "see it" affordance — opens the doc in the non-blocking
+               right sidebar so the user never has to hunt for a window. */
             <button
               type="button"
               onClick={() => {
@@ -110,31 +110,34 @@ function DocRow({
               <PanelRight className="h-3 w-3" />
               Open
             </button>
-            <DocumentLinkPicker
-              kind={kind}
-              align="start"
-              side="bottom"
-              onSelect={(documentId) =>
-                void dispatch(
-                  linkConversationDocumentThunk({
-                    conversationId,
-                    kind,
-                    documentId,
-                  }),
-                )
-              }
-              trigger={
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
-                >
-                  <Link2 className="h-3 w-3" />
-                  Link existing…
-                </button>
-              }
-            />
-          </div>
-        )}
+          )}
+          {/* Always available: a working document is usually CONTINUED across
+              chats and agents, not started blank — picking an existing doc
+              enables the feature AND links it in one step. */}
+          <DocumentLinkPicker
+            kind={kind}
+            align="start"
+            side="bottom"
+            onSelect={(documentId) =>
+              void dispatch(
+                linkConversationDocumentThunk({
+                  conversationId,
+                  kind,
+                  documentId,
+                }),
+              )
+            }
+            trigger={
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
+              >
+                <Link2 className="h-3 w-3" />
+                {enabled ? "Link existing…" : "Start from existing…"}
+              </button>
+            }
+          />
+        </div>
       </div>
       <Switch
         checked={enabled}
