@@ -20,6 +20,7 @@ import { getManifest } from "@/features/surfaces/manifests/registry";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { useLiveSurfaceScope } from "@/features/surfaces/runtime/useLiveSurfaceScope";
 import { locateSurfaceValueOnPage } from "@/features/surfaces/utils/locate-on-page";
+import { listLiveWriteTargets } from "@/features/surfaces/runtime/surface-writeback";
 import type { ResolvedSurfaceValue } from "@/features/surfaces/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -174,6 +175,14 @@ export default function SurfaceContextWindow({
   const missingRequired = declared.filter(
     (value) => value.alwaysAvailable && !hasValue(live.scope[value.name]),
   ).length;
+  // What could be WRITTEN into this page right now — the write half of the
+  // contract, beside the values. This is also the ONLY place a declared target
+  // with no registered handler becomes visible BEFORE an agent tries it and
+  // gets the loud runtime failure.
+  const liveWriteTargets = listLiveWriteTargets().filter(
+    (entry) => !surfaceName || entry.surfaceName === surfaceName,
+  );
+  const unwiredTargets = liveWriteTargets.filter((entry) => !entry.hasHandler);
   const presentation = statusPresentation(live.status);
   // THE NAMING LAW — only the canonical manifest label, never an override.
   const friendlySurfaceName = surfaceName
@@ -234,6 +243,8 @@ export default function SurfaceContextWindow({
                 status: live.status,
                 declared: declared.length,
                 supplied,
+                writeTargets: liveWriteTargets.length,
+                unwiredWriteTargets: unwiredTargets.length,
               },
               context: {
                 surface: friendlySurfaceName,
@@ -246,6 +257,17 @@ export default function SurfaceContextWindow({
                 runtimeOnlyKeys,
                 missingRequired,
                 runtimeError: live.error,
+                // The write half: what an agent or a rendered result component
+                // may change here, and whether the page actually wired it.
+                writeTargets: liveWriteTargets.map((entry) => ({
+                  name: entry.target.name,
+                  label: entry.target.label,
+                  mode: entry.target.mode,
+                  applyPolicy: entry.target.applyPolicy ?? "manual",
+                  updatesValue: entry.target.updatesValue ?? null,
+                  description: entry.target.description,
+                  hasHandler: entry.hasHandler,
+                })),
               },
             })}
           />
@@ -370,6 +392,39 @@ export default function SurfaceContextWindow({
               contract honored
             </span>
           ) : null}
+          {/* The write half. `writable` counts what an AGENT may change here
+              (a manual target is user-gesture-only, so it is not writable in
+              this sense). An unwired target is a page defect — it is declared
+              and nothing registered a handler, so the first write against it
+              fails loudly. Showing it here is how it gets caught first. */}
+          {liveWriteTargets.length > 0 && (
+            <span
+              title={liveWriteTargets
+                .map(
+                  (entry) =>
+                    `${entry.target.name} (${entry.target.mode}, ${
+                      entry.target.applyPolicy ?? "manual"
+                    }${entry.hasHandler ? "" : ", NO HANDLER"})`,
+                )
+                .join("\n")}
+            >
+              <b className="text-foreground">
+                {
+                  liveWriteTargets.filter(
+                    (entry) => (entry.target.applyPolicy ?? "manual") !== "manual",
+                  ).length
+                }
+              </b>
+              /{liveWriteTargets.length} agent-writable
+            </span>
+          )}
+          {unwiredTargets.length > 0 && (
+            <span className="flex items-center gap-1 text-destructive">
+              <TriangleAlert className="h-3 w-3" />
+              {unwiredTargets.length} write target
+              {unwiredTargets.length === 1 ? "" : "s"} unwired
+            </span>
+          )}
           {runtimeOnlyKeys.length > 0 && (
             <span>{runtimeOnlyKeys.length} runtime-only</span>
           )}

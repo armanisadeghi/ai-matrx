@@ -3,7 +3,8 @@
 /**
  * KeywordResearchLauncher — THE canonical "run keyword research and watch it
  * live" surface. Input + Research button + pipeline stage line + the live
- * kind-component feed (LiveResearchFeed) + the durable done-summary strip.
+ * canonical live render (<MarkdownStream> over the adopted pipeline stream)
+ * + the durable done-summary strip.
  *
  * One implementation, consumed by:
  *  - the /marketing/keyword-research workbench (page)
@@ -28,7 +29,7 @@ import {
   savedKeywordResearchQueryKey,
   useSavedKeywordResearch,
 } from "../useSavedKeywordResearch";
-import LiveResearchFeed from "./LiveResearchFeed";
+import MarkdownStream from "@/components/MarkdownStream";
 import SavedResearchFeed from "./SavedResearchFeed";
 
 export interface KeywordResearchLauncherProps {
@@ -68,9 +69,7 @@ export default function KeywordResearchLauncher({
     debounceMs: 350,
   });
 
-  const hasLiveOutput = Boolean(
-    (run.researchOutput ?? "").trim() || (run.classificationOutput ?? "").trim(),
-  );
+  const hasLiveOutput = Boolean(run.requestId && run.hasStreamedContent);
   // The freshest durable truth: this run's completed result, else the saved
   // artifact from a previous run of the same phrase.
   const durableArtifact = run.result?.artifact ?? saved.data?.artifact ?? null;
@@ -176,14 +175,13 @@ export default function KeywordResearchLauncher({
                 </p>
               )
             ) : (
-              <LiveResearchFeed
-                streamKey={run.streamKey}
-                researchText={run.researchOutput ?? ""}
-                researchDone={run.researchDone ?? run.status !== "running"}
-                classificationText={run.classificationOutput ?? ""}
-                classificationDone={
-                  run.classificationDone ?? run.status !== "running"
-                }
+              // The ONE canonical renderer, driven by the adopted requestId.
+              // Every research + classification payload routes to its real
+              // kind component through the same pipeline chat uses.
+              <MarkdownStream
+                requestId={run.requestId}
+                isStreamActive={run.status === "running"}
+                hideCopyButton
               />
             )}
           </div>

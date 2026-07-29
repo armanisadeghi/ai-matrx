@@ -32,14 +32,14 @@ market enrichment remain explicit compute operations.
     (30-day policy; `force_refresh` bypasses), also streamed through exact provider
     response, normalization, persistence, and completion events.
   - Both commands use `callApi({stream: true})`; long JSON timeouts are forbidden.
-    The workbench renders live pipeline stages. **The live agent-token rendering here
-    is BANNED ARCHITECTURE — see § The LiveResearchFeed disease below.** How it
-    currently (wrongly) works: `useKeywordResearch` buckets chunk text by phase
-    (`researchOutput` until `seo.research_agent_completed`, then
-    `classificationOutput`) and `components/LiveResearchFeed.tsx` opens its own
-    content-ir parse sessions over those buffers. **The server's chunk relay may stop
-    before the payload's closing bytes** — the phase event is the completion truth,
-    never JSON-close alone. A client disconnect stops only delivery—the backend's
+    The workbench renders live pipeline stages. **Live agent output renders through
+    the ONE canonical pipeline** — `useKeywordResearch` ADOPTS the stream
+    (`adoptForeignStream` → `callApi`'s `consumeStream`), so the run lands in
+    `activeRequests` and both surfaces render `<MarkdownStream requestId />`.
+    The hook keeps `onEvent` for its own `seo.*` progress only. **The server's
+    chunk relay may stop before the payload's closing bytes** — the phase event
+    is the completion truth, never JSON-close alone; the stream accumulator owns
+    finalization, so no surface decides it. A client disconnect stops only delivery—the backend's
     detached stream task continues and persists. Backend contract:
     `aidream/services/seo/FEATURE.md` § Keyword pipeline.
   - **Durable run identity + reconnect (2026-07-23, WS-1).** Every research/volume
@@ -118,9 +118,8 @@ before adding any keyword field or per-keyword display anywhere.
   Supabase reads of `seo.v_site_keyword_performance` with server-side search,
   filtering, sorting, and pagination for one site.
 - `useKeywordResearch.ts` — page state + the two `callApi` actions; debounced search,
-  abort-safe reloads; phase-bucketed stream buffers + `streamKey` for the live feed.
-- `components/LiveResearchFeed.tsx` — ⛔ **quarantined debt, scheduled for deletion.
-  Never copy, extend, or cite it** (§ The LiveResearchFeed disease).
+  abort-safe reloads; adopts the pipeline stream and exposes `run.requestId` +
+  `run.hasStreamedContent` (the whole live-rendering contract).
 - `components/SavedResearchFeed.tsx` — durable in-place rendering of the saved
   hierarchy plus persisted classification rows through the same selectable
   blocks used by the live feed.
@@ -155,26 +154,38 @@ before adding any keyword field or per-keyword display anywhere.
   ranked queries, GSC performance, strongest matched page, market metrics, and
   site-specific workflow state.
 
-## ⛔ The LiveResearchFeed disease — this feature carries the platform's worst defect
+## The stream renders canonically (was: the LiveResearchFeed disease)
 
-`components/LiveResearchFeed.tsx` is a **bespoke stream renderer**: it buckets raw
-chunk text by phase, opens its own `useLiveJsonRegion` parse sessions, splits
-multi-payload text into segments, hand-routes envelopes into kind components, and
-decides "done" on its own signal. All of that is **banned** — streamed model output
-renders through the ONE canonical pipeline (`MarkdownStream` → `EnhancedChatMarkdown`
-→ `BlockRenderer` → the kind registry). Full rule:
-[`features/content-ir/FEATURE.md`](../../../content-ir/FEATURE.md) § No bespoke
-stream renderers.
+**Fixed 2026-07-29.** This feature used to carry the platform's worst defect: a
+bespoke stream renderer (`components/LiveResearchFeed.tsx`) that bucketed raw
+chunk text into per-phase buffers, opened its own content-ir parse sessions,
+split its own payload segments, hand-routed envelopes into components, and
+decided "done" on its own signal. Every one of those is banned.
 
-**Arman's ruling, 2026-07-28, in anger:** this workbench is a small side surface, and
-that is exactly why it must not have custom stream processing. One hand-rolled
-renderer becomes tens of thousands; the single canonical system dies and the product
-dies with it. **It cannot happen again, at any size, for any feature.**
+It existed for a real reason, and that reason is what got fixed: the research
+run is orchestrated SERVER-side (`POST /seo/keywords/research` — a durable,
+rejoinable job that also persists the artifact, ingests relationships, and
+fetches provider volume), so its agent stream had no `requestId`, and every
+canonical read (`selectKindEnvelope`, `<MarkdownStream>`) is keyed on one.
 
-**Status: quarantined debt awaiting deletion.** Do not extend it, do not cite it as a
-pattern, do not copy its shape into another surface. The replacement is the execution
-system (`requestId` + `selectKindEnvelope`) driving the canonical block components.
-Filed as **D116** in [`FOUND_DEFECTS.md`](../../../../FOUND_DEFECTS.md).
+Now `useKeywordResearch` **adopts** the stream: `adoptForeignStream` hands the
+NDJSON body to the execution system's `processStream` via `callApi`'s
+`consumeStream`, so the run becomes an ordinary `activeRequests` row and both
+surfaces render `<MarkdownStream requestId={run.requestId} />`. The hook still
+sees every `seo.*` progress event through `onEvent`. Server side, aidream's
+`stream_agent_as_blocks` makes the run emit real `render_block` events with
+`metadata.__ir` envelopes rather than bare chunks.
+
+`run.requestId` + `run.hasStreamedContent` replaced `researchOutput` /
+`classificationOutput` / `researchDone` / `classificationDone` / `streamKey`.
+A rejoined run has no chunk replay, so it falls back to `SavedResearchFeed`
+over the durable artifact — unchanged.
+
+**Keyword selection is not passed as props any more.** The blocks read
+`keyword_selection` surface UI state and write the `keyword_selection` target
+(see `features/surfaces/runtime/surface-writeback.ts` +
+`surface-ui-state.ts`), so the live view and the saved view behave identically
+and the same block renders read-only in chat.
 
 ## Invariants
 
@@ -189,6 +200,8 @@ Filed as **D116** in [`FOUND_DEFECTS.md`](../../../../FOUND_DEFECTS.md).
 - No barrel files; import from source.
 
 ## Change Log
+
+- 2026-07-29 — **The disease is cured: `LiveResearchFeed.tsx` deleted, live output renders canonically.** `useKeywordResearch` adopts the pipeline stream via the new `adoptForeignStream` primitive (`callApi`'s new `consumeStream` option hands the raw NDJSON body to the execution system's `processStream`), so the server-orchestrated run becomes an ordinary `activeRequests` row and `KeywordResearchLauncher` + `KeywordResearchTab` render `<MarkdownStream requestId />`. `researchOutput` / `classificationOutput` / `researchDone` / `classificationDone` / `streamKey` are gone, replaced by `requestId` + `hasStreamedContent`. Server half: aidream `stream_agent_as_blocks` makes `run_one_agent(stream_output=True)` emit `render_block` events with envelopes instead of bare chunks. Keyword SELECTION moved off props onto the surface seams — the blocks read `keyword_selection` UI state and write the `keyword_selection` target declared on `matrx-user/keyword-intelligence` (`applyPolicy: "ask"`), so live and saved views behave identically and the same block is read-only in chat. Enforced by the new `matrx/no-bespoke-stream-renderer` ESLint rule (error). **Not type-checked / browser-verified — the environment could not complete `pnpm install`; see `docs/handoffs/canonical-stream-and-surface-writeback.md`.**
 
 - 2026-07-29 — **Library management shipped (autosave already existed
   server-side).** Verified `fn_ingest_keyword_research` auto-saves every
@@ -245,7 +258,8 @@ Filed as **D116** in [`FOUND_DEFECTS.md`](../../../../FOUND_DEFECTS.md).
 - 2026-07-26 — **Live streams render as real components, key by key — raw JSON killed.**
   The workbench's `<pre>` of raw agent tokens is gone: chunk text is phase-bucketed in
   `useKeywordResearch` and rendered through `LiveResearchFeed` → content-ir
-  `useLiveJsonRegion` → the new `keyword_relationship_research` /
+  `useLiveJsonRegion` (both since DELETED 2026-07-29 — the stream is now adopted
+  into `activeRequests` and rendered by `<MarkdownStream>`) → the new `keyword_relationship_research` /
   `keyword_classification_batch_v1` system kinds' streaming bridges → the shared
   `KeywordResearchBlock` / `KeywordClassificationBatchBlock` components. Keywords and
   classification cards pop in individually while streaming; phase-done finalizes

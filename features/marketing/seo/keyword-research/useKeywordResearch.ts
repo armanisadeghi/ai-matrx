@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
+import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import {
   describeBackendFailure,
   parseCallApiError,
@@ -33,18 +34,25 @@ export interface ResearchRunState {
   status: "idle" | "running" | "done" | "error";
   primaryKeyword?: string;
   stage?: string;
-  /** Raw agent tokens from the relationship-research phase. Fed to the live
-   * content-ir parse session (LiveResearchFeed) — never rendered as text. */
-  researchOutput?: string;
-  /** True once the research agent finished — ends its parse region. */
-  researchDone?: boolean;
-  /** Raw agent tokens from the classification phase (may carry several
-   * sequential batch payloads). Fed to live parse sessions, never shown raw. */
-  classificationOutput?: string;
-  /** True once classification persisted — ends its parse regions. */
-  classificationDone?: boolean;
-  /** Stable per-launch key namespacing the live parse-session identities. */
-  streamKey?: string;
+  /**
+   * The `activeRequests` id this run's agent stream was ADOPTED under
+   * (`adoptForeignStream`). This is the whole live-rendering contract: hand it
+   * to `<MarkdownStream requestId={…} />` and the canonical pipeline renders
+   * every research/classification payload as its real kind component.
+   *
+   * This surface used to bucket raw chunk text into per-phase strings and feed
+   * them to hand-opened parse sessions — the banned bespoke-renderer pattern
+   * (`features/content-ir/FEATURE.md` § No bespoke stream renderers). It did
+   * that because a server-orchestrated pipeline run had no requestId to render
+   * from. It has one now.
+   */
+  requestId?: string;
+  /**
+   * True once the adopted stream produced ANY renderable content. Distinguishes
+   * "live run with output" from a rejoin (no chunk replay exists), which falls
+   * back to the durable persisted artifact.
+   */
+  hasStreamedContent?: boolean;
   result?: KeywordResearchResponse;
   error?: string;
   /** Durable seo.collection_run id — persisted by the server BEFORE the AI
@@ -185,12 +193,20 @@ export function useKeywordResearch(organizationId?: string | null) {
       const completedResults: KeywordResearchResponse[] = [];
       let serverBusy = false;
       let streamFailure: string | null = null;
-      // Chunk tokens arrive from TWO sequential agent calls on one stream:
-      // relationship research first, then intent classification. Bucketing by
-      // phase gives each payload its own live parse region.
-      let chunkPhase: "research" | "classification" = "research";
       const onStreamEvent = (event: TypedStreamEvent) => {
         {
+          // Agent content — chunks and server render blocks — is NOT handled
+          // here. It is already in `activeRequests` under the adopted
+          // requestId, and renders through the canonical pipeline. This
+          // handler owns only this feature's OWN typed progress events.
+          if (event.event === "chunk" || event.event === "render_block") {
+            setRun((current) =>
+              current.hasStreamedContent
+                ? current
+                : { ...current, hasStreamedContent: true },
+            );
+            return;
+          }
           if (isErrorEvent(event)) {
             const explanation = describeBackendFailure(
               parseStreamError(event.data),
@@ -204,42 +220,13 @@ export function useKeywordResearch(organizationId?: string | null) {
             }));
             return;
           }
-          if (event.event === "chunk") {
-            const phase = chunkPhase;
-            setRun((current) =>
-              phase === "research"
-                ? {
-                    ...current,
-                    researchOutput: `${current.researchOutput ?? ""}${event.data.text}`,
-                  }
-                : {
-                    ...current,
-                    classificationOutput: `${current.classificationOutput ?? ""}${event.data.text}`,
-                  },
-            );
-            return;
-          }
           const data = streamData(event);
           if (!data) return;
           const kind = typeof data.kind === "string" ? data.kind : null;
           if (!kind) return;
-          if (kind === "seo.research_agent_completed") {
-            chunkPhase = "classification";
-            setRun((current) => ({ ...current, researchDone: true }));
-          }
-          if (kind === "seo.classification_started") {
-            chunkPhase = "classification";
-          }
-          if (
-            kind === "seo.classification_completed" ||
-            kind === "seo.research_completed"
-          ) {
-            setRun((current) => ({
-              ...current,
-              researchDone: true,
-              classificationDone: true,
-            }));
-          }
+          // Phase transitions are progress labels only. Region boundaries and
+          // finalization belong to the stream accumulator — this surface no
+          // longer decides when a payload is "done".
           // Durable job identity — persisted server-side BEFORE the AI call.
           if (kind === "seo.command_run" && typeof data.run_id === "string") {
             const runId = data.run_id;
@@ -305,6 +292,17 @@ export function useKeywordResearch(organizationId?: string | null) {
           }
         }
       };
+      // Hand the raw NDJSON body to the execution system instead of draining
+      // it here: the agent's content lands in `activeRequests` under a real
+      // requestId, so the canonical pipeline renders it. This surface still
+      // sees every event via `onEvent` for its own `seo.*` progress.
+      const consumeStream = dispatch(
+        adoptForeignStream({
+          onAdopted: ({ requestId }) =>
+            setRun((current) => ({ ...current, requestId })),
+          onEvent: onStreamEvent,
+        }),
+      );
       const result = await dispatch(
         request.path === "/seo/keywords/research"
           ? callApi({
@@ -315,23 +313,16 @@ export function useKeywordResearch(organizationId?: string | null) {
                 ? { organization_id: organizationId }
                 : undefined,
               stream: true,
-              onStreamEvent,
+              consumeStream,
             })
           : callApi({
               path: request.path,
               method: "POST",
               pathParams: request.pathParams,
               stream: true,
-              onStreamEvent,
+              consumeStream,
             }),
       );
-      // The stream is over either way — end the live parse regions so partial
-      // payloads finalize instead of pulsing forever.
-      setRun((current) => ({
-        ...current,
-        researchDone: true,
-        classificationDone: true,
-      }));
       if (result.error) {
         storeActiveRun(null);
         const explanation = describeBackendFailure(
@@ -384,9 +375,6 @@ export function useKeywordResearch(organizationId?: string | null) {
         status: "running",
         primaryKeyword: phrase,
         stage: "Checking organization access and DataForSEO credentials",
-        researchOutput: "",
-        classificationOutput: "",
-        streamKey: crypto.randomUUID(),
       });
       await consumeResearchStream(phrase, {
         path: "/seo/keywords/research",
@@ -402,9 +390,6 @@ export function useKeywordResearch(organizationId?: string | null) {
         status: "running",
         primaryKeyword,
         stage: "Rejoining previous run",
-        researchOutput: "",
-        classificationOutput: "",
-        streamKey: crypto.randomUUID(),
         runId,
       });
       await consumeResearchStream(primaryKeyword, {

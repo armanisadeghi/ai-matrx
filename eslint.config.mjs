@@ -287,6 +287,50 @@ const matrxLintPlugin = {
                 };
             },
         },
+        'no-bespoke-stream-renderer': {
+            meta: {
+                type: 'problem',
+                docs: {
+                    description:
+                        'Disallow consuming content-ir parse sessions (useLiveJsonRegion / openParseSession) outside content-ir itself. A surface that opens its own parse session has become a second renderer for streamed model output — the exact failure Arman banned on 2026-07-28: one bespoke renderer becomes ten thousand and the single canonical system dies. Streamed content renders through MarkdownStream -> EnhancedChatMarkdown -> BlockRenderer -> the kind registry, reached from Redux by requestId.',
+                },
+                schema: [],
+                messages: {
+                    banned:
+                        "Bespoke stream rendering is banned. `useLiveJsonRegion` / `openParseSession` are INTERNAL to content-ir — not consumable primitives. Render streamed content through the canonical pipeline: give the run a requestId (launch via the execution system, or adopt a server-orchestrated stream with `adoptForeignStream` from @/features/agents/redux/execution-system/thunks/adopt-foreign-stream), then read it from Redux (`selectKindEnvelope`, `selectRenderBlocksInOrder`). See features/content-ir/FEATURE.md § No bespoke stream renderers.",
+                },
+            },
+            create(context) {
+                const ALLOWED = ['/features/content-ir/'];
+                const filename = context.filename || context.getFilename?.() || '';
+                if (ALLOWED.some((p) => filename.includes(p))) return {};
+                const BANNED_NAMES = new Set([
+                    'useLiveJsonRegion',
+                    'openParseSession',
+                ]);
+                return {
+                    ImportDeclaration(node) {
+                        if (node.importKind === 'type') return;
+                        const src = node.source.value;
+                        if (typeof src !== 'string') return;
+                        const looksContentIr =
+                            src.includes('content-ir/react/useLiveJsonRegion') ||
+                            src.includes('content-ir/session');
+                        for (const spec of node.specifiers) {
+                            if (spec.importKind === 'type') continue;
+                            const imported =
+                                spec.imported?.name ?? spec.local?.name ?? '';
+                            if (
+                                BANNED_NAMES.has(imported) ||
+                                (looksContentIr && BANNED_NAMES.has(spec.local?.name))
+                            ) {
+                                context.report({ node: spec, messageId: 'banned' });
+                            }
+                        }
+                    },
+                };
+            },
+        },
         'no-banned-lucide-icons': {
             meta: {
                 type: 'suggestion',
@@ -744,6 +788,10 @@ export default [
             'matrx/no-parallel-stream-json-scan': 'warn',
             // Single canonical structured-content parser — no parallel instances.
             'matrx/no-parallel-kind-parser': 'warn',
+            // ONE renderer for streamed model output. Error, not warn: this is
+            // the ban Arman issued in anger, and the gap that forced the one
+            // violation is now closed by `adoptForeignStream`.
+            'matrx/no-bespoke-stream-renderer': 'error',
             'react-hooks/exhaustive-deps': 'off',
             '@next/next/no-img-element': 'off',
             'react/no-unescaped-entities': 'off',

@@ -45486,6 +45486,59 @@ export type Database = {
           },
         ]
       }
+      ui_surface_write_target: {
+        Row: {
+          apply_policy: string
+          created_at: string
+          description: string
+          group_key: string
+          label: string
+          mode: string
+          name: string
+          sort_order: number
+          surface_name: string
+          updated_at: string
+          updates_value: string | null
+          value_type: string
+        }
+        Insert: {
+          apply_policy?: string
+          created_at?: string
+          description?: string
+          group_key?: string
+          label?: string
+          mode?: string
+          name: string
+          sort_order?: number
+          surface_name: string
+          updated_at?: string
+          updates_value?: string | null
+          value_type?: string
+        }
+        Update: {
+          apply_policy?: string
+          created_at?: string
+          description?: string
+          group_key?: string
+          label?: string
+          mode?: string
+          name?: string
+          sort_order?: number
+          surface_name?: string
+          updated_at?: string
+          updates_value?: string | null
+          value_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ui_surface_write_target_surface_name_fkey"
+            columns: ["surface_name"]
+            isOneToOne: false
+            referencedRelation: "ui_surface"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

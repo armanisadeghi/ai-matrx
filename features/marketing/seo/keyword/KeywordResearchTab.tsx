@@ -5,9 +5,16 @@
  *
  * Runs the full canonical keyword-research pipeline for the panel's phrase
  * (LSI agent → relationship ingestion → provider volume → classification) by
- * REUSING `useKeywordResearch` and `LiveResearchFeed` from the
- * keyword-research feature — the same durable-run, auto-rejoin, live
- * kind-component streaming the workbench uses. No forked stream consumer.
+ * REUSING `useKeywordResearch` from the keyword-research feature — the same
+ * durable-run, auto-rejoin behavior the workbench uses.
+ *
+ * Live output renders through the ONE canonical pipeline (`MarkdownStream`
+ * over the adopted requestId), exactly as chat does. Keyword SELECTION is not
+ * threaded into the blocks as props — it travels the two surface seams:
+ * this tab PUBLISHES `keyword_selection` UI state and REGISTERS the
+ * `keyword_selection` write handler its manifest declares, and the blocks
+ * read/write those by name. See KeywordResearchBlock's header for the
+ * contract, and `features/surfaces/runtime/surface-writeback.ts`.
  */
 
 import { useEffect, useState } from "react";
@@ -21,14 +28,27 @@ import {
   savedKeywordResearchQueryKey,
   useSavedKeywordResearch,
 } from "@/features/marketing/seo/keyword-research/useSavedKeywordResearch";
-import LiveResearchFeed from "@/features/marketing/seo/keyword-research/components/LiveResearchFeed";
 import SavedResearchFeed from "@/features/marketing/seo/keyword-research/components/SavedResearchFeed";
+import MarkdownStream from "@/components/MarkdownStream";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { publishSurfaceUiState } from "@/features/surfaces/runtime/surface-ui-state";
+import type {
+  KeywordSelectionUiState,
+  KeywordSelectionWrite,
+} from "@/components/mardown-display/blocks/keyword-research/KeywordResearchBlock";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 import {
   addPageSupportingKeywords,
   pageKeywordsQueryKey,
 } from "@/features/marketing/data/page-keywords";
 import { toast } from "@/lib/toast";
+
+/**
+ * The surface this tab lives inside — the Keyword Intelligence window owns the
+ * `SurfaceRuntimeProvider`; this tab only registers the write target it can
+ * service and publishes the UI state its blocks read.
+ */
+const KEYWORD_SURFACE = "matrx-user/keyword-intelligence";
 
 export function KeywordResearchTab({
   phrase,
@@ -48,10 +68,33 @@ export function KeywordResearchTab({
   const disabledPhrases = new Set([normalizeKeywordPhrase(phrase)]);
   const saved = useSavedKeywordResearch(phrase, organizationId);
   const visibleArtifact = run.result?.artifact ?? saved.data?.artifact ?? null;
-  const hasLiveOutput = Boolean(
-    run.streamKey &&
-      ((run.researchOutput ?? "").trim() ||
-        (run.classificationOutput ?? "").trim()),
+  const hasLiveOutput = Boolean(run.requestId && run.hasStreamedContent);
+
+  // ── The 360 loop, this surface's half ────────────────────────────────────
+  // PUBLISH what the blocks need to read, REGISTER the handler for the target
+  // the manifest declares. The blocks (streamed or saved) then work by name,
+  // with no props and no knowledge of this component.
+  const selectionKeys = Object.keys(selectedByKey).sort().join("|");
+  const disabledKey = normalizeKeywordPhrase(phrase);
+  useEffect(() => {
+    if (!pageId) {
+      // No page binding ⇒ nothing to attach keywords to ⇒ no selection is
+      // offered. Clearing the key is what makes the blocks render read-only.
+      publishSurfaceUiState(KEYWORD_SURFACE, "keyword_selection", undefined);
+      return;
+    }
+    publishSurfaceUiState(KEYWORD_SURFACE, "keyword_selection", {
+      selected: Object.keys(selectedByKey),
+      disabled: [disabledKey],
+    } satisfies KeywordSelectionUiState);
+  }, [pageId, selectionKeys, disabledKey]);
+
+  // Unpublish on unmount so a closed window never leaves stale selection
+  // behind for the next surface that mounts.
+  useEffect(
+    () => () =>
+      publishSurfaceUiState(KEYWORD_SURFACE, "keyword_selection", undefined),
+    [],
   );
 
   const toggleKeyword = (candidate: string, selected: boolean) => {
@@ -64,6 +107,20 @@ export function KeywordResearchTab({
       return next;
     });
   };
+
+  useSurfaceWriteHandlers(KEYWORD_SURFACE, {
+    keyword_selection: (value: unknown) => {
+      const write = value as Partial<KeywordSelectionWrite> | null;
+      if (!write || typeof write.phrase !== "string") {
+        // Loud by contract: throwing here surfaces through the writeback
+        // envelope (toast + captured error), never a silent no-op.
+        throw new Error(
+          "keyword_selection expects { phrase: string, selected: boolean }",
+        );
+      }
+      toggleKeyword(write.phrase, write.selected === true);
+    },
+  });
 
   const addSelected = useMutation({
     mutationFn: () => {
@@ -201,24 +258,14 @@ export function KeywordResearchTab({
         </div>
       ) : null}
 
-      {hasLiveOutput && run.streamKey ? (
-        <LiveResearchFeed
-          streamKey={run.streamKey}
-          researchText={run.researchOutput ?? ""}
-          researchDone={run.researchDone ?? false}
-          classificationText={run.classificationOutput ?? ""}
-          classificationDone={run.classificationDone ?? false}
-          selectedPhrases={pageId ? selectedPhrases : undefined}
-          disabledPhrases={pageId ? disabledPhrases : undefined}
-          onKeywordSelectionChange={pageId ? toggleKeyword : undefined}
+      {hasLiveOutput ? (
+        <MarkdownStream
+          requestId={run.requestId}
+          isStreamActive={running}
+          hideCopyButton
         />
       ) : visibleArtifact ? (
-        <SavedResearchFeed
-          artifact={visibleArtifact}
-          selectedPhrases={pageId ? selectedPhrases : undefined}
-          disabledPhrases={pageId ? disabledPhrases : undefined}
-          onKeywordSelectionChange={pageId ? toggleKeyword : undefined}
-        />
+        <SavedResearchFeed artifact={visibleArtifact} />
       ) : null}
 
       {run.status === "done" ? (

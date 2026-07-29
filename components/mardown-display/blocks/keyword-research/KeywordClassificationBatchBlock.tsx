@@ -25,12 +25,15 @@ import {
 } from "@/features/marketing/seo/keyword-research/components/KeywordMetrics";
 import { Checkbox } from "@/components/ui/checkbox";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
+import { useKindActionRunner } from "@/features/content-ir/react/actions/useKindActionRunner";
+import { useCurrentSurfaceUiState } from "@/features/surfaces/runtime/surface-ui-state";
+import type {
+  KeywordSelectionUiState,
+  KeywordSelectionWrite,
+} from "./KeywordResearchBlock";
 
 export interface KeywordClassificationBatchBlockProps {
   serverData?: unknown;
-  selectedPhrases?: ReadonlySet<string>;
-  disabledPhrases?: ReadonlySet<string>;
-  onKeywordSelectionChange?: (phrase: string, selected: boolean) => void;
 }
 
 function isCard(value: unknown): value is KeywordClassificationCardData {
@@ -76,26 +79,25 @@ function ClassificationCard({
   card,
   selectedPhrases,
   disabledPhrases,
-  onKeywordSelectionChange,
+  interactive,
+  onToggle,
 }: {
   card: KeywordClassificationCardData;
-  selectedPhrases?: ReadonlySet<string>;
-  disabledPhrases?: ReadonlySet<string>;
-  onKeywordSelectionChange?: (phrase: string, selected: boolean) => void;
+  selectedPhrases: ReadonlySet<string>;
+  disabledPhrases: ReadonlySet<string>;
+  interactive: boolean;
+  onToggle: (phrase: string, selected: boolean) => void;
 }) {
   const intent = card.facts.intent_class ?? null;
   const key = normalizeKeywordPhrase(card.phrase);
-  const selectable =
-    Boolean(onKeywordSelectionChange) && !disabledPhrases?.has(key);
+  const selectable = interactive && !disabledPhrases.has(key);
   return (
     <div className="animate-in fade-in rounded-lg border border-border bg-card p-2.5">
       <div className="flex items-center gap-2">
         {selectable ? (
           <Checkbox
-            checked={selectedPhrases?.has(key) ?? false}
-            onCheckedChange={(checked) =>
-              onKeywordSelectionChange?.(card.phrase, checked === true)
-            }
+            checked={selectedPhrases.has(key)}
+            onCheckedChange={(checked) => onToggle(card.phrase, checked === true)}
             aria-label={`Select ${card.phrase} as a supporting keyword`}
           />
         ) : null}
@@ -147,12 +149,24 @@ function ClassificationCard({
 
 export default function KeywordClassificationBatchBlock({
   serverData,
-  selectedPhrases,
-  disabledPhrases,
-  onKeywordSelectionChange,
 }: KeywordClassificationBatchBlockProps) {
+  // Selection travels through the surface seams, never props — see
+  // KeywordResearchBlock's header for the contract.
+  const runAction = useKindActionRunner();
+  const selectionState =
+    useCurrentSurfaceUiState<KeywordSelectionUiState>("keyword_selection");
   const data = readKeywordClassificationData(serverData);
   if (!data) return null;
+
+  const selectedPhrases = new Set(selectionState?.selected ?? []);
+  const disabledPhrases = new Set(selectionState?.disabled ?? []);
+  const interactive = selectionState !== undefined;
+  const onToggle = (phrase: string, selected: boolean) => {
+    void runAction("apply_surface_write", {
+      target: "keyword_selection",
+      value: { phrase, selected } satisfies KeywordSelectionWrite,
+    });
+  };
 
   return (
     <div className="my-2 space-y-2">
@@ -183,7 +197,8 @@ export default function KeywordClassificationBatchBlock({
             card={card}
             selectedPhrases={selectedPhrases}
             disabledPhrases={disabledPhrases}
-            onKeywordSelectionChange={onKeywordSelectionChange}
+            interactive={interactive}
+            onToggle={onToggle}
           />
         ))}
         {data.results.length === 0 && (

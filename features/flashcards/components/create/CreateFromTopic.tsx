@@ -11,11 +11,10 @@
 // quiz flows); its activeRequestId is Redux-derived and live from the moment
 // the stream connects (the direct-mode launch thunk only resolves AFTER the
 // stream ends — never read the request id from it). The live envelope comes
-// from Redux (selectKindEnvelope — the accumulator's own `metadata.__ir`,
-// PRIMARY) with a hoisted useLiveJsonRegion session as fallback (prod
-// flag-off); whichever yields drives BOTH the card-by-card preview and, on
-// completion, the persisted set (generatedSetFromEnvelope) — parse once →
-// display AND persist. Persistence is fcService.createSetWithCards.
+// from Redux ONLY (selectKindEnvelope — the accumulator's own `metadata.__ir`).
+// That one envelope drives BOTH the card-by-card preview and, on completion,
+// the persisted set (generatedSetFromEnvelope) — parse once → display AND
+// persist. A second parse session here was banned debt and is gone. Persistence is fcService.createSetWithCards.
 // Navigation uses useTransition. Errors surface loudly via sonner toast.
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
@@ -38,12 +37,7 @@ import {
 } from "@/components/ui/select";
 import { LoadingSpinner } from "@/components/ui/spinner";
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectAnswerText,
-  selectKindEnvelope,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useLiveJsonRegion } from "@/features/content-ir/react/useLiveJsonRegion";
+import { selectKindEnvelope } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
@@ -74,12 +68,6 @@ export function CreateFromTopic() {
   const cardGen = useEntitlementGuard("education.generate_cards");
   const [isNavigating, startNavigation] = useTransition();
 
-  const answerText = useAppSelector((state) =>
-    activeRequestId ? selectAnswerText(activeRequestId)(state) : "",
-  );
-  const requestStatus = useAppSelector((state) =>
-    activeRequestId ? selectRequestStatus(activeRequestId)(state) : null,
-  );
 
   // PRIMARY envelope source: the StreamBlockAccumulator's shadow session
   // already parses the streaming JSON region and re-attaches a live
@@ -92,29 +80,13 @@ export function CreateFromTopic() {
       : null,
   );
 
-  // NOTE: the previous inline check compared against "completed", which is
-  // not a RequestStatus member — the region never ended on success. Every
-  // terminal status ends the region so the envelope can reach "complete".
-  const requestIsDone =
-    requestStatus === "complete" ||
-    requestStatus === "error" ||
-    requestStatus === "timeout" ||
-    requestStatus === "cancelled";
-
-  // FALLBACK parse session: covers any payload the accumulator couldn't kind-resolve
-  // (e.g. no root __kind — expectedRootKind types the tree here regardless).
-  const { envelope: sessionEnvelope } = useLiveJsonRegion(
-    activeRequestId ? `flashcards-live:${activeRequestId}` : null,
-    answerText,
-    {
-      expectedRootKind: "flashcard_set",
-      done: requestIsDone,
-    },
-  );
-
-  // Whichever source yields the envelope drives BOTH the live preview and the
-  // persisted set (generatedSetFromEnvelope) — Redux first, session fallback.
-  const envelope = reduxEnvelope ?? sessionEnvelope;
+  // The Redux read is the ONLY envelope source. The second parse session that
+  // used to sit here as a "fallback" was banned debt (2026-07-28): a surface
+  // that opens its own parse session is a second renderer for streamed model
+  // output, and there is exactly one. If the accumulator can't kind-resolve a
+  // payload, that is a bug in the accumulator or a missing kind — both fixed
+  // where they live, never worked around here.
+  const envelope = reduxEnvelope;
 
   // The async submit handler reads the envelope as it stands AFTER the
   // awaited generation resolves — a ref carries the latest value across the
