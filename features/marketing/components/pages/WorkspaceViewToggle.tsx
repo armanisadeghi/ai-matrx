@@ -90,7 +90,7 @@ export function WorkspaceViewToggle({
       role="group"
       aria-label="Workspace view"
       className={cn(
-        "flex items-center rounded-md border border-border bg-card",
+        "flex shrink-0 items-center rounded-md border border-border bg-card",
         className,
       )}
     >
@@ -110,7 +110,7 @@ export function WorkspaceViewToggle({
               : "text-muted-foreground hover:text-foreground",
           )}
         >
-          <Icon className="h-3.5 w-3.5" />
+          <Icon className="h-3.5 w-3.5 shrink-0" />
           <span className="hidden sm:inline">{label}</span>
         </button>
       ))}

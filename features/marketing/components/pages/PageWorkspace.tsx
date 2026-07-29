@@ -826,7 +826,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                 </span>
               </p>
             </div>
-            <div className="flex shrink-0 items-center gap-1.5">
+            <div className="flex shrink-0 flex-wrap items-center gap-1.5">
               <WorkspaceViewToggle mode={viewMode} onChange={setViewMode} />
               <PageTaskButton
                 page={page}
