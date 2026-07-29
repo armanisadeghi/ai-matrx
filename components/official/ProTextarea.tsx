@@ -140,25 +140,16 @@ import {
   type ProTextareaAgentActionId,
   type ProTextareaMenuMode,
 } from "./proTextareaAgentActions";
-import dynamic from "next/dynamic";
-
-// FRONT-DOOR GATE (build-lab E1): the embedded agent panel drags the entire
-// 1,569-module conversation engine (AgentRunner -> AgentConversationDisplay ->
-// execution system). ProTextarea has ~66 importers across ~107 entry contexts;
-// a static import here compiles that cluster into every one of them. The panel
-// only renders after a user picks an agent action from the menu, so this is a
-// genuine deferral + ssr:false front door (one planned chunk group).
-const ProTextareaAgentPanel = dynamic(
-  () => import("./ProTextareaAgentPanel").then((m) => m.ProTextareaAgentPanel),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center p-6">
-        <Loader2 className="h-4 w-4 animate-spin" />
-      </div>
-    ),
-  },
-);
+// STATIC by measured ruling (2026-07-28, build-lab bracket): a dynamic({ssr:
+// false}) front door here was tried (v0.4.225 E1) and REVERTED same day. It
+// cut /notes first-load JS by 3MB, but the async chunk-group split of the
+// 1,569-module conversation engine from this ~106-context importer cost
+// +1.0min compile / +1.1GB RSS on EVERY build (bracket: 8.0/34.4 with vs
+// 7.0/33.3 without). Even a correctly-shaped gate is not free at ubiquitous-
+// importer × mega-cluster scale; only route/callback inversion is, and the
+// in-place panel has no route. Re-gating is a deliberate Arman tradeoff
+// (page weight vs build cost) — never a drive-by "optimization".
+import { ProTextareaAgentPanel } from "./ProTextareaAgentPanel";
 import {
   ProTextFieldStatsBar,
   ProTextFieldStatsMenuItems,
