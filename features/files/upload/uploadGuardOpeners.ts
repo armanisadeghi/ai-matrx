@@ -19,7 +19,6 @@
 
 import type { UploadFilesArg } from "@/features/files/types";
 import type { AppDispatch } from "@/lib/redux/store";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
 
 /**
  * The handler the host registers at mount. Returns a promise that
@@ -93,11 +92,11 @@ export async function requestUpload(
       "[upload-guard] requestUpload called before <UploadGuardHost/> mounted — falling back to direct dispatch with no duplicate check.",
     );
   }
-  // Store access via the cycle-free leaf singleton (build-graph: the old
-  // `import("@/lib/redux/store")` was an async edge to the entire
-  // reducer/middleware graph from a ~777-reach module).
-  const { uploadFiles } = await import("@/features/files/redux/thunks");
-  const store = getStoreSingleton();
+  const [{ getStore }, { uploadFiles }] = await Promise.all([
+    import("@/lib/redux/store"),
+    import("@/features/files/redux/thunks"),
+  ]);
+  const store = getStore();
   if (!store) {
     return {
       uploaded: [],

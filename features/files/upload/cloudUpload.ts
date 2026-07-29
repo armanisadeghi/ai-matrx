@@ -71,7 +71,6 @@ import {
 } from "@/features/files/upload/tusUpload";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { PermissionLevel, Visibility } from "@/features/files/types";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
 
 // ─── Transport policy ────────────────────────────────────────────────────
 
@@ -622,7 +621,8 @@ export async function cloudUploadImperative(
   file: File,
   options: CloudUploadOptions,
 ): Promise<CloudUploadResult> {
-  const store = getStoreSingleton();
+  const { getStore } = await import("@/lib/redux/store");
+  const store = getStore();
   if (!store) {
     return {
       ok: false,
