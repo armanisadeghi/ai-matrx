@@ -106,6 +106,7 @@ import {
 import { PageImagePlanCard } from "@/features/marketing/components/pages/cards/PageImagePlanCard";
 import { PageMediaCard } from "@/features/marketing/components/pages/cards/PageMediaCard";
 import { PushToCmsCard } from "@/features/marketing/components/pages/cards/PushToCmsCard";
+import { LinksPlan } from "@/features/marketing/components/pages/cards/LinksPlanCard";
 import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
 import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
 import { PagespeedCard } from "@/features/marketing/components/pages/cards/PagespeedCard";
@@ -764,6 +765,8 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
       <PageTasksCard page={page} />
 
       <PageImagePlanCard page={page} />
+
+      <LinksPlan page={page} />
 
       <PushToCmsCard page={page} site={site} />
 
