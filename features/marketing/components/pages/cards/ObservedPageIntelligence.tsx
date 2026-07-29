@@ -186,7 +186,10 @@ export function PageIdentityCard({
             featured-image provenance, authorship, and publication dates.
           </p>
         ) : null}
-        {featuredImage || hasBadges || identityFields.length > 0 ? (
+        {featuredImage ||
+        hasBadges ||
+        identityFields.length > 0 ||
+        hasRelatedLinks ? (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
             {featuredImage ? (
               <div className="w-fit shrink-0">
