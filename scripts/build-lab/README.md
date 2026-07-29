@@ -5,10 +5,14 @@ v0.4.217-221) all made the build SLOWER while one provider dedup saved ~3min —
 because everyone was guessing at an unmeasured quantity. This lab replaces the
 guessing.
 
-**The law:** build cost ≈ Σ (module's transitive size × entry contexts that
-compile it). The only winning move is reducing the multiplicity of heavy
-subgraphs. "Static" vs "dynamic" is mechanism, not goal — each helps or hurts
-depending on that product. See the `code-splitting` skill (rule 6 + caveat).
+**Calibration (ground-truthed 2026-07-28):** the size×contexts "bill" does NOT
+predict Turbopack compile time/RSS — a −62% bill cut measured ZERO build change
+(Turbopack compiles each module once, unified graph). The bill predicts
+CLIENT-BUNDLE duplication (first-load JS per route) — use it for page weight.
+Real build-cost levers: total unique module count, and D115-class pathological
+edges (dynamic import of a cycle-carrying mega-cluster from a ubiquitous
+module). "Static" vs "dynamic" is mechanism, not goal. See the `code-splitting`
+skill (rule 6 + caveat).
 
 ## Tools
 

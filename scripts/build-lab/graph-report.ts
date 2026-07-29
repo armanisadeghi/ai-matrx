@@ -2,13 +2,19 @@
 /**
  * graph-report.ts — the build-graph "type checker".
  *
- * THE LAW IT ENFORCES (learned 2026-07-28, D115 + the failed A-E probes):
- *   build cost ≈ Σ over modules of (module's transitive graph size × number of
- *   entry contexts that compile it). The ONLY move that wins is reducing the
- *   multiplicity of heavy subgraphs. "Make it dynamic" and "make it static"
- *   are both wrong half the time — each optimizes one side of the trade while
- *   detonating the other. This report puts the actual multiplication in front
- *   of you so nobody has to guess again.
+ * WHAT THE METRICS MEAN — calibrated against ground truth (2026-07-28):
+ *   • THE COMPILE BILL (size × entry-contexts) does NOT model Turbopack
+ *     compile time or build RSS. Measured: a −62% bill cut (the ProTextarea
+ *     gate) produced ZERO change in compile time and RSS — Turbopack compiles
+ *     each module ONCE in a unified graph, not once per reaching entry. The
+ *     bill DOES model CLIENT-BUNDLE duplication: which routes ship a cluster
+ *     in first-load JS. Use it for page-weight/UX work, not build-cost work.
+ *   • Build-cost levers that ground truth supports: total unique module count,
+ *     and D115-class pathological edges (dynamic import of a CYCLE-carrying
+ *     mega-cluster from a ubiquitous module: +14GB RSS, +50% compile,
+ *     bisect-proven). Report 2/3 exist to catch that class.
+ *   • "Make it dynamic" and "make it static" are both wrong half the time.
+ *     Measure, then move; ground-truth with lab:run before believing anything.
  *
  * What it computes, in seconds, with NO build:
  *   1. THE COMPILE BILL — top first-party clusters ranked by
@@ -82,7 +88,19 @@ function resolveSpec(fromRel: string, spec: string): string | null {
 
 // ── parse imports ────────────────────────────────────────────────────────────
 // static: import ... from 'x' | import 'x' | export ... from 'x'  (skip `import type`)
-const STATIC_RE = /(?:^|\n)\s*(import|export)\s+(type\s+)?(?:[\s\S]*?from\s+)?["']([^"'\n]+)["']/g;
+// Clause captured so ALL-inline-type imports (`import { type A, type B } from`)
+// can be dropped too — TS erases those entirely, and counting them produced
+// false-positive "static importers" (caught by Arman on artifact-renderers,
+// whose 29 static importers were almost all type-only).
+const STATIC_RE = /(?:^|\n)\s*(import|export)\s+(type\s+)?([\s\S]*?)?\bfrom\s+["']([^"'\n]+)["']|(?:^|\n)\s*import\s+["']([^"'\n]+)["']/g;
+/** true if an import/export clause is fully type-erased (no runtime edge). */
+function isTypeOnlyClause(clause: string | undefined): boolean {
+  if (!clause) return false;
+  const m = clause.match(/^\s*\{([\s\S]*)\}\s*$/); // named-only clause
+  if (!m) return false; // default/namespace import present → value edge
+  const items = m[1].split(",").map((s) => s.trim()).filter(Boolean);
+  return items.length > 0 && items.every((s) => /^type\s/.test(s));
+}
 const DYNAMIC_RE = /import\(\s*(?:\/\*[^*]*\*\/\s*)?["']([^"'\n]+)["']\s*\)/g;
 
 type Edge = { from: string; to: string; spec: string };
@@ -95,8 +113,11 @@ for (const abs of files) {
   let m: RegExpExecArray | null;
   STATIC_RE.lastIndex = 0;
   while ((m = STATIC_RE.exec(src))) {
-    if (m[2]) continue; // import type / export type — erased
-    const to = resolveSpec(rel, m[3]);
+    const spec = m[4] ?? m[5];
+    if (!spec) continue;
+    if (m[2]) continue; // `import type` / `export type` — erased
+    if (m[4] && isTypeOnlyClause(m[3])) continue; // `import { type A, type B }` — erased
+    const to = resolveSpec(rel, spec);
     if (to && to !== rel) outs.push(to);
   }
   DYNAMIC_RE.lastIndex = 0;
