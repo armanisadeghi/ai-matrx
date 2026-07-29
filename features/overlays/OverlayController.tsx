@@ -2444,6 +2444,11 @@ export default function OverlayController() {
                 ? data.initialAgentName
                 : null
             }
+            initialDraftText={
+              typeof data?.initialDraftText === "string"
+                ? data.initialDraftText
+                : null
+            }
           />
         );
       })()}

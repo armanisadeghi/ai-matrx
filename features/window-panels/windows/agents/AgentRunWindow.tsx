@@ -52,6 +52,8 @@ import {
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { DebugSessionActivator } from "@/features/agents/components/debug/DebugSessionActivator";
+import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { selectUserInputEntryExists } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 
 const SOURCE_FEATURE: SourceFeature = "agent-run-window";
@@ -201,13 +203,26 @@ function WindowTitleContent({
 interface AgentRunBodyProps {
   agentId: string;
   selectedConversationId: string | null;
+  /**
+   * Composed intent to pre-fill into the composer on open. When set, the body
+   * launches a FRESH conversation (never revives the surface's cached focus)
+   * and seeds this text once — the exact behavior the `/chat/a/[agentId]`
+   * route gives the Shape-studio hand-offs, now in-place in the window. Pre-fill
+   * only: the user reviews and sends (no auto-submit).
+   */
+  initialDraftText?: string | null;
 }
 
-function AgentRunBody({ agentId, selectedConversationId }: AgentRunBodyProps) {
+function AgentRunBody({
+  agentId,
+  selectedConversationId,
+  initialDraftText,
+}: AgentRunBodyProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
 
   const surfaceKey = `${SOURCE_FEATURE}:${agentId}`;
+  const hasDraft = Boolean(initialDraftText);
 
   // Register as a `window` surface — fork outcomes update the window's
   // internal focus (no URL change). The conversation column already
@@ -265,11 +280,32 @@ function AgentRunBody({ agentId, selectedConversationId }: AgentRunBodyProps) {
   }, [agentId, initAttempt]);
 
   // ── Managed launcher ───────────────────────────────────────────────────────
+  // A seeded (draft) open mints a brand-new conversation instead of reusing the
+  // surface's cached focus, so re-opening the window to build another kind never
+  // revives the previous run's transcript (same reason the fresh chat route sets
+  // `preferFresh`).
   const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature: SOURCE_FEATURE,
     ready: !isInitializing,
+    preferFresh: hasDraft,
   });
+
+  // ── Seed the composed draft into the fresh conversation's composer ─────────
+  // Applied once the launcher's input entry exists (setUserInputText requires
+  // `instanceUserInput.byConversationId[cid]`). Ref-guarded so the single seed
+  // happens exactly once per conversation. Mirrors ChatRoomClient's draft-
+  // transfer effect — pre-fill only, never auto-submit.
+  const draftEntryReady = useAppSelector((state) =>
+    conversationId ? selectUserInputEntryExists(conversationId)(state) : false,
+  );
+  const draftSeededRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!initialDraftText || !conversationId || !draftEntryReady) return;
+    if (draftSeededRef.current === conversationId) return;
+    draftSeededRef.current = conversationId;
+    dispatch(setUserInputText({ conversationId, text: initialDraftText }));
+  }, [initialDraftText, conversationId, draftEntryReady, dispatch]);
 
   // ── Sync selectedConversationId → load + focus (replaces URL sync) ─────────
   const lastLoadedRef = useRef<string | null>(null);
@@ -394,6 +430,11 @@ interface AgentRunWindowProps {
   initialAgentId?: string | null;
   initialSelectedConversationId?: string | null;
   initialAgentName?: string | null;
+  /**
+   * Composed intent to pre-fill into the composer on open (Shape-studio
+   * hand-offs). Seeds a fresh conversation — see `AgentRunBodyProps`.
+   */
+  initialDraftText?: string | null;
 }
 
 export default function AgentRunWindow({
@@ -402,6 +443,7 @@ export default function AgentRunWindow({
   initialAgentId,
   initialSelectedConversationId,
   initialAgentName,
+  initialDraftText,
 }: AgentRunWindowProps) {
   if (!isOpen) return null;
   return (
@@ -410,6 +452,7 @@ export default function AgentRunWindow({
       initialAgentId={initialAgentId ?? null}
       initialSelectedConversationId={initialSelectedConversationId ?? null}
       initialAgentName={initialAgentName ?? null}
+      initialDraftText={initialDraftText ?? null}
     />
   );
 }
@@ -419,11 +462,13 @@ function AgentRunWindowInner({
   initialAgentId,
   initialSelectedConversationId,
   initialAgentName,
+  initialDraftText,
 }: {
   onClose: () => void;
   initialAgentId: string | null;
   initialSelectedConversationId: string | null;
   initialAgentName: string | null;
+  initialDraftText: string | null;
 }) {
   const [agentId, setAgentId] = useState<string | null>(initialAgentId);
   const [selectedConversationId, setSelectedConversationId] = useState<
@@ -508,6 +553,7 @@ function AgentRunWindowInner({
           key={agentId}
           agentId={agentId}
           selectedConversationId={selectedConversationId}
+          initialDraftText={initialDraftText}
         />
       ) : (
         <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center text-muted-foreground">

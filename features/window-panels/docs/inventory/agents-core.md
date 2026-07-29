@@ -97,4 +97,5 @@
 ---
 
 ## Change Log
+- 2026-07-28 — `agentRunWindow` gained an optional `initialDraftText` prop (opener + `OverlayController` + `AgentRunWindow`): seeds a FRESH conversation's composer with a composed brief on open (pre-fill only). Adds a 4th distribution surface — the content-ir Shape studio (`NewShapeClient` / `KindAgentButton` / `KindBuilderClient`) now opens the creator agent in-place here instead of navigating to `/chat/a/[agentId]`.
 - 2026-06-23 — Created. Agents-core chunk (12 panels) filled (Tables A/B/C). Verdict: agentContentWindow is the canonical family head; agentSettingsWindow/agentRunHistoryWindow collapse into it as tab presets; agentRunWindow kept as distribution entry; chatHistoryWindow kept as cross-agent variant. Canonical-core leaf reuse strong, shell-level conv-sidebar forked ×3-4. Surface/std-ctrls/help wiring 0% across chunk (system gap S1–S3). Distribution flows through AgentOptionsMenu hub + item-presentation + code-editor.

@@ -3,17 +3,17 @@
 /**
  * KindAgentButton — the one seam that hands a kind + a specific part to the
  * platform kind-creator agent. Mirrors NewShapeClient's handoff (compose intent
- * → stashChatDraftTransfer → /chat/a/[agentId]) but is droppable next to any
- * doctor-row part, on both the admin kind-registry page and the /shapes owner
- * editor. Loud when the creator agent is not configured — never a silent no-op.
+ * → open the run in-place) but is droppable next to any doctor-row part, on both
+ * the admin kind-registry page and the /shapes owner editor. The agent runs in a
+ * floating window on the current page, so the user watches every kind_* tool
+ * call stream without leaving the registry. Loud when the creator agent is not
+ * configured — never a silent no-op.
  */
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { Loader2, PencilRuler } from "lucide-react";
+import { PencilRuler } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
-import { stashChatDraftTransfer } from "@/features/agents/components/chat/chat-draft-transfer";
+import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { shapeCreatorAgentId } from "@/features/content-ir/studio/constants";
 import {
   composeKindAgentIntent,
@@ -36,9 +36,7 @@ export default function KindAgentButton({
   className,
   ...intent
 }: KindAgentButtonProps) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [launching, setLaunching] = useState(false);
+  const openRun = useOpenAgentRunWindow();
 
   function launch() {
     const agentId = shapeCreatorAgentId();
@@ -49,31 +47,23 @@ export default function KindAgentButton({
       });
       return;
     }
-    setLaunching(true);
-    stashChatDraftTransfer({
-      text: composeKindAgentIntent(intent),
-      targetAgentId: agentId,
-    });
-    startTransition(() => {
-      router.push(`/chat/a/${agentId}`);
+    // Open the creator agent in a floating window on this page, pre-loaded with
+    // the composed brief. The user reviews and sends; the run streams in-place.
+    openRun({
+      initialAgentId: agentId,
+      initialDraftText: composeKindAgentIntent(intent),
     });
   }
 
-  const busy = launching || pending;
   return (
     <Button
       type="button"
       variant={variant}
       size={size}
       className={className}
-      disabled={busy}
       onClick={launch}
     >
-      {busy ? (
-        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-      ) : (
-        <PencilRuler className="mr-1.5 h-3.5 w-3.5" />
-      )}
+      <PencilRuler className="mr-1.5 h-3.5 w-3.5" />
       {children}
     </Button>
   );

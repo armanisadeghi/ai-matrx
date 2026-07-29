@@ -28,6 +28,14 @@ export interface OpenAgentRunWindowOptions {
    * agent definition (and the full agent list) lazy-loads.
    */
   initialAgentName?: string | null;
+  /**
+   * Composed intent to pre-fill into the composer. When set, the window opens
+   * a FRESH conversation with the agent and seeds this text once (pre-fill
+   * only — the user reviews and sends). This is how the Shape studio hands a
+   * kind-build brief to the creator agent in-place instead of navigating to
+   * `/chat/a/[agentId]`.
+   */
+  initialDraftText?: string | null;
 }
 
 export interface AgentRunWindowHandle {
@@ -45,6 +53,7 @@ export function useOpenAgentRunWindow() {
             initialAgentId: opts.initialAgentId,
             initialSelectedConversationId: opts.initialSelectedConversationId,
             initialAgentName: opts.initialAgentName,
+            initialDraftText: opts.initialDraftText,
           },
         }),
       );
@@ -71,6 +80,7 @@ export function AgentRunWindowController(props: OpenAgentRunWindowOptions): null
     props.initialAgentId,
     props.initialSelectedConversationId,
     props.initialAgentName,
+    props.initialDraftText,
   ]);
   return null;
 }

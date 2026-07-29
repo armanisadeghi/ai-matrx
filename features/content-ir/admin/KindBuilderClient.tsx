@@ -7,22 +7,22 @@
  * it, in one pass.
  *
  * Like the user-facing /shapes/new, this surface does NOT own a chat: it
- * composes the admin's structure into a draft and hands off to the canonical
- * direct-agent chat route (`/chat/a/[agentId]`) via `stashChatDraftTransfer` —
- * where the run streams and every kind_* tool call renders through the standard
- * ToolCallVisualization ("drive it, watch it work"). The read-only Kind
- * Registry board is one click away to confirm what landed.
+ * composes the admin's structure into a brief and opens the builder agent in a
+ * floating run window on this page (the shared `agentRunWindow` overlay) — where
+ * the run streams and every kind_* tool call renders through the standard
+ * ToolCallVisualization ("drive it, watch it work"), with no navigation away.
+ * The read-only Kind Registry board is one click away to confirm what landed.
  *
  * The target is the admin builder agent, not the cautious user creator — see
  * KIND_ARCHITECT_AGENT_ID.
  */
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Hammer, Loader2, Table2 } from "lucide-react";
+import { Hammer, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { stashChatDraftTransfer } from "@/features/agents/components/chat/chat-draft-transfer";
+import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 
 /**
  * The admin one-shot kind builder (agent.definition 'kind_architect', builtin).
@@ -33,16 +33,14 @@ const KIND_ARCHITECT_AGENT_ID = "9d484ce1-1e2b-4db7-8469-d3ba8550cdd8";
 
 export default function KindBuilderClient() {
   const router = useRouter();
+  const openRun = useOpenAgentRunWindow();
   const [structure, setStructure] = useState("");
   const [notes, setNotes] = useState("");
-  const [pending, startTransition] = useTransition();
-  const [launching, setLaunching] = useState(false);
 
-  const canStart = structure.trim().length > 0 && !launching && !pending;
+  const canStart = structure.trim().length > 0;
 
   const start = () => {
     if (!canStart) return;
-    setLaunching(true);
     const parts = [
       "Build a complete, live kind from this data structure. Run the whole build end to end and activate it.",
       structure.trim(),
@@ -50,12 +48,11 @@ export default function KindBuilderClient() {
     if (notes.trim().length > 0) {
       parts.push(`Additional direction:\n\n${notes.trim()}`);
     }
-    stashChatDraftTransfer({
-      text: parts.join("\n\n"),
-      targetAgentId: KIND_ARCHITECT_AGENT_ID,
-    });
-    startTransition(() => {
-      router.push(`/chat/a/${KIND_ARCHITECT_AGENT_ID}`);
+    // Open the builder agent in a floating run window on this page, pre-loaded
+    // with the brief. The run streams in-place; the admin watches every step.
+    openRun({
+      initialAgentId: KIND_ARCHITECT_AGENT_ID,
+      initialDraftText: parts.join("\n\n"),
     });
   };
 
@@ -70,8 +67,8 @@ export default function KindBuilderClient() {
           Paste a data structure. The admin builder agent creates the schema, a
           live-quality interactive component (with copy-for-AI and any agent
           triggers the data implies), the skill and content blocks, and
-          activates the kind — in one pass, no interview. The run opens in chat
-          so you can watch every step.
+          activates the kind — in one pass, no interview. The run opens in a
+          window right here so you can watch every step.
         </p>
 
         <label className="mt-4 block text-xs font-medium text-foreground">
@@ -121,11 +118,7 @@ export default function KindBuilderClient() {
             Kind Registry
           </Button>
           <Button onClick={start} disabled={!canStart} className="gap-1.5">
-            {launching || pending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Hammer className="h-4 w-4" />
-            )}
+            <Hammer className="h-4 w-4" />
             Build the kind
           </Button>
         </div>

@@ -2,22 +2,21 @@
 
 /**
  * New Shape — create-with-agent entry. The studio does NOT own a chat: it
- * composes the user's intent (+ optional pasted sample data) and hands off to
- * the canonical direct-agent chat route (`/chat/a/[agentId]`) via the
- * canonical single-hop draft transfer (`stashChatDraftTransfer`) — the exact
- * machinery the chat quick-action chips use. The creator agent does the
- * actual creation server-side; when the shape lands, the /shapes list's
- * Refresh picks it up.
+ * composes the user's intent (+ optional pasted sample data) and opens the
+ * creator agent in a floating run window on this page (the shared
+ * `agentRunWindow` overlay), pre-loaded with the composed brief. The user
+ * reviews and sends; the creator agent does the actual creation server-side and
+ * the run streams in-place — no navigation away from the studio. When the shape
+ * lands, the /shapes list's Refresh picks it up.
  *
  * Not-configured state is LOUD: no fallback agent, ever.
  */
 
-import { useCallback, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { CircleAlert, Loader2, PencilRuler } from "lucide-react";
+import { useCallback, useState } from "react";
+import { CircleAlert, PencilRuler } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { stashChatDraftTransfer } from "@/features/agents/components/chat/chat-draft-transfer";
+import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { shapeCreatorAgentId } from "@/features/content-ir/studio/constants";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
@@ -31,12 +30,10 @@ function composeDraft(intent: string, sample: string): string {
 }
 
 export default function NewShapeClient() {
-  const router = useRouter();
+  const openRun = useOpenAgentRunWindow();
   const agentId = shapeCreatorAgentId();
   const [intent, setIntent] = useState("");
   const [sample, setSample] = useState("");
-  const [pending, startTransition] = useTransition();
-  const [launching, setLaunching] = useState(false);
 
   // Surface scope (matrx-user/shapes) — the create-a-shape draft. Built at
   // TRIGGER time; no kind exists yet, so no kind_* values are emitted here.
@@ -70,17 +67,13 @@ export default function NewShapeClient() {
     );
   }
 
-  const canStart = intent.trim().length > 0 && !launching && !pending;
+  const canStart = intent.trim().length > 0;
 
   const start = () => {
     if (!canStart) return;
-    setLaunching(true);
-    stashChatDraftTransfer({
-      text: composeDraft(intent, sample),
-      targetAgentId: agentId,
-    });
-    startTransition(() => {
-      router.push(`/chat/a/${agentId}`);
+    openRun({
+      initialAgentId: agentId,
+      initialDraftText: composeDraft(intent, sample),
     });
   };
 
@@ -137,11 +130,7 @@ export default function NewShapeClient() {
 
           <div className="mt-4 flex items-center justify-end">
             <Button onClick={start} disabled={!canStart} className="gap-1.5">
-              {launching || pending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <PencilRuler className="h-4 w-4" />
-              )}
+              <PencilRuler className="h-4 w-4" />
               Start with the agent
             </Button>
           </div>
