@@ -22,6 +22,8 @@ import { consumeChatDraftTransfer } from "./chat-draft-transfer";
 import { selectChatIncognitoActive } from "./chat-incognito.slice";
 import { selectChatFreshSessionNonce } from "./chat-route.slice";
 import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
+import { linkConversationDocumentThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
+import { useOpenWorkingDocumentPanel } from "@/features/overlays/openers/workingDocumentPanel";
 import {
   registerSurface,
   unregisterSurface,
@@ -200,6 +202,51 @@ export function ChatRoomClient({
       }),
     );
   }, [conversationIdProp, dispatch, isIncognito, liveConversationId]);
+
+  // ── ?attachDoc= deep link (fresh routes only) ────────────────────────────
+  // The working document's registry share URL is `/chat/new?attachDoc={id}`:
+  // a shared/linked document opens a NEW chat with that document attached.
+  // The link is adopted into Redux immediately and its conversation edge is
+  // queued until the conversation is server-confirmed (first message), so it
+  // works on a not-yet-persisted chat. Read from window.location (client-only
+  // effect) rather than useSearchParams to avoid a Suspense boundary here; the
+  // param is consumed once per document id and stripped from the URL.
+  const openWorkingDocPanel = useOpenWorkingDocumentPanel();
+  const attachedDocRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!liveConversationId || conversationIdProp || !authReady) return;
+    const params = new URLSearchParams(window.location.search);
+    const docId = params.get("attachDoc");
+    if (!docId || attachedDocRef.current === docId) return;
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(docId)) {
+      return;
+    }
+    attachedDocRef.current = docId;
+    void dispatch(
+      linkConversationDocumentThunk({
+        conversationId: liveConversationId,
+        kind: "working",
+        documentId: docId,
+      }),
+    );
+    openWorkingDocPanel({
+      conversationId: liveConversationId,
+      initialKind: "working",
+    });
+    params.delete("attachDoc");
+    const qs = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${qs ? `?${qs}` : ""}`,
+    );
+  }, [
+    authReady,
+    conversationIdProp,
+    dispatch,
+    liveConversationId,
+    openWorkingDocPanel,
+  ]);
 
   // ── Existing-conversation load (only on /chat/[conversationId]) ──────────
   // One in-flight load at a time, cancelled on prop change.

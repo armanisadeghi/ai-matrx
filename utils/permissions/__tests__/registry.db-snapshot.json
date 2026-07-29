@@ -110,6 +110,17 @@
     "is_active": true
   },
   {
+    "resource_type": "content_ir_kind_instance",
+    "table_name": "kind_instance",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": "visibility",
+    "display_label": "Kind Instance",
+    "url_path_template": "/shapes/instances/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "content_template",
     "table_name": "content_template",
     "id_column": "id",
@@ -128,6 +139,17 @@
     "is_public_column": null,
     "display_label": "Conversation",
     "url_path_template": "/chat/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "crm_campaign",
+    "table_name": "campaign",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Campaign",
+    "url_path_template": "/crm/campaigns/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -319,6 +341,17 @@
     "is_active": true
   },
   {
+    "resource_type": "party",
+    "table_name": "party",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Entity",
+    "url_path_template": "/crm/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "pdf_redaction_audit",
     "table_name": "pdf_redaction_audits",
     "id_column": "id",
@@ -491,6 +524,28 @@
     "is_public_column": "is_public",
     "display_label": "Tracked website",
     "url_path_template": "/websites?site_id={id}",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "seo_collection_run",
+    "table_name": "collection_run",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "SEO Collection Run",
+    "url_path_template": "/marketing/seo/collections/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "seo_keyword",
+    "table_name": "keyword",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "SEO Keyword",
+    "url_path_template": "/seo/keywords/{id}",
     "rls_uses_has_permission": false,
     "is_active": true
   },
@@ -690,6 +745,28 @@
     "display_label": "Workflow Trigger",
     "url_path_template": "/workflows/{id}/triggers/{id}",
     "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "working_document",
+    "table_name": "working_documents",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Working Document",
+    "url_path_template": "/chat/new?attachDoc={id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "youtube_search",
+    "table_name": "youtube_search",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "YouTube Search",
+    "url_path_template": "/marketing/discovery/youtube?search={id}",
+    "rls_uses_has_permission": true,
     "is_active": true
   }
 ]

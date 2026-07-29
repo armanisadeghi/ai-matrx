@@ -746,6 +746,91 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/workflows/{id}",
     rlsUsesHasPermission: true,
   },
+  // Live DB registry rows that predate this mirror — surfaced by the
+  // 2026-07-29 snapshot regen (the working_document registration). Mirrored
+  // here so the TS↔DB parity guard stays green.
+  content_ir_kind_instance: {
+    resourceType: "content_ir_kind_instance",
+    tableName: "kind_instance",
+    schemaName: "content_ir",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    // NOTE: the DB row declares 'visibility' (the canonical enum) in the
+    // boolean is_public_column slot — mirrored verbatim for parity; flagged in
+    // FOUND_DEFECTS (it routes ShareModal through make_resource_public).
+    isPublicColumn: "visibility",
+    displayLabel: "Kind Instance",
+    urlPathTemplate: "/shapes/instances/{id}",
+    rlsUsesHasPermission: true,
+  },
+  crm_campaign: {
+    resourceType: "crm_campaign",
+    tableName: "campaign",
+    schemaName: "crm",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Campaign",
+    urlPathTemplate: "/crm/campaigns/{id}",
+    rlsUsesHasPermission: true,
+  },
+  party: {
+    resourceType: "party",
+    tableName: "party",
+    schemaName: "crm",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Entity",
+    urlPathTemplate: "/crm/{id}",
+    rlsUsesHasPermission: true,
+  },
+  seo_collection_run: {
+    resourceType: "seo_collection_run",
+    tableName: "collection_run",
+    schemaName: "seo",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "SEO Collection Run",
+    urlPathTemplate: "/marketing/seo/collections/{id}",
+    rlsUsesHasPermission: true,
+  },
+  seo_keyword: {
+    resourceType: "seo_keyword",
+    tableName: "keyword",
+    schemaName: "seo",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "SEO Keyword",
+    urlPathTemplate: "/seo/keywords/{id}",
+    rlsUsesHasPermission: false,
+  },
+  youtube_search: {
+    resourceType: "youtube_search",
+    tableName: "youtube_search",
+    schemaName: "research",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "YouTube Search",
+    urlPathTemplate: "/marketing/discovery/youtube?search={id}",
+    rlsUsesHasPermission: true,
+  },
+  working_document: {
+    resourceType: "working_document",
+    tableName: "working_documents",
+    schemaName: "workbench",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Working Document",
+    // No standalone route: the in-app destination opens a NEW chat with the
+    // document linked (ChatRoomClient consumes ?attachDoc= on fresh routes).
+    urlPathTemplate: "/chat/new?attachDoc={id}",
+    rlsUsesHasPermission: true,
+  },
 } as const satisfies Record<string, ShareableResourceEntry>;
 
 /**

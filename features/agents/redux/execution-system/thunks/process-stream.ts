@@ -112,6 +112,7 @@ import {
 import { assertConversationIdMatches } from "../utils/assert-conversation-id";
 import {
   applyAgentWorkingDocDelta,
+  flushPendingDocumentEdgesThunk,
   reflectAgentMaterializedThunk,
   syncWorkingDocumentFromAgentThunk,
 } from "../instance-working-document/instance-working-document.thunks";
@@ -1836,6 +1837,11 @@ export async function processStream({
             if (!cxConversationConfirmed) {
               cxConversationConfirmed = true;
               dispatch(confirmServerSync(conversationId));
+              // The conversation row now exists — document/scratch edges that
+              // were queued while it was cache-only can finally persist.
+              void dispatch(
+                flushPendingDocumentEdgesThunk({ conversationId }),
+              );
               const syncListCx = upsertAgentConversationFromExecutionAction(
                 getState(),
                 conversationId,
