@@ -21,7 +21,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { MARKETING_PAGE_SURFACE_NAME } from "@/features/surfaces/manifests/marketing-page.manifest";
+import { MARKETING_PAGE_SURFACE_NAME } from "@/features/marketing/lib/marketing-page-scope";
 import { updatePageIntent } from "@/features/marketing/data/service";
 import {
   addPageSupportingKeywords,

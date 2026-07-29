@@ -1,4 +1,4 @@
-# Handoff — canonical pipeline streams + the surface 360 loop
+# Handoff — pipeline streams + the surface 360 loop
 
 **Created:** 2026-07-29 · **Repos:** matrx-frontend (this) + aidream · **DB:** `txzxabzwovsujtloxrus`
 **Branch:** `claude/agent-shortcuts-content-ir-qtmsfu` (both repos)

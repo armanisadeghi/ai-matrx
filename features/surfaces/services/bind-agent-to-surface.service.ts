@@ -418,6 +418,7 @@ export async function upsertAgentSurfaceBinding(args: {
     projectId: scope.projectId ?? null,
     taskId: scope.taskId ?? null,
     valueMappings,
+    writePolicies: writePolicies ?? {},
     createdAt: new Date().toISOString(),
   };
 }
