@@ -67,7 +67,6 @@ import {
   logProjectCreateAiStage,
   warnProjectCreateAi,
 } from "@/features/projects/debug/projectCreateAiDebug";
-import { setOverrides } from "../instance-model-overrides/instance-model-overrides.slice";
 
 export interface LaunchResult {
   /** The conversation id — client-generated, honored by the server end-to-end. */
@@ -600,6 +599,8 @@ export const launchAgentExecution = createAsyncThunk<
 
     const shortcutLlmOverrides = config?.llmOverrides;
     if (shortcutLlmOverrides && Object.keys(shortcutLlmOverrides).length > 0) {
+      const { setOverrides } =
+        await import("../instance-model-overrides/instance-model-overrides.slice");
       dispatch(setOverrides({ conversationId, changes: shortcutLlmOverrides }));
     }
   } else if (agentId) {
@@ -761,6 +762,8 @@ export const launchAgentExecution = createAsyncThunk<
 
     const llmOverrides = config?.llmOverrides;
     if (llmOverrides && Object.keys(llmOverrides).length > 0) {
+      const { setOverrides } =
+        await import("../instance-model-overrides/instance-model-overrides.slice");
       dispatch(setOverrides({ conversationId, changes: llmOverrides }));
     }
 

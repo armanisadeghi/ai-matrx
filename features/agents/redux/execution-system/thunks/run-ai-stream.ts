@@ -65,7 +65,6 @@ import {
   failPendingToolLifecycle,
 } from "../active-requests/active-requests.slice";
 import { assertConversationIdMatches } from "../utils/assert-conversation-id";
-import { clearComposerIfUnsubmitted } from "../instance-user-input/clear-composer.thunk";
 
 /**
  * Thrown when the underlying fetch is aborted (user cancel, heartbeat-driven
@@ -587,6 +586,8 @@ export async function runAiStream(
     // next-message draft the user started while this send was in flight is left
     // untouched (no false violation scream). Resume passes false here.
     if (clearInputOnError) {
+      const { clearComposerIfUnsubmitted } =
+        await import("../instance-user-input/clear-composer.thunk");
       dispatch(clearComposerIfUnsubmitted(conversationId, { via: "clear" }));
     }
 

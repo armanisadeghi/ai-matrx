@@ -18,9 +18,6 @@
 import type { EditorPrimaryAction } from "@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor";
 import type { AppDispatch } from "@/lib/redux/store";
 import { toast } from "@/lib/toast";
-import { editMessageText } from "@/features/agents/redux/execution-system/message-crud/edit-message-text.thunk";
-import { overwriteAndResend } from "@/features/agents/redux/execution-system/message-crud/overwrite-and-resend.thunk";
-import { forkAndResubmitFromMessage } from "@/features/agents/redux/execution-system/message-crud/fork-and-resubmit-from-message.thunk";
 
 export const USER_EDIT_ACTIONS: EditorPrimaryAction[] = [
   { id: "save", label: "Save only", variant: "secondary" },
@@ -47,15 +44,21 @@ export async function routeUserEditAction(
 ): Promise<void> {
   try {
     if (actionId === "save") {
+      const { editMessageText } =
+        await import("@/features/agents/redux/execution-system/message-crud/edit-message-text.thunk");
       await dispatch(
         editMessageText({ conversationId, messageId, newContent }),
       ).unwrap();
       toast.success("Message saved");
     } else if (actionId === "resubmit") {
+      const { overwriteAndResend } =
+        await import("@/features/agents/redux/execution-system/message-crud/overwrite-and-resend.thunk");
       await dispatch(
         overwriteAndResend({ conversationId, messageId, newContent }),
       ).unwrap();
     } else if (actionId === "fork") {
+      const { forkAndResubmitFromMessage } =
+        await import("@/features/agents/redux/execution-system/message-crud/fork-and-resubmit-from-message.thunk");
       await dispatch(
         forkAndResubmitFromMessage({
           conversationId,
