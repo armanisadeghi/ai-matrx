@@ -34,10 +34,12 @@ export function KeywordResearchTab({
   phrase,
   organizationId,
   pageId,
+  onResearchStart,
 }: {
   phrase: string;
   organizationId?: string | null;
   pageId?: string | null;
+  onResearchStart?: (phrase: string) => void;
 }) {
   const research = useKeywordResearch(organizationId);
   const { run } = research;
@@ -144,7 +146,10 @@ export function KeywordResearchTab({
               ? "Saved results are shown below. Run again only when you need refreshed research."
               : undefined
           }
-          onClick={() => void research.runResearch(phrase)}
+          onClick={() => {
+            onResearchStart?.(phrase);
+            void research.runResearch(phrase);
+          }}
         >
           {running || saved.isLoading ? (
             <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />

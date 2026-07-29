@@ -31,6 +31,8 @@ export function useOpenKeywordWindow() {
           overlayId: OVERLAY_ID,
           data: {
             phrase: options.phrase ?? "",
+            targetPhrase: options.phrase ?? "",
+            history: [],
             organizationId: options.organizationId ?? "",
             siteId: options.siteId ?? "",
             pageId: options.pageId ?? "",

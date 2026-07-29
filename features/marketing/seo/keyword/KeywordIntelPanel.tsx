@@ -24,7 +24,6 @@
  * keyword-research feature already owns.
  */
 
-import { useEffect, useState } from "react";
 import {
   Archive,
   ArrowDownLeft,
@@ -117,24 +116,26 @@ const CLASSIFICATION_LABELS: [keyof KeywordWithMarket, string][] = [
 ];
 
 export interface KeywordIntelPanelProps {
-  initialPhrase: string;
+  phrase: string;
+  activeTab: KeywordIntelTab;
   scope?: KeywordScope;
-  initialTab?: KeywordIntelTab;
-  /** Live state mirror for window persistence (`onCollectData`). */
-  onStateChange?: (state: {
-    phrase: string;
-    activeTab: KeywordIntelTab;
-  }) => void;
+  onPhraseChange: (phrase: string) => void;
+  onTabChange: (tab: KeywordIntelTab) => void;
+  /** Relationship navigation also records the phrase in the window history. */
+  onRelatedKeywordNavigate: (phrase: string) => void;
+  /** Running research commits a manually entered phrase to window history. */
+  onResearchStart: (phrase: string) => void;
 }
 
 export function KeywordIntelPanel({
-  initialPhrase,
+  phrase,
+  activeTab,
   scope,
-  initialTab = "overview",
-  onStateChange,
+  onPhraseChange,
+  onTabChange,
+  onRelatedKeywordNavigate,
+  onResearchStart,
 }: KeywordIntelPanelProps) {
-  const [phrase, setPhrase] = useState(initialPhrase);
-  const [activeTab, setActiveTab] = useState<KeywordIntelTab>(initialTab);
   const resolved = useResolvedKeyword(phrase);
   const keyword = resolved.data?.keyword ?? null;
   const market = resolved.data?.market ?? null;
@@ -146,10 +147,6 @@ export function KeywordIntelPanel({
   const siteId = scope?.siteId;
   const organizationId = scope?.organizationId;
   const hasSite = Boolean(siteId && organizationId);
-
-  useEffect(() => {
-    onStateChange?.({ phrase, activeTab });
-  }, [phrase, activeTab, onStateChange]);
 
   const brief = buildKeywordBrief({
     phrase,
@@ -215,8 +212,7 @@ export function KeywordIntelPanel({
   };
 
   const navigateToKeyword = (nextPhrase: string) => {
-    setPhrase(nextPhrase);
-    setActiveTab("overview");
+    onRelatedKeywordNavigate(nextPhrase);
   };
 
   /** Soft-archive this library keyword (seo.fn_archive_keywords, undoable).
@@ -272,7 +268,7 @@ export function KeywordIntelPanel({
         <div className="flex items-start gap-2">
           <KeywordInput
             value={phrase}
-            onChange={setPhrase}
+            onChange={onPhraseChange}
             scope={scope}
             showIntelButton={false}
             placeholder="Type any keyword…"
@@ -337,7 +333,7 @@ export function KeywordIntelPanel({
                   ? "Open Keyword Intelligence from a site to see site-scoped data"
                   : undefined
               }
-              onClick={() => setActiveTab(tab)}
+              onClick={() => onTabChange(tab)}
               className={cn(
                 "shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
                 activeTab === tab
@@ -409,6 +405,7 @@ export function KeywordIntelPanel({
             phrase={phrase}
             organizationId={scope?.organizationId}
             pageId={scope?.pageId}
+            onResearchStart={onResearchStart}
           />
         )}
       </div>

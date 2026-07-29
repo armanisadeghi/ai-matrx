@@ -71,6 +71,11 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
 
 ## Change Log
 
+- 2026-07-29 — Codex: Keyword Intelligence now uses the existing WindowPanel
+  sidebar for a persistent research path: the opening target stays pinned,
+  related/researched phrases are deduplicated beneath it, and selecting any
+  entry swaps the existing dossier back to its durable saved research. No new
+  store, query, or persistence system was added.
 - 2026-07-29 — Claude: library management (Arman "autosave + easy removal"
   ruling) — panel header Archive button (`fn_archive_keywords`, confirm +
   Undo), explicit-entry restore in `ensureKeywordId`; research autosave

@@ -4005,6 +4005,14 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "keywordWindow" }))
             }
             initialPhrase={str("phrase")}
+            initialTargetPhrase={str("targetPhrase")}
+            initialHistory={
+              Array.isArray(data?.history)
+                ? data.history.filter(
+                    (entry): entry is string => typeof entry === "string",
+                  )
+                : undefined
+            }
             initialOrganizationId={str("organizationId")}
             initialSiteId={str("siteId")}
             initialPageId={str("pageId")}

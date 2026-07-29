@@ -1263,6 +1263,8 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     label: "Keyword Intelligence",
     defaultData: {
       phrase: "",
+      targetPhrase: "",
+      history: [],
       organizationId: "",
       siteId: "",
       pageId: "",
@@ -1276,6 +1278,8 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     preservation: {
       dataKeys: [
         "phrase",
+        "targetPhrase",
+        "history",
         "activeTab",
         "organizationId",
         "siteId",
