@@ -325,6 +325,34 @@ export function folderForAgentBlock(blockId: string): string {
   return `${CloudFolders.AGENT_BLOCKS}/${blockId}`;
 }
 
+/** Per-org capture subtree. Org id in the path keeps each workspace's
+ *  captures a DISTINCT global folder path (the server allows one folder
+ *  path per user, pinned to one org — a flat `Captures/Videos` cannot exist
+ *  under two orgs). Falls back to the flat path when there is no active org
+ *  (personal context).
+ *
+ *  Nested output still resolves to `personal` visibility: the
+ *  `resolveDefaultVisibility` rule keys on the `Captures` prefix (a
+ *  longest-prefix match), so `Captures/<org>/Videos` matches the same rule as
+ *  the flat `Captures/Videos`. The org id in the path is filing, not access —
+ *  personal-visibility files stay owner-gated regardless of org. */
+export function folderForCaptures(
+  kind: "photo" | "video" | "audio",
+  orgId?: string | null,
+): string {
+  const leaf = kind === "photo" ? "Photos" : kind === "video" ? "Videos" : "Audio";
+  const trimmed = typeof orgId === "string" ? orgId.trim() : "";
+  if (trimmed) {
+    return `${CloudFolders.CAPTURES}/${trimmed}/${leaf}`;
+  }
+  // No active org (personal context) — the flat/legacy path.
+  return kind === "photo"
+    ? CloudFolders.CAPTURES_PHOTOS
+    : kind === "video"
+      ? CloudFolders.CAPTURES_VIDEOS
+      : CloudFolders.CAPTURES_AUDIO;
+}
+
 // ---------------------------------------------------------------------------
 // Predicates
 // ---------------------------------------------------------------------------

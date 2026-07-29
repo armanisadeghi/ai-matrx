@@ -4,8 +4,12 @@
  * features/media-capture/components/CaptureLibrary.tsx
  *
  * The /camera management lens — a view over the EXISTING files data layer
- * (cloud-files tree + `useFolderContents`; no second query stack, no ad hoc
- * `.from()` calls) across all three `Captures/` folders:
+ * (the whole-user-tree read via `useCloudTree`; no second query stack, no ad
+ * hoc `.from()` calls). Captures are collected by FOLDER-PATH PREFIX + kind so
+ * BOTH the org-namespaced `Captures/<orgId>/{Photos|Videos|Audio}` subtree AND
+ * the legacy flat `Captures/{Photos|Videos|Audio}` folders surface here (the
+ * tree RPC has no org filter, so nested-org captures appear regardless of the
+ * active workspace). Across all `Captures/` leaves:
  *
  *   • kind filter chips (all / photo / video / audio) — client-side on the
  *     owning folder (authoritative for captures) with mime as tiebreak;
@@ -25,7 +29,7 @@
  * path — this file is a LENS over `files.files`.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { FileAudio, ImageOff, Video } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,7 +39,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
 import { useCloudTree } from "@/features/files/hooks/useCloudTree";
-import { useFolderContents } from "@/features/files/hooks/useFolderContents";
+import { selectAllFilesMap } from "@/features/files/redux/selectors";
 import type { CloudFile } from "@/features/files/types";
 import { CaptureRecoverySection } from "@/features/media-capture/components/CaptureRecoverySection";
 import { CaptureTransportStrip } from "@/features/media-capture/components/CaptureTransportStrip";
@@ -54,6 +58,32 @@ const FILTERS: Array<{ key: CaptureKindFilter; label: string }> = [
 interface CaptureItem {
   file: CloudFile;
   kind: "photo" | "video" | "audio";
+}
+
+/**
+ * Classify a file by its Captures folder LEAF, or null if it isn't a capture.
+ * Matches both the org-namespaced subtree (`Captures/<orgId>/Videos`) and the
+ * legacy flat path (`Captures/Videos`): the containing directory must be under
+ * the `Captures/` root and end in a `/Photos`, `/Videos`, or `/Audio` leaf.
+ */
+function captureFolderKindFromPath(
+  filePath: string | null | undefined,
+): "photo" | "video" | "audio" | null {
+  if (!filePath) return null;
+  const normalized = filePath.replace(/^\/+/, "");
+  const lastSlash = normalized.lastIndexOf("/");
+  if (lastSlash < 0) return null;
+  const dir = normalized.slice(0, lastSlash);
+  if (
+    dir !== CloudFolders.CAPTURES &&
+    !dir.startsWith(`${CloudFolders.CAPTURES}/`)
+  ) {
+    return null;
+  }
+  if (dir.endsWith("/Photos")) return "photo";
+  if (dir.endsWith("/Videos")) return "video";
+  if (dir.endsWith("/Audio")) return "audio";
+  return null;
 }
 
 function kindOfFile(
@@ -85,52 +115,41 @@ export function CaptureLibrary({ refreshToken = 0 }: CaptureLibraryProps) {
   const [recoveryToken, setRecoveryToken] = useState(0);
 
   // ── Existing files data layer only ─────────────────────────────────────────
-  const { status, rootFolders } = useCloudTree(userId);
+  // `useCloudTree` triggers/observes the whole-user-tree read; the tree RPC is
+  // identity-locked to the user with NO org filter, so every capture — flat or
+  // org-namespaced — is in `filesById`. We collect by folder-path prefix.
+  const { status } = useCloudTree(userId);
   const treeReady = status === "loaded";
-  const capturesFolderId =
-    rootFolders.find((f) => f.folderPath === CloudFolders.CAPTURES)?.id ?? null;
-  const { folders: capturesChildren } = useFolderContents(capturesFolderId);
-  const folderIdFor = useCallback(
-    (path: string) =>
-      capturesChildren.find((f) => f.folderPath === path)?.id ?? null,
-    [capturesChildren],
-  );
-  const photosId = folderIdFor(CloudFolders.CAPTURES_PHOTOS);
-  const videosId = folderIdFor(CloudFolders.CAPTURES_VIDEOS);
-  const audioId = folderIdFor(CloudFolders.CAPTURES_AUDIO);
+  const filesById = useAppSelector(selectAllFilesMap);
 
-  const photos = useFolderContents(photosId);
-  const videos = useFolderContents(videosId);
-  const audio = useFolderContents(audioId);
+  const allCaptures = useMemo<CaptureItem[]>(() => {
+    const collected: CaptureItem[] = [];
+    for (const file of Object.values(filesById)) {
+      if (!file || file.deletedAt) continue;
+      const folderKind = captureFolderKindFromPath(file.filePath);
+      if (!folderKind) continue;
+      collected.push({ file, kind: kindOfFile(file, folderKind) });
+    }
+    return collected;
+  }, [filesById]);
 
   const items = useMemo<CaptureItem[]>(() => {
-    const all: CaptureItem[] = [
-      ...photos.files.map((file) => ({ file, kind: kindOfFile(file, "photo") })),
-      ...videos.files.map((file) => ({ file, kind: kindOfFile(file, "video") })),
-      ...audio.files.map((file) => ({ file, kind: kindOfFile(file, "audio") })),
-    ];
     const filtered =
-      filter === "all" ? all : all.filter((i) => i.kind === filter);
-    return filtered.sort((a, b) =>
+      filter === "all"
+        ? allCaptures
+        : allCaptures.filter((i) => i.kind === filter);
+    return [...filtered].sort((a, b) =>
       (b.file.updatedAt ?? "").localeCompare(a.file.updatedAt ?? ""),
     );
-  }, [photos.files, videos.files, audio.files, filter]);
+  }, [allCaptures, filter]);
 
-  const counts = useMemo(
-    () => ({
-      all: photos.files.length + videos.files.length + audio.files.length,
-      photo: photos.files.length,
-      video: videos.files.length,
-      audio: audio.files.length,
-    }),
-    [photos.files, videos.files, audio.files],
-  );
+  const counts = useMemo(() => {
+    const c = { all: allCaptures.length, photo: 0, video: 0, audio: 0 };
+    for (const item of allCaptures) c[item.kind] += 1;
+    return c;
+  }, [allCaptures]);
 
-  const loading =
-    !treeReady ||
-    (photosId !== null && photos.loading) ||
-    (videosId !== null && videos.loading) ||
-    (audioId !== null && audio.loading);
+  const loading = !treeReady;
 
   return (
     <section className="flex min-h-0 flex-col gap-2">

@@ -920,12 +920,14 @@ export function CaptureStudio({
 
   const isRecordingLive = recUi === "recording" || recUi === "paused";
 
+  // Clean, readable destination — the org id in the real path is a filing
+  // implementation detail, not something to show the user.
   const savedFolderLabel =
     captured?.kind === "video"
-      ? "Captures/Videos"
+      ? "Captures / Videos"
       : captured?.kind === "audio"
-        ? "Captures/Audio"
-        : "Captures/Photos";
+        ? "Captures / Audio"
+        : "Captures / Photos";
 
   return (
     <div className={`flex h-full min-h-0 flex-col ${className ?? ""}`}>
