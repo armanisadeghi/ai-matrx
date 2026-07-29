@@ -405,7 +405,7 @@ export function SetupView() {
     return (
       <EmptyState
         title="That site is not visible to you"
-        body="The ?site= link points at a site you cannot see (or that was deleted). Pick another from the header."
+        body="This link points at a site you cannot see (or that was deleted). Pick another from the header, or go back to the plans list."
       />
     );
   }

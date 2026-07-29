@@ -40,6 +40,7 @@ import {
   listPlanEntities,
   listPlanNodes,
   listPlanProfiles,
+  listPlanSiteStats,
   listSeoTopics,
   listSiteKeywordValues,
   reparentPlanNode,
@@ -63,7 +64,17 @@ export const planKeys = {
   siteKeywordValues: (siteId: string) =>
     ["content-plan", "site-keyword-values", siteId] as const,
   topics: (search: string) => ["content-plan", "topics", search] as const,
+  siteStats: () => ["content-plan", "site-stats"] as const,
 };
+
+/** Per-site plan aggregates for the /marketing/content-plan list page. */
+export function usePlanSiteStats() {
+  return useQuery({
+    queryKey: planKeys.siteStats(),
+    queryFn: ({ signal }) => listPlanSiteStats(signal),
+    staleTime: 30 * 1000,
+  });
+}
 
 export function usePlanNodes(siteId: string | null) {
   return useQuery({

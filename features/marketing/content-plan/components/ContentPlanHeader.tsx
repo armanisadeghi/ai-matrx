@@ -1,14 +1,17 @@
 "use client";
 
 /**
- * Shell-header controls for /content-plan — injected into the PageHeader
- * center zone (never an in-body toolbar). Site picker + view switcher +
- * refresh; state rides the URL via usePlanWorkspaceParams so the body
- * workbench stays in sync.
+ * Shell-header controls for the /marketing/content-plan/[siteId] WORKSPACE —
+ * injected into the PageHeader center zone (never an in-body toolbar).
+ * Back-to-list + site picker + view switcher + refresh; state rides the URL
+ * via usePlanWorkspaceParams so the body workbench stays in sync. The list
+ * page has its own quieter header (ContentPlanListHeader).
  */
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
+import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  ChevronLeft,
   LayoutTemplate,
   ListTree,
   Map as MapIcon,
@@ -18,6 +21,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   Select,
   SelectContent,
@@ -77,14 +81,8 @@ export function useContentPlanSites() {
 
 export function ContentPlanHeader() {
   const { siteId, view, setSiteId, setView } = usePlanWorkspaceParams();
-  const { sites, orgSites, scopedSites } = useContentPlanSites();
+  const { sites, orgSites } = useContentPlanSites();
   const queryClient = useQueryClient();
-
-  // Prefer auto-selecting a site of the ACTIVE org. If the URL already names
-  // a site outside that org, leave it — the picker still lists it.
-  useEffect(() => {
-    if (!siteId && scopedSites.length > 0) setSiteId(scopedSites[0].id);
-  }, [siteId, scopedSites, setSiteId]);
 
   // Keep a ?site= target in the list even if options are still loading /
   // briefly empty so the Select doesn't blank out.
@@ -97,6 +95,17 @@ export function ContentPlanHeader() {
 
   return (
     <div className="flex w-full min-w-0 items-center gap-1.5">
+      <Button
+        asChild
+        variant="ghost"
+        size="sm"
+        className="h-7 shrink-0 gap-1 px-1.5 text-xs text-muted-foreground"
+      >
+        <Link href={marketingRoutes.contentPlan()} aria-label="All plans">
+          <ChevronLeft className="h-3.5 w-3.5" />
+          <span className="hidden md:inline">Plans</span>
+        </Link>
+      </Button>
       <ActiveContextLensChip className="shrink-0" />
       <Select value={siteId ?? ""} onValueChange={setSiteId}>
         <SelectTrigger

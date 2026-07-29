@@ -1,40 +1,43 @@
-// app/(core)/content-plan/page.tsx
+// app/(core)/marketing/content-plan/page.tsx
 //
-// Server Component page for the Content Planning workspace
-// (features/marketing/content-plan — see its FEATURE.md). Auth branches server-side;
-// route chrome injects into the shell header; the body is the client
-// workbench, full-height per (core) doctrine.
+// The Content Plan LIST page — the feature's front door (canonical
+// entry-list doctrine: a list of every site you can plan, never a forced
+// workspace). Clicking a site opens its plan workspace at
+// /marketing/content-plan/[siteId]. Legacy `?site=<id>` URLs (the pre-split
+// single-route shape) redirect to the routed workspace.
 
 import { redirect } from "next/navigation";
 
-import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { ContentPlanHeader } from "@/features/marketing/content-plan/components/ContentPlanHeader";
-import { ContentPlanWorkbench } from "@/features/marketing/content-plan/components/ContentPlanWorkbench";
+import { ContentPlanListHeader } from "@/features/marketing/content-plan/components/ContentPlanListHeader";
+import { PlanSitesList } from "@/features/marketing/content-plan/components/PlanSitesList";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
-// Cookie-persisted tree|panel split (same pattern as /tasks) — read
-// server-side so the first paint already has the user's sizes.
-const LAYOUT_COOKIE = "panels:content-plan";
-
-export default async function ContentPlanPage() {
+export default async function ContentPlanListPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { isAuthenticated } = await getServerAuth();
   if (!isAuthenticated) {
     redirect("/login?next=/marketing/content-plan");
   }
 
-  const defaultLayout = await readLayoutCookie(LAYOUT_COOKIE);
+  // Legacy single-route URLs: /marketing/content-plan?site=<id>&view=<v>
+  const params = await searchParams;
+  const legacySite = typeof params.site === "string" ? params.site : null;
+  if (legacySite) {
+    const view = typeof params.view === "string" ? `?view=${params.view}` : "";
+    redirect(`/marketing/content-plan/${legacySite}${view}`);
+  }
 
   return (
     <>
       <PageHeader>
-        <ContentPlanHeader />
+        <ContentPlanListHeader />
       </PageHeader>
-      <div className="h-full overflow-hidden">
-        <ContentPlanWorkbench
-          defaultLayout={defaultLayout}
-          layoutCookieName={LAYOUT_COOKIE}
-        />
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+        <PlanSitesList />
       </div>
     </>
   );

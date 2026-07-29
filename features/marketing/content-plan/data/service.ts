@@ -169,6 +169,83 @@ export async function softDeletePlanNode(id: string): Promise<void> {
   assertMutated(response.data, response.error, "delete this plan node");
 }
 
+// ─── Cross-site plan overview (the /marketing/content-plan list page) ────
+
+export interface PlanSiteStats {
+  siteId: string;
+  totalNodes: number;
+  /** status_id → live node count (unset status under the "" key). */
+  byStatusId: Record<string, number>;
+  keywordBound: number;
+  lastUpdatedAt: string | null;
+}
+
+/**
+ * Per-site plan aggregates across EVERY RLS-visible site, for the list page.
+ * Deliberate scope: this mirrors the site picker's own org-browse surface
+ * (`listSiteOptions` — a deliberate VIEW-LAW destination), aggregated from
+ * `plan.node` under the same RLS. Minimal columns, paginated; totals are
+ * counted client-side because plans are small (≤ a few thousand rows total
+ * pre-launch) and PostgREST grouping would cost an RPC we don't need yet.
+ */
+export async function listPlanSiteStats(
+  signal?: AbortSignal,
+): Promise<Map<string, PlanSiteStats>> {
+  type StatRow = Pick<
+    PlanNodeRow,
+    "site_id" | "status_id" | "primary_keyword_id" | "updated_at"
+  >;
+  const rows: StatRow[] = [];
+  const abortSignal = signal ?? new AbortController().signal;
+  const db = await planDb();
+  for (let page = 0; page < 30; page += 1) {
+    const from = page * 1000;
+    const response = await db
+      .from("node")
+      .select("site_id, status_id, primary_keyword_id, updated_at")
+      .is("deleted_at", null)
+      .order("id", { ascending: true })
+      .range(from, from + 999)
+      .abortSignal(abortSignal)
+      .returns<StatRow[]>();
+    const batch = assertData(response.data, response.error);
+    rows.push(...batch);
+    if (batch.length < 1000) break;
+    if (page === 29) {
+      // Loud recovery: >30k plan rows means the list page needs a real
+      // aggregate RPC, not a silently incomplete overview.
+      throw new Error(
+        "More than 30,000 plan nodes visible — the overview needs a server-side aggregate before it can render honestly.",
+      );
+    }
+  }
+  const bySite = new Map<string, PlanSiteStats>();
+  for (const row of rows) {
+    let stats = bySite.get(row.site_id);
+    if (!stats) {
+      stats = {
+        siteId: row.site_id,
+        totalNodes: 0,
+        byStatusId: {},
+        keywordBound: 0,
+        lastUpdatedAt: null,
+      };
+      bySite.set(row.site_id, stats);
+    }
+    stats.totalNodes += 1;
+    const statusKey = row.status_id ?? "";
+    stats.byStatusId[statusKey] = (stats.byStatusId[statusKey] ?? 0) + 1;
+    if (row.primary_keyword_id) stats.keywordBound += 1;
+    if (
+      row.updated_at &&
+      (stats.lastUpdatedAt === null || row.updated_at > stats.lastUpdatedAt)
+    ) {
+      stats.lastUpdatedAt = row.updated_at;
+    }
+  }
+  return bySite;
+}
+
 // ─── plan.entity ─────────────────────────────────────────────────────────
 
 export async function listPlanEntities(

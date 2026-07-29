@@ -427,7 +427,7 @@ export function PlanNodesTable({
       copy={{
         label: "Plan node",
         listLabel: "Plan nodes",
-        location: "/marketing/content-plan?view=table",
+        location: "/marketing/content-plan/[siteId]?view=table",
         rowKind: "plan_node",
         listKind: "plan_node_list",
         humanRow: (row) =>

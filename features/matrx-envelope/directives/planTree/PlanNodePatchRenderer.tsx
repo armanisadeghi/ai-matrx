@@ -10,6 +10,7 @@ import Link from "next/link";
 import { ExternalLink, PencilLine, Loader2 } from "lucide-react";
 
 import { EnvelopeFallbackCard } from "@/features/matrx-envelope/EnvelopeFallbackCard";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { EnvelopeRendererProps } from "@/features/matrx-envelope/registry";
 
 import { parsePlanNodePatchItems } from "./parseDirectiveItems";
@@ -44,8 +45,8 @@ function PatchCard({ item }: { item: PlanNodePatchItem }) {
         <Link
           href={
             item.site_id
-              ? `/content-plan?site=${item.site_id}`
-              : "/marketing/content-plan"
+              ? marketingRoutes.contentPlanSite(item.site_id)
+              : marketingRoutes.contentPlan()
           }
           className="ml-auto inline-flex shrink-0 items-center gap-1 text-primary hover:underline"
         >

@@ -16,8 +16,11 @@
 export const marketingRoutes = {
   home: () => "/marketing",
   brands: () => "/marketing/brands",
-  /** Editorial plan tree (was the root-level `/content-plan`, moved 2026-07-25). */
+  /** Content-plan LIST page (was the root-level `/content-plan`, moved 2026-07-25; list+workspace split 2026-07-28). */
   contentPlan: () => "/marketing/content-plan",
+  /** One site's plan workspace. `view` = tree (default) | table | map | entities | setup. */
+  contentPlanSite: (siteId: string, view?: string) =>
+    `/marketing/content-plan/${siteId}${view && view !== "tree" ? `?view=${view}` : ""}`,
   /** Keyword research workbench (was `/seo/keyword-research`, moved 2026-07-25). */
   keywordResearch: () => "/marketing/keyword-research",
   /** Public-video discovery and expertise comparison through YouTube Data API v3. */

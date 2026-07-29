@@ -1,14 +1,16 @@
 /**
  * Surface manifest — Content Plan workspace (`matrx-user/content-plan`).
  *
- * Drives `/content-plan?site=<web.site id>&view=tree|table|map|entities|setup` — the
+ * Drives `/marketing/content-plan/[siteId]?view=tree|table|map|entities|setup` — the
  * client workspace for the `plan` schema (`features/marketing/content-plan`): every URL
  * a site *should* have, as an editable tree (pillars → clusters → articles)
  * with briefs, keyword bindings, topics, and the people/sources behind the
  * content (E-E-A-T). `route` / `depth` / `pillar_label` / `cluster_label` on
  * every node are TRIGGER-OWNED derived cache — observed evidence an agent
- * reads as-is and never recomputes. Site identity rides the `?site=` query
- * param (not a routed segment), so only the view is guaranteed on launch.
+ * reads as-is and never recomputes. Site identity is a routed path segment
+ * since 2026-07-28 (the list page at /marketing/content-plan is the front
+ * door); the workspace always has a site, but the runtime emitter still
+ * treats site-derived values as best-effort while queries hydrate.
  *
  * Runtime emitter: `features/marketing/content-plan/lib/content-plan-scope.ts`
  * (`buildContentPlanScope`), mounted via `SurfaceRuntimeProvider` in
@@ -64,7 +66,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "site_id",
     label: "Site ID",
     description:
-      "UUID of the `web.site` whose plan is open (from `?site=`). Empty when no site is selected yet (first visit before the header default kicks in).",
+      "UUID of the `web.site` whose plan is open (the routed /marketing/content-plan/[siteId] segment). Empty only while the workspace hydrates.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
