@@ -48,8 +48,8 @@ Bug-fix policy: "For any issues like these, especially clear-cut fixes, proceed 
 - Push to CMS v1 — `lib/push-to-cms.ts` + `cards/PushToCmsCard.tsx`, drafts only, provenance in CMS activity log.
 - Desired-values layer, draft content, keyword batch, tasks, image plan, associations grid — 2026-07-27, see FEATURE.md.
 - `useFileBlob` unhandled-rejection leak fixed.
+- Crawl-file access (Arman ruling "absolutely never personal"): 12,413 snapshot/screenshot files backfilled personal→internal; `files.reject_web_artifact_file_mutation` amended to allow metadata-only updates (`migrations/mtx_web_artifact_metadata_mutable.sql`). REAL 403 root cause is matrx-files hard-denying contextual `web_crawl` artifacts before the platform-judge tier — fix + PyPI deploy in flight (see FOUND items / task list).
 
 ## Decisions needed
 
-- **Crawl-file visibility.** Situation: all 7,093 `web.snapshot` markdown/body files are `visibility='personal'` owned by the crawling user, so page content 403s for every other org member; the permission classifier blocks agents from bulk visibility changes and from delegating the aidream creation-time change. Decide: approve the one-line backfill to `internal` (SQL in task #11 of the session task list) and authorize the aidream creation-time default change — or pick `public` instead.
 - **Association conveyance.** Situation: page/capture pairs (note/task/file/conversation ↔ web_page/web_screenshot) registered with `viewer` conveyance to match existing patterns. Decide: keep viewer, or adjust at `/administration/relationships`.
