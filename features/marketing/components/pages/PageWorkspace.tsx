@@ -5,10 +5,11 @@ import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import Link from "next/link";
 import {
   AppWindow,
+  Eye,
   FileQuestion,
   History,
   Monitor,
-  Search,
+  PenLine,
   Smartphone,
 } from "lucide-react";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -79,9 +80,18 @@ import { PageLinksCard } from "@/features/marketing/components/pages/cards/PageL
 import { PageBacklinksCard } from "@/features/marketing/components/pages/cards/PageBacklinksCard";
 import { PageIntentCard } from "@/features/marketing/components/pages/cards/PageIntentCard";
 import { SerpPreview } from "@/features/marketing/components/pages/cards/SerpPreviewCard";
-import { SocialCardPreview } from "@/features/marketing/components/pages/cards/SocialCardPreview";
-import { IndexabilitySection } from "@/features/marketing/components/pages/cards/IndexabilitySection";
-import { HeadingsOutline } from "@/features/marketing/components/pages/cards/HeadingsOutline";
+import {
+  SocialCardPlan,
+  SocialCardPreview,
+} from "@/features/marketing/components/pages/cards/SocialCardPreview";
+import {
+  IndexabilityPlan,
+  IndexabilitySection,
+} from "@/features/marketing/components/pages/cards/IndexabilitySection";
+import {
+  HeadingsOutline,
+  HeadingsPlan,
+} from "@/features/marketing/components/pages/cards/HeadingsOutline";
 import { ContentStats } from "@/features/marketing/components/pages/cards/ContentStats";
 import { SitemapMembershipsCard } from "@/features/marketing/components/pages/cards/SitemapMembershipsCard";
 import { PageCapturesCard } from "@/features/marketing/components/pages/cards/PageCapturesCard";
@@ -94,6 +104,7 @@ import {
   pageTargetPerformanceQueryKey,
 } from "@/features/marketing/components/pages/cards/PageTargetPerformanceCard";
 import { PageImagePlanCard } from "@/features/marketing/components/pages/cards/PageImagePlanCard";
+import { PageMediaCard } from "@/features/marketing/components/pages/cards/PageMediaCard";
 import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
 import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
 import { PagespeedCard } from "@/features/marketing/components/pages/cards/PagespeedCard";
@@ -106,10 +117,37 @@ import {
   PageResourcesCard,
   StructuredDataCard,
 } from "@/features/marketing/components/pages/cards/ObservedPageIntelligence";
+import {
+  useWorkspaceViewMode,
+  WorkspaceViewToggle,
+} from "@/features/marketing/components/pages/WorkspaceViewToggle";
 
 // THE NAMING LAW: canonical labels for every declared surface value + group —
 // section titles and field labels below render these byte-identically.
 const L = surfaceValueLabels(marketingPageManifest);
+
+/** Column header shown only in Studio (split) view to orient the two lanes. */
+function LaneLabel({
+  icon: Icon,
+  label,
+  detail,
+}: {
+  icon: typeof Eye;
+  label: string;
+  detail: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 px-1">
+      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+      <span className="text-xs font-semibold uppercase tracking-wide text-foreground">
+        {label}
+      </span>
+      <span className="truncate text-[11px] text-muted-foreground">
+        {detail}
+      </span>
+    </div>
+  );
+}
 
 export function PageWorkspace({ pageId }: { pageId: string }) {
   const { site, sitePath } = useMarketingSite();
@@ -161,6 +199,8 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   const openSocialCards = useOpenSocialCardWindow();
   const [serpDevice, setSerpDevice] = useState<SerpDevice>("desktop");
   const [socialPlatform, setSocialPlatform] = useState<SocialPlatform>("x");
+  // Current | Plan | Studio — the ratified three-state workspace view.
+  const [viewMode, setViewMode] = useWorkspaceViewMode();
   // The extracted markdown IS the page_content surface value — decode it from
   // the same module-level blob cache PageContentCard renders from (no
   // duplicate fetch), so agents receive the full body at launch time.
@@ -319,6 +359,429 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     attributes: { page_id: page.id, site_id: site.id },
   });
 
+  // ————————————————————————————————————————————————————————————————————————
+  // THE SPLIT (Arman, 2026-07-27, ratified 2026-07-29): the CURRENT lane is
+  // everything observed/measured about the page as it exists; the PLAN lane
+  // is everything the user intends — targets, drafts, tasks, attachments.
+  // Both lanes stay MOUNTED in every mode (hidden via CSS) so in-progress
+  // edits and query caches survive view switches. Lanes are @container roots:
+  // card pairs go two-up only when the lane itself is wide enough.
+  // ————————————————————————————————————————————————————————————————————————
+
+  const currentLane = (
+    <>
+      <SectionCard
+        title="Search result preview"
+        collapsible
+        copy={webCopy({
+          kind: "web-page-serp",
+          label: "Search result preview",
+          description:
+            "Observed search-appearance metadata vs the desired editorial targets for this page.",
+          surface: `Search result preview — ${page.url}`,
+          data: {
+            url: page.url,
+            observed: {
+              title: head.title,
+              description: head.metaDescription,
+            },
+            desired: {
+              title: page.meta_title_desired,
+              description: page.meta_description_desired,
+              targetKeyword: page.target_keyword,
+            },
+            seoMetrics: snapshot?.seo_metrics ?? null,
+          },
+          lines: [
+            ["URL", page.url],
+            ["Observed title", head.title ?? "none"],
+            ["Observed description", head.metaDescription ?? "none"],
+            ["Desired title", page.meta_title_desired],
+            ["Desired description", page.meta_description_desired],
+            [L.target_keyword, page.target_keyword],
+          ],
+          attributes: { page_id: page.id },
+        })}
+        headerExtra={
+          <div className="flex items-center gap-1">
+            <div className="flex items-center rounded-md border border-border">
+              <button
+                type="button"
+                onClick={() => setSerpDevice("desktop")}
+                aria-label="Desktop preview"
+                title="Desktop preview"
+                className={cn(
+                  "flex h-6 w-7 items-center justify-center rounded-l-[5px] transition-colors",
+                  serpDevice === "desktop"
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Monitor className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setSerpDevice("mobile")}
+                aria-label="Mobile preview"
+                title="Mobile preview"
+                className={cn(
+                  "flex h-6 w-7 items-center justify-center rounded-r-[5px] transition-colors",
+                  serpDevice === "mobile"
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Smartphone className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const headTags = snapshot
+                  ? parseSnapshotHeadTags(snapshot.head_tags)
+                  : parseSnapshotHeadTags(null);
+                openSerpAnalyzer({
+                  url: page.url,
+                  title: headTags.title ?? page.meta_title_desired ?? "",
+                  description:
+                    headTags.metaDescription ??
+                    page.meta_description_desired ??
+                    "",
+                });
+              }}
+              aria-label="Open in Search Appearance analyzer"
+              title="Open in Search Appearance analyzer"
+              className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <AppWindow className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        }
+      >
+        <SerpPreview page={page} snapshot={snapshot} device={serpDevice} />
+      </SectionCard>
+
+      <PageTargetPerformanceCard page={page} />
+
+      <PageQueriesCard page={page} />
+
+      {snapshot ? (
+        <>
+          <PageIdentityCard page={page} snapshot={snapshot} />
+          <div className="grid gap-3 @3xl:grid-cols-2">
+            <StructuredDataCard page={page} snapshot={snapshot} />
+            <PageResourcesCard page={page} snapshot={snapshot} />
+          </div>
+          <div className="grid gap-3 @3xl:grid-cols-2">
+            <SectionCard
+              title={L.social_card}
+              collapsible
+              anchor="social_card"
+              headerExtra={
+                <div className="flex items-center gap-1">
+                  <div className="flex items-center rounded-md border border-border">
+                    {(
+                      [
+                        ["x", "X"],
+                        ["facebook", "FB"],
+                        ["linkedin", "LI"],
+                      ] as const
+                    ).map(([value, label], index) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setSocialPlatform(value)}
+                        aria-label={`${label} preview`}
+                        title={`${label} preview`}
+                        className={cn(
+                          "flex h-6 w-7 items-center justify-center text-[10px] font-semibold transition-colors",
+                          index === 0 && "rounded-l-[5px]",
+                          index === 2 && "rounded-r-[5px]",
+                          socialPlatform === value
+                            ? "bg-muted text-foreground"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const observed = evaluatePageSocialCard(snapshot);
+                      openSocialCards({
+                        url: observed.url ?? page.url,
+                        title: observed.title ?? "",
+                        description: observed.description ?? "",
+                        image: observed.image ?? "",
+                        siteName: observed.siteName ?? "",
+                        ogType: observed.ogType ?? "",
+                        cardType: observed.cardType ?? "",
+                      });
+                    }}
+                    aria-label="Open in Social Cards analyzer"
+                    title="Open in Social Cards analyzer"
+                    className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    <AppWindow className="h-3.5 w-3.5" />
+                  </button>
+                  <PageTaskButton
+                    page={page}
+                    ariaLabel="Create a task from the social card state"
+                    title={`Improve social card — ${page.path || page.url}`}
+                    description={`Social share tags for ${page.url}:\nTitle: ${head.og.title ?? head.twitter.title ?? "none"}\nDescription: ${head.og.description ?? head.twitter.description ?? "none"}\nImage: ${head.og.image ?? head.twitter.image ?? "none"}`}
+                  />
+                </div>
+              }
+              copy={webCopy({
+                kind: "web-page-social-card",
+                label: L.social_card,
+                description:
+                  "Observed Open Graph and Twitter card tags controlling how shares of this URL render.",
+                surface: `Social share preview — ${page.url}`,
+                data: { url: page.url, og: head.og, twitter: head.twitter },
+                lines: [
+                  ["URL", page.url],
+                  [
+                    "Social title",
+                    head.og.title ?? head.twitter.title ?? "none",
+                  ],
+                  [
+                    "Social description",
+                    head.og.description ?? head.twitter.description ?? "none",
+                  ],
+                  ["Share image", head.og.image ?? head.twitter.image ?? "none"],
+                  ["Twitter card", head.twitter.card ?? "none"],
+                  ["og:type", head.og.type],
+                ],
+                attributes: { page_id: page.id },
+              })}
+            >
+              <SocialCardPreview
+                snapshot={snapshot}
+                page={page}
+                platform={socialPlatform}
+              />
+            </SectionCard>
+            <SectionCard
+              title={L.indexability}
+              collapsible
+              anchor="indexability"
+              headerExtra={
+                <PageTaskButton
+                  page={page}
+                  ariaLabel="Create a task from the indexability state"
+                  title={`Fix indexability — ${page.path || page.url}`}
+                  description={`Indexability signals for ${page.url}:\nHTTP status: ${snapshot.http_status ?? "unknown"}\nMeta robots: ${head.metaRobots ?? "not set"}\nCanonical: ${head.canonicalUrl ?? "not set"}\nFinal URL: ${snapshot.final_url ?? page.url}`}
+                />
+              }
+              copy={webCopy({
+                kind: "web-page-indexability",
+                label: L.indexability,
+                description:
+                  "Crawl/indexing signals observed on this page: HTTP status, robots, canonical, redirects.",
+                surface: `Indexability — ${page.url}`,
+                data: {
+                  url: page.url,
+                  http_status: snapshot.http_status,
+                  meta_robots: head.metaRobots,
+                  canonical_url: head.canonicalUrl,
+                  redirect_chain: extracted.redirectChain,
+                  final_url: snapshot.final_url,
+                  lang: head.lang,
+                },
+                lines: [
+                  ["URL", page.url],
+                  ["HTTP status", snapshot.http_status],
+                  ["Meta robots", head.metaRobots ?? "not set"],
+                  ["Canonical URL", head.canonicalUrl ?? "not set"],
+                  [
+                    "Redirects",
+                    extracted.redirectChain.length > 1
+                      ? extracted.redirectChain
+                          .map((hop) => `${hop.status ?? "—"} ${hop.url}`)
+                          .join(" → ")
+                      : "direct",
+                  ],
+                  ["Final URL", snapshot.final_url ?? page.url],
+                ],
+                attributes: { page_id: page.id },
+              })}
+            >
+              <IndexabilitySection page={page} snapshot={snapshot} />
+            </SectionCard>
+          </div>
+          <PageMediaCard page={page} snapshot={snapshot} />
+          <PageAnalyzerCard
+            page={page}
+            state={analyzer.state}
+            run={analyzer.run}
+          />
+          <div className="grid gap-3 @3xl:grid-cols-2 @6xl:grid-cols-3">
+            <PageSearchConsoleCard page={page} />
+            <PagespeedCard page={page} />
+            <PageAnalyticsCard page={page} />
+          </div>
+          <div className="grid gap-3 @3xl:grid-cols-2">
+            <SectionCard
+              title={L.headings_outline}
+              collapsible
+              anchor="headings_outline"
+              headerExtra={
+                <PageTaskButton
+                  page={page}
+                  ariaLabel="Create a task from the heading structure"
+                  title={`Improve heading structure — ${page.path || page.url}`}
+                  description={`Observed headings on ${page.url} (${headings.all.length} total, ${headings.h1Count} H1):\n${headings.all.map((h) => `h${h.level}: ${h.text}`).join("\n")}`}
+                />
+              }
+              copy={webCopy({
+                kind: "web-page-headings",
+                label: "Headings outline",
+                description:
+                  "The observed heading structure (h1–h6) of this page, in document order.",
+                surface: `Headings outline — ${page.url}`,
+                data: { url: page.url, headings: headings.all },
+                lines: [
+                  ["URL", page.url],
+                  ["H1 count", headings.h1Count],
+                  ...headings.all.map((heading): [string, string] => [
+                    `h${heading.level}`,
+                    heading.text,
+                  ]),
+                ],
+                attributes: {
+                  page_id: page.id,
+                  count: headings.all.length,
+                },
+              })}
+            >
+              <HeadingsOutline page={page} snapshot={snapshot} />
+            </SectionCard>
+            <SectionCard
+              title={L.content_stats}
+              collapsible
+              anchor="content_stats"
+              copy={webCopy({
+                kind: "web-page-content-stats",
+                label: "Content stats",
+                description:
+                  "Quantitative content signals from this page's latest snapshot.",
+                surface: `Content stats — ${page.url}`,
+                data: {
+                  url: page.url,
+                  word_count: snapshot.word_count,
+                  extracted: snapshot.extracted,
+                  links_summary: snapshot.links_summary,
+                  images: snapshot.images,
+                  captured_at: snapshot.captured_at,
+                },
+                lines: [
+                  ["URL", page.url],
+                  ["Words", snapshot.word_count],
+                  ["Sentences", extracted.sentenceCount],
+                  ["Flesch reading ease", extracted.fleschReadingEase],
+                  ["Captured", formatDate(snapshot.captured_at)],
+                ],
+                attributes: { page_id: page.id },
+              })}
+            >
+              <ContentStats snapshot={snapshot} page={page} />
+            </SectionCard>
+          </div>
+          {snapshot.markdown_file_id ? (
+            <PageContentCard
+              page={page}
+              markdownFileId={snapshot.markdown_file_id}
+              getPageScope={getScope}
+            />
+          ) : null}
+        </>
+      ) : (
+        <section className="flex min-h-32 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-card/50 p-6 text-center">
+          <FileQuestion className="h-6 w-6 text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">
+            This canonical URL exists independently, but nothing has produced
+            an accepted snapshot yet — observed content sections appear after
+            the first capture.
+          </p>
+          <FetchPageButton siteId={site.id} url={page.url} pageId={page.id} />
+        </section>
+      )}
+
+      <PageFindingsCard page={page} />
+
+      <PageLinksCard page={page} />
+
+      <PageBacklinksCard page={page} />
+
+      <SitemapMembershipsCard page={page} />
+
+      <PageCapturesCard page={page} />
+    </>
+  );
+
+  const planLane = (
+    <>
+      <PageIntentCard
+        // Reseed ONLY when an intent-owned field changes server-side —
+        // keying on updated_at would wipe in-progress intent edits every
+        // time a sibling card saves desired values (same page row).
+        key={`${page.id}:${page.target_keyword ?? ""}:${page.meta_title_desired ?? ""}:${page.meta_description_desired ?? ""}`}
+        page={page}
+        brandId={brandId}
+        observedTitle={head.title}
+        observedDescription={head.metaDescription}
+        observedH1={
+          headings.all.find((heading) => heading.level === 1)?.text ?? null
+        }
+        analyzerKeywords={analyzerKeywordSuggestions}
+      />
+
+      <div className="grid gap-3 @3xl:grid-cols-2">
+        <SectionCard title="Social card plan" collapsible>
+          <SocialCardPlan page={page} snapshot={snapshot} />
+        </SectionCard>
+        <SectionCard title="Indexability plan" collapsible>
+          <IndexabilityPlan page={page} snapshot={snapshot} />
+        </SectionCard>
+      </div>
+
+      <SectionCard title="Heading plan" collapsible>
+        <HeadingsPlan page={page} snapshot={snapshot} />
+      </SectionCard>
+
+      <PageKeywordsCard
+        page={page}
+        brandId={brandId}
+        suggestions={analyzerKeywordSuggestions}
+      />
+
+      <PageDraftContentCard page={page} />
+
+      <PageTasksCard page={page} />
+
+      <PageImagePlanCard page={page} />
+
+      <section className="rounded-lg border border-border bg-card p-3">
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Attached to this page
+        </h2>
+        <PrimaryEntityProvider
+          value={{
+            type: "web_page",
+            id: page.id,
+            orgId: page.organization_id,
+            label: page.path || page.url,
+          }}
+        >
+          <AssociationCardGrid />
+        </PrimaryEntityProvider>
+      </section>
+    </>
+  );
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={MARKETING_PAGE_SURFACE_NAME}
@@ -364,6 +827,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
+              <WorkspaceViewToggle mode={viewMode} onChange={setViewMode} />
               <PageTaskButton
                 page={page}
                 ariaLabel="Create a task for this page"
@@ -424,419 +888,43 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             />
           </section>
 
-          <div className="grid gap-3 lg:grid-cols-2">
-            <SectionCard
-              title="Search result preview"
-              collapsible
-              copy={webCopy({
-                kind: "web-page-serp",
-                label: "Search result preview",
-                description:
-                  "Observed search-appearance metadata vs the desired editorial targets for this page.",
-                surface: `Search result preview — ${page.url}`,
-                data: {
-                  url: page.url,
-                  observed: {
-                    title: head.title,
-                    description: head.metaDescription,
-                  },
-                  desired: {
-                    title: page.meta_title_desired,
-                    description: page.meta_description_desired,
-                    targetKeyword: page.target_keyword,
-                  },
-                  seoMetrics: snapshot?.seo_metrics ?? null,
-                },
-                lines: [
-                  ["URL", page.url],
-                  ["Observed title", head.title ?? "none"],
-                  ["Observed description", head.metaDescription ?? "none"],
-                  ["Desired title", page.meta_title_desired],
-                  ["Desired description", page.meta_description_desired],
-                  [L.target_keyword, page.target_keyword],
-                ],
-                attributes: { page_id: page.id },
-              })}
-              headerExtra={
-                <div className="flex items-center gap-1">
-                  <div className="flex items-center rounded-md border border-border">
-                    <button
-                      type="button"
-                      onClick={() => setSerpDevice("desktop")}
-                      aria-label="Desktop preview"
-                      title="Desktop preview"
-                      className={cn(
-                        "flex h-6 w-7 items-center justify-center rounded-l-[5px] transition-colors",
-                        serpDevice === "desktop"
-                          ? "bg-muted text-foreground"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      <Monitor className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSerpDevice("mobile")}
-                      aria-label="Mobile preview"
-                      title="Mobile preview"
-                      className={cn(
-                        "flex h-6 w-7 items-center justify-center rounded-r-[5px] transition-colors",
-                        serpDevice === "mobile"
-                          ? "bg-muted text-foreground"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      <Smartphone className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const head = snapshot
-                        ? parseSnapshotHeadTags(snapshot.head_tags)
-                        : parseSnapshotHeadTags(null);
-                      openSerpAnalyzer({
-                        url: page.url,
-                        title: head.title ?? page.meta_title_desired ?? "",
-                        description:
-                          head.metaDescription ??
-                          page.meta_description_desired ??
-                          "",
-                      });
-                    }}
-                    aria-label="Open in Search Appearance analyzer"
-                    title="Open in Search Appearance analyzer"
-                    className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    <AppWindow className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              }
+          <div
+            className={cn(
+              "grid items-start gap-3",
+              viewMode === "studio" && "xl:grid-cols-2",
+            )}
+          >
+            <div
+              className={cn(
+                "@container grid min-w-0 gap-3",
+                viewMode === "plan" && "hidden",
+              )}
             >
-              <SerpPreview
-                page={page}
-                snapshot={snapshot}
-                device={serpDevice}
-              />
-            </SectionCard>
-            <PageIntentCard
-              // Reseed ONLY when an intent-owned field changes server-side —
-              // keying on updated_at would wipe in-progress intent edits every
-              // time a sibling card saves desired values (same page row).
-              key={`${page.id}:${page.target_keyword ?? ""}:${page.meta_title_desired ?? ""}:${page.meta_description_desired ?? ""}`}
-              page={page}
-              brandId={brandId}
-              observedTitle={head.title}
-              observedDescription={head.metaDescription}
-              observedH1={
-                headings.all.find((heading) => heading.level === 1)?.text ??
-                null
-              }
-              analyzerKeywords={analyzerKeywordSuggestions}
-            />
-          </div>
-
-          <PageKeywordsCard
-            page={page}
-            brandId={brandId}
-            suggestions={analyzerKeywordSuggestions}
-          />
-
-          <PageTargetPerformanceCard page={page} />
-
-          {snapshot ? (
-            <>
-              <PageIdentityCard page={page} snapshot={snapshot} />
-              <div className="grid gap-3 lg:grid-cols-2">
-                <StructuredDataCard page={page} snapshot={snapshot} />
-                <PageResourcesCard page={page} snapshot={snapshot} />
-              </div>
-            </>
-          ) : null}
-
-          {snapshot ? (
-            <>
-              <div className="grid gap-3 lg:grid-cols-2">
-                <SectionCard
-                  title={L.social_card}
-                  collapsible
-                  anchor="social_card"
-                  headerExtra={
-                    <div className="flex items-center gap-1">
-                      <div className="flex items-center rounded-md border border-border">
-                        {(
-                          [
-                            ["x", "X"],
-                            ["facebook", "FB"],
-                            ["linkedin", "LI"],
-                          ] as const
-                        ).map(([value, label], index) => (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() => setSocialPlatform(value)}
-                            aria-label={`${label} preview`}
-                            title={`${label} preview`}
-                            className={cn(
-                              "flex h-6 w-7 items-center justify-center text-[10px] font-semibold transition-colors",
-                              index === 0 && "rounded-l-[5px]",
-                              index === 2 && "rounded-r-[5px]",
-                              socialPlatform === value
-                                ? "bg-muted text-foreground"
-                                : "text-muted-foreground hover:text-foreground",
-                            )}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const observed = evaluatePageSocialCard(snapshot);
-                          openSocialCards({
-                            url: observed.url ?? page.url,
-                            title: observed.title ?? "",
-                            description: observed.description ?? "",
-                            image: observed.image ?? "",
-                            siteName: observed.siteName ?? "",
-                            ogType: observed.ogType ?? "",
-                            cardType: observed.cardType ?? "",
-                          });
-                        }}
-                        aria-label="Open in Social Cards analyzer"
-                        title="Open in Social Cards analyzer"
-                        className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground"
-                      >
-                        <AppWindow className="h-3.5 w-3.5" />
-                      </button>
-                      <PageTaskButton
-                        page={page}
-                        ariaLabel="Create a task from the social card state"
-                        title={`Improve social card — ${page.path || page.url}`}
-                        description={`Social share tags for ${page.url}:\nTitle: ${head.og.title ?? head.twitter.title ?? "none"}\nDescription: ${head.og.description ?? head.twitter.description ?? "none"}\nImage: ${head.og.image ?? head.twitter.image ?? "none"}`}
-                      />
-                    </div>
-                  }
-                  copy={webCopy({
-                    kind: "web-page-social-card",
-                    label: L.social_card,
-                    description:
-                      "Observed Open Graph and Twitter card tags controlling how shares of this URL render.",
-                    surface: `Social share preview — ${page.url}`,
-                    data: { url: page.url, og: head.og, twitter: head.twitter },
-                    lines: [
-                      ["URL", page.url],
-                      [
-                        "Social title",
-                        head.og.title ?? head.twitter.title ?? "none",
-                      ],
-                      [
-                        "Social description",
-                        head.og.description ??
-                          head.twitter.description ??
-                          "none",
-                      ],
-                      [
-                        "Share image",
-                        head.og.image ?? head.twitter.image ?? "none",
-                      ],
-                      ["Twitter card", head.twitter.card ?? "none"],
-                      ["og:type", head.og.type],
-                    ],
-                    attributes: { page_id: page.id },
-                  })}
-                >
-                  <SocialCardPreview
-                    snapshot={snapshot}
-                    page={page}
-                    platform={socialPlatform}
-                  />
-                </SectionCard>
-                <SectionCard
-                  title={L.indexability}
-                  collapsible
-                  anchor="indexability"
-                  headerExtra={
-                    <PageTaskButton
-                      page={page}
-                      ariaLabel="Create a task from the indexability state"
-                      title={`Fix indexability — ${page.path || page.url}`}
-                      description={`Indexability signals for ${page.url}:\nHTTP status: ${snapshot.http_status ?? "unknown"}\nMeta robots: ${head.metaRobots ?? "not set"}\nCanonical: ${head.canonicalUrl ?? "not set"}\nFinal URL: ${snapshot.final_url ?? page.url}`}
-                    />
-                  }
-                  copy={webCopy({
-                    kind: "web-page-indexability",
-                    label: L.indexability,
-                    description:
-                      "Crawl/indexing signals observed on this page: HTTP status, robots, canonical, redirects.",
-                    surface: `Indexability — ${page.url}`,
-                    data: {
-                      url: page.url,
-                      http_status: snapshot.http_status,
-                      meta_robots: head.metaRobots,
-                      canonical_url: head.canonicalUrl,
-                      redirect_chain: extracted.redirectChain,
-                      final_url: snapshot.final_url,
-                      lang: head.lang,
-                    },
-                    lines: [
-                      ["URL", page.url],
-                      ["HTTP status", snapshot.http_status],
-                      ["Meta robots", head.metaRobots ?? "not set"],
-                      ["Canonical URL", head.canonicalUrl ?? "not set"],
-                      [
-                        "Redirects",
-                        extracted.redirectChain.length > 1
-                          ? extracted.redirectChain
-                              .map((hop) => `${hop.status ?? "—"} ${hop.url}`)
-                              .join(" → ")
-                          : "direct",
-                      ],
-                      ["Final URL", snapshot.final_url ?? page.url],
-                    ],
-                    attributes: { page_id: page.id },
-                  })}
-                >
-                  <IndexabilitySection page={page} snapshot={snapshot} />
-                </SectionCard>
-              </div>
-              <div className="grid gap-3 lg:grid-cols-1">
-                <PageAnalyzerCard
-                  page={page}
-                  state={analyzer.state}
-                  run={analyzer.run}
-                />
-              </div>
-              <div className="grid gap-3 xl:grid-cols-3">
-                <PageSearchConsoleCard page={page} />
-                <PagespeedCard page={page} />
-                <PageAnalyticsCard page={page} />
-              </div>
-              <div className="grid gap-3 lg:grid-cols-2">
-                <SectionCard
-                  title={L.headings_outline}
-                  collapsible
-                  anchor="headings_outline"
-                  headerExtra={
-                    <PageTaskButton
-                      page={page}
-                      ariaLabel="Create a task from the heading structure"
-                      title={`Improve heading structure — ${page.path || page.url}`}
-                      description={`Observed headings on ${page.url} (${headings.all.length} total, ${headings.h1Count} H1):\n${headings.all.map((h) => `h${h.level}: ${h.text}`).join("\n")}`}
-                    />
-                  }
-                  copy={webCopy({
-                    kind: "web-page-headings",
-                    label: "Headings outline",
-                    description:
-                      "The observed heading structure (h1–h6) of this page, in document order.",
-                    surface: `Headings outline — ${page.url}`,
-                    data: { url: page.url, headings: headings.all },
-                    lines: [
-                      ["URL", page.url],
-                      ["H1 count", headings.h1Count],
-                      ...headings.all.map((heading): [string, string] => [
-                        `h${heading.level}`,
-                        heading.text,
-                      ]),
-                    ],
-                    attributes: {
-                      page_id: page.id,
-                      count: headings.all.length,
-                    },
-                  })}
-                >
-                  <HeadingsOutline page={page} snapshot={snapshot} />
-                </SectionCard>
-                <SectionCard
-                  title={L.content_stats}
-                  collapsible
-                  anchor="content_stats"
-                  copy={webCopy({
-                    kind: "web-page-content-stats",
-                    label: "Content stats",
-                    description:
-                      "Quantitative content signals from this page's latest snapshot.",
-                    surface: `Content stats — ${page.url}`,
-                    data: {
-                      url: page.url,
-                      word_count: snapshot.word_count,
-                      extracted: snapshot.extracted,
-                      links_summary: snapshot.links_summary,
-                      images: snapshot.images,
-                      captured_at: snapshot.captured_at,
-                    },
-                    lines: [
-                      ["URL", page.url],
-                      ["Words", snapshot.word_count],
-                      ["Sentences", extracted.sentenceCount],
-                      ["Flesch reading ease", extracted.fleschReadingEase],
-                      ["Captured", formatDate(snapshot.captured_at)],
-                    ],
-                    attributes: { page_id: page.id },
-                  })}
-                >
-                  <ContentStats snapshot={snapshot} page={page} />
-                </SectionCard>
-              </div>
-              {snapshot.markdown_file_id ? (
-                <PageContentCard
-                  page={page}
-                  markdownFileId={snapshot.markdown_file_id}
-                  getPageScope={getScope}
+              {viewMode === "studio" ? (
+                <LaneLabel
+                  icon={Eye}
+                  label="Current"
+                  detail="what the page is today"
                 />
               ) : null}
-              <PageDraftContentCard page={page} />
-            </>
-          ) : (
-            <section className="flex min-h-32 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-card/50 p-6 text-center">
-              <FileQuestion className="h-6 w-6 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">
-                This canonical URL exists independently, but nothing has
-                produced an accepted snapshot yet — observed content sections
-                appear after the first capture.
-              </p>
-              <FetchPageButton
-                siteId={site.id}
-                url={page.url}
-                pageId={page.id}
-              />
-            </section>
-          )}
-
-          <div className="grid gap-3 lg:grid-cols-2">
-            <PageQueriesCard page={page} />
-            <PageFindingsCard page={page} />
-          </div>
-
-          <PageTasksCard page={page} />
-
-          <PageLinksCard page={page} />
-
-          <PageBacklinksCard page={page} />
-
-          <SitemapMembershipsCard page={page} />
-
-          <PageImagePlanCard page={page} />
-
-          <PageCapturesCard page={page} />
-
-          <section className="rounded-lg border border-border bg-card p-3">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Attached to this page
-            </h2>
-            <PrimaryEntityProvider
-              value={{
-                type: "web_page",
-                id: page.id,
-                orgId: page.organization_id,
-                label: page.path || page.url,
-              }}
+              {currentLane}
+            </div>
+            <div
+              className={cn(
+                "@container grid min-w-0 gap-3",
+                viewMode === "current" && "hidden",
+              )}
             >
-              <AssociationCardGrid />
-            </PrimaryEntityProvider>
-          </section>
+              {viewMode === "studio" ? (
+                <LaneLabel
+                  icon={PenLine}
+                  label="Plan"
+                  detail="what you intend it to become"
+                />
+              ) : null}
+              {planLane}
+            </div>
+          </div>
         </div>
       </main>
     </SurfaceRuntimeProvider>

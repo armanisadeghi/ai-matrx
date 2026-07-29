@@ -22,6 +22,9 @@ import { useDesiredValueSlice } from "@/features/marketing/components/pages/desi
  * social) for the OBSERVED share tags, with a platform toggle and the
  * deterministic checks (features/marketing/seo/audit, exact parity with the scraper's
  * crawl-time `audit_metrics.social`).
+ *
+ * CURRENT lane only — the desired share values moved to `SocialCardPlan`
+ * (Plan lane) in the Current|Plan|Studio split.
  */
 export function SocialCardPreview({
   snapshot,
@@ -34,8 +37,6 @@ export function SocialCardPreview({
 }) {
   // The SAME deterministic evaluation the surface scope emits (social_card).
   const evaluation = evaluatePageSocialCard(snapshot);
-  const desired = useDesiredValueSlice(page, "social_card");
-  const draft = desired.draft ?? {};
 
   return (
     <div className="grid gap-3 p-3">
@@ -62,43 +63,64 @@ export function SocialCardPreview({
         successText="Share tags look great — title, image, description, card type, and canonical link are all present."
         compact
       />
-      <DesiredSection
-        hint="The share title/description this page SHOULD carry."
-        dirty={desired.dirty}
-        saving={desired.saving}
-        onSave={() => void desired.save()}
-        onReset={desired.reset}
-        className="-mx-3 -mb-3"
-      >
-        <div className="space-y-1.5">
-          <Label htmlFor="desired-og-title" className="text-xs">
-            Desired share title
-          </Label>
-          <Input
-            id="desired-og-title"
-            value={draft.og_title ?? ""}
-            onChange={(event) =>
-              desired.setDraft({ ...draft, og_title: event.target.value })
-            }
-            placeholder={evaluation.title ?? "Editorial share title"}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="desired-og-description" className="text-xs">
-            Desired share description
-          </Label>
-          <Textarea
-            id="desired-og-description"
-            value={draft.og_description ?? ""}
-            onChange={(event) =>
-              desired.setDraft({ ...draft, og_description: event.target.value })
-            }
-            minHeight={64}
-            maxHeight={140}
-            placeholder={evaluation.description ?? "Editorial share description"}
-          />
-        </div>
-      </DesiredSection>
     </div>
+  );
+}
+
+/**
+ * The PLAN half of the social card: the share title/description this page
+ * SHOULD carry (`desired_values.social_card`). Works with or without a
+ * snapshot — planning never waits for a crawl; observed values only seed
+ * placeholders.
+ */
+export function SocialCardPlan({
+  page,
+  snapshot,
+}: {
+  page: MarketingPage;
+  snapshot: PageSnapshot | null;
+}) {
+  const evaluation = snapshot ? evaluatePageSocialCard(snapshot) : null;
+  const desired = useDesiredValueSlice(page, "social_card");
+  const draft = desired.draft ?? {};
+
+  return (
+    <DesiredSection
+      hint="The share title/description this page SHOULD carry."
+      dirty={desired.dirty}
+      saving={desired.saving}
+      onSave={() => void desired.save()}
+      onReset={desired.reset}
+      className="border-t-0"
+    >
+      <div className="space-y-1.5">
+        <Label htmlFor="desired-og-title" className="text-xs">
+          Desired share title
+        </Label>
+        <Input
+          id="desired-og-title"
+          value={draft.og_title ?? ""}
+          onChange={(event) =>
+            desired.setDraft({ ...draft, og_title: event.target.value })
+          }
+          placeholder={evaluation?.title ?? "Editorial share title"}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="desired-og-description" className="text-xs">
+          Desired share description
+        </Label>
+        <Textarea
+          id="desired-og-description"
+          value={draft.og_description ?? ""}
+          onChange={(event) =>
+            desired.setDraft({ ...draft, og_description: event.target.value })
+          }
+          minHeight={64}
+          maxHeight={140}
+          placeholder={evaluation?.description ?? "Editorial share description"}
+        />
+      </div>
+    </DesiredSection>
   );
 }

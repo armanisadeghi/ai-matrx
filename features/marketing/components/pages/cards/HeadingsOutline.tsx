@@ -13,44 +13,30 @@ import { DesiredOutlineEditor } from "@/features/marketing/components/pages/desi
 import { useDesiredValueSlice } from "@/features/marketing/components/pages/desired/useDesiredValueSlice";
 import { cn } from "@/lib/utils";
 
+function rawHeadingInputs(snapshot: PageSnapshot | null) {
+  // Evaluate the RAW headings JSON (keeps empty-text entries the display
+  // parser drops) — identical to the scraper's `audit_metrics.headings`.
+  return snapshot && isJsonRecord(snapshot.headings)
+    ? headingInputsFromRaw(snapshot.headings.all)
+    : [];
+}
+
+/**
+ * CURRENT lane only — the observed heading structure. The outline PLAN moved
+ * to `HeadingsPlan` (Plan lane) in the Current|Plan|Studio split.
+ */
 export function HeadingsOutline({
-  page,
   snapshot,
 }: {
   page: MarketingPage;
   snapshot: PageSnapshot;
 }) {
-  // Evaluate the RAW headings JSON (keeps empty-text entries the display
-  // parser drops) — identical to the scraper's `audit_metrics.headings`.
-  const rawHeadings = isJsonRecord(snapshot.headings)
-    ? headingInputsFromRaw(snapshot.headings.all)
-    : [];
+  const rawHeadings = rawHeadingInputs(snapshot);
   const evaluation = evaluateHeadingStructure(rawHeadings);
-  const desired = useDesiredValueSlice(page, "headings");
-  const draft = desired.draft ?? {};
-  // The header-structure PLAN — the outline this page SHOULD have, planned
-  // right beside the observed reality (seedable from it).
-  const desiredSection = (
-    <DesiredSection
-      hint="The heading structure this page SHOULD have."
-      dirty={desired.dirty}
-      saving={desired.saving}
-      onSave={() => void desired.save()}
-      onReset={desired.reset}
-      className="-mx-3 -mb-3"
-    >
-      <DesiredOutlineEditor
-        value={draft.outline ?? []}
-        onChange={(outline) => desired.setDraft({ ...draft, outline })}
-        seedFrom={rawHeadings.map((h) => ({ level: h.level, text: h.text }))}
-      />
-    </DesiredSection>
-  );
   if (rawHeadings.length === 0) {
     return (
       <div className="grid gap-2 p-3">
         <AuditIssueList issues={evaluation.issues} compact />
-        {desiredSection}
       </div>
     );
   }
@@ -104,7 +90,39 @@ export function HeadingsOutline({
           </li>
         ))}
       </ol>
-      {desiredSection}
     </div>
+  );
+}
+
+/**
+ * The PLAN half of the headings card: the outline this page SHOULD have
+ * (`desired_values.headings`), seedable from the observed structure when a
+ * snapshot exists. Works without one — planning never waits for a crawl.
+ */
+export function HeadingsPlan({
+  page,
+  snapshot,
+}: {
+  page: MarketingPage;
+  snapshot: PageSnapshot | null;
+}) {
+  const rawHeadings = rawHeadingInputs(snapshot);
+  const desired = useDesiredValueSlice(page, "headings");
+  const draft = desired.draft ?? {};
+  return (
+    <DesiredSection
+      hint="The heading structure this page SHOULD have."
+      dirty={desired.dirty}
+      saving={desired.saving}
+      onSave={() => void desired.save()}
+      onReset={desired.reset}
+      className="border-t-0"
+    >
+      <DesiredOutlineEditor
+        value={draft.outline ?? []}
+        onChange={(outline) => desired.setDraft({ ...draft, outline })}
+        seedFrom={rawHeadings.map((h) => ({ level: h.level, text: h.text }))}
+      />
+    </DesiredSection>
   );
 }

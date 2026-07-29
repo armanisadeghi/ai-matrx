@@ -83,8 +83,6 @@ export function IndexabilitySection({
   const canonicalMismatch = evaluation.canonicalMatches === false;
   // URL quality needs no crawl data — always computed live from the URL.
   const urlQuality = evaluateUrlQuality(page.url);
-  const desired = useDesiredValueSlice(page, "indexability");
-  const draft = desired.draft ?? {};
   return (
     <div className="grid gap-3 p-3">
       <IndexabilityVerdictBanner evaluation={evaluation} />
@@ -139,45 +137,65 @@ export function IndexabilitySection({
           { label: "Language", value: head.lang ?? "Not declared" },
         ]}
       />
-      <DesiredSection
-        hint="The canonical + robots values this page SHOULD serve."
-        dirty={desired.dirty}
-        saving={desired.saving}
-        onSave={() => void desired.save()}
-        onReset={desired.reset}
-        className="-mx-3 -mb-3"
-      >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="desired-canonical" className="text-xs">
-              Desired canonical URL
-            </Label>
-            <Input
-              id="desired-canonical"
-              value={draft.canonical_url ?? ""}
-              onChange={(event) =>
-                desired.setDraft({ ...draft, canonical_url: event.target.value })
-              }
-              placeholder={head.canonicalUrl ?? page.url}
-              className="font-mono text-xs"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="desired-robots" className="text-xs">
-              Desired meta robots
-            </Label>
-            <Input
-              id="desired-robots"
-              value={draft.meta_robots ?? ""}
-              onChange={(event) =>
-                desired.setDraft({ ...draft, meta_robots: event.target.value })
-              }
-              placeholder={head.metaRobots ?? "index, follow"}
-              className="font-mono text-xs"
-            />
-          </div>
-        </div>
-      </DesiredSection>
     </div>
+  );
+}
+
+/**
+ * The PLAN half of indexability: the canonical + robots values this page
+ * SHOULD serve (`desired_values.indexability`). Works with or without a
+ * snapshot — planning never waits for a crawl; observed values only seed
+ * placeholders.
+ */
+export function IndexabilityPlan({
+  page,
+  snapshot,
+}: {
+  page: MarketingPage;
+  snapshot: PageSnapshot | null;
+}) {
+  const head = parseSnapshotHeadTags(snapshot ? snapshot.head_tags : null);
+  const desired = useDesiredValueSlice(page, "indexability");
+  const draft = desired.draft ?? {};
+  return (
+    <DesiredSection
+      hint="The canonical + robots values this page SHOULD serve."
+      dirty={desired.dirty}
+      saving={desired.saving}
+      onSave={() => void desired.save()}
+      onReset={desired.reset}
+      className="border-t-0"
+    >
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="desired-canonical" className="text-xs">
+            Desired canonical URL
+          </Label>
+          <Input
+            id="desired-canonical"
+            value={draft.canonical_url ?? ""}
+            onChange={(event) =>
+              desired.setDraft({ ...draft, canonical_url: event.target.value })
+            }
+            placeholder={head.canonicalUrl ?? page.url}
+            className="font-mono text-xs"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="desired-robots" className="text-xs">
+            Desired meta robots
+          </Label>
+          <Input
+            id="desired-robots"
+            value={draft.meta_robots ?? ""}
+            onChange={(event) =>
+              desired.setDraft({ ...draft, meta_robots: event.target.value })
+            }
+            placeholder={head.metaRobots ?? "index, follow"}
+            className="font-mono text-xs"
+          />
+        </div>
+      </div>
+    </DesiredSection>
   );
 }
