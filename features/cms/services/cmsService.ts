@@ -87,6 +87,13 @@ export const CmsSiteService = {
         domain?: string;
         themeConfig?: Record<string, unknown>;
         globalCss?: string;
+        /**
+         * Initial settings. A caller whose site must be immediately authorable
+         * through aidream's guarded seams (starter kit, plan↔CMS bridge) seeds
+         * `{ agent_write_policy: "full" }` here — the same seed aidream's own
+         * `site_service.create` applies — because an unset policy is `blocked`.
+         */
+        settings?: Record<string, unknown>;
     }): Promise<ClientSite> {
         const res = await callApi<{ site: ClientSite }>('sites', 'create', params);
         return res.site;

@@ -151,9 +151,11 @@ plan CRUD through it.
    screen answers "what is missing?" on an empty site, a half-built one, and a
    finished one, and re-running it is safe. Under the foundation checklist sit
    the **"Make it real" rungs** (`SetupBridgeSection`): 1 create-or-link the
-   CMS counterpart (CMS site via the existing `/api/cms` seam; link recorded on
-   BOTH sides — `web.site.settings.cms` merge-write + the bridge pairing via
-   the first `cms-reconcile`), 2 run the starter kit (refusal on a non-empty
+   CMS counterpart (CMS site via the existing `/api/cms` seam, **seeding
+   `settings.agent_write_policy: "full"` — an unset policy is `blocked` and
+   every later rung writes through aidream's policy-guarded seams**; link
+   recorded on BOTH sides — `web.site.settings.cms` merge-write + the bridge
+   pairing via the first `cms-reconcile`), 2 run the starter kit (refusal on a non-empty
    site surfaces verbatim; force only behind a destructive confirm), 3 realize
    planned pages (reconcile report → **dry-run preview mandatory before
    apply**; per-item results shown verbatim — the bridge isolates per item, so

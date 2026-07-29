@@ -117,6 +117,11 @@ export function SetupBridgeSection({
           name: site.name,
           slug,
           domain: normalizeDomain(site.domain) || undefined,
+          // The rungs below (starter kit, realize) write through aidream's
+          // guarded seams, where an unset agent_write_policy means BLOCKED.
+          // Seed `full` exactly like aidream's site_service.create does for a
+          // site the creator intends to author immediately.
+          settings: { agent_write_policy: "full" },
         });
         cmsSiteId = created.id;
         cmsSlug = created.slug;
