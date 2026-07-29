@@ -146,6 +146,42 @@ const risk: RiskRow[] = dynamicEdges
   })
   .sort((a, b) => b.product - a.product);
 
+// ── report 3: per-target split multiplicity (the front-door integrity check) ─
+// A heavy module with ONE dynamic importer is a proper front door. The same
+// module with ≥2 dynamic importers is compiled into MULTIPLE chunk groups
+// (split duplication — the fragmentation incident class). A module with BOTH
+// dynamic and static importers is a BYPASS: someone imports statically what
+// the rest of the app loads through a gate, dragging it into their own graph.
+const staticImportersOf = new Map<string, Set<string>>();
+for (const [from, outs] of staticAdj) for (const to of outs) {
+  if (!staticImportersOf.has(to)) staticImportersOf.set(to, new Set());
+  staticImportersOf.get(to)!.add(from);
+}
+type TargetRow = {
+  target: string; targetSize: number;
+  dynImporters: number; dynCallSites: number; staticImporters: number;
+  sumImporterCtx: number; verdict: string; score: number;
+};
+const byTarget = new Map<string, Edge[]>();
+for (const e of dynamicEdges) {
+  if (!byTarget.has(e.to)) byTarget.set(e.to, []);
+  byTarget.get(e.to)!.push(e);
+}
+const targets: TargetRow[] = [...byTarget.entries()].map(([target, edges]) => {
+  const importers = new Set(edges.map((e) => e.from));
+  const statics = staticImportersOf.get(target)?.size ?? 0;
+  const targetSize = closureSize.get(target) ?? 0;
+  const sumImporterCtx = [...importers].reduce((n, f) => n + (contextCount.get(f) ?? 0), 0);
+  const verdict =
+    statics > 0 && importers.size > 0 ? "BYPASS" :
+    importers.size >= 2 ? "SPLIT-DUP" : "front-door";
+  // score: how much duplicated compilation this target's split points cause.
+  // front-door (1 importer, 0 static) scores by nothing extra → 0-ish rank.
+  const extraGroups = importers.size - 1 + (statics > 0 ? 1 : 0);
+  return { target, targetSize, dynImporters: importers.size, dynCallSites: edges.length,
+    staticImporters: statics, sumImporterCtx, verdict, score: extraGroups * targetSize };
+}).sort((a, b) => b.score - a.score || b.targetSize - a.targetSize);
+
 // ── output ───────────────────────────────────────────────────────────────────
 const summary = {
   modules: fileSet.size,
@@ -154,10 +190,12 @@ const summary = {
   dynamicEdges: dynamicEdges.length,
   totalBill: bill.reduce((n, r) => n + r.bill, 0),
   highRiskDynamicEdges: risk.filter((r) => r.tier === "HIGH").length,
+  splitDupTargets: targets.filter((t) => t.verdict === "SPLIT-DUP").length,
+  bypassTargets: targets.filter((t) => t.verdict === "BYPASS").length,
 };
 
 if (JSON_OUT) {
-  writeFileSync(JSON_OUT, JSON.stringify({ summary, bill: bill.slice(0, 500), dynamicEdges: risk }, null, 1));
+  writeFileSync(JSON_OUT, JSON.stringify({ summary, bill: bill.slice(0, 500), dynamicEdges: risk, targets }, null, 1));
   console.log(`wrote ${JSON_OUT}`);
 }
 
@@ -172,6 +210,16 @@ for (const r of bill.slice(0, TOP)) console.log(pad(r.bill.toLocaleString(), 10)
 console.log(`\n── 2. DYNAMIC-EDGE RISK — the D115 shape: importer-reach × target-size ──`);
 console.log(pad("TIER", 6) + pad("PRODUCT", 10) + pad("CTX", 6) + pad("TSIZE", 7) + "IMPORTER → TARGET");
 for (const r of risk.slice(0, TOP)) console.log(pad(r.tier, 6) + pad(r.product.toLocaleString(), 10) + pad(r.importerContexts, 6) + pad(r.targetSize, 7) + `${r.from} → ${r.to}`);
+
+console.log(`\n── 3. SPLIT MULTIPLICITY — how many doors does each dynamic target have? ──`);
+console.log(`   front-door = 1 dynamic importer, 0 static (CORRECT — MarkdownStreamImpl's shape)`);
+console.log(`   SPLIT-DUP  = ≥2 dynamic importers → same cluster compiled into multiple chunk groups`);
+console.log(`   BYPASS     = dynamic AND static importers → someone drags the gated module statically`);
+console.log(pad("VERDICT", 11) + pad("SCORE", 9) + pad("TSIZE", 7) + pad("DYN", 5) + pad("STAT", 6) + "TARGET");
+for (const t of targets.filter((t) => t.verdict !== "front-door").slice(0, TOP))
+  console.log(pad(t.verdict, 11) + pad(t.score.toLocaleString(), 9) + pad(t.targetSize, 7) + pad(t.dynImporters, 5) + pad(t.staticImporters, 6) + t.target);
+const fd = targets.filter((t) => t.verdict === "front-door").length;
+console.log(`(${fd} targets are clean front-doors and not listed; SCORE = extra chunk groups × target size)`);
 
 console.log(`\nHIGH-tier dynamic edges: ${summary.highRiskDynamicEdges} (each is a candidate detonator — invert via callback registry or route, never static-inline into a wide importer)`);
 console.log(`Compare refs: run with --json in two worktrees and diff the summaries/bills.\n`);
