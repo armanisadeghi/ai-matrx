@@ -1661,16 +1661,18 @@ export async function processStream({
             } else if (role === "user" && inboxTempIdByPosition.has(position)) {
               // A queued (inbox) message drained into the conversation earlier
               // this stream — promote its optimistic bubble to the durable id.
-              const inboxTempId = inboxTempIdByPosition.get(position)!;
+              const inboxTempId = inboxTempIdByPosition.get(position);
               inboxTempIdByPosition.delete(position);
-              dispatch(
-                promoteMessageId({
-                  conversationId: owningConversationId,
-                  oldId: inboxTempId,
-                  newId: d.record_id,
-                  position,
-                }),
-              );
+              if (inboxTempId) {
+                dispatch(
+                  promoteMessageId({
+                    conversationId: owningConversationId,
+                    oldId: inboxTempId,
+                    newId: d.record_id,
+                    position,
+                  }),
+                );
+              }
             } else if (role === "user" && userMessageClientTempId) {
               // Promote the optimistic user record to the server id. The record
               // already carries the user's content, so no further patch needed
