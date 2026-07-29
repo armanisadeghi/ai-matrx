@@ -2,6 +2,8 @@ import { apiGet, apiPost, buildPath } from "@/lib/api/typed-client";
 import { callApi } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/lib/api/types";
 import type { AppDispatch } from "@/lib/redux/store";
+import { requireUserId } from "@/utils/auth/getUserId";
+import { supabase } from "@/utils/supabase/client";
 import type {
   ProcessYouTubeVideosResponse,
   YouTubeSearchPage,
@@ -9,6 +11,93 @@ import type {
   YouTubeVideoCandidate,
   YouTubeVideoLibraryRecord,
 } from "./types";
+import { parseYouTubeSearchPage, parseYouTubeSearchRequest } from "./types";
+
+export interface YouTubeSearchHistoryEntry {
+  id: string;
+  query: string;
+  request: YouTubeSearchRequest | null;
+  page: YouTubeSearchPage | null;
+  status: string;
+  resultCount: number;
+  error: string | null;
+  createdAt: string;
+}
+
+export interface YouTubeSearchHistoryPage {
+  entries: YouTubeSearchHistoryEntry[];
+  hasMore: boolean;
+}
+
+const SEARCH_HISTORY_PAGE_SIZE = 50;
+
+function mapSearchHistoryRow(row: {
+  id: string;
+  query: string;
+  request: unknown;
+  response: unknown;
+  status: string;
+  result_count: number;
+  error: string | null;
+  created_at: string;
+}): YouTubeSearchHistoryEntry {
+  return {
+    id: row.id,
+    query: row.query,
+    request: parseYouTubeSearchRequest(row.request),
+    page: parseYouTubeSearchPage(row.response),
+    status: row.status,
+    resultCount: row.result_count,
+    error: row.error,
+    createdAt: row.created_at,
+  };
+}
+
+export async function listYouTubeSearchHistory(
+  offset = 0,
+): Promise<YouTubeSearchHistoryPage> {
+  const userId = requireUserId();
+  const { data, error } = await supabase
+    .schema("research")
+    .from("youtube_search")
+    .select("id,query,request,response,status,result_count,error,created_at")
+    .eq("created_by", userId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .range(offset, offset + SEARCH_HISTORY_PAGE_SIZE);
+
+  if (error) {
+    throw new Error(`Could not load YouTube search history: ${error.message}`);
+  }
+
+  const rows = data ?? [];
+  return {
+    entries: rows.slice(0, SEARCH_HISTORY_PAGE_SIZE).map(mapSearchHistoryRow),
+    hasMore: rows.length > SEARCH_HISTORY_PAGE_SIZE,
+  };
+}
+
+export async function getYouTubeSearchHistory(
+  searchId: string,
+): Promise<YouTubeSearchHistoryEntry | null> {
+  const userId = requireUserId();
+  const { data, error } = await supabase
+    .schema("research")
+    .from("youtube_search")
+    .select("id,query,request,response,status,result_count,error,created_at")
+    .eq("id", searchId)
+    .eq("created_by", userId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `Could not load the saved YouTube search: ${error.message}`,
+    );
+  }
+  return data ? mapSearchHistoryRow(data) : null;
+}
 
 export async function searchYouTube(
   request: YouTubeSearchRequest,

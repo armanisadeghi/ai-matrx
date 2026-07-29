@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useState, type ComponentProps } from "react";
+import { FormEvent, useEffect, useState, type ComponentProps } from "react";
 import {
   ArrowUpRight,
   CalendarDays,
@@ -20,6 +20,7 @@ import {
   Users,
   ListPlus,
   Clock3,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
@@ -35,6 +36,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Youtube } from "@/components/icons/brand-icons";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { youTubeWatchUrl } from "@/lib/media/youtube";
 import { YouTubeVideoPreviewDialog } from "./YouTubeVideoPreview";
 import {
@@ -45,8 +48,11 @@ import {
 } from "./formatters";
 import {
   addTopicYouTubeVideos,
+  getYouTubeSearchHistory,
+  listYouTubeSearchHistory,
   searchTopicYouTube,
   searchYouTube,
+  type YouTubeSearchHistoryEntry,
 } from "./service";
 import {
   DEFAULT_YOUTUBE_SEARCH,
@@ -55,6 +61,7 @@ import {
   type YouTubeVideoCandidate,
 } from "./types";
 import { YouTubeResearchActions } from "./YouTubeResearchActions";
+import { YouTubeSearchHistory } from "./YouTubeSearchHistory";
 
 type FormState = YouTubeSearchRequest & {
   published_after: string;
@@ -109,7 +116,22 @@ function compactRequest(
   };
 }
 
+function restoreForm(request: YouTubeSearchRequest | null): FormState {
+  return {
+    ...INITIAL_FORM,
+    ...(request ?? {}),
+    published_after: request?.published_after ?? "",
+    published_before: request?.published_before ?? "",
+    channel_id: request?.channel_id ?? "",
+    topic_id: request?.topic_id ?? "",
+    location: request?.location ?? "",
+    location_radius: request?.location_radius ?? "",
+    video_category_id: request?.video_category_id ?? "",
+  };
+}
+
 export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
+  const userId = useAppSelector(selectUserId);
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [page, setPage] = useState<YouTubeSearchPage | null>(null);
   const [selected, setSelected] = useState<YouTubeVideoCandidate | null>(null);
@@ -118,6 +140,55 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState(false);
+  const [historyEntries, setHistoryEntries] = useState<
+    YouTubeSearchHistoryEntry[]
+  >([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyHasMore, setHistoryHasMore] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+
+    const loadInitialHistory = async () => {
+      setHistoryLoading(true);
+      setHistoryError(null);
+      try {
+        const searchId = new URLSearchParams(window.location.search).get(
+          "search",
+        );
+        const [history, selectedSearch] = await Promise.all([
+          listYouTubeSearchHistory(),
+          searchId ? getYouTubeSearchHistory(searchId) : Promise.resolve(null),
+        ]);
+        if (!active) return;
+        setHistoryEntries(history.entries);
+        setHistoryHasMore(history.hasMore);
+        if (selectedSearch?.page) {
+          setForm(restoreForm(selectedSearch.request));
+          setPage(selectedSearch.page);
+          setActiveHistoryId(selectedSearch.id);
+        }
+      } catch (caught) {
+        if (!active) return;
+        setHistoryError(
+          caught instanceof Error
+            ? caught.message
+            : "YouTube search history could not be loaded.",
+        );
+      } finally {
+        if (active) setHistoryLoading(false);
+      }
+    };
+
+    void loadInitialHistory();
+    return () => {
+      active = false;
+    };
+  }, [userId]);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -135,6 +206,24 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
       setPage(result);
       setSelected(null);
       setSelectedIds(new Set());
+      setActiveHistoryId(result.search_id ?? null);
+      if (result.search_id) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("search", result.search_id);
+        window.history.replaceState(null, "", url);
+      }
+      try {
+        const history = await listYouTubeSearchHistory();
+        setHistoryEntries(history.entries);
+        setHistoryHasMore(history.hasMore);
+        setHistoryError(null);
+      } catch (historyCaught) {
+        setHistoryError(
+          historyCaught instanceof Error
+            ? historyCaught.message
+            : "The search was saved, but history could not be refreshed.",
+        );
+      }
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (caught) {
       setError(
@@ -142,8 +231,54 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
           ? caught.message
           : "YouTube search could not be completed.",
       );
+      try {
+        const history = await listYouTubeSearchHistory();
+        setHistoryEntries(history.entries);
+        setHistoryHasMore(history.hasMore);
+        setHistoryError(null);
+      } catch (historyCaught) {
+        setHistoryError(
+          historyCaught instanceof Error
+            ? historyCaught.message
+            : "The failed search was saved, but history could not be refreshed.",
+        );
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const restoreSearch = (entry: YouTubeSearchHistoryEntry) => {
+    if (!entry.page) return;
+    setForm(restoreForm(entry.request));
+    setPage(entry.page);
+    setSelected(null);
+    setSelectedIds(new Set());
+    setError(null);
+    setActiveHistoryId(entry.id);
+    setHistoryOpen(false);
+    const url = new URL(window.location.href);
+    url.searchParams.set("search", entry.id);
+    window.history.replaceState(null, "", url);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const loadOlderHistory = async () => {
+    if (historyLoading || !historyHasMore) return;
+    setHistoryLoading(true);
+    setHistoryError(null);
+    try {
+      const history = await listYouTubeSearchHistory(historyEntries.length);
+      setHistoryEntries((current) => [...current, ...history.entries]);
+      setHistoryHasMore(history.hasMore);
+    } catch (caught) {
+      setHistoryError(
+        caught instanceof Error
+          ? caught.message
+          : "Older YouTube searches could not be loaded.",
+      );
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -195,261 +330,286 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
   return (
     <main className="min-h-screen bg-background text-foreground dark:bg-[#07090d] dark:text-zinc-100">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(239,68,68,0.08),transparent_32%),radial-gradient(circle_at_90%_20%,rgba(8,145,178,0.07),transparent_34%)] dark:bg-[radial-gradient(circle_at_10%_0%,rgba(239,68,68,0.13),transparent_32%),radial-gradient(circle_at_90%_20%,rgba(34,211,238,0.1),transparent_34%)]" />
-      <div className="relative mx-auto max-w-[1500px] px-4 py-8 sm:px-6 lg:px-8">
-        <header className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="mb-3 flex items-center gap-2 pt-3 text-sm font-medium text-red-600 dark:text-red-400">
-              <Youtube className="h-5 w-5" />
-              YouTube intelligence
+      <div className="relative mx-auto flex max-w-[1830px] items-start gap-6 px-4 py-8 sm:px-6 lg:px-8">
+        <YouTubeSearchHistory
+          entries={historyEntries}
+          activeId={activeHistoryId}
+          loading={historyLoading}
+          error={historyError}
+          hasMore={historyHasMore}
+          mobileOpen={historyOpen}
+          onMobileOpenChange={setHistoryOpen}
+          onSelect={restoreSearch}
+          onLoadMore={() => void loadOlderHistory()}
+        />
+        <div className="min-w-0 flex-1">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setHistoryOpen(true)}
+            className="mb-5 rounded-xl lg:hidden"
+          >
+            <History className="mr-2 h-4 w-4" />
+            Search history
+          </Button>
+          <header className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="mb-3 flex items-center gap-2 pt-3 text-sm font-medium text-red-600 dark:text-red-400">
+                <Youtube className="h-5 w-5" />
+                YouTube intelligence
+              </div>
+              <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-5xl">
+                {topicId
+                  ? "Build this topic’s YouTube library."
+                  : "Find the signal in YouTube."}
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground dark:text-zinc-400 sm:text-base">
+                Search videos, inspect creator authority and engagement, and{" "}
+                {topicId
+                  ? "attach only the strongest sources to this research topic."
+                  : "open the strongest sources for deeper research."}
+              </p>
             </div>
-            <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-5xl">
-              {topicId
-                ? "Build this topic’s YouTube library."
-                : "Find the signal in YouTube."}
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground dark:text-zinc-400 sm:text-base">
-              Search videos, inspect creator authority and engagement, and{" "}
-              {topicId
-                ? "attach only the strongest sources to this research topic."
-                : "open the strongest sources for deeper research."}
-            </p>
-          </div>
-          {page && (
-            <div className="rounded-2xl border border-border bg-card/80 px-4 py-3 text-sm text-muted-foreground dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-400">
-              <span className="font-semibold text-foreground dark:text-white">
-                {formatYouTubeCount(page.total_results)}
-              </span>{" "}
-              estimated matches
-              {page.region_code ? ` · ${page.region_code}` : ""}
-            </div>
-          )}
-        </header>
+            {page && (
+              <div className="rounded-2xl border border-border bg-card/80 px-4 py-3 text-sm text-muted-foreground dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-400">
+                <span className="font-semibold text-foreground dark:text-white">
+                  {formatYouTubeCount(page.total_results)}
+                </span>{" "}
+                estimated matches
+                {page.region_code ? ` · ${page.region_code}` : ""}
+              </div>
+            )}
+          </header>
 
-        <form
-          onSubmit={onSubmit}
-          className="mb-7 rounded-3xl border border-border bg-card/90 p-3 shadow-2xl shadow-black/10 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/70 dark:shadow-black/30"
-        >
-          <div className="flex flex-col gap-3 md:flex-row">
-            <div className="relative min-w-0 flex-1">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground dark:text-zinc-500" />
-              <Input
-                value={form.query}
-                onChange={(event) => update("query", event.target.value)}
-                placeholder="Search a topic, expert, question, or exact phrase…"
-                className="h-14 rounded-2xl border-border bg-background pl-12 text-base shadow-none placeholder:text-muted-foreground focus-visible:ring-cyan-400/30 dark:border-white/10 dark:bg-white/[0.04] dark:placeholder:text-zinc-600"
-                aria-label="YouTube search query"
+          <form
+            onSubmit={onSubmit}
+            className="mb-7 rounded-3xl border border-border bg-card/90 p-3 shadow-2xl shadow-black/10 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/70 dark:shadow-black/30"
+          >
+            <div className="flex flex-col gap-3 md:flex-row">
+              <div className="relative min-w-0 flex-1">
+                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground dark:text-zinc-500" />
+                <Input
+                  value={form.query}
+                  onChange={(event) => update("query", event.target.value)}
+                  placeholder="Search a topic, expert, question, or exact phrase…"
+                  className="h-14 rounded-2xl border-border bg-background pl-12 text-base shadow-none placeholder:text-muted-foreground focus-visible:ring-cyan-400/30 dark:border-white/10 dark:bg-white/[0.04] dark:placeholder:text-zinc-600"
+                  aria-label="YouTube search query"
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={!form.query.trim() || loading}
+                className="h-14 rounded-2xl bg-red-500 px-7 font-semibold text-white hover:bg-red-400"
+              >
+                {loading ? (
+                  <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
+                ) : (
+                  <Search className="mr-2 h-5 w-5" />
+                )}
+                Search YouTube
+              </Button>
+            </div>
+
+            <div className="mt-3 grid gap-3 border-t border-border pt-3 sm:grid-cols-2 lg:grid-cols-6 dark:border-white/10">
+              <FilterSelect
+                label="Sort by"
+                value={form.order ?? "relevance"}
+                onValueChange={(value) =>
+                  update("order", value as FormState["order"])
+                }
+                options={[
+                  ["relevance", "Most relevant"],
+                  ["viewCount", "Most viewed"],
+                  ["rating", "Highest rated"],
+                  ["date", "Newest"],
+                  ["title", "Title"],
+                ]}
               />
-            </div>
-            <Button
-              type="submit"
-              disabled={!form.query.trim() || loading}
-              className="h-14 rounded-2xl bg-red-500 px-7 font-semibold text-white hover:bg-red-400"
-            >
-              {loading ? (
-                <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
-              ) : (
-                <Search className="mr-2 h-5 w-5" />
-              )}
-              Search YouTube
-            </Button>
-          </div>
-
-          <div className="mt-3 grid gap-3 border-t border-border pt-3 sm:grid-cols-2 lg:grid-cols-6 dark:border-white/10">
-            <FilterSelect
-              label="Sort by"
-              value={form.order ?? "relevance"}
-              onValueChange={(value) =>
-                update("order", value as FormState["order"])
-              }
-              options={[
-                ["relevance", "Most relevant"],
-                ["viewCount", "Most viewed"],
-                ["rating", "Highest rated"],
-                ["date", "Newest"],
-                ["title", "Title"],
-              ]}
-            />
-            <FilterSelect
-              label="Results"
-              value={String(form.max_results)}
-              onValueChange={(value) => update("max_results", Number(value))}
-              options={[
-                ["10", "10 videos"],
-                ["25", "25 videos"],
-                ["50", "50 videos"],
-              ]}
-            />
-            <FilterSelect
-              label="Duration"
-              value={selectedDuration(form)}
-              onValueChange={(value) => {
-                if (value === "under10" || value === "under20") {
+              <FilterSelect
+                label="Results"
+                value={String(form.max_results)}
+                onValueChange={(value) => update("max_results", Number(value))}
+                options={[
+                  ["10", "10 videos"],
+                  ["25", "25 videos"],
+                  ["50", "50 videos"],
+                ]}
+              />
+              <FilterSelect
+                label="Duration"
+                value={selectedDuration(form)}
+                onValueChange={(value) => {
+                  if (value === "under10" || value === "under20") {
+                    setForm((current) => ({
+                      ...current,
+                      video_duration: "any",
+                      max_duration_minutes: value === "under10" ? 10 : 20,
+                    }));
+                    return;
+                  }
                   setForm((current) => ({
                     ...current,
-                    video_duration: "any",
-                    max_duration_minutes: value === "under10" ? 10 : 20,
+                    video_duration: value as FormState["video_duration"],
+                    max_duration_minutes: undefined,
                   }));
-                  return;
-                }
-                setForm((current) => ({
-                  ...current,
-                  video_duration: value as FormState["video_duration"],
-                  max_duration_minutes: undefined,
-                }));
-              }}
-              options={[
-                ["any", "Any length"],
-                ["short", "Under 4 minutes"],
-                ["under10", "Under 10 minutes"],
-                ["under20", "Under 20 minutes"],
-                ["medium", "4–20 minutes"],
-                ["long", "Over 20 minutes"],
-              ]}
-            />
-            <FilterSelect
-              label="Captions"
-              value={form.video_caption ?? "any"}
-              onValueChange={(value) =>
-                update("video_caption", value as FormState["video_caption"])
-              }
-              options={[
-                ["any", "Any"],
-                ["closedCaption", "Has captions"],
-                ["none", "No captions"],
-              ]}
-            />
-            <FilterSelect
-              label="Per channel"
-              value={String(form.max_results_per_channel ?? "any")}
-              onValueChange={(value) =>
-                update(
-                  "max_results_per_channel",
-                  value === "any" ? undefined : Number(value),
-                )
-              }
-              options={[
-                ["1", "1 video"],
-                ["2", "2 videos"],
-                ["3", "3 videos"],
-                ["5", "5 videos"],
-                ["10", "10 videos"],
-                ["any", "No limit"],
-              ]}
-            />
-            <button
-              type="button"
-              onClick={() => setAdvanced((current) => !current)}
-              className="flex h-[62px] min-w-0 items-end justify-between rounded-2xl border border-border bg-muted/30 px-4 pb-2.5 text-left text-sm transition hover:bg-muted/60 dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
-            >
-              <span>
-                <span className="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground dark:text-zinc-500">
-                  Filters
-                </span>
-                <span className="mt-1 flex items-center gap-2 font-medium text-foreground dark:text-zinc-200">
-                  <SlidersHorizontal className="h-4 w-4" />
-                  Advanced
-                </span>
-              </span>
-              <ChevronDown
-                className={`h-4 w-4 text-muted-foreground transition dark:text-zinc-500 ${advanced ? "rotate-180" : ""}`}
+                }}
+                options={[
+                  ["any", "Any length"],
+                  ["short", "Under 4 minutes"],
+                  ["under10", "Under 10 minutes"],
+                  ["under20", "Under 20 minutes"],
+                  ["medium", "4–20 minutes"],
+                  ["long", "Over 20 minutes"],
+                ]}
               />
-            </button>
-          </div>
-
-          {advanced && <AdvancedFilters form={form} update={update} />}
-          <p className="mt-3 px-1 text-xs text-muted-foreground dark:text-zinc-600">
-            Power search: use{" "}
-            <code className="text-foreground/70 dark:text-zinc-400">
-              term1 | term2
-            </code>{" "}
-            for alternatives and{" "}
-            <code className="text-foreground/70 dark:text-zinc-400">-term</code>{" "}
-            to exclude a word.
-          </p>
-        </form>
-
-        {error && (
-          <div className="mb-7 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-200">
-            {error}
-          </div>
-        )}
-
-        {!page && !loading && <EmptyState />}
-
-        {page && page.results.length === 0 && (
-          <div className="rounded-3xl border border-dashed border-border p-14 text-center dark:border-white/15">
-            <h2 className="text-lg font-semibold">No videos matched</h2>
-            <p className="mt-2 text-sm text-muted-foreground dark:text-zinc-500">
-              Try broadening the query or removing one of the advanced filters.
-            </p>
-          </div>
-        )}
-
-        {page && page.results.length > 0 && (
-          <>
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground dark:text-zinc-500">
-                Showing {page.results.length} enriched videos for{" "}
-                <span className="text-foreground/80 dark:text-zinc-300">
-                  “{page.query}”
+              <FilterSelect
+                label="Captions"
+                value={form.video_caption ?? "any"}
+                onValueChange={(value) =>
+                  update("video_caption", value as FormState["video_caption"])
+                }
+                options={[
+                  ["any", "Any"],
+                  ["closedCaption", "Has captions"],
+                  ["none", "No captions"],
+                ]}
+              />
+              <FilterSelect
+                label="Per channel"
+                value={String(form.max_results_per_channel ?? "any")}
+                onValueChange={(value) =>
+                  update(
+                    "max_results_per_channel",
+                    value === "any" ? undefined : Number(value),
+                  )
+                }
+                options={[
+                  ["1", "1 video"],
+                  ["2", "2 videos"],
+                  ["3", "3 videos"],
+                  ["5", "5 videos"],
+                  ["10", "10 videos"],
+                  ["any", "No limit"],
+                ]}
+              />
+              <button
+                type="button"
+                onClick={() => setAdvanced((current) => !current)}
+                className="flex h-[62px] min-w-0 items-end justify-between rounded-2xl border border-border bg-muted/30 px-4 pb-2.5 text-left text-sm transition hover:bg-muted/60 dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
+              >
+                <span>
+                  <span className="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground dark:text-zinc-500">
+                    Filters
+                  </span>
+                  <span className="mt-1 flex items-center gap-2 font-medium text-foreground dark:text-zinc-200">
+                    <SlidersHorizontal className="h-4 w-4" />
+                    Advanced
+                  </span>
                 </span>
-              </p>
-              {topicId && selectedIds.size > 0 && (
-                <Button
-                  type="button"
-                  onClick={() => void addSelected()}
-                  disabled={adding}
-                  className="rounded-xl bg-red-500 text-white hover:bg-red-400"
-                >
-                  {adding ? (
-                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <ListPlus className="mr-2 h-4 w-4" />
-                  )}
-                  Add {selectedIds.size} to research
-                </Button>
-              )}
-            </div>
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {page.results.map((video, index) => (
-                <VideoCard
-                  key={video.video_id}
-                  video={video}
-                  eagerImage={index === 0}
-                  onPreview={() => setSelected(video)}
-                  researchMode={Boolean(topicId)}
-                  isSelected={selectedIds.has(video.video_id)}
-                  onToggleSelected={() => toggleSelected(video.video_id)}
-                  onAdd={() => void addSelected([video.video_id])}
+                <ChevronDown
+                  className={`h-4 w-4 text-muted-foreground transition dark:text-zinc-500 ${advanced ? "rotate-180" : ""}`}
                 />
-              ))}
+              </button>
             </div>
-            <div className="mt-8 flex justify-center gap-3">
-              <Button
-                variant="outline"
-                disabled={!page.prev_page_token || loading}
-                onClick={() =>
-                  void runSearch(page.prev_page_token ?? undefined)
-                }
-                className="rounded-xl border-border bg-card dark:border-white/10 dark:bg-white/[0.03]"
-              >
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                disabled={!page.next_page_token || loading}
-                onClick={() =>
-                  void runSearch(page.next_page_token ?? undefined)
-                }
-                className="rounded-xl border-border bg-card dark:border-white/10 dark:bg-white/[0.03]"
-              >
-                Next
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
+
+            {advanced && <AdvancedFilters form={form} update={update} />}
+            <p className="mt-3 px-1 text-xs text-muted-foreground dark:text-zinc-600">
+              Power search: use{" "}
+              <code className="text-foreground/70 dark:text-zinc-400">
+                term1 | term2
+              </code>{" "}
+              for alternatives and{" "}
+              <code className="text-foreground/70 dark:text-zinc-400">
+                -term
+              </code>{" "}
+              to exclude a word.
+            </p>
+          </form>
+
+          {error && (
+            <div className="mb-7 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-200">
+              {error}
             </div>
-          </>
-        )}
+          )}
+
+          {!page && !loading && <EmptyState />}
+
+          {page && page.results.length === 0 && (
+            <div className="rounded-3xl border border-dashed border-border p-14 text-center dark:border-white/15">
+              <h2 className="text-lg font-semibold">No videos matched</h2>
+              <p className="mt-2 text-sm text-muted-foreground dark:text-zinc-500">
+                Try broadening the query or removing one of the advanced
+                filters.
+              </p>
+            </div>
+          )}
+
+          {page && page.results.length > 0 && (
+            <>
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-sm text-muted-foreground dark:text-zinc-500">
+                  Showing {page.results.length} enriched videos for{" "}
+                  <span className="text-foreground/80 dark:text-zinc-300">
+                    “{page.query}”
+                  </span>
+                </p>
+                {topicId && selectedIds.size > 0 && (
+                  <Button
+                    type="button"
+                    onClick={() => void addSelected()}
+                    disabled={adding}
+                    className="rounded-xl bg-red-500 text-white hover:bg-red-400"
+                  >
+                    {adding ? (
+                      <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <ListPlus className="mr-2 h-4 w-4" />
+                    )}
+                    Add {selectedIds.size} to research
+                  </Button>
+                )}
+              </div>
+              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {page.results.map((video, index) => (
+                  <VideoCard
+                    key={video.video_id}
+                    video={video}
+                    eagerImage={index === 0}
+                    onPreview={() => setSelected(video)}
+                    researchMode={Boolean(topicId)}
+                    isSelected={selectedIds.has(video.video_id)}
+                    onToggleSelected={() => toggleSelected(video.video_id)}
+                    onAdd={() => void addSelected([video.video_id])}
+                  />
+                ))}
+              </div>
+              <div className="mt-8 flex justify-center gap-3">
+                <Button
+                  variant="outline"
+                  disabled={!page.prev_page_token || loading}
+                  onClick={() =>
+                    void runSearch(page.prev_page_token ?? undefined)
+                  }
+                  className="rounded-xl border-border bg-card dark:border-white/10 dark:bg-white/[0.03]"
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={!page.next_page_token || loading}
+                  onClick={() =>
+                    void runSearch(page.next_page_token ?? undefined)
+                  }
+                  className="rounded-xl border-border bg-card dark:border-white/10 dark:bg-white/[0.03]"
+                >
+                  Next
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {selected && (

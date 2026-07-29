@@ -27,6 +27,15 @@ same enriched YouTube Data API primitive as the automated research pipeline.
 - The browser never calls Google directly and never receives the YouTube API
   key. It calls the authenticated AI Dream endpoint through `apiPost`.
 - Request and response shapes come from the generated Python OpenAPI contract.
+- Every provider search is persisted before it runs. The server stores the
+  complete request and exact enriched response in the user's canonical
+  `research.youtube_search` history row, including failed attempts and each
+  separately billed pagination request.
+- The desktop sidebar and mobile history sheet page through the user's entire
+  saved history. Selecting a completed entry restores its original controls and
+  result page directly from Supabase; it never calls the YouTube provider and
+  therefore spends no additional search quota. A `?search={id}` URL reopens the
+  same saved result directly.
 - Search results are enriched with video statistics, duration, tags, topics,
   and channel statistics before they reach the UI.
 - Advanced controls expose supported YouTube search filters as ordinary form
@@ -69,6 +78,8 @@ enrich comments, and open a result on YouTube. Topic selection lives at
 
 ## Changelog
 
+- **2026-07-28** — Added permanent per-user search history, exact zero-quota
+  result replay, deep links, and paginated desktop/mobile history navigation.
 - **2026-07-28** — Promoted video length into the card metrics, added explicit
   full-page navigation from every result surface, renamed the vendor-neutral
   action to Analyze, replaced passive polling with live analysis streams, and

@@ -38035,6 +38035,63 @@ export type Database = {
         }
         Relationships: []
       }
+      youtube_search: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          query: string
+          request: Json
+          response: Json | null
+          result_count: number
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          query: string
+          request?: Json
+          response?: Json | null
+          result_count?: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          query?: string
+          request?: Json
+          response?: Json | null
+          result_count?: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       youtube_video: {
         Row: {
           analysis_agent_id: string | null
