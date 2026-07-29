@@ -28,6 +28,7 @@
  */
 
 import type {
+  SurfaceWriteTarget,
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
@@ -738,6 +739,59 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * The WRITE half — what an agent result (or a rendered kind component) may
+ * change on this page. This is the proving surface for the 360 loop: the
+ * "LSI Variations & Metadata" agent's kinds (`meta_tag_options`,
+ * `keyword_relationship_research`, `keyword_search_metrics`) render with
+ * apply buttons that land HERE, and nowhere else.
+ *
+ * Per-target defaults follow the surface's own opinion (a binding or shortcut
+ * may override per target via `write_policies`): everything here PERSISTS
+ * through the page's canonical services, so the surface defaults every entity
+ * write to `ask` — an agent proposing your metadata is welcome, an agent
+ * silently rewriting it is not. A user's click on an option card is consent
+ * and never consults the policy.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "page_meta_tags",
+    label: "Desired meta tags",
+    description:
+      "Set the page's DESIRED meta title and/or description (the editorial intent — never the observed crawl evidence). Value: { meta_title?: string, meta_description?: string }; omitted fields keep their current value. Persists immediately through updatePageIntent with the version guard; desired SEO metrics are recomputed on save.",
+    valueType: "object",
+    updatesValue: "page_intent",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "page_intent",
+    sortOrder: 100,
+  },
+  {
+    name: "page_target_keyword",
+    label: "Target keyword",
+    description:
+      "Set the page's primary target keyword. Value: { keyword: string }. Persists immediately through updatePageIntent (meta intent fields are preserved).",
+    valueType: "object",
+    updatesValue: "target_keyword",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "page_intent",
+    sortOrder: 110,
+  },
+  {
+    name: "page_supporting_keywords",
+    label: "Supporting keywords",
+    description:
+      "Attach one or more phrases to this page as supporting keywords. Value: { keywords: string[] }. Each phrase is upserted into the keyword library and associated through the canonical chokepoint (addPageSupportingKeywords); duplicates are deduplicated, already-attached phrases are a no-op.",
+    valueType: "object",
+    updatesValue: "keyword_batch",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "analysis",
+    sortOrder: 120,
+  },
+];
+
 export const marketingPageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-page",
   readiness: "verified",
@@ -756,6 +810,7 @@ SEO metrics are deterministic (shared pixel-width table between browser and scra
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
   // The AI layer for this surface is deliberately staged: these roles are the
   // declared slots the marketing agent fleet (metadata writers, SERP analysts,
   // content auditors, keyword strategists, …) will bind into. Declaring them

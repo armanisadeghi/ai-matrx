@@ -34,7 +34,11 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast } from "@/lib/toast";
 
-import type { SurfaceWriteTarget } from "../types";
+import type {
+  SurfaceWritePolicy,
+  SurfaceWriteTarget,
+  WritePolicyMap,
+} from "../types";
 import {
   getRegisteredWriteHandlers,
   getSurfaceRuntimeStack,
@@ -105,6 +109,69 @@ export interface ApplySurfaceWriteOptions {
   actorLabel?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Per-run write-policy overrides — the BINDING's say over the surface default.
+// ---------------------------------------------------------------------------
+
+/**
+ * The surface declares each target's DEFAULT policy
+ * (`SurfaceWriteTarget.applyPolicy`); the binding (or shortcut — the same
+ * system, one opinionated layer stronger) is where the USER controls it.
+ * The launch path registers a run's merged `write_policies` here for the
+ * run's lifetime; `applySurfaceWrite` consults the newest registration that
+ * names the target, else the surface default.
+ *
+ * Deliberately additive-only in the safe direction to worry about: an
+ * override can NEVER weaken `manual` → an agent write the surface refuses
+ * stays refused unless the SURFACE itself declared the target `ask`/`auto`
+ * or the override tightens it. (Loosening `manual` from a binding would let
+ * any binding author grant agents a write the surface never opened.)
+ */
+interface WritePolicyRegistration {
+  id: number;
+  /** Replacement identity — a re-launch of the same (agent, surface) replaces
+   * its prior registration instead of stacking forever. */
+  key: string | null;
+  policies: WritePolicyMap;
+}
+
+let nextPolicyRegId = 0;
+let policyRegistrations: WritePolicyRegistration[] = [];
+
+/**
+ * Register a run's binding-resolved overrides. Returns unregister. Passing a
+ * `key` (e.g. `"<agentId>::<surfaceName>"`) makes the registration
+ * REPLACING: the same binding re-launched updates its policies in place
+ * rather than accumulating one registration per run for the session.
+ */
+export function registerSurfaceWritePolicies(
+  policies: WritePolicyMap,
+  key?: string,
+): () => void {
+  const id = ++nextPolicyRegId;
+  policyRegistrations = [
+    ...policyRegistrations.filter((r) => !key || r.key !== key),
+    { id, key: key ?? null, policies },
+  ];
+  return () => {
+    policyRegistrations = policyRegistrations.filter((r) => r.id !== id);
+  };
+}
+
+/** Effective policy for a target: newest override that names it, else default. */
+function resolveApplyPolicy(target: SurfaceWriteTarget): SurfaceWritePolicy {
+  const surfaceDefault = target.applyPolicy ?? "manual";
+  for (let i = policyRegistrations.length - 1; i >= 0; i--) {
+    const override = policyRegistrations[i].policies[target.name];
+    if (!override) continue;
+    // A binding may TIGHTEN (auto→ask→manual) freely; it may loosen only what
+    // the surface opened (ask→auto). It can never open a manual target.
+    if (surfaceDefault === "manual" && override !== "manual") return "manual";
+    return override;
+  }
+  return surfaceDefault;
+}
+
 /** Neither a success nor a defect — the user declined. Silent by design. */
 function declined(target: SurfaceWriteTarget): SurfaceWriteResult {
   return {
@@ -128,7 +195,7 @@ async function agentWriteAllowed(
   surfaceName: string,
   actorLabel: string | undefined,
 ): Promise<SurfaceWriteResult | true> {
-  const policy = target.applyPolicy ?? "manual";
+  const policy = resolveApplyPolicy(target);
   if (policy === "auto") return true;
   if (policy === "manual") {
     // Return `fail`'s OWN result so the toast the user sees and the error the

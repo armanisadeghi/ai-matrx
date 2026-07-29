@@ -386,6 +386,20 @@ export interface SurfaceManifest {
 // ---------------------------------------------------------------------------
 
 /** Map types v1. Adding a new type is a TS branch + resolver case; no SQL changes. */
+/**
+ * A binding's per-target override of a write target's `applyPolicy`.
+ *
+ * Precedence (weakest → strongest): the SURFACE's per-target default
+ * (`SurfaceWriteTarget.applyPolicy`) → binding layers in the same order value
+ * mappings merge (global → org → user → shortcut). The user controls this
+ * wherever they bind — a shortcut is just the most opinionated binding layer,
+ * never a different system.
+ */
+export type SurfaceWritePolicy = "manual" | "ask" | "auto";
+
+/** target name → policy override. Stored in the surface_binding payload (v2). */
+export type WritePolicyMap = Record<string, SurfaceWritePolicy>;
+
 export type ValueMappingType =
   "surface_value" | "direct_value" | "prompt_user" | "unmapped";
 

@@ -1209,6 +1209,7 @@ export type Database = {
           value_mappings: Json | null
           version: number | null
           visibility: Database["platform"]["Enums"]["visibility"] | null
+          write_policies: Json | null
         }
         Relationships: []
       }
