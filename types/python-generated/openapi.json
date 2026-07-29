@@ -11467,6 +11467,66 @@
         }
       }
     },
+    "/content-plan/sites/{site_id}/cms-redirects": {
+      "get": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Cms Redirects Route",
+        "description": "THE 301 LAW ledger, read side — what the paired CMS site's renderer\nserves as 301s. Writes are automatic (route-move trigger, dispositions) or\ngo through the `cms_site` tool's redirect_record / redirect_delete.",
+        "operationId": "cms_redirects_route_content_plan_sites__site_id__cms_redirects_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "cms_site",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cms Site"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsRedirectsResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/content-plan/sites/{site_id}/cms-starter-kit": {
       "post": {
         "tags": [
@@ -11568,9 +11628,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CmsFillPreviewResult"
-                }
+                "schema": {}
               }
             }
           },
@@ -58721,80 +58779,6 @@
         "type": "object",
         "title": "CmsFillPreviewBody"
       },
-      "CmsFillPreviewResult": {
-        "properties": {
-          "node_id": {
-            "type": "string",
-            "title": "Node Id"
-          },
-          "page_id": {
-            "type": "string",
-            "title": "Page Id"
-          },
-          "route": {
-            "type": "string",
-            "title": "Route"
-          },
-          "title": {
-            "type": "string",
-            "title": "Title"
-          },
-          "html": {
-            "type": "string",
-            "title": "Html"
-          },
-          "css": {
-            "type": "string",
-            "title": "Css"
-          },
-          "meta_title": {
-            "type": "string",
-            "title": "Meta Title"
-          },
-          "meta_description": {
-            "type": "string",
-            "title": "Meta Description"
-          },
-          "model": {
-            "type": "string",
-            "title": "Model"
-          },
-          "wrote": {
-            "type": "boolean",
-            "title": "Wrote"
-          },
-          "global_css": {
-            "type": "string",
-            "title": "Global Css"
-          },
-          "header_html": {
-            "type": "string",
-            "title": "Header Html"
-          },
-          "footer_html": {
-            "type": "string",
-            "title": "Footer Html"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "node_id",
-          "page_id",
-          "route",
-          "title",
-          "html",
-          "css",
-          "meta_title",
-          "meta_description",
-          "model",
-          "wrote",
-          "global_css",
-          "header_html",
-          "footer_html"
-        ],
-        "title": "CmsFillPreviewResult"
-      },
       "CmsFillStartBody": {
         "properties": {
           "organization_id": {
@@ -59348,6 +59332,50 @@
           "cms_site_slug"
         ],
         "title": "CmsReconcileReport"
+      },
+      "CmsRedirectsResult": {
+        "properties": {
+          "web_site_id": {
+            "type": "string",
+            "title": "Web Site Id"
+          },
+          "cms_site_id": {
+            "type": "string",
+            "title": "Cms Site Id"
+          },
+          "cms_site_slug": {
+            "type": "string",
+            "title": "Cms Site Slug"
+          },
+          "redirects": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Redirects"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 0
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "web_site_id",
+          "cms_site_id",
+          "cms_site_slug"
+        ],
+        "title": "CmsRedirectsResult"
       },
       "CmsStarterKitBody": {
         "properties": {
@@ -66207,6 +66235,18 @@
             "type": "integer",
             "title": "Written",
             "default": 0
+          },
+          "redirects_written": {
+            "type": "integer",
+            "title": "Redirects Written",
+            "default": 0
+          },
+          "redirects_skipped": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Redirects Skipped"
           },
           "errors": {
             "items": {

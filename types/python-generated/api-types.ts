@@ -4504,6 +4504,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/content-plan/sites/{site_id}/cms-redirects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cms Redirects Route
+         * @description THE 301 LAW ledger, read side — what the paired CMS site's renderer
+         *     serves as 301s. Writes are automatic (route-move trigger, dispositions) or
+         *     go through the `cms_site` tool's redirect_record / redirect_delete.
+         */
+        get: operations["cms_redirects_route_content_plan_sites__site_id__cms_redirects_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/content-plan/sites/{site_id}/cms-starter-kit": {
         parameters: {
             query?: never;
@@ -21156,35 +21178,6 @@ export interface components {
              */
             write?: boolean;
         };
-        /** CmsFillPreviewResult */
-        CmsFillPreviewResult: {
-            /** Node Id */
-            node_id: string;
-            /** Page Id */
-            page_id: string;
-            /** Route */
-            route: string;
-            /** Title */
-            title: string;
-            /** Html */
-            html: string;
-            /** Css */
-            css: string;
-            /** Meta Title */
-            meta_title: string;
-            /** Meta Description */
-            meta_description: string;
-            /** Model */
-            model: string;
-            /** Wrote */
-            wrote: boolean;
-            /** Global Css */
-            global_css: string;
-            /** Header Html */
-            header_html: string;
-            /** Footer Html */
-            footer_html: string;
-        };
         /** CmsFillStartBody */
         CmsFillStartBody: {
             /** Organization Id */
@@ -21417,6 +21410,26 @@ export interface components {
              * @default 0
              */
             links_written?: number;
+            /** Warnings */
+            warnings?: string[];
+        };
+        /** CmsRedirectsResult */
+        CmsRedirectsResult: {
+            /** Web Site Id */
+            web_site_id: string;
+            /** Cms Site Id */
+            cms_site_id: string;
+            /** Cms Site Slug */
+            cms_site_slug: string;
+            /** Redirects */
+            redirects?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Count
+             * @default 0
+             */
+            count?: number;
             /** Warnings */
             warnings?: string[];
         };
@@ -23891,6 +23904,13 @@ export interface components {
              * @default 0
              */
             written?: number;
+            /**
+             * Redirects Written
+             * @default 0
+             */
+            redirects_written?: number;
+            /** Redirects Skipped */
+            redirects_skipped?: string[];
             /** Errors */
             errors?: string[];
         };
@@ -48477,6 +48497,39 @@ export interface operations {
             };
         };
     };
+    cms_redirects_route_content_plan_sites__site_id__cms_redirects_get: {
+        parameters: {
+            query?: {
+                cms_site?: string | null;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsRedirectsResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     cms_starter_kit_route_content_plan_sites__site_id__cms_starter_kit_post: {
         parameters: {
             query?: never;
@@ -48533,7 +48586,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CmsFillPreviewResult"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

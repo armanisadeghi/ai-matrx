@@ -8351,6 +8351,87 @@
     "title": "PlanDeepenResultData",
     "type": "object"
   },
+  "PlanCmsFillPreviewData": {
+    "additionalProperties": false,
+    "description": "Terminal event of POST /content-plan/sites/{id}/cms-fill/preview: ONE\nauthored page (html/css/meta) plus the site's real global CSS and\nheader/footer so the client can compose a faithful preview.",
+    "properties": {
+      "type": {
+        "const": "plan_cms_fill_preview",
+        "default": "plan_cms_fill_preview",
+        "title": "Type",
+        "type": "string"
+      },
+      "node_id": {
+        "title": "Node Id",
+        "type": "string"
+      },
+      "page_id": {
+        "title": "Page Id",
+        "type": "string"
+      },
+      "route": {
+        "default": "/",
+        "title": "Route",
+        "type": "string"
+      },
+      "title": {
+        "default": "",
+        "title": "Title",
+        "type": "string"
+      },
+      "html": {
+        "default": "",
+        "title": "Html",
+        "type": "string"
+      },
+      "css": {
+        "default": "",
+        "title": "Css",
+        "type": "string"
+      },
+      "meta_title": {
+        "default": "",
+        "title": "Meta Title",
+        "type": "string"
+      },
+      "meta_description": {
+        "default": "",
+        "title": "Meta Description",
+        "type": "string"
+      },
+      "model": {
+        "default": "",
+        "title": "Model",
+        "type": "string"
+      },
+      "wrote": {
+        "default": false,
+        "title": "Wrote",
+        "type": "boolean"
+      },
+      "global_css": {
+        "default": "",
+        "title": "Global Css",
+        "type": "string"
+      },
+      "header_html": {
+        "default": "",
+        "title": "Header Html",
+        "type": "string"
+      },
+      "footer_html": {
+        "default": "",
+        "title": "Footer Html",
+        "type": "string"
+      }
+    },
+    "required": [
+      "node_id",
+      "page_id"
+    ],
+    "title": "PlanCmsFillPreviewData",
+    "type": "object"
+  },
   "ToolStartedData": {
     "additionalProperties": false,
     "properties": {

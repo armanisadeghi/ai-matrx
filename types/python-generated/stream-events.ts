@@ -1155,6 +1155,23 @@ export interface PdfTablesStartedData {
   total_pages: number;
 }
 
+export interface PlanCmsFillPreviewData {
+  type?: "plan_cms_fill_preview";
+  node_id: string;
+  page_id: string;
+  route?: string;
+  title?: string;
+  html?: string;
+  css?: string;
+  meta_title?: string;
+  meta_description?: string;
+  model?: string;
+  wrote?: boolean;
+  global_css?: string;
+  header_html?: string;
+  footer_html?: string;
+}
+
 export interface PlanDeepenResultData {
   type?: "plan_deepen_result";
   node_id: string;
@@ -1454,6 +1471,7 @@ export type TypedDataPayload =
   | PdfTablesCompleteData
   | PdfTablesPageData
   | PdfTablesStartedData
+  | PlanCmsFillPreviewData
   | PlanDeepenResultData
   | PlanGenAppliedData
   | PlanGenCandidateData
