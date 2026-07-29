@@ -18,6 +18,7 @@
 import React from "react";
 import { SmartAgentInputStacked } from "./SmartAgentInputStacked";
 import { SmartAgentInputSingleRow } from "./SmartAgentInputSingleRow";
+import { InboxQueueStrip } from "./InboxQueueStrip";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
 
 interface SmartAgentInputProps {
@@ -53,14 +54,45 @@ export function SmartAgentInput({
   variablesPanelStyle,
   extraRightControls,
 }: SmartAgentInputProps) {
+  // Queued-while-running message cards render above EITHER variant, so every
+  // surface that mounts a composer also sees / edits / withdraws its queue
+  // (docs/TURN_BOUNDARY_INBOX.md). Renders null when the queue is empty.
+  const queueStrip = conversationId ? (
+    <InboxQueueStrip conversationId={conversationId} />
+  ) : null;
+
   if (singleRowTextarea) {
     return (
-      <SmartAgentInputSingleRow
+      <>
+        {queueStrip}
+        <SmartAgentInputSingleRow
+          conversationId={conversationId}
+          sendButtonVariant={sendButtonVariant}
+          uploadRoot={uploadRoot}
+          uploadPath={uploadPath}
+          enablePasteImages={enablePasteImages}
+          showSendButton={showSendButton}
+          showVariableIcon={showVariableIcon}
+          surfaceKey={surfaceKey}
+          disableSend={disableSend}
+          variablesPanelStyle={variablesPanelStyle}
+          extraRightControls={extraRightControls}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      {queueStrip}
+      <SmartAgentInputStacked
         conversationId={conversationId}
         sendButtonVariant={sendButtonVariant}
+        showSubmitOnEnterToggle={showSubmitOnEnterToggle}
         uploadRoot={uploadRoot}
         uploadPath={uploadPath}
         enablePasteImages={enablePasteImages}
+        compact={compact}
         showSendButton={showSendButton}
         showVariableIcon={showVariableIcon}
         surfaceKey={surfaceKey}
@@ -68,24 +100,6 @@ export function SmartAgentInput({
         variablesPanelStyle={variablesPanelStyle}
         extraRightControls={extraRightControls}
       />
-    );
-  }
-
-  return (
-    <SmartAgentInputStacked
-      conversationId={conversationId}
-      sendButtonVariant={sendButtonVariant}
-      showSubmitOnEnterToggle={showSubmitOnEnterToggle}
-      uploadRoot={uploadRoot}
-      uploadPath={uploadPath}
-      enablePasteImages={enablePasteImages}
-      compact={compact}
-      showSendButton={showSendButton}
-      showVariableIcon={showVariableIcon}
-      surfaceKey={surfaceKey}
-      disableSend={disableSend}
-      variablesPanelStyle={variablesPanelStyle}
-      extraRightControls={extraRightControls}
-    />
+    </>
   );
 }

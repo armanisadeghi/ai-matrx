@@ -26,9 +26,13 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { selectAllResourcesResolved } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
-import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
+import {
+  smartExecute,
+  cancelExecution,
+} from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
+import { InboxQueueStrip } from "../../inputs/smart-input/InboxQueueStrip";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Mic, Braces, CornerDownLeft } from "lucide-react";
+import { ArrowUp, Mic, Braces, CircleStop, CornerDownLeft } from "lucide-react";
 
 // Voice input
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
@@ -96,11 +100,16 @@ export function CompactAssistantInput({
     autoTranscribe: true,
   });
 
-  // Agents can execute on variables alone — text is NOT required.
-  // Block while executing OR while the mic is recording/transcribing so send
-  // can't fire before the trailing audio lands (and leave the recorder on).
+  // Agents can execute on variables alone — text is NOT required (idle).
+  // While a run streams, the composer STAYS live: a send with text queues via
+  // the Turn-Boundary Inbox (smartExecute routes it — the running agent
+  // answers on the same stream), so executing only disables send when there's
+  // nothing to queue. Voice/attachment blocks apply in both states.
   const voiceBusy = isRecording || isTranscribing;
-  const isSendDisabled = isExecuting || voiceBusy || !allResourcesResolved;
+  const isSendDisabled =
+    voiceBusy ||
+    !allResourcesResolved ||
+    (isExecuting && !inputText.trim());
 
   // Auto-submit after voice transcription
   useEffect(() => {
@@ -149,6 +158,9 @@ export function CompactAssistantInput({
       conversationId={conversationId}
       className="shrink-0 border-t border-border/40 bg-muted/10"
     >
+      {/* Queued-while-running message cards (Turn-Boundary Inbox) */}
+      <InboxQueueStrip conversationId={conversationId} />
+
       {/* Resource chips */}
       <SmartAgentResourceChips conversationId={conversationId} />
       {/* Durable document attachments (association edges) — persist across turns/reloads */}
@@ -164,7 +176,6 @@ export function CompactAssistantInput({
           }
           onKeyDown={handleKeyDown}
           placeholder="Ask anything..."
-          disabled={isExecuting}
           className="w-full bg-transparent border-none outline-none text-xs text-foreground placeholder:text-muted-foreground/50 resize-none overflow-y-auto scrollbar-hide disabled:opacity-60"
           style={{ minHeight: 20, maxHeight: 100, fontSize: "16px" }}
           rows={1}
@@ -239,7 +250,19 @@ export function CompactAssistantInput({
             active={submitOnEnter}
           />
 
-          {/* Send button */}
+          {/* Stop button — only while a run streams */}
+          {isExecuting && (
+            <Button
+              size="icon"
+              className="w-6 h-6 rounded-full bg-muted text-foreground shrink-0 ml-0.5 hover:bg-destructive/15 hover:text-destructive"
+              onClick={() => dispatch(cancelExecution(conversationId))}
+              title="Stop the run (everything streamed so far is kept)"
+            >
+              <CircleStop className="w-3 h-3" />
+            </Button>
+          )}
+
+          {/* Send button — queues via the inbox while a run streams */}
           <Button
             size="icon"
             className="w-6 h-6 rounded-full bg-primary text-primary-foreground shrink-0 disabled:opacity-40 ml-0.5"
@@ -247,7 +270,7 @@ export function CompactAssistantInput({
             onClick={handleSend}
             title={
               isExecuting
-                ? "Sending…"
+                ? "Queue message — the agent answers it at its next pause"
                 : voiceBusy
                   ? "Finish recording to send"
                   : !allResourcesResolved
@@ -255,11 +278,7 @@ export function CompactAssistantInput({
                   : "Send"
             }
           >
-            {isExecuting ? (
-              <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <ArrowUp className="w-3 h-3" />
-            )}
+            <ArrowUp className="w-3 h-3" />
           </Button>
         </div>
       </div>

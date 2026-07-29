@@ -33,7 +33,7 @@ know if it's still emitting.** So the client decides, the server never guesses:
 |---|---|---|
 | **No open stream** (idle) | normal send `POST /ai/conversations/{id}` | runs immediately, streams |
 | **Open stream** (busy), and we want to *add* to it | `POST /ai/conversations/{id}/inbox` | queues; answered on the open stream at the next boundary |
-| **Open stream** (busy), and we want to *redirect* | **abort the stream**, then normal send | cuts the run, keeps the partial, fresh run answers the new message |
+| **Open stream** (busy), and we want to *redirect* | `POST /ai/cancel/{request_id}`, wait for the stream to end, then normal send | stops the run at its next boundary (everything streamed persists), fresh run answers the new message — see "Interrupt flow" below |
 
 ## Inbox endpoint
 
@@ -73,33 +73,55 @@ Move the bubble from "queued" → "delivered" and honor `is_visible_to_user`. Be
 device) can still render it. (Also: an `info` event with `code:"inbox_continue"`
 fires if the agent had to continue past its final turn to answer a just-queued msg.)
 
-## Interrupt flow ("stop & redirect")
+## Interrupt flow ("stop & redirect") — the REAL contract
 
-Fully server-managed — **no special endpoint, no client-supplied content:**
-1. **Abort the current stream** (close the SSE connection). The server cancels the
-   run and **saves the partial assistant turn** — the text streamed up to the last
-   chunk — with an automatic marker appended:
-   `\n\n[⚠️ Response interrupted by the user before completion.]`
-2. **Send the new message normally** (`POST /ai/conversations/{id}`). The fresh run
-   loads history (including that truncated, marked turn) and responds.
+> ⚠️ An earlier revision of this doc said "abort the SSE and the server saves a
+> truncated turn with a marker." That was never how production behaves: aidream
+> streams with `detach_on_disconnect=True` (a client disconnect NEVER stops
+> server work — the run loops to completion on the server's dime). Closing your
+> read of the stream stops nothing.
 
-**Sequencing:** send the redirect *after* the aborted stream has fully closed, so
-the partial turn persists before the new run loads history.
+The server-side stop is **`POST /ai/cancel/{request_id}`** — cooperative: the
+run stops at its next iteration boundary, the in-flight provider call finishes
+by design (its cost is committed the instant it starts), and **everything
+streamed persists as normal history** (no truncation, so no marker is needed).
 
-## FE client checklist
+- **`request_id`** is the server's id from the stream response's
+  **`X-Request-ID` header** — captured by `runAiStream` into
+  `activeRequests.byRequestId[*].serverRequestId`. The client-local `req_*` id
+  means nothing to the server.
+- **Stop** (`cancelExecution`) fires the cancel POST best-effort AND aborts the
+  local stream so the UI settles instantly.
+- **Stop & redirect** (`interruptAndSend`) fires the cancel POST, keeps reading
+  the stream until it ends (stream end ⇒ the run finalized and persisted — the
+  continue endpoint takes no run claim, so sending earlier would start a
+  CONCURRENT run), then submits normally. `⌘/Ctrl+Shift+Enter` in the composer.
+- The `[⚠️ Response interrupted…]` marker exists only on the server's
+  hard-cancellation path (task cancelled mid-provider-call — shutdown or a
+  `detach_on_disconnect=False` caller), where text really is truncated.
 
-- [ ] Keep the composer **enabled while streaming**; route sends made during a
-      stream to `/inbox`, sends while idle to the normal endpoint.
-- [ ] Render queued messages as a distinct "waiting its turn" state; on
-      `injection_consumed` (match by `injection_id`) flip to delivered.
-- [ ] Wire retract (`DELETE`) and edit (`PATCH`) on pending items; handle `409`
-      (drained — fall back to delivered) and `404` (gone).
-- [ ] On reopen mid-run, `GET …/inbox?status=pending` to rebuild waiting cards.
-- [ ] Add a "stop & redirect" affordance: abort stream → (after close) normal send.
-      The interrupted assistant bubble will show the marker text — render it as a
-      cut-off turn.
-- [ ] After backend deploy: `pnpm sync-types`, then drop any defensive casts around
-      `injection_consumed` fields.
+## FE client checklist — SHIPPED 2026-07-29
+
+- [x] Composer **enabled while streaming**; `smartExecute` routes a send during
+      a live run to `enqueueInboxMessage` → `POST …/inbox` (single funnel —
+      never POST `/inbox` from anywhere else), idle sends run normally. Second
+      layer: `executeInstance` refuses a concurrent turn and reconciles to the
+      inbox, loudly. Slice: `conversationInbox`
+      (`features/agents/redux/execution-system/inbox/`).
+- [x] Queued messages render as "waiting its turn" cards (`InboxQueueStrip`,
+      mounted by SmartAgentInput both variants + CompactAssistantInput +
+      NewChatLandingInput); on `injection_consumed`, `process-stream` retires
+      the card and seeds the transcript bubble from the echoed `text`
+      (promoted to the durable id by the matching `record_reserved`).
+- [x] Retract (`DELETE`) and edit (`PATCH`) wired with 409 (drained →
+      delivered) and 404 handling — `retractInboxItem` / `editInboxItem`.
+- [x] Reopen mid-run rebuilds waiting cards — `hydrateInbox` from
+      `loadConversation` (gated: skipped when the latest turn completed, since
+      a completed run cannot strand items — the no-stranding drain).
+- [x] "Stop & redirect": `interruptAndSend` (see above). Plain Stop also
+      signals the server now (was: local-abort only, run kept burning tokens).
+- [x] Types already synced (`injection_consumed` + all four inbox endpoints in
+      `types/python-generated/`).
 
 ## Not in this contract
 

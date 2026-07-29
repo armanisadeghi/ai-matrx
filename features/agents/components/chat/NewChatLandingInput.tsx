@@ -10,6 +10,7 @@ import { AgentMicrophoneButton } from "@/features/agents/components/inputs/smart
 import { RunControlsMenu } from "@/features/agents/components/inputs/smart-input/RunControlsMenu";
 import { SmartInputFileDropTarget } from "@/features/agents/components/inputs/smart-input/SmartInputFileDropTarget";
 import { SmartAgentResourceChips } from "@/features/agents/components/inputs/resources/SmartAgentResourceChips";
+import { InboxQueueStrip } from "@/features/agents/components/inputs/smart-input/InboxQueueStrip";
 import { AttachedDocumentChips } from "@/features/agents/components/inputs/resources/AttachedDocumentChips";
 import {
   smartExecute,
@@ -94,11 +95,13 @@ export function NewChatLandingInput({
   // Also gate while the mic is recording/transcribing so send doesn't drop the
   // trailing audio or leave the recorder running.
   const [voiceBusy, setVoiceBusy] = useState(false);
+  // While the first turn streams, a send with text QUEUES via the
+  // Turn-Boundary Inbox (smartExecute routes it; the running agent answers on
+  // the open stream) — attachments-only sends need an idle run.
   const canSend =
-    !isExecuting &&
     !voiceBusy &&
     allResourcesResolved &&
-    (charCount > 0 || hasResources);
+    (isExecuting ? charCount > 0 : charCount > 0 || hasResources);
 
   // Hide the message while a submit is in flight (it moves into the streaming
   // conversation); the text stays in Redux as the non-visual backup.
@@ -149,27 +152,29 @@ export function NewChatLandingInput({
   }, [visibleText, isExpanded]);
 
   const rawSubmit = useCallback(() => {
-    if (isExecuting) {
-      dispatch(cancelExecution(conversationId));
-      return;
-    }
     if (
       voiceBusy ||
       !allResourcesResolved ||
       (charCount === 0 && !hasResources)
     )
       return;
+    // smartExecute is streaming-aware: while this conversation's run is live
+    // it queues the text via the Turn-Boundary Inbox instead of starting a
+    // colliding second turn. Stop is its own button below.
     dispatch(smartExecute({ conversationId, surfaceKey }));
   }, [
     dispatch,
     conversationId,
     surfaceKey,
-    isExecuting,
     voiceBusy,
     allResourcesResolved,
     charCount,
     hasResources,
   ]);
+
+  const stopRun = useCallback(() => {
+    dispatch(cancelExecution(conversationId));
+  }, [dispatch, conversationId]);
 
   // Guests send like everyone else — the platform is public. Guest identity
   // rides as X-Fingerprint-ID (see GlobalAuthSync); the server resolves it to
@@ -252,6 +257,8 @@ export function NewChatLandingInput({
       {/* Attachments / inclusions — pinned at the top, same Redux source as
           the standard input. Renders nothing (no extra height) when empty. */}
       <div onClick={(e) => e.stopPropagation()}>
+        {/* Queued-while-running message cards (Turn-Boundary Inbox) */}
+        <InboxQueueStrip conversationId={conversationId} />
         <SmartAgentResourceChips conversationId={conversationId} />
         {/* Durable document attachments (association edges) — persist across turns/reloads */}
         <AttachedDocumentChips conversationId={conversationId} />
@@ -335,9 +342,20 @@ export function NewChatLandingInput({
             }
           />
 
+          {isExecuting && (
+            <Button
+              onClick={stopRun}
+              className="h-9 w-9 p-0 rounded-full bg-muted text-foreground hover:bg-destructive/15 hover:text-destructive"
+              title="Stop the run (everything streamed so far is kept)"
+              aria-label="Stop the run"
+            >
+              <CircleStop className="w-4 h-4" />
+            </Button>
+          )}
+
           <Button
             onClick={submit}
-            disabled={!isExecuting && !canSend}
+            disabled={!canSend}
             className={cn(
               "h-9 w-9 p-0 rounded-full",
               "bg-foreground text-background hover:bg-foreground/90",
@@ -346,7 +364,7 @@ export function NewChatLandingInput({
             )}
             title={
               isExecuting
-                ? "Stop"
+                ? "Queue message — the agent answers it at its next pause"
                 : voiceBusy
                   ? "Finish recording to send"
                   : !allResourcesResolved
@@ -355,7 +373,7 @@ export function NewChatLandingInput({
             }
             aria-label={
               isExecuting
-                ? "Stop"
+                ? "Queue message"
                 : voiceBusy
                   ? "Finish recording to send"
                   : !allResourcesResolved
@@ -363,11 +381,7 @@ export function NewChatLandingInput({
                   : "Send"
             }
           >
-            {isExecuting ? (
-              <CircleStop className="w-4 h-4" />
-            ) : (
-              <ArrowUp className="w-5 h-5" />
-            )}
+            <ArrowUp className="w-5 h-5" />
           </Button>
         </div>
       </div>

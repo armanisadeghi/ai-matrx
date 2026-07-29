@@ -89,6 +89,7 @@ function makeRequest(overrides: Partial<ActiveRequest>): ActiveRequest {
     completedAt: null,
     clientMetrics: null,
     routing: null,
+    serverRequestId: null,
     ...overrides,
   };
 }

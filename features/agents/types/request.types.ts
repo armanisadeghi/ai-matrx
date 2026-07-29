@@ -362,6 +362,14 @@ export interface ActiveRequest {
    * bind" without anyone guessing. `null` until the send fires.
    */
   routing: RequestRouting | null;
+
+  /**
+   * The server's request id for this turn — the `X-Request-ID` header on the
+   * opened stream response (aidream AppContext.request_id). This is the id
+   * `POST /ai/cancel/{request_id}` expects; the client-local `requestId`
+   * (`req_*`) is meaningless to the server. `null` until the stream opens.
+   */
+  serverRequestId: string | null;
 }
 
 /**

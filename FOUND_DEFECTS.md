@@ -17,6 +17,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 `platform.shareable_resource_registry.content_ir_kind_instance` has `is_public_column='visibility'` — but that column holds the canonical `platform.visibility` ENUM, not a boolean. A non-null `is_public_column` routes ShareModal's public toggle through `make_resource_public` (boolean write) instead of the canonical `setVisibilityColumn` enum path, and `getResourceVisibility` will read the enum string as a boolean. Fix: set `is_public_column=null` in the live registry + TS mirror + snapshot together (the canonical-visibility shape), then verify ShareModal's Public tab against a kind instance. Found while regenerating the snapshot (which had drifted 6 rows behind the live DB); mirrored verbatim for parity in the meantime. **Decides: anyone — small, but touch all three surfaces in one commit.**
 
+### D118 — invisible inbox injections (`is_visible_to_user=false`) may seed a phantom user bubble in-session (2026-07-29)
+
+The Turn-Boundary Inbox client (Flow 6 in `features/agents/components/chat/FEATURE.md`) correctly skips the optimistic bubble for invisible steering messages, but the server still announces the persisted row via `record_reserved cx_message` (role=user), and `process-stream`'s fallback branch (`reserveMessage`) seeds it into `messages.byId` with no visibility flag — a possible empty/phantom bubble until reload (reload filters by `is_visible_to_user`). Fix: carry visibility on the reservation metadata (server) or track announced invisible injection positions in `process-stream` and skip the reservation. Low frequency — invisible injections are only produced by `kind:"system_message"` + `is_visible_to_user:false`, which no product UI sends yet.
+
 ### D116 — RESOLVED 2026-07-29: both bespoke stream renderers deleted, gap closed, lint enforced
 
 Both callers are gone and the reason they existed is fixed:

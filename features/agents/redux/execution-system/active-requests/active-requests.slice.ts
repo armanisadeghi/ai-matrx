@@ -290,6 +290,7 @@ const activeRequestsSlice = createSlice({
         completedAt: null,
         clientMetrics: null,
         routing: null,
+        serverRequestId: null,
       };
 
       if (!state.byConversationId[conversationId]) {
@@ -312,6 +313,18 @@ const activeRequestsSlice = createSlice({
     ) {
       const request = state.byRequestId[action.payload.requestId];
       if (request) request.routing = action.payload.routing;
+    },
+
+    /**
+     * Record the server's `X-Request-ID` for the opened stream — the id the
+     * cancel endpoint (`POST /ai/cancel/{request_id}`) understands.
+     */
+    setRequestServerId(
+      state,
+      action: PayloadAction<{ requestId: string; serverRequestId: string }>,
+    ) {
+      const request = state.byRequestId[action.payload.requestId];
+      if (request) request.serverRequestId = action.payload.serverRequestId;
     },
 
     setRequestStatus(
@@ -1187,6 +1200,7 @@ const activeRequestsSlice = createSlice({
           // server process), so we initialize null. Selectors that read it
           // (selectRequestRouting) tolerate null.
           routing: null,
+          serverRequestId: null,
           error: null,
           warnings: [],
           infoEvents: [],
@@ -1237,6 +1251,7 @@ export const {
   createRequest,
   setRequestStatus,
   setRequestRouting,
+  setRequestServerId,
   appendChunk,
   appendReasoningChunk,
   finalizeAccumulatedReasoning,

@@ -62,6 +62,7 @@ import { setInstanceStatus } from "../conversations/conversations.slice";
 import {
   setRequestStatus,
   setRequestRouting,
+  setRequestServerId,
   failPendingToolLifecycle,
 } from "../active-requests/active-requests.slice";
 import { assertConversationIdMatches } from "../utils/assert-conversation-id";
@@ -433,6 +434,16 @@ export async function runAiStream(
       );
     }
     const conversationIdAt = headerConversationId ? performance.now() : null;
+
+    // The server's request id (AppContext.request_id) — the ONLY id
+    // `POST /ai/cancel/{request_id}` understands. Captured here so the stop /
+    // interrupt affordances can actually stop the server-side run instead of
+    // just closing our read of the stream (detach_on_disconnect means an
+    // abandoned run otherwise loops to completion on the server's dime).
+    const serverRequestId = response.headers.get("X-Request-ID");
+    if (serverRequestId) {
+      dispatch(setRequestServerId({ requestId, serverRequestId }));
+    }
 
     // A stream genuinely opened — let the caller release any single-flight
     // claim (resume) so the loop's next suspend can claim fresh.

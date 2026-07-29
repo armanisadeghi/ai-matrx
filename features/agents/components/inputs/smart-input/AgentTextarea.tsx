@@ -40,7 +40,7 @@ import { usePasteImageResource } from "@/features/agents/components/inputs/resou
 import { useInstanceInputUndoRedo } from "@/features/agents/hooks/useInstanceInputUndoRedo";
 import {
   smartExecute,
-  cancelExecution,
+  interruptAndSend,
 } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 
@@ -138,14 +138,23 @@ export function AgentTextarea({
   const showExpand =
     !singleRow && (isExpanded || (isSubmitting ? 0 : charCount) > 80);
 
+  // Send is ALWAYS a send. While a run is streaming, smartExecute routes the
+  // text to the Turn-Boundary Inbox (queued; the running agent answers it at
+  // its next pause on the same stream) instead of starting a colliding turn —
+  // see docs/TURN_BOUNDARY_INBOX.md. Stopping the run is the action bar's
+  // explicit Stop button, never a side effect of pressing Enter.
   const handleSend = useCallback(() => {
     if (disableSend) return;
-    if (isExecuting) {
-      dispatch(cancelExecution(conversationId));
-    } else {
-      dispatch(smartExecute({ conversationId, surfaceKey }));
-    }
-  }, [disableSend, isExecuting, conversationId, surfaceKey, dispatch]);
+    dispatch(smartExecute({ conversationId, surfaceKey }));
+  }, [disableSend, conversationId, surfaceKey, dispatch]);
+
+  // Interrupt-and-send: ⌘/Ctrl+Shift+Enter while a run is streaming cuts the
+  // run (server-side cancel at its next boundary, everything streamed
+  // persists) and submits the composer text as the next turn.
+  const handleInterruptSend = useCallback(() => {
+    if (disableSend) return;
+    dispatch(interruptAndSend({ conversationId, surfaceKey }));
+  }, [disableSend, conversationId, surfaceKey, dispatch]);
 
   // ── Paste image ─────────────────────────────────────────────────────────────
   // Canonical paste→upload→attach flow, shared by every composer.
@@ -179,14 +188,31 @@ export function AgentTextarea({
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key !== "Enter") return;
       const withCmd = e.metaKey || e.ctrlKey;
+      // ⌘/Ctrl+Shift+Enter during a run → interrupt & send now.
+      if (withCmd && e.shiftKey && isExecuting) {
+        e.preventDefault();
+        if (!disableSend && charCount > 0) handleInterruptSend();
+        return;
+      }
       // submitOnEnter ON  → Enter sends, Shift+Enter is a newline.
       // submitOnEnter OFF → Enter is a newline, ⌘/Ctrl+Enter sends.
       const shouldSend = submitOnEnter ? !e.shiftKey && !withCmd : withCmd;
       if (!shouldSend) return;
       e.preventDefault();
-      if (!disableSend && !isExecuting) handleSend();
+      // While streaming, an empty Enter is a no-op (never an implicit stop);
+      // with text it queues via the inbox. While idle it submits normally.
+      if (disableSend) return;
+      if (isExecuting && charCount === 0) return;
+      handleSend();
     },
-    [submitOnEnter, disableSend, isExecuting, handleSend],
+    [
+      submitOnEnter,
+      disableSend,
+      isExecuting,
+      charCount,
+      handleSend,
+      handleInterruptSend,
+    ],
   );
 
   // ── Auto-resize ─────────────────────────────────────────────────────────────
