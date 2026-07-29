@@ -13,7 +13,7 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Plus, Network, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
@@ -113,9 +113,9 @@ export function AgentBrowsePage() {
 
   const newAgentButton = (
     <Button asChild size="sm">
-      <Link href="/agents/new">
+      <Link href="/agents/new" aria-label="New agent">
         <Plus className="h-4 w-4" />
-        New agent
+        <span className="max-sm:sr-only">New agent</span>
       </Link>
     </Button>
   );
@@ -128,20 +128,22 @@ export function AgentBrowsePage() {
         pt-[var(--shell-header-h)] (never a hardcoded pt-12). Only the list body
         below scrolls behind the glass.
       */}
-      <div className="shrink-0 space-y-2 px-3 pt-[calc(var(--shell-header-h)+0.5rem)] pb-2">
+      <div className="shrink-0 space-y-1.5 px-3 pt-[calc(var(--shell-header-h)+0.5rem)] pb-2 sm:space-y-2">
         <ClassicViewNotice />
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <BrowseScopeTabs
-            scope={browse.query.scope}
-            scopes={AGENT_LIST_SCOPES}
-            counts={browse.counts}
-            onChange={browse.setScope}
-          />
-          <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center justify-between gap-1.5 sm:gap-2">
+          <div className="min-w-0 flex-1 sm:flex-none">
+            <BrowseScopeTabs
+              scope={browse.query.scope}
+              scopes={AGENT_LIST_SCOPES}
+              counts={browse.counts}
+              onChange={browse.setScope}
+            />
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <Button asChild variant="outline" size="sm">
-              <Link href="/agents/sets">
+              <Link href="/agents/sets" aria-label="Agent sets">
                 <Network className="h-4 w-4" />
-                Sets
+                <span className="max-sm:sr-only">Sets</span>
               </Link>
             </Button>
             {newAgentButton}

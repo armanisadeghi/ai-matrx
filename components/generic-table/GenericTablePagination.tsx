@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ChevronsLeft,
@@ -65,26 +64,16 @@ export default function GenericTablePagination({
   compact = false,
   hideEntriesInfo = false,
 }: GenericTablePaginationProps) {
-  // State to keep track of available page size options including custom values
-  const [availablePageSizes, setAvailablePageSizes] =
-    useState<number[]>(pageSizeOptions);
-
-  // Ensure the current itemsPerPage is in the available options
-  useEffect(() => {
-    if (!availablePageSizes.includes(itemsPerPage)) {
-      // Add the current value to the available options if it's not already there
-      setAvailablePageSizes((prev) =>
-        [...prev, itemsPerPage].sort((a, b) => a - b),
-      );
-    }
-  }, [itemsPerPage, availablePageSizes]);
+  const availablePageSizes = pageSizeOptions.includes(itemsPerPage)
+    ? pageSizeOptions
+    : [...pageSizeOptions, itemsPerPage].sort((a, b) => a - b);
 
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
-  const getPageNumbers = () => {
-    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-    startPage = Math.max(1, endPage - maxPagesToShow + 1);
+  const getPageNumbers = (limit = maxPagesToShow) => {
+    let startPage = Math.max(1, currentPage - Math.floor(limit / 2));
+    const endPage = Math.min(totalPages, startPage + limit - 1);
+    startPage = Math.max(1, endPage - limit + 1);
     return Array.from(
       { length: endPage - startPage + 1 },
       (_, i) => startPage + i,
@@ -105,26 +94,33 @@ export default function GenericTablePagination({
   const formatLabel = labelFormat || defaultLabelFormat;
 
   const buttonSize = compact ? "sm" : "icon";
-  const buttonWidth = compact ? "w-6" : "w-8";
-  const buttonHeight = compact ? "h-6" : "h-8";
+  const buttonWidth = compact ? "w-7 sm:w-6" : "w-8";
+  const buttonHeight = compact ? "h-7 sm:h-6" : "h-8";
   const buttonPadding = compact ? "p-0 text-xs" : "p-0";
 
   const containerClass =
     layoutType === "grid"
-      ? `grid grid-cols-1 md:grid-cols-3 items-center gap-4 w-full border-t border-gray-200 dark:border-gray-600 px-3 py-1 ${className} ${containerClassName}`
-      : `flex flex-wrap items-center justify-between gap-2 w-full border-t border-gray-200 dark:border-gray-600 px-3 py-1 ${className} ${containerClassName}`;
+      ? `grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 sm:gap-4 w-full border-t border-gray-200 dark:border-gray-600 px-2 sm:px-3 py-1 ${className} ${containerClassName}`
+      : `flex flex-nowrap items-center justify-between gap-1 sm:gap-2 w-full border-t border-gray-200 dark:border-gray-600 px-2 sm:px-3 py-1 ${className} ${containerClassName}`;
 
   return (
     <div className={containerClass}>
       {/* Items Per Page Select */}
       {showItemsPerPageSelect && (
-        <div className={`flex justify-start p-1 ${selectContainerClassName}`}>
+        <div
+          className={`flex min-w-0 justify-start sm:p-1 ${selectContainerClassName}`}
+        >
           <Select
             value={itemsPerPage.toString()}
             onValueChange={(value) => onItemsPerPageChange(parseInt(value))}
           >
             <SelectTrigger
-              className={`${compact ? "w-20 h-6 text-xs" : "w-36 h-8"} focus:ring-0`}
+              aria-label="Rows per page"
+              className={`${
+                compact
+                  ? "h-7 w-[3.75rem] text-xs sm:h-6 sm:w-20"
+                  : "h-8 w-[3.75rem] text-xs sm:w-36 sm:text-sm"
+              } focus:ring-0`}
             >
               <SelectValue placeholder={itemsPerPage.toString()} />
             </SelectTrigger>
@@ -143,28 +139,37 @@ export default function GenericTablePagination({
         </div>
       )}
 
-      <div className={`flex justify-center ${infoContainerClassName}`}>
+      <div className={`flex min-w-0 justify-center ${infoContainerClassName}`}>
         {/* Page Info - only show if not hidden But always show the div. */}
         {showPageInfo && !hideEntriesInfo && (
-          <span
-            className={`${compact ? "text-xs" : "text-sm"} text-gray-600 dark:text-gray-400`}
-          >
-            {formatLabel(startItem, endItem, totalItems)}
-          </span>
+          <>
+            <span className="truncate text-[10px] tabular-nums text-gray-600 dark:text-gray-400 sm:hidden">
+              {startItem}-{endItem} / {totalItems}
+            </span>
+            <span
+              className={`hidden whitespace-nowrap ${
+                compact ? "text-xs" : "text-sm"
+              } text-gray-600 dark:text-gray-400 sm:inline`}
+            >
+              {formatLabel(startItem, endItem, totalItems)}
+            </span>
+          </>
         )}
       </div>
 
       {/* Page Controls */}
       {showPageControls && (
         <div
-          className={`flex justify-end items-center space-x-1 ${controlsContainerClassName}`}
+          className={`flex min-w-0 items-center justify-end gap-0.5 sm:gap-1 ${controlsContainerClassName}`}
         >
           <Button
             variant="outline"
             size={buttonSize}
+            aria-label="First page"
+            title="First page"
             onClick={() => onPageChange(1)}
             disabled={isFirstPageDisabled}
-            className={`${buttonWidth} ${buttonHeight} ${navButtonClassName}`}
+            className={`hidden ${buttonWidth} ${buttonHeight} sm:inline-flex ${navButtonClassName}`}
           >
             <ChevronsLeft className={`${compact ? "h-3 w-3" : "h-4 w-4"}`} />
           </Button>
@@ -172,6 +177,8 @@ export default function GenericTablePagination({
           <Button
             variant="outline"
             size={buttonSize}
+            aria-label="Previous page"
+            title="Previous page"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={isFirstPageDisabled}
             className={`${buttonWidth} ${buttonHeight} ${navButtonClassName}`}
@@ -179,13 +186,35 @@ export default function GenericTablePagination({
             <ChevronLeft className={`${compact ? "h-3 w-3" : "h-4 w-4"}`} />
           </Button>
 
-          {getPageNumbers().map((page) => (
+          {getPageNumbers(3).map((page) => (
             <Button
-              key={page}
+              key={`mobile-${page}`}
               variant={currentPage === page ? "default" : "outline"}
               size={buttonSize}
+              aria-label={`Page ${page}`}
+              aria-current={currentPage === page ? "page" : undefined}
               onClick={() => onPageChange(page)}
-              className={`${buttonWidth} ${buttonHeight} ${buttonPadding} ${
+              className={`${buttonWidth} ${buttonHeight} ${buttonPadding} sm:hidden ${
+                page === currentPage ? "" : "hidden min-[360px]:inline-flex"
+              } ${
+                currentPage === page
+                  ? pageActiveButtonClassName
+                  : pageButtonClassName
+              }`}
+            >
+              {page}
+            </Button>
+          ))}
+
+          {getPageNumbers().map((page) => (
+            <Button
+              key={`desktop-${page}`}
+              variant={currentPage === page ? "default" : "outline"}
+              size={buttonSize}
+              aria-label={`Page ${page}`}
+              aria-current={currentPage === page ? "page" : undefined}
+              onClick={() => onPageChange(page)}
+              className={`hidden ${buttonWidth} ${buttonHeight} ${buttonPadding} sm:inline-flex ${
                 currentPage === page
                   ? pageActiveButtonClassName
                   : pageButtonClassName
@@ -198,6 +227,8 @@ export default function GenericTablePagination({
           <Button
             variant="outline"
             size={buttonSize}
+            aria-label="Next page"
+            title="Next page"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={isLastPageDisabled}
             className={`${buttonWidth} ${buttonHeight} ${navButtonClassName}`}
@@ -208,9 +239,11 @@ export default function GenericTablePagination({
           <Button
             variant="outline"
             size={buttonSize}
+            aria-label="Last page"
+            title="Last page"
             onClick={() => onPageChange(totalPages)}
             disabled={isLastPageDisabled}
-            className={`${buttonWidth} ${buttonHeight} ${navButtonClassName}`}
+            className={`hidden ${buttonWidth} ${buttonHeight} sm:inline-flex ${navButtonClassName}`}
           >
             <ChevronsRight className={`${compact ? "h-3 w-3" : "h-4 w-4"}`} />
           </Button>

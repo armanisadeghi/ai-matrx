@@ -20,12 +20,24 @@ import {
   Rows3,
   Rows2,
   RotateCcw,
+  Settings2,
+  Check,
 } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { BrowseFilterPanel } from "./BrowseFilterPanel";
@@ -92,8 +104,8 @@ export function BrowseToolbar({
   onResetView,
 }: Props) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="flex h-9 min-w-56 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-2.5">
+    <div className="flex min-w-0 items-center gap-1.5 sm:flex-wrap sm:gap-2">
+      <div className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-2.5 sm:min-w-56">
         {isFetching ? (
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
         ) : (
@@ -150,7 +162,62 @@ export function BrowseToolbar({
         />
       )}
 
-      <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label="Display options"
+            title="Display options"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-foreground sm:hidden"
+          >
+            <Settings2 className="h-3.5 w-3.5" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52 sm:hidden">
+          <DropdownMenuLabel>Display</DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            value={prefs.view}
+            onValueChange={(view) =>
+              onPatchPrefs({ view: view as ListViewPrefs["view"] })
+            }
+          >
+            <DropdownMenuRadioItem value="table">
+              <Table2 className="mr-2 h-3.5 w-3.5" />
+              Table
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="cards">
+              <LayoutGrid className="mr-2 h-3.5 w-3.5" />
+              Cards
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="rows">
+              <List className="mr-2 h-3.5 w-3.5" />
+              Compact list
+            </DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onSelect={() =>
+              onPatchPrefs({
+                density:
+                  prefs.density === "compact" ? "comfortable" : "compact",
+              })
+            }
+          >
+            {prefs.density === "compact" ? (
+              <Check className="mr-2 h-3.5 w-3.5" />
+            ) : (
+              <span className="mr-2 h-3.5 w-3.5" />
+            )}
+            Compact rows
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onResetView}>
+            <RotateCcw className="mr-2 h-3.5 w-3.5" />
+            Reset view
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <div className="hidden items-center gap-1 rounded-lg border border-border bg-card p-1 sm:flex">
         <IconToggle
           active={prefs.view === "table"}
           label="Table"
@@ -174,7 +241,7 @@ export function BrowseToolbar({
         </IconToggle>
       </div>
 
-      <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
+      <div className="hidden items-center gap-1 rounded-lg border border-border bg-card p-1 sm:flex">
         <IconToggle
           active={prefs.density === "compact"}
           label={
@@ -192,7 +259,11 @@ export function BrowseToolbar({
             <Rows3 className="h-3.5 w-3.5" />
           )}
         </IconToggle>
-        <IconToggle active={false} label="Reset view to defaults" onClick={onResetView}>
+        <IconToggle
+          active={false}
+          label="Reset view to defaults"
+          onClick={onResetView}
+        >
           <RotateCcw className="h-3.5 w-3.5" />
         </IconToggle>
       </div>

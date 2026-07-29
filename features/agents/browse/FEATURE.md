@@ -196,13 +196,17 @@ hostile at 2,000.
 ## Open iteration items
 
 - Pre-hydration view flash (above).
-- Mobile toolbar wraps to three rows; wants a bottom-sheet collapse.
 - Multi-select + bulk actions — `MatrxDataTable` has single-row selection only.
 - Column ORDER and width are not user-controlled yet (visibility is).
 - Generalising this into the reusable shell, then retiring `/agents/all` into it.
 
 ## Change log
 
+- **2026-07-29** — Mobile browse chrome is one scope/actions row plus one
+  search/actions row: scope labels collapse accessibly to icons, Sets/New use
+  icon tap targets, and view/density/reset move into one Display menu. The
+  shared `GenericTablePagination` now remains one concise row on phones instead
+  of stacking page size, range, and controls into three rows.
 - **2026-07-28** — Restored classic row-click → `AgentActionModal` (table,
   dense rows, cards). Name is plain text again (not a Run/Build link) so
   clicking it opens the chooser. Name/Description edit is pencil-only.

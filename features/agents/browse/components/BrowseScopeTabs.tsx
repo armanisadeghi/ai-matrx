@@ -22,7 +22,15 @@
 // surfaces — so on /agents/all the slice was empty and this dropdown silently
 // never rendered at all.
 
-import { User, Building2, Users2, Globe, Factory, ChevronDown, Check } from "lucide-react";
+import {
+  User,
+  Building2,
+  Users2,
+  Globe,
+  Factory,
+  ChevronDown,
+  Check,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,7 +58,7 @@ interface Props {
 }
 
 const TAB_BASE =
-  "inline-flex items-center gap-1.5 rounded-md px-2.5 h-7 text-xs font-medium transition-colors whitespace-nowrap";
+  "inline-flex items-center gap-1 rounded-md px-2 h-7 text-xs font-medium transition-colors whitespace-nowrap sm:gap-1.5 sm:px-2.5";
 const TAB_ACTIVE = "bg-primary text-primary-foreground";
 const TAB_IDLE = "text-muted-foreground hover:bg-muted hover:text-foreground";
 
@@ -93,7 +101,7 @@ function CountPill({ n, active }: { n: number; active: boolean }) {
 export function BrowseScopeTabs({ scope, scopes, counts, onChange }: Props) {
   return (
     <div
-      className="inline-flex items-center gap-1 rounded-lg border border-border bg-card p-1"
+      className="inline-flex min-w-0 items-center gap-0.5 rounded-lg border border-border bg-card p-0.5 sm:gap-1 sm:p-1"
       role="tablist"
       aria-label="List scope"
     >
@@ -134,7 +142,9 @@ export function BrowseScopeTabs({ scope, scopes, counts, onChange }: Props) {
             onClick={() => onChange(makeScope(kind))}
           >
             <Icon className="h-3.5 w-3.5" />
-            {narrowed?.label ?? meta.label}
+            <span className="max-sm:sr-only">
+              {narrowed?.label ?? meta.label}
+            </span>
             <CountPill n={count} active={active} />
           </button>
         );

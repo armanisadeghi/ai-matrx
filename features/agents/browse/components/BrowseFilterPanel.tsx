@@ -149,6 +149,8 @@ export function BrowseFilterPanel({
       <PopoverTrigger asChild>
         <button
           type="button"
+          aria-label="Filters and sort"
+          title="Filters and sort"
           className={cn(
             "relative inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium transition-colors",
             activeCount > 0
