@@ -26,6 +26,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  Archive,
   ArrowDownLeft,
   ArrowUpRight,
   Database,
@@ -38,7 +39,13 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
+import {
+  archiveKeywords,
+  restoreKeywords,
+} from "@/features/marketing/seo/keyword-research/data/queries";
+import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 import {
   CondensedFieldGrid,
@@ -212,6 +219,47 @@ export function KeywordIntelPanel({
     setActiveTab("overview");
   };
 
+  /** Soft-archive this library keyword (seo.fn_archive_keywords, undoable).
+   * Keeps autosaved research from becoming clutter — the management half of
+   * the "autosave everything" ruling. */
+  const archiveKeyword = async () => {
+    if (!keyword) return;
+    const keywordId = keyword.id;
+    const confirmed = await confirm({
+      title: `Archive “${keyword.phrase}” from the keyword library?`,
+      description:
+        "Archived keywords disappear from every keyword list and research runs won't re-add them. Undo from the toast, or restore by typing the phrase in any keyword input.",
+      confirmLabel: "Archive",
+      variant: "destructive",
+    });
+    if (!confirmed) return;
+    try {
+      await archiveKeywords([keywordId]);
+      void resolved.refetch();
+      toast.success(`Archived “${keyword.phrase}” from the library`, {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void restoreKeywords([keywordId])
+              .then(() => {
+                void resolved.refetch();
+                toast.success(`Restored “${keyword.phrase}”`);
+              })
+              .catch((error) => {
+                toast.error("Could not restore the keyword", {
+                  description: extractErrorMessage(error),
+                });
+              });
+          },
+        },
+      });
+    } catch (error) {
+      toast.error("Could not archive the keyword", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={KEYWORD_INTELLIGENCE_SURFACE_NAME}
@@ -251,6 +299,20 @@ export function KeywordIntelPanel({
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
+            </button>
+            <button
+              type="button"
+              onClick={() => void archiveKeyword()}
+              disabled={!keyword}
+              aria-label="Archive this keyword from the library"
+              title={
+                keyword
+                  ? "Archive this keyword from the library (undoable)"
+                  : "Not a library keyword yet — nothing to archive"
+              }
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-destructive disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Archive className="h-4 w-4" />
             </button>
           </div>
         </div>

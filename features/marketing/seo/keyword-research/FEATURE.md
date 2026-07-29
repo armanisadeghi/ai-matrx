@@ -55,6 +55,42 @@ market enrichment remain explicit compute operations.
     the completed run (`seo.research_completed {reused_completed_run: true}`) — zero
     duplicate paid calls.
 
+## Autosave + library management (Arman ruling 2026-07-29)
+
+**Every keyword surfaced by research is ALREADY auto-saved — server-side.**
+`POST /seo/keywords/research` calls `seo.fn_ingest_keyword_research`, which
+upserts the primary AND every phrase in every `keyword_lists` label into
+`seo.keyword` via `seo.fn_upsert_keyword`, plus `keyword_edge` rows
+(`origin='ai_research'`). No client-side save exists or is needed; selection
+on page-bound surfaces only controls what ATTACHES to the page.
+
+Management (the ruling's other half — autosave must not become clutter):
+
+- **Removal is soft-archive, ONLY via `seo.fn_archive_keywords` /
+  `seo.fn_restore_keywords`** (SECURITY DEFINER, authenticated-granted;
+  the table itself is SELECT-only for authenticated). Wrappers:
+  `data/queries.ts#archiveKeywords/restoreKeywords`. Never a direct
+  update/delete, never a second write path.
+- **Archive is durable memory** (like edge rejection): `uq_keyword_identity`
+  is a FULL unique index, so `fn_upsert_keyword` returns the archived
+  identity row WITHOUT reviving it — research re-runs do not resurrect an
+  archived keyword. **Explicit hand-entry does restore it**:
+  `page-keywords.ts#ensureKeywordId` calls `fn_restore_keywords` when the
+  upsert returns an existing row (typing the phrase IS the intent to use it).
+- **Provenance is derived, not stored**: research-discovered = has a live
+  `keyword_edge` with `origin='ai_research'`
+  (`data/queries.ts#fetchResearchDiscoveredKeywordIds`, one batched read per
+  list render). No schema change.
+- Per the soft-delete class rule, authenticated reads filter
+  `deleted_at IS NULL` in the QUERY; only the anon `pub_read` policy gates it.
+- Surfaces: workbench explorer (bulk checkbox select + Archive selected +
+  per-row kebab: Keyword Intelligence / Archive, + Source column), site
+  keywords table (row kebab: Keyword Intelligence / Archive from library —
+  query evidence is untouched), Keyword Intelligence panel header (archive
+  button, so every chip/row launcher reaches archive), page keyword board
+  (detach-from-page chips, pre-existing). All archives confirm first
+  (`confirm()` dialog) and toast an Undo that calls restore.
+
 **The canonical per-keyword UI primitive lives in `features/marketing/seo/keyword/`**
 (`KeywordInput`, the Keyword Intelligence window, `buildKeywordBrief`) — it consumes
 this feature's reads, stream hook, and `KeywordMetrics` atoms. Read its FEATURE.md
@@ -154,6 +190,15 @@ Filed as **D116** in [`FOUND_DEFECTS.md`](../../../../FOUND_DEFECTS.md).
 
 ## Change Log
 
+- 2026-07-29 — **Library management shipped (autosave already existed
+  server-side).** Verified `fn_ingest_keyword_research` auto-saves every
+  discovered phrase; added `seo.fn_archive_keywords`/`fn_restore_keywords`
+  (migration `mtx_seo_keyword_archive_rpcs.sql`, live + ledgered), archive
+  wrappers + edge-origin provenance query in `data/queries.ts`, workbench
+  bulk-select/Archive/Source column + row kebab, site-keywords row kebab
+  with Archive-from-library, Keyword Intelligence panel archive button, and
+  explicit-entry restore in `ensureKeywordId`. Archive is durable against
+  research re-runs; every archive is confirmable + undoable.
 - 2026-07-28 — **`LiveResearchFeed` condemned: bespoke stream rendering is banned
   platform-wide (Arman ruling).** Every doc that blessed this surface as "the
   canonical non-chat `useLiveJsonRegion` consumer" now names it as the one violation

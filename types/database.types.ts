@@ -43203,6 +43203,10 @@ export type Database = {
       }
     }
     Functions: {
+      fn_archive_keywords: {
+        Args: { p_keyword_ids: string[]; p_reason?: string }
+        Returns: number
+      }
       fn_ingest_keyword_research: {
         Args: {
           p_language?: string
@@ -43216,6 +43220,10 @@ export type Database = {
       fn_reject_keyword_edge: {
         Args: { p_edge_id: string; p_reason: string }
         Returns: undefined
+      }
+      fn_restore_keywords: {
+        Args: { p_keyword_ids: string[] }
+        Returns: number
       }
       fn_upsert_keyword: {
         Args: { p_language?: string; p_phrase: string }

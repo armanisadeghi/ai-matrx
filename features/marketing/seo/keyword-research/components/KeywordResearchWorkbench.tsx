@@ -10,20 +10,34 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Archive,
   ArrowDownRight,
   ArrowUpRight,
+  BrainCircuit,
   ChevronDown,
   ChevronRight,
   Loader2,
+  MoreVertical,
   RefreshCw,
   Search,
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ItemMenu } from "@/components/official/item/ItemMenu";
+import type { ItemMenuConfig } from "@/components/official/item/types";
+import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildKeywordResearchScope } from "@/features/marketing/lib/scopes/keyword-research-scope";
+import { extractErrorMessage } from "@/utils/errors";
 
 import { useKeywordResearch } from "../useKeywordResearch";
+import {
+  archiveKeywords,
+  fetchResearchDiscoveredKeywordIds,
+  restoreKeywords,
+} from "../data/queries";
 import KeywordResearchLauncher from "./KeywordResearchLauncher";
 import { normalizeMonthlySearches } from "../types";
 import type {
@@ -221,9 +235,20 @@ export default function KeywordResearchWorkbench() {
     runResearch,
     refreshVolume,
     loadEdges,
+    reloadKeywords,
   } = useKeywordResearch();
+  const openKeywordIntel = useOpenKeywordWindow();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
+  const [archiving, setArchiving] = useState(false);
+  // Provenance: keyword ids with at least one live ai_research edge —
+  // research-discovered vs hand-added. Null until the batched read lands.
+  const [researchIds, setResearchIds] = useState<ReadonlySet<string> | null>(
+    null,
+  );
 
   const sorted = useMemo(() => {
     const cluster = clusterPhrases ? new Set(clusterPhrases) : null;
@@ -233,6 +258,125 @@ export default function KeywordResearchWorkbench() {
         (a, b) => (usMarket(b)?.search_volume ?? -1) - (usMarket(a)?.search_volume ?? -1),
       );
   }, [keywords, clusterPhrases]);
+
+  const visibleIdsKey = useMemo(
+    () => sorted.map((row) => row.id).join(","),
+    [sorted],
+  );
+
+  useEffect(() => {
+    const ids = visibleIdsKey ? visibleIdsKey.split(",") : [];
+    if (ids.length === 0) {
+      setResearchIds(new Set());
+      return;
+    }
+    const controller = new AbortController();
+    fetchResearchDiscoveredKeywordIds(ids, controller.signal)
+      .then((discovered) => {
+        if (!controller.signal.aborted) setResearchIds(discovered);
+      })
+      .catch((error) => {
+        // Provenance is decoration — the list must not fail with it, but the
+        // failure stays loud in the console (never a silent default).
+        if (!controller.signal.aborted) {
+          console.error("Keyword provenance lookup failed:", error);
+          setResearchIds(null);
+        }
+      });
+    return () => controller.abort();
+  }, [visibleIdsKey]);
+
+  // Selection survives only within the visible set — rows that scroll out of
+  // the current search/cluster drop out so bulk archive never acts blind.
+  useEffect(() => {
+    const visible = new Set(visibleIdsKey ? visibleIdsKey.split(",") : []);
+    setSelectedIds((current) => {
+      const next = [...current].filter((id) => visible.has(id));
+      return next.length === current.size ? current : new Set(next);
+    });
+  }, [visibleIdsKey]);
+
+  const toggleSelected = useCallback((id: string, checked: boolean) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
+
+  const allVisibleSelected =
+    sorted.length > 0 && sorted.every((row) => selectedIds.has(row.id));
+
+  const toggleSelectAll = useCallback(
+    (checked: boolean) => {
+      setSelectedIds(checked ? new Set(sorted.map((row) => row.id)) : new Set());
+    },
+    [sorted],
+  );
+
+  /** Archive library rows (bulk or single) with confirm + undo. */
+  const archiveRows = useCallback(
+    async (rows: { id: string; phrase: string }[]) => {
+      if (rows.length === 0 || archiving) return;
+      const label =
+        rows.length === 1
+          ? `“${rows[0].phrase}”`
+          : `${rows.length} keywords`;
+      const confirmed = await confirm({
+        title: `Archive ${label} from the library?`,
+        description:
+          "Archived keywords disappear from every list and won't be re-added by research runs. You can undo from the toast, and typing the phrase anywhere restores it.",
+        confirmLabel: "Archive",
+        variant: "destructive",
+      });
+      if (!confirmed) return;
+      setArchiving(true);
+      const ids = rows.map((row) => row.id);
+      try {
+        const archived = await archiveKeywords(ids);
+        setSelectedIds(new Set());
+        reloadKeywords();
+        toast.success(
+          archived === 1
+            ? `Archived ${label}`
+            : `Archived ${archived} keywords`,
+          {
+            action: {
+              label: "Undo",
+              onClick: () => {
+                void restoreKeywords(ids)
+                  .then((restored) => {
+                    reloadKeywords();
+                    toast.success(`Restored ${restored} keyword${restored === 1 ? "" : "s"}`);
+                  })
+                  .catch((error) => {
+                    toast.error("Could not restore keywords", {
+                      description: extractErrorMessage(error),
+                    });
+                  });
+              },
+            },
+          },
+        );
+      } catch (error) {
+        toast.error("Could not archive keywords", {
+          description: extractErrorMessage(error),
+        });
+      } finally {
+        setArchiving(false);
+      }
+    },
+    [archiving, reloadKeywords],
+  );
+
+  const selectedRows = useMemo(
+    () =>
+      sorted
+        .filter((row) => selectedIds.has(row.id))
+        .map((row) => ({ id: row.id, phrase: row.phrase })),
+    [sorted, selectedIds],
+  );
 
   const handleRefreshAll = useCallback(async () => {
     const phrases = sorted.map((row) => row.phrase);
@@ -302,6 +446,31 @@ export default function KeywordResearchWorkbench() {
             {loading ? "Loading…" : `${sorted.length} keywords in the library`}
           </span>
         )}
+        {selectedRows.length > 0 && (
+          <span className="inline-flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void archiveRows(selectedRows)}
+              disabled={archiving}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+              title="Soft-archive the selected keywords from the library (undoable)"
+            >
+              {archiving ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Archive className="h-3.5 w-3.5" />
+              )}
+              Archive {selectedRows.length} selected
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Clear selection
+            </button>
+          </span>
+        )}
         <div className="flex-1" />
         {volumeStage && (
           <span className="text-xs text-muted-foreground">{volumeStage}</span>
@@ -338,14 +507,26 @@ export default function KeywordResearchWorkbench() {
           <table className="w-full border-collapse text-sm">
             <thead className="sticky top-0 z-10 bg-background">
               <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                <th className="w-8 px-2 py-2">
+                  <Checkbox
+                    checked={allVisibleSelected}
+                    onCheckedChange={(checked) =>
+                      toggleSelectAll(checked === true)
+                    }
+                    aria-label="Select all visible keywords"
+                    className="h-3.5 w-3.5"
+                  />
+                </th>
                 <th className="w-8 px-2 py-2" aria-label="Expand" />
                 <th className="px-2 py-2 font-semibold">Keyword</th>
+                <th className="px-2 py-2 font-semibold">Source</th>
                 <th className="px-2 py-2 text-right font-semibold">Volume</th>
                 <th className="px-2 py-2 font-semibold">Trend</th>
                 <th className="px-2 py-2 font-semibold">Competition</th>
                 <th className="px-2 py-2 text-right font-semibold">CPC</th>
                 <th className="px-2 py-2 font-semibold">Trajectory</th>
                 <th className="px-2 py-2 font-semibold">Intent</th>
+                <th className="w-10 px-2 py-2" aria-label="Actions" />
               </tr>
             </thead>
             <tbody>
@@ -360,6 +541,17 @@ export default function KeywordResearchWorkbench() {
                     expanded={expanded}
                     onToggle={() => setExpandedId(expanded ? null : row.id)}
                     loadEdges={loadEdges}
+                    selected={selectedIds.has(row.id)}
+                    onSelectedChange={(checked) =>
+                      toggleSelected(row.id, checked)
+                    }
+                    researchDiscovered={
+                      researchIds === null ? null : researchIds.has(row.id)
+                    }
+                    onArchive={() =>
+                      void archiveRows([{ id: row.id, phrase: row.phrase }])
+                    }
+                    onOpenIntel={() => openKeywordIntel({ phrase: row.phrase })}
                   />
                 );
               })}
@@ -372,25 +564,91 @@ export default function KeywordResearchWorkbench() {
   );
 }
 
+/** Source-of-record chip: research-discovered vs hand-added, derived from
+ * live ai_research keyword edges. Null = provenance read not landed. */
+function KeywordSourceChip({ discovered }: { discovered: boolean | null }) {
+  if (discovered === null) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  return discovered ? (
+    <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 px-2 py-0.5 text-[10px] font-medium text-primary">
+      <BrainCircuit className="h-3 w-3" />
+      Research
+    </span>
+  ) : (
+    <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+      Manual
+    </span>
+  );
+}
+
 function FragmentRow({
   row,
   market,
   expanded,
   onToggle,
   loadEdges,
+  selected,
+  onSelectedChange,
+  researchDiscovered,
+  onArchive,
+  onOpenIntel,
 }: {
   row: KeywordWithMarket;
   market: KeywordMarketRow | null;
   expanded: boolean;
   onToggle: () => void;
   loadEdges: (keywordId: string) => Promise<KeywordEdgeView[]>;
+  selected: boolean;
+  onSelectedChange: (checked: boolean) => void;
+  researchDiscovered: boolean | null;
+  onArchive: () => void;
+  onOpenIntel: () => void;
 }) {
+  const menuConfig = (): ItemMenuConfig => ({
+    header: { title: row.phrase },
+    sections: [
+      {
+        items: [
+          {
+            id: "intel",
+            label: "Keyword Intelligence",
+            icon: BrainCircuit,
+            onSelect: onOpenIntel,
+          },
+        ],
+      },
+      {
+        items: [
+          {
+            id: "archive",
+            label: "Archive from library",
+            icon: Archive,
+            tone: "destructive",
+            onSelect: onArchive,
+          },
+        ],
+      },
+    ],
+  });
+
   return (
     <>
       <tr
         className="cursor-pointer border-b border-border/60 transition-colors hover:bg-accent/50"
         onClick={onToggle}
       >
+        <td
+          className="px-2 py-1.5"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <Checkbox
+            checked={selected}
+            onCheckedChange={(checked) => onSelectedChange(checked === true)}
+            aria-label={`Select ${row.phrase}`}
+            className="h-3.5 w-3.5"
+          />
+        </td>
         <td className="px-2 py-1.5 text-muted-foreground">
           {expanded ? (
             <ChevronDown className="h-3.5 w-3.5" />
@@ -399,6 +657,9 @@ function FragmentRow({
           )}
         </td>
         <td className="px-2 py-1.5 font-medium text-foreground">{row.phrase}</td>
+        <td className="px-2 py-1.5">
+          <KeywordSourceChip discovered={researchDiscovered} />
+        </td>
         <td className="px-2 py-1.5 text-right tabular-nums text-foreground">
           {formatSearchVolume(market?.search_volume)}
         </td>
@@ -420,10 +681,24 @@ function FragmentRow({
         <td className="px-2 py-1.5">
           <KeywordIntentChip intentClass={row.intent_class} />
         </td>
+        <td
+          className="px-2 py-1.5"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <ItemMenu config={menuConfig}>
+            <button
+              type="button"
+              aria-label={`Options for ${row.phrase}`}
+              className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <MoreVertical className="h-3.5 w-3.5" />
+            </button>
+          </ItemMenu>
+        </td>
       </tr>
       {expanded && (
         <tr>
-          <td colSpan={8} className="p-0">
+          <td colSpan={11} className="p-0">
             <KeywordDetail row={row} loadEdges={loadEdges} />
           </td>
         </tr>

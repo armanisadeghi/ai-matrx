@@ -168,13 +168,19 @@ export function useFileBlob(fileId: string | null): UseFileBlobResult {
             if (ev.total !== null) setBytesTotal(ev.total);
           }).then(({ blob, filename }) => ({ blob, filename }));
           inflightDownloads.set(fileId, download);
-          void download.finally(() => {
-            // Only clear if it's still the same promise (a later retry may
-            // have replaced it).
-            if (inflightDownloads.get(fileId) === download) {
-              inflightDownloads.delete(fileId);
-            }
-          });
+          void download
+            .finally(() => {
+              // Only clear if it's still the same promise (a later retry may
+              // have replaced it).
+              if (inflightDownloads.get(fileId) === download) {
+                inflightDownloads.delete(fileId);
+              }
+            })
+            .catch(() => {
+              // Every awaiting subscriber handles the rejection (sets its own
+              // error state); this catch only stops the void'd cleanup chain
+              // from re-surfacing it as an unhandled promise rejection.
+            });
         }
         const { blob: b } = await download;
         if (cancelled) return;

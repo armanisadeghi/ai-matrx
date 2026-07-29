@@ -62,9 +62,19 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
 - Research opens saved org-visible `content_ir.kind_instance` data in place
   before offering a rerun. Do not replace this with creator-private run-ledger
   state or a link to another page.
+- **Library removal is soft-archive via `seo.fn_archive_keywords` only**
+  (panel header button; wrappers + doctrine in
+  `keyword-research/FEATURE.md` § Autosave + library management). Archive is
+  durable against research re-runs; explicit hand-entry restores
+  (`ensureKeywordId` → `fn_restore_keywords`). Every archive confirms first
+  and toasts an Undo.
 
 ## Change Log
 
+- 2026-07-29 — Claude: library management (Arman "autosave + easy removal"
+  ruling) — panel header Archive button (`fn_archive_keywords`, confirm +
+  Undo), explicit-entry restore in `ensureKeywordId`; research autosave
+  confirmed already server-side (`fn_ingest_keyword_research`).
 - 2026-07-29 — Claude: both keyword windows now preserve/restore across
   reload — `keywordWindow` (phrase + activeTab + org/site/page/brand scope)
   and `keywordResearchWindow` (primaryKeyword; never autoRun) gained registry

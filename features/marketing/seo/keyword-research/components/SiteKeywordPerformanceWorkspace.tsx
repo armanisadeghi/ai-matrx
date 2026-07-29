@@ -2,8 +2,24 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BarChart3, BrainCircuit, ExternalLink, Loader2, RefreshCw, Search } from "lucide-react";
+import {
+  Archive,
+  BarChart3,
+  BrainCircuit,
+  ExternalLink,
+  Loader2,
+  MoreVertical,
+  RefreshCw,
+  Search,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { ItemMenu } from "@/components/official/item/ItemMenu";
+import type { ItemMenuConfig } from "@/components/official/item/types";
+import {
+  archiveKeywords,
+  restoreKeywords,
+} from "@/features/marketing/seo/keyword-research/data/queries";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +70,86 @@ export function SiteKeywordPerformanceWorkspace() {
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const bingBinding = parseBingSiteBinding(site.integrations);
   const [syncingBing, setSyncingBing] = useState(false);
+
+  /** Soft-archive the mapped library keyword (undoable). GSC/Bing query
+   * evidence stays — only the seo.keyword library row is archived. */
+  const archiveLibraryKeyword = async (row: SiteKeywordPerformanceRow) => {
+    const keywordId = row.keyword_id;
+    if (!keywordId) return;
+    const phrase = row.query ?? "this keyword";
+    const confirmed = await confirm({
+      title: `Archive “${phrase}” from the keyword library?`,
+      description:
+        "The library row disappears from every keyword list and research runs won't re-add it. Search-performance evidence for the query is unaffected. Undo from the toast, or restore by typing the phrase anywhere.",
+      confirmLabel: "Archive",
+      variant: "destructive",
+    });
+    if (!confirmed) return;
+    try {
+      await archiveKeywords([keywordId]);
+      await performance.refetch();
+      toast.success(`Archived “${phrase}” from the library`, {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void restoreKeywords([keywordId])
+              .then(() => {
+                void performance.refetch();
+                toast.success(`Restored “${phrase}”`);
+              })
+              .catch((error) => {
+                toast.error("Could not restore the keyword", {
+                  description: extractErrorMessage(error),
+                });
+              });
+          },
+        },
+      });
+    } catch (error) {
+      toast.error("Could not archive the keyword", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
+
+  const rowMenuConfig = (row: SiteKeywordPerformanceRow): ItemMenuConfig => ({
+    header: { title: row.query ?? "Search query" },
+    sections: [
+      {
+        items: [
+          {
+            id: "intel",
+            label: "Keyword Intelligence",
+            icon: BrainCircuit,
+            onSelect: () => {
+              openKeywordWindow({
+                phrase: row.query ?? "",
+                organizationId: site.organization_id,
+                siteId: site.id,
+                brandId: site.brand_id ?? undefined,
+                tab: "site",
+              });
+            },
+          },
+        ],
+      },
+      {
+        items: [
+          {
+            id: "archive-library",
+            label: "Archive from library",
+            icon: Archive,
+            tone: "destructive",
+            disabled: !row.keyword_id,
+            disabledReason: row.keyword_id
+              ? undefined
+              : "This query has no mapped library keyword yet",
+            onSelect: () => void archiveLibraryKeyword(row),
+          },
+        ],
+      },
+    ],
+  });
 
   const runBingSync = async () => {
     setSyncingBing(true);
@@ -433,26 +529,41 @@ export function SiteKeywordPerformanceWorkspace() {
             }),
           }}
           rowActions={(row) => (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-primary"
-              aria-label="Keyword Intelligence"
-              title="Keyword Intelligence"
-              onClick={(event) => {
-                event.stopPropagation();
-                openKeywordWindow({
-                  phrase: row.query ?? "",
-                  organizationId: site.organization_id,
-                  siteId: site.id,
-                  brandId: site.brand_id ?? undefined,
-                  tab: "site",
-                });
-              }}
+            <div
+              className="flex items-center gap-0.5"
+              onClick={(event) => event.stopPropagation()}
             >
-              <BrainCircuit className="h-3.5 w-3.5" />
-            </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-primary"
+                aria-label="Keyword Intelligence"
+                title="Keyword Intelligence"
+                onClick={() => {
+                  openKeywordWindow({
+                    phrase: row.query ?? "",
+                    organizationId: site.organization_id,
+                    siteId: site.id,
+                    brandId: site.brand_id ?? undefined,
+                    tab: "site",
+                  });
+                }}
+              >
+                <BrainCircuit className="h-3.5 w-3.5" />
+              </Button>
+              <ItemMenu config={() => rowMenuConfig(row)}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                  aria-label={`Options for ${row.query ?? "search query"}`}
+                >
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </Button>
+              </ItemMenu>
+            </div>
           )}
           window={{
             title: (row) => row.query ?? "Search query",
