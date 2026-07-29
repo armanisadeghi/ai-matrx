@@ -1,15 +1,11 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseDiagramJSON } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
-import {
-  type ArtifactRendererProps,
-  resolveJsonPayload,
-  artifactDedupKey,
-} from "../artifact-renderers";
+import { resolveJsonPayload, artifactDedupKey } from "../artifact-renderers";
 import InteractiveDiagramBlock from "@/components/mardown-display/blocks/diagram/InteractiveDiagramBlock";
-
+import type { ArtifactRendererProps } from "../types";
 /**
  * Unified renderer for `diagram` artifacts — the ONE renderer used by chat,
  * canvas, and artifact-card surfaces. Resolves the payload (serverData ?? canvas

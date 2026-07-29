@@ -18,7 +18,9 @@ import { IrTree } from "../core/ir-tree";
 const RESEARCH_VALUE = {
   __kind: "keyword_relationship_research",
   primary_keyword: "espresso machines",
-  keyword_lists: [{ label: "Comparisons", keywords: ["best espresso machine"] }],
+  keyword_lists: [
+    { label: "Comparisons", keywords: ["best espresso machine"] },
+  ],
 };
 
 function treeWithPublishedRoot(): IrTree {
@@ -39,13 +41,21 @@ describe("degrade never regresses published data", () => {
   it("an EMPTY root raw_object cannot blank a rendered root", () => {
     const tree = treeWithPublishedRoot();
 
-    tree.applyEvent({ type: "raw_object", path: [], value: {}, reason: "no schema registered", at: 1 });
+    tree.applyEvent({
+      type: "raw_object",
+      path: [],
+      value: {},
+      reason: "no schema registered",
+      at: 1,
+    });
 
     const envelope = tree.buildEnvelope("fp");
     expect(envelope.root.value).toMatchObject(RESEARCH_VALUE);
     expect(envelope.root.kindState).toBe("raw");
     expect(
-      envelope.root.residue?.notices?.some((n) => n.code === "degrade_data_rescued"),
+      envelope.root.residue?.notices?.some(
+        (n) => n.code === "degrade_data_rescued",
+      ),
     ).toBe(true);
   });
 
@@ -67,9 +77,20 @@ describe("degrade never regresses published data", () => {
 
   it("completion repairs a root a mid-stream degrade already emptied", () => {
     const tree = treeWithPublishedRoot();
-    tree.applyEvent({ type: "raw_object", path: [], value: {}, reason: "no schema registered", at: 1 });
+    tree.applyEvent({
+      type: "raw_object",
+      path: [],
+      value: {},
+      reason: "no schema registered",
+      at: 1,
+    });
 
-    tree.applyEvent({ type: "complete", kind: "keyword_relationship_research", value: RESEARCH_VALUE, at: 2 });
+    tree.applyEvent({
+      type: "complete",
+      kind: "keyword_relationship_research",
+      value: RESEARCH_VALUE,
+      at: 2,
+    });
 
     const envelope = tree.buildEnvelope("fp");
     expect(envelope.root.status).toBe("complete");
@@ -82,7 +103,10 @@ describe("degrade never regresses published data", () => {
       type: "block_snapshot",
       kind: "parent_kind",
       path: [],
-      value: { __kind: "parent_kind", items: [{ __kind: "child_kind", label: "one" }] },
+      value: {
+        __kind: "parent_kind",
+        items: [{ __kind: "child_kind", label: "one" }],
+      },
       residue: null,
       complete: false,
       at: 0,
@@ -97,21 +121,37 @@ describe("degrade never regresses published data", () => {
       at: 1,
     });
 
-    tree.applyEvent({ type: "raw_object", path: ["items", 0], value: {}, reason: "no schema registered", at: 2 });
+    tree.applyEvent({
+      type: "raw_object",
+      path: ["items", 0],
+      value: {},
+      reason: "no schema registered",
+      at: 2,
+    });
 
-    const items = tree.buildEnvelope("fp").root.value.items as Array<Record<string, unknown>>;
+    const items = tree.buildEnvelope("fp").root.value.items as Array<
+      Record<string, unknown>
+    >;
     expect(items[0]).toMatchObject({ label: "one", detail: "kept" });
   });
 
   it("a normal degrade with no prior data reports nothing and passes its value through", () => {
     const tree = new IrTree();
 
-    tree.applyEvent({ type: "raw_object", path: [], value: { a: 1 }, reason: "missing __kind", at: 0 });
+    tree.applyEvent({
+      type: "raw_object",
+      path: [],
+      value: { a: 1 },
+      reason: "missing __kind",
+      at: 0,
+    });
 
     const envelope = tree.buildEnvelope("fp");
     expect(envelope.root.value).toEqual({ a: 1 });
     expect(
-      envelope.root.residue?.notices?.some((n) => n.code === "degrade_data_rescued"),
+      envelope.root.residue?.notices?.some(
+        (n) => n.code === "degrade_data_rescued",
+      ),
     ).toBe(false);
   });
 });

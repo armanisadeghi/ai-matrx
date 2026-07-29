@@ -1,15 +1,11 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { safeJsonParse } from "@/components/mardown-display/chat-markdown/block-registry/json-parse-utils";
-import {
-  type ArtifactRendererProps,
-  resolveJsonPayload,
-  artifactDedupKey,
-} from "../artifact-renderers";
+import { resolveJsonPayload, artifactDedupKey } from "../artifact-renderers";
 import MultipleChoiceQuiz from "@/components/mardown-display/blocks/quiz/MultipleChoiceQuiz";
-
+import type { ArtifactRendererProps } from "../types";
 // Default export at components/mardown-display/blocks/quiz/MultipleChoiceQuiz.tsx
 // Props: quizData, taskId?, conversationId?, messageId?, blockIndex?, sessionId?,
 //        enableAutoSave?, autoSaveInterval?, showCanvasButton?, className?

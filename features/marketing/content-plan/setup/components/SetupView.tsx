@@ -15,8 +15,10 @@
  *
  * Data: plan nodes and the archetype library come DIRECT from Supabase under
  * RLS; writes go through the feature's ONE plan write path. The CMS foundation
- * half comes from the existing `/api/cms/*` seam. Nothing routes through the
- * Python server.
+ * half comes from the existing `/api/cms/*` seam. The ONLY Python calls are
+ * the "Make it real" rungs (SetupBridgeSection → setup/bridge.ts): guarded CMS
+ * writes (starter kit, plan↔CMS reconcile/realize) that genuinely need the
+ * server's write policy + activity-log seams — never plain DB reads.
  */
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -54,6 +56,7 @@ import {
   recordSiteArchetype,
   type CommitResult,
 } from "../service";
+import { SetupBridgeSection } from "./SetupBridgeSection";
 import { SetupPreviewColumn } from "./SetupPreviewColumn";
 import { SetupShapeColumn } from "./SetupShapeColumn";
 import { SetupWorkOrderColumn } from "./SetupWorkOrderColumn";
@@ -489,6 +492,11 @@ export function SetupView() {
               newCount={preview.counts.new}
               pageTypeName={(slug) =>
                 slug ? (pageTypeNameBySlug.get(slug) ?? slug) : "No page type"
+              }
+              bridgeSlot={
+                site ? (
+                  <SetupBridgeSection site={site} cms={cms.data ?? null} />
+                ) : null
               }
             />
           ) : (

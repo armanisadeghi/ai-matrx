@@ -1,15 +1,12 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { separatedMarkdownParser } from "@/components/mardown-display/markdown-classification/processors/custom/parser-separated";
-import {
-  type ArtifactRendererProps,
-  resolveMarkdownPayload,
-} from "../artifact-renderers";
+import { resolveMarkdownPayload } from "../artifact-renderers";
 import { useArtifactState } from "../persistence/useArtifactState";
 import QuestionnaireRenderer from "@/components/mardown-display/blocks/questionnaire/QuestionnaireRenderer";
-
+import type { ArtifactRendererProps } from "../types";
 interface QuestionnaireState extends Record<string, unknown> {
   formState?: Record<string, unknown>;
 }

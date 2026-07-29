@@ -4453,6 +4453,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/content-plan/sites/{site_id}/cms-reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cms Reconcile Route */
+        post: operations["cms_reconcile_route_content_plan_sites__site_id__cms_reconcile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/sites/{site_id}/cms-align": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cms Align Route */
+        post: operations["cms_align_route_content_plan_sites__site_id__cms_align_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/sites/{site_id}/cms-starter-kit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cms Starter Kit Route */
+        post: operations["cms_starter_kit_route_content_plan_sites__site_id__cms_starter_kit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/public/structured-data/validate": {
         parameters: {
             query?: never;
@@ -20869,6 +20920,189 @@ export interface components {
             /** Workflow Id */
             workflow_id: string;
         };
+        /** CmsAlignAction */
+        CmsAlignAction: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "realize" | "adopt" | "map" | "retire";
+            /** Node Id */
+            node_id?: string | null;
+            /** Page Id */
+            page_id?: string | null;
+            /** Resolve */
+            resolve?: ("plan_yields" | "cms_yields" | "none") | null;
+            /** Note */
+            note?: string | null;
+            /**
+             * Force
+             * @default false
+             */
+            force?: boolean;
+        };
+        /** CmsAlignBody */
+        CmsAlignBody: {
+            /** Cms Site */
+            cms_site?: string | null;
+            /** Actions */
+            actions?: components["schemas"]["CmsAlignAction"][];
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+            /**
+             * Sync Status
+             * @default true
+             */
+            sync_status?: boolean;
+        };
+        /** CmsAlignItemResult */
+        CmsAlignItemResult: {
+            /** Action */
+            action: string;
+            /** Node Id */
+            node_id?: string | null;
+            /** Page Id */
+            page_id?: string | null;
+            /**
+             * Ok
+             * @default true
+             */
+            ok?: boolean;
+            /**
+             * Changed
+             * @default false
+             */
+            changed?: boolean;
+            /**
+             * Detail
+             * @default
+             */
+            detail?: string;
+            /** Error */
+            error?: string | null;
+            /** Error Code */
+            error_code?: string | null;
+        };
+        /** CmsAlignResult */
+        CmsAlignResult: {
+            /** Web Site Id */
+            web_site_id: string;
+            /** Cms Site Id */
+            cms_site_id: string;
+            /** Cms Site Slug */
+            cms_site_slug: string;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+            /** Items */
+            items?: components["schemas"]["CmsAlignItemResult"][];
+            /**
+             * Applied
+             * @default 0
+             */
+            applied?: number;
+            /**
+             * Unchanged
+             * @default 0
+             */
+            unchanged?: number;
+            /**
+             * Failed
+             * @default 0
+             */
+            failed?: number;
+            /** Statuses Advanced */
+            statuses_advanced?: string[];
+            /** Errors */
+            errors?: string[];
+        };
+        /** CmsReconcileBody */
+        CmsReconcileBody: {
+            /** Cms Site */
+            cms_site?: string | null;
+            /**
+             * Write Links
+             * @default true
+             */
+            write_links?: boolean;
+        };
+        /** CmsReconcileMatch */
+        CmsReconcileMatch: {
+            /** Node Id */
+            node_id: string;
+            /** Route */
+            route: string;
+            /** Page Id */
+            page_id: string;
+            /** Page Route */
+            page_route: string;
+            /** Live Url */
+            live_url: string;
+            /**
+             * Is Published
+             * @default false
+             */
+            is_published?: boolean;
+            /**
+             * Linked
+             * @default true
+             */
+            linked?: boolean;
+        };
+        /** CmsReconcileReport */
+        CmsReconcileReport: {
+            /** Web Site Id */
+            web_site_id: string;
+            /** Cms Site Id */
+            cms_site_id: string;
+            /** Cms Site Slug */
+            cms_site_slug: string;
+            /** Matched */
+            matched?: components["schemas"]["CmsReconcileMatch"][];
+            /** Ghosts */
+            ghosts?: {
+                [key: string]: unknown;
+            }[];
+            /** Orphans */
+            orphans?: {
+                [key: string]: unknown;
+            }[];
+            /** Conflicts */
+            conflicts?: {
+                [key: string]: unknown;
+            }[];
+            /** Retired */
+            retired?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Links Written
+             * @default 0
+             */
+            links_written?: number;
+            /** Warnings */
+            warnings?: string[];
+        };
+        /** CmsStarterKitBody */
+        CmsStarterKitBody: {
+            /** Cms Site */
+            cms_site?: string | null;
+            /**
+             * Force
+             * @default false
+             */
+            force?: boolean;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+        };
         /**
          * CodeAgentUsage
          * @description One declared code usage — mirrors a row of public.agx_usage_registry.
@@ -21146,6 +21380,37 @@ export interface components {
             pd_adjustment_reason?: string | null;
             /** Life Pension Weekly */
             life_pension_weekly?: number | null;
+        };
+        /** ComponentRead */
+        ComponentRead: {
+            /** Id */
+            id: string;
+            /** Client Id */
+            client_id: string;
+            /** Component Type */
+            component_type: string;
+            /** Name */
+            name: string;
+            /** Html Content */
+            html_content?: string | null;
+            /** Html Content Draft */
+            html_content_draft?: string | null;
+            /** Css Content */
+            css_content?: string | null;
+            /** Css Content Draft */
+            css_content_draft?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Has Draft */
+            has_draft?: boolean | null;
+            /** Last Published At */
+            last_published_at?: string | null;
+            /** Last Published By */
+            last_published_by?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
         };
         /** ComputeNextDueRequest */
         ComputeNextDueRequest: {
@@ -29028,6 +29293,15 @@ export interface components {
              */
             created_at: string;
         };
+        /** NavLink */
+        NavLink: {
+            /** Label */
+            label: string;
+            /** Href */
+            href: string;
+        } & {
+            [key: string]: unknown;
+        };
         /** NodeContractReport */
         NodeContractReport: {
             /** Node Type */
@@ -35100,6 +35374,54 @@ export interface components {
             frontier?: components["schemas"]["FrontierInvocation"][];
         } & {
             [key: string]: unknown;
+        };
+        /** StarterKitResult */
+        StarterKitResult: {
+            /** Site Id */
+            site_id: string;
+            /** Site Slug */
+            site_slug: string;
+            /** Dry Run */
+            dry_run: boolean;
+            /** Forced */
+            forced: boolean;
+            /** Operation */
+            operation: string;
+            /** Global Css Chars */
+            global_css_chars: number;
+            /** Global Css Written */
+            global_css_written: boolean;
+            /** Global Css Replaced Chars */
+            global_css_replaced_chars: number;
+            /** Navigation Seeded */
+            navigation_seeded: boolean;
+            /**
+             * Navigation
+             * @default []
+             */
+            navigation?: components["schemas"]["NavLink"][];
+            /**
+             * Components
+             * @default []
+             */
+            components?: components["schemas"]["ComponentRead"][];
+            /**
+             * Replaced Component Ids
+             * @default []
+             */
+            replaced_component_ids?: string[];
+            /**
+             * Rejected Theme Properties
+             * @default []
+             */
+            rejected_theme_properties?: string[];
+            /** Nav Token */
+            nav_token: string;
+            /**
+             * Notes
+             * @default []
+             */
+            notes?: string[];
         };
         /** StatelessApplicant */
         StatelessApplicant: {
@@ -47655,6 +47977,111 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DispositionResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cms_reconcile_route_content_plan_sites__site_id__cms_reconcile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CmsReconcileBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsReconcileReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cms_align_route_content_plan_sites__site_id__cms_align_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CmsAlignBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsAlignResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cms_starter_kit_route_content_plan_sites__site_id__cms_starter_kit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CmsStarterKitBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StarterKitResult"];
                 };
             };
             /** @description Validation Error */

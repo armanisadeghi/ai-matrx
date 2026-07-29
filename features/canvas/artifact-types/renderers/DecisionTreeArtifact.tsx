@@ -1,17 +1,13 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseDecisionTreeJSON } from "@/components/mardown-display/blocks/decision-tree/parseDecisionTreeJSON";
-import {
-  type ArtifactRendererProps,
-  resolveJsonPayload,
-  artifactDedupKey,
-} from "../artifact-renderers";
+import { resolveJsonPayload, artifactDedupKey } from "../artifact-renderers";
 import { useArtifactState } from "../persistence/useArtifactState";
 import type { DecisionTreeState } from "@/components/mardown-display/blocks/decision-tree/DecisionTreeBlock";
 import DecisionTreeBlock from "@/components/mardown-display/blocks/decision-tree/DecisionTreeBlock";
-
+import type { ArtifactRendererProps } from "../types";
 /**
  * Unified renderer for `decision-tree` artifacts — the ONE renderer used by
  * chat, canvas, and artifact-card surfaces. Resolves the payload (serverData ??
@@ -29,10 +25,9 @@ export default function DecisionTreeArtifact({
   artifactId,
   isStreamActive,
 }: ArtifactRendererProps) {
-  const { state, loaded, save } = useArtifactState<DecisionTreeState & Record<string, unknown>>(
-    artifactId,
-    "generic",
-  );
+  const { state, loaded, save } = useArtifactState<
+    DecisionTreeState & Record<string, unknown>
+  >(artifactId, "generic");
 
   const decisionTree = useMemo(
     () =>

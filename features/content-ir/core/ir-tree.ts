@@ -235,7 +235,9 @@ export class IrTree {
     const prior = this.nodes.get(pathKey);
     const node: IrTreeNode = {
       kind: payload.kind,
-      kindState: payload.complete ? "resolved" : (prior?.kindState ?? "resolved"),
+      kindState: payload.complete
+        ? "resolved"
+        : (prior?.kindState ?? "resolved"),
       path,
       pathKey,
       value: stabilized,
@@ -380,7 +382,11 @@ export class IrTree {
    * Error Inspector instead of being silently absorbed (`core/` is a pure
    * kernel: no console, no capture — the notice IS the alarm).
    */
-  private recordRescue(pathKey: string, reason: string, rescued: string[]): void {
+  private recordRescue(
+    pathKey: string,
+    reason: string,
+    rescued: string[],
+  ): void {
     if (rescued.length === 0) return;
     this.rescueNotices.push({
       code: "degrade_data_rescued",

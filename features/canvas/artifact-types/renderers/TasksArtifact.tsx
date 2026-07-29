@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { isMaterializedArtifactId } from "../artifactId";
-import { type ArtifactRendererProps } from "../artifact-renderers";
+import type { ArtifactRendererProps } from "../types";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
 
 /**
@@ -95,10 +95,7 @@ function TasksArtifactMaterialized({
 
   const content = useMemo(() => {
     const stored = row?.content as
-      | { data?: unknown }
-      | string
-      | null
-      | undefined;
+      { data?: unknown } | string | null | undefined;
     if (
       stored &&
       typeof stored === "object" &&
@@ -208,7 +205,10 @@ function TasksArtifactTracked({
           });
           toast.success(
             `Converted to ${ids.length} task${ids.length !== 1 ? "s" : ""}`,
-            { description: "Open /tasks to view or edit — status stays in sync here." },
+            {
+              description:
+                "Open /tasks to view or edit — status stays in sync here.",
+            },
           );
         }}
       />

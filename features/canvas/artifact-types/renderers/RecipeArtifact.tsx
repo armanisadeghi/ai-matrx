@@ -1,17 +1,16 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseRecipeMarkdown } from "@/components/mardown-display/blocks/cooking-recipes/parseRecipeMarkdown";
 import {
-  type ArtifactRendererProps,
   resolveMarkdownPayload,
   artifactDedupKey,
 } from "../artifact-renderers";
 import { useArtifactState } from "../persistence/useArtifactState";
 import type { RecipeState } from "@/components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay";
 import RecipeViewer from "@/components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay";
-
+import type { ArtifactRendererProps } from "../types";
 /**
  * Unified renderer for `recipe` (cooking_recipe) artifacts — the ONE renderer
  * used by chat, canvas, and artifact-card surfaces. Resolves the payload

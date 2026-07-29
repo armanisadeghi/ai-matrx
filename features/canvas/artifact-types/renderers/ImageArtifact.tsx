@@ -1,8 +1,7 @@
 "use client";
 
-import React from "react";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import type { ArtifactRendererProps } from "../artifact-renderers";
+import type { ArtifactRendererProps } from "../types";
 
 /**
  * Unified renderer for `image` artifacts — chat, canvas, and artifact-card surfaces.
@@ -16,27 +15,27 @@ import type { ArtifactRendererProps } from "../artifact-renderers";
  *   ref={src}, alt={title}, size="fill", fit="contain", rounded="md".
  */
 export default function ImageArtifact({
-    raw,
-    data,
-    metadata,
+  raw,
+  data,
+  metadata,
 }: ArtifactRendererProps) {
-    const src =
-        typeof data === "string"
-            ? data
-            : ((data as { url?: string })?.url ?? raw ?? "");
+  const src =
+    typeof data === "string"
+      ? data
+      : ((data as { url?: string })?.url ?? raw ?? "");
 
-    const alt = (metadata?.title as string) || "Image";
+  const alt = (metadata?.title as string) || "Image";
 
-    return (
-        <div className="flex items-center justify-center p-4 bg-muted/30">
-            <InlineMediaRef
-                ref={src}
-                alt={alt}
-                size="fill"
-                fit="contain"
-                rounded="md"
-                className="max-w-full max-h-[400px]"
-            />
-        </div>
-    );
+  return (
+    <div className="flex items-center justify-center p-4 bg-muted/30">
+      <InlineMediaRef
+        ref={src}
+        alt={alt}
+        size="fill"
+        fit="contain"
+        rounded="md"
+        className="max-w-full max-h-[400px]"
+      />
+    </div>
+  );
 }

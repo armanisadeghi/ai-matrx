@@ -1,13 +1,10 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
+import React, { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseComparisonJSON } from "@/components/mardown-display/blocks/comparison/parseComparisonJSON";
-import {
-  type ArtifactRendererProps,
-  resolveJsonPayload,
-  artifactDedupKey,
-} from "../artifact-renderers";
+import { resolveJsonPayload, artifactDedupKey } from "../artifact-renderers";
+import type { ArtifactRendererProps } from "../types";
 import { useArtifactState } from "../persistence/useArtifactState";
 import type { ComparisonTableState } from "@/components/mardown-display/blocks/comparison/ComparisonTableBlock";
 import ComparisonTableBlock from "@/components/mardown-display/blocks/comparison/ComparisonTableBlock";

@@ -1,12 +1,11 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import { type ArtifactRendererProps } from "../artifact-renderers";
 import { isMaterializedArtifactId } from "../artifactId";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
 import StructuredPlanBlock from "@/components/mardown-display/blocks/plan/StructuredPlanBlock";
-
+import type { ArtifactRendererProps } from "../types";
 /**
  * Unified renderer for `structured_info` artifacts (transcription + tasks
  * combined). Durable structured content → materializes (persisted, versioned,
@@ -61,10 +60,7 @@ function StructuredInfoArtifactMaterialized({
 
   const content = useMemo(() => {
     const stored = row?.content as
-      | { data?: unknown }
-      | string
-      | null
-      | undefined;
+      { data?: unknown } | string | null | undefined;
     if (
       stored &&
       typeof stored === "object" &&

@@ -1,7 +1,6 @@
 "use client";
 
-import React from "react";
-import type { ArtifactRendererProps } from "../artifact-renderers";
+import type { ArtifactRendererProps } from "../types";
 
 /**
  * Only http(s) embeds are allowed for iframe `src` — blocks javascript:/data: URIs.

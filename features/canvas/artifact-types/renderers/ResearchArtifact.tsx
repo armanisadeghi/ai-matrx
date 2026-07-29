@@ -1,15 +1,14 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseResearchMarkdown } from "@/components/mardown-display/blocks/research/parseResearchMarkdown";
 import {
-  type ArtifactRendererProps,
   resolveMarkdownPayload,
   artifactDedupKey,
 } from "../artifact-renderers";
 import ResearchBlock from "@/components/mardown-display/blocks/research/ResearchBlock";
-
+import type { ArtifactRendererProps } from "../types";
 /**
  * Unified renderer for `research` artifacts — the ONE renderer used by chat,
  * canvas, and artifact-card surfaces. Resolves the payload (serverData ?? canvas

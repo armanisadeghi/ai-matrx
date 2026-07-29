@@ -1,11 +1,10 @@
 "use client";
 
-import React, { Suspense,  useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 import { Undo2, ExternalLink, Maximize2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { Button } from "@/components/ui/button";
-import { type ArtifactRendererProps } from "../artifact-renderers";
 import { isMaterializedArtifactId } from "../artifactId";
 import {
   useCanvasItem,
@@ -19,7 +18,7 @@ import { deriveDatasetNameForChatTable } from "@/features/data-tables/derive-dat
 import { useOpenUserTableWindow } from "@/features/overlays/openers/userTableWindow";
 import { StreamingTableRenderer as StreamingTableRenderer } from "@/components/mardown-display/blocks/table/StreamingTableRenderer";
 import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";
-
+import type { ArtifactRendererProps } from "../types";
 const UDT_SYSTEM = "udt_datasets";
 
 /**
@@ -101,10 +100,7 @@ function TableArtifactMaterialized({
   // passed while the row loads).
   const content = useMemo(() => {
     const stored = row?.content as
-      | { data?: unknown }
-      | string
-      | null
-      | undefined;
+      { data?: unknown } | string | null | undefined;
     if (
       stored &&
       typeof stored === "object" &&
@@ -196,8 +192,7 @@ function TableArtifactMaterialized({
   // chat artifact provides the context, so suppress the table's own title header
   // (no double title). A quiet Revert action unlinks it back to the text table.
   if (linkedTableId) {
-    const tableTitle =
-      (typeof row?.title === "string" && row.title) || "Table";
+    const tableTitle = (typeof row?.title === "string" && row.title) || "Table";
     return (
       <Suspense fallback={<MatrxMiniLoader />}>
         <UserTableViewer

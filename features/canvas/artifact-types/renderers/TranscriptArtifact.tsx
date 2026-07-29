@@ -1,8 +1,8 @@
 "use client";
 
-import React, { Suspense } from "react";
+import { Suspense } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import { type ArtifactRendererProps } from "../artifact-renderers";
+import type { ArtifactRendererProps } from "../types";
 import TranscriptBlock from "@/components/mardown-display/blocks/transcripts/TranscriptBlock";
 
 /**

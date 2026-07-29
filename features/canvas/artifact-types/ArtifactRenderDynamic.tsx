@@ -9,9 +9,10 @@
 
 import dynamic from "next/dynamic";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import type { ArtifactRendererProps } from "./artifact-renderers";
+import type { ArtifactRendererProps } from "./types";
 
 export const ArtifactRenderDynamic = dynamic(
-  () => import("./artifact-renderers").then((m) => ({ default: m.ArtifactRender })),
+  () =>
+    import("./artifact-renderers").then((m) => ({ default: m.ArtifactRender })),
   { ssr: false, loading: () => <MatrxMiniLoader /> },
 ) as React.ComponentType<ArtifactRendererProps & { canvasType: string }>;

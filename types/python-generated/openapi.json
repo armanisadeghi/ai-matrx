@@ -11294,6 +11294,179 @@
         }
       }
     },
+    "/content-plan/sites/{site_id}/cms-reconcile": {
+      "post": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Cms Reconcile Route",
+        "operationId": "cms_reconcile_route_content_plan_sites__site_id__cms_reconcile_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CmsReconcileBody"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsReconcileReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content-plan/sites/{site_id}/cms-align": {
+      "post": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Cms Align Route",
+        "operationId": "cms_align_route_content_plan_sites__site_id__cms_align_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CmsAlignBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsAlignResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content-plan/sites/{site_id}/cms-starter-kit": {
+      "post": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Cms Starter Kit Route",
+        "operationId": "cms_starter_kit_route_content_plan_sites__site_id__cms_starter_kit_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CmsStarterKitBody"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StarterKitResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/public/structured-data/validate": {
       "post": {
         "tags": [
@@ -57817,6 +57990,423 @@
         ],
         "title": "CloneTemplateResponse"
       },
+      "CmsAlignAction": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "realize",
+              "adopt",
+              "map",
+              "retire"
+            ],
+            "title": "Action"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Id"
+          },
+          "resolve": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "plan_yields",
+                  "cms_yields",
+                  "none"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolve"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "title": "CmsAlignAction"
+      },
+      "CmsAlignBody": {
+        "properties": {
+          "cms_site": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cms Site"
+          },
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/CmsAlignAction"
+            },
+            "type": "array",
+            "title": "Actions"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          },
+          "sync_status": {
+            "type": "boolean",
+            "title": "Sync Status",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CmsAlignBody"
+      },
+      "CmsAlignItemResult": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Id"
+          },
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "changed": {
+            "type": "boolean",
+            "title": "Changed",
+            "default": false
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "default": ""
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "title": "CmsAlignItemResult"
+      },
+      "CmsAlignResult": {
+        "properties": {
+          "web_site_id": {
+            "type": "string",
+            "title": "Web Site Id"
+          },
+          "cms_site_id": {
+            "type": "string",
+            "title": "Cms Site Id"
+          },
+          "cms_site_slug": {
+            "type": "string",
+            "title": "Cms Site Slug"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CmsAlignItemResult"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "applied": {
+            "type": "integer",
+            "title": "Applied",
+            "default": 0
+          },
+          "unchanged": {
+            "type": "integer",
+            "title": "Unchanged",
+            "default": 0
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed",
+            "default": 0
+          },
+          "statuses_advanced": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Statuses Advanced"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "web_site_id",
+          "cms_site_id",
+          "cms_site_slug"
+        ],
+        "title": "CmsAlignResult"
+      },
+      "CmsReconcileBody": {
+        "properties": {
+          "cms_site": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cms Site"
+          },
+          "write_links": {
+            "type": "boolean",
+            "title": "Write Links",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CmsReconcileBody"
+      },
+      "CmsReconcileMatch": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "route": {
+            "type": "string",
+            "title": "Route"
+          },
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "page_route": {
+            "type": "string",
+            "title": "Page Route"
+          },
+          "live_url": {
+            "type": "string",
+            "title": "Live Url"
+          },
+          "is_published": {
+            "type": "boolean",
+            "title": "Is Published",
+            "default": false
+          },
+          "linked": {
+            "type": "boolean",
+            "title": "Linked",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "node_id",
+          "route",
+          "page_id",
+          "page_route",
+          "live_url"
+        ],
+        "title": "CmsReconcileMatch"
+      },
+      "CmsReconcileReport": {
+        "properties": {
+          "web_site_id": {
+            "type": "string",
+            "title": "Web Site Id"
+          },
+          "cms_site_id": {
+            "type": "string",
+            "title": "Cms Site Id"
+          },
+          "cms_site_slug": {
+            "type": "string",
+            "title": "Cms Site Slug"
+          },
+          "matched": {
+            "items": {
+              "$ref": "#/components/schemas/CmsReconcileMatch"
+            },
+            "type": "array",
+            "title": "Matched"
+          },
+          "ghosts": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Ghosts"
+          },
+          "orphans": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Orphans"
+          },
+          "conflicts": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Conflicts"
+          },
+          "retired": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Retired"
+          },
+          "links_written": {
+            "type": "integer",
+            "title": "Links Written",
+            "default": 0
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "web_site_id",
+          "cms_site_id",
+          "cms_site_slug"
+        ],
+        "title": "CmsReconcileReport"
+      },
+      "CmsStarterKitBody": {
+        "properties": {
+          "cms_site": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cms Site"
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CmsStarterKitBody"
+      },
       "CodeAgentUsage": {
         "properties": {
           "usage_key": {
@@ -58626,6 +59216,147 @@
         "type": "object",
         "title": "CompensationOut",
         "description": "Per-claim compensation block.\n\n`compensation` is the total PD payout. `weekly_payment` is the actual\nrate per week (= weekly_earnings × LC §4658(d) adjustment if any).\n`pd_adjustment_pct` is +15 / -15 / 0 with `pd_adjustment_reason`\nexplaining why. `life_pension_weekly` is populated only when the\nfinal rating is ≥ 70% (LC §4659)."
+      },
+      "ComponentRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "client_id": {
+            "type": "string",
+            "title": "Client Id"
+          },
+          "component_type": {
+            "type": "string",
+            "title": "Component Type"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "html_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Html Content"
+          },
+          "html_content_draft": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Html Content Draft"
+          },
+          "css_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Css Content"
+          },
+          "css_content_draft": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Css Content Draft"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "has_draft": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Draft"
+          },
+          "last_published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Published At"
+          },
+          "last_published_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Published By"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "client_id",
+          "component_type",
+          "name"
+        ],
+        "title": "ComponentRead"
       },
       "ComputeNextDueRequest": {
         "properties": {
@@ -80174,6 +80905,25 @@
         "title": "MutedPattern",
         "description": "An admin UI-muted signature (app_log_muted_pattern row)."
       },
+      "NavLink": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "href": {
+            "type": "string",
+            "title": "Href"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "label",
+          "href"
+        ],
+        "title": "NavLink"
+      },
       "NodeContractReport": {
         "properties": {
           "node_type": {
@@ -96608,6 +97358,104 @@
         ],
         "title": "StartStepRunResponse",
         "description": "A freshly created step-mode run — a ``paused`` run seeded at its entry\nfrontier, ready for per-node execution."
+      },
+      "StarterKitResult": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "site_slug": {
+            "type": "string",
+            "title": "Site Slug"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run"
+          },
+          "forced": {
+            "type": "boolean",
+            "title": "Forced"
+          },
+          "operation": {
+            "type": "string",
+            "title": "Operation"
+          },
+          "global_css_chars": {
+            "type": "integer",
+            "title": "Global Css Chars"
+          },
+          "global_css_written": {
+            "type": "boolean",
+            "title": "Global Css Written"
+          },
+          "global_css_replaced_chars": {
+            "type": "integer",
+            "title": "Global Css Replaced Chars"
+          },
+          "navigation_seeded": {
+            "type": "boolean",
+            "title": "Navigation Seeded"
+          },
+          "navigation": {
+            "items": {
+              "$ref": "#/components/schemas/NavLink"
+            },
+            "type": "array",
+            "title": "Navigation",
+            "default": []
+          },
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/ComponentRead"
+            },
+            "type": "array",
+            "title": "Components",
+            "default": []
+          },
+          "replaced_component_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Replaced Component Ids",
+            "default": []
+          },
+          "rejected_theme_properties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rejected Theme Properties",
+            "default": []
+          },
+          "nav_token": {
+            "type": "string",
+            "title": "Nav Token"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_id",
+          "site_slug",
+          "dry_run",
+          "forced",
+          "operation",
+          "global_css_chars",
+          "global_css_written",
+          "global_css_replaced_chars",
+          "navigation_seeded",
+          "nav_token"
+        ],
+        "title": "StarterKitResult"
       },
       "StatelessApplicant": {
         "properties": {

@@ -46,6 +46,7 @@ export function SetupWorkOrderColumn({
   onReset,
   pageTypeName,
   newCount,
+  bridgeSlot,
 }: {
   expanded: ExpandedArchetype;
   readiness: Readiness;
@@ -61,6 +62,13 @@ export function SetupWorkOrderColumn({
   pageTypeName: (slug: string | null) => string;
   /** How many routes this commit would create — the headline number. */
   newCount: number;
+  /**
+   * The "Make it real" rungs (SetupBridgeSection), injected so this column
+   * stays presentational — the rungs need site + dispatch, which live in
+   * SetupView. Rendered directly under the foundation checklist: the
+   * checklist diagnoses, the rungs act on the same facts.
+   */
+  bridgeSlot?: React.ReactNode;
 }) {
   const [namingOpen, setNamingOpen] = useState<string | null>(null);
 
@@ -352,6 +360,8 @@ export function SetupWorkOrderColumn({
             : "Measured against the linked CMS site — tokens, components, navigation, and assets are real counts, not assumptions."}
         </p>
       </SetupSection>
+
+      {bridgeSlot}
 
       <SetupSection title="Depth of what is planned">
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-stretch">

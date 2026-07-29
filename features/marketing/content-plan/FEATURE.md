@@ -35,11 +35,14 @@ plan CRUD through it.
   (back-to-plans link, site picker, view switch, refresh) injects into the
   shell PageHeader (`components/ContentPlanHeader.tsx`); state rides the URL
   (`hooks/usePlanWorkspaceParams.ts`).
-- AI actions (`hooks/useContentPlanAi.ts`) — the feature's ONLY aidream
-  calls: Generate plan (`PlanGenerateBar` strip on tree/table/map, streams
-  `/content-plan/sites/{id}/generate`) and Deepen (NodePanel header button,
-  streams `/content-plan/nodes/{id}/deepen`). Everything else stays
-  Supabase-direct.
+- AI actions (`hooks/useContentPlanAi.ts`) — Generate plan (`PlanGenerateBar`
+  strip on tree/table/map, streams `/content-plan/sites/{id}/generate`) and
+  Deepen (NodePanel header button, streams `/content-plan/nodes/{id}/deepen`).
+- Plan↔CMS bridge (`setup/bridge.ts`, consumed by
+  `setup/components/SetupBridgeSection.tsx`) — the OTHER sanctioned aidream
+  calls: `POST /content-plan/sites/{id}/cms-reconcile | cms-align |
+  cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
+  server-side), never DB reads. Everything else stays Supabase-direct.
 - Nav: Marketing Hub → "Content Plan" (`features/shell/constants/nav-data.ts`).
 - `data/service.ts` — THE plan write path on the client. Every entrance
   (UI, future envelope-apply, generators) delegates here; nothing else calls
@@ -146,7 +149,15 @@ plan CRUD through it.
    the count AND rewrites the slugs live), **the exact routes** then commit.
    It is a PERSISTENT readiness surface, not a day-zero wizard — the same
    screen answers "what is missing?" on an empty site, a half-built one, and a
-   finished one, and re-running it is safe.
+   finished one, and re-running it is safe. Under the foundation checklist sit
+   the **"Make it real" rungs** (`SetupBridgeSection`): 1 create-or-link the
+   CMS counterpart (CMS site via the existing `/api/cms` seam; link recorded on
+   BOTH sides — `web.site.settings.cms` merge-write + the bridge pairing via
+   the first `cms-reconcile`), 2 run the starter kit (refusal on a non-empty
+   site surfaces verbatim; force only behind a destructive confirm), 3 realize
+   planned pages (reconcile report → **dry-run preview mandatory before
+   apply**; per-item results shown verbatim — the bridge isolates per item, so
+   partial success is reported as exactly that).
 4. **Entities** (`EntityManager.tsx`): `plan.entity` CRUD per site.
 5. **Agent writes** land directly in the DB (chat tools today, aidream
    generator later) and appear on refetch — the header Refresh invalidates
@@ -262,6 +273,13 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-28 — Claude: **Setup gained the "Make it real" rungs.** New
+  `setup/bridge.ts` (aidream `cms-reconcile`/`cms-align`/`cms-starter-kit`
+  clients + `recordCmsLink` settings merge-write) and
+  `setup/components/SetupBridgeSection.tsx` (create/link CMS site, starter
+  kit, realize with mandatory dry-run preview), injected into
+  SetupWorkOrderColumn via `bridgeSlot` under the foundation checklist. The
+  readiness panel now acts, not just diagnoses (handoff §3 item 2).
 - 2026-07-28 — Claude: **canonical routing + list page + AI buttons.**
   `/marketing/content-plan` became the canonical entry LIST (PlanSitesList on
   MatrxDataTable, per-site plan aggregates via `listPlanSiteStats`, row menu,

@@ -1,17 +1,16 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseTroubleshootingMarkdown } from "@/components/mardown-display/blocks/troubleshooting/parseTroubleshootingMarkdown";
 import {
-  type ArtifactRendererProps,
-  resolveMarkdownPayload,
   artifactDedupKey,
+  resolveMarkdownPayload,
 } from "../artifact-renderers";
 import { useArtifactState } from "../persistence/useArtifactState";
 import type { TroubleshootingState } from "@/components/mardown-display/blocks/troubleshooting/TroubleshootingBlock";
 import TroubleshootingBlock from "@/components/mardown-display/blocks/troubleshooting/TroubleshootingBlock";
-
+import type { ArtifactRendererProps } from "../types";
 /**
  * Unified renderer for `troubleshooting` artifacts — the ONE renderer used by
  * chat, canvas, and artifact-card surfaces. Resolves the payload (serverData ??
@@ -26,10 +25,9 @@ export default function TroubleshootingArtifact({
   artifactId,
   isStreamActive,
 }: ArtifactRendererProps) {
-  const { state, loaded, save } = useArtifactState<TroubleshootingState & Record<string, unknown>>(
-    artifactId,
-    "generic",
-  );
+  const { state, loaded, save } = useArtifactState<
+    TroubleshootingState & Record<string, unknown>
+  >(artifactId, "generic");
 
   const troubleshooting = useMemo(
     () =>

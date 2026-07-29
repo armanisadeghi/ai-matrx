@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 316 active entity tokens. A token here is FK-valid for
+// 317 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -360,6 +360,7 @@ export type EntityTypeToken =
   | "workflow_trigger"
   | "workflow_trigger_fire"
   | "working_document"
+  | "youtube_search"
   | "youtube_video";
 
 /** Tokens flagged `reference_pickable` — offered in reference "Allowed types" choosers. */
@@ -882,6 +883,7 @@ export type ScopeableEntityToken =
   | "workflow_template"
   | "workflow_trigger"
   | "workflow_trigger_fire"
+  | "youtube_search"
   | "youtube_video";
 
 /** Tokens flagged `is_listed` — surfaced in list/nav UIs. */
@@ -1131,7 +1133,7 @@ export const ENTITY_TYPE_METADATA = {
   "sms_notification": { token: "sms_notification", schema: "communication", table: "sms_notifications", label: "SMS Notification", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "sms_notification_preference": { token: "sms_notification_preference", schema: "communication", table: "sms_notification_preferences", label: "SMS Notification Preference", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "sms_phone_number": { token: "sms_phone_number", schema: "communication", table: "sms_phone_numbers", label: "SMS Phone Number", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "structured_list": { token: "structured_list", schema: "workbench", table: "udt_structured_lists", label: "Structured List", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "list_name", contentRole: "utility", referenceCategory: null },
+  "structured_list": { token: "structured_list", schema: "workbench", table: "udt_structured_lists", label: "Structured List", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "list_name", contentRole: "hybrid", referenceCategory: null },
   "studio_documents": { token: "studio_documents", schema: "transcripts", table: "studio_documents", label: "Studio Document", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "studio_recording_chunks": { token: "studio_recording_chunks", schema: "transcripts", table: "studio_recording_chunks", label: "Studio Recording Chunk", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "studio_recording_segments": { token: "studio_recording_segments", schema: "transcripts", table: "studio_recording_segments", label: "Studio Recording Segment", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1232,6 +1234,7 @@ export const ENTITY_TYPE_METADATA = {
   "workflow_trigger": { token: "workflow_trigger", schema: "workflow", table: "trigger", label: "Workflow Trigger", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "workflow_trigger_fire": { token: "workflow_trigger_fire", schema: "workflow", table: "trigger_fire", label: "Workflow Trigger Fire", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "working_document": { token: "working_document", schema: "workbench", table: "working_documents", label: "Working Documents", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: true, titleColumn: "title", contentRole: "destination", referenceCategory: null },
+  "youtube_search": { token: "youtube_search", schema: "research", table: "youtube_search", label: "YouTube Search", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "youtube_video": { token: "youtube_video", schema: "research", table: "youtube_video", label: "YouTube Video", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: "source", referenceCategory: null },
 } as const satisfies Record<EntityTypeToken, EntityTypeMeta>;
 
@@ -1552,6 +1555,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "workflow_trigger",
   "workflow_trigger_fire",
   "working_document",
+  "youtube_search",
   "youtube_video",
 ];
 

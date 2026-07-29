@@ -1,15 +1,14 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseTimelineMarkdown } from "@/components/mardown-display/blocks/timeline/parseTimelineMarkdown";
 import {
-  type ArtifactRendererProps,
   resolveMarkdownPayload,
   artifactDedupKey,
 } from "../artifact-renderers";
 import TimelineBlock from "@/components/mardown-display/blocks/timeline/TimelineBlock";
-
+import type { ArtifactRendererProps } from "../types";
 /**
  * Unified renderer for `timeline` artifacts — the ONE renderer used by chat,
  * canvas, and artifact-card surfaces. Resolves the payload (serverData ?? canvas

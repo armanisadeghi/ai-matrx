@@ -1,17 +1,16 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseProgressMarkdown } from "@/components/mardown-display/blocks/progress/parseProgressMarkdown";
 import {
-  type ArtifactRendererProps,
   resolveMarkdownPayload,
   artifactDedupKey,
 } from "../artifact-renderers";
 import { useArtifactState } from "../persistence/useArtifactState";
 import type { ProgressTrackerState } from "@/components/mardown-display/blocks/progress/ProgressTrackerBlock";
 import ProgressTrackerBlock from "@/components/mardown-display/blocks/progress/ProgressTrackerBlock";
-
+import type { ArtifactRendererProps } from "../types";
 /**
  * Unified renderer for `progress` (progress_tracker) artifacts — the ONE
  * renderer used by chat, canvas, and artifact-card surfaces. Resolves the
@@ -26,10 +25,9 @@ export default function ProgressArtifact({
   artifactId,
   isStreamActive,
 }: ArtifactRendererProps) {
-  const { state, loaded, save } = useArtifactState<ProgressTrackerState & Record<string, unknown>>(
-    artifactId,
-    "generic",
-  );
+  const { state, loaded, save } = useArtifactState<
+    ProgressTrackerState & Record<string, unknown>
+  >(artifactId, "generic");
 
   const tracker = useMemo(
     () =>

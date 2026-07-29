@@ -1,16 +1,12 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import {
-  type ArtifactRendererProps,
-  resolveJsonPayload,
-  artifactDedupKey,
-} from "../artifact-renderers";
+import { resolveJsonPayload, artifactDedupKey } from "../artifact-renderers";
 import { useArtifactState } from "../persistence/useArtifactState";
 import type { SlideshowState } from "@/components/mardown-display/blocks/presentations/Slideshow";
 import Slideshow from "@/components/mardown-display/blocks/presentations/Slideshow";
-
+import type { ArtifactRendererProps } from "../types";
 /** Theme default matching the legacy presentation cases (BlockRenderer / ArtifactBlock). */
 const DEFAULT_THEME = { primaryColor: "#2563eb", secondaryColor: "#1e40af" };
 

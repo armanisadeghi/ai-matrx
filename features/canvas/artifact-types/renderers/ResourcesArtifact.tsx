@@ -1,15 +1,14 @@
 "use client";
 
-import React, { Suspense,  useMemo } from "react";
+import React, { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { parseResourcesMarkdown } from "@/components/mardown-display/blocks/resources/parseResourcesMarkdown";
 import {
-  type ArtifactRendererProps,
   resolveMarkdownPayload,
   artifactDedupKey,
 } from "../artifact-renderers";
 import ResourceCollectionBlock from "@/components/mardown-display/blocks/resources/ResourceCollectionBlock";
-
+import type { ArtifactRendererProps } from "../types";
 /**
  * Unified renderer for `resources` artifacts — the ONE renderer used by chat,
  * canvas, and artifact-card surfaces. Resolves the payload (serverData ?? canvas

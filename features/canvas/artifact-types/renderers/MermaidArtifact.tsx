@@ -1,14 +1,11 @@
 "use client";
 
-import React, { Suspense } from "react";
+import { Suspense } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import {
-  type ArtifactRendererProps,
-  artifactDedupKey,
-} from "../artifact-renderers";
+import { artifactDedupKey } from "../artifact-renderers";
 import MermaidWorkbench from "@/components/mermaid/workbench/MermaidWorkbench";
 import MermaidBlock from "@/components/mardown-display/blocks/mermaid/MermaidBlock";
-
+import type { ArtifactRendererProps } from "../types";
 // Canvas mode: the full editable workbench — default export, props: source, metadata?
 // Path confirmed from CanvasBody's `mermaid` case:
 //   `import("@/components/mermaid/workbench/MermaidWorkbench")`

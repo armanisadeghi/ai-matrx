@@ -1,9 +1,9 @@
 "use client";
 
-import React, { Suspense } from "react";
+import { Suspense } from "react";
 import SandboxedHtml from "@/components/mardown-display/blocks/common/SandboxedHtml";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import type { ArtifactRendererProps } from "../artifact-renderers";
+import type { ArtifactRendererProps } from "../types";
 import HtmlInlinePreview from "@/features/html-pages/components/HtmlInlinePreview";
 
 /**

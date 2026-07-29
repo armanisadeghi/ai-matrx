@@ -76,7 +76,8 @@ function LiveResearchRegion({
   // replace what the user is already reading. The old check only guarded
   // against a null parse — a valid-but-EMPTY payload (lists: []) both poisoned
   // the retained copy and won the render, which is the block "disappearing".
-  const currentHasData = currentData !== undefined && currentData.lists.length > 0;
+  const currentHasData =
+    currentData !== undefined && currentData.lists.length > 0;
   if (currentHasData && latest.text !== text) {
     setLatest({ text, data: currentData });
   }

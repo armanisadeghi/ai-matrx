@@ -2,7 +2,7 @@
 
 import React, { Suspense } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import { type ArtifactRendererProps } from "../artifact-renderers";
+import { type ArtifactRendererProps } from "../types";
 import ChartBlock from "@/components/mardown-display/blocks/chart/ChartBlock";
 
 /**
