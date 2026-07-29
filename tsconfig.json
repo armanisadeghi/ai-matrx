@@ -85,13 +85,9 @@
     "features/**/*",
     "app/**/*",
     "packages/**/*.ts",
-<<<<<<< Updated upstream
     "packages/**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
-=======
-    "packages/**/*.tsx"
->>>>>>> Stashed changes
   ],
   "exclude": [
     ".next*/**",
