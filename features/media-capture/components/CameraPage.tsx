@@ -46,16 +46,27 @@ export default function CameraPage() {
       </PageHeader>
 
       <div className="h-full overflow-hidden bg-textured">
-        <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-3 pt-[var(--shell-header-h)]">
+        {/*
+          The studio must FIT the viewport — never grow to the camera's
+          intrinsic size and push the library off-screen (a real feed made the
+          stage taller than the page). On desktop the column does not scroll:
+          studio and library split the available height (≈60/40) and each is
+          `min-h-0` so the stage is bounded and the library scrolls INSIDE its
+          own region. On mobile a bounded split would crush the stage, so the
+          column falls back to a normal vertical scroll with min-height floors.
+        */}
+        <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-3 pt-[var(--shell-header-h)] md:overflow-hidden">
           {studioOpen && (
-            <div className="min-h-[320px] shrink-0 md:min-h-[420px]">
+            <div className="min-h-[360px] shrink-0 md:min-h-0 md:flex-[3] md:basis-0">
               <CaptureStudio
                 sourceFeature="camera"
                 onSaved={() => setSaveCount((n) => n + 1)}
               />
             </div>
           )}
-          <CaptureLibrary refreshToken={saveCount} />
+          <div className="min-h-[280px] shrink-0 md:min-h-0 md:flex-[2] md:basis-0 md:overflow-y-auto">
+            <CaptureLibrary refreshToken={saveCount} />
+          </div>
         </div>
       </div>
     </>
