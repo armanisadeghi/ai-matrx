@@ -42,12 +42,32 @@ deliberate and is what keeps ONE renderer).
   `forceLocalConversationId: true` (the wire conversation belongs to the server's
   pipeline, not a local Redux conversation). Terminal status is forced on a clean
   end so a row can't sit "streaming" forever.
-- **Server twin** — aidream `aidream/services/ai_execution/block_stream.py`
-  (`stream_agent_as_blocks`), engaged automatically by
-  `run_one_agent(stream_output=True)` (`services/agent_service/run.py`): wraps the
-  ambient emitter in the existing `BlockStreamingEmitter` so the run emits
-  `render_block` events carrying `metadata.__ir` envelopes instead of bare chunks.
-  No-op when there's no live emitter; never double-wraps.
+- **Server twin — WRITTEN BUT PARKED, NOT ENGAGED.** aidream
+  `aidream/services/ai_execution/block_stream.py` (`stream_agent_as_blocks`)
+  would make pipeline runs emit `render_block` events with envelopes instead of
+  bare chunks. Adversarial review found `BlockStreamingEmitter` (which it
+  installs) does not implement the emitter protocol, so it is deliberately wired
+  to nothing. **The frontend does not need it** — `processStream`'s own
+  `StreamBlockAccumulator` already builds envelopes from the chunk stream, so
+  server-built envelopes are an optimization. The four blockers are documented at
+  the top of `block_stream.py`:
+  1. `send_reasoning_state` missing and called **UNGUARDED** by every provider
+     the moment a model opens a thinking block → `AttributeError`, billed, and
+     re-raised: a paid run dies. Same for `send_resource_changed`,
+     `send_citation`, `send_structured_output`, `send_injection_consumed`,
+     `send_context_analysis`/`_state`/`_trimmed`.
+  2. No turn-text accumulator (`send_chunk` never reaches the inner emitter, no
+     `get_turn_text`) → the cancel and mid-stream-error handlers read via
+     `getattr` and silently lose the partial assistant text the user already saw.
+  3. `blk_N` ids restart per instance, and `keyword_research` runs TWO wrapped
+     agents on one client stream → both emit `blk_0` and the FE keys upgrades by
+     that id. Needs a run-scoped prefix.
+  4. The wrap is None-gated, not capability-gated: `_emit_block_event` requires
+     the inner emitter's `queue`/`_ended`/`cancelled`, which `SilentEmitter`,
+     `ConsoleEmitter`, `CaptureEmitter` and the workflow emitters lack.
+  Fix all four with a forcing-function test asserting the protocol surface is
+  complete, then engage it in `run_one_agent`. Fixing it also repairs the
+  pre-existing `ctx.block_mode` path, which has the same gaps.
 - **Enforcement** — `matrx/no-bespoke-stream-renderer` in `eslint.config.mjs`, at
   **error**: `useLiveJsonRegion` / `openParseSession` unimportable outside
   `features/content-ir/`.
@@ -102,6 +122,34 @@ it is a tarball-fetch restriction). Consequences:
 - **No browser verification.** Nothing was exercised live.
 - **aidream:** Python deps are not installed either — no imports, no tests run.
   Every touched file passes `ast.parse` only.
+
+## Adversarial review — what it caught
+
+Three reviewers audited the diff before it was committed. Everything
+substantiated is fixed in `160b68be`; the notable ones, because they show what
+to distrust in similar work:
+
+- The launcher still gated its entire live panel on a field the migration
+  deleted, so the change rendered **nothing** on its primary surface. A partial
+  rename across two consumers.
+- The new lint rule errored on the canonical implementation its own message
+  points you at, and its name-only check was bypassable by namespace import,
+  re-export, or `await import()`.
+- Read and write used **different** surface resolution (single deepest runtime
+  vs. walking the stack), which silently disabled the blocks in an
+  overlay-hosted window and could leak one surface's selection onto another's.
+- The whole `applyPolicy` gate was **dead code** — the only client seam never
+  passed `origin` — while the DB was already advertising `ask` to the server.
+- An adopted stream fired the "no assistant reservation arrived" alarm on every
+  successful run and wrote a phantom message record.
+- The adopter's AbortController was never wired to the fetch, so a heartbeat
+  timeout aborted nothing and leaked the body for the life of the tab.
+
+Still open from review, judged not worth blocking on (fix opportunistically):
+`listLiveWriteTargets()` is called in the Surface Context window's render body
+and re-invokes every mounted provider's `getWriteHandlers()` on each 400ms poll;
+`useSurfaceUiState`'s exact-surface form is now the rarely-used one and could be
+folded into the stack-walking form.
 
 ## Next steps, in order
 
