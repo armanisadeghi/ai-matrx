@@ -7,8 +7,8 @@
 // Three power-user controls live here, each grafted from the bake-off winner +
 // its grafts:
 //
-//   1. mode — "stage" (a watchlist rail + one driven thread) vs "grid" (the
-//      bento gallery of every thread, all at once). The reimagine spine.
+//   1. mode — "stage" (thread list → one full-surface thread) vs "grid" (the
+//      bento gallery of every thread, all at once).
 //   2. projectedTab — the Bloomberg "set the whole wall to one instrument"
 //      move (dense): force every tile to the same tab (all-Tasks, all-Notes,
 //      all-Audio, all-Combined) without mutating each tile's saved active_tab.
@@ -60,6 +60,14 @@ export interface RoomViewState {
   setChosenStageId: (id: string) => void;
   /** Bring a thread to the Stage AND switch to Stage mode in one move. */
   stageThread: (id: string) => void;
+
+  /**
+   * A selected thread owns the route surface until the user returns to the
+   * list. This avoids embedding an already-complex multi-tab thread inside the
+   * War Room cockpit at every viewport size.
+   */
+  threadDetailOpen: boolean;
+  closeThreadDetail: () => void;
 }
 
 const RoomViewContext = createContext<RoomViewState | null>(null);
@@ -73,6 +81,7 @@ export function RoomViewProvider({ children }: { children: React.ReactNode }) {
     ReadonlySet<string>
   >(() => new Set());
   const [chosenStageId, setChosenStageId] = useState<string | null>(null);
+  const [threadDetailOpen, setThreadDetailOpen] = useState(false);
 
   const value = useMemo<RoomViewState>(
     () => ({
@@ -99,7 +108,10 @@ export function RoomViewProvider({ children }: { children: React.ReactNode }) {
       stageThread: (id: string) => {
         setChosenStageId(id);
         setMode("stage");
+        setThreadDetailOpen(true);
       },
+      threadDetailOpen,
+      closeThreadDetail: () => setThreadDetailOpen(false),
     }),
     [
       mode,
@@ -108,6 +120,7 @@ export function RoomViewProvider({ children }: { children: React.ReactNode }) {
       threadQuery,
       dismissedAnchorPrompts,
       chosenStageId,
+      threadDetailOpen,
     ],
   );
 
