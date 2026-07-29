@@ -1,8 +1,16 @@
 // features/scopes/components/associations/AssociationPicker.tsx
 //
-// The token-driven "pick a record to associate" surface. Adaptive: a right
-// Sheet on desktop, a bottom Drawer on mobile (project rule — never a Dialog
-// on mobile).
+// The token-driven "pick a record to associate" surface. Adaptive: a
+// NON-BLOCKING draggable/resizable `WindowPanel` on desktop (the page behind
+// stays interactive — never a blocking Sheet), a bottom Drawer on mobile
+// (project rule — never a Dialog on mobile).
+//
+// Two jobs, both ALWAYS available (the create-then-associate contract in the
+// association-entity-select skill):
+//   1. Associate existing — the registry-driven candidate list.
+//   2. Add new + associate — the "+ New <Entity>" footer creates the row
+//      first (durable, via `createEntityRow`), writes the edge second, and
+//      every terminal outcome is loud.
 //
 // Files are NOT listed with the generic candidate list — the `file` token
 // always mounts the canonical stored-files browser (`FilesResourcePicker`:
@@ -14,22 +22,17 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Check, Loader2, Plus, Search } from "lucide-react";
+import { Check, Loader2, Plus, Search, X } from "lucide-react";
+import { toast } from "@/lib/toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAssociationCandidates } from "@/features/scopes/hooks/useAssociationCandidates";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { createEntityRow } from "@/features/scopes/service/entityRows";
 import {
   FilesResourcePicker,
   type FileSelection,
 } from "@/features/resource-manager/resource-picker/FilesResourcePicker";
 import dynamic from "next/dynamic";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
 import {
   Drawer,
   DrawerContent,
@@ -51,18 +54,32 @@ const FilePickerWindow = dynamic(
   { ssr: false, loading: () => null },
 );
 
+// Same lazy rule for the association window shell (it parses WindowPanel).
+const AssociationWindow = dynamic(
+  () =>
+    import(
+      "@/features/scopes/components/associations/AssociationWindow"
+    ).then((m) => ({ default: m.AssociationWindow })),
+  { ssr: false, loading: () => null },
+);
+
 export interface AssociationPickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   token: EntityTypeToken;
   /** Container display label, for the header ("…to Titanium Marketing"). */
   containerLabel?: string;
+  /** Org stamped onto rows created by the "+ New" footer. */
+  orgId?: string | null;
   /** Resource ids already attached to the container. */
   attachedIds: Set<string>;
   /** Attach a resource (returns ok/err so the row can surface failures). */
-  onAttach: (resourceId: string, title: string) => Promise<{ ok: boolean }>;
+  onAttach: (
+    resourceId: string,
+    title: string,
+  ) => Promise<{ ok: boolean; error?: string }>;
   /** Detach a resource. */
-  onDetach: (resourceId: string) => Promise<{ ok: boolean }>;
+  onDetach: (resourceId: string) => Promise<{ ok: boolean; error?: string }>;
 }
 
 export function AssociationPicker(props: AssociationPickerProps) {
@@ -104,6 +121,7 @@ export function AssociationPicker(props: AssociationPickerProps) {
     <AssociationCandidateBody
       token={props.token}
       enabled={props.open}
+      orgId={props.orgId}
       attachedIds={props.attachedIds}
       onAttach={props.onAttach}
       onDetach={props.onDetach}
@@ -130,34 +148,35 @@ export function AssociationPicker(props: AssociationPickerProps) {
     );
   }
 
+  // Desktop: non-blocking draggable window. Gated on `open` so the window
+  // chunk only loads on first use.
+  if (!props.open) return null;
   return (
-    <Sheet open={props.open} onOpenChange={props.onOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-md flex flex-col gap-3"
-      >
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <info.Icon className="h-4 w-4 text-muted-foreground" />
-            {title}
-          </SheetTitle>
-          <SheetDescription>{subtitle}</SheetDescription>
-        </SheetHeader>
-        <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
-          {body}
-        </div>
-      </SheetContent>
-    </Sheet>
+    <AssociationWindow
+      open={props.open}
+      onClose={() => props.onOpenChange(false)}
+      scopeId={`picker:${props.token}`}
+      title={title}
+      icon={<info.Icon className="size-3.5 text-primary" />}
+      subtitle={subtitle}
+    >
+      {body}
+    </AssociationWindow>
   );
 }
 
 export interface AssociationCandidateBodyProps {
   token: EntityTypeToken;
-  /** Load candidates only while true (mirror of the sheet's `open`). */
+  /** Load candidates only while true (mirror of the surface's `open`). */
   enabled: boolean;
+  /** Org stamped onto rows created by the "+ New" footer. */
+  orgId?: string | null;
   attachedIds: Set<string>;
-  onAttach: (resourceId: string, title: string) => Promise<{ ok: boolean }>;
-  onDetach: (resourceId: string) => Promise<{ ok: boolean }>;
+  onAttach: (
+    resourceId: string,
+    title: string,
+  ) => Promise<{ ok: boolean; error?: string }>;
+  onDetach: (resourceId: string) => Promise<{ ok: boolean; error?: string }>;
   /** Wired to the canonical file browser's back affordance. */
   onClose?: () => void;
 }
@@ -172,6 +191,7 @@ export interface AssociationCandidateBodyProps {
 export function AssociationCandidateBody({
   token,
   enabled,
+  orgId,
   attachedIds,
   onAttach,
   onDetach,
@@ -213,6 +233,7 @@ export function AssociationCandidateBody({
     <EntityCandidateList
       token={token}
       enabled={enabled}
+      orgId={orgId}
       attachedIds={attachedIds}
       onAttach={onAttach}
       onDetach={onDetach}
@@ -223,15 +244,20 @@ export function AssociationCandidateBody({
 function EntityCandidateList({
   token,
   enabled,
+  orgId,
   attachedIds,
   onAttach,
   onDetach,
 }: {
   token: EntityTypeToken;
   enabled: boolean;
+  orgId?: string | null;
   attachedIds: Set<string>;
-  onAttach: (resourceId: string, title: string) => Promise<{ ok: boolean }>;
-  onDetach: (resourceId: string) => Promise<{ ok: boolean }>;
+  onAttach: (
+    resourceId: string,
+    title: string,
+  ) => Promise<{ ok: boolean; error?: string }>;
+  onDetach: (resourceId: string) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -242,6 +268,11 @@ function EntityCandidateList({
     search: search.trim() || undefined,
   });
 
+  // Creatable = the generic registry write path works: a title column and no
+  // bespoke candidate source (a `listCandidates` override signals the table
+  // is not PostgREST-writable, e.g. rag data stores).
+  const canCreate = info.titleColumn !== null && info.listCandidates === null;
+
   const toggle = async (id: string, title: string) => {
     if (busyId) return;
     setBusyId(id);
@@ -249,7 +280,13 @@ function EntityCandidateList({
       const attached = attachedIds.has(id);
       const res = attached ? await onDetach(id) : await onAttach(id, title);
       // The container cache reload (in the thunk) flips `attachedIds` for us.
-      if (!res.ok) return;
+      // A silent no-op attach is the bug class this toast kills.
+      if (!res.ok) {
+        toast.error(
+          `Couldn't ${attached ? "detach" : "attach"} "${title}"` +
+            (res.error ? `: ${res.error}` : ""),
+        );
+      }
     } finally {
       setBusyId(null);
     }
@@ -287,7 +324,11 @@ function EntityCandidateList({
             </button>
           </div>
         ) : candidates.length === 0 ? (
-          <ListMessage>Nothing to attach.</ListMessage>
+          <ListMessage>
+            {canCreate
+              ? `Nothing to attach yet — create a new ${info.label.toLowerCase()} below.`
+              : "Nothing to attach."}
+          </ListMessage>
         ) : (
           <ul className="space-y-0.5">
             {candidates.map((c) => {
@@ -332,7 +373,141 @@ function EntityCandidateList({
           </ul>
         )}
       </div>
+
+      {canCreate && (
+        <CreateAndAttachFooter
+          token={token}
+          orgId={orgId}
+          seed={search.trim()}
+          onAttach={onAttach}
+          onCreated={reload}
+        />
+      )}
     </>
+  );
+}
+
+/**
+ * The "+ New <Entity>" footer — the create-then-associate contract: create the
+ * durable row FIRST (`createEntityRow`), write the idempotent edge SECOND
+ * (retry once), and every terminal outcome is loud. A created-but-unlinked
+ * row is reported WITH its location, never silently orphaned.
+ */
+function CreateAndAttachFooter({
+  token,
+  orgId,
+  seed,
+  onAttach,
+  onCreated,
+}: {
+  token: EntityTypeToken;
+  orgId?: string | null;
+  /** Current search text — doubles as the new row's default name. */
+  seed: string;
+  onAttach: (resourceId: string, title: string) => Promise<{ ok: boolean }>;
+  onCreated: () => void;
+}) {
+  const info = getEntityInfo(token);
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    const title = name.trim();
+    if (!title || busy) return;
+    setBusy(true);
+    try {
+      const created = await createEntityRow(token, {
+        title,
+        orgId: orgId ?? null,
+      });
+      if (!created.ok) {
+        toast.error(
+          `Couldn't create ${info.label.toLowerCase()}: ${created.error}`,
+        );
+        return;
+      }
+      let attached = await onAttach(created.data.id, created.data.title);
+      if (!attached.ok) {
+        // The edge write is idempotent — one retry is safe.
+        attached = await onAttach(created.data.id, created.data.title);
+      }
+      if (attached.ok) {
+        toast.success(`"${title}" created and attached`);
+      } else {
+        toast.error(
+          `Created "${title}" but couldn't attach it — it's saved in your ` +
+            `${info.labelPlural.toLowerCase()}; pick it from the list to retry.`,
+        );
+      }
+      setEditing(false);
+      setName("");
+      onCreated();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setName(seed);
+          setEditing(true);
+        }}
+        className="mt-2 flex w-full shrink-0 items-center justify-center gap-1.5 rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground"
+      >
+        <Plus className="h-4 w-4" />
+        New {info.label}
+        {seed ? (
+          <span className="max-w-40 truncate text-muted-foreground/70">
+            “{seed}”
+          </span>
+        ) : null}
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-2 flex shrink-0 items-center gap-1.5">
+      <Input
+        autoFocus
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") void submit();
+          if (e.key === "Escape") {
+            setEditing(false);
+            setName("");
+          }
+        }}
+        placeholder={`New ${info.label.toLowerCase()} name…`}
+        disabled={busy}
+        className="h-8 flex-1 text-base"
+        style={{ fontSize: 16 }}
+      />
+      <button
+        type="button"
+        disabled={busy || !name.trim()}
+        onClick={() => void submit()}
+        className="flex h-8 items-center gap-1 rounded-md bg-primary px-2.5 text-sm font-medium text-primary-foreground transition-opacity disabled:opacity-50"
+      >
+        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create"}
+      </button>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => {
+          setEditing(false);
+          setName("");
+        }}
+        title="Cancel"
+        className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
   );
 }
 

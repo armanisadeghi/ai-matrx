@@ -258,6 +258,7 @@ export function AssociationList(props: AssociationListProps) {
         <div className="rounded-md border border-border/60 bg-muted/30 p-2 max-h-80 flex flex-col">
           <UniversalAssociationPicker
             tokens={attachableTokens}
+            orgId={container?.orgId}
             attachedKeys={attachedKeys}
             onAttach={(token, id, title) => adapter.attach(token, id, title)}
             onDetach={(token, id) => adapter.detach(token, id)}
@@ -471,6 +472,7 @@ export function AssociationList(props: AssociationListProps) {
           }}
           token={pickerToken}
           containerLabel={container?.label}
+          orgId={container?.orgId}
           attachedIds={
             new Set(
               rows

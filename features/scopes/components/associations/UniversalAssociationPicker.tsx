@@ -14,6 +14,7 @@
 
 import { useState } from "react";
 import { Check, Loader2, Plus, Search } from "lucide-react";
+import { toast } from "@/lib/toast";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/utils/cn";
 import { useUniversalEntitySearch } from "@/features/scopes/hooks/useUniversalEntitySearch";
@@ -34,13 +35,15 @@ export interface UniversalAssociationPickerProps {
     token: EntityTypeToken,
     resourceId: string,
     title: string,
-  ) => Promise<{ ok: boolean }>;
+  ) => Promise<{ ok: boolean; error?: string }>;
   onDetach: (
     token: EntityTypeToken,
     resourceId: string,
-  ) => Promise<{ ok: boolean }>;
+  ) => Promise<{ ok: boolean; error?: string }>;
   /** Owner filter for candidate reads (defaults to RLS-only). */
   ownerId?: string | null;
+  /** Org stamped onto rows created via the per-token "+ New" footer. */
+  orgId?: string | null;
   className?: string;
 }
 
@@ -51,7 +54,7 @@ export function attachedKey(token: string, id: string): string {
 export function UniversalAssociationPicker(
   props: UniversalAssociationPickerProps,
 ) {
-  const { attachedKeys, onAttach, onDetach, ownerId, className } = props;
+  const { attachedKeys, onAttach, onDetach, ownerId, orgId, className } = props;
   const tokens = props.tokens ?? curatedTokens();
   const [query, setQuery] = useState("");
   const [browseToken, setBrowseToken] = useState<EntityTypeToken | null>(null);
@@ -69,8 +72,17 @@ export function UniversalAssociationPicker(
     if (busyKey) return;
     setBusyKey(key);
     try {
-      if (attachedKeys.has(key)) await onDetach(c.token, c.id);
-      else await onAttach(c.token, c.id, c.title);
+      const attached = attachedKeys.has(key);
+      const res = attached
+        ? await onDetach(c.token, c.id)
+        : await onAttach(c.token, c.id, c.title);
+      // A silent no-op attach is the bug class this toast kills.
+      if (!res.ok) {
+        toast.error(
+          `Couldn't ${attached ? "detach" : "attach"} "${c.title}"` +
+            (res.error ? `: ${res.error}` : ""),
+        );
+      }
     } finally {
       setBusyKey(null);
     }
@@ -134,6 +146,7 @@ export function UniversalAssociationPicker(
           <AssociationCandidateBody
             token={browseToken}
             enabled
+            orgId={orgId}
             onClose={() => setBrowseToken(null)}
             attachedIds={
               new Set(

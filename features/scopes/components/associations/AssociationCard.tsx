@@ -8,10 +8,12 @@
 //
 // It resolves the icon + label from the entity registry (nothing hardcoded),
 // shows a LIVE count of how many of that entity are attached to the primary
-// (container) entity, and a plus button that opens a picker side-sheet to
-// attach/detach. ALL logic lives in hooks/utilities — this is pure presentation
-// wiring over `useContainerLinks` + `AssociationPicker` (files open the
-// canonical FilesResourcePicker, never a plain list).
+// (container) entity, and a plus button that opens the picker — a NON-BLOCKING
+// draggable window on desktop (drawer on mobile) with attach/detach AND a
+// "+ New" create-and-associate footer. ALL logic lives in hooks/utilities —
+// this is pure presentation wiring over `useContainerLinks` +
+// `AssociationPicker` (files open the canonical FilesResourcePicker, never a
+// plain list).
 
 "use client";
 
@@ -145,7 +147,10 @@ export function AssociationCard({
         )}
       </div>
 
-      {canDrillIn && (
+      {/* Mount while open (not while canDrillIn) — detaching the last item
+          must leave the surface up showing "Nothing attached yet", never
+          yank the window out from under the user. */}
+      {listOpen && (
         <AttachedItemsSheet
           open={listOpen}
           onOpenChange={setListOpen}
@@ -170,6 +175,7 @@ export function AssociationCard({
           onOpenChange={setOpen}
           token={token}
           containerLabel={container.label}
+          orgId={container.orgId}
           attachedIds={attachedIdsFor(token)}
           onAttach={(resourceId, title) => attach(token, resourceId, title)}
           onDetach={(resourceId) => detach(token, resourceId)}

@@ -10,24 +10,20 @@
 // have no label at all). Ids the viewer cannot read are omitted by the RPC, so
 // they surface here as "No longer available" instead of leaking a name.
 //
-// Adaptive per project rule: right Sheet on desktop, bottom Drawer on mobile.
+// Adaptive per project rule: a NON-BLOCKING draggable `WindowPanel` on
+// desktop (the page behind stays interactive), bottom Drawer on mobile.
 
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { ExternalLink, Loader2, Plus, X } from "lucide-react";
+import { toast } from "@/lib/toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { fetchEntityTitles } from "@/features/sharing/service/accessSummary";
 import type { ContainerLink } from "@/features/scopes/hooks/useContainerLinks";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
 import {
   Drawer,
   DrawerContent,
@@ -38,6 +34,16 @@ import {
 import { cn } from "@/utils/cn";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
+// Lazy — WindowPanel must never be parsed in a route/boot bundle
+// (features/window-panels FEATURE.md → Bundle invariant).
+const AssociationWindow = dynamic(
+  () =>
+    import(
+      "@/features/scopes/components/associations/AssociationWindow"
+    ).then((m) => ({ default: m.AssociationWindow })),
+  { ssr: false, loading: () => null },
+);
+
 export interface AttachedItemsSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -46,7 +52,7 @@ export interface AttachedItemsSheetProps {
   links: ContainerLink[];
   /** Opens the attach picker. Omitted when the token cannot list candidates. */
   onAdd?: () => void;
-  onDetach: (resourceId: string) => Promise<{ ok: boolean }>;
+  onDetach: (resourceId: string) => Promise<{ ok: boolean; error?: string }>;
 }
 
 export function AttachedItemsSheet(props: AttachedItemsSheetProps) {
@@ -87,24 +93,20 @@ export function AttachedItemsSheet(props: AttachedItemsSheetProps) {
     );
   }
 
+  // Desktop: non-blocking draggable window. Gated on `open` so the window
+  // chunk only loads on first use.
+  if (!props.open) return null;
   return (
-    <Sheet open={props.open} onOpenChange={props.onOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-md flex flex-col gap-3"
-      >
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <info.Icon className="h-4 w-4 text-muted-foreground" />
-            {title}
-          </SheetTitle>
-          <SheetDescription>{subtitle}</SheetDescription>
-        </SheetHeader>
-        <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
-          {body}
-        </div>
-      </SheetContent>
-    </Sheet>
+    <AssociationWindow
+      open={props.open}
+      onClose={() => props.onOpenChange(false)}
+      scopeId={`attached:${props.token}`}
+      title={title}
+      icon={<info.Icon className="size-3.5 text-primary" />}
+      subtitle={subtitle}
+    >
+      {body}
+    </AssociationWindow>
   );
 }
 
@@ -119,7 +121,7 @@ function AttachedItemsBody({
   enabled: boolean;
   links: ContainerLink[];
   onAdd?: () => void;
-  onDetach: (resourceId: string) => Promise<{ ok: boolean }>;
+  onDetach: (resourceId: string) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const info = getEntityInfo(token);
   const [titles, setTitles] = useState<Map<string, string | null> | null>(null);
@@ -166,7 +168,11 @@ function AttachedItemsBody({
     if (busyId) return;
     setBusyId(resourceId);
     try {
-      await onDetach(resourceId);
+      const res = await onDetach(resourceId);
+      // A silent no-op detach reads as "removed" — scream instead.
+      if (!res.ok) {
+        toast.error(`Couldn't detach${res.error ? `: ${res.error}` : ""}`);
+      }
     } finally {
       setBusyId(null);
     }
