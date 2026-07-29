@@ -33,6 +33,7 @@ import {
   selectShowMicrophone,
   selectAutoClearConversation,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectInputCharCount } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   setSubmitOnEnter,
   toggleVariablePanel,
@@ -143,9 +144,16 @@ export function InputActionButtons({
   const showAttachments = useAppSelector(selectShowAttachments(conversationId));
   const showMicrophone = useAppSelector(selectShowMicrophone(conversationId));
 
-  // Stop must stay available during a run; only block the *send* path while
-  // the mic is active so trailing audio isn't dropped mid-transcript.
-  const isSendDisabled = !isExecuting && (disableSend || voiceBusy);
+  const charCount = useAppSelector(selectInputCharCount(conversationId));
+
+  // While a run streams, the composer STAYS live: Send queues the text into
+  // the Turn-Boundary Inbox (the running agent answers it at its next pause,
+  // on the same stream — docs/TURN_BOUNDARY_INBOX.md), and a separate Stop
+  // button cancels the run. Send during a run needs text to queue; while the
+  // mic is active the send path blocks so trailing audio isn't dropped.
+  const isSendDisabled = isExecuting
+    ? charCount === 0 || disableSend || voiceBusy
+    : disableSend || voiceBusy;
 
   const handleVoiceBusyChange = useCallback(
     (state: { isRecording: boolean; isTranscribing: boolean }) => {
@@ -157,21 +165,13 @@ export function InputActionButtons({
   );
 
   const handleSend = useCallback(() => {
-    if (isExecuting) {
-      dispatch(cancelExecution(executingConversationId ?? conversationId));
-      return;
-    }
     if (disableSend || voiceBusy) return;
     dispatch(smartExecute({ conversationId, surfaceKey }));
-  }, [
-    disableSend,
-    voiceBusy,
-    isExecuting,
-    executingConversationId,
-    conversationId,
-    surfaceKey,
-    dispatch,
-  ]);
+  }, [disableSend, voiceBusy, conversationId, surfaceKey, dispatch]);
+
+  const handleStop = useCallback(() => {
+    dispatch(cancelExecution(executingConversationId ?? conversationId));
+  }, [executingConversationId, conversationId, dispatch]);
 
   const sendBtnClass =
     sendButtonVariant === "blue"
@@ -261,6 +261,17 @@ export function InputActionButtons({
           />
         )}
 
+        {showSendButton && isExecuting && (
+          <Button
+            onClick={handleStop}
+            className="h-9 w-9 p-0 shrink-0 rounded-full bg-muted text-foreground hover:bg-destructive/15 hover:text-destructive"
+            tabIndex={-1}
+            title="Stop the run (everything streamed so far is kept)"
+          >
+            <CircleStop className="w-4 h-4" />
+          </Button>
+        )}
+
         {showSendButton && (
           <Button
             onClick={handleSend}
@@ -269,17 +280,13 @@ export function InputActionButtons({
             tabIndex={-1}
             title={
               isExecuting
-                ? "Stop"
+                ? "Queue message — the agent answers it at its next pause (⌘⇧Enter interrupts & sends now)"
                 : voiceBusy
                   ? "Finish recording to send"
                   : "Send Message"
             }
           >
-            {isExecuting ? (
-              <CircleStop className="w-4 h-4" />
-            ) : (
-              <ArrowUp className="w-5 h-5" />
-            )}
+            <ArrowUp className="w-5 h-5" />
           </Button>
         )}
 

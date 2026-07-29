@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D117 — invisible inbox injections (`is_visible_to_user=false`) may seed a phantom user bubble in-session (2026-07-29)
+
+The Turn-Boundary Inbox client (Flow 6 in `features/agents/components/chat/FEATURE.md`) correctly skips the optimistic bubble for invisible steering messages, but the server still announces the persisted row via `record_reserved cx_message` (role=user), and `process-stream`'s fallback branch (`reserveMessage`) seeds it into `messages.byId` with no visibility flag — a possible empty/phantom bubble until reload (reload filters by `is_visible_to_user`). Fix: carry visibility on the reservation metadata (server) or track announced invisible injection positions in `process-stream` and skip the reservation. Low frequency — invisible injections are only produced by `kind:"system_message"` + `is_visible_to_user:false`, which no product UI sends yet.
+
 ### D116 — RESOLVED 2026-07-29: both bespoke stream renderers deleted, gap closed, lint enforced
 
 Both callers are gone and the reason they existed is fixed:

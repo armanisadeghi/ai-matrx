@@ -89,7 +89,11 @@ import {
 import { validateMessageBlocks } from "@/features/agents/runtime/validation";
 import { getCapabilitiesForConversation } from "@/features/agents/runtime/get-model-capabilities";
 import { setUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
-import { markInputSubmitted } from "../instance-user-input/instance-user-input.slice";
+import {
+  markInputSubmitted,
+  clearUserInput,
+} from "../instance-user-input/instance-user-input.slice";
+import { hasAbortController } from "./abort-registry";
 import { markResourcesSubmitted } from "../instance-resources/instance-resources.slice";
 import {
   selectIsBlockMode,
@@ -394,6 +398,38 @@ export const executeInstance = createAsyncThunk<
 
       if (!instance) {
         throw new Error(`Conversation ${conversationId} not found`);
+      }
+
+      // ── Concurrent-turn guard (second layer behind smartExecute) ──────────
+      // A live abort controller means a stream is OPEN on this conversation.
+      // Starting another turn now would corrupt the run: the new controller
+      // evicts the old one from the abort registry (stream #1 becomes
+      // unabortable), both runs share one instance status, and the server
+      // interleaves history writes (the continue endpoint takes no run
+      // claim). The server supports exactly this case via the Turn-Boundary
+      // Inbox — reconcile there instead of killing the request, and scream:
+      // reaching this line means a caller bypassed smartExecute's routing.
+      if (hasAbortController(conversationId)) {
+        const pendingText =
+          state.instanceUserInput.byConversationId[conversationId]?.text ?? "";
+        console.error(
+          `[execute-instance] refused a concurrent turn on conversation ` +
+            `"${conversationId}" — a stream is already open. ` +
+            (pendingText.trim()
+              ? "Reconciled: queued the composer text via the Turn-Boundary Inbox."
+              : "No composer text to queue; the duplicate dispatch was dropped.") +
+            " Callers must route sends through smartExecute.",
+        );
+        if (pendingText.trim()) {
+          const { enqueueInboxMessage } = await import("../inbox/inbox.thunks");
+          dispatch(
+            enqueueInboxMessage({ conversationId, text: pendingText.trim() }),
+          );
+          dispatch(clearUserInput(conversationId));
+        }
+        return rejectWithValue(
+          "Concurrent turn refused — message queued to the running agent",
+        );
       }
 
       // Capture the user's input BEFORE assembling (for history + display).

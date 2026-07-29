@@ -131,8 +131,11 @@ import {
   reserveMessage,
   updateMessageRecord,
   promoteMessageId,
+  addOptimisticUserMessage,
   type MessageRecord,
 } from "../messages/messages.slice";
+import { removeInboxItem } from "../inbox/inbox.slice";
+import { selectMessageCount } from "../messages/messages.selectors";
 import { fromImageOutputData } from "@/features/files/blocks/image/adapters/from-image-output-data";
 import { fromPartialImageData } from "@/features/files/blocks/image/adapters/from-partial-image-data";
 import { getCapabilitiesForConversation } from "@/features/agents/runtime/get-model-capabilities";
@@ -357,6 +360,15 @@ export async function processStream({
     [];
 
   let reservedUserRequestId: string | null = null;
+
+  // Turn-Boundary Inbox delivery bookkeeping. When `injection_consumed`
+  // announces that queued message(s) drained into the conversation, we add an
+  // optimistic user bubble per visible item (clientTempId `inbox_<injection_id>`)
+  // and remember its server-declared position. The later
+  // `record_reserved cx_message` (role=user) at that position promotes the
+  // temp id to the durable server id — same handshake the primary optimistic
+  // user message uses.
+  const inboxTempIdByPosition = new Map<number, string>();
 
   // Maps the provider's opaque `call_id` (used by activeRequests.toolLifecycle)
   // to the DB-side `cx_tool_call.id` (used by observability.toolCalls). Both
@@ -1646,6 +1658,19 @@ export async function processStream({
               // A child conversation's user/system row announced on the
               // parent wire — skip entirely (it must not promote our
               // optimistic user message or seed a phantom bubble).
+            } else if (role === "user" && inboxTempIdByPosition.has(position)) {
+              // A queued (inbox) message drained into the conversation earlier
+              // this stream — promote its optimistic bubble to the durable id.
+              const inboxTempId = inboxTempIdByPosition.get(position)!;
+              inboxTempIdByPosition.delete(position);
+              dispatch(
+                promoteMessageId({
+                  conversationId: owningConversationId,
+                  oldId: inboxTempId,
+                  newId: d.record_id,
+                  position,
+                }),
+              );
             } else if (role === "user" && userMessageClientTempId) {
               // Promote the optimistic user record to the server id. The record
               // already carries the user's content, so no further patch needed
@@ -2278,20 +2303,37 @@ export async function processStream({
         }
       } else if (isInjectionConsumedEvent(event)) {
         otherEvents++;
-        // Inbox delivery ack — full queued→delivered UI lands with turn-boundary
-        // inbox work; preserve the payload on the timeline until then.
-        dispatch(
-          appendTimeline({
-            requestId,
-            entry: {
-              kind: "unknown",
-              seq: 0,
-              timestamp: now,
-              originalEvent: "injection_consumed",
-              rawData: event.data,
-            },
-          }),
-        );
+        // Turn-Boundary Inbox delivery ack — the running agent just drained
+        // queued message(s) at a turn boundary and will answer them on THIS
+        // stream. For each item: retire its "waiting its turn" card, and (when
+        // user-visible) seed the transcript bubble from the echoed text. The
+        // echo makes this work even for items queued by another device/panel —
+        // no local record required (docs/TURN_BOUNDARY_INBOX.md).
+        for (const item of event.data.items ?? []) {
+          dispatch(
+            removeInboxItem({
+              conversationId,
+              injectionId: item.injection_id,
+            }),
+          );
+          if (item.is_visible_to_user === false) continue;
+          const text = item.text ?? "";
+          if (!text) continue;
+          const tempId = `inbox_${item.injection_id}`;
+          const position =
+            typeof item.position === "number"
+              ? item.position
+              : selectMessageCount(conversationId)(getState());
+          inboxTempIdByPosition.set(position, tempId);
+          dispatch(
+            addOptimisticUserMessage({
+              conversationId,
+              clientTempId: tempId,
+              content: [{ type: "text", text }],
+              position,
+            }),
+          );
+        }
       } else {
         const _exhaustive: never = event;
         const unhandled = _exhaustive as { event?: string; data?: unknown };
