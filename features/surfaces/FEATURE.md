@@ -110,6 +110,40 @@ Two per-surface settings primitives, both resolved `manifest/DB default → glob
 
 [`admin-detail/SurfaceAdminDetailPage.tsx`](./admin-detail/SurfaceAdminDetailPage.tsx) (Wave 4). Catch-all route (slash-safe via `surfaceAdminHref` in `utils/surface-hierarchy.ts`) and reusable embedded body for `surfaceContextInspector`. Edits identity (active/description/rename/url_pattern/executor/parent), shows the parent/child tree (`buildChildrenByParent` / `getAncestorChain` — reads the DB mirror), authored-vs-resolved manifest provenance, declared values, roles + prefs, config namespaces, bound agents, and tools. Platform-global config namespace JSON is editable here through the namespace handler's canonical validation; manifest declarations and evidence sources remain code-owned. The 5-panel per-agent shell (`/agents/[id]/surfaces`, `admin/`) and the batch editor (`admin/batch/SurfaceBindingsBatchEditor.tsx`) write through the same associations-backed thunks.
 
+## The 360 loop — read, write, policy (2026-07-29)
+
+Surfaces are no longer read-only. Three seams, ONE system shared by user
+bindings, shortcuts (the same system, one opinionated layer stronger), and
+internal platform use — never a washed-down user variant beside a private one:
+
+- **Write targets** — `SurfaceManifest.writeTargets` declares what may be
+  written INTO a surface; the page registers handlers (provider prop or
+  `useSurfaceWriteHandlers` from any depth); every caller lands through
+  `applySurfaceWrite` (`runtime/surface-writeback.ts`). Mirrored to
+  `ui.ui_surface_write_target` by manifest-sync so aidream feeds them to
+  surface-bound agents as a `<surface_write_targets>` block. Live adopters:
+  `matrx-user/marketing-page` (`page_meta_tags`, `page_target_keyword`,
+  `page_supporting_keywords` — handlers in
+  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`) and
+  `matrx-user/keyword-intelligence` (`keyword_selection`). The LSI kind
+  components (`meta_tag_options` / `keyword_relationship_research` /
+  `keyword_search_metrics`, DB components) call
+  `runAction("apply_surface_write", …)` — same seam users' agent-authored
+  components get.
+- **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
+  interaction-state projections (`publishSurfaceUiState`), rendered blocks
+  read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
+  writes). Never a store, never domain data, never callbacks.
+- **Apply policy** — per-target `applyPolicy: manual | ask | auto` is the
+  SURFACE's default opinion (transient `ui` writes can be `auto`; persisted
+  `entity` writes default `ask`; `manual` = user-gesture only). The BINDING is
+  where the user controls it: `write_policies` on the `surface_binding`
+  payload (v2), merged through the same weakest→strongest layers as value
+  mappings, registered at launch (`registerSurfaceWritePolicies`), resolved at
+  apply time. A binding may tighten but can NEVER open a `manual` target.
+  User-facing editor for `write_policies` is not built yet — the pipeline
+  honors it end to end (see the canonical-stream handoff).
+
 ## Header Surface Context windows
 
 The universal Agents header dropdown exposes two ephemeral WindowPanels for the current route/runtime surface:

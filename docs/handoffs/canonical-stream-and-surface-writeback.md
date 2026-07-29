@@ -123,6 +123,67 @@ it is a tarball-fetch restriction). Consequences:
 - **aidream:** Python deps are not installed either — no imports, no tests run.
   Every touched file passes `ast.parse` only.
 
+## Round 2 (2026-07-29, same day) — the loop is LIVE on the marketing page
+
+Arman's direction: prove it on the real surface, unify user-facing and internal
+into ONE system, and make policy user-controllable from the binding. All built:
+
+- **Marketing Page Workspace is the proving ground.** `matrx-user/marketing-page`
+  declares `page_meta_tags` / `page_target_keyword` / `page_supporting_keywords`
+  (all `entity` mode, surface default `ask`); handlers registered by
+  `MarketingPageWriteTargets.tsx` (mounted in `PageWorkspace`) through the
+  page's CANONICAL services (`updatePageIntent` with the version guard,
+  `addPageSupportingKeywords`). Rows pre-synced live into
+  `ui.ui_surface_write_target`.
+- **The "LSI Variations & Metadata" agent's DB kind components are wired** (SQL
+  patches on `content_ir.kind_component`, updated_at bumped so refresh-on-view
+  recompiles): `meta_tag_options` gained a per-option **Use on page** button →
+  `page_meta_tags`; `keyword_relationship_research` gained a per-list
+  send-to-page button; `keyword_search_metrics` gained per-row + **Add all to
+  page** → `page_supporting_keywords`. All call
+  `runAction("apply_surface_write", { …, origin: "user" })` — the exact seam
+  any user's agent-authored component gets. **To test:** open the bound agent on
+  a page workspace (e.g. `/marketing/brands/…/pages/…`), run it, click Use on
+  page / the send icons; the page intent + keyword chips should update through
+  the canonical saves, with toasts.
+- **Per-binding policy overrides, end to end:** `surface_binding` payload v2
+  (`write_policies: {target: manual|ask|auto}` — DB schema widened, view
+  `agent.menu_surface` exposes it, migration recorded+ledgered), binding
+  service reads/writes it, `mergeValueMappingLayers` merges it with the same
+  precedence as mappings (shortcut = strongest layer), the launch thunk
+  registers it (`registerSurfaceWritePolicies`, keyed per agent+surface so
+  re-launches replace), `applySurfaceWrite` resolves override→surface default.
+  **Safety floor:** a binding can tighten but can never open a target the
+  surface declared `manual`.
+- **aidream is on `main`** (pushed per Arman's explicit instruction — codegen
+  can't run in this environment). Non-breaking: the write-target feed degrades
+  to a one-shot notice until `python db/generate.py` runs; `block_stream.py`
+  stays parked. **Arman: run `db/generate.py`, commit the generated model, then
+  `./scripts/release.sh`** — that activates the `<surface_write_targets>`
+  injection for surface-bound agents.
+
+### Still open (the rest of the vision, in order)
+
+1. **Binding-editor UI for `write_policies`** — the pipeline honors it, but no
+   UI writes it yet. Add a per-target policy picker to the binding editor
+   (`/agents/[id]/surfaces` 5-panel shell + the batch editor) and the shortcut
+   editor. NOTE: `bindAgentToSurface` replaces the payload wholesale — the
+   editor must round-trip the existing `write_policies` when saving mappings.
+2. **Surface-scoped client tools** — the next tier: a surface declares/registers
+   client-side tools (precedent: the text/code patching client tools +
+   `instanceClientTools` + the capability system), the bound agent gets them and
+   triggers live page behavior; big surfaces add server tools that write and
+   refresh. Design this on the SurfaceManifest (declare) + SurfaceRuntimeProvider
+   (register impls) + tool injection funnel (aidream `apply_unified_tools`).
+3. **Content writes** — the most important target: `draft_content` /
+   planned-content modification via a `draft` mode write target on
+   marketing-page, so agents can propose the page body itself for review.
+4. **`keyword_search_metrics` UI-state read** — the metrics/keyword components
+   could read already-attached keywords via `useCurrentSurfaceUiState` to show
+   "already on page" states (publish from `PageWorkspace`).
+5. **Agent-facing kind skills** — update the three kinds' skills/teaching blocks
+   to mention the apply affordances so agents describe them to users.
+
 ## Adversarial review — what it caught
 
 Three reviewers audited the diff before it was committed. Everything
