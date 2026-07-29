@@ -122,51 +122,6 @@ const TOOL_STATE_EFFECTS: ToolStateEffect[] = [
       });
     },
   },
-  {
-    // Agent edited a db-authored kind component IN-SESSION (component-builder
-    // flows). The row's `updated_at` bumped, but the FE's warm component
-    // registry + compile cache only refetch on a mount-triggered
-    // `refreshKindComponents` — so any already-rendered `__kind` block keeps
-    // showing the STALE compiled component until a hard refresh. Force a
-    // registry refetch: the compile cache is keyed on the row's `updated_at`,
-    // so the edited row re-keys and recompiles, and the per-kind repaint
-    // (`useContentIrKindVersion` → BlockRenderer) re-renders the live block.
-    //
-    // NOT throttled: an agent makes only a handful of edits per component, and
-    // the LAST edit MUST leave the cache fresh — a leading throttle could drop
-    // the final refresh and strand stale bytes on screen.
-    //
-    // NOT static-imported: the content-ir registry cluster has a documented
-    // eager-init cycle (component-registry.ts CYCLE-ENTRY ANCHOR); a dynamic
-    // import inside `run` keeps it out of the stream processor's init graph.
-    id: "kind-components",
-    tools: new Set([
-      "kindcomp_create_component",
-      "kindcomp_update_code",
-      "kindcomp_patch_code",
-      "kindcomp_update_settings",
-    ]),
-    run({ result }) {
-      void (async () => {
-        const { refreshKindComponents } = await import(
-          "@/features/content-ir/registry/component-registry"
-        );
-        // `0` bypasses the 10s rate-limit — an in-session edit must show now.
-        await refreshKindComponents(0);
-        // Belt-and-suspenders hard-drop of the compile-cache key family, when
-        // the tool told us WHICH kind (only `kindcomp_create_component` returns
-        // `kind` today; the update/patch/settings tools return `component_id`
-        // only, and `refreshKindComponents(0)` alone already re-keys those).
-        const kind = asObject(result)?.kind;
-        if (typeof kind === "string" && kind) {
-          const { invalidateDbKindComponent } = await import(
-            "@/features/content-ir/react/db-component/dbKindComponentCache"
-          );
-          invalidateDbKindComponent(kind);
-        }
-      })();
-    },
-  },
 ];
 
 // ─── The runner ──────────────────────────────────────────────────────────────
