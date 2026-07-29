@@ -1,5 +1,9 @@
+import { SlidersHorizontal } from "lucide-react";
+
 import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
 import { SettingsRouteShell } from "@/features/settings/route-shell/SettingsRouteShell";
+import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 const COOKIE_NAME = "panels:settings:v1";
@@ -24,6 +28,18 @@ export default async function SettingsLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { isAuthenticated } = await getServerAuth();
+  if (!isAuthenticated) {
+    return (
+      <ModuleSignInGate
+        title="Settings"
+        route="/user-settings"
+        description="Your preferences, appearance, AI, voice, profile, and integrations — all tied to your account."
+        icon={SlidersHorizontal}
+      />
+    );
+  }
+
   const defaultLayout = await readLayoutCookie(COOKIE_NAME);
 
   return (
