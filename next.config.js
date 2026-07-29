@@ -282,11 +282,20 @@ const nextConfig = {
         // levers are rootReducer lazy-injection (shrinks every per-page server
         // bundle) or building off-Vercel (GH Actions + `vercel deploy
         // --prebuilt`), and the graph itself needs to come down.
-        // 30GiB → 40GiB (2026-07-28, Arman ruling closing D107): the 30GiB drop
-        // was NOT the OOM fix — eliminating the incorrect edge lazy imports that
-        // caused massive chunking (the v0.4.137 revert) was. Restored to 40GiB
-        // for compile speed; the worker-phase headroom math above still holds.
-        turbopackMemoryLimit: 42949672960,
+        // 30GiB → 40GiB (2026-07-28 13:17, v0.4.195, Arman ruling closing D107):
+        // theory was the 30GiB drop was NOT the OOM fix — the v0.4.137 edge
+        // lazy-import revert was — so 40GiB was restored for compile speed.
+        // 40GiB → 30GiB AGAIN (2026-07-28 ~18:00): that theory is disproven.
+        // Under the restored 40GiB, v0.4.195-198 went green but degraded
+        // (12m → 13m → 19m — ceiling-thrash signature; measured peak RSS at
+        // 40GiB is 58.49GiB on the 60GB machine, ~1.5GiB margin), then
+        // v0.4.199-203 ALL OOM'd with the exact pre-30GiB signatures: SIGKILL
+        // mid-compile (199) or 3s after "Collecting page data using 4 workers"
+        // spawned (200/202/203), with no code/config/machine/cache delta that
+        // explains it. 30GiB is load-bearing at the current graph size. Do not
+        // raise it again without headroom evidence from
+        // `next build --experimental-debug-memory-usage` at the CURRENT graph.
+        turbopackMemoryLimit: 32212254720,
         cpus: 4,
         serverActions: {
             bodySizeLimit: "10mb",
