@@ -86,12 +86,12 @@
     "app/**/*",
     "packages/**/*.ts",
     "packages/**/*.tsx",
-    ".next-agent-2841dde3260a/types/**/*.ts",
-    ".next-agent-2841dde3260a/dev/types/**/*.ts",
-    ".next-agent-c6ffcc8a5764/types/**/*.ts",
-    ".next-agent-c6ffcc8a5764/dev/types/**/*.ts",
-    ".next-agent-f8a30709609c/types/**/*.ts",
-    ".next-agent-f8a30709609c/dev/types/**/*.ts"
+    ".next-agent-386b27d22ea3/types/**/*.ts",
+    ".next-agent-386b27d22ea3/dev/types/**/*.ts",
+    ".next-agent-eb4cf22aa738/types/**/*.ts",
+    ".next-agent-eb4cf22aa738/dev/types/**/*.ts",
+    ".next-agent-a84df74ce674/types/**/*.ts",
+    ".next-agent-a84df74ce674/dev/types/**/*.ts"
   ],
   "exclude": [
     ".next*/**",
