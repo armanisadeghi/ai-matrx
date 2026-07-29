@@ -1,17 +1,23 @@
 "use client";
 
 /**
- * LiveResearchFeed — renders the research run's agent output as REAL
- * components, live, key by key, while the stream is still running.
+ * ⛔ QUARANTINED DEBT — DO NOT COPY, DO NOT EXTEND, DO NOT CITE.
  *
- * The canonical pattern for a bespoke (non-chat) streaming surface: feed the
- * accumulating chunk buffers into `useLiveJsonRegion` (one parse session per
- * JSON region) and render each envelope through the SAME kind components
- * chat uses (components/mardown-display/blocks/keyword-research/), via the
- * kinds' streaming serverData bridges. Raw JSON never reaches the DOM.
+ * This file is a BESPOKE STREAM RENDERER: it buckets its own chunk text, opens
+ * its own content-ir parse sessions, splits its own multi-payload segments,
+ * hand-routes envelopes into kind components, and decides "done" on its own
+ * signal. Every one of those is BANNED — see
+ * `features/content-ir/FEATURE.md` § No bespoke stream renderers and the
+ * matching rule in CLAUDE.md.
  *
- * The classification phase may emit several sequential batch payloads;
- * `splitKeywordClassificationSegments` gives each its own region/session.
+ * It exists because it was built and wrongly documented as "the canonical
+ * non-chat consumer" on 2026-07-26. It never was. Arman's ruling on
+ * 2026-07-28: one hand-rolled renderer becomes ten thousand, the single
+ * canonical system dies, and so does the product — no feature is small enough
+ * to earn an exception. This one is scheduled for deletion; the replacement is
+ * the execution system + `selectKindEnvelope` + the canonical block pipeline.
+ *
+ * Touching this file? The only sanctioned change is deleting it.
  */
 
 import { useMemo, useState } from "react";

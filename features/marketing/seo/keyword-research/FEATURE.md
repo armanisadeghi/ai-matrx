@@ -32,19 +32,16 @@ market enrichment remain explicit compute operations.
     (30-day policy; `force_refresh` bypasses), also streamed through exact provider
     response, normalization, persistence, and completion events.
   - Both commands use `callApi({stream: true})`; long JSON timeouts are forbidden.
-    The workbench renders live pipeline stages, and the agent token stream renders as
-    REAL kind components, never raw JSON: `useKeywordResearch` buckets chunk text by
-    phase (`researchOutput` until `seo.research_agent_completed`, then
-    `classificationOutput`), and `components/LiveResearchFeed.tsx` feeds each buffer
-    into `useLiveJsonRegion` (content-ir) → the `keyword_relationship_research` /
-    `keyword_classification_batch_v1` streaming bridges →
-    `KeywordResearchBlock` / `KeywordClassificationBatchBlock`
-    (`components/mardown-display/blocks/keyword-research/`, shared with chat).
-    **The server's chunk relay may stop before the payload's closing bytes** — the
-    phase event is the completion truth; `LiveResearchFeed` finalizes (kills pulses)
-    on phase done, never on JSON-close alone. A client disconnect stops only
-    delivery—the backend's detached stream task continues and persists. Backend
-    contract: `aidream/services/seo/FEATURE.md` § Keyword pipeline.
+    The workbench renders live pipeline stages. **The live agent-token rendering here
+    is BANNED ARCHITECTURE — see § The LiveResearchFeed disease below.** How it
+    currently (wrongly) works: `useKeywordResearch` buckets chunk text by phase
+    (`researchOutput` until `seo.research_agent_completed`, then
+    `classificationOutput`) and `components/LiveResearchFeed.tsx` opens its own
+    content-ir parse sessions over those buffers. **The server's chunk relay may stop
+    before the payload's closing bytes** — the phase event is the completion truth,
+    never JSON-close alone. A client disconnect stops only delivery—the backend's
+    detached stream task continues and persists. Backend contract:
+    `aidream/services/seo/FEATURE.md` § Keyword pipeline.
   - **Durable run identity + reconnect (2026-07-23, WS-1).** Every research/volume
     command persists a `seo.collection_run` row server-side BEFORE the first AI call and
     streams it first as `seo.command_run {run_id}`. The hook stores
@@ -86,10 +83,8 @@ before adding any keyword field or per-keyword display anywhere.
   filtering, sorting, and pagination for one site.
 - `useKeywordResearch.ts` — page state + the two `callApi` actions; debounced search,
   abort-safe reloads; phase-bucketed stream buffers + `streamKey` for the live feed.
-- `components/LiveResearchFeed.tsx` — live kind-component rendering of the agent
-  streams (see the two-lane rule above); the canonical non-chat consumer of
-  `useLiveJsonRegion`. It retains each region's last valid parsed payload so
-  phase completion or a later phase can never blank earlier results.
+- `components/LiveResearchFeed.tsx` — ⛔ **quarantined debt, scheduled for deletion.
+  Never copy, extend, or cite it** (§ The LiveResearchFeed disease).
 - `components/SavedResearchFeed.tsx` — durable in-place rendering of the saved
   hierarchy plus persisted classification rows through the same selectable
   blocks used by the live feed.
@@ -124,8 +119,31 @@ before adding any keyword field or per-keyword display anywhere.
   ranked queries, GSC performance, strongest matched page, market metrics, and
   site-specific workflow state.
 
+## ⛔ The LiveResearchFeed disease — this feature carries the platform's worst defect
+
+`components/LiveResearchFeed.tsx` is a **bespoke stream renderer**: it buckets raw
+chunk text by phase, opens its own `useLiveJsonRegion` parse sessions, splits
+multi-payload text into segments, hand-routes envelopes into kind components, and
+decides "done" on its own signal. All of that is **banned** — streamed model output
+renders through the ONE canonical pipeline (`MarkdownStream` → `EnhancedChatMarkdown`
+→ `BlockRenderer` → the kind registry). Full rule:
+[`features/content-ir/FEATURE.md`](../../../content-ir/FEATURE.md) § No bespoke
+stream renderers.
+
+**Arman's ruling, 2026-07-28, in anger:** this workbench is a small side surface, and
+that is exactly why it must not have custom stream processing. One hand-rolled
+renderer becomes tens of thousands; the single canonical system dies and the product
+dies with it. **It cannot happen again, at any size, for any feature.**
+
+**Status: quarantined debt awaiting deletion.** Do not extend it, do not cite it as a
+pattern, do not copy its shape into another surface. The replacement is the execution
+system (`requestId` + `selectKindEnvelope`) driving the canonical block components.
+Filed as **D116** in [`FOUND_DEFECTS.md`](../../../../FOUND_DEFECTS.md).
+
 ## Invariants
 
+- **No bespoke stream rendering.** No new parse session, chunk buffer, segment
+  splitter, or hand-routed envelope anywhere in this feature. See above.
 - `(core)` shell rules: `<PageHeader>` center-only title; body `h-full overflow-hidden`
   with `paddingTop: var(--shell-header-h)`; no in-body title bar.
 - `intent_class` etc. render from the 13 real columns — never parsed out of JSONB.
@@ -136,6 +154,15 @@ before adding any keyword field or per-keyword display anywhere.
 
 ## Change Log
 
+- 2026-07-28 — **`LiveResearchFeed` condemned: bespoke stream rendering is banned
+  platform-wide (Arman ruling).** Every doc that blessed this surface as "the
+  canonical non-chat `useLiveJsonRegion` consumer" now names it as the one violation
+  to delete; the rule lives in CLAUDE.md + `features/content-ir/FEATURE.md` § No
+  bespoke stream renderers, and `useLiveJsonRegion` is marked internal to content-ir.
+  Shipped with the fix for the bug this surface exposed: a root degrade could blank a
+  fully-rendered block mid-stream (the "research disappeared when classification
+  started" report) — `IrTree` now never regresses published data. Deletion of this
+  component is D116.
 - 2026-07-28 — **Durable memory on EVERY research surface (launcher + window +
   workbench).** Extracted `useSavedKeywordResearch` (shared query + key;
   effective-org fallback mirrors callApi) and taught the canonical

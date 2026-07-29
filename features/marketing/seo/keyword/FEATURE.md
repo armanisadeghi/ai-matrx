@@ -36,7 +36,11 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
 ## Invariants
 
 - **Reads direct to Supabase, compute to aidream** (two-lane rule). Research
-  streaming REUSES `useKeywordResearch` + `LiveResearchFeed`; rank data REUSES
+  streaming REUSES `useKeywordResearch` + `LiveResearchFeed` — the latter is ⛔
+  **banned architecture awaiting deletion** (bespoke stream renderer; see
+  `keyword-research/FEATURE.md` § The LiveResearchFeed disease). Reuse it here
+  rather than forking it, add nothing to it, and never model a new surface on it.
+  Rank data REUSES
   `features/marketing/components/ranks/useRanks.ts`; display atoms REUSE
   `keyword-research/components/KeywordMetrics.tsx`. No forked fetchers or
   visuals.

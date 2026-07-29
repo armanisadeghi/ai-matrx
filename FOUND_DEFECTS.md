@@ -13,6 +13,15 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D116 — delete the two bespoke stream renderers (Arman ruling 2026-07-28)
+
+Hand-rolled stream rendering is banned platform-wide (CLAUDE.md; `features/content-ir/FEATURE.md` § No bespoke stream renderers). Two callers exist and must go:
+
+1. `features/marketing/seo/keyword-research/components/LiveResearchFeed.tsx` — the full disease (phase chunk buffers, two parse sessions, hand-rolled segment splitting, hand-routed components, own done signal). Replace with the execution system (`requestId` → `selectKindEnvelope`) driving the canonical block pipeline; the surface is `KeywordResearchLauncher` + the SEO workbench + `KeywordResearchWindow`.
+2. `features/flashcards/components/create/CreateFromTopic.tsx` — a `useLiveJsonRegion` fallback beside the correct Redux-primary read. Drop the fallback; `selectKindEnvelope` stands alone.
+
+Also owed: a lint rule fencing `useLiveJsonRegion` / `session-manager` to content-ir + the accumulator, so this can't come back. **Decides: Arman** on sequencing — the ruling is that the pattern dies, not that the keyword feature keeps working the old way.
+
 ### D115 — in-session tool-viz repaint REVERTED (build detonator) — reimplement without the import edge (2026-07-28)
 
 The v0.4.198/199 repaint pair (`165034fb8` toolStateEffects kind-components effect; `6a74e4ddc` DB tool-renderer repaint: `DbToolRendererImpl` version consumer, `toolRendererCache` invalidation, `useToolRendererVersion`) was bisect-proven to cost **+14.3GB peak build RSS (35.4→49.7GB local) and +50-57% compile time**, which OOM-killed every Vercel build v0.4.199-210; reverted in v0.4.212 (probes: 211/212, local A/B in worktrees). Mechanism: the effect's `await import()` of `@/features/content-ir/registry/component-registry` (and `dbKindComponentCache`) from `toolStateEffects.ts` — a module statically reachable via `process-stream.ts` from ~every context — split the giant content-ir registry cluster (which carries a documented eager-init CYCLE) into new async chunk groups per context. THE FRAGMENTATION LAW, `await import()` edition: the sanctioned handler-body dynamic import still detonates when the target graph is enormous AND the importer is ubiquitous. **Fix pattern: invert the dependency** — content-ir registers an invalidation callback into a tiny shared registry at its own init (it is always initialized wherever a `__kind` block can render); `toolStateEffects` fires the callback by name with zero import edge to content-ir. The user-facing bugs these fixed (stale compiled kind component / stale DB tool renderer until hard refresh) are LIVE AGAIN until reimplemented.

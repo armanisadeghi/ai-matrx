@@ -5,10 +5,24 @@
  * websocket buffer, anything that grows monotonically) into a live
  * ParseSession and read the typed tree as it forms.
  *
- * This is the generic "watch structured output form in real time" primitive:
- * CreateFromTopic renders cards as they stream; any surface expecting a known
- * root kind passes `expectedRootKind` and gets a fully typed tree even when
- * the payload carries no __kind at all (Option-1 provenance).
+ * ⛔ INTERNAL TO content-ir — NOT a primitive features may consume.
+ *
+ * This is NOT the "watch structured output form in real time" primitive it was
+ * once documented as. Streamed model output renders through the ONE canonical
+ * pipeline (`MarkdownStream` → `EnhancedChatMarkdown` → `BlockRenderer` → the
+ * kind registry); a surface that opens its own parse session is a BESPOKE
+ * STREAM RENDERER and is banned — see `features/content-ir/FEATURE.md`
+ * § No bespoke stream renderers and the matching rule in CLAUDE.md.
+ *
+ * Rendering a stream outside `/chat`? Give it a `requestId` through the
+ * execution system and read `selectKindEnvelope`. Blocked? Ask Arman. Adding a
+ * caller here is not the answer, however small the surface — that argument is
+ * exactly what produced the two quarantined callers below.
+ *
+ * Existing callers, both debt awaiting removal, neither a precedent:
+ * `features/marketing/seo/keyword-research/components/LiveResearchFeed.tsx`,
+ * `features/flashcards/components/create/CreateFromTopic.tsx` (fallback beside
+ * the correct Redux-primary read).
  *
  * Prose before the first `{` is skipped; anything after the root object
  * closes is ignored by the parser — defensive against answers that aren't
@@ -77,7 +91,8 @@ export function useLiveJsonRegion(
     }
 
     const session = getParseSession(identity);
-    if (!session || session.isEnded) return;
+    if (!session) return;
+    if (session.isEnded) return;
 
     const full = text ?? "";
 

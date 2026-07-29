@@ -45,6 +45,37 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/**
+ * THE NO-REGRESSION LAW: a value already shown to a user is never taken away.
+ *
+ * A degrade (raw_object) or a late completion carries the parser's plain view
+ * of a node, which can be POORER than the snapshot the tree already holds —
+ * `{}` in the worst case, when a root object closes and its schema was never
+ * satisfied. Overwriting with it blanks a fully-rendered block mid-stream.
+ * Incoming keys win; prior keys the incoming lacks survive.
+ *
+ * Returns the merged value plus whether prior fields had to be rescued —
+ * a rescue means a real defect upstream and is reported on the envelope as a
+ * `degrade_data_rescued` notice, never silently absorbed.
+ */
+function mergeWithoutLoss(
+  prior: unknown,
+  incoming: unknown,
+): { value: unknown; rescued: string[] } {
+  if (!isRecord(prior)) return { value: incoming, rescued: [] };
+  if (!isRecord(incoming)) {
+    // A real array/scalar is a genuine shape change, not a blanking; only
+    // nothing-at-all loses to what we already have.
+    if (incoming !== null && incoming !== undefined) {
+      return { value: incoming, rescued: [] };
+    }
+    return { value: prior, rescued: Object.keys(prior) };
+  }
+  const rescued = Object.keys(prior).filter((key) => !(key in incoming));
+  if (rescued.length === 0) return { value: incoming, rescued };
+  return { value: { ...prior, ...incoming }, rescued };
+}
+
 export class IrTree {
   private readonly nodes = new Map<string, IrTreeNode>();
   private readonly rawPaths = new Map<string, string>(); // pathKey → reason
@@ -77,6 +108,8 @@ export class IrTree {
   private regionStatus: "streaming" | "complete" | "error" = "streaming";
   private errorReason: string | null = null;
   private rootRawValue: Record<string, unknown> | null = null;
+  /** Notices for degrades that tried to erase already-published data. */
+  private readonly rescueNotices: NonNullable<IrResidue["notices"]> = [];
   private completedKind = "";
 
   get status(): "streaming" | "complete" | "error" {
@@ -134,12 +167,13 @@ export class IrTree {
       case "complete": {
         this.regionStatus = this.errorReason ? "error" : "complete";
         this.completedKind = event.kind;
-        if (
-          this.rawPaths.has("") &&
-          isRecord(event.value) &&
-          this.rootRawValue === null
-        ) {
-          this.rootRawValue = event.value;
+        if (this.rawPaths.has("") && isRecord(event.value)) {
+          // The completion value is the parser's full view of the region — it
+          // fills a raw root, and merges with (never regresses) one a mid-
+          // stream degrade already wrote.
+          const merged = mergeWithoutLoss(this.rootRawValue, event.value);
+          this.recordRescue("", "complete", merged.rescued);
+          if (isRecord(merged.value)) this.rootRawValue = merged.value;
         }
         this.dirty.add("");
         return;
@@ -319,17 +353,39 @@ export class IrTree {
 
   private markRaw(path: IrPath, reason: string, value: unknown): void {
     const pathKey = irPathKey(path);
+    // NO REGRESSION: the degrade must not blank the snapshot this node already
+    // published. Its plain data still belongs to its ancestors — zero loss.
+    const prior =
+      path.length === 0
+        ? (this.nodes.get("")?.value ?? this.rootRawValue)
+        : this.nodes.get(pathKey)?.value;
+    const merged = mergeWithoutLoss(prior, value);
+    this.recordRescue(pathKey, reason, merged.rescued);
+
     this.rawPaths.set(pathKey, reason);
     this.nodes.delete(pathKey);
     this.dirty.add(pathKey);
 
     if (path.length === 0) {
-      if (isRecord(value)) this.rootRawValue = value;
+      if (isRecord(merged.value)) this.rootRawValue = merged.value;
       return;
     }
 
-    // The raw child's plain data still belongs to its ancestors — zero loss.
-    this.propagateToAncestors(path, value);
+    this.propagateToAncestors(path, merged.value);
+  }
+
+  /**
+   * A rescue means a degrade tried to erase data a user could already see —
+   * an upstream defect. It rides the envelope as a notice so it surfaces in the
+   * Error Inspector instead of being silently absorbed (`core/` is a pure
+   * kernel: no console, no capture — the notice IS the alarm).
+   */
+  private recordRescue(pathKey: string, reason: string, rescued: string[]): void {
+    if (rescued.length === 0) return;
+    this.rescueNotices.push({
+      code: "degrade_data_rescued",
+      message: `degrade (${reason}) at path "${pathKey || "<root>"}" would have dropped: ${rescued.join(", ")}`,
+    });
   }
 
   /**
@@ -348,6 +404,7 @@ export class IrTree {
     if (rootRawReason) {
       notices.push({ code: "raw_fallback", message: rootRawReason });
     }
+    notices.push(...this.rescueNotices);
 
     const baseResidue = rootNode?.residue ?? null;
     let residue = baseResidue;
