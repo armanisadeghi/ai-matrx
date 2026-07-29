@@ -8,7 +8,6 @@ import {
   PRIMARY_QUICK_ACTIONS,
   SECONDARY_QUICK_ACTIONS,
 } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { WorkspaceConversionNudge } from "@/features/auth/components/conversion/WorkspaceConversionNudge";
 import { ArrowUp, ArrowUpRight, Mic, Plus } from "lucide-react";
 
 /**
@@ -43,14 +42,8 @@ export default async function NewChatPage() {
       <Suspense fallback={<NewChatLandingFallback />}>
         <ChatNewClient />
       </Suspense>
-      {/* Polite inline conversion card for guests who hit the send gate.
-          Renders nothing for authed users and for guests with zero attempts. */}
-      <WorkspaceConversionNudge
-        featureName="Chat"
-        threshold={1}
-        heading="Save your chat in 30 seconds"
-        description="Your messages, agents, files, and history all sync the moment you create a free account. No credit card required."
-      />
+      {/* No conversion nudge here: the send gate is gone (guests send for
+          real), so gate-attempt-driven nudges can never fire on this page. */}
     </>
   );
 }

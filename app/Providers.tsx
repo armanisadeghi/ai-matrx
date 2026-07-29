@@ -79,6 +79,10 @@ import { CloudFilesPickerHost } from "@/features/files/components/pickers/CloudF
 import { CloudFilesRealtimeProvider } from "@/features/files/providers/CloudFilesRealtimeProvider";
 import { UploadGuardHost } from "@/features/files/upload/UploadGuardHost";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
+// ONE auth sync for the whole app (authed session + guest fingerprint).
+// Guests are first-class users — without this mount their backend calls go
+// out with no X-Fingerprint-ID header and the server can't identify them.
+import { GlobalAuthSync } from "@/features/auth/components/GlobalAuthSync";
 import { SandboxGateHost } from "@/components/dialogs/sandbox-gate/SandboxGateHost";
 import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 import { ScopeMismatchDialogHost } from "@/components/dialogs/scope-mismatch/ScopeMismatchDialogHost";
@@ -130,6 +134,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                 See providers/AudioSystemHost.tsx. */}
                               <AudioSystemHost />
                               <React.Fragment>
+                                <GlobalAuthSync />
                                 {children}
                                 <RecoveryWindow />
                                 <RecoveryNudge />

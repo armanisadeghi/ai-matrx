@@ -45,6 +45,22 @@ export async function waitForConversationPersisted(
     maxIntervalMs = 1500,
   }: WaitForConversationPersistedOptions = {},
 ): Promise<boolean> {
+  // Guests can never read the row: the server persists their conversation
+  // under a fingerprint-resolved anonymous user (aidream guest registry),
+  // but this browser holds no Supabase session, so RLS hides it. Polling
+  // would burn 3 minutes of reads to learn nothing — skip immediately. The
+  // conversation stays live in Redux on the /new route; it surfaces in
+  // history after signup promotes the anonymous user in place.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) {
+    console.info(
+      `[conversation-persistence] Guest session — skipping persistence poll for ${conversationId} (URL stays on /new; server persists under the guest's anonymous user).`,
+    );
+    return false;
+  }
+
   const deadline = Date.now() + timeoutMs;
   let delay = intervalMs;
   for (;;) {

@@ -15,7 +15,7 @@ const AdminMenu = lazy(() => import('./AdminMenu'));
 /**
  * Public Header Auth - Redux-powered
  * 
- * Reads auth state from Redux (populated by AuthSyncWrapper).
+ * Reads auth state from Redux (populated by GlobalAuthSync).
  * No direct Supabase calls - single source of truth.
  * 
  * Shows:
@@ -30,7 +30,7 @@ export function PublicHeaderAuth() {
   const isAdmin = useSelector(selectIsSuperAdmin);
   const router = useRouter();
 
-  // Avoid hydration mismatch: AuthSyncWrapper populates the user slice after
+  // Avoid hydration mismatch: GlobalAuthSync populates the user slice after
   // mount, so the very first client render must match the server's render
   // (always unauthenticated). After mount we honor the real Redux state.
   // Without this gate, the server emits the Sign In <Button> and the client's

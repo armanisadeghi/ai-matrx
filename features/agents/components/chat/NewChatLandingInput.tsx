@@ -24,7 +24,6 @@ import {
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { useAuthGuardedAction } from "@/features/auth/components/useAuthGuardedAction";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import {
   buildChatContextData,
@@ -156,13 +155,12 @@ export function NewChatLandingInput({
     hasResources,
   ]);
 
-  // Guests can compose freely — sending opens the AuthGate so they sign up
-  // exactly where the value lands.
-  const submit = useAuthGuardedAction(rawSubmit, {
-    featureName: "Chat",
-    featureDescription:
-      "Send your message, get an agent on it, save the conversation. Free account, 30 seconds, no credit card — your draft is right here when you sign back in.",
-  });
+  // Guests send like everyone else — the platform is public. Guest identity
+  // rides as X-Fingerprint-ID (see GlobalAuthSync); the server resolves it to
+  // a stable anonymous user and persists the conversation. NEVER re-add an
+  // auth gate here — signup prompts must not block usable features
+  // (regression 7420db832, removed 2026-07-28 on Arman's order).
+  const submit = rawSubmit;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter submits; Shift+Enter inserts a newline (ChatGPT convention).
