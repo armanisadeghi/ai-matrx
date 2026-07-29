@@ -6,6 +6,7 @@ import type {
   SurfaceDriftReport,
   SurfaceValue,
 } from "@/features/surfaces/types";
+import type { ApplyManifestSyncResult } from "@/features/surfaces/services/manifest-sync.service";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import {
@@ -674,16 +675,7 @@ export async function syncManifests(
     deleteStale?: boolean;
     createMissingSurfaces?: boolean;
   } = {},
-): Promise<{
-  upserted: { surfaceName: string; valueName: string }[];
-  deleted: { surfaceName: string; valueName: string }[];
-  roleUpserted: { surfaceName: string; roleName: string }[];
-  roleDeleted: { surfaceName: string; roleName: string }[];
-  sweptPrefCount: number;
-  skippedMissingSurface: string[];
-  urlPatternsUpdated: { surfaceName: string; urlPattern: string }[];
-  driftAfter: SurfaceDriftReport;
-}> {
+): Promise<ApplyManifestSyncResult> {
   const res = await fetch("/api/admin/surfaces/sync-manifests", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -693,18 +685,10 @@ export async function syncManifests(
     const text = await res.text().catch(() => "");
     throw new Error(text || `Sync manifests failed (${res.status})`);
   }
-  const body = (await res.json()) as {
-    result: {
-      upserted: { surfaceName: string; valueName: string }[];
-      deleted: { surfaceName: string; valueName: string }[];
-      roleUpserted: { surfaceName: string; roleName: string }[];
-      roleDeleted: { surfaceName: string; roleName: string }[];
-      sweptPrefCount: number;
-      skippedMissingSurface: string[];
-      urlPatternsUpdated: { surfaceName: string; urlPattern: string }[];
-      driftAfter: SurfaceDriftReport;
-    };
-  };
+  // The canonical result type, NOT a hand-mirror: the previous inline copy
+  // silently dropped every field added to the service (structural typing gives
+  // no error), which is how write-target sync counts became invisible.
+  const body = (await res.json()) as { result: ApplyManifestSyncResult };
   return body.result;
 }
 

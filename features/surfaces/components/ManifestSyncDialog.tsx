@@ -41,12 +41,14 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
         res.deleted.length +
         res.roleUpserted.length +
         res.roleDeleted.length +
+        res.writeTargetUpserted.length +
+        res.writeTargetDeleted.length +
         res.urlPatternsUpdated.length;
       if (changeCount === 0) {
         toast.success("Already in sync — no changes applied.");
       } else {
         toast.success(
-          `Sync applied: ${res.upserted.length + res.roleUpserted.length} upserted, ${res.deleted.length + res.roleDeleted.length} deleted`,
+          `Sync applied: ${res.upserted.length + res.roleUpserted.length + res.writeTargetUpserted.length} upserted, ${res.deleted.length + res.roleDeleted.length + res.writeTargetDeleted.length} deleted`,
         );
       }
     } catch (e) {
@@ -135,6 +137,18 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
               <span className="text-muted-foreground">Roles deleted:</span>
               <span className="tabular-nums font-mono">
                 {result.roleDeleted.length}
+              </span>
+              <span className="text-muted-foreground">
+                Write targets upserted:
+              </span>
+              <span className="tabular-nums font-mono">
+                {result.writeTargetUpserted.length}
+              </span>
+              <span className="text-muted-foreground">
+                Write targets deleted:
+              </span>
+              <span className="tabular-nums font-mono">
+                {result.writeTargetDeleted.length}
               </span>
               <span className="text-muted-foreground">Agent prefs swept:</span>
               <span className="tabular-nums font-mono">

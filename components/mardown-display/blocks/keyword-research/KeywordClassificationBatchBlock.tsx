@@ -165,6 +165,11 @@ export default function KeywordClassificationBatchBlock({
     void runAction("apply_surface_write", {
       target: "keyword_selection",
       value: { phrase, selected } satisfies KeywordSelectionWrite,
+      // A real checkbox click by the viewer — the click IS the consent, so the
+      // target's applyPolicy is not consulted. Anything this component did on
+      // its OWN (on mount, from streamed instructions) must omit this and be
+      // gated. See handlers/apply-surface-write.ts § Origin.
+      origin: "user",
     });
   };
 

@@ -49,20 +49,56 @@
 
 import { useSyncExternalStore } from "react";
 
-import { useSurfaceRuntime } from "./SurfaceRuntimeContext";
+import { getSurfaceRuntimeStack } from "./SurfaceRuntimeContext";
 
 type StoreKey = string;
 
 const store = new Map<StoreKey, unknown>();
-const listeners = new Map<StoreKey, Set<() => void>>();
+
+/**
+ * Listeners are keyed by the BARE key, not `surface::key`.
+ *
+ * Both read forms must wake on any publication of a key: the exact-surface
+ * form because its surface published, and the stack-walking form because a
+ * DIFFERENT surface publishing can change which value wins. Keying listeners
+ * by surface would leave the stack-walking reader asleep through exactly the
+ * change it needs to see.
+ */
+const listeners = new Map<string, Set<() => void>>();
+
+/** Stable per-key `subscribe` functions — a fresh closure each render would
+ *  make `useSyncExternalStore` tear down and re-add its listener on every
+ *  commit of every reading block. */
+const subscribers = new Map<string, (listener: () => void) => () => void>();
 
 const keyOf = (surfaceName: string, key: string): StoreKey =>
   `${surfaceName}::${key}`;
 
-function emit(storeKey: StoreKey): void {
-  const set = listeners.get(storeKey);
+function emit(key: string): void {
+  const set = listeners.get(key);
   if (!set) return;
   for (const listener of set) listener();
+}
+
+function subscriberFor(key: string): (listener: () => void) => () => void {
+  const existing = subscribers.get(key);
+  if (existing) return existing;
+  const subscribe = (listener: () => void) => {
+    let set = listeners.get(key);
+    if (!set) {
+      set = new Set();
+      listeners.set(key, set);
+    }
+    set.add(listener);
+    return () => {
+      const current = listeners.get(key);
+      if (!current) return;
+      current.delete(listener);
+      if (current.size === 0) listeners.delete(key);
+    };
+  };
+  subscribers.set(key, subscribe);
+  return subscribe;
 }
 
 /**
@@ -85,10 +121,10 @@ export function publishSurfaceUiState(
   } else {
     store.set(storeKey, value);
   }
-  emit(storeKey);
+  emit(key);
 }
 
-/** Imperative read — for non-React callers (action handlers, chrome). */
+/** Imperative read of ONE surface's value — for non-React callers. */
 export function readSurfaceUiState<T = unknown>(
   surfaceName: string,
   key: string,
@@ -97,10 +133,27 @@ export function readSurfaceUiState<T = unknown>(
 }
 
 /**
- * Subscribe to one piece of surface UI state. Returns `undefined` when the
- * surface is not mounted or has not published the key — a block MUST render
- * correctly in that case (it is the normal state in chat, where no surface
- * is publishing anything).
+ * Imperative stack-walking read: the value from the DEEPEST mounted surface
+ * that publishes `key`. This is the same resolution `applySurfaceWrite` uses
+ * for targets — read and write MUST agree, or a block reads one surface's
+ * state while its writes land on another's.
+ */
+export function readCurrentSurfaceUiState<T = unknown>(
+  key: string,
+): T | undefined {
+  for (const runtime of getSurfaceRuntimeStack()) {
+    const storeKey = keyOf(runtime.surfaceName, key);
+    if (store.has(storeKey)) return store.get(storeKey) as T;
+  }
+  return undefined;
+}
+
+/**
+ * Subscribe to ONE named surface's value. Returns `undefined` when that
+ * surface is not publishing the key.
+ *
+ * Prefer `useCurrentSurfaceUiState` in a rendered block — a block must not
+ * know which surface it landed on.
  */
 export function useSurfaceUiState<T = unknown>(
   surfaceName: string,
@@ -108,18 +161,7 @@ export function useSurfaceUiState<T = unknown>(
 ): T | undefined {
   const storeKey = keyOf(surfaceName, key);
   return useSyncExternalStore(
-    (listener) => {
-      let set = listeners.get(storeKey);
-      if (!set) {
-        set = new Set();
-        listeners.set(storeKey, set);
-      }
-      set.add(listener);
-      return () => {
-        set.delete(listener);
-        if (set.size === 0) listeners.delete(storeKey);
-      };
-    },
+    subscriberFor(key),
     () => store.get(storeKey) as T | undefined,
     // Server snapshot: nothing is published during SSR, and it must be the
     // SAME value every call or React throws an infinite-loop error.
@@ -128,35 +170,49 @@ export function useSurfaceUiState<T = unknown>(
 }
 
 /**
- * Read a key from whatever surface is CURRENTLY mounted (deepest wins — the
- * same resolution `applySurfaceWrite` uses for targets).
+ * Read a key from the mounted surface stack — deepest publisher wins, the same
+ * resolution `applySurfaceWrite` uses for write targets.
  *
  * This is the form a rendered block wants: a block does not know, and must not
- * know, which page it landed on. It names a key; if a surface is publishing
- * that key it gets a value, and if not (chat, a share page, SSR) it gets
- * `undefined` and renders its non-interactive form. Same key, same block,
- * every surface — that is what keeps ONE renderer.
+ * know, which page it landed on. It names a key; if a mounted surface is
+ * publishing that key it gets a value, and if not (chat, a share page, SSR) it
+ * gets `undefined` and renders its non-interactive form. Same key, same block,
+ * every surface.
+ *
+ * It walks the stack rather than asking only the single deepest runtime,
+ * because those are NOT the same surface: an overlay-hosted window registers
+ * near the top of the tree (shallow depth) while the page behind it can be
+ * nested deeper. Asking only the winner made a keyword window's blocks read
+ * the content-plan node panel's (absent) state and silently render
+ * non-interactive.
  */
 export function useCurrentSurfaceUiState<T = unknown>(
   key: string,
 ): T | undefined {
-  const runtime = useSurfaceRuntime();
-  return useSurfaceUiState<T>(runtime?.surfaceName ?? "", key);
+  // Re-runs whenever any surface publishes this key. `getSurfaceRuntimeStack`
+  // is read inside the snapshot so a mount/unmount is picked up on the next
+  // notification or render — the same freshness contract as writeback.
+  return useSyncExternalStore(
+    subscriberFor(key),
+    () => readCurrentSurfaceUiState<T>(key),
+    () => undefined,
+  );
 }
 
 /** Test/unmount cleanup. Never call from product code mid-session. */
 export function clearSurfaceUiState(surfaceName?: string): void {
+  const bareKey = (storeKey: string) => storeKey.split("::").slice(1).join("::");
   if (!surfaceName) {
     const keys = [...store.keys()];
     store.clear();
-    for (const key of keys) emit(key);
+    for (const key of keys) emit(bareKey(key));
     return;
   }
   const prefix = `${surfaceName}::`;
   for (const key of [...store.keys()]) {
     if (key.startsWith(prefix)) {
       store.delete(key);
-      emit(key);
+      emit(bareKey(key));
     }
   }
 }

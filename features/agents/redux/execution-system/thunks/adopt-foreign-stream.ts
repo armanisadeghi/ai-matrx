@@ -88,6 +88,18 @@ export interface AdoptForeignStreamOptions {
   preferServerIds?: boolean;
   /** Structured-output extraction, when the caller reads `selectFirstExtractedObject`. */
   jsonExtraction?: JsonExtractionConfig;
+  /**
+   * The AbortController whose `signal` the CALLER also handed to `callApi`.
+   *
+   * This must be the fetch's own controller. `monitorStream` aborts it on a
+   * heartbeat / lifetime timeout, and if it is not wired to the fetch the
+   * response body stays open — the server keeps writing to a reader nobody
+   * drains, for the life of the tab, while the UI already says the connection
+   * was lost. Omit it to run without the watchdog (no timeout, no leak);
+   * passing a controller that is NOT the fetch's is the one genuinely broken
+   * combination, so there is no default.
+   */
+  abortController?: AbortController;
   /** Max ms between events before the stream is declared dead. Default 60s. */
   heartbeatTimeoutMs?: number;
   /** Max total stream lifetime. Default 30 min — pipelines are long. */
@@ -111,6 +123,7 @@ export function adoptForeignStream(
     onEvent,
     preferServerIds = true,
     jsonExtraction,
+    abortController,
     heartbeatTimeoutMs = 60_000,
     maxLifetimeMs = 30 * 60_000,
   } = options;
@@ -128,8 +141,6 @@ export function adoptForeignStream(
       // time the first chunk lands.
       onAdopted?.({ requestId, conversationId });
 
-      const abortController = new AbortController();
-
       try {
         await processStream({
           requestId,
@@ -141,9 +152,15 @@ export function adoptForeignStream(
           getState,
           jsonExtraction,
           onEvent: onEvent as ((event: unknown) => void) | undefined,
+          // Only arm the watchdog when the caller gave us the FETCH's own
+          // controller — `monitorStream` only takes effect when a controller is
+          // present, and an unwired one turns a timeout into a leaked body.
           abortController,
           heartbeatTimeoutMs,
           maxLifetimeMs,
+          // An adopted stream has no chat transcript to commit — see the flag's
+          // docs in process-stream.ts.
+          skipTranscriptCommit: true,
           // The adopted stream's wire conversation_id belongs to the server's
           // pipeline run, not to any local Redux conversation. Pin every
           // dispatch to the id we adopted under, and skip the drift assert —

@@ -301,31 +301,51 @@ const matrxLintPlugin = {
                 },
             },
             create(context) {
-                const ALLOWED = ['/features/content-ir/'];
+                // content-ir owns the parser. The stream accumulator IS the
+                // canonical pipeline this rule points people at, and the
+                // json-block-detector demo is content-ir's own harness — both
+                // are hosts, not violations.
+                const ALLOWED = [
+                    '/features/content-ir/',
+                    '/execution-system/utils/stream-block-accumulator.ts',
+                    '/demos/json-block-detector/',
+                ];
                 const filename = context.filename || context.getFilename?.() || '';
                 if (ALLOWED.some((p) => filename.includes(p))) return {};
                 const BANNED_NAMES = new Set([
                     'useLiveJsonRegion',
                     'openParseSession',
                 ]);
+                // Reaching the session manager AT ALL from outside the hosts is
+                // the violation — a namespace import, a re-export, or an
+                // `await import()` bypasses a name-only check entirely.
+                const isSessionModule = (src) =>
+                    typeof src === 'string' &&
+                    (src.includes('content-ir/react/useLiveJsonRegion') ||
+                        src.includes('content-ir/session'));
                 return {
                     ImportDeclaration(node) {
                         if (node.importKind === 'type') return;
-                        const src = node.source.value;
-                        if (typeof src !== 'string') return;
-                        const looksContentIr =
-                            src.includes('content-ir/react/useLiveJsonRegion') ||
-                            src.includes('content-ir/session');
+                        if (isSessionModule(node.source.value)) {
+                            context.report({ node, messageId: 'banned' });
+                            return;
+                        }
                         for (const spec of node.specifiers) {
                             if (spec.importKind === 'type') continue;
-                            const imported =
-                                spec.imported?.name ?? spec.local?.name ?? '';
-                            if (
-                                BANNED_NAMES.has(imported) ||
-                                (looksContentIr && BANNED_NAMES.has(spec.local?.name))
-                            ) {
+                            const imported = spec.imported?.name;
+                            if (imported && BANNED_NAMES.has(imported)) {
                                 context.report({ node: spec, messageId: 'banned' });
                             }
+                        }
+                    },
+                    ExportNamedDeclaration(node) {
+                        if (node.source && isSessionModule(node.source.value)) {
+                            context.report({ node, messageId: 'banned' });
+                        }
+                    },
+                    ImportExpression(node) {
+                        if (node.source && isSessionModule(node.source.value)) {
+                            context.report({ node, messageId: 'banned' });
                         }
                     },
                 };
