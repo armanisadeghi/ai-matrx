@@ -38,6 +38,12 @@ interface WorkingDocumentEditorProps {
    * see what the chat agent sees. Defaults to deriving from `conversationId`.
    */
   surfaceContext?: WorkingDocumentSurfaceContext;
+  /**
+   * View-only rendering (a viewer-level sharee): content is selectable and
+   * scrollable but never editable — RLS would refuse the write anyway, and a
+   * refused write surfaces as a bogus "concurrent edit" conflict loop.
+   */
+  readOnly?: boolean;
 }
 
 export function WorkingDocumentEditor({
@@ -50,6 +56,7 @@ export function WorkingDocumentEditor({
   className,
   actionsSource,
   surfaceContext,
+  readOnly = false,
 }: WorkingDocumentEditorProps) {
   const { editorMode } = useWorkingDocViewState(conversationId);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -142,8 +149,9 @@ export function WorkingDocumentEditor({
             "Empty. Ask the agent to draft this — or type here. Your edits and the agent's stay in sync each round."
           }
           className="h-full min-h-0"
-          showVoiceButton
+          showVoiceButton={!readOnly}
           embedded
+          readOnly={readOnly}
           resetKey={conversationId}
           actionsSource={actionsSource}
           previewActionsVariant="none"

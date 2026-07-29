@@ -34,6 +34,10 @@
 import { supabase } from "@/utils/supabase/client";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
+import {
+  resolveResourceAccess,
+  type ResourceAccess,
+} from "@/utils/permissions/access-core";
 import type { Json } from "@/types/database.types";
 
 export type WorkingDocumentKind = "working" | "scratch";
@@ -82,6 +86,17 @@ export function rowToCxWorkingDocument(
 }
 
 const WD = () => supabase.schema("workbench").from("working_documents");
+
+/**
+ * The caller's access to a document via the canonical view-vs-edit gate
+ * (`get_resource_access` — same model RLS enforces). Never throws; failures
+ * resolve to no-access.
+ */
+export function getWorkingDocumentAccess(
+  documentId: string,
+): Promise<ResourceAccess> {
+  return resolveResourceAccess(supabase, "working_document", documentId);
+}
 
 // =============================================================================
 // Document CRUD (by document id)
@@ -199,9 +214,11 @@ export async function commitWorkingDocumentContent(
 
 /**
  * Explicit list scope (THE VIEW LAW: RLS is the ceiling, never the list
- * definition). `mine` = documents I created; `shared` = documents RLS lets me
- * read that someone ELSE created (direct grants, org access, reachability
- * through a shared conversation).
+ * definition). `mine` = documents I created. `shared` = documents DIRECTLY
+ * granted to me in `iam.permissions` — deliberately NOT "everything RLS lets
+ * me read": a doc reachable only through a shared conversation container is
+ * readable in that container but must never be ENUMERATED in a list
+ * (contextual-access rule: reads use has_access, lists use discoverability).
  */
 export type DocumentListScope = "mine" | "shared";
 
@@ -210,6 +227,34 @@ async function currentUserId(): Promise<string | null> {
     data: { session },
   } = await supabase.auth.getSession();
   return session?.user?.id ?? null;
+}
+
+// Grant rows may carry any registered spelling of the type (the permissions
+// trigger canonicalizes against the registry; has_permission_for matches all
+// three) — match the same set here.
+const WD_GRANT_SPELLINGS = [
+  "working_document",
+  "working_documents",
+  "workbench.working_documents",
+];
+
+/** Ids of documents directly granted to me (active, unexpired). */
+async function listGrantedDocumentIds(uid: string): Promise<string[]> {
+  const nowIso = new Date().toISOString();
+  const { data, error } = await supabase
+    .schema("iam")
+    .from("permissions")
+    .select("resource_id, status, expires_at")
+    .in("resource_type", WD_GRANT_SPELLINGS)
+    .eq("granted_to_user_id", uid)
+    .or("status.is.null,status.neq.rejected")
+    .or(`expires_at.is.null,expires_at.gt.${nowIso}`);
+  if (error) {
+    throw new Error(
+      `[working-document] shared-grants read failed: ${error.message}`,
+    );
+  }
+  return Array.from(new Set((data ?? []).map((r) => r.resource_id as string)));
 }
 
 /**
@@ -224,16 +269,22 @@ export async function listUserDocuments(
 ): Promise<CxWorkingDocument[]> {
   const uid = await currentUserId();
   if (!uid) return []; // guests own nothing and are granted nothing
+
   let query = WD()
     .select("*")
     .eq("kind", kind)
     .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .limit(limit);
-  query =
-    scope === "mine"
-      ? query.eq("created_by", uid)
-      : query.neq("created_by", uid);
+
+  if (scope === "mine") {
+    query = query.eq("created_by", uid);
+  } else {
+    const grantedIds = await listGrantedDocumentIds(uid);
+    if (grantedIds.length === 0) return [];
+    query = query.in("id", grantedIds);
+  }
+
   const { data, error } = await query;
   if (error) {
     throw new Error(`[working-document] list failed: ${error.message}`);

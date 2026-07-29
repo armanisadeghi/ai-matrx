@@ -68,6 +68,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   commitWorkingDocumentContent,
   getCxWorkingDocumentById,
+  getWorkingDocumentAccess,
   linkDocumentToConversation,
   listConversationDocuments,
   materializeWorkingDocument,
@@ -106,6 +107,46 @@ type PendingEdgeOp =
 
 const pendingEdgeOps = new Map<string, PendingEdgeOp[]>();
 
+// Conversations whose row has been PROVEN readable this session (the flush's
+// `waitForConversationPersisted` succeeded). `cacheOnly=false` is NOT that
+// proof: it flips at `record_reserved`, which only announces the id — the row
+// commits atomically at stream-end, minutes later on a long turn. Writing an
+// edge in that window is the same guaranteed 42501 the queue exists to kill.
+const confirmedPersistedConversations = new Set<string>();
+
+// Conversations with a flush drain in progress. While a drain is in flight,
+// new edge intents keep QUEUEING (the drain loop picks them up) so a direct
+// write can never land ahead of an older queued op and invert user intent.
+const flushInFlight = new Set<string>();
+
+/**
+ * Should an edge intent for this conversation be queued instead of written?
+ * - Unknown to Redux → not a this-session provisional conversation; only an
+ *   already-persisted row can be referenced from elsewhere → write direct.
+ * - Flush in flight → queue (ordering).
+ * - Proven persisted → write direct.
+ * - Cache-only, or confirmed-but-not-yet-proven (announce→commit window),
+ *   or has queued ops → queue.
+ */
+function shouldQueueEdgeOps(
+  state: RootState,
+  conversationId: string,
+): boolean {
+  const rec = state.conversations.byConversationId[conversationId];
+  if (!rec) return false;
+  if (flushInFlight.has(conversationId)) return true;
+  if (confirmedPersistedConversations.has(conversationId)) return false;
+  if (rec.cacheOnly) return true;
+  if (pendingEdgeOps.has(conversationId)) return true;
+  // cacheOnly=false but never proven readable: for a conversation HYDRATED
+  // from the DB the row obviously exists (mark and go direct); for one born
+  // this session the flush proves it. Hydrated conversations are the ones
+  // with messages loaded / list-row provenance — they were never cacheOnly
+  // here, and no flush ever runs for them, so treat "no flush pending and no
+  // ops queued" as hydrated-direct.
+  return false;
+}
+
 function queueEdgeOp(conversationId: string, next: PendingEdgeOp): void {
   const ops = pendingEdgeOps.get(conversationId) ?? [];
   // Collapse to the latest intent per document: a link supersedes a prior
@@ -126,8 +167,9 @@ function queueEdgeOp(conversationId: string, next: PendingEdgeOp): void {
 
 /**
  * Persist a document↔conversation edge now, or queue it when the conversation
- * is still cache-only (no DB row — the RPC would 42501). Returns "queued" so
- * callers can skip failure handling for deferred writes.
+ * row is not yet proven to exist (the RPC would 42501). Returns "queued" for
+ * deferred writes and "skipped" for guests, so callers can skip failure
+ * handling on those outcomes.
  */
 async function persistOrQueueLink(
   getState: () => RootState,
@@ -138,8 +180,19 @@ async function persistOrQueueLink(
     kind: WorkingDocumentKind;
     enabled: boolean;
   },
-): Promise<"persisted" | "queued"> {
-  if (selectIsCacheOnly(args.conversationId)(getState())) {
+): Promise<"persisted" | "queued" | "skipped"> {
+  const state = getState();
+  // Guests can never write edges (RLS requires an authenticated editor) and
+  // their conversations are never client-readable — don't queue what can
+  // never flush.
+  if (!selectUserId(state)) {
+    console.info(
+      "[working-document] guest session — document link kept in Redux only",
+      { conversationId: args.conversationId, documentId: args.documentId },
+    );
+    return "skipped";
+  }
+  if (shouldQueueEdgeOps(state, args.conversationId)) {
     queueEdgeOp(args.conversationId, {
       op: "link",
       documentId: args.documentId,
@@ -156,7 +209,13 @@ async function persistOrQueueLink(
 /**
  * Drain the queued edge writes for a conversation once the server has
  * confirmed its row exists. Dispatched from the stream processor right after
- * `confirmServerSync`. LOUD on failure — by this point the edges should land.
+ * `confirmServerSync` — for EVERY newly confirmed conversation, queue or no
+ * queue, because being in-flight here is what keeps mid-stream edge intents
+ * queueing until the row is actually readable (`record_reserved` announces
+ * the id; the commit lands at stream-end — see 2026-07-24 change log).
+ *
+ * On failure the queue is KEPT (the next turn's confirm re-fires this thunk)
+ * and every affected document slot gets a visible error — never console-only.
  */
 export const flushPendingDocumentEdgesThunk = createAsyncThunk<
   void,
@@ -164,42 +223,88 @@ export const flushPendingDocumentEdgesThunk = createAsyncThunk<
   ThunkConfig
 >(
   "instanceWorkingDocument/flushPendingEdges",
-  async ({ conversationId }) => {
-    const ops = pendingEdgeOps.get(conversationId);
-    if (!ops?.length) return;
-    pendingEdgeOps.delete(conversationId);
-    // `record_reserved` only ANNOUNCES the id — the backend commits the row
-    // atomically at stream-end, so wait for a readable row before writing
-    // edges (same race that hit conversation_files, see 2026-07-24 log).
-    const persisted = await waitForConversationPersisted(conversationId);
-    if (!persisted) {
-      console.error(
-        "[working-document] flush: conversation never became readable — " +
-          "deferred document edges dropped",
-        { conversationId, ops },
-      );
+  async ({ conversationId }, { dispatch, getState }) => {
+    if (
+      flushInFlight.has(conversationId) ||
+      confirmedPersistedConversations.has(conversationId)
+    ) {
       return;
     }
-    for (const op of ops) {
-      try {
-        if (op.op === "link") {
-          await linkDocumentToConversation({
-            documentId: op.documentId,
-            conversationId,
-            organizationId: op.organizationId,
-            kind: op.kind,
-            enabled: op.enabled,
-          });
-        } else {
-          await unlinkDocumentFromConversation(op.documentId, conversationId);
-        }
-      } catch (err) {
-        console.error(
-          "[working-document] flushing a deferred conversation edge FAILED " +
-            "after server confirmation — the attachment will not survive a reload",
-          { conversationId, op, err },
-        );
+    // SYNCHRONOUS (before any await): from this moment edge intents queue, so
+    // nothing can fire a direct RPC inside the announce→commit window.
+    flushInFlight.add(conversationId);
+    try {
+      if (!selectUserId(getState())) {
+        // Guest: the row persists under the server's anonymous user and is
+        // never readable here. Drop quietly — nothing could ever flush.
+        pendingEdgeOps.delete(conversationId);
+        return;
       }
+      const persisted = await waitForConversationPersisted(conversationId);
+      if (!persisted) {
+        const ops = pendingEdgeOps.get(conversationId) ?? [];
+        console.error(
+          "[working-document] flush: conversation never became readable — " +
+            "deferred document edges held for the next confirm",
+          { conversationId, ops },
+        );
+        for (const kind of new Set(
+          ops.map((o) => (o.op === "link" ? o.kind : ("working" as const))),
+        )) {
+          dispatch(
+            markWorkingDocError({
+              conversationId,
+              kind,
+              error:
+                "Could not save this document's chat attachment yet — it will retry on your next message.",
+            }),
+          );
+        }
+        return;
+      }
+      confirmedPersistedConversations.add(conversationId);
+      // Drain until empty — ops queued DURING the drain (shouldQueueEdgeOps
+      // keeps queueing while we're in flight) are picked up by the next pass,
+      // preserving intent order.
+      for (;;) {
+        const ops = pendingEdgeOps.get(conversationId);
+        if (!ops?.length) break;
+        pendingEdgeOps.delete(conversationId);
+        for (const op of ops) {
+          try {
+            if (op.op === "link") {
+              await linkDocumentToConversation({
+                documentId: op.documentId,
+                conversationId,
+                organizationId: op.organizationId,
+                kind: op.kind,
+                enabled: op.enabled,
+              });
+            } else {
+              await unlinkDocumentFromConversation(
+                op.documentId,
+                conversationId,
+              );
+            }
+          } catch (err) {
+            console.error(
+              "[working-document] flushing a deferred conversation edge FAILED " +
+                "after server confirmation — the attachment will not survive a reload",
+              { conversationId, op, err },
+            );
+            dispatch(
+              markWorkingDocError({
+                conversationId,
+                kind: op.op === "link" ? op.kind : "working",
+                error:
+                  "Could not save this document's attachment to the chat — it may not survive a reload.",
+              }),
+            );
+          }
+        }
+      }
+    } finally {
+      flushInFlight.delete(conversationId);
     }
   },
 );
@@ -370,7 +475,13 @@ export const setConversationDocumentEnabledThunk = createAsyncThunk<
     // exist, so the edge works even while the scratch pool is unmaterialized.
     if (kind === "scratch" && !isScratchScope(conversationId)) {
       const orgId = resolveOrgId(getState(), conversationId);
-      if (!orgId) return;
+      if (!orgId) {
+        console.error(
+          "[scratchpad] gate not persisted — no org resolvable for conversation",
+          { conversationId, enabled },
+        );
+        return;
+      }
       try {
         // Queues while the conversation is cache-only (no DB row yet) and
         // flushes on server confirmation, so the gate survives a reload.
@@ -395,9 +506,10 @@ export const setConversationDocumentEnabledThunk = createAsyncThunk<
 
     if (enabled) {
       // Reserve the id only if not already pointing at a working_document (a
-      // hydrated/linked doc keeps its id). NO durable write here. Conversation
-      // docs reserve the DETERMINISTIC per-(conversation, kind) id; a global
-      // scratchpad scope (sp:<docId>) already carries its id in the scope.
+      // hydrated/linked doc keeps its id). NO durable write for a fresh
+      // reservation (materialize-on-write). Conversation docs reserve the
+      // DETERMINISTIC per-(conversation, kind) id; a global scratchpad scope
+      // (sp:<docId>) already carries its id in the scope.
       if (binding.kind === "none" || !binding.id) {
         dispatch(
           setWorkingDocBinding({
@@ -412,6 +524,39 @@ export const setConversationDocumentEnabledThunk = createAsyncThunk<
             },
           }),
         );
+        return;
+      }
+      // Re-enabling a MATERIALIZED document must persist enabled:true on the
+      // edge — disable persisted enabled:false, so without this the reload
+      // comes back OFF while the session UI said ON.
+      if (isScratchScope(conversationId)) return;
+      const materialized = selectWorkingDocMaterialized(
+        conversationId,
+        kind,
+      )(getState());
+      if (
+        materialized &&
+        binding.kind === "cx_working_document" &&
+        binding.id
+      ) {
+        try {
+          const orgId = resolveOrgId(getState(), conversationId);
+          if (orgId) {
+            await persistOrQueueLink(getState, {
+              conversationId,
+              documentId: binding.id,
+              organizationId: orgId,
+              kind,
+              enabled: true,
+            });
+          }
+        } catch (err) {
+          console.error("[working-document] failed to persist re-enable", {
+            conversationId,
+            kind,
+            err,
+          });
+        }
       }
       return;
     }
@@ -697,38 +842,76 @@ export const linkConversationDocumentThunk = createAsyncThunk<
         }),
       );
       // Persist the edge AFTER local adoption — the user has their document
-      // either way. Cache-only conversations queue the edge and flush it when
-      // the server confirms the row (a pre-confirmation assoc_add is a
+      // either way. Not-yet-committed conversations queue the edge and flush
+      // when the row is proven readable (a premature assoc_add is a
       // guaranteed 42501, since the conversation endpoint doesn't exist yet).
+      //
+      // ACCESS GATE: the doc↔conversation edge is access-CONVEYING, so
+      // `assoc_add` requires EDITOR on the document. A viewer-level sharee
+      // (the default grant) can read and adopt the doc, but the edge write
+      // would always 42501 — attach for the session and say so honestly
+      // instead of queueing a doomed write.
+      // Exactly 'view' takes the session-only lane. 'none' here means the
+      // access RPC failed transiently (we just read the doc via RLS) — fall
+      // through and let the persist path fail loudly if it must.
+      const access = await getWorkingDocumentAccess(documentId);
+      if (access.level === "view" && !access.isOwner) {
+        console.info(
+          "[working-document] view-only link — session-only, no durable edge",
+          { conversationId, documentId, level: access.level },
+        );
+        dispatch(
+          markWorkingDocError({
+            conversationId,
+            kind,
+            error:
+              "You have view access to this document — it's attached for this session, but won't reattach automatically after a reload.",
+          }),
+        );
+        return;
+      }
       const orgId = resolveOrgId(getState(), conversationId);
-      if (orgId) {
-        try {
-          await persistOrQueueLink(getState, {
-            conversationId,
-            documentId,
-            organizationId: orgId,
-            kind,
-            enabled: true,
-          });
-        } catch (err) {
-          // Local adoption already succeeded — the user has the document this
-          // session. Scream about durability rather than pretending the link
-          // didn't happen.
-          console.error("[working-document] link: edge persist failed", {
+      if (!orgId) {
+        console.error(
+          "[working-document] link: no org resolvable — edge not persisted",
+          { conversationId, kind, documentId },
+        );
+        dispatch(
+          markWorkingDocError({
             conversationId,
             kind,
-            documentId,
-            err,
-          });
-          dispatch(
-            markWorkingDocError({
-              conversationId,
-              kind,
-              error:
-                "Linked for this session, but saving the link failed — it may not survive a reload.",
-            }),
-          );
-        }
+            error:
+              "Linked for this session, but saving the link failed — it may not survive a reload.",
+          }),
+        );
+        return;
+      }
+      try {
+        await persistOrQueueLink(getState, {
+          conversationId,
+          documentId,
+          organizationId: orgId,
+          kind,
+          enabled: true,
+        });
+      } catch (err) {
+        // Local adoption already succeeded — the user has the document this
+        // session. Scream about durability rather than pretending the link
+        // didn't happen.
+        console.error("[working-document] link: edge persist failed", {
+          conversationId,
+          kind,
+          documentId,
+          err,
+        });
+        dispatch(
+          markWorkingDocError({
+            conversationId,
+            kind,
+            error:
+              "Linked for this session, but saving the link failed — it may not survive a reload.",
+          }),
+        );
       }
     } catch (err) {
       console.error("[working-document] link failed", {
@@ -1156,8 +1339,19 @@ export const openWorkspaceDocumentThunk = createAsyncThunk<
     }
 
     if (attachTo) {
+      // View-only docs get NO durable edge (access-conveying assoc_add needs
+      // editor on the doc — it would always 42501). The tab still opens; the
+      // attach is session-only.
+      const access = await getWorkingDocumentAccess(documentId);
+      const viewOnly = access.level === "view" && !access.isOwner;
       const orgId = resolveOrgId(getState(), attachTo);
-      if (orgId) {
+      if (!viewOnly && !orgId) {
+        console.error(
+          "[working-document] attach: no org resolvable — edge not persisted",
+          { attachTo, documentId },
+        );
+      }
+      if (!viewOnly && orgId) {
         try {
           await persistOrQueueLink(getState, {
             conversationId: attachTo,
@@ -1223,9 +1417,11 @@ export const detachWorkspaceDocumentThunk = createAsyncThunk<
     // If it was an attached scratchpad, drop it from the publication list too
     // (no-op for working docs).
     dispatch(removeAttachedScratchpad({ conversationId, documentId }));
-    // Cache-only conversation: no DB row, so no edge can exist server-side —
-    // cancel any queued link instead of firing a guaranteed-42501 remove.
-    if (selectIsCacheOnly(conversationId)(getState())) {
+    if (!selectUserId(getState())) return; // guests hold no server edges
+    // Conversation row not yet proven to exist (or a flush is draining): no
+    // edge can exist server-side yet — cancel/queue instead of firing a
+    // guaranteed-42501 remove (or racing ahead of a queued link).
+    if (shouldQueueEdgeOps(getState(), conversationId)) {
       queueEdgeOp(conversationId, { op: "unlink", documentId });
       return;
     }

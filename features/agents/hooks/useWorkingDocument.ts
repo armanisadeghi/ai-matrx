@@ -825,17 +825,23 @@ export function useWorkingDocument(
                 agentContent: res.document.content,
               }),
             );
+            dispatch(
+              markWorkingDocSaving({ conversationId, kind, saving: false }),
+            );
           }
         })
-        .catch(() =>
+        .catch(() => {
           dispatch(
             markWorkingDocError({
               conversationId,
               kind,
               error: "Could not save your version.",
             }),
-          ),
-        );
+          );
+          dispatch(
+            markWorkingDocSaving({ conversationId, kind, saving: false }),
+          );
+        });
     },
     [dispatch, conversationId, kind, binding.kind, binding.id],
   );
