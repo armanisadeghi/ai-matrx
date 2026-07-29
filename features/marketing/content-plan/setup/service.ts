@@ -94,22 +94,38 @@ export async function loadArchetypeLibrary(
       // Concepts first: the catalog must be in hand before any selection that
       // names it is resolved. An org profile shadows INDIVIDUAL concept keys,
       // exactly the way it shadows individual archetype keys.
+      // Degrades PER CONCEPT (Arman, 2026-07-29, after a live break): one
+      // malformed or newer-schema concept is skipped + screamed about, never
+      // allowed to kill the whole menu.
       const conceptsRaw = templateMap[CONCEPT_MAP_KEY];
-      if (conceptsRaw !== null && conceptsRaw !== undefined) {
-        try {
-          Object.assign(
-            catalog,
-            parseConceptCatalog(
-              conceptsRaw,
-              `plan.profile "${row.vertical}"`,
-              problems,
-            ),
-          );
-        } catch (error) {
-          problems.push(
-            `plan.profile "${row.vertical}" concepts: ${extractErrorMessage(error)}`,
-          );
+      if (
+        conceptsRaw !== null &&
+        conceptsRaw !== undefined &&
+        typeof conceptsRaw === "object" &&
+        !Array.isArray(conceptsRaw)
+      ) {
+        for (const [conceptKey, value] of Object.entries(
+          conceptsRaw as Record<string, unknown>,
+        )) {
+          try {
+            Object.assign(
+              catalog,
+              parseConceptCatalog(
+                { [conceptKey]: value },
+                `plan.profile "${row.vertical}"`,
+                problems,
+              ),
+            );
+          } catch (error) {
+            problems.push(
+              `plan.profile "${row.vertical}" concept "${conceptKey}" skipped: ${extractErrorMessage(error)}`,
+            );
+          }
         }
+      } else if (conceptsRaw !== null && conceptsRaw !== undefined) {
+        problems.push(
+          `plan.profile "${row.vertical}" concepts: expected an object keyed by concept name.`,
+        );
       }
 
       const map = templateMap[ARCHETYPE_MAP_KEY];

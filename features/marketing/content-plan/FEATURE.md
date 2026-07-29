@@ -196,7 +196,7 @@ plan CRUD through it.
   `services/content_plan/archetypes.py` + `concepts.py`,** pinned by the
   language-neutral fixture `setup/archetype-expansion-cases.json` (copied
   verbatim from aidream, which owns it) and the runnable guard
-  **`pnpm check:archetype-expansion`** (45 cases + a checksum against aidream's
+  **`pnpm check:archetype-expansion`** (62 cases + a checksum against aidream's
   copy; aidream runs the same cases in
   `tests/test_archetype_expansion_fixture.py`). Behaviour changes go: fixture in
   aidream → copy here → fix the twin. **Never edit the fixture to make the twin
@@ -213,7 +213,7 @@ plan CRUD through it.
   **concept** (`home`, `about`, `services`, … — a menu row) → **variant** (a
   named composition: either fixed real-named `pages`, which may nest `children`
   to arbitrary depth, or ONE count-bearing `family`) → **selection**
-  (`{concept: {variant?, count?, brief?, child_brief?}}` plus `omits`).
+  (`{concept: {variant?, count?, name?, brief?, child_brief?}}` plus `omits`).
   **Count and variant are orthogonal and both optional**; nothing is required
   except `home`. `expandArchetype` resolves a selection into the same
   `core`+`families`+`foundation` shape the explicit form uses, ONCE, at the top
@@ -237,10 +237,26 @@ plan CRUD through it.
     is half the decision; it is shown on the shape row and in the Concepts
     section. Node provenance (`attributes.archetype.concept` / `.variant`,
     written identically by both sides) says which menu item owns which page.
+  - **Naming enums — the slug FOLLOWS the chosen name** (ruled 2026-07-28). A
+    concept's `nameOptions` are suggestions; ANY custom name is valid. A pick
+    (`ConceptSelection.name` or `expandArchetype`'s `conceptNames`) renames the
+    family hub or the variant's single top page AND its slug (`Offices` →
+    `/offices`); provenance keeps the canonical concept key; the family KEY
+    never changes, so `=<key>.count` keeps resolving. Home renames label-only;
+    a multi-top-page variant (legal) rejects a name loudly. The Concepts
+    section renders the chips + Custom… input (`ConceptRow` in
+    `SetupWorkOrderColumn`).
+  - **Hub concepts auto-nest** (ruled 2026-07-28). `Concept.hub = "content"`
+    (blog/learn/education) hosts every selected `hubMember = "content"` concept
+    (`guides`) via `ArchetypeFamily.parentKey` — ONE level, loud on chains —
+    landing `/learn/guides/…`. No hub selected → members stay top-level;
+    commercial concepts are never moved. The UI shows a `hub` badge and a
+    "Nests under X" note; aidream's generator honors the same placement.
 - **The committed work order lives in ONE place:**
-  `web.site.settings.content_plan.archetype = {key, counts, instantiated_at}` —
-  byte-identical to what aidream's `_record_site_archetype` writes, MERGED into
-  the `content_plan` block that already carries `vertical`, and guarded by the
+  `web.site.settings.content_plan.archetype = {key, counts, concept_names?,
+  instantiated_at}` — byte-identical to what aidream's `_record_site_archetype`
+  writes (`concept_names` only when names were chosen), MERGED into the
+  `content_plan` block that already carries `vertical`, and guarded by the
   row's `version`. Nothing extra is stored beside it. In particular **child
   NAMES are not persisted** — they are re-derived from the live plan's own child
   labels (`namesFromPlan` in `setup/components/SetupView.tsx`, adopting only
@@ -289,6 +305,15 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-29 — Claude: **Concept library v2 twin + Setup pickers** (rulings
+  2026-07-28; aidream migration `0295` live). Twin learned
+  `nameOptions`/`hub`/`hubMember`, `ConceptSelection.name`,
+  `ArchetypeFamily.parentKey`, `expandArchetype conceptNames`; committed record
+  gained `concept_names`. Setup Concepts rows now carry name chips + Custom…,
+  a `hub` badge and "Nests under X". Lineup is FIVE shapes
+  (`local-services-md` renamed `local-services-multi`; a NEW true medium took
+  the md key — committed site keys migrated live). Fixture 62 cases, guard
+  62/62, proven to redden on injected divergence.
 - 2026-07-29 — Claude: **"Generate content" rung (Make-it-real rung 4; publish
   became 5).** `setup/bridge.ts bridgeFill{Preview,Start,Status,Cancel}` →
   aidream's durable cms-fill pipeline (frontier in `plan.cms_fill_job/_item`,
