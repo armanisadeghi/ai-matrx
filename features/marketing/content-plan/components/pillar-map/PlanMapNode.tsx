@@ -33,6 +33,8 @@ export interface PlanMapNodeData extends Record<string, unknown> {
   collapsedCount: number;
   dimmed: boolean;
   canvasLabel: string;
+  /** Reality overlay: this route is live on the crawled site. */
+  isLive?: boolean;
 }
 
 /** Silhouette per node_type — distinct shapes, home visually distinct. */
@@ -94,6 +96,12 @@ export function PlanMapNodeView({
             nodeShapeClass(data.nodeType),
           )}
         />
+        {data.isLive ? (
+          <span
+            className="absolute -left-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background"
+            title="Live on the site"
+          />
+        ) : null}
         {data.hasKeyword ? (
           <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border border-background bg-foreground" />
         ) : null}

@@ -148,6 +148,12 @@ export interface ClientPage {
   source_artifact_id: string | null;
   source_message_id: string | null;
   source_conv_id: string | null;
+  /**
+   * Plan → CMS linkage (aidream content-plan bridge): the `plan.node` id this
+   * page was built from, or null. Written by aidream's bridge only — the FE
+   * surfaces it read-only.
+   */
+  plan_node_id: string | null;
 }
 
 /** Result of the `promote` action on /api/cms/pages (html_page → draft page). */

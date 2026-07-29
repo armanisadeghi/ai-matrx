@@ -130,12 +130,15 @@ function ZoomBandWatcher({ onBand }: { onBand: (band: ZoomBand) => void }) {
 export function PillarMap({
   nodes,
   statusSlugById,
+  liveById,
   onSelect,
   onReparent,
   onBulkStatus,
 }: {
   nodes: PlanNodeRow[];
   statusSlugById: Map<string, string>;
+  /** Reality overlay: node_id → crawl match (present = live on the site). */
+  liveById?: Map<string, { url: string }>;
   onSelect: (id: string) => void;
   onReparent: (id: string, parentId: string) => void;
   onBulkStatus: (ids: string[], statusId: string) => void;
@@ -248,9 +251,10 @@ export function PillarMap({
           hasKeyword: node.primary_keyword_id != null,
           collapsedCount: hiddenCounts.get(node.id) ?? 0,
           dimmed: dimmed.has(node.id),
+          isLive: liveById?.has(node.id) ?? false,
         },
       })),
-    [visible, layout, statusSlugById, hiddenCounts, dimmed],
+    [visible, layout, statusSlugById, hiddenCounts, dimmed, liveById],
   );
 
   // Controlled React Flow: drag movement + selection flags only persist if

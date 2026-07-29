@@ -86,6 +86,10 @@ export function MapLegend({
           <span>Primary keyword bound</span>
         </span>
         <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+          <span>Live on the site (Reality check)</span>
+        </span>
+        <span className="flex items-center gap-1.5">
           <span className="rounded-full border border-background bg-primary px-1 text-[8px] font-semibold leading-3 text-primary-foreground">
             +n
           </span>

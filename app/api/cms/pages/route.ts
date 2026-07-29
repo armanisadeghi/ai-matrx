@@ -36,6 +36,19 @@ const LIST_COLUMNS = `
   .replace(/\s+/g, " ")
   .trim();
 
+/**
+ * Caller-supplied provenance for the activity log (`changes.metadata`, the C6
+ * seam) — e.g. the marketing page-workspace push stamps
+ * `{source: "page-workspace", web_page_id, pushed_at}`. Only a plain object is
+ * accepted; anything else is dropped (undefined), never an error.
+ */
+function asProvenance(value: unknown): Record<string, unknown> | undefined {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return undefined;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const mainSupabase = await createMainSupabaseClient();
@@ -154,6 +167,7 @@ export async function POST(request: NextRequest) {
           showInNav,
           sortOrder,
           isHomePage,
+          provenance,
         } = params;
 
         if (!siteId || !slug || !title) {
@@ -221,6 +235,7 @@ export async function POST(request: NextRequest) {
           description: `Created page "${data.title}" (${data.slug})`,
           userId: user.id,
           userEmail: user.email,
+          metadata: asProvenance(provenance),
         });
 
         return NextResponse.json({ success: true, page: data });
@@ -556,6 +571,7 @@ export async function POST(request: NextRequest) {
           metaKeywords,
           ogImage,
           canonicalUrl,
+          provenance,
         } = params;
         if (!pageId) {
           return NextResponse.json(
@@ -606,6 +622,7 @@ export async function POST(request: NextRequest) {
           userId: user.id,
           userEmail: user.email,
           changes: { fields: Object.keys(draftData) },
+          metadata: asProvenance(provenance),
         });
 
         return NextResponse.json({ success: true, page: data });

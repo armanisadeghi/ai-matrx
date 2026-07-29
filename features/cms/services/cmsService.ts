@@ -187,6 +187,8 @@ export const CmsPageService = {
         cssContent?: string;
         jsContent?: string;
         category?: string;
+        /** Parent page id — the trigger derives `route` as `parent.route + '/' + slug`. */
+        parentId?: string;
         pageType?: string;
         metaTitle?: string;
         metaDescription?: string;
@@ -196,6 +198,8 @@ export const CmsPageService = {
         tags?: string[];
         excerpt?: string;
         author?: string;
+        /** Caller provenance, stamped into the activity log (`changes.metadata`). */
+        provenance?: Record<string, unknown>;
     }): Promise<ClientPage> {
         const res = await callApi<{ page: ClientPage }>('pages', 'create', params);
         return res.page;
@@ -238,6 +242,8 @@ export const CmsPageService = {
         metaKeywords?: string;
         ogImage?: string;
         canonicalUrl?: string;
+        /** Caller provenance, stamped into the activity log (`changes.metadata`). */
+        provenance?: Record<string, unknown>;
     }): Promise<ClientPage> {
         const res = await callApi<{ page: ClientPage }>('pages', 'save-draft', { pageId, ...draft });
         return res.page;

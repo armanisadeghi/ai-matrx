@@ -257,7 +257,7 @@ export function ContentPlanWorkbench({
         (view === "tree" || view === "table" || view === "map") ? (
           <PlanRealityBar
             report={reality.report}
-            showTreeHint={view === "tree"}
+            showTreeHint={view === "tree" || view === "map"}
             onDismiss={reality.dismiss}
           />
         ) : null}
@@ -313,6 +313,7 @@ export function ContentPlanWorkbench({
             <PillarMap
               nodes={nodeRows}
               statusSlugById={statusSlugById}
+              liveById={liveById}
               onSelect={setSelectedNodeId}
               onReparent={(id, parentId) => handleReparent(id, parentId)}
               onBulkStatus={handleBulkStatus}

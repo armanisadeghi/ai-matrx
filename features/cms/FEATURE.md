@@ -333,6 +333,14 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-07-29` — **Marketing "Push to CMS" support.** `CmsPageService.createPage` gained `parentId`
+  (the route already accepted it — the trigger derives `parent.route + '/' + slug`) and both
+  `createPage` + `saveDraft` gained an optional `provenance` object, which `/api/cms/pages`
+  `create`/`save-draft` stamp into the activity log as `changes.metadata` (the C6 seam; validated
+  as a plain object, silently dropped otherwise — `client_pages` has no metadata jsonb column).
+  `ClientPage` gained `plan_node_id` (live uuid column written by aidream's content-plan bridge;
+  FE reads it only). Consumer: `features/marketing/lib/push-to-cms.ts` + `PushToCmsCard` (marketing
+  page workspace) — route-matched `saveDraft` / draft `createPage`, never publish, never a route move.
 - `2026-07-28` — **Three-way route-derivation divergence fixed (CMS migration 0029), and the guard
   that missed it given teeth.** SQL, Python and TS each produced a DIFFERENT route for a parented
   page: TS omitted the trailing-slash strip (`parentRoute='/a/'` → `/a//x`, `'/'` → `//x`), and SQL
