@@ -22296,6 +22296,116 @@ export type Database = {
   }
   plan: {
     Tables: {
+      cms_fill_item: {
+        Row: {
+          attempts: number
+          claimed_at: string | null
+          claimed_by: string | null
+          created_at: string
+          error: Json | null
+          id: string
+          job_id: string
+          max_attempts: number
+          node_id: string
+          page_id: string
+          result: Json | null
+          route: string
+          status: string
+          updated_at: string
+          visible_at: string
+        }
+        Insert: {
+          attempts?: number
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          error?: Json | null
+          id?: string
+          job_id: string
+          max_attempts?: number
+          node_id: string
+          page_id: string
+          result?: Json | null
+          route?: string
+          status?: string
+          updated_at?: string
+          visible_at?: string
+        }
+        Update: {
+          attempts?: number
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          error?: Json | null
+          id?: string
+          job_id?: string
+          max_attempts?: number
+          node_id?: string
+          page_id?: string
+          result?: Json | null
+          route?: string
+          status?: string
+          updated_at?: string
+          visible_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cms_fill_item_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "cms_fill_job"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cms_fill_job: {
+        Row: {
+          acting_user_id: string
+          cms_site_id: string
+          cms_site_slug: string
+          created_at: string
+          error: Json | null
+          finished_at: string | null
+          id: string
+          options: Json
+          result: Json | null
+          started_at: string | null
+          status: string
+          updated_at: string
+          web_site_id: string
+        }
+        Insert: {
+          acting_user_id: string
+          cms_site_id: string
+          cms_site_slug?: string
+          created_at?: string
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          options?: Json
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          web_site_id: string
+        }
+        Update: {
+          acting_user_id?: string
+          cms_site_id?: string
+          cms_site_slug?: string
+          created_at?: string
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          options?: Json
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          web_site_id?: string
+        }
+        Relationships: []
+      }
       entity: {
         Row: {
           attributes: Json

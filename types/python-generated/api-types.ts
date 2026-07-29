@@ -4487,6 +4487,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/content-plan/sites/{site_id}/cms-publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cms Publish Route */
+        post: operations["cms_publish_route_content_plan_sites__site_id__cms_publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/content-plan/sites/{site_id}/cms-starter-kit": {
         parameters: {
             query?: never;
@@ -4498,6 +4515,74 @@ export interface paths {
         put?: never;
         /** Cms Starter Kit Route */
         post: operations["cms_starter_kit_route_content_plan_sites__site_id__cms_starter_kit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/sites/{site_id}/cms-fill/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cms Fill Preview Route */
+        post: operations["cms_fill_preview_route_content_plan_sites__site_id__cms_fill_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/sites/{site_id}/cms-fill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cms Fill Start Route */
+        post: operations["cms_fill_start_route_content_plan_sites__site_id__cms_fill_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/sites/{site_id}/cms-fill/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cms Fill Status Route */
+        get: operations["cms_fill_status_route_content_plan_sites__site_id__cms_fill_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/sites/{site_id}/cms-fill/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cms Fill Cancel Route */
+        post: operations["cms_fill_cancel_route_content_plan_sites__site_id__cms_fill_cancel_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -20943,6 +21028,12 @@ export interface components {
         };
         /** CmsAlignBody */
         CmsAlignBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Cms Site */
             cms_site?: string | null;
             /** Actions */
@@ -21021,8 +21112,249 @@ export interface components {
             /** Errors */
             errors?: string[];
         };
+        /** CmsFillCancelBody */
+        CmsFillCancelBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Job Id */
+            job_id: string;
+        };
+        /** CmsFillItemOut */
+        CmsFillItemOut: {
+            /** Node Id */
+            node_id: string;
+            /** Page Id */
+            page_id: string;
+            /** Route */
+            route: string;
+            /** Status */
+            status: string;
+            /** Attempts */
+            attempts: number;
+            /** Error */
+            error?: string | null;
+        };
+        /** CmsFillPreviewBody */
+        CmsFillPreviewBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Cms Site */
+            cms_site?: string | null;
+            /** Node Id */
+            node_id?: string | null;
+            /**
+             * Write
+             * @default false
+             */
+            write?: boolean;
+        };
+        /** CmsFillPreviewResult */
+        CmsFillPreviewResult: {
+            /** Node Id */
+            node_id: string;
+            /** Page Id */
+            page_id: string;
+            /** Route */
+            route: string;
+            /** Title */
+            title: string;
+            /** Html */
+            html: string;
+            /** Css */
+            css: string;
+            /** Meta Title */
+            meta_title: string;
+            /** Meta Description */
+            meta_description: string;
+            /** Model */
+            model: string;
+            /** Wrote */
+            wrote: boolean;
+            /** Global Css */
+            global_css: string;
+            /** Header Html */
+            header_html: string;
+            /** Footer Html */
+            footer_html: string;
+        };
+        /** CmsFillStartBody */
+        CmsFillStartBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Cms Site */
+            cms_site?: string | null;
+            /**
+             * Overwrite
+             * @default false
+             */
+            overwrite?: boolean;
+            /** Node Ids */
+            node_ids?: string[] | null;
+        };
+        /** CmsFillStartResult */
+        CmsFillStartResult: {
+            /** Job Id */
+            job_id: string;
+            /** Web Site Id */
+            web_site_id: string;
+            /** Cms Site Id */
+            cms_site_id: string;
+            /** Cms Site Slug */
+            cms_site_slug: string;
+            /** Seeded */
+            seeded: number;
+            /** Skipped */
+            skipped?: string[];
+        };
+        /** CmsFillStatusResult */
+        CmsFillStatusResult: {
+            /** Job Id */
+            job_id?: string | null;
+            /** Web Site Id */
+            web_site_id: string;
+            /**
+             * Status
+             * @default none
+             * @enum {string}
+             */
+            status?: "none" | "pending" | "processing" | "completed" | "failed" | "cancelled";
+            /**
+             * Total
+             * @default 0
+             */
+            total?: number;
+            /**
+             * Pending
+             * @default 0
+             */
+            pending?: number;
+            /**
+             * In Progress
+             * @default 0
+             */
+            in_progress?: number;
+            /**
+             * Succeeded
+             * @default 0
+             */
+            succeeded?: number;
+            /**
+             * Failed
+             * @default 0
+             */
+            failed?: number;
+            /**
+             * Dead Letter
+             * @default 0
+             */
+            dead_letter?: number;
+            /** Started At */
+            started_at?: string | null;
+            /** Finished At */
+            finished_at?: string | null;
+            /** Error */
+            error?: string | null;
+            /** Problems */
+            problems?: components["schemas"]["CmsFillItemOut"][];
+        };
+        /** CmsPublishBody */
+        CmsPublishBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Cms Site */
+            cms_site?: string | null;
+            /** Page Ids */
+            page_ids?: string[] | null;
+            /**
+             * Only Plan Linked
+             * @default false
+             */
+            only_plan_linked?: boolean;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+            /**
+             * Sync Status
+             * @default true
+             */
+            sync_status?: boolean;
+        };
+        /** CmsPublishResult */
+        CmsPublishResult: {
+            /** Web Site Id */
+            web_site_id: string;
+            /** Cms Site Id */
+            cms_site_id: string;
+            /** Cms Site Slug */
+            cms_site_slug: string;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+            /**
+             * Requested
+             * @default 0
+             */
+            requested?: number;
+            /**
+             * Published
+             * @default 0
+             */
+            published?: number;
+            /**
+             * Would Publish
+             * @default 0
+             */
+            would_publish?: number;
+            /**
+             * Skipped No Changes
+             * @default 0
+             */
+            skipped_no_changes?: number;
+            /**
+             * Failed
+             * @default 0
+             */
+            failed?: number;
+            /**
+             * Remaining Candidates
+             * @default 0
+             */
+            remaining_candidates?: number;
+            /** Results */
+            results?: components["schemas"]["PublishBatchItemResult"][];
+            /** Statuses Advanced */
+            statuses_advanced?: string[];
+            /** Warnings */
+            warnings?: string[];
+        };
         /** CmsReconcileBody */
         CmsReconcileBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Cms Site */
             cms_site?: string | null;
             /**
@@ -21090,6 +21422,12 @@ export interface components {
         };
         /** CmsStarterKitBody */
         CmsStarterKitBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Cms Site */
             cms_site?: string | null;
             /**
@@ -23558,6 +23896,12 @@ export interface components {
         };
         /** DispositionsBody */
         DispositionsBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Items */
             items: components["schemas"]["DispositionItem"][];
         };
@@ -26094,6 +26438,12 @@ export interface components {
         };
         /** GeneratePlanBody */
         GeneratePlanBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /**
              * Max Nodes
              * @default 40
@@ -31720,6 +32070,32 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** PublishBatchItemResult */
+        PublishBatchItemResult: {
+            /** Page Id */
+            page_id: string;
+            /** Slug */
+            slug: string;
+            /** Route */
+            route?: string | null;
+            /** Title */
+            title?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "published" | "would_publish" | "skipped_no_changes" | "failed";
+            /** Reason */
+            reason?: string | null;
+            /** Live Url */
+            live_url?: string | null;
+            /** Plan Node Id */
+            plan_node_id?: string | null;
+            /** Error Code */
+            error_code?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+        };
         /** PutDeclaredSampleRequest */
         PutDeclaredSampleRequest: {
             /**
@@ -32089,6 +32465,12 @@ export interface components {
         };
         /** ReconcileBody */
         ReconcileBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /**
              * Write Edges
              * @default true
@@ -48060,6 +48442,41 @@ export interface operations {
             };
         };
     };
+    cms_publish_route_content_plan_sites__site_id__cms_publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CmsPublishBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsPublishResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     cms_starter_kit_route_content_plan_sites__site_id__cms_starter_kit_post: {
         parameters: {
             query?: never;
@@ -48082,6 +48499,144 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StarterKitResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cms_fill_preview_route_content_plan_sites__site_id__cms_fill_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CmsFillPreviewBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsFillPreviewResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cms_fill_start_route_content_plan_sites__site_id__cms_fill_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CmsFillStartBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsFillStartResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cms_fill_status_route_content_plan_sites__site_id__cms_fill_status_get: {
+        parameters: {
+            query?: {
+                job_id?: string | null;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsFillStatusResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cms_fill_cancel_route_content_plan_sites__site_id__cms_fill_cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CmsFillCancelBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsFillStatusResult"];
                 };
             };
             /** @description Validation Error */

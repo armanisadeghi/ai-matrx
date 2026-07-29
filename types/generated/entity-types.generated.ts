@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 317 active entity tokens. A token here is FK-valid for
+// 318 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -346,6 +346,7 @@ export type EntityTypeToken =
   | "web_snapshot"
   | "wf_node_data_slot"
   | "window_session"
+  | "work_item"
   | "workbook"
   | "workflow"
   | "workflow_checkpoint"
@@ -576,6 +577,7 @@ export type ComponentEntityToken =
   | "web_sitemap"
   | "web_snapshot"
   | "wf_node_data_slot"
+  | "work_item"
   | "workflow_checkpoint"
   | "workflow_definition_version"
   | "workflow_idempotency"
@@ -870,6 +872,7 @@ export type ScopeableEntityToken =
   | "web_snapshot"
   | "wf_node_data_slot"
   | "window_session"
+  | "work_item"
   | "workbook"
   | "workflow"
   | "workflow_checkpoint"
@@ -1220,6 +1223,7 @@ export const ENTITY_TYPE_METADATA = {
   "web_snapshot": { token: "web_snapshot", schema: "web", table: "snapshot", label: "Snapshot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "wf_node_data_slot": { token: "wf_node_data_slot", schema: "workflow", table: "node_data_slot", label: "Workflow Node Data Slot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "window_session": { token: "window_session", schema: "public", table: "window_sessions", label: "Window Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
+  "work_item": { token: "work_item", schema: "runtime", table: "work_item", label: "Runtime Work Item", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "workbook": { token: "workbook", schema: "workbench", table: "udt_workbooks", label: "Workbook", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "description", contentRole: "hybrid", referenceCategory: null },
   "workflow": { token: "workflow", schema: "workflow", table: "definition", label: "Workflow", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "utility", referenceCategory: null },
   "workflow_checkpoint": { token: "workflow_checkpoint", schema: "workflow", table: "checkpoint", label: "Workflow Checkpoint", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1541,6 +1545,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "web_snapshot",
   "wf_node_data_slot",
   "window_session",
+  "work_item",
   "workbook",
   "workflow",
   "workflow_checkpoint",
