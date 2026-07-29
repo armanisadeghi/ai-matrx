@@ -15,7 +15,7 @@ interface UploadedFile {
      * API payloads should construct a `MediaRef` from this id (via
      * `fileIdToMediaRef`) rather than the share URL.
      */
-    fileId?: string;
+    fileId: string;
     url: string;
     /**
      * **FE classification token** — one of `"image" | "video" | "audio"

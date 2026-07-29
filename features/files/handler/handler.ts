@@ -28,6 +28,7 @@ import type {
   FileTarget,
   NormalizedFile,
   RenderedFor,
+  UploadedNormalizedFile,
   UploadOpts,
 } from "./types";
 
@@ -74,7 +75,10 @@ export const fileHandler = {
    * One-shot upload. Resolves to a fully-hydrated NormalizedFile pointing
    * at the freshly-created cld_files row.
    */
-  async upload(source: FileSource, opts: UploadOpts = {}): Promise<NormalizedFile> {
+  async upload(
+    source: FileSource,
+    opts: UploadOpts = {},
+  ): Promise<UploadedNormalizedFile> {
     return uploadInternal(source, opts);
   },
 
@@ -154,4 +158,10 @@ export const fileHandler = {
   },
 };
 
-export type { FileSource, FileTarget, NormalizedFile, UploadOpts } from "./types";
+export type {
+  FileSource,
+  FileTarget,
+  NormalizedFile,
+  UploadedNormalizedFile,
+  UploadOpts,
+} from "./types";

@@ -101,6 +101,8 @@ export interface TableRow {
 export interface FileResourceData {
   // File identification
   id?: string;
+  /** Canonical cld_files UUID emitted by upload and storage pickers. */
+  fileId?: string;
   filename?: string;
   filepath?: string;
   url?: string;

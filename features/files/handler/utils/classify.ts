@@ -6,7 +6,7 @@
  * the classifier — keeps imports tidy and mocks easy.
  */
 
-import { getFileTypeDetails } from "@/features/files/utils/file-types";
+import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import type { FileMeta } from "../types";
 
 export function classify(opts: {
@@ -16,15 +16,19 @@ export function classify(opts: {
   checksum?: string;
 }): FileMeta {
   const fallbackName = opts.fileName ?? guessNameFromMime(opts.mime);
-  const details = getFileTypeDetails(fallbackName);
+  const profile = getFilePreviewProfile(
+    fallbackName,
+    opts.mime ?? null,
+    opts.sizeBytes ?? null,
+  );
   return {
     fileName: opts.fileName,
-    mime: opts.mime ?? details.mime,
+    mime: profile.mime,
     sizeBytes: opts.sizeBytes,
     checksum: opts.checksum,
-    category: details.category,
-    previewKind: details.previewKind,
-    thumbnailStrategy: details.thumbnailStrategy,
+    category: profile.details.category,
+    previewKind: profile.previewKind,
+    thumbnailStrategy: profile.thumbnailStrategy,
   };
 }
 

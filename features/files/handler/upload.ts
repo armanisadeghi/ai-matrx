@@ -32,7 +32,12 @@ import {
 } from "@/lib/redux/slices/appContextSlice";
 import { FileUploadError } from "./errors";
 import { fromCloudFile } from "./input/normalize";
-import type { FileSource, NormalizedFile, UploadOpts } from "./types";
+import type {
+  FileSource,
+  NormalizedFile,
+  UploadedNormalizedFile,
+  UploadOpts,
+} from "./types";
 
 const DEFAULT_FOLDER = "Inbox";
 
@@ -68,7 +73,7 @@ export function shouldInheritActiveScope(
 export async function uploadInternal(
   source: FileSource,
   opts: UploadOpts,
-): Promise<NormalizedFile> {
+): Promise<UploadedNormalizedFile> {
   const file = await sourceToFile(source, opts.fileName);
   if (!file) {
     throw new FileUploadError(
@@ -115,6 +120,7 @@ export async function uploadInternal(
     const { data: full } = await Files.getFile(asset.file_id);
     const cloudFile = apiFileRecordToCloudFile(full);
     const normalized = fromCloudFile(cloudFile, source);
+    assertUploadedIdentity(normalized);
     return {
       ...normalized,
       asset,
@@ -158,6 +164,7 @@ export async function uploadInternal(
   const { data: full } = await Files.getFile(result.fileId);
   const cloudFile = apiFileRecordToCloudFile(full);
   const normalized = fromCloudFile(cloudFile, source);
+  assertUploadedIdentity(normalized);
 
   // Stitch on the share-link fields — cloudUpload created them in the
   // same round-trip as the upload. URL precedence is deliberate: a PUBLIC
@@ -184,6 +191,16 @@ export async function uploadInternal(
   }
 
   return normalized;
+}
+
+function assertUploadedIdentity(
+  file: NormalizedFile,
+): asserts file is UploadedNormalizedFile {
+  if (!file.fileId) {
+    throw new FileUploadError(
+      "Upload completed without a durable file identity; refusing to attach a temporary URL",
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
