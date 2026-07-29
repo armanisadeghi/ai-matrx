@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   HelpCircle,
   ImageIcon,
@@ -391,9 +392,12 @@ export function SnapshotMediaGallery({
 export function MediaEmptyState({
   title,
   detail,
+  action,
 }: {
   title: string;
   detail: string;
+  /** Optional call to action (e.g. a fetch-now button) rendered under the copy. */
+  action?: ReactNode;
 }) {
   return (
     <div className="flex min-h-[160px] flex-col items-center justify-center gap-3 px-4 py-6 text-center">
@@ -406,6 +410,7 @@ export function MediaEmptyState({
           {detail}
         </p>
       </div>
+      {action}
     </div>
   );
 }

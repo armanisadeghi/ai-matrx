@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import Link from "next/link";
 import {
   AppWindow,
+  ArrowRight,
   Eye,
   FileQuestion,
   History,
@@ -123,7 +124,9 @@ import {
 import {
   useWorkspaceViewMode,
   WorkspaceViewToggle,
+  type WorkspaceViewMode,
 } from "@/features/marketing/components/pages/WorkspaceViewToggle";
+import { PagePlanNoteCard } from "@/features/marketing/components/pages/cards/PagePlanNoteCard";
 
 // THE NAMING LAW: canonical labels for every declared surface value + group —
 // section titles and field labels below render these byte-identically.
@@ -149,6 +152,86 @@ function LaneLabel({
         {detail}
       </span>
     </div>
+  );
+}
+
+/**
+ * Dashed stand-in for a pair side with nothing to show yet — keeps the Studio
+ * split even (every "thing" is side by side) and names what would appear.
+ */
+function PairStub({
+  title,
+  detail,
+  children,
+}: {
+  title: string;
+  detail?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <section className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-card/50 p-4 text-center">
+      <FileQuestion className="h-5 w-5 text-muted-foreground/70" />
+      <p className="text-xs font-medium text-foreground/70">{title}</p>
+      {detail ? (
+        <p className="max-w-[340px] text-[11px] text-muted-foreground">
+          {detail}
+        </p>
+      ) : null}
+      {children}
+    </section>
+  );
+}
+
+/**
+ * ONE paired row of the workspace: the observed state (left) beside the plan
+ * for the same "thing" (right), separated by the current→plan connector.
+ * All three cells stay mounted in every mode (CSS hidden) so in-progress
+ * edits and query caches survive view switches; the parent grid's 3-column
+ * template (Studio, xl+) makes each pair share one row — the row is as tall
+ * as its tallest side, and the shorter card stretches to match.
+ */
+function Pair({
+  mode,
+  current,
+  plan,
+}: {
+  mode: WorkspaceViewMode;
+  current: ReactNode;
+  plan: ReactNode;
+}) {
+  return (
+    <>
+      <div
+        className={cn(
+          "@container grid min-w-0 gap-3",
+          mode === "plan" && "hidden",
+        )}
+      >
+        {current}
+      </div>
+      {/* The connector: a vertical gradient thread with a current→plan node.
+          Rendered only in the Studio split at xl+ (below xl the pair stacks). */}
+      <div
+        aria-hidden="true"
+        className={cn(
+          "relative hidden w-6",
+          mode === "studio" && "xl:flex xl:items-center xl:justify-center",
+        )}
+      >
+        <div className="absolute inset-y-0 left-1/2 w-[2px] -translate-x-1/2 rounded-full bg-gradient-to-b from-primary/10 via-primary/45 to-primary/10" />
+        <div className="relative z-10 flex h-5 w-5 items-center justify-center rounded-full border border-primary/40 bg-background shadow-sm">
+          <ArrowRight className="h-3 w-3 text-primary" />
+        </div>
+      </div>
+      <div
+        className={cn(
+          "@container grid min-w-0 gap-3",
+          mode === "current" && "hidden",
+        )}
+      >
+        {plan}
+      </div>
+    </>
   );
 }
 
@@ -250,16 +333,20 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           source: "analyzer" as const,
           detail: "inferred primary",
         },
-        ...analyzerArtifact.supported_keywords.map((k): KeywordSuggestion => ({
-          phrase: k.phrase,
-          source: "analyzer",
-          detail: "supporting",
-        })),
-        ...analyzerArtifact.discovered_keywords.map((k): KeywordSuggestion => ({
-          phrase: k.phrase,
-          source: "analyzer",
-          detail: "discovered",
-        })),
+        ...analyzerArtifact.supported_keywords.map(
+          (k): KeywordSuggestion => ({
+            phrase: k.phrase,
+            source: "analyzer",
+            detail: "supporting",
+          }),
+        ),
+        ...analyzerArtifact.discovered_keywords.map(
+          (k): KeywordSuggestion => ({
+            phrase: k.phrase,
+            source: "analyzer",
+            detail: "discovered",
+          }),
+        ),
       ]
     : [];
   const searchPerformance = data.searchPerformance;
@@ -363,430 +450,584 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   });
 
   // ————————————————————————————————————————————————————————————————————————
-  // THE SPLIT (Arman, 2026-07-27, ratified 2026-07-29): the CURRENT lane is
-  // everything observed/measured about the page as it exists; the PLAN lane
-  // is everything the user intends — targets, drafts, tasks, attachments.
-  // Both lanes stay MOUNTED in every mode (hidden via CSS) so in-progress
-  // edits and query caches survive view switches. Lanes are @container roots:
-  // card pairs go two-up only when the lane itself is wide enough.
+  // THE SPLIT (Arman, 2026-07-27; pair-aligned 2026-07-29): the workspace is
+  // a list of PAIRED rows — for each "thing", the observed CURRENT state sits
+  // beside the PLAN for that same thing. Studio shows both sides of every
+  // row (always side by side, always the same height — the shorter side
+  // stretches); Current/Plan show one side. All cells stay MOUNTED in every
+  // mode (hidden via CSS) so in-progress edits and query caches survive view
+  // switches; each cell is a @container root so internal card groups go
+  // multi-up only when the cell is wide enough. A side with no structured
+  // counterpart yet gets a PairStub or a PagePlanNoteCard — never an empty
+  // hole. Associated items are neither current nor plan, so they span the
+  // full width at the bottom.
   // ————————————————————————————————————————————————————————————————————————
 
-  const currentLane = (
-    <>
-      <SectionCard
-        title="Search result preview"
-        collapsible
-        copy={webCopy({
-          kind: "web-page-serp",
-          label: "Search result preview",
-          description:
-            "Observed search-appearance metadata vs the desired editorial targets for this page.",
-          surface: `Search result preview — ${page.url}`,
-          data: {
-            url: page.url,
-            observed: {
-              title: head.title,
-              description: head.metaDescription,
+  const rows: Array<{ key: string; current: ReactNode; plan: ReactNode }> = [
+    {
+      key: "serp",
+      current: (
+        <SectionCard
+          title="Search result preview"
+          collapsible
+          copy={webCopy({
+            kind: "web-page-serp",
+            label: "Search result preview",
+            description:
+              "Observed search-appearance metadata vs the desired editorial targets for this page.",
+            surface: `Search result preview — ${page.url}`,
+            data: {
+              url: page.url,
+              observed: {
+                title: head.title,
+                description: head.metaDescription,
+              },
+              desired: {
+                title: page.meta_title_desired,
+                description: page.meta_description_desired,
+                targetKeyword: page.target_keyword,
+              },
+              seoMetrics: snapshot?.seo_metrics ?? null,
             },
-            desired: {
-              title: page.meta_title_desired,
-              description: page.meta_description_desired,
-              targetKeyword: page.target_keyword,
-            },
-            seoMetrics: snapshot?.seo_metrics ?? null,
-          },
-          lines: [
-            ["URL", page.url],
-            ["Observed title", head.title ?? "none"],
-            ["Observed description", head.metaDescription ?? "none"],
-            ["Desired title", page.meta_title_desired],
-            ["Desired description", page.meta_description_desired],
-            [L.target_keyword, page.target_keyword],
-          ],
-          attributes: { page_id: page.id },
-        })}
-        headerExtra={
-          <div className="flex items-center gap-1">
-            <div className="flex items-center rounded-md border border-border">
+            lines: [
+              ["URL", page.url],
+              ["Observed title", head.title ?? "none"],
+              ["Observed description", head.metaDescription ?? "none"],
+              ["Desired title", page.meta_title_desired],
+              ["Desired description", page.meta_description_desired],
+              [L.target_keyword, page.target_keyword],
+            ],
+            attributes: { page_id: page.id },
+          })}
+          headerExtra={
+            <div className="flex items-center gap-1">
+              <div className="flex items-center rounded-md border border-border">
+                <button
+                  type="button"
+                  onClick={() => setSerpDevice("desktop")}
+                  aria-label="Desktop preview"
+                  title="Desktop preview"
+                  className={cn(
+                    "flex h-6 w-7 items-center justify-center rounded-l-[5px] transition-colors",
+                    serpDevice === "desktop"
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Monitor className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSerpDevice("mobile")}
+                  aria-label="Mobile preview"
+                  title="Mobile preview"
+                  className={cn(
+                    "flex h-6 w-7 items-center justify-center rounded-r-[5px] transition-colors",
+                    serpDevice === "mobile"
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Smartphone className="h-3.5 w-3.5" />
+                </button>
+              </div>
               <button
                 type="button"
-                onClick={() => setSerpDevice("desktop")}
-                aria-label="Desktop preview"
-                title="Desktop preview"
-                className={cn(
-                  "flex h-6 w-7 items-center justify-center rounded-l-[5px] transition-colors",
-                  serpDevice === "desktop"
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
+                onClick={() => {
+                  const headTags = snapshot
+                    ? parseSnapshotHeadTags(snapshot.head_tags)
+                    : parseSnapshotHeadTags(null);
+                  openSerpAnalyzer({
+                    url: page.url,
+                    title: headTags.title ?? page.meta_title_desired ?? "",
+                    description:
+                      headTags.metaDescription ??
+                      page.meta_description_desired ??
+                      "",
+                  });
+                }}
+                aria-label="Open in Search Appearance analyzer"
+                title="Open in Search Appearance analyzer"
+                className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground"
               >
-                <Monitor className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setSerpDevice("mobile")}
-                aria-label="Mobile preview"
-                title="Mobile preview"
-                className={cn(
-                  "flex h-6 w-7 items-center justify-center rounded-r-[5px] transition-colors",
-                  serpDevice === "mobile"
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Smartphone className="h-3.5 w-3.5" />
+                <AppWindow className="h-3.5 w-3.5" />
               </button>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                const headTags = snapshot
-                  ? parseSnapshotHeadTags(snapshot.head_tags)
-                  : parseSnapshotHeadTags(null);
-                openSerpAnalyzer({
-                  url: page.url,
-                  title: headTags.title ?? page.meta_title_desired ?? "",
-                  description:
-                    headTags.metaDescription ??
-                    page.meta_description_desired ??
-                    "",
-                });
-              }}
-              aria-label="Open in Search Appearance analyzer"
-              title="Open in Search Appearance analyzer"
-              className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <AppWindow className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        }
-      >
-        <SerpPreview page={page} snapshot={snapshot} device={serpDevice} />
-      </SectionCard>
-
-      <PageTargetPerformanceCard page={page} />
-
-      <PageQueriesCard page={page} />
-
-      {snapshot ? (
-        <>
-          <PageIdentityCard page={page} snapshot={snapshot} />
-          <div className="grid gap-3 @3xl:grid-cols-2">
-            <StructuredDataCard page={page} snapshot={snapshot} />
-            <PageResourcesCard page={page} snapshot={snapshot} />
-          </div>
-          <div className="grid gap-3 @3xl:grid-cols-2">
-            <SectionCard
-              title={L.social_card}
-              collapsible
-              anchor="social_card"
-              headerExtra={
-                <div className="flex items-center gap-1">
-                  <div className="flex items-center rounded-md border border-border">
-                    {(
-                      [
-                        ["x", "X"],
-                        ["facebook", "FB"],
-                        ["linkedin", "LI"],
-                      ] as const
-                    ).map(([value, label], index) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => setSocialPlatform(value)}
-                        aria-label={`${label} preview`}
-                        title={`${label} preview`}
-                        className={cn(
-                          "flex h-6 w-7 items-center justify-center text-[10px] font-semibold transition-colors",
-                          index === 0 && "rounded-l-[5px]",
-                          index === 2 && "rounded-r-[5px]",
-                          socialPlatform === value
-                            ? "bg-muted text-foreground"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const observed = evaluatePageSocialCard(snapshot);
-                      openSocialCards({
-                        url: observed.url ?? page.url,
-                        title: observed.title ?? "",
-                        description: observed.description ?? "",
-                        image: observed.image ?? "",
-                        siteName: observed.siteName ?? "",
-                        ogType: observed.ogType ?? "",
-                        cardType: observed.cardType ?? "",
-                      });
-                    }}
-                    aria-label="Open in Social Cards analyzer"
-                    title="Open in Social Cards analyzer"
-                    className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    <AppWindow className="h-3.5 w-3.5" />
-                  </button>
-                  <PageTaskButton
-                    page={page}
-                    ariaLabel="Create a task from the social card state"
-                    title={`Improve social card — ${page.path || page.url}`}
-                    description={`Social share tags for ${page.url}:\nTitle: ${head.og.title ?? head.twitter.title ?? "none"}\nDescription: ${head.og.description ?? head.twitter.description ?? "none"}\nImage: ${head.og.image ?? head.twitter.image ?? "none"}`}
-                  />
-                </div>
-              }
-              copy={webCopy({
-                kind: "web-page-social-card",
-                label: L.social_card,
-                description:
-                  "Observed Open Graph and Twitter card tags controlling how shares of this URL render.",
-                surface: `Social share preview — ${page.url}`,
-                data: { url: page.url, og: head.og, twitter: head.twitter },
-                lines: [
-                  ["URL", page.url],
-                  [
-                    "Social title",
-                    head.og.title ?? head.twitter.title ?? "none",
-                  ],
-                  [
-                    "Social description",
-                    head.og.description ?? head.twitter.description ?? "none",
-                  ],
-                  ["Share image", head.og.image ?? head.twitter.image ?? "none"],
-                  ["Twitter card", head.twitter.card ?? "none"],
-                  ["og:type", head.og.type],
-                ],
-                attributes: { page_id: page.id },
-              })}
-            >
-              <SocialCardPreview
-                snapshot={snapshot}
-                page={page}
-                platform={socialPlatform}
-              />
-            </SectionCard>
-            <SectionCard
-              title={L.indexability}
-              collapsible
-              anchor="indexability"
-              headerExtra={
-                <PageTaskButton
-                  page={page}
-                  ariaLabel="Create a task from the indexability state"
-                  title={`Fix indexability — ${page.path || page.url}`}
-                  description={`Indexability signals for ${page.url}:\nHTTP status: ${snapshot.http_status ?? "unknown"}\nMeta robots: ${head.metaRobots ?? "not set"}\nCanonical: ${head.canonicalUrl ?? "not set"}\nFinal URL: ${snapshot.final_url ?? page.url}`}
-                />
-              }
-              copy={webCopy({
-                kind: "web-page-indexability",
-                label: L.indexability,
-                description:
-                  "Crawl/indexing signals observed on this page: HTTP status, robots, canonical, redirects.",
-                surface: `Indexability — ${page.url}`,
-                data: {
-                  url: page.url,
-                  http_status: snapshot.http_status,
-                  meta_robots: head.metaRobots,
-                  canonical_url: head.canonicalUrl,
-                  redirect_chain: extracted.redirectChain,
-                  final_url: snapshot.final_url,
-                  lang: head.lang,
-                },
-                lines: [
-                  ["URL", page.url],
-                  ["HTTP status", snapshot.http_status],
-                  ["Meta robots", head.metaRobots ?? "not set"],
-                  ["Canonical URL", head.canonicalUrl ?? "not set"],
-                  [
-                    "Redirects",
-                    extracted.redirectChain.length > 1
-                      ? extracted.redirectChain
-                          .map((hop) => `${hop.status ?? "—"} ${hop.url}`)
-                          .join(" → ")
-                      : "direct",
-                  ],
-                  ["Final URL", snapshot.final_url ?? page.url],
-                ],
-                attributes: { page_id: page.id },
-              })}
-            >
-              <IndexabilitySection page={page} snapshot={snapshot} />
-            </SectionCard>
-          </div>
-          <PageMediaCard page={page} snapshot={snapshot} />
-          <PageAnalyzerCard
-            page={page}
-            state={analyzer.state}
-            run={analyzer.run}
-          />
-          <div className="grid gap-3 @3xl:grid-cols-2 @6xl:grid-cols-3">
-            <PageSearchConsoleCard page={page} />
-            <PagespeedCard page={page} />
-            <PageAnalyticsCard page={page} />
-          </div>
-          <div className="grid gap-3 @3xl:grid-cols-2">
-            <SectionCard
-              title={L.headings_outline}
-              collapsible
-              anchor="headings_outline"
-              headerExtra={
-                <PageTaskButton
-                  page={page}
-                  ariaLabel="Create a task from the heading structure"
-                  title={`Improve heading structure — ${page.path || page.url}`}
-                  description={`Observed headings on ${page.url} (${headings.all.length} total, ${headings.h1Count} H1):\n${headings.all.map((h) => `h${h.level}: ${h.text}`).join("\n")}`}
-                />
-              }
-              copy={webCopy({
-                kind: "web-page-headings",
-                label: "Headings outline",
-                description:
-                  "The observed heading structure (h1–h6) of this page, in document order.",
-                surface: `Headings outline — ${page.url}`,
-                data: { url: page.url, headings: headings.all },
-                lines: [
-                  ["URL", page.url],
-                  ["H1 count", headings.h1Count],
-                  ...headings.all.map((heading): [string, string] => [
-                    `h${heading.level}`,
-                    heading.text,
-                  ]),
-                ],
-                attributes: {
-                  page_id: page.id,
-                  count: headings.all.length,
-                },
-              })}
-            >
-              <HeadingsOutline page={page} snapshot={snapshot} />
-            </SectionCard>
-            <SectionCard
-              title={L.content_stats}
-              collapsible
-              anchor="content_stats"
-              copy={webCopy({
-                kind: "web-page-content-stats",
-                label: "Content stats",
-                description:
-                  "Quantitative content signals from this page's latest snapshot.",
-                surface: `Content stats — ${page.url}`,
-                data: {
-                  url: page.url,
-                  word_count: snapshot.word_count,
-                  extracted: snapshot.extracted,
-                  links_summary: snapshot.links_summary,
-                  images: snapshot.images,
-                  captured_at: snapshot.captured_at,
-                },
-                lines: [
-                  ["URL", page.url],
-                  ["Words", snapshot.word_count],
-                  ["Sentences", extracted.sentenceCount],
-                  ["Flesch reading ease", extracted.fleschReadingEase],
-                  ["Captured", formatDate(snapshot.captured_at)],
-                ],
-                attributes: { page_id: page.id },
-              })}
-            >
-              <ContentStats snapshot={snapshot} page={page} />
-            </SectionCard>
-          </div>
-          {snapshot.markdown_file_id ? (
-            <PageContentCard
-              page={page}
-              markdownFileId={snapshot.markdown_file_id}
-              getPageScope={getScope}
-            />
-          ) : null}
-        </>
+          }
+        >
+          <SerpPreview page={page} snapshot={snapshot} device={serpDevice} />
+        </SectionCard>
+      ),
+      plan: (
+        <PageIntentCard
+          // Reseed ONLY when an intent-owned field changes server-side —
+          // keying on updated_at would wipe in-progress intent edits every
+          // time a sibling card saves desired values (same page row).
+          key={`${page.id}:${page.target_keyword ?? ""}:${page.meta_title_desired ?? ""}:${page.meta_description_desired ?? ""}`}
+          page={page}
+          brandId={brandId}
+          observedTitle={head.title}
+          observedDescription={head.metaDescription}
+          observedH1={
+            headings.all.find((heading) => heading.level === 1)?.text ?? null
+          }
+          analyzerKeywords={analyzerKeywordSuggestions}
+        />
+      ),
+    },
+    {
+      key: "keywords",
+      current: (
+        <div className="grid gap-3 @5xl:grid-cols-2">
+          <PageTargetPerformanceCard page={page} />
+          <PageQueriesCard page={page} />
+        </div>
+      ),
+      plan: (
+        <PageKeywordsCard
+          page={page}
+          brandId={brandId}
+          suggestions={analyzerKeywordSuggestions}
+        />
+      ),
+    },
+    {
+      key: "identity",
+      current: snapshot ? (
+        <PageIdentityCard page={page} snapshot={snapshot} />
       ) : (
-        <section className="flex min-h-32 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-card/50 p-6 text-center">
-          <FileQuestion className="h-6 w-6 text-muted-foreground" />
-          <p className="text-xs text-muted-foreground">
-            This canonical URL exists independently, but nothing has produced
-            an accepted snapshot yet — observed content sections appear after
-            the first capture.
-          </p>
-          <FetchPageButton siteId={site.id} url={page.url} pageId={page.id} />
-        </section>
-      )}
-
-      <PageFindingsCard page={page} />
-
-      <PageLinksCard page={page} />
-
-      <PageBacklinksCard page={page} />
-
-      <SitemapMembershipsCard page={page} />
-
-      <PageCapturesCard page={page} />
-    </>
-  );
-
-  const planLane = (
-    <>
-      <PageIntentCard
-        // Reseed ONLY when an intent-owned field changes server-side —
-        // keying on updated_at would wipe in-progress intent edits every
-        // time a sibling card saves desired values (same page row).
-        key={`${page.id}:${page.target_keyword ?? ""}:${page.meta_title_desired ?? ""}:${page.meta_description_desired ?? ""}`}
-        page={page}
-        brandId={brandId}
-        observedTitle={head.title}
-        observedDescription={head.metaDescription}
-        observedH1={
-          headings.all.find((heading) => heading.level === 1)?.text ?? null
-        }
-        analyzerKeywords={analyzerKeywordSuggestions}
-      />
-
-      <div className="grid gap-3 @3xl:grid-cols-2">
+        <PairStub
+          title="Page identity not observed yet"
+          detail="CMS, authorship, and platform signals appear after the first capture."
+        />
+      ),
+      plan: (
+        <PagePlanNoteCard
+          page={page}
+          noteKey="identity_notes"
+          title="Identity plan"
+          hint="How this page SHOULD present itself — type, author, publish cadence."
+          placeholder="e.g. Convert to an article page with a named author and a visible updated date…"
+        />
+      ),
+    },
+    {
+      key: "structured-data",
+      current: snapshot ? (
+        <div className="grid gap-3 @3xl:grid-cols-2">
+          <StructuredDataCard page={page} snapshot={snapshot} />
+          <PageResourcesCard page={page} snapshot={snapshot} />
+        </div>
+      ) : (
+        <PairStub
+          title="Structured data not observed yet"
+          detail="Schema.org evidence and the DOM resource inventory appear after the first capture."
+        />
+      ),
+      plan: (
+        <PagePlanNoteCard
+          page={page}
+          noteKey="structured_data_notes"
+          title="Structured data plan"
+          hint="The schema this page SHOULD carry (types, required properties)."
+          placeholder="e.g. Add Article + FAQPage schema; include author, datePublished, and mainEntity…"
+        />
+      ),
+    },
+    {
+      key: "social-card",
+      current: snapshot ? (
+        <SectionCard
+          title={L.social_card}
+          collapsible
+          anchor="social_card"
+          headerExtra={
+            <div className="flex items-center gap-1">
+              <div className="flex items-center rounded-md border border-border">
+                {(
+                  [
+                    ["x", "X"],
+                    ["facebook", "FB"],
+                    ["linkedin", "LI"],
+                  ] as const
+                ).map(([value, label], index) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setSocialPlatform(value)}
+                    aria-label={`${label} preview`}
+                    title={`${label} preview`}
+                    className={cn(
+                      "flex h-6 w-7 items-center justify-center text-[10px] font-semibold transition-colors",
+                      index === 0 && "rounded-l-[5px]",
+                      index === 2 && "rounded-r-[5px]",
+                      socialPlatform === value
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const observed = evaluatePageSocialCard(snapshot);
+                  openSocialCards({
+                    url: observed.url ?? page.url,
+                    title: observed.title ?? "",
+                    description: observed.description ?? "",
+                    image: observed.image ?? "",
+                    siteName: observed.siteName ?? "",
+                    ogType: observed.ogType ?? "",
+                    cardType: observed.cardType ?? "",
+                  });
+                }}
+                aria-label="Open in Social Cards analyzer"
+                title="Open in Social Cards analyzer"
+                className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <AppWindow className="h-3.5 w-3.5" />
+              </button>
+              <PageTaskButton
+                page={page}
+                ariaLabel="Create a task from the social card state"
+                title={`Improve social card — ${page.path || page.url}`}
+                description={`Social share tags for ${page.url}:\nTitle: ${head.og.title ?? head.twitter.title ?? "none"}\nDescription: ${head.og.description ?? head.twitter.description ?? "none"}\nImage: ${head.og.image ?? head.twitter.image ?? "none"}`}
+              />
+            </div>
+          }
+          copy={webCopy({
+            kind: "web-page-social-card",
+            label: L.social_card,
+            description:
+              "Observed Open Graph and Twitter card tags controlling how shares of this URL render.",
+            surface: `Social share preview — ${page.url}`,
+            data: { url: page.url, og: head.og, twitter: head.twitter },
+            lines: [
+              ["URL", page.url],
+              ["Social title", head.og.title ?? head.twitter.title ?? "none"],
+              [
+                "Social description",
+                head.og.description ?? head.twitter.description ?? "none",
+              ],
+              ["Share image", head.og.image ?? head.twitter.image ?? "none"],
+              ["Twitter card", head.twitter.card ?? "none"],
+              ["og:type", head.og.type],
+            ],
+            attributes: { page_id: page.id },
+          })}
+        >
+          <SocialCardPreview
+            snapshot={snapshot}
+            page={page}
+            platform={socialPlatform}
+          />
+        </SectionCard>
+      ) : (
+        <PairStub
+          title="Social card not observed yet"
+          detail="Open Graph and Twitter card tags appear after the first capture."
+        />
+      ),
+      plan: (
         <SectionCard title="Social card plan" collapsible>
           <SocialCardPlan page={page} snapshot={snapshot} />
         </SectionCard>
+      ),
+    },
+    {
+      key: "indexability",
+      current: snapshot ? (
+        <SectionCard
+          title={L.indexability}
+          collapsible
+          anchor="indexability"
+          headerExtra={
+            <PageTaskButton
+              page={page}
+              ariaLabel="Create a task from the indexability state"
+              title={`Fix indexability — ${page.path || page.url}`}
+              description={`Indexability signals for ${page.url}:\nHTTP status: ${snapshot.http_status ?? "unknown"}\nMeta robots: ${head.metaRobots ?? "not set"}\nCanonical: ${head.canonicalUrl ?? "not set"}\nFinal URL: ${snapshot.final_url ?? page.url}`}
+            />
+          }
+          copy={webCopy({
+            kind: "web-page-indexability",
+            label: L.indexability,
+            description:
+              "Crawl/indexing signals observed on this page: HTTP status, robots, canonical, redirects.",
+            surface: `Indexability — ${page.url}`,
+            data: {
+              url: page.url,
+              http_status: snapshot.http_status,
+              meta_robots: head.metaRobots,
+              canonical_url: head.canonicalUrl,
+              redirect_chain: extracted.redirectChain,
+              final_url: snapshot.final_url,
+              lang: head.lang,
+            },
+            lines: [
+              ["URL", page.url],
+              ["HTTP status", snapshot.http_status],
+              ["Meta robots", head.metaRobots ?? "not set"],
+              ["Canonical URL", head.canonicalUrl ?? "not set"],
+              [
+                "Redirects",
+                extracted.redirectChain.length > 1
+                  ? extracted.redirectChain
+                      .map((hop) => `${hop.status ?? "—"} ${hop.url}`)
+                      .join(" → ")
+                  : "direct",
+              ],
+              ["Final URL", snapshot.final_url ?? page.url],
+            ],
+            attributes: { page_id: page.id },
+          })}
+        >
+          <IndexabilitySection page={page} snapshot={snapshot} />
+        </SectionCard>
+      ) : (
+        <PairStub
+          title="Indexability not observed yet"
+          detail="HTTP status, robots, and canonical evidence appear after the first capture."
+        />
+      ),
+      plan: (
         <SectionCard title="Indexability plan" collapsible>
           <IndexabilityPlan page={page} snapshot={snapshot} />
         </SectionCard>
-      </div>
-
-      <SectionCard title="Heading plan" collapsible>
-        <HeadingsPlan page={page} snapshot={snapshot} />
-      </SectionCard>
-
-      <PageKeywordsCard
-        page={page}
-        brandId={brandId}
-        suggestions={analyzerKeywordSuggestions}
-      />
-
-      <PageDraftContentCard page={page} />
-
-      <PageTasksCard page={page} />
-
-      <PageImagePlanCard page={page} />
-
-      <LinksPlan page={page} />
-
-      <PushToCmsCard page={page} site={site} />
-
-      <section className="rounded-lg border border-border bg-card p-3">
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Attached to this page
-        </h2>
-        <PrimaryEntityProvider
-          value={{
-            type: "web_page",
-            id: page.id,
-            orgId: page.organization_id,
-            label: page.path || page.url,
-          }}
+      ),
+    },
+    {
+      key: "media",
+      current: snapshot ? (
+        <PageMediaCard
+          page={page}
+          snapshot={snapshot}
+          refetchAction={
+            <FetchPageButton siteId={site.id} url={page.url} pageId={page.id} />
+          }
+        />
+      ) : (
+        <PairStub
+          title="Media not observed yet"
+          detail="Images, share images, and embedded media appear after the first capture."
+        />
+      ),
+      plan: <PageImagePlanCard page={page} />,
+    },
+    {
+      key: "analyzer",
+      current: snapshot ? (
+        <PageAnalyzerCard
+          page={page}
+          state={analyzer.state}
+          run={analyzer.run}
+        />
+      ) : (
+        <PairStub
+          title="Page Analyzer needs a capture"
+          detail="Run the analyzer once the page has an accepted snapshot."
+        />
+      ),
+      plan: (
+        <PagePlanNoteCard
+          page={page}
+          noteKey="strategy_notes"
+          title="Strategy notes"
+          hint="The editorial strategy for this page — audience, angle, positioning."
+          placeholder="e.g. Reposition for comparison-intent searchers; lead with the pricing table…"
+        />
+      ),
+    },
+    {
+      key: "performance",
+      current: (
+        <div className="grid gap-3 @3xl:grid-cols-2 @6xl:grid-cols-3">
+          <PageSearchConsoleCard page={page} />
+          <PagespeedCard page={page} />
+          <PageAnalyticsCard page={page} />
+        </div>
+      ),
+      plan: (
+        <PagePlanNoteCard
+          page={page}
+          noteKey="performance_goals"
+          title="Performance goals"
+          hint="Search, speed, and traffic targets this page SHOULD hit."
+          placeholder="e.g. Top 3 for the target keyword, LCP under 2.5s, 500 clicks/month…"
+        />
+      ),
+    },
+    {
+      key: "headings",
+      current: snapshot ? (
+        <SectionCard
+          title={L.headings_outline}
+          collapsible
+          anchor="headings_outline"
+          headerExtra={
+            <PageTaskButton
+              page={page}
+              ariaLabel="Create a task from the heading structure"
+              title={`Improve heading structure — ${page.path || page.url}`}
+              description={`Observed headings on ${page.url} (${headings.all.length} total, ${headings.h1Count} H1):\n${headings.all.map((h) => `h${h.level}: ${h.text}`).join("\n")}`}
+            />
+          }
+          copy={webCopy({
+            kind: "web-page-headings",
+            label: "Headings outline",
+            description:
+              "The observed heading structure (h1–h6) of this page, in document order.",
+            surface: `Headings outline — ${page.url}`,
+            data: { url: page.url, headings: headings.all },
+            lines: [
+              ["URL", page.url],
+              ["H1 count", headings.h1Count],
+              ...headings.all.map((heading): [string, string] => [
+                `h${heading.level}`,
+                heading.text,
+              ]),
+            ],
+            attributes: {
+              page_id: page.id,
+              count: headings.all.length,
+            },
+          })}
         >
-          <AssociationCardGrid />
-        </PrimaryEntityProvider>
-      </section>
-    </>
+          <HeadingsOutline page={page} snapshot={snapshot} />
+        </SectionCard>
+      ) : (
+        <PairStub
+          title="Headings not observed yet"
+          detail="The observed h1–h6 outline appears after the first capture."
+        />
+      ),
+      plan: (
+        <SectionCard title="Heading plan" collapsible>
+          <HeadingsPlan page={page} snapshot={snapshot} />
+        </SectionCard>
+      ),
+    },
+    {
+      key: "content-stats",
+      current: snapshot ? (
+        <SectionCard
+          title={L.content_stats}
+          collapsible
+          anchor="content_stats"
+          copy={webCopy({
+            kind: "web-page-content-stats",
+            label: "Content stats",
+            description:
+              "Quantitative content signals from this page's latest snapshot.",
+            surface: `Content stats — ${page.url}`,
+            data: {
+              url: page.url,
+              word_count: snapshot.word_count,
+              extracted: snapshot.extracted,
+              links_summary: snapshot.links_summary,
+              images: snapshot.images,
+              captured_at: snapshot.captured_at,
+            },
+            lines: [
+              ["URL", page.url],
+              ["Words", snapshot.word_count],
+              ["Sentences", extracted.sentenceCount],
+              ["Flesch reading ease", extracted.fleschReadingEase],
+              ["Captured", formatDate(snapshot.captured_at)],
+            ],
+            attributes: { page_id: page.id },
+          })}
+        >
+          <ContentStats snapshot={snapshot} page={page} />
+        </SectionCard>
+      ) : (
+        <PairStub
+          title="Content stats not observed yet"
+          detail="Word count and readability appear after the first capture."
+        />
+      ),
+      plan: (
+        <PagePlanNoteCard
+          page={page}
+          noteKey="additional_content_notes"
+          title="Content targets"
+          hint="Length, depth, and coverage this page SHOULD reach."
+          placeholder="e.g. Expand to ~1,800 words; add an FAQ section and a comparison table…"
+        />
+      ),
+    },
+    {
+      key: "content",
+      current: snapshot?.markdown_file_id ? (
+        <PageContentCard
+          page={page}
+          markdownFileId={snapshot.markdown_file_id}
+          getPageScope={getScope}
+        />
+      ) : (
+        <PairStub
+          title="Page content not extracted yet"
+          detail="The observed body content appears after the first capture that extracts it."
+        />
+      ),
+      plan: <PageDraftContentCard page={page} />,
+    },
+    {
+      key: "work",
+      current: <PageFindingsCard page={page} />,
+      plan: <PageTasksCard page={page} />,
+    },
+    {
+      key: "links",
+      current: <PageLinksCard page={page} />,
+      plan: <LinksPlan page={page} />,
+    },
+    {
+      key: "backlinks",
+      current: <PageBacklinksCard page={page} />,
+      plan: (
+        <PagePlanNoteCard
+          page={page}
+          noteKey="backlink_plan"
+          title="Backlink & outreach plan"
+          hint="Where new links to this page SHOULD come from."
+          placeholder="e.g. Pitch the industry roundups that link to competitors; guest post on…"
+        />
+      ),
+    },
+    {
+      key: "publication",
+      current: (
+        <div className="grid gap-3 @3xl:grid-cols-2">
+          <SitemapMembershipsCard page={page} />
+          <PageCapturesCard page={page} />
+        </div>
+      ),
+      plan: <PushToCmsCard page={page} site={site} />,
+    },
+  ];
+
+  // Neither current nor plan — the stuff ASSOCIATED with this page. Spans the
+  // full workspace width below the split, in every mode.
+  const associationsSection = (
+    <section className="rounded-lg border border-border bg-card p-3">
+      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Attached to this page
+      </h2>
+      <PrimaryEntityProvider
+        value={{
+          type: "web_page",
+          id: page.id,
+          orgId: page.organization_id,
+          label: page.path || page.url,
+        }}
+      >
+        <AssociationCardGrid />
+      </PrimaryEntityProvider>
+    </section>
   );
 
   return (
@@ -900,43 +1141,66 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             />
           </section>
 
+          {/* The paired split: 3 columns in Studio at xl+ (current | connector
+              | plan). Each Pair contributes one grid row, so the two sides of
+              every "thing" share a row and stretch to the same height. In
+              Current/Plan modes (and Studio below xl) the grid is one column
+              and hidden cells collapse — nothing unmounts on mode switch. */}
           <div
             className={cn(
-              "grid items-start gap-3",
-              viewMode === "studio" && "xl:grid-cols-2",
+              "grid gap-3",
+              viewMode === "studio" &&
+                "xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]",
             )}
           >
-            <div
-              className={cn(
-                "@container grid min-w-0 gap-3",
-                viewMode === "plan" && "hidden",
-              )}
-            >
-              {viewMode === "studio" ? (
-                <LaneLabel
-                  icon={Eye}
-                  label="Current"
-                  detail="what the page is today"
-                />
-              ) : null}
-              {currentLane}
+            <div className={cn("hidden", viewMode === "studio" && "xl:block")}>
+              <LaneLabel
+                icon={Eye}
+                label="Current"
+                detail="what the page is today"
+              />
             </div>
             <div
-              className={cn(
-                "@container grid min-w-0 gap-3",
-                viewMode === "current" && "hidden",
-              )}
-            >
-              {viewMode === "studio" ? (
-                <LaneLabel
-                  icon={PenLine}
-                  label="Plan"
-                  detail="what you intend it to become"
-                />
-              ) : null}
-              {planLane}
+              className={cn("hidden", viewMode === "studio" && "xl:block")}
+            />
+            <div className={cn("hidden", viewMode === "studio" && "xl:block")}>
+              <LaneLabel
+                icon={PenLine}
+                label="Plan"
+                detail="what you intend it to become"
+              />
             </div>
+            {!snapshot ? (
+              <section
+                className={cn(
+                  "col-span-full flex min-w-0 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-card/50 p-6 text-center",
+                  viewMode === "plan" && "hidden",
+                )}
+              >
+                <FileQuestion className="h-6 w-6 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">
+                  This canonical URL exists independently, but nothing has
+                  produced an accepted snapshot yet — observed sections appear
+                  after the first capture.
+                </p>
+                <FetchPageButton
+                  siteId={site.id}
+                  url={page.url}
+                  pageId={page.id}
+                />
+              </section>
+            ) : null}
+            {rows.map((row) => (
+              <Pair
+                key={row.key}
+                mode={viewMode}
+                current={row.current}
+                plan={row.plan}
+              />
+            ))}
           </div>
+
+          {associationsSection}
         </div>
       </main>
     </SurfaceRuntimeProvider>

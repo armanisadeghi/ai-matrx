@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { ExternalLink, Film, Share2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { MarketingPage, PageSnapshot } from "@/features/marketing/types";
@@ -43,13 +43,7 @@ function mediaResources(
   );
 }
 
-function ShareImageTile({
-  label,
-  url,
-}: {
-  label: string;
-  url: string;
-}) {
+function ShareImageTile({ label, url }: { label: string; url: string }) {
   return (
     <div className="flex min-w-0 items-center gap-2 rounded-lg border border-border bg-muted/20 p-1.5">
       {/* Third-party crawl asset — see the exception note at the top. */}
@@ -80,9 +74,14 @@ function ShareImageTile({
 export function PageMediaCard({
   page,
   snapshot,
+  refetchAction,
 }: {
   page: MarketingPage;
   snapshot: PageSnapshot;
+  /** Rendered inside the "inventory not captured" empty states — the caller's
+   *  fetch-now button, so a stale (pre-inventory) snapshot is one click from
+   *  a capture that carries the full per-image inventory. */
+  refetchAction?: ReactNode;
 }) {
   const images = useMemo(
     () => parseSnapshotImages(snapshot.images),
@@ -149,12 +148,7 @@ export function PageMediaCard({
   });
 
   return (
-    <SectionCard
-      title="Media"
-      copy={copy}
-      collapsible
-      anchor="media_inventory"
-    >
+    <SectionCard title="Media" copy={copy} collapsible anchor="media_inventory">
       <div className="space-y-4 p-3">
         {/* Summary strip — counts come from the snapshot even when the
             per-image inventory is absent. */}
@@ -174,8 +168,8 @@ export function PageMediaCard({
           ) : null}
           {withoutSrc > 0 ? (
             <span className="text-[10px] text-muted-foreground/70">
-              {withoutSrc} inventory entr{withoutSrc === 1 ? "y" : "ies"} without
-              a src
+              {withoutSrc} inventory entr{withoutSrc === 1 ? "y" : "ies"}{" "}
+              without a src
             </span>
           ) : null}
         </div>
@@ -205,12 +199,14 @@ export function PageMediaCard({
         ) : hasCountsOnly ? (
           <MediaEmptyState
             title={`${images.count?.toLocaleString()} image${images.count === 1 ? "" : "s"} counted — inventory not captured yet`}
-            detail="This snapshot only persisted image counts. The per-image inventory (src, dimensions, alt) will appear after the next crawl of this page."
+            detail="This snapshot only persisted image counts. Fetch the page again to capture the full per-image inventory (src, dimensions, alt)."
+            action={refetchAction}
           />
         ) : shareImages.length === 0 && embeds.length === 0 ? (
           <MediaEmptyState
             title="No media evidence captured"
-            detail="The latest snapshot carries no image inventory, counts, or share images for this page."
+            detail="The latest snapshot carries no image inventory, counts, or share images for this page. Fetch the page again to capture the current media."
+            action={refetchAction}
           />
         ) : null}
 

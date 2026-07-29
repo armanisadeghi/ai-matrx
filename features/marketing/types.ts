@@ -562,6 +562,12 @@ export interface PageDesiredValues {
   /** Links this page SHOULD carry (target URL + planned anchor). */
   outbound_links?: PlannedLinkEntry[];
   structured_data_notes?: string;
+  /** Freeform plan notes for areas without a structured plan yet — each key
+   *  is one card's slice (PagePlanNoteCard), same clobber-safe merge path. */
+  identity_notes?: string;
+  strategy_notes?: string;
+  performance_goals?: string;
+  backlink_plan?: string;
   image_plan?: DesiredImagePlanEntry[];
   /** Desired alt text for EXISTING crawled images, keyed by the image `src`
    *  from the snapshot inventory (`web.snapshot.images.items[].src`). */
