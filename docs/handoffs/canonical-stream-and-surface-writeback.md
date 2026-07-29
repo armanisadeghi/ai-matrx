@@ -166,9 +166,12 @@ into ONE system, and make policy user-controllable from the binding. All built:
 
 1. **Agent-facing kind skills** — update the three kinds' skills/teaching blocks
    to mention the apply affordances so agents describe them to users.
-2. **`create_shortcut_from_agent_surface` RPC does not copy `write_policies`** —
-   a shortcut minted from a binding starts with the binding's mappings but not
-   its policy overrides. Needs a DB RPC change (the FE thunk just calls it).
+2. ~~`create_shortcut_from_agent_surface` RPC~~ — DONE 2026-07-29: the RPC now
+   reads the v2 edge payload (payload-first for value_mappings — the old
+   metadata-only read minted EMPTY mappings for current bindings) and nests the
+   binding's `write_policies` under `__write_policies`
+   (`migrations/create_shortcut_from_agent_surface_write_policies.sql`, applied
+   + ledgered).
 3. **Surface client tools have zero adopters** — the seam is live end-to-end
    (declare → register → inject → dispatch) but no manifest declares one yet,
    and they have no DB mirror / `check:surface-drift` coverage.
