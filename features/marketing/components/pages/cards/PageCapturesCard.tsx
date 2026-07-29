@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
 import { CaptureAttachments } from "@/features/marketing/components/pages/CaptureAttachments";
+import { CaptureObservations } from "@/features/marketing/components/pages/CaptureObservations";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import {
   useDeleteScreenshot,
@@ -153,11 +154,18 @@ export function PageCapturesCard({ page }: { page: MarketingPage }) {
                     </div>
                   }
                 />
-                <CaptureAttachments
-                  screenshotId={current.id}
-                  orgId={page.organization_id}
-                  className="mt-1.5"
-                />
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  <CaptureAttachments
+                    screenshotId={current.id}
+                    orgId={page.organization_id}
+                    className="min-w-0 flex-1"
+                  />
+                  <CaptureObservations
+                    screenshot={current}
+                    kind={kind}
+                    page={page}
+                  />
+                </div>
                 {captures.length > 1 ? (
                   <ul className="mt-1.5 grid gap-1">
                     {captures.slice(1).map((capture) => (

@@ -38,8 +38,10 @@ import {
 } from "../data/hooks";
 import { updatePlanNode } from "../data/service";
 import { usePlanDeepen, usePlanGenerate } from "../hooks/useContentPlanAi";
+import { liveMatchesById, usePlanReality } from "../hooks/usePlanReality";
 import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
 import { PlanGenerateBar } from "./PlanGenerateBar";
+import { PlanRealityBar } from "./PlanRealityBar";
 import type { PlanNodeRow } from "../types";
 import { useContentPlanSites } from "./ContentPlanHeader";
 import { EntityManager } from "./EntityManager";
@@ -97,6 +99,12 @@ export function ContentPlanWorkbench({
   // Owned here (not in NodePanel) so an in-flight deepen survives the
   // panel's per-node remount when the user selects another node.
   const deepen = usePlanDeepen(siteId);
+  // Reality report (run from the header button — shared query cache).
+  const reality = usePlanReality(siteId);
+  const liveById = useMemo(
+    () => liveMatchesById(reality.report),
+    [reality.report],
+  );
 
   const statusCategories = useCategories({
     dimension: CATEGORY_DIMENSIONS.planStatus,
@@ -245,6 +253,11 @@ export function ContentPlanWorkbench({
           </div>
         ) : null}
 
+        {reality.report &&
+        (view === "tree" || view === "table" || view === "map") ? (
+          <PlanRealityBar report={reality.report} onDismiss={reality.dismiss} />
+        ) : null}
+
         {/* AI generation strip — plan-bearing views only; Setup and
           Entities have their own jobs. */}
         {siteId &&
@@ -307,6 +320,7 @@ export function ContentPlanWorkbench({
               nodes={nodeRows}
               selectedId={selectedNodeId}
               statusSlugById={statusSlugById}
+              liveById={liveById}
               onSelect={setSelectedNodeId}
               onReparent={handleReparent}
               onAddChild={openNewNode}
@@ -325,6 +339,7 @@ export function ContentPlanWorkbench({
                     nodes={nodeRows}
                     selectedId={selectedNodeId}
                     statusSlugById={statusSlugById}
+                    liveById={liveById}
                     onSelect={setSelectedNodeId}
                     onReparent={handleReparent}
                     onAddChild={openNewNode}

@@ -505,6 +505,21 @@ export interface DesiredImagePlanEntry {
   style?: string;
 }
 
+/**
+ * One planned internal link. For a page's `inbound_links` plan, `url` is the
+ * page that SHOULD link here; for `outbound_links`, `url` is the page this
+ * page SHOULD link to. `anchor_text` is the preferred exact anchor — empty
+ * means any accepted anchor (per the partner page's policy) satisfies the
+ * plan. These are plans, not canonical entity relationships — jsonb is the
+ * deliberate home (ruled 2026-07-29).
+ */
+export interface PlannedLinkEntry {
+  /** Stable local id so list edits do not reorder React state. */
+  id: string;
+  url: string;
+  anchor_text?: string;
+}
+
 export interface PageDesiredValues {
   /** ONE key per card — a card's slice save can never touch a sibling's. */
   social_card?: { og_title?: string; og_description?: string };
@@ -515,6 +530,10 @@ export interface PageDesiredValues {
    * to this page. Matching is case-insensitive with collapsed whitespace.
    */
   accepted_anchor_texts?: string[];
+  /** Pages that SHOULD link to this page (source URL + preferred anchor). */
+  inbound_links?: PlannedLinkEntry[];
+  /** Links this page SHOULD carry (target URL + planned anchor). */
+  outbound_links?: PlannedLinkEntry[];
   structured_data_notes?: string;
   image_plan?: DesiredImagePlanEntry[];
   /** Desired alt text for EXISTING crawled images, keyed by the image `src`

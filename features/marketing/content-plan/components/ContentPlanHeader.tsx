@@ -14,7 +14,9 @@ import {
   ChevronLeft,
   LayoutTemplate,
   ListTree,
+  Loader2,
   Map as MapIcon,
+  Radar,
   RefreshCw,
   Table2,
   Users,
@@ -35,6 +37,7 @@ import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlic
 import { useAppSelector } from "@/lib/redux/hooks";
 
 import { planKeys } from "../data/hooks";
+import { usePlanReality } from "../hooks/usePlanReality";
 import {
   usePlanWorkspaceParams,
   type PlanView,
@@ -83,6 +86,9 @@ export function ContentPlanHeader() {
   const { siteId, view, setSiteId, setView } = usePlanWorkspaceParams();
   const { sites, orgSites } = useContentPlanSites();
   const queryClient = useQueryClient();
+  // Shares the workbench's query-cache entry — running here lights up the
+  // overlay there.
+  const reality = usePlanReality(siteId);
 
   // Keep a ?site= target in the list even if options are still loading /
   // briefly empty so the Select doesn't blank out.
@@ -145,6 +151,21 @@ export function ContentPlanHeader() {
             <span className="hidden sm:inline">{item.label}</span>
           </Button>
         ))}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 shrink-0 p-0"
+          aria-label="Reality check — compare the plan against the crawled site"
+          title="Reality check: which planned pages are actually live?"
+          disabled={reality.isRunning}
+          onClick={() => void reality.run()}
+        >
+          {reality.isRunning ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Radar className="h-3.5 w-3.5" />
+          )}
+        </Button>
         <Button
           variant="ghost"
           size="sm"

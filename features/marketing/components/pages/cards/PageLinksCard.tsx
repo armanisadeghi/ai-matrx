@@ -1,15 +1,17 @@
 "use client";
 
 /**
- * PageLinksCard — the current internal-link picture for one canonical page.
+ * PageLinksCard — the CURRENT internal-link picture for one canonical page
+ * (observed evidence only; the editors live in `LinksPlan`, Plan lane).
  *
  * Two interchangeable views share the same edge evidence:
  *   - URL view: one rollup row per source/target page;
  *   - Anchor-text view: a folding tree of anchor → pages → link counts.
  *
  * This page's accepted inbound anchors are authored in
- * `web.page.desired_values.accepted_anchor_texts`. Outbound edges resolve the
- * target page's same slice, so the source page immediately reports mismatches.
+ * `web.page.desired_values.accepted_anchor_texts` (via LinksPlan). Outbound
+ * edges resolve the target page's same slice, so the source page immediately
+ * reports mismatches.
  */
 
 import { useState } from "react";
@@ -21,7 +23,6 @@ import {
   ChevronDown,
   CircleAlert,
 } from "lucide-react";
-import TextArrayInput from "@/components/official/TextArrayInput";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import {
   jsonExportItem,
@@ -35,8 +36,6 @@ import {
   QueryError,
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
-import { DesiredSection } from "@/features/marketing/components/pages/desired/DesiredSection";
-import { useDesiredValueSlice } from "@/features/marketing/components/pages/desired/useDesiredValueSlice";
 import {
   LINK_ROW_CAP,
   acceptedAnchorTextsFromDesiredValues,
@@ -45,7 +44,6 @@ import {
   buildOutboundAnchorTextReport,
   rollupInboundLinks,
   rollupOutboundLinks,
-  sanitizeAcceptedAnchorTexts,
   usePageInboundLinks,
   usePageOutboundLinks,
   type AnchorPartnerRollup,
@@ -289,7 +287,6 @@ function AnchorTextTree({
 export function PageLinksCard({ page }: { page: MarketingPage }) {
   const { site, sitePath } = useMarketingSite();
   const [view, setView] = useState<"url" | "anchor">("url");
-  const desired = useDesiredValueSlice(page, "accepted_anchor_texts");
   const savedAcceptedAnchors = acceptedAnchorTextsFromDesiredValues(
     page.desired_values,
   );
@@ -522,8 +519,8 @@ export function PageLinksCard({ page }: { page: MarketingPage }) {
             </div>
           ) : (
             <p className="text-xs text-muted-foreground">
-              Add accepted anchors below to turn on compliance reporting for
-              links pointing to this page.
+              Add accepted anchors in the Link plan card to turn on compliance
+              reporting for links pointing to this page.
             </p>
           )}
           <SegmentedControl
@@ -588,30 +585,6 @@ export function PageLinksCard({ page }: { page: MarketingPage }) {
             </p>
           ) : null}
         </div>
-
-        <DesiredSection
-          title="Accepted inbound anchor text"
-          hint="Exact phrases other internal pages may use when linking here."
-          dirty={desired.dirty}
-          saving={desired.saving}
-          onSave={() => void desired.save()}
-          onReset={desired.reset}
-        >
-          <TextArrayInput
-            value={desired.draft ?? []}
-            onChange={(values) =>
-              desired.setDraft(sanitizeAcceptedAnchorTexts(values))
-            }
-            placeholder="Type an acceptable anchor and press Enter (commas add several)"
-            showCopyIcon={false}
-            chipClassName="border border-primary/25 bg-primary/10 text-foreground"
-            className="[&_input]:h-8 [&_input]:text-xs [&_span]:text-xs"
-          />
-          <p className="text-[11px] text-muted-foreground">
-            Matching ignores capitalization and repeated whitespace. Empty
-            anchor text is never acceptable when a list is configured.
-          </p>
-        </DesiredSection>
       </>
     );
   }

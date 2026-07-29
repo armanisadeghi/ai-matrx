@@ -481,6 +481,11 @@ export function useKeywordResearch(organizationId?: string | null) {
 
   const clearCluster = useCallback(() => setClusterPhrases(null), []);
 
+  /** Re-read the library with the current search (post-archive/restore). */
+  const reloadKeywords = useCallback(() => {
+    void reload(search);
+  }, [reload, search]);
+
   return {
     clusterPhrases,
     clearCluster,
@@ -495,5 +500,6 @@ export function useKeywordResearch(organizationId?: string | null) {
     rejoinResearch,
     refreshVolume,
     loadEdges,
+    reloadKeywords,
   };
 }

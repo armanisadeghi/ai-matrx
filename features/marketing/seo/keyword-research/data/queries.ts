@@ -178,6 +178,73 @@ export async function getLatestSavedKeywordResearch(
   return null;
 }
 
+/**
+ * Soft-archive library keywords (seo.fn_archive_keywords — the ONE sanctioned
+ * client-side removal path; authenticated users have SELECT-only on the
+ * table). Archive is durable memory: research re-runs do NOT resurrect an
+ * archived keyword (the server upsert re-selects the archived identity row).
+ * Returns the number of rows archived.
+ */
+export async function archiveKeywords(
+  keywordIds: string[],
+  reason?: string,
+): Promise<number> {
+  if (keywordIds.length === 0) return 0;
+  const response = await (await seoDb()).rpc("fn_archive_keywords", {
+    p_keyword_ids: keywordIds,
+    ...(reason ? { p_reason: reason } : {}),
+  });
+  if (response.error) throw response.error;
+  return response.data ?? 0;
+}
+
+/** Undo an archive (seo.fn_restore_keywords). Returns rows restored. */
+export async function restoreKeywords(keywordIds: string[]): Promise<number> {
+  if (keywordIds.length === 0) return 0;
+  const response = await (await seoDb()).rpc("fn_restore_keywords", {
+    p_keyword_ids: keywordIds,
+  });
+  if (response.error) throw response.error;
+  return response.data ?? 0;
+}
+
+/**
+ * Provenance: which of these keywords were discovered by the research
+ * pipeline? Derived from live keyword_edge rows with origin 'ai_research'
+ * (the ingest function writes every research edge with that origin) — no
+ * schema change, one batched read per list render.
+ */
+export async function fetchResearchDiscoveredKeywordIds(
+  keywordIds: string[],
+  signal?: AbortSignal,
+): Promise<Set<string>> {
+  if (keywordIds.length === 0) return new Set();
+  const db = await seoDb();
+  const abortSignal = signal ?? new AbortController().signal;
+  const [asSource, asTarget] = await Promise.all([
+    db
+      .from("keyword_edge")
+      .select("source_keyword_id")
+      .eq("origin", "ai_research")
+      .is("deleted_at", null)
+      .in("source_keyword_id", keywordIds)
+      .abortSignal(abortSignal),
+    db
+      .from("keyword_edge")
+      .select("target_keyword_id")
+      .eq("origin", "ai_research")
+      .is("deleted_at", null)
+      .in("target_keyword_id", keywordIds)
+      .abortSignal(abortSignal),
+  ]);
+  if (asSource.error) throw asSource.error;
+  if (asTarget.error) throw asTarget.error;
+  return new Set([
+    ...(asSource.data ?? []).map((row) => row.source_keyword_id),
+    ...(asTarget.data ?? []).map((row) => row.target_keyword_id),
+  ]);
+}
+
 /** All edges touching a keyword, annotated with the partner phrase. */
 export async function listKeywordEdges(
   keywordId: string,

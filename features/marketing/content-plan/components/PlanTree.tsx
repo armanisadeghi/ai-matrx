@@ -80,6 +80,9 @@ export interface PlanTreeProps {
   nodes: PlanNodeRow[];
   selectedId: string | null;
   statusSlugById: Map<string, string>;
+  /** node_id → crawl reconciler match — rows with an entry are LIVE on the
+   * real site (Reality overlay; empty/absent = overlay off). */
+  liveById?: Map<string, { url: string }>;
   onSelect: (id: string) => void;
   onReparent: (id: string, parentId: string | null) => void;
   onAddChild: (parentId: string | null) => void;
@@ -89,6 +92,7 @@ export function PlanTree({
   nodes,
   selectedId,
   statusSlugById,
+  liveById,
   onSelect,
   onReparent,
   onAddChild,
@@ -273,6 +277,7 @@ export function PlanTree({
                 dimmed={dimmed.has(row.node.id)}
                 descendantCount={descendantCounts.get(row.node.id) ?? 0}
                 statusSlug={statusSlugById.get(row.node.status_id ?? "")}
+                liveMatch={liveById?.get(row.node.id) ?? null}
                 dragging={row.node.id === activeId}
                 onSelect={() => onSelect(row.node.id)}
                 onToggle={() => toggleCollapse(row.node.id)}
@@ -325,6 +330,7 @@ function TreeRow({
   dimmed,
   descendantCount,
   statusSlug,
+  liveMatch,
   dragging,
   onSelect,
   onToggle,
@@ -336,6 +342,8 @@ function TreeRow({
   dimmed: boolean;
   descendantCount: number;
   statusSlug: string | undefined;
+  /** Present when the Reality overlay says this route is live on the site. */
+  liveMatch: { url: string } | null;
   dragging: boolean;
   onSelect: () => void;
   onToggle: () => void;
@@ -423,6 +431,12 @@ function TreeRow({
                 >
                   {descendantCount}
                 </span>
+              ) : null}
+              {liveMatch ? (
+                <span
+                  className="ml-1.5 inline-block h-2 w-2 rounded-full bg-emerald-500 align-middle ring-2 ring-emerald-500/25"
+                  title={`Live on the site: ${liveMatch.url}`}
+                />
               ) : null}
             </span>
             <span className="mt-px shrink-0 rounded bg-muted px-1 py-px text-[10px] font-medium uppercase tracking-wide text-muted-foreground">

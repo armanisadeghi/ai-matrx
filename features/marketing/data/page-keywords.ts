@@ -80,9 +80,23 @@ export async function ensureKeywordId(phrase: string): Promise<string> {
     .schema("seo")
     .rpc("fn_upsert_keyword", { p_phrase: trimmed, p_language: "en" });
   if (response.error) throw response.error;
-  const row = response.data as { o_id?: string | null } | null;
+  const row = response.data as {
+    o_id?: string | null;
+    o_created?: boolean | null;
+  } | null;
   if (!row?.o_id) {
     throw new Error(`Keyword upsert returned no id for "${trimmed}".`);
+  }
+  if (!row.o_created) {
+    // Explicit hand-entry resurrects an archived library row: archive is
+    // durable against pipeline re-saves (fn_upsert_keyword returns the
+    // archived identity row without reviving it), but a user typing the
+    // phrase IS the intent to use it. fn_restore_keywords is idempotent —
+    // it only touches rows whose deleted_at is set.
+    const restore = await supabase
+      .schema("seo")
+      .rpc("fn_restore_keywords", { p_keyword_ids: [row.o_id] });
+    if (restore.error) throw restore.error;
   }
   return row.o_id;
 }

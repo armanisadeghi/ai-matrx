@@ -24,7 +24,7 @@ import {
   authenticatedWebDb,
   requireAuthenticatedSupabaseSession,
 } from "@/utils/supabase/webDb";
-import { isJsonRecord } from "@/features/marketing/types";
+import { isJsonRecord, type PlannedLinkEntry } from "@/features/marketing/types";
 import type { Json } from "@/types/database.types";
 
 export const LINK_ROW_CAP = 500;
@@ -455,6 +455,223 @@ export function buildOutboundAnchorTextReport(
           : [],
     })),
   );
+}
+
+// ─── Planned links (desired_values.inbound_links / .outbound_links) ─────────
+
+export type PlannedLinkStatus = "linked" | "wrong_anchor" | "missing";
+
+/** One observed edge projected for plan scoring — direction-agnostic. */
+export interface PlannedLinkObservation {
+  /** Partner URL: source page URL (inbound) or target URL (outbound). */
+  url: string;
+  pageId: string | null;
+  anchorText: string | null;
+}
+
+export interface PlannedLinkScore {
+  entry: PlannedLinkEntry;
+  status: PlannedLinkStatus;
+  /** Unique anchors observed on edges between the planned pair, capped at 3. */
+  observedAnchors: string[];
+  observedEdgeCount: number;
+  /** Canonical page id of the planned partner when an edge resolved it. */
+  partnerPageId: string | null;
+  /** The anchor set the plan was judged against (for "use:" hints). */
+  acceptableAnchors: string[];
+}
+
+/**
+ * Normalize a URL for plan matching: trim, drop the fragment, strip a
+ * trailing slash (except the bare origin), lowercase scheme + host. Query
+ * strings stay significant — same identity policy as the link graph.
+ */
+export function normalizePlanUrl(value: string | null | undefined): string {
+  const raw = (value ?? "").trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    url.hash = "";
+    let path = url.pathname;
+    if (path.length > 1 && path.endsWith("/")) path = path.slice(0, -1);
+    return `${url.protocol}//${url.host}${path}${url.search}`.toLowerCase();
+  } catch {
+    // Not an absolute URL — compare the raw string case-insensitively so a
+    // path-only plan entry still matches nothing silently rather than crash.
+    return raw.replace(/#.*$/, "").replace(/\/+$/, "").toLowerCase() || raw.toLowerCase();
+  }
+}
+
+/** Trim fields, drop url-less rows, dedupe by normalized url + anchor. */
+export function sanitizePlannedLinks(
+  values: PlannedLinkEntry[],
+): PlannedLinkEntry[] {
+  const seen = new Set<string>();
+  const result: PlannedLinkEntry[] = [];
+  for (const value of values) {
+    const url = value.url.trim();
+    if (!url) continue;
+    const anchor = value.anchor_text?.trim().replace(/\s+/g, " ") || undefined;
+    const key = `${normalizePlanUrl(url)} ${normalizeAnchorText(anchor)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push({ id: value.id, url, ...(anchor ? { anchor_text: anchor } : {}) });
+  }
+  return result;
+}
+
+/** Safely read a planned-link slice from a page's desired_values JSON. */
+export function plannedLinksFromDesiredValues(
+  value: Json,
+  key: "inbound_links" | "outbound_links",
+): PlannedLinkEntry[] {
+  if (!isJsonRecord(value)) return [];
+  const raw = value[key];
+  if (!Array.isArray(raw)) return [];
+  const entries: PlannedLinkEntry[] = [];
+  for (const item of raw) {
+    if (!isJsonRecord(item) || typeof item.url !== "string") continue;
+    entries.push({
+      id: typeof item.id === "string" && item.id ? item.id : item.url,
+      url: item.url,
+      ...(typeof item.anchor_text === "string" && item.anchor_text
+        ? { anchor_text: item.anchor_text }
+        : {}),
+    });
+  }
+  return sanitizePlannedLinks(entries);
+}
+
+/**
+ * Score a planned-link list against the observed current edges.
+ *
+ * Rules (per entry):
+ *   - no observed edge to/from the planned URL          → `missing`;
+ *   - entry declares a preferred anchor                 → `linked` only when
+ *     some edge's anchor matches it exactly (normalized), else `wrong_anchor`;
+ *   - no preferred anchor, partner policy has anchors   → `linked` when some
+ *     edge matches ANY accepted anchor, else `wrong_anchor`;
+ *   - no preferred anchor and no policy                 → any edge = `linked`.
+ *
+ * `acceptedAnchorsForUrl` supplies the fallback policy for a normalized URL
+ * (the page's own accepted list for inbound plans; the target page's policy
+ * for outbound plans).
+ */
+export function scorePlannedLinks(
+  entries: PlannedLinkEntry[],
+  observed: PlannedLinkObservation[],
+  acceptedAnchorsForUrl: (normalizedUrl: string) => string[],
+): PlannedLinkScore[] {
+  const byUrl = new Map<string, PlannedLinkObservation[]>();
+  for (const observation of observed) {
+    const key = normalizePlanUrl(observation.url);
+    const list = byUrl.get(key);
+    if (list) list.push(observation);
+    else byUrl.set(key, [observation]);
+  }
+  return entries.map((entry) => {
+    const key = normalizePlanUrl(entry.url);
+    const matches = byUrl.get(key) ?? [];
+    const acceptable = entry.anchor_text
+      ? [entry.anchor_text]
+      : acceptedAnchorsForUrl(key);
+    const observedAnchors: string[] = [];
+    for (const match of matches) {
+      const anchor = match.anchorText?.trim().replace(/\s+/g, " ");
+      if (anchor && observedAnchors.length < 3 && !observedAnchors.includes(anchor)) {
+        observedAnchors.push(anchor);
+      }
+    }
+    const partnerPageId =
+      matches.find((match) => match.pageId !== null)?.pageId ?? null;
+    let status: PlannedLinkStatus;
+    if (matches.length === 0) {
+      status = "missing";
+    } else if (acceptable.length === 0) {
+      status = "linked";
+    } else {
+      const acceptableSet = new Set(acceptable.map(normalizeAnchorText));
+      status = matches.some((match) =>
+        acceptableSet.has(normalizeAnchorText(match.anchorText)),
+      )
+        ? "linked"
+        : "wrong_anchor";
+    }
+    return {
+      entry,
+      status,
+      observedAnchors,
+      observedEdgeCount: matches.length,
+      partnerPageId,
+      acceptableAnchors: acceptable,
+    };
+  });
+}
+
+export interface PlannedLinkPlanSummary {
+  planned: number;
+  linked: number;
+  wrongAnchor: number;
+  missing: number;
+}
+
+export function summarizePlannedLinkScores(
+  scores: PlannedLinkScore[],
+): PlannedLinkPlanSummary {
+  const summary: PlannedLinkPlanSummary = {
+    planned: scores.length,
+    linked: 0,
+    wrongAnchor: 0,
+    missing: 0,
+  };
+  for (const score of scores) {
+    if (score.status === "linked") summary.linked += 1;
+    else if (score.status === "wrong_anchor") summary.wrongAnchor += 1;
+    else summary.missing += 1;
+  }
+  return summary;
+}
+
+/** Observed inbound rows projected for inbound-plan scoring. */
+export function inboundPlanObservations(
+  rows: InboundLinkEdge[],
+): PlannedLinkObservation[] {
+  return rows.map((row) => ({
+    url: row.source_page?.url ?? row.source_page_id,
+    pageId: row.source_page_id,
+    anchorText: row.anchor_text,
+  }));
+}
+
+/** Observed outbound rows projected for outbound-plan scoring. */
+export function outboundPlanObservations(
+  rows: OutboundLinkEdge[],
+): PlannedLinkObservation[] {
+  return rows.map((row) => ({
+    url: row.target_page?.url ?? row.target_url,
+    pageId: row.target_page_id,
+    anchorText: row.anchor_text,
+  }));
+}
+
+/**
+ * Accepted-anchor policies keyed by normalized URL, harvested from observed
+ * outbound rows (each internal edge carries its target page's slice).
+ */
+export function acceptedAnchorsByTargetUrl(
+  rows: OutboundLinkEdge[],
+): Map<string, string[]> {
+  const byUrl = new Map<string, string[]>();
+  for (const row of rows) {
+    if (!row.is_internal || !row.target_page) continue;
+    const key = normalizePlanUrl(row.target_page.url);
+    if (byUrl.has(key)) continue;
+    byUrl.set(
+      key,
+      acceptedAnchorTextsFromDesiredValues(row.target_page.desired_values),
+    );
+  }
+  return byUrl;
 }
 
 /** Collapse an anchor-grouped report back to per-page compliance for URL view. */
