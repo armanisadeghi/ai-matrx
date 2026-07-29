@@ -50,11 +50,12 @@ function resourceFileName(url: string): string {
 
 function FeaturedImage({ src, alt }: { src: string | null; alt: string }) {
   const [broken, setBroken] = useState(false);
-  if (!src || broken) {
+  if (!src) return null;
+  if (broken) {
     return (
-      <div className="flex aspect-[16/9] min-h-32 items-center justify-center gap-2 rounded-md bg-muted/40 text-xs text-muted-foreground">
-        <ImageOff className="h-4 w-4" />
-        {src ? "Featured image failed to load" : "No featured image detected"}
+      <div className="flex h-20 w-32 shrink-0 items-center justify-center gap-1.5 rounded-md bg-muted/40 px-2 text-center text-[10px] text-muted-foreground sm:h-24 sm:w-40">
+        <ImageOff className="h-3.5 w-3.5 shrink-0" />
+        Image unavailable
       </div>
     );
   }
@@ -63,7 +64,7 @@ function FeaturedImage({ src, alt }: { src: string | null; alt: string }) {
     <img
       src={src}
       alt={alt}
-      className="aspect-[16/9] min-h-32 w-full rounded-md bg-muted/40 object-cover"
+      className="h-20 w-32 shrink-0 rounded-md bg-muted/40 object-cover sm:h-24 sm:w-40"
       onError={() => setBroken(true)}
     />
   );
@@ -103,6 +104,8 @@ export function PageIdentityCard({
   const rawIdentity = isJsonRecord(snapshot.extracted)
     ? (snapshot.extracted.page_identity ?? {})
     : {};
+  const hasCapturedIdentity =
+    isJsonRecord(rawIdentity) && Object.keys(rawIdentity).length > 0;
   const platformTemplate =
     typeof identity.platformDetails.template === "string"
       ? identity.platformDetails.template
@@ -111,10 +114,45 @@ export function PageIdentityCard({
     typeof identity.platformDetails.wordpress_post_id === "string"
       ? identity.platformDetails.wordpress_post_id
       : null;
+  const identityFields = [
+    { label: "Generator", value: identity.generator },
+    {
+      label: "Application",
+      value: identity.applicationName ?? identity.siteName,
+    },
+    { label: "Locale", value: identity.locale ?? identity.htmlLang },
+    { label: "Author", value: identity.author },
+    {
+      label: "Published",
+      value: identity.publishedAt ? formatDate(identity.publishedAt) : null,
+    },
+    {
+      label: "Modified",
+      value: identity.modifiedAt ? formatDate(identity.modifiedAt) : null,
+    },
+    { label: "Content section", value: identity.contentSection },
+    { label: "CMS content id", value: platformContentId },
+    { label: "Template", value: platformTemplate },
+    { label: "Theme color", value: identity.themeColor },
+  ].filter(
+    (field): field is { label: string; value: string } =>
+      typeof field.value === "string" &&
+      field.value.trim().length > 0 &&
+      field.value !== "—",
+  );
+  const hasBadges =
+    Boolean(identity.cms) ||
+    identity.pageTypes.length > 0 ||
+    identity.platformSignals.length > 0 ||
+    Boolean(identity.featuredImageSource);
+  const hasRelatedLinks =
+    Boolean(identity.shortlink) ||
+    Boolean(identity.ampUrl) ||
+    identity.apiUrls.length > 0;
   return (
     <SectionCard
       title="Page identity"
-      className="lg:col-span-2"
+      collapsible
       anchor="page_identity"
       copy={{
         ...webCopy({
@@ -139,112 +177,105 @@ export function PageIdentityCard({
         json: () => payload,
       }}
     >
-      <div className="grid gap-3 p-3 md:grid-cols-[minmax(240px,0.8fr)_minmax(0,1.2fr)]">
-        <div>
-          <FeaturedImage
-            src={featuredImage}
-            alt={head.title ?? page.path ?? "Featured page image"}
-          />
-          {featuredImage ? (
-            <a
-              href={featuredImage}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-1.5 flex min-w-0 items-center gap-1 text-[10px] text-muted-foreground hover:text-primary"
-            >
-              <ExternalLink className="h-3 w-3 shrink-0" />
-              <span className="truncate">{featuredImage}</span>
-            </a>
-          ) : null}
-        </div>
-        <div className="min-w-0">
-          <div className="mb-3 flex flex-wrap gap-1.5">
-            {identity.cms ? (
-              <Badge variant="secondary">{formatText(identity.cms)}</Badge>
+      <div className="p-3">
+        {!hasCapturedIdentity ? (
+          <p className="mb-3 rounded-md border border-border/70 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+            This snapshot predates complete page-identity capture. Use{" "}
+            <span className="font-medium text-foreground">Fetch now</span> at
+            the top of the page to capture CMS identifiers, template signals,
+            featured-image provenance, authorship, and publication dates.
+          </p>
+        ) : null}
+        {featuredImage || hasBadges || identityFields.length > 0 ? (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+            {featuredImage ? (
+              <div className="w-fit shrink-0">
+                <FeaturedImage
+                  src={featuredImage}
+                  alt={head.title ?? page.path ?? "Featured page image"}
+                />
+                <a
+                  href={featuredImage}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={featuredImage}
+                  className="mt-1 flex w-32 min-w-0 items-center gap-1 text-[9px] text-muted-foreground hover:text-primary sm:w-40"
+                >
+                  <ExternalLink className="h-3 w-3 shrink-0" />
+                  <span className="truncate">
+                    {resourceFileName(featuredImage)}
+                  </span>
+                </a>
+              </div>
             ) : null}
-            {identity.pageTypes.map((type) => (
-              <Badge key={type} variant="outline">
-                {type}
-              </Badge>
-            ))}
-            {identity.platformSignals.map((signal) => (
-              <Badge key={signal} variant="outline">
-                {formatText(signal)}
-              </Badge>
-            ))}
-            {identity.featuredImageSource ? (
-              <Badge variant="outline">
-                Image: {identity.featuredImageSource}
-              </Badge>
-            ) : null}
-          </div>
-          <CondensedFieldGrid
-            fields={[
-              { label: "Generator", value: identity.generator ?? "—" },
-              {
-                label: "Application",
-                value: identity.applicationName ?? identity.siteName ?? "—",
-              },
-              {
-                label: "Locale",
-                value: identity.locale ?? identity.htmlLang ?? "—",
-              },
-              { label: "Author", value: identity.author ?? "—" },
-              {
-                label: "Published",
-                value: formatDate(identity.publishedAt),
-              },
-              {
-                label: "Modified",
-                value: formatDate(identity.modifiedAt),
-              },
-              {
-                label: "Content section",
-                value: identity.contentSection ?? "—",
-              },
-              { label: "CMS content id", value: platformContentId ?? "—" },
-              { label: "Template", value: platformTemplate ?? "—" },
-              { label: "Theme color", value: identity.themeColor ?? "—" },
-            ]}
-          />
-          {identity.shortlink || identity.ampUrl || identity.apiUrls.length ? (
-            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[10px]">
-              {identity.shortlink ? (
-                <a
-                  href={identity.shortlink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-muted-foreground hover:text-primary"
-                >
-                  Shortlink
-                </a>
+            <div className="min-w-0 flex-1">
+              {hasBadges ? (
+                <div className="mb-2.5 flex flex-wrap gap-1.5">
+                  {identity.cms ? (
+                    <Badge variant="secondary">
+                      {formatText(identity.cms)}
+                    </Badge>
+                  ) : null}
+                  {identity.pageTypes.map((type) => (
+                    <Badge key={type} variant="outline">
+                      {type}
+                    </Badge>
+                  ))}
+                  {identity.platformSignals.map((signal) => (
+                    <Badge key={signal} variant="outline">
+                      {formatText(signal)}
+                    </Badge>
+                  ))}
+                  {identity.featuredImageSource ? (
+                    <Badge variant="outline">
+                      Image: {identity.featuredImageSource}
+                    </Badge>
+                  ) : null}
+                </div>
               ) : null}
-              {identity.ampUrl ? (
-                <a
-                  href={identity.ampUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-muted-foreground hover:text-primary"
-                >
-                  AMP version
-                </a>
+              {identityFields.length > 0 ? (
+                <CondensedFieldGrid fields={identityFields} />
               ) : null}
-              {identity.apiUrls.map((url) => (
-                <a
-                  key={url}
-                  href={url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-muted-foreground hover:text-primary"
-                >
-                  API
-                </a>
-              ))}
+              {hasRelatedLinks ? (
+                <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px]">
+                  {identity.shortlink ? (
+                    <a
+                      href={identity.shortlink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Shortlink
+                    </a>
+                  ) : null}
+                  {identity.ampUrl ? (
+                    <a
+                      href={identity.ampUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      AMP version
+                    </a>
+                  ) : null}
+                  {identity.apiUrls.map((url) => (
+                    <a
+                      key={url}
+                      href={url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      API
+                    </a>
+                  ))}
+                </div>
+              ) : null}
             </div>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
-      <RawEvidence value={rawIdentity} />
+      {hasCapturedIdentity ? <RawEvidence value={rawIdentity} /> : null}
     </SectionCard>
   );
 }

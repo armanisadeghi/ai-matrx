@@ -264,7 +264,7 @@ Track bugs/gaps you can't fully fix in [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (t
   constant plus a loud console/log banner whenever the non-default path is taken — never a silent
   read.
 
-Same doctrine, server side: aidream's [CLAUDE.md](/Users/armanisadeghi/code/aidream/CLAUDE.md) §"A new env var fails SILENTLY in production."
+Same doctrine, server side: aidream's `../aidream/CLAUDE.md` §"A new env var fails SILENTLY in production."
 
 ## "Coming Soon" is a promise — track it like a found defect
 

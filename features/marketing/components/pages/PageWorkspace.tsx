@@ -275,7 +275,10 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
       // same react-query entry without a second subscription.
       targetPerformance:
         (queryClient.getQueryData(
-          pageTargetPerformanceQueryKey(page.id, page.target_keyword?.trim() ?? ""),
+          pageTargetPerformanceQueryKey(
+            page.id,
+            page.target_keyword?.trim() ?? "",
+          ),
         ) as Record<string, unknown> | undefined) ?? null,
       inboundLinks:
         (inboundLinks.data as unknown as Record<string, unknown>[]) ?? null,
@@ -421,14 +424,6 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             />
           </section>
 
-          {snapshot ? (
-            <div className="grid gap-3 lg:grid-cols-2">
-              <PageIdentityCard page={page} snapshot={snapshot} />
-              <StructuredDataCard page={page} snapshot={snapshot} />
-              <PageResourcesCard page={page} snapshot={snapshot} />
-            </div>
-          ) : null}
-
           <div className="grid gap-3 lg:grid-cols-2">
             <SectionCard
               title="Search result preview"
@@ -548,6 +543,16 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           />
 
           <PageTargetPerformanceCard page={page} />
+
+          {snapshot ? (
+            <>
+              <PageIdentityCard page={page} snapshot={snapshot} />
+              <div className="grid gap-3 lg:grid-cols-2">
+                <StructuredDataCard page={page} snapshot={snapshot} />
+                <PageResourcesCard page={page} snapshot={snapshot} />
+              </div>
+            </>
+          ) : null}
 
           {snapshot ? (
             <>
