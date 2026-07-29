@@ -1,6 +1,8 @@
 import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ListChecks } from "lucide-react";
+import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import { createClient } from "@/utils/supabase/server";
 import type { UserListWithItems } from "@/features/user-lists/types";
 import { ListDetailClient } from "@/features/user-lists/components/ListDetailClient";
@@ -57,6 +59,20 @@ export default async function ListDetailPage({ params }: PageProps) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user) {
+    // Guests: the owner-scoped RPC always returns null without a session, so
+    // a signed-out visitor following a shared link would otherwise hit a 404.
+    // Show the sign-in gate and bring them back here after login.
+    return (
+      <ModuleSignInGate
+        title="Picklists"
+        route={`/lists/${id}`}
+        description="Sign in to view and edit this picklist."
+        icon={ListChecks}
+      />
+    );
+  }
 
   if (!list) notFound();
 

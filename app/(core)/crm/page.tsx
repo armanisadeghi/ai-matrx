@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
 import { Contact } from "lucide-react";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { CrmListPage } from "@/features/crm/components/CrmListPage";
 import { CRM_SURFACE_NAME } from "@/features/surfaces/manifests/crm.manifest";
@@ -16,7 +16,16 @@ import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-displa
  */
 export default async function CrmRoute() {
   const { isAuthenticated } = await getServerAuth();
-  if (!isAuthenticated) redirect("/login?next=/crm");
+  if (!isAuthenticated) {
+    return (
+      <ModuleSignInGate
+        title="CRM"
+        route="/crm"
+        description="Manage people and companies — contacts, affiliations, activity, notes, and files in one place."
+        icon={Contact}
+      />
+    );
+  }
 
   return (
     <>
