@@ -42,8 +42,6 @@ import type { RootState } from "@/lib/redux/store";
 type ToolResultsDispatch = ThunkDispatch<RootState, unknown, UnknownAction>;
 import type { components } from "@/types/python-generated/api-types";
 import { setInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import { fireResumeInstance } from "@/features/agents/redux/execution-system/resume-registry";
-import { upsertToolLifecycle } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 
 type ClientToolResult = components["schemas"]["ClientToolResult"];
 type ToolResultsResponse = components["schemas"]["ToolResultsResponse"];
@@ -189,15 +187,19 @@ function postToolResults(
         // nothing and let the eventual final answer trigger the resume.
         const data = result.data as ToolResultsResponse | undefined;
         if (data?.continuation_needed && data.user_request_id) {
-          // D115 inversion: fire the resume handler via the leaf
-          // resume-registry — zero import edge back into the execution graph
-          // (the old await import() here was a per-context chunk-group split
-          // multiplied across ~every app entry). resume-instance.thunk
-          // registers the handler at its own module init.
-          fireResumeInstance(dispatch, {
-            conversationId,
-            userRequestId: data.user_request_id,
-          });
+          // Dynamic import breaks the would-be cycle:
+          // submit-tool-results → resume-instance → run-ai-stream → process-stream
+          //   → dispatch-ui-first-tool → submit-tool-results.
+          // executeInstance uses the same pattern for cache-bypass + clearUserInput.
+          const { resumeInstance } = await import(
+            "@/features/agents/redux/execution-system/thunks/resume-instance.thunk"
+          );
+          void dispatch(
+            resumeInstance({
+              conversationId,
+              userRequestId: data.user_request_id,
+            }),
+          );
         }
         return;
       } catch (e) {
@@ -258,6 +260,9 @@ async function failLifecycleForCalls(
   errorMessage: string,
 ): Promise<void> {
   try {
+    const { upsertToolLifecycle } = await import(
+      "@/features/agents/redux/execution-system/active-requests/active-requests.slice"
+    );
     // Walk every active request for this conversation and force-terminal any
     // matching callId. The reducer is idempotent + already filters on
     // completed/error.

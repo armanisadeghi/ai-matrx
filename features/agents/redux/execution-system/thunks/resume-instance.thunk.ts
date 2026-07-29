@@ -29,8 +29,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState, AppDispatch } from "@/lib/redux/store";
-import { registerResumeInstanceHandler } from "../resume-registry";
+import type { RootState } from "@/lib/redux/store";
 import type { UserOverrides } from "@/features/agents/types/request.types";
 
 import { generateRequestId } from "../utils/ids";
@@ -344,11 +343,3 @@ export const resumeInstance = createAsyncThunk<
     }
   },
 );
-
-// ── D115 inversion: self-register into the leaf resume-registry so
-// submit-tool-results can fire resumeInstance with zero import edge into this
-// graph. Guaranteed to run: launch-agent-execution.thunk side-effect-imports
-// this module. See resume-registry.ts header.
-registerResumeInstanceHandler((dispatch, args) => {
-  void (dispatch as AppDispatch)(resumeInstance(args));
-});
