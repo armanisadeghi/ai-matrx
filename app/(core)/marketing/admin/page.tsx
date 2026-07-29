@@ -496,7 +496,7 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       tier: "official",
     },
     {
-      name: "KeywordResearchLauncher + LiveResearchFeed (features/marketing/seo/keyword-research)",
+      name: "KeywordResearchLauncher (features/marketing/seo/keyword-research) — live output via MarkdownStream",
       filePath:
         "features/marketing/seo/keyword-research/components/KeywordResearchLauncher.tsx",
       description:

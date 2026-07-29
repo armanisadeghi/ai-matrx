@@ -248,6 +248,27 @@ export interface SurfaceWriteTarget {
    *   is persisted and nothing needs saving.
    */
   mode: "draft" | "entity" | "ui";
+  /**
+   * Who may apply this target WITHOUT a human in the loop.
+   *
+   * A user clicking a declared control is always allowed — the click IS the
+   * consent. This axis governs an AGENT-originated write (`origin: "agent"` on
+   * `applySurfaceWrite`), which is the direction that turns "agents can read
+   * the page" into "agents can change the page":
+   *
+   * - `"manual"` (DEFAULT, and deliberately so) — agent-originated writes are
+   *   REFUSED, loudly. The target exists for user-driven controls only. A new
+   *   target starts here: nothing becomes agent-writable by omission.
+   * - `"ask"` — the user is asked, in place, naming the target and what lands.
+   *   Decline is a normal outcome, not an error. This is the right setting for
+   *   almost everything that changes what the user sees.
+   * - `"auto"` — applied immediately. Justify it: appropriate for `ui` mode
+   *   (moving a selection is cheap and visible) and for `draft` mode where the
+   *   user still reviews before saving. An `entity` target on `"auto"` means an
+   *   agent silently writes the database — do not set that without a reason
+   *   written in `description`.
+   */
+  applyPolicy?: "manual" | "ask" | "auto";
   /** Key of a declared SurfaceValueGroup (same rules as SurfaceValue.group). */
   group?: string;
   sortOrder?: number;

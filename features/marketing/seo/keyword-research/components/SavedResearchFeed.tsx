@@ -1,9 +1,14 @@
 "use client";
 
 /**
- * Renders a durable keyword-research artifact with the same selectable result
- * blocks as the live stream. Intent classifications are reconstructed from
- * the canonical `seo.keyword` rows written by the research pipeline.
+ * Renders a durable keyword-research artifact with the SAME blocks the live
+ * stream renders. Intent classifications are reconstructed from the canonical
+ * `seo.keyword` rows written by the research pipeline.
+ *
+ * Selection is not passed here: the blocks source it from the mounted surface
+ * (`keyword_selection` UI state + the `keyword_selection` write target), so
+ * the saved view and the live view behave identically with no duplicated
+ * interaction wiring. See KeywordResearchBlock's header.
  */
 
 import { useQuery } from "@tanstack/react-query";
@@ -20,16 +25,10 @@ import type { KeywordResearchArtifact } from "@/types/python-generated/stream-ev
 
 export interface SavedResearchFeedProps {
   artifact: KeywordResearchArtifact;
-  selectedPhrases?: ReadonlySet<string>;
-  disabledPhrases?: ReadonlySet<string>;
-  onKeywordSelectionChange?: (phrase: string, selected: boolean) => void;
 }
 
 export default function SavedResearchFeed({
   artifact,
-  selectedPhrases,
-  disabledPhrases,
-  onKeywordSelectionChange,
 }: SavedResearchFeedProps) {
   const phrases = [
     artifact.primary_keyword,
@@ -78,21 +77,11 @@ export default function SavedResearchFeed({
 
   return (
     <div className="space-y-3">
-      <KeywordResearchBlock
-        serverData={researchData}
-        selectedPhrases={selectedPhrases}
-        disabledPhrases={disabledPhrases}
-        onKeywordSelectionChange={onKeywordSelectionChange}
-      />
+      <KeywordResearchBlock serverData={researchData} />
       {classifications.isLoading ? (
         <div className="h-20 animate-pulse rounded-lg border border-border bg-muted/40" />
       ) : classificationData.results.length > 0 ? (
-        <KeywordClassificationBatchBlock
-          serverData={classificationData}
-          selectedPhrases={selectedPhrases}
-          disabledPhrases={disabledPhrases}
-          onKeywordSelectionChange={onKeywordSelectionChange}
-        />
+        <KeywordClassificationBatchBlock serverData={classificationData} />
       ) : null}
     </div>
   );

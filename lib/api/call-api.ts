@@ -293,6 +293,30 @@ export interface ApiCallConfig<
   /** Called for each NDJSON event during streaming */
   onStreamEvent?: (event: TypedStreamEvent) => void;
 
+  /**
+   * Take ownership of the NDJSON body instead of letting callApi drain it.
+   *
+   * WHY THIS EXISTS: a response body can only be consumed once. A caller that
+   * needs the RAW `Response` — the canonical one being the agent execution
+   * system's `processStream`, which turns a stream into `activeRequests` state
+   * so content-IR blocks render through the ONE canonical pipeline — cannot
+   * get it from the `onStreamEvent` callback. Passing a consumer here inverts
+   * that: callApi still owns auth, URL resolution, scope injection, the v2
+   * fallback and HTTP error handling; the caller owns the body.
+   *
+   * Layering: `lib/api` knows nothing about who consumes the stream. The
+   * consumer is supplied by the caller (see
+   * `features/agents/redux/execution-system/thunks/adopt-foreign-stream.ts`).
+   *
+   * When set, `onStreamEvent` is NOT called by callApi — the consumer sees
+   * every event and is responsible for forwarding what it needs.
+   * `onStreamStart` / `onStreamComplete` / `onStreamError` still fire.
+   */
+  consumeStream?: (
+    response: Response,
+    ids: { requestId: string | null; conversationId: string | null },
+  ) => Promise<void>;
+
   /** Called when the stream ends cleanly */
   onStreamComplete?: (
     requestId: string | null,
@@ -935,6 +959,7 @@ async function executeStreamingRequest(
     | "onStreamEvent"
     | "onStreamComplete"
     | "onStreamError"
+    | "consumeStream"
   >,
 ): Promise<ApiCallResult> {
   const { response } = await fetchWithV2Fallback(
@@ -968,6 +993,23 @@ async function executeStreamingRequest(
     };
     config.onStreamError?.(error);
     return { error };
+  }
+
+  // A body can be consumed exactly once. When the caller supplied a
+  // `consumeStream` owner, hand it the raw Response and never touch the body
+  // here — the ids still come from headers, which are already available.
+  if (config.consumeStream) {
+    const ids = {
+      requestId: response.headers.get("X-Request-ID"),
+      conversationId: response.headers.get("X-Conversation-ID"),
+    };
+    config.onStreamStart?.(ids.requestId, ids.conversationId);
+    await config.consumeStream(response, ids);
+    config.onStreamComplete?.(ids.requestId, ids.conversationId);
+    return {
+      requestId: ids.requestId ?? undefined,
+      conversationId: ids.conversationId ?? undefined,
+    };
   }
 
   // Use the shared NDJSON stream parser.

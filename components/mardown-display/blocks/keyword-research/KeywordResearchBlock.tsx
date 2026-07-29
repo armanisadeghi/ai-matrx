@@ -8,9 +8,29 @@
  * A still-streaming bucket shows a subtle inline pulse; nothing ever waits
  * for the full payload.
  *
+ * ## Surface-aware selection — the 360 loop, worked example
+ *
+ * This block is INTERACTIVE without taking a single interaction prop, because
+ * it renders through the canonical pipeline (`BlockRenderer`), which hands a
+ * block its data and nothing else. That constraint is deliberate — it is what
+ * keeps ONE renderer for streamed content — and it used to mean interactivity
+ * required forking the renderer, which is the banned pattern.
+ *
+ * Instead the block talks to whatever page it landed on through the two
+ * surface seams, naming a target and a key and nothing else:
+ *
+ *   READ   `useCurrentSurfaceUiState("keyword_selection")` — what the page has
+ *          already selected / locked. Absent (chat, a share page) ⇒ the block
+ *          renders read-only. Same block, every surface.
+ *   WRITE  `runAction("apply_surface_write", { target: "keyword_selection" })`
+ *          — the page's declared handler decides what selection MEANS there.
+ *
+ * The block never learns which surface it is on, never receives a callback,
+ * and can never reach the page's state directly. An agent-authored component
+ * gets exactly the same two seams, under exactly the same manifest gate.
+ *
  * Consumes the bridge serverData from
- * features/content-ir/kinds/keyword-research.ts. Also rendered directly
- * (outside chat) by the keyword-research workbench's live feed.
+ * features/content-ir/kinds/keyword-research.ts.
  */
 
 import {
@@ -29,12 +49,29 @@ import type {
 } from "@/features/content-ir/kinds/keyword-research";
 import { Checkbox } from "@/components/ui/checkbox";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
+import { useKindActionRunner } from "@/features/content-ir/react/actions/useKindActionRunner";
+import { useCurrentSurfaceUiState } from "@/features/surfaces/runtime/surface-ui-state";
 
 export interface KeywordResearchBlockProps {
   serverData?: unknown;
-  selectedPhrases?: ReadonlySet<string>;
-  disabledPhrases?: ReadonlySet<string>;
-  onKeywordSelectionChange?: (phrase: string, selected: boolean) => void;
+}
+
+/**
+ * The shape a page publishes under the `keyword_selection` UI-state key. Both
+ * halves optional: a surface that only wants to LOCK phrases (no selection)
+ * publishes `disabled` alone.
+ */
+export interface KeywordSelectionUiState {
+  /** Normalized phrases currently selected. */
+  selected?: readonly string[];
+  /** Normalized phrases the user may not toggle (e.g. the primary keyword). */
+  disabled?: readonly string[];
+}
+
+/** The value `apply_surface_write` carries for the `keyword_selection` target. */
+export interface KeywordSelectionWrite {
+  phrase: string;
+  selected: boolean;
 }
 
 function isList(value: unknown): value is KeywordListData {
@@ -78,12 +115,14 @@ function KeywordListCard({
   list,
   selectedPhrases,
   disabledPhrases,
-  onKeywordSelectionChange,
+  interactive,
+  onToggle,
 }: {
   list: KeywordListData;
-  selectedPhrases?: ReadonlySet<string>;
-  disabledPhrases?: ReadonlySet<string>;
-  onKeywordSelectionChange?: (phrase: string, selected: boolean) => void;
+  selectedPhrases: ReadonlySet<string>;
+  disabledPhrases: ReadonlySet<string>;
+  interactive: boolean;
+  onToggle: (phrase: string, selected: boolean) => void;
 }) {
   return (
     <div className="rounded-lg border border-border bg-card p-3">
@@ -102,8 +141,7 @@ function KeywordListCard({
       <div className="flex flex-wrap gap-1.5">
         {list.keywords.map((keyword, index) => {
           const key = normalizeKeywordPhrase(keyword);
-          const selectable =
-            Boolean(onKeywordSelectionChange) && !disabledPhrases?.has(key);
+          const selectable = interactive && !disabledPhrases.has(key);
           return (
             <label
               key={`${index}-${keyword}`}
@@ -111,9 +149,9 @@ function KeywordListCard({
             >
               {selectable ? (
                 <Checkbox
-                  checked={selectedPhrases?.has(key) ?? false}
+                  checked={selectedPhrases.has(key)}
                   onCheckedChange={(checked) =>
-                    onKeywordSelectionChange?.(keyword, checked === true)
+                    onToggle(keyword, checked === true)
                   }
                   aria-label={`Select ${keyword} as a supporting keyword`}
                 />
@@ -132,12 +170,30 @@ function KeywordListCard({
 
 export default function KeywordResearchBlock({
   serverData,
-  selectedPhrases,
-  disabledPhrases,
-  onKeywordSelectionChange,
 }: KeywordResearchBlockProps) {
+  const runAction = useKindActionRunner();
+  // Whatever page this block landed on, if it publishes keyword selection.
+  // Undefined everywhere else — chat renders the same block read-only.
+  const selectionState =
+    useCurrentSurfaceUiState<KeywordSelectionUiState>("keyword_selection");
   const data = readKeywordResearchData(serverData);
   if (!data) return null;
+
+  const selectedPhrases = new Set(selectionState?.selected ?? []);
+  const disabledPhrases = new Set(selectionState?.disabled ?? []);
+  // A surface that publishes the key is offering selection. One that does not
+  // gets a read-only render — never a dead checkbox.
+  const interactive = selectionState !== undefined;
+
+  const onToggle = (phrase: string, selected: boolean) => {
+    // Fire-and-forget by contract: `runAction` NEVER throws and always reports
+    // its own failure (toast + captured error). A rejected write leaves the
+    // page state untouched, so the checkbox simply does not move.
+    void runAction("apply_surface_write", {
+      target: "keyword_selection",
+      value: { phrase, selected } satisfies KeywordSelectionWrite,
+    });
+  };
 
   return (
     <div className="my-2 space-y-2">
@@ -165,7 +221,8 @@ export default function KeywordResearchBlock({
             list={list}
             selectedPhrases={selectedPhrases}
             disabledPhrases={disabledPhrases}
-            onKeywordSelectionChange={onKeywordSelectionChange}
+            interactive={interactive}
+            onToggle={onToggle}
           />
         ))}
       </div>

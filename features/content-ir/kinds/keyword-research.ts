@@ -17,7 +17,8 @@
  * instant its node parses — never a JSON dump, never a wait-for-complete
  * reveal. Consumed by chat (via applyIrKindRoute's compiled-bridge flip) AND
  * directly by the keyword-research workbench's live stream feed
- * (features/marketing/seo/keyword-research/components/LiveResearchFeed.tsx).
+ * (rendered through the canonical pipeline over an adopted pipeline stream —
+ * see features/marketing/seo/keyword-research/useKeywordResearch.ts).
  */
 
 import type { CanonicalBlockIR } from "../core/ir-types";

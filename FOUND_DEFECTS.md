@@ -13,14 +13,18 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D116 — delete the two bespoke stream renderers (Arman ruling 2026-07-28)
+### D116 — RESOLVED 2026-07-29: both bespoke stream renderers deleted, gap closed, lint enforced
 
-Hand-rolled stream rendering is banned platform-wide (CLAUDE.md; `features/content-ir/FEATURE.md` § No bespoke stream renderers). Two callers exist and must go:
+Both callers are gone and the reason they existed is fixed:
 
-1. `features/marketing/seo/keyword-research/components/LiveResearchFeed.tsx` — the full disease (phase chunk buffers, two parse sessions, hand-rolled segment splitting, hand-routed components, own done signal). Replace with the execution system (`requestId` → `selectKindEnvelope`) driving the canonical block pipeline; the surface is `KeywordResearchLauncher` + the SEO workbench + `KeywordResearchWindow`.
-2. `features/flashcards/components/create/CreateFromTopic.tsx` — a `useLiveJsonRegion` fallback beside the correct Redux-primary read. Drop the fallback; `selectKindEnvelope` stands alone.
+1. `LiveResearchFeed.tsx` — **deleted.** `useKeywordResearch` now ADOPTS the server-orchestrated pipeline stream into `activeRequests` via the new `adoptForeignStream` thunk + `callApi`'s `consumeStream` option, and both surfaces render `<MarkdownStream requestId />`.
+2. flashcards `CreateFromTopic` fallback session — **deleted.** `selectKindEnvelope` stands alone.
 
-Also owed: a lint rule fencing `useLiveJsonRegion` / `session-manager` to content-ir + the accumulator, so this can't come back. **Decides: Arman** on sequencing — the ruling is that the pattern dies, not that the keyword feature keeps working the old way.
+The root cause was a real platform gap, not carelessness: `activeRequests` (which every canonical read is keyed on) was fillable ONLY by `executeInstance`, so a run orchestrated server-side inside a pipeline endpoint had no `requestId` and literally could not render canonically. That is what `adoptForeignStream` fixes; aidream's `stream_agent_as_blocks` is the server twin (pipeline runs now emit `render_block` events with envelopes, not bare chunks).
+
+The owed lint rule shipped: **`matrx/no-bespoke-stream-renderer`** (ESLint, error) fences `useLiveJsonRegion` / `openParseSession` to `features/content-ir/`.
+
+⚠️ **Verification debt (carried, not closed):** the work was written in an environment where `pnpm install` fails (`codeload.github.com` 403 through the proxy), so it is **neither type-checked nor browser-verified**. Before this is trusted: `pnpm type-check`, then exercise `/marketing/keyword-research` and the Keyword Intelligence research tab live. Tracked in `docs/handoffs/canonical-stream-and-surface-writeback.md`.
 
 ### D115 — in-session tool-viz repaint REVERTED (build detonator) — reimplement without the import edge (2026-07-28)
 
