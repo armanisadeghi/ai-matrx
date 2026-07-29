@@ -15,6 +15,11 @@
  *                      realize every ghost as a draft CMS page. ALWAYS
  *                      dry-run preview before apply; nothing is written the
  *                      user has not seen.
+ *   4. Publish site  — bulk publish every page with something pending
+ *                      (never published, or draft newer than live) through
+ *                      the server's ONE per-page publish path. Dry-run
+ *                      preview first, always; apply is behind a destructive
+ *                      confirm — this is the rung that changes the live site.
  *
  * Every number shown is a server report, never an assumption (readiness.ts
  * honesty rule). Failures arrive as per-item rows and are shown verbatim —
@@ -26,6 +31,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
   Check,
+  Globe,
   Hammer,
   Link2,
   Loader2,
@@ -52,11 +58,13 @@ import { planKeys } from "../../data/hooks";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { slugify } from "../archetypes";
 import {
+  bridgePublish,
   bridgeRealize,
   bridgeReconcile,
   bridgeStarterKit,
   recordCmsLink,
   type BridgeAlignResult,
+  type BridgePublishResult,
   type BridgeReport,
 } from "../bridge";
 import { setupKeys } from "../hooks";
@@ -91,10 +99,13 @@ export function SetupBridgeSection({
   // leaves behind if its reconcile step failed mid-flight.
   const knownCmsSite = cms?.link.cmsSiteId ?? undefined;
 
-  const [busy, setBusy] = useState<"link" | "kit" | "check" | "preview" | "apply" | null>(null);
+  const [busy, setBusy] = useState<
+    "link" | "kit" | "check" | "preview" | "apply" | "publishPreview" | "publishApply" | null
+  >(null);
   const [linkChoice, setLinkChoice] = useState<string>("__create__");
   const [report, setReport] = useState<BridgeReport | null>(null);
   const [alignResult, setAlignResult] = useState<BridgeAlignResult | null>(null);
+  const [publishResult, setPublishResult] = useState<BridgePublishResult | null>(null);
 
   const invalidateCms = () =>
     Promise.all([
@@ -249,14 +260,64 @@ export function SetupBridgeSection({
     }
   };
 
+  // ── rung 4: publish — dry-run preview, then destructive-confirmed apply ───
+  const handlePublish = async (dryRun: boolean) => {
+    if (!dryRun) {
+      const pending = publishResult?.wouldPublish ?? 0;
+      const ok = await confirm({
+        title: `Publish ${pending} page${pending === 1 ? "" : "s"}?`,
+        description:
+          `Every listed page on CMS site "${cms?.link.cmsSlug ?? ""}" goes LIVE on the public site. ` +
+          `Pages fail or succeed individually — one bad page never blocks the rest.`,
+        confirmLabel: "Publish site",
+        variant: "destructive",
+      });
+      if (!ok) return;
+    }
+    setBusy(dryRun ? "publishPreview" : "publishApply");
+    try {
+      const outcome = await bridgePublish(dispatch, site.id, {
+        dryRun,
+        cmsSite: knownCmsSite,
+      });
+      setPublishResult(outcome);
+      if (!dryRun) {
+        await Promise.all([
+          invalidateCms(),
+          queryClient.invalidateQueries({ queryKey: planKeys.nodes(site.id) }),
+        ]);
+        if (outcome.failed > 0) {
+          toast.error(
+            `Published ${outcome.published} page(s); ${outcome.failed} failed — see the rows below.`,
+          );
+        } else if (outcome.published > 0) {
+          toast.success(`Published ${outcome.published} page(s) — the site is live.`);
+        } else {
+          toast.info("Nothing had pending changes — the live site is already current.");
+        }
+        if (outcome.remainingCandidates > 0) {
+          toast.info(
+            `${outcome.remainingCandidates} more page(s) still pending — run Publish again to continue.`,
+          );
+        }
+      }
+    } catch (error) {
+      toast.error(`Publish failed: ${extractErrorMessage(error)}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const cmsUnknown = cms === null;
   const ghostCount = report?.ghosts.length ?? null;
+  const publishPending = publishResult?.dryRun ? publishResult.wouldPublish : null;
 
   return (
     <SetupSection title="Make it real">
       <p className="mb-2 text-xs leading-relaxed text-muted-foreground">
-        The checklist above measures; these steps act. Each one is safe to
-        re-run — nothing is published, and existing pages are never touched.
+        The checklist above measures; these steps act. Steps 1–3 are safe to
+        re-run and never publish anything; step 4 is the deliberate one — it
+        takes the drafted site live, behind a preview and a confirm.
       </p>
       <ol className="divide-y divide-border overflow-hidden rounded-md border border-border">
         {/* ── 1 · CMS site ── */}

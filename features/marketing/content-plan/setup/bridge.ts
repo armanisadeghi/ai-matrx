@@ -9,6 +9,7 @@
  *   POST /content-plan/sites/{site_id}/cms-reconcile   → the diff report
  *   POST /content-plan/sites/{site_id}/cms-align       → realize (dry-run/apply)
  *   POST /content-plan/sites/{site_id}/cms-starter-kit → seed the site shell
+ *   POST /content-plan/sites/{site_id}/cms-publish     → bulk publish (dry-run/apply)
  *
  * These are REAL server work (guarded CMS writes: agent_write_policy +
  * client_activity_log live behind aidream's page_service/site_service), so the
@@ -67,6 +68,32 @@ export interface BridgeAlignResult {
   failed: number;
   statusesAdvanced: string[];
   errors: string[];
+}
+
+export interface BridgePublishItem {
+  pageId: string;
+  slug: string;
+  route: string | null;
+  title: string | null;
+  status: string;
+  /** Why it is a candidate: "never_published" | "draft_pending". */
+  reason: string | null;
+  liveUrl: string | null;
+  error: string | null;
+}
+
+export interface BridgePublishResult {
+  dryRun: boolean;
+  requested: number;
+  published: number;
+  wouldPublish: number;
+  skippedNoChanges: number;
+  failed: number;
+  /** Candidates beyond the per-call cap — re-run to continue. */
+  remainingCandidates: number;
+  items: BridgePublishItem[];
+  statusesAdvanced: string[];
+  warnings: string[];
 }
 
 export interface StarterKitOutcome {
@@ -195,6 +222,66 @@ export async function bridgeRealize(
     }),
   );
   return parseAlign(requireBody(result, "cms-align"));
+}
+
+function parsePublish(data: Record<string, unknown>): BridgePublishResult {
+  const items: BridgePublishItem[] = [];
+  for (const row of Array.isArray(data.results) ? data.results : []) {
+    if (!row || typeof row !== "object") continue;
+    const record = row as Record<string, unknown>;
+    items.push({
+      pageId: str(record.page_id),
+      slug: str(record.slug),
+      route: str(record.route) || null,
+      title: str(record.title) || null,
+      status: str(record.status),
+      reason: str(record.reason) || null,
+      liveUrl: str(record.live_url) || null,
+      error: str(record.error_message) || null,
+    });
+  }
+  const num = (key: string): number =>
+    typeof data[key] === "number" ? (data[key] as number) : 0;
+  return {
+    dryRun: data.dry_run === true,
+    requested: num("requested"),
+    published: num("published"),
+    wouldPublish: num("would_publish"),
+    skippedNoChanges: num("skipped_no_changes"),
+    failed: num("failed"),
+    remainingCandidates: num("remaining_candidates"),
+    items,
+    statusesAdvanced: Array.isArray(data.statuses_advanced)
+      ? data.statuses_advanced.map(String)
+      : [],
+    warnings: Array.isArray(data.warnings) ? data.warnings.map(String) : [],
+  };
+}
+
+/**
+ * Bulk-publish the paired CMS site's pending pages. Dry-run returns the real
+ * candidate list (what would publish and why); apply publishes through the
+ * server's ONE per-page publish path with per-item failure isolation.
+ */
+export async function bridgePublish(
+  dispatch: AppDispatch,
+  siteId: string,
+  options: { dryRun: boolean; cmsSite?: string },
+): Promise<BridgePublishResult> {
+  const result = await dispatch(
+    callApi({
+      path: "/content-plan/sites/{site_id}/cms-publish",
+      method: "POST",
+      pathParams: { site_id: siteId },
+      body: {
+        cms_site: options.cmsSite ?? null,
+        only_plan_linked: false,
+        dry_run: options.dryRun,
+        sync_status: true,
+      },
+    }),
+  );
+  return parsePublish(requireBody(result, "cms-publish"));
 }
 
 /** Seed the paired CMS site's shell (global CSS + header/footer + nav). */

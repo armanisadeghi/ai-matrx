@@ -9,6 +9,7 @@ import {
   Globe2,
   Images,
   Inbox,
+  ListTree,
   MapPin,
   Pencil,
   Trash2,
@@ -451,6 +452,14 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                     </div>
                     <SiteConnectionChips site={site} />
                     <div className="flex shrink-0 items-center gap-0.5">
+                      <RowActionButton
+                        title="Content plan — every URL this site should have"
+                        onClick={() =>
+                          router.push(marketingRoutes.contentPlanSite(site.id))
+                        }
+                      >
+                        <ListTree className="h-3.5 w-3.5" />
+                      </RowActionButton>
                       <RowActionButton
                         title="Edit site"
                         onClick={() => setEditingSite(site)}

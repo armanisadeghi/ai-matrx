@@ -15,6 +15,7 @@ import {
   Inbox,
   KeyRound,
   Link2,
+  ListTree,
   Map,
   Plug,
   ScanSearch,
@@ -273,6 +274,11 @@ export function MarketingSiteLayoutClient({
                 },
               ]
             : []),
+          {
+            label: "Content Plan",
+            icon: ListTree,
+            href: marketingRoutes.contentPlanSite(siteId),
+          },
           {
             label: "Open live site",
             icon: ExternalLink,

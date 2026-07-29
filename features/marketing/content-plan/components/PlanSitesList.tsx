@@ -525,7 +525,11 @@ export function PlanSitesList() {
             <Button
               size="sm"
               className="h-8 gap-1.5 px-2.5 text-xs"
-              onClick={() => router.push(marketingRoutes.newSite())}
+              onClick={() =>
+                // From the plans list, the default intent is a site that
+                // doesn't exist yet — the form still offers both kinds.
+                router.push(`${marketingRoutes.newSite()}?purpose=planned`)
+              }
             >
               <Plus className="h-3.5 w-3.5" />
               New site

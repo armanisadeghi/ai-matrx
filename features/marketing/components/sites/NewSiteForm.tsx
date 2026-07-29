@@ -4,7 +4,14 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Building2, Globe2, Landmark, Loader2, Plus } from "lucide-react";
+import {
+  Building2,
+  Globe2,
+  Landmark,
+  ListTree,
+  Loader2,
+  Plus,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +37,13 @@ export function NewSiteForm() {
   const [rootUrl, setRootUrl] = useState("");
   const [urlTouched, setUrlTouched] = useState(false);
   const [name, setName] = useState("");
+  // What kind of site this is decides where creation LANDS, nothing else:
+  // an existing site goes to its cockpit (homepage capture kicks off); a
+  // planned one goes straight to the Content Plan Setup view — there is no
+  // live site to crawl yet, and both kinds can coexist on one brand.
+  const [purpose, setPurpose] = useState<"existing" | "planned">(() =>
+    searchParams.get("purpose") === "planned" ? "planned" : "existing",
+  );
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   // `?brand=` pre-binds the new site to that brand: the RPC receives the id
   // explicitly (an explicit brand ALWAYS wins over name matching) and the
@@ -98,6 +112,11 @@ export function NewSiteForm() {
       return;
     }
 
+    if (purpose === "planned") {
+      toast.success("Site added — plan it before it exists.");
+      router.push(marketingRoutes.contentPlanSite(site.id, "setup"));
+      return;
+    }
     toast.success("Site added");
     router.push(`${marketingRoutes.site(site.brand_id, site.id)}?capture=homepage`);
   };
@@ -138,11 +157,50 @@ export function NewSiteForm() {
               </h1>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Add a website you manage. We’ll capture its homepage and then you
-              can crawl it, connect search data, and track improvements.
+              {purpose === "existing"
+                ? "Add a website you manage. We’ll capture its homepage and then you can crawl it, connect search data, and track improvements."
+                : "Register a site that doesn’t exist yet. You’ll land in Content Plan Setup to design its structure — crawl and search data can come later, once it’s live."}
             </p>
           </div>
           <div className="grid gap-4 p-4 sm:grid-cols-2">
+            <div className="grid gap-2 sm:col-span-2 sm:grid-cols-2">
+              {(
+                [
+                  {
+                    value: "existing" as const,
+                    icon: Globe2,
+                    title: "Existing website",
+                    body: "It’s live — capture the homepage, then crawl and track it.",
+                  },
+                  {
+                    value: "planned" as const,
+                    icon: ListTree,
+                    title: "Planned website",
+                    body: "It doesn’t exist yet — start from a content plan.",
+                  },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={purpose === option.value}
+                  onClick={() => setPurpose(option.value)}
+                  className={
+                    purpose === option.value
+                      ? "rounded-md border border-primary bg-primary/5 px-3 py-2 text-left"
+                      : "rounded-md border border-border px-3 py-2 text-left hover:bg-muted/40"
+                  }
+                >
+                  <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                    <option.icon className="h-3.5 w-3.5 text-primary" />
+                    {option.title}
+                  </span>
+                  <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                    {option.body}
+                  </span>
+                </button>
+              ))}
+            </div>
             {targetBrandId ? (
               <div className="flex items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2 sm:col-span-2">
                 <Landmark className="h-4 w-4 shrink-0 text-primary" />
@@ -167,7 +225,7 @@ export function NewSiteForm() {
             ) : null}
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="site-url" className="text-xs">
-                Website URL
+                {purpose === "existing" ? "Website URL" : "Intended domain"}
               </Label>
               <Input
                 id="site-url"
@@ -186,7 +244,9 @@ export function NewSiteForm() {
                 id="site-url-help"
                 className="text-[11px] text-muted-foreground"
               >
-                You can enter just the domain — we’ll add https:// for you.
+                {purpose === "existing"
+                  ? "You can enter just the domain — we’ll add https:// for you."
+                  : "The address it will live at once launched — it doesn’t need to resolve yet."}
               </p>
               {urlTouched && !urlIsValid ? (
                 <p id="site-url-error" className="text-[11px] text-destructive">
