@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { CreateAgentAppFormWrapper } from "@/features/agent-apps/components/CreateAgentAppFormWrapper";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
@@ -17,6 +19,11 @@ interface NewAgentAppPageProps {
 export default async function NewAgentAppPage({
   searchParams,
 }: NewAgentAppPageProps) {
+  // Guests never see the creation workspace — bounce to /agent-apps, which
+  // serves the marketing landing to anonymous visitors.
+  const { isAuthenticated } = await getServerAuth();
+  if (!isAuthenticated) redirect("/agent-apps");
+
   const params = await searchParams;
   const preselectedAgentId = params.agent_id ?? null;
 

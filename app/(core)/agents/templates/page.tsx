@@ -2,10 +2,18 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { TemplatesGrid } from "@/features/agents/agent-creators/templates/TemplatesGrid";
 
 export default async function AgentTemplatesPage() {
+  // Guests never see the templates workspace — bounce to the /agents landing
+  // (same server-side convention as /agents/all). An anonymous template query
+  // could also throw below, which would surface an error page to guests.
+  const { isAuthenticated } = await getServerAuth();
+  if (!isAuthenticated) redirect("/agents");
+
   const supabase = await createClient();
 
   const { data: templates, error } = await supabase
