@@ -46,6 +46,7 @@ function dbRow(
     pinnedKindVersion: null,
     updatedAt: "2026-01-01T00:00:00Z",
     createdAt: "2026-01-01T00:00:00Z",
+    createdBy: null,
     id: "00000000-0000-0000-0000-000000000001",
     ...overrides,
   };

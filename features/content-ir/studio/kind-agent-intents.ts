@@ -63,3 +63,36 @@ export function composeKindAgentIntent(input: KindAgentIntentInput): string {
   const note = input.note?.trim() ? `\n\n${input.note.trim()}` : "";
   return `${base}${schemaBlock(input.emittedJsonSchema)}${note}`;
 }
+
+/** Cap for inlined live-instance JSON — enough context, never a mega-prompt. */
+const FIX_INSTANCE_CONTENT_MAX = 6_000;
+
+export interface KindComponentFixIntentInput {
+  kind: string;
+  /** The raw content of the instance the user was looking at when they asked. */
+  instanceContent: string;
+}
+
+/**
+ * Seed text for the in-render "fix this component" affordance: the user was
+ * LOOKING at a live instance rendered by the kind's DB component and hit the
+ * badge. The agent gets the kind slug (its kind_* tools fetch the component
+ * row itself) plus the exact instance data, so it reproduces what the user saw.
+ * The draft is pre-fill only — the user describes the problem before sending.
+ */
+export function composeKindComponentFixIntent(
+  input: KindComponentFixIntentInput,
+): string {
+  const raw = input.instanceContent.trim();
+  const content =
+    raw.length > FIX_INSTANCE_CONTENT_MAX
+      ? `${raw.slice(0, FIX_INSTANCE_CONTENT_MAX)}\n… (truncated)`
+      : raw;
+  return (
+    `Fix the output component for the existing Shape (kind) \`${input.kind}\`. ` +
+    `I was viewing a live instance rendered by this kind's DB component and noticed a problem. ` +
+    `Load the current component with your kind tools, reproduce the issue against the instance data below, and fix it.\n\n` +
+    `The exact instance I was viewing:\n\n\`\`\`json\n${content}\n\`\`\`\n\n` +
+    `What I want changed: `
+  );
+}

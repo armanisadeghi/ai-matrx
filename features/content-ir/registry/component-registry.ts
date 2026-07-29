@@ -70,6 +70,12 @@ export interface ComponentResolution {
    * Null for compiled entries.
    */
   updatedAt: string | null;
+  /**
+   * `source='db'` rows only: the row's author. Drives the in-render
+   * ownership affordance (fix badge shows to creator or super admin).
+   * Null for compiled entries.
+   */
+  createdBy: string | null;
 }
 
 function keyOf(kind: string, platform: string, role: string): string {
@@ -143,6 +149,7 @@ export class ComponentRegistry {
         propsTransform: dbRow.propsTransform,
         pinnedKindVersion: dbRow.pinnedKindVersion,
         updatedAt: dbRow.updatedAt,
+        createdBy: dbRow.createdBy,
       };
     }
 
@@ -158,6 +165,7 @@ export class ComponentRegistry {
         propsTransform: null,
         pinnedKindVersion: null,
         updatedAt: null,
+        createdBy: null,
       };
     }
 

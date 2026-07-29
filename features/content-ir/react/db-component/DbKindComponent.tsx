@@ -19,6 +19,7 @@ import React from "react";
 
 import type { DbKindComponentImplProps } from "./DbKindComponentImpl";
 import { useKindActionRunner } from "../actions/useKindActionRunner";
+import { KindComponentFixBadge } from "./KindComponentFixBadge";
 
 const LazyImpl = dynamic(
   () =>
@@ -38,7 +39,15 @@ export const DbKindComponent: React.FC<DbKindComponentProps> = (props) => {
   // compiled component. Keeping this in the shell — not the impl — keeps the
   // impl bare-renderable (tests/SSR) and Redux out of that path.
   const runAction = useKindActionRunner();
-  return <LazyImpl {...props} runAction={runAction} />;
+  // The relative wrapper anchors the ownership affordance: creators and super
+  // admins get a floating "fix this component" badge at the block's top-right
+  // that opens the kind-creator agent seeded with this exact instance.
+  return (
+    <div className="relative">
+      <KindComponentFixBadge content={props.content} metadata={props.metadata} />
+      <LazyImpl {...props} runAction={runAction} />
+    </div>
+  );
 };
 
 export default DbKindComponent;

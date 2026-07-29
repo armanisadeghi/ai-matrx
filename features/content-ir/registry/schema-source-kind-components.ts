@@ -59,6 +59,11 @@ export interface KindComponentProjection {
   /** Deterministic-tiebreaker inputs (see sortKindComponentRows). */
   createdAt: string;
   id: string;
+  /**
+   * The row's author — drives the in-render ownership affordance (the
+   * "fix this component" badge shows only to the creator or a super admin).
+   */
+  createdBy: string | null;
 }
 
 /**
@@ -124,7 +129,7 @@ export async function listKindComponentsFromTables(): Promise<
     .schema("content_ir")
     .from("kind_component")
     .select(
-      "id, kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version, updated_at, created_at",
+      "id, kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version, updated_at, created_at, created_by",
     )
     .is("deleted_at", null)
     .order("is_default", { ascending: false })
@@ -190,7 +195,7 @@ export async function getKindComponentBySlug(
     .schema("content_ir")
     .from("kind_component")
     .select(
-      "id, kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version, updated_at, created_at, is_default, sort_order",
+      "id, kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version, updated_at, created_at, created_by, is_default, sort_order",
     )
     .eq("kind_definition_id", def.id)
     .is("deleted_at", null)
@@ -226,6 +231,7 @@ type RawKindComponentRow = {
   pinned_kind_version: number | null;
   updated_at: string;
   created_at: string;
+  created_by: string | null;
   /**
    * Selected by the cold single-kind fetch so the client-side defense sort
    * (`sortKindComponentRows`) can actually act on them; the warm list omits
@@ -267,6 +273,7 @@ function projectRows(
       updatedAt: row.updated_at,
       createdAt: row.created_at,
       id: row.id,
+      createdBy: row.created_by,
     });
   }
   return out;

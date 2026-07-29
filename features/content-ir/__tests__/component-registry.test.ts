@@ -47,6 +47,7 @@ function dbRow(
     pinnedKindVersion: null,
     updatedAt: "2026-01-01T00:00:00Z",
     createdAt: "2026-01-01T00:00:00Z",
+    createdBy: null,
     id: "00000000-0000-0000-0000-000000000000",
     ...overrides,
   };
@@ -126,6 +127,7 @@ describe("resolveComponent — compiled floor (pre-warm)", () => {
         propsTransform: null,
         pinnedKindVersion: null,
         updatedAt: null,
+        createdBy: null,
         isActive: true,
         resolvedBy: "compiled",
       } satisfies ComponentResolution);
@@ -161,6 +163,7 @@ describe("ComponentRegistry — DB tier", () => {
       propsTransform: null,
       pinnedKindVersion: null,
       updatedAt: "2026-01-01T00:00:00Z",
+      createdBy: null,
     });
     // The compiled floor is untouched underneath.
     expect(registry.hasCompiled("flashcard_set", "web", "output")).toBe(true);

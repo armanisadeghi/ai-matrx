@@ -89,6 +89,7 @@ function dbRow(
     propsTransform: null,
     pinnedKindVersion: null,
     updatedAt: "2026-01-01T00:00:00Z",
+    createdBy: null,
     createdAt: "2026-01-01T00:00:00Z",
     id: "00000000-0000-0000-0000-000000000000",
     ...overrides,
