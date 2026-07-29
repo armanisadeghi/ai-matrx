@@ -11,7 +11,7 @@
  * All execution logic is driven by Redux — no prop drilling.
  */
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
@@ -25,6 +25,7 @@ import {
   toggleVariablePanel,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectAllResourcesResolved } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, Mic, Braces, CornerDownLeft } from "lucide-react";
@@ -59,6 +60,9 @@ export function CompactAssistantInput({
   const submissionPhase = useAppSelector(selectSubmissionPhase(conversationId));
   const isExecuting = useAppSelector(selectIsExecuting(conversationId));
   const submitOnEnter = useAppSelector(selectSubmitOnEnter(conversationId));
+  const allResourcesResolved = useAppSelector(
+    selectAllResourcesResolved(conversationId),
+  );
 
   // Hide the in-flight message from the box (it moves into the conversation);
   // the text stays in Redux as the non-visual backup. `inputText` is still used
@@ -96,16 +100,17 @@ export function CompactAssistantInput({
   // Block while executing OR while the mic is recording/transcribing so send
   // can't fire before the trailing audio lands (and leave the recorder on).
   const voiceBusy = isRecording || isTranscribing;
-  const isSendDisabled = isExecuting || voiceBusy;
+  const isSendDisabled = isExecuting || voiceBusy || !allResourcesResolved;
 
   // Auto-submit after voice transcription
   useEffect(() => {
     if (pendingVoiceSubmitRef.current && inputText.trim()) {
       pendingVoiceSubmitRef.current = false;
-      setTimeout(() => handleSend(), 50);
+      setTimeout(() => {
+        if (!isSendDisabled) dispatch(smartExecute({ conversationId }));
+      }, 50);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inputText]);
+  }, [conversationId, dispatch, inputText, isSendDisabled]);
 
   // ── Auto-resize textarea ────────────────────────────────────────────────────
   useEffect(() => {
@@ -116,25 +121,22 @@ export function CompactAssistantInput({
   }, [visibleText]);
 
   // ── Send logic ──────────────────────────────────────────────────────────────
-  const handleSend = useCallback(() => {
+  const handleSend = () => {
     if (isSendDisabled) return;
     dispatch(smartExecute({ conversationId }));
-  }, [isSendDisabled, conversationId, dispatch]);
+  };
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === "Enter" && !e.shiftKey && submitOnEnter) {
-        e.preventDefault();
-        if (!isSendDisabled) handleSend();
-      }
-    },
-    [submitOnEnter, isSendDisabled, handleSend],
-  );
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey && submitOnEnter) {
+      e.preventDefault();
+      if (!isSendDisabled) handleSend();
+    }
+  };
 
-  const handleMicClick = useCallback(() => {
+  const handleMicClick = () => {
     if (isRecording) stopRecording();
     else if (!isTranscribing) startRecording();
-  }, [isRecording, isTranscribing, startRecording, stopRecording]);
+  };
 
   // ── Paste image / screenshot ────────────────────────────────────────────────
   // Same canonical paste→upload→attach flow as every other composer, so pasting
@@ -248,6 +250,8 @@ export function CompactAssistantInput({
                 ? "Sending…"
                 : voiceBusy
                   ? "Finish recording to send"
+                  : !allResourcesResolved
+                    ? "Wait for attachments to finish uploading"
                   : "Send"
             }
           >

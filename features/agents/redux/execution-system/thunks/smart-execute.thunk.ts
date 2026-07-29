@@ -16,6 +16,8 @@ import { selectUserInputText } from "../instance-user-input/instance-user-input.
 import { resolvePendingAsksWithInput } from "@/features/agents/ui-first-tools/redux/resolve-asks-with-input.thunk";
 import { ensureSandboxOrDecide } from "./sandbox-gate.thunk";
 import { ensureConversationScopesOrAsk } from "@/features/scopes/redux/thunks/conversationScopeGate";
+import { selectAllResourcesResolved } from "../instance-resources/instance-resources.selectors";
+import { toast } from "@/lib/toast";
 
 interface SmartExecuteArgs {
   conversationId: string;
@@ -43,6 +45,22 @@ export const smartExecute = createAsyncThunk<
   "instances/smartExecute",
   async ({ conversationId, surfaceKey }, { getState, dispatch }) => {
     const state = getState();
+
+    // A pending resource has only a local preview; it has no durable file_id
+    // and is intentionally excluded from selectResourcePayloads. Sending now
+    // would persist a text-only turn while the upload continued in the
+    // background. This thunk-level guard protects every submit surface,
+    // including callers that bypass the disabled composer controls.
+    if (!selectAllResourcesResolved(conversationId)(state)) {
+      console.error(
+        `[smart-execute] blocked conversation "${conversationId}" while attachments are still resolving; ` +
+          `sending now would silently omit them.`,
+      );
+      toast.info("Attachment is still uploading", {
+        description: "Your message will be ready to send when the upload finishes.",
+      });
+      return;
+    }
 
     // On-deck delegated tool guard. If the agent has delegated one or more
     // client tools that are still awaiting the user (pending asks), a chat

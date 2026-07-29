@@ -22,7 +22,10 @@ import {
   selectSubmissionPhase,
 } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+import {
+  selectAllResourcesResolved,
+  selectInstanceResources,
+} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import {
@@ -81,6 +84,9 @@ export function NewChatLandingInput({
   const submissionPhase = useAppSelector(selectSubmissionPhase(conversationId));
   const isExecuting = useAppSelector(selectIsExecuting(conversationId));
   const resources = useAppSelector(selectInstanceResources(conversationId));
+  const allResourcesResolved = useAppSelector(
+    selectAllResourcesResolved(conversationId),
+  );
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
   const hasResources = resources.length > 0;
   // Sendable with text OR with attachments/inclusions alone (an attached note
@@ -88,7 +94,11 @@ export function NewChatLandingInput({
   // Also gate while the mic is recording/transcribing so send doesn't drop the
   // trailing audio or leave the recorder running.
   const [voiceBusy, setVoiceBusy] = useState(false);
-  const canSend = !isExecuting && !voiceBusy && (charCount > 0 || hasResources);
+  const canSend =
+    !isExecuting &&
+    !voiceBusy &&
+    allResourcesResolved &&
+    (charCount > 0 || hasResources);
 
   // Hide the message while a submit is in flight (it moves into the streaming
   // conversation); the text stays in Redux as the non-visual backup.
@@ -143,7 +153,12 @@ export function NewChatLandingInput({
       dispatch(cancelExecution(conversationId));
       return;
     }
-    if (voiceBusy || (charCount === 0 && !hasResources)) return;
+    if (
+      voiceBusy ||
+      !allResourcesResolved ||
+      (charCount === 0 && !hasResources)
+    )
+      return;
     dispatch(smartExecute({ conversationId, surfaceKey }));
   }, [
     dispatch,
@@ -151,6 +166,7 @@ export function NewChatLandingInput({
     surfaceKey,
     isExecuting,
     voiceBusy,
+    allResourcesResolved,
     charCount,
     hasResources,
   ]);
@@ -333,6 +349,8 @@ export function NewChatLandingInput({
                 ? "Stop"
                 : voiceBusy
                   ? "Finish recording to send"
+                  : !allResourcesResolved
+                    ? "Wait for attachments to finish uploading"
                   : "Send"
             }
             aria-label={
@@ -340,6 +358,8 @@ export function NewChatLandingInput({
                 ? "Stop"
                 : voiceBusy
                   ? "Finish recording to send"
+                  : !allResourcesResolved
+                    ? "Wait for attachments to finish uploading"
                   : "Send"
             }
           >

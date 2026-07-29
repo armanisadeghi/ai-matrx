@@ -22,7 +22,8 @@ import { ConversationContextRail } from "./ConversationContextRail";
 import { UninitializedShell } from "./UninitializedShell";
 import { SmartInputFileDropTarget } from "./SmartInputFileDropTarget";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { selectAllResourcesResolved } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
 
 interface SmartAgentInputSingleRowProps {
@@ -57,7 +58,10 @@ export function SmartAgentInputSingleRow({
   // transcript — submitting mid-voice drops the trailing audio and leaves the
   // recorder running.
   const [voiceBusy, setVoiceBusy] = useState(false);
-  const sendBlocked = disableSend || voiceBusy;
+  const allResourcesResolved = useAppSelector(
+    selectAllResourcesResolved(conversationId ?? ""),
+  );
+  const sendBlocked = disableSend || voiceBusy || !allResourcesResolved;
 
   const sendBtnClass =
     sendButtonVariant === "blue"
