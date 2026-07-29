@@ -7,7 +7,11 @@
  */
 
 import { RagHomePage } from "@/features/rag/components/RagHomePage";
+import KnowledgeLanding from "@/features/auth/components/module-landing/landings/KnowledgeLanding";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
-export default function Page() {
+export default async function Page() {
+  const { isAuthenticated } = await getServerAuth();
+  if (!isAuthenticated) return <KnowledgeLanding />;
   return <RagHomePage />;
 }

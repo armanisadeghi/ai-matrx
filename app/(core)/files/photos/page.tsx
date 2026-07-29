@@ -6,6 +6,8 @@
  * realtime provider.
  */
 
+import { redirect } from "next/navigation";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { PageShell } from "@/features/files/components/surfaces/PageShell";
 import { readSidebarModeCookie } from "@/features/files/utils/server-cookies";
 import {
@@ -20,6 +22,11 @@ interface PageProps {
 export default async function CloudFilesPhotosPage({
   searchParams,
 }: PageProps) {
+  const { isAuthenticated } = await getServerAuth();
+  if (!isAuthenticated) {
+    // Guests never see the workspace shell — bounce to the /files landing.
+    redirect("/files");
+  }
   const sidebarMode = await readSidebarModeCookie();
   const sp = searchParams ? await searchParams : undefined;
   const { initialUiPatch, initialFileId } = readFilesUiFromParams(sp);

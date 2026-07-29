@@ -7,13 +7,20 @@
  */
 
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { WebhooksManager } from "@/features/files/webhooks/components/WebhooksManager";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 
 export const metadata: Metadata = { title: "Webhooks | Files" };
 
-export default function FilesWebhooksPage() {
+export default async function FilesWebhooksPage() {
+  const { isAuthenticated } = await getServerAuth();
+  if (!isAuthenticated) {
+    // Guests never see the workspace shell — bounce to the /files landing.
+    redirect("/files");
+  }
   return (
     <>
       <RouteHeader
