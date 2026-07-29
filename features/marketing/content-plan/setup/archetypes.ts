@@ -92,6 +92,14 @@ export interface ArchetypeFamily {
   brief: string[];
   childBrief: string[];
   materialize: Materialize;
+  /**
+   * Nest this family's hub under ANOTHER family's hub (one level — a hub of
+   * hubs is a maze, not a site). How a content hub (Learn/Blog) hosts an
+   * educational family: guides at `/learn/guides/…` while commercial families
+   * keep their own top level. Set by data (explicit form) or by hub resolution
+   * in `resolveSelection` — never inferred.
+   */
+  parentKey: string | null;
 }
 
 export interface ArchetypeFoundationConfig {
@@ -310,6 +318,7 @@ const FAMILY_KEYS = [
   "brief",
   "child_brief",
   "materialize",
+  "parent_key",
 ] as const;
 const FOUNDATION_KEYS = [
   "tokens",
@@ -404,6 +413,10 @@ export function parseFamily(
     brief: asStringList(row.brief, `${where}.brief`),
     childBrief: asStringList(row.child_brief, `${where}.child_brief`),
     materialize: materializeRaw,
+    parentKey:
+      typeof row.parent_key === "string" && row.parent_key.trim()
+        ? row.parent_key.trim()
+        : null,
   };
 }
 
@@ -600,6 +613,12 @@ export interface ExpandOptions {
    * SELECTION (`concepts`); explicit-form archetypes ignore it.
    */
   catalog?: Record<string, Concept>;
+  /**
+   * Per-concept display-name picks (the Setup naming enums) — slug follows
+   * the name; overrides any `name` the archetype's selection carries.
+   * Selection-form only.
+   */
+  conceptNames?: Record<string, string>;
 }
 
 /** `concept` / `variant` stamped onto the nodes a menu item produced. */
@@ -614,12 +633,18 @@ type ProvenanceStamp = { concept: string; variant: string };
 function resolveIfSelection(
   archetype: Archetype,
   catalog: Record<string, Concept> | undefined,
+  conceptNames: Record<string, string> | undefined,
 ): {
   archetype: Archetype;
   concepts: ResolvedConcept[];
   provenance: Map<string, ProvenanceStamp>;
 } {
   if (Object.keys(archetype.concepts).length === 0) {
+    if (conceptNames && Object.keys(conceptNames).length > 0) {
+      throw new ArchetypeError(
+        `Archetype "${archetype.key}" is explicit-form (\`core\`/\`families\`); \`concept_names\` only mean something against a concept selection.`,
+      );
+    }
     return { archetype, concepts: [], provenance: new Map() };
   }
   if (!catalog || Object.keys(catalog).length === 0) {
@@ -627,7 +652,22 @@ function resolveIfSelection(
       `Archetype "${archetype.key}" is authored as a concept SELECTION but no concept catalog was supplied. The catalog lives in plan.profile.template_map.concepts on the system-org row (vertical='platform-archetypes').`,
     );
   }
-  const resolved = resolveSelection(catalog, archetype.concepts, {
+  const selection = { ...archetype.concepts };
+  for (const [conceptKey, chosen] of Object.entries(conceptNames ?? {})) {
+    const picked = selection[conceptKey];
+    if (picked === undefined) {
+      throw new ArchetypeError(
+        `concept_names names "${conceptKey}", which archetype "${archetype.key}" does not select. Selected: ${Object.keys(selection).sort().join(", ")}.`,
+      );
+    }
+    if (!String(chosen).trim()) {
+      throw new ArchetypeError(
+        `concept_names["${conceptKey}"] must be a non-empty display name.`,
+      );
+    }
+    selection[conceptKey] = { ...picked, name: chosen };
+  }
+  const resolved = resolveSelection(catalog, selection, {
     omits: archetype.omits,
     foundationOverrides: archetype.foundationOverrides,
     where: `archetype "${archetype.key}"`,
@@ -667,7 +707,7 @@ export function expandArchetype(
     archetype,
     concepts: conceptReport,
     provenance,
-  } = resolveIfSelection(source, options.catalog);
+  } = resolveIfSelection(source, options.catalog, options.conceptNames);
   const counts = familyCounts(archetype, options.counts, options.names);
 
   let home: ArchetypeCorePage | null = null;
@@ -729,10 +769,41 @@ export function expandArchetype(
 
   for (const page of otherCore) children.push(coreSpec(page, ""));
 
-  for (const family of archetype.families) {
+  // Families nest ONE level: a family with `parentKey` lands under that
+  // family's hub (`/learn/guides/…`) instead of the root. Parents are
+  // processed first so the hub node exists when a member attaches; within
+  // each pass, declaration order is preserved.
+  const familyIndex = new Map(archetype.families.map((family) => [family.key, family]));
+  const hubSpecs = new Map<string, PlanSpecNode>();
+  const hubRoutes = new Map<string, string>();
+  const orderedFamilies = [
+    ...archetype.families.filter((family) => family.parentKey === null),
+    ...archetype.families.filter((family) => family.parentKey !== null),
+  ];
+  for (const family of orderedFamilies) {
+    if (family.parentKey !== null) {
+      if (family.parentKey === family.key) {
+        throw new ArchetypeError(
+          `Family "${family.key}" declares itself as its own parent.`,
+        );
+      }
+      const parent = familyIndex.get(family.parentKey);
+      if (!parent) {
+        throw new ArchetypeError(
+          `Family "${family.key}" nests under "${family.parentKey}", which this archetype does not declare. Families: ${[...familyIndex.keys()].sort().join(", ") || "(none)"}.`,
+        );
+      }
+      if (parent.parentKey !== null) {
+        throw new ArchetypeError(
+          `Family "${family.key}" nests under "${family.parentKey}", which is itself nested. Hubs nest ONE level — a hub of hubs is a maze, not a site.`,
+        );
+      }
+    }
     const count = counts[family.key];
     const slug = family.slug ?? family.key;
-    const hubRoute = `/${slug}`;
+    const parentRoute =
+      family.parentKey !== null ? hubRoutes.get(family.parentKey)! : "";
+    const hubRoute = `${parentRoute}/${slug}`;
     const supplied = options.names?.[family.key];
     const stamp = provenance.get(`family:${family.key}`) ?? {};
     const familyChildren: PlanSpecNode[] = [];
@@ -786,7 +857,7 @@ export function expandArchetype(
       childLabels,
     });
     routes.push(hubRoute);
-    children.push({
+    const hubSpec: PlanSpecNode = {
       route: hubRoute,
       label: family.label,
       slug,
@@ -806,7 +877,14 @@ export function expandArchetype(
       role: "family_hub",
       familyKey: family.key,
       children: familyChildren,
-    });
+    };
+    hubSpecs.set(family.key, hubSpec);
+    hubRoutes.set(family.key, hubRoute);
+    if (family.parentKey !== null) {
+      hubSpecs.get(family.parentKey)!.children.push(hubSpec);
+    } else {
+      children.push(hubSpec);
+    }
   }
 
   const root: PlanSpecNode = {

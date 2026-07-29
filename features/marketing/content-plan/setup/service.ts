@@ -172,6 +172,8 @@ export async function loadArchetypeLibrary(
 export interface CommittedArchetype {
   key: string;
   counts: Record<string, number>;
+  /** Chosen display names per concept (naming enums — slug followed them). */
+  conceptNames: Record<string, string>;
   instantiatedAt: string | null;
 }
 
@@ -192,9 +194,18 @@ export function readCommittedArchetype(
       if (typeof value === "number" && Number.isInteger(value)) counts[key] = value;
     }
   }
+  const conceptNames: Record<string, string> = {};
+  if (record.concept_names && typeof record.concept_names === "object") {
+    for (const [key, value] of Object.entries(
+      record.concept_names as Record<string, unknown>,
+    )) {
+      if (typeof value === "string" && value.trim()) conceptNames[key] = value;
+    }
+  }
   return {
     key: record.key,
     counts,
+    conceptNames,
     instantiatedAt:
       typeof record.instantiated_at === "string" ? record.instantiated_at : null,
   };
@@ -212,6 +223,9 @@ export async function recordSiteArchetype(args: {
   currentSettings: unknown;
   archetypeKey: string;
   counts: Record<string, number>;
+  /** Chosen display names (naming enums); omitted from the record when empty —
+   * byte-for-byte what aidream's `_record_site_archetype` writes. */
+  conceptNames?: Record<string, string>;
 }): Promise<void> {
   const settings =
     args.currentSettings && typeof args.currentSettings === "object"
@@ -221,11 +235,15 @@ export async function recordSiteArchetype(args: {
     settings[SITE_SETTINGS_KEY] && typeof settings[SITE_SETTINGS_KEY] === "object"
       ? { ...(settings[SITE_SETTINGS_KEY] as Record<string, unknown>) }
       : {};
-  block[SITE_ARCHETYPE_KEY] = {
+  const entry: Record<string, unknown> = {
     key: args.archetypeKey,
     counts: args.counts,
     instantiated_at: new Date().toISOString(),
   };
+  if (args.conceptNames && Object.keys(args.conceptNames).length > 0) {
+    entry.concept_names = args.conceptNames;
+  }
+  block[SITE_ARCHETYPE_KEY] = entry;
   settings[SITE_SETTINGS_KEY] = block;
 
   const response = await (await authenticatedWebDb(supabase))

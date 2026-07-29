@@ -55,6 +55,8 @@ interface ExpectConcept {
   order: number;
   family_key: string | null;
   page_routes: string[];
+  name: string | null;
+  nested_under: string | null;
 }
 
 interface ExpandCase {
@@ -66,6 +68,7 @@ interface ExpandCase {
   catalog?: unknown;
   counts: Record<string, number> | null;
   names: Record<string, string[]> | null;
+  concept_names?: Record<string, string> | null;
   expect: {
     counts: Record<string, number>;
     routes: string[];
@@ -100,6 +103,7 @@ interface ErrorCase {
   archetype_map_raw?: unknown;
   counts: Record<string, number> | null;
   names: Record<string, string[]> | null;
+  concept_names?: Record<string, string> | null;
   expect_error_mentions: string[];
 }
 
@@ -190,6 +194,7 @@ for (const c of fixture.expand_cases ?? []) {
       counts: c.counts ?? undefined,
       names: c.names ?? undefined,
       catalog: parseCatalog(c),
+      conceptNames: c.concept_names ?? undefined,
     });
 
     same("counts", expanded.counts, c.expect.counts, problems);
@@ -247,6 +252,8 @@ for (const c of fixture.expand_cases ?? []) {
         order: item.order,
         family_key: item.familyKey,
         page_routes: item.pageRoutes,
+        name: item.name,
+        nested_under: item.nestedUnder,
       })),
       c.expect.concepts ?? [],
       problems,
@@ -281,6 +288,7 @@ for (const c of fixture.error_cases ?? []) {
       counts: c.counts ?? undefined,
       names: c.names ?? undefined,
       catalog: parseCatalog(c),
+      conceptNames: c.concept_names ?? undefined,
     });
   } catch (error) {
     message = error instanceof Error ? error.message : String(error);

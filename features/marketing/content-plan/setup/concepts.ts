@@ -41,6 +41,7 @@ import {
   parseCore,
   parseFamily,
   rejectUnknownKeys,
+  slugify,
   type ArchetypeCorePage,
   type ArchetypeFamily,
   type ArchetypeFoundationConfig,
@@ -102,6 +103,21 @@ export interface Concept {
   order: number;
   defaultVariant: string;
   variants: Record<string, ConceptVariant>;
+  /**
+   * NAMING ENUM (Arman, 2026-07-28): suggested display names for this concept
+   * ("Locations" / "Offices" / "Facilities"). The slug FOLLOWS the chosen name
+   * while `attributes.archetype.concept` keeps the canonical identity.
+   * Suggestions only — a selection may pick ANY custom name.
+   */
+  nameOptions: string[];
+  /**
+   * Hub CLASS this concept PROVIDES when selected (e.g. "content" for the
+   * blog/learn/education concept). Selecting it auto-nests every selected
+   * `hubMember` concept of the same class under its hub.
+   */
+  hub: string | null;
+  /** Nests under a selected hub of this class; top-level when none is selected. */
+  hubMember: string | null;
   foundation: ConceptFoundationFragment;
 }
 
@@ -113,6 +129,11 @@ export interface Concept {
 export interface ConceptSelection {
   variant: string | null;
   count: number | null;
+  /**
+   * The CHOSEN DISPLAY NAME (naming enums — Locations → "Offices"). The slug
+   * follows it; provenance keeps the canonical concept key.
+   */
+  name: string | null;
   brief: string[] | null;
   childBrief: string[] | null;
 }
@@ -126,6 +147,10 @@ export interface ResolvedConcept {
   order: number;
   familyKey: string | null;
   pageRoutes: string[];
+  /** The chosen display name, when the selection renamed this concept. */
+  name: string | null;
+  /** The hub concept this one auto-nested under, when hub resolution moved it. */
+  nestedUnder: string | null;
 }
 
 /**
@@ -162,9 +187,18 @@ const CONCEPT_KEYS = [
   "order",
   "default_variant",
   "variants",
+  "name_options",
+  "hub",
+  "hub_member",
   "foundation",
 ] as const;
-const SELECTION_KEYS = ["variant", "count", "brief", "child_brief"] as const;
+const SELECTION_KEYS = [
+  "variant",
+  "count",
+  "name",
+  "brief",
+  "child_brief",
+] as const;
 
 function emptyFragment(): ConceptFoundationFragment {
   return { tokens: null, header: null, footer: null, navEntries: null, assets: {} };
@@ -270,6 +304,17 @@ function parseConcept(
       `Concept "${label}" default_variant "${defaultVariant}" is not one of its variants: ${Object.keys(variants).sort().join(", ")}.`,
     );
   }
+  const hub =
+    typeof row.hub === "string" && row.hub.trim() ? row.hub.trim() : null;
+  const hubMember =
+    typeof row.hub_member === "string" && row.hub_member.trim()
+      ? row.hub_member.trim()
+      : null;
+  if (hub !== null && hubMember !== null) {
+    throw new ArchetypeError(
+      `Concept "${label}" declares BOTH \`hub\` and \`hub_member\` — a hub cannot also nest inside another hub.`,
+    );
+  }
   return {
     key,
     label,
@@ -277,6 +322,9 @@ function parseConcept(
     order,
     defaultVariant,
     variants,
+    nameOptions: asStringList(row.name_options, `${where}.name_options`),
+    hub,
+    hubMember,
     foundation: parseFoundationFragment(row.foundation, `${where}.foundation`),
   };
 }
@@ -313,10 +361,20 @@ export function parseConceptSelection(raw: unknown, where: string): ConceptSelec
       throw new ArchetypeError(`${where}.count: must be a whole number.`);
     }
   }
+  let name: string | null = null;
+  if (row.name !== undefined && row.name !== null) {
+    if (typeof row.name !== "string" || !row.name.trim()) {
+      throw new ArchetypeError(
+        "Selection `name` must be a non-empty display name — omit it to keep the variant's own naming.",
+      );
+    }
+    name = row.name;
+  }
   return {
     variant:
       typeof row.variant === "string" && row.variant.trim() ? row.variant.trim() : null,
     count,
+    name,
     brief:
       row.brief === undefined || row.brief === null
         ? null
@@ -416,6 +474,10 @@ export function resolveSelection(
   const assets = new Map<string, CountRef>();
   const scalars = new Map<"tokens" | "header" | "footer" | "navEntries", CountRef>();
 
+  // concept key → index into `families` / `resolved`, for hub nesting below.
+  const familyIndexByConcept = new Map<string, number>();
+  const resolvedIndexByConcept = new Map<string, number>();
+
   for (const key of ordered) {
     const concept = catalog[key];
     const picked = selection[key];
@@ -426,6 +488,7 @@ export function resolveSelection(
         `${where}: concept "${key}" has no variant "${variantKey}". Variants: ${Object.keys(concept.variants).sort().join(", ")}.`,
       );
     }
+    const chosenName = picked.name !== null ? picked.name.trim() : null;
 
     if (variant.family !== null) {
       let family: ArchetypeFamily = { ...variant.family };
@@ -439,7 +502,14 @@ export function resolveSelection(
       if (picked.childBrief !== null) {
         family = { ...family, childBrief: [...picked.childBrief] };
       }
+      if (chosenName !== null) {
+        // The slug FOLLOWS the chosen name; the family KEY stays canonical so
+        // `=<key>.count` references keep resolving.
+        family = { ...family, label: chosenName, slug: slugify(chosenName) };
+      }
+      familyIndexByConcept.set(key, families.length);
       families.push(family);
+      resolvedIndexByConcept.set(key, resolved.length);
       resolved.push({
         concept: key,
         label: concept.label,
@@ -448,6 +518,8 @@ export function resolveSelection(
         order: concept.order,
         familyKey: family.key,
         pageRoutes: [],
+        name: chosenName,
+        nestedUnder: null,
       });
     } else {
       if (picked.count !== null) {
@@ -460,8 +532,23 @@ export function resolveSelection(
           `${where}: concept "${key}" variant "${variantKey}" has no family children, so child_brief has nothing to apply to.`,
         );
       }
-      const pages = variant.pages.map((page) => withBrief(page, picked.brief));
+      let pages = variant.pages.map((page) => withBrief(page, picked.brief));
+      if (chosenName !== null) {
+        if (pages.length !== 1) {
+          throw new ArchetypeError(
+            `${where}: concept "${key}" variant "${variantKey}" names ${pages.length} top-level pages, so a chosen \`name\` has nothing unambiguous to apply to.`,
+          );
+        }
+        const top = pages[0];
+        // Home keeps its null slug — a name changes only its label.
+        pages = [
+          top.slug !== null
+            ? { ...top, label: chosenName, slug: slugify(chosenName) }
+            : { ...top, label: chosenName },
+        ];
+      }
       core.push(...pages);
+      resolvedIndexByConcept.set(key, resolved.length);
       resolved.push({
         concept: key,
         label: concept.label,
@@ -470,6 +557,8 @@ export function resolveSelection(
         order: concept.order,
         familyKey: null,
         pageRoutes: pageRoutes(pages),
+        name: chosenName,
+        nestedUnder: null,
       });
     }
 
@@ -481,6 +570,50 @@ export function resolveSelection(
       for (const [assetKey, raw] of Object.entries(fragment.assets)) {
         assets.set(assetKey, raw);
       }
+    }
+  }
+
+  // ── hub auto-nesting (Arman, 2026-07-28: "choosing a hub auto-nests its
+  // tree") ─ a selected concept declaring `hub=<class>` hosts every selected
+  // `hubMember=<class>` concept: the member's family nests under the hub's
+  // family (/learn/guides/…). Members with no selected hub keep their own top
+  // level; commercial concepts (no hubMember) are never moved.
+  const hubConceptByClass = new Map<string, string>();
+  for (const key of ordered) {
+    const hubClass = catalog[key].hub;
+    if (hubClass === null) continue;
+    const existing = hubConceptByClass.get(hubClass);
+    if (existing !== undefined) {
+      throw new ArchetypeError(
+        `${where}: concepts "${existing}" and "${key}" both provide the "${hubClass}" hub — a selection takes at most one hub per class.`,
+      );
+    }
+    hubConceptByClass.set(hubClass, key);
+  }
+  for (const key of ordered) {
+    const memberClass = catalog[key].hubMember;
+    if (memberClass === null) continue;
+    const hubKey = hubConceptByClass.get(memberClass);
+    if (hubKey === undefined) continue;
+    const hubFamilyIndex = familyIndexByConcept.get(hubKey);
+    if (hubFamilyIndex === undefined) {
+      throw new ArchetypeError(
+        `${where}: concept "${hubKey}" provides the "${memberClass}" hub but its selected variant names fixed pages — a hub must be a count-bearing (family) variant so member trees can nest under it.`,
+      );
+    }
+    const memberFamilyIndex = familyIndexByConcept.get(key);
+    if (memberFamilyIndex === undefined) {
+      throw new ArchetypeError(
+        `${where}: concept "${key}" nests under the "${memberClass}" hub but its selected variant names fixed pages — hub members must be count-bearing (family) variants.`,
+      );
+    }
+    families[memberFamilyIndex] = {
+      ...families[memberFamilyIndex],
+      parentKey: families[hubFamilyIndex].key,
+    };
+    const reportIndex = resolvedIndexByConcept.get(key);
+    if (reportIndex !== undefined) {
+      resolved[reportIndex] = { ...resolved[reportIndex], nestedUnder: hubKey };
     }
   }
 
