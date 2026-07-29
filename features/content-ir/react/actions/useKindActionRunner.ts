@@ -43,6 +43,26 @@ export type RunKindAction = (
   input: unknown,
 ) => Promise<KindActionResult>;
 
+/**
+ * The in-flight identity for the double-fire guard.
+ *
+ * Keying by action key ALONE turns one slow action into a global lock: an
+ * `apply_surface_write` whose policy is `ask` holds the key for as long as the
+ * user reads the dialog, and every OTHER write from every block on every
+ * surface is refused meanwhile. So the guard keys by action + target when the
+ * input names one. Still per-target-idempotent (a double-click can't fire an
+ * agent or a write twice), without the cross-talk.
+ */
+function inFlightKey(key: string, input: unknown): string {
+  if (input && typeof input === "object") {
+    const target = (input as { target?: unknown }).target;
+    if (typeof target === "string" && target) return `${key}::${target}`;
+    const agentId = (input as { agentId?: unknown }).agentId;
+    if (typeof agentId === "string" && agentId) return `${key}::${agentId}`;
+  }
+  return key;
+}
+
 export function useKindActionRunner(): RunKindAction {
   const { launchAgent } = useAgentLauncher();
   const userId = useAppSelector(selectUserId);
@@ -62,10 +82,11 @@ export function useKindActionRunner(): RunKindAction {
         return { ok: false, error };
       }
 
-      if (inFlight.current.has(key)) {
+      const guardKey = inFlightKey(key, input);
+      if (inFlight.current.has(guardKey)) {
         return { ok: false, error: `"${key}" is already running.` };
       }
-      inFlight.current.add(key);
+      inFlight.current.add(guardKey);
 
       try {
         return await def.handler(input, { launchAgent, userId });
@@ -80,7 +101,7 @@ export function useKindActionRunner(): RunKindAction {
         });
         return { ok: false, error: message };
       } finally {
-        inFlight.current.delete(key);
+        inFlight.current.delete(guardKey);
       }
     },
     [launchAgent, userId],

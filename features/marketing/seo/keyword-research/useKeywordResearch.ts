@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import {
   describeBackendFailure,
   parseCallApiError,
@@ -161,6 +162,8 @@ export function useKeywordResearch(organizationId?: string | null) {
   // this cluster instead of the whole universal library.
   const [clusterPhrases, setClusterPhrases] = useState<string[] | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  /** The adopted `activeRequests` row this hook owns, so it can reap it. */
+  const adoptedRequestIdRef = useRef<string | null>(null);
 
   const reload = useCallback(async (searchValue: string) => {
     abortRef.current?.abort();
@@ -187,6 +190,19 @@ export function useKeywordResearch(organizationId?: string | null) {
     const timer = setTimeout(() => void reload(search), search ? 250 : 0);
     return () => clearTimeout(timer);
   }, [search, reload]);
+
+  // Leaving the page reaps this hook's adopted row too — the work keeps running
+  // server-side (a disconnect never stops it) and is re-read from the durable
+  // artifact on return, so the streaming state has nothing left to serve.
+  useEffect(
+    () => () => {
+      if (adoptedRequestIdRef.current) {
+        dispatch(removeRequest(adoptedRequestIdRef.current));
+        adoptedRequestIdRef.current = null;
+      }
+    },
+    [dispatch],
+  );
 
   const consumeResearchStream = useCallback(
     async (phrase: string, request: ResearchStreamRequest) => {
@@ -296,11 +312,27 @@ export function useKeywordResearch(organizationId?: string | null) {
       // it here: the agent's content lands in `activeRequests` under a real
       // requestId, so the canonical pipeline renders it. This surface still
       // sees every event via `onEvent` for its own `seo.*` progress.
+      // ONE controller for both halves: `callApi` gives it to the fetch, the
+      // adopter gives it to the stream watchdog. If they are not the same
+      // object a heartbeat timeout aborts nothing and the response body leaks.
+      // Drop the PREVIOUS run's adopted row before starting a new one. Nothing
+      // else reaps it — an adopted row has no instance whose teardown would
+      // sweep it, and each row holds that run's full raw event log, so a long
+      // session would accumulate one permanently per run. Read from a ref, not
+      // a state updater: an updater must stay pure (React may call it twice).
+      if (adoptedRequestIdRef.current) {
+        dispatch(removeRequest(adoptedRequestIdRef.current));
+        adoptedRequestIdRef.current = null;
+      }
+      const streamAbort = new AbortController();
       const consumeStream = dispatch(
         adoptForeignStream({
-          onAdopted: ({ requestId }) =>
-            setRun((current) => ({ ...current, requestId })),
+          onAdopted: ({ requestId }) => {
+            adoptedRequestIdRef.current = requestId;
+            setRun((current) => ({ ...current, requestId }));
+          },
           onEvent: onStreamEvent,
+          abortController: streamAbort,
         }),
       );
       const result = await dispatch(
@@ -314,6 +346,7 @@ export function useKeywordResearch(organizationId?: string | null) {
                 : undefined,
               stream: true,
               consumeStream,
+              signal: streamAbort.signal,
             })
           : callApi({
               path: request.path,
@@ -321,6 +354,7 @@ export function useKeywordResearch(organizationId?: string | null) {
               pathParams: request.pathParams,
               stream: true,
               consumeStream,
+              signal: streamAbort.signal,
             }),
       );
       if (result.error) {

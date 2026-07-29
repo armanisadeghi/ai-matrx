@@ -270,6 +270,18 @@ interface ProcessStreamArgs {
    * Agent mode leaves this false and keeps the strict integrity guard.
    */
   forceLocalConversationId?: boolean;
+  /**
+   * Skip the chat-transcript commit half entirely (message reservation
+   * assembly, the client-temp fallback record, materialization).
+   *
+   * Set by `adoptForeignStream`: an adopted pipeline stream has no instance and
+   * no conversation row, and a `system_run` server agent deliberately reserves
+   * no `cx_message` rows — so the commit half would write a phantom message
+   * record and fire the "no assistant reservation arrived" diagnostic on every
+   * successful run. Streaming state in `activeRequests` is unaffected; that is
+   * what an adopted consumer reads.
+   */
+  skipTranscriptCommit?: boolean;
 }
 
 export interface ProcessStreamResult {
@@ -299,6 +311,7 @@ export async function processStream({
   maxLifetimeMs,
   userMessageClientTempId,
   forceLocalConversationId = false,
+  skipTranscriptCommit = false,
 }: ProcessStreamArgs): Promise<ProcessStreamResult> {
   // Helper for the manual execution path: when forceLocalConversationId is
   // set, stream-event parent_refs.conversation_id is ignored and the local
@@ -2527,6 +2540,24 @@ export async function processStream({
       }),
     );
   };
+
+  // An ADOPTED stream has no chat transcript: no instance, no conversation row,
+  // and (for a `system_run` pipeline agent) no `cx_message` reservations by
+  // design. Running the commit half would fabricate a phantom message record
+  // for a conversation that does not exist AND fire the "no assistant
+  // reservation arrived" alarm below on every single successful run — a
+  // guaranteed false positive, which is how a real alarm channel gets ignored.
+  // The content is already in `activeRequests`, which is all an adopted
+  // consumer reads.
+  if (skipTranscriptCommit) {
+    // The profiler already reported above; nothing else to unwind.
+    return {
+      conversationId: cxConversationConfirmed ? conversationId : null,
+      completionStats,
+      tokenUsage,
+      finishReason,
+    };
+  }
 
   if (sortedTurns.length === 1) {
     const turn = sortedTurns[0];

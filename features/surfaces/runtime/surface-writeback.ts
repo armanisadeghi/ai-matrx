@@ -59,13 +59,19 @@ function resolveHandlers(runtime: {
 /** The envelope every write returns. A skip/failure is never a silent pass. */
 export type SurfaceWriteResult =
   | { ok: true; surfaceName: string; target: SurfaceWriteTarget }
-  | { ok: false; error: string }
-  /**
-   * The user was asked and said no. NOT a failure — nothing toasts, nothing is
-   * captured. A caller that treats decline as an error trains users to stop
-   * declining, which is the opposite of what the ask policy is for.
-   */
-  | { ok: false; declined: true; error: string };
+  | {
+      ok: false;
+      error: string;
+      /**
+       * The user was asked and said no. NOT a failure — nothing toasts,
+       * nothing is captured. A caller that treats decline as an error trains
+       * users to stop declining, which is the opposite of what the ask policy
+       * is for. Optional on the single failure member so `if (!r.ok &&
+       * r.declined)` actually narrows — a second `ok:false` member would make
+       * the property unreachable.
+       */
+      declined?: true;
+    };
 
 /**
  * Who is driving this write.
@@ -112,26 +118,28 @@ function declined(target: SurfaceWriteTarget): SurfaceWriteResult {
  * Decide whether an agent-originated write may proceed. User-origin writes
  * never reach here.
  *
- * Returns true to apply, false to stop. A `manual` refusal is LOUD — an agent
- * attempting a write the surface never opened up is a real contract break the
- * author needs to see, not a silent no-op.
+ * Returns `true` to apply, or the exact `SurfaceWriteResult` to hand back. A
+ * `manual` refusal is LOUD — an agent attempting a write the surface never
+ * opened up is a real contract break the author needs to see. A DECLINE is
+ * silent: the user answered, and that is not a defect.
  */
 async function agentWriteAllowed(
   target: SurfaceWriteTarget,
   surfaceName: string,
   actorLabel: string | undefined,
-): Promise<boolean> {
+): Promise<SurfaceWriteResult | true> {
   const policy = target.applyPolicy ?? "manual";
   if (policy === "auto") return true;
   if (policy === "manual") {
-    fail(
+    // Return `fail`'s OWN result so the toast the user sees and the error the
+    // caller reports are the same sentence.
+    return fail(
       `"${target.label}" is not agent-writable on this surface (applyPolicy: manual). A person has to make this change.`,
       { targetName: target.name, surfaceName, policy },
     );
-    return false;
   }
   const who = actorLabel?.trim() ? actorLabel.trim() : "An agent";
-  return confirm({
+  const approved = await confirm({
     title: `${who} wants to change ${target.label}`,
     description:
       target.mode === "entity"
@@ -142,6 +150,7 @@ async function agentWriteAllowed(
     confirmLabel: "Apply",
     cancelLabel: "Keep as is",
   });
+  return approved ? true : declined(target);
 }
 
 function findDeclaredTarget(
@@ -202,21 +211,14 @@ export async function applySurfaceWrite(
     }
 
     if ((opts?.origin ?? "user") === "agent") {
-      const allowed = await agentWriteAllowed(
+      // Returns `true` to proceed, or the exact result to hand back (already
+      // reported for a refusal, deliberately silent for a decline).
+      const verdict = await agentWriteAllowed(
         target,
         runtime.surfaceName,
         opts?.actorLabel,
       );
-      // `agentWriteAllowed` already reported a manual refusal; a decline is
-      // deliberately quiet.
-      if (!allowed) {
-        return (target.applyPolicy ?? "manual") === "manual"
-          ? {
-              ok: false,
-              error: `"${target.label}" is not agent-writable on this surface.`,
-            }
-          : declined(target);
-      }
+      if (verdict !== true) return verdict;
     }
 
     try {

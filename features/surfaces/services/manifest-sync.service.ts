@@ -1029,8 +1029,6 @@ export async function applyManifestSync(
   }
 
   // 5. Re-run drift for the post-sync report.
-  const driftAfter = await computeDriftReport(sb);
-
   // 4c. Delete stale write targets — a target removed from a manifest must
   //     stop being advertised to agents, or the server keeps offering a write
   //     nothing can service.
@@ -1067,6 +1065,8 @@ export async function applyManifestSync(
       });
     }
   }
+
+  const driftAfter = await computeDriftReport(sb);
 
   return {
     upserted,

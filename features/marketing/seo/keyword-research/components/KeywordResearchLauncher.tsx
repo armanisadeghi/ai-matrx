@@ -139,7 +139,7 @@ export default function KeywordResearchLauncher({
           components key-by-key while streaming — never raw JSON. Stays
           visible after completion or failure so the run never vanishes while
           the user is trying to understand what happened. */}
-      {run.status !== "idle" && run.streamKey && (
+      {run.status !== "idle" && (
         <div
           className={`mt-2 min-h-16 overflow-y-auto rounded-md border border-border bg-muted/20 ${feedMaxHeightClassName}`}
           aria-live="polite"
