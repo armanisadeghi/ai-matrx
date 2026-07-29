@@ -107,7 +107,6 @@ features/html-pages/
 └── README.md                              # This file
 ```
 
-
 ---
 
 ## Core Concepts
@@ -118,10 +117,10 @@ All HTML is derived from three source files:
 
 ```typescript
 interface HtmlSourceFiles {
-  contentHtml: string;        // Body content only
-  wordPressCSS: string;       // CSS rules
-  metadata: HtmlMetadata;     // SEO metadata
-  scripts?: string;           // Future: LD+JSON, etc.
+  contentHtml: string; // Body content only
+  wordPressCSS: string; // CSS rules
+  metadata: HtmlMetadata; // SEO metadata
+  scripts?: string; // Future: LD+JSON, etc.
 }
 ```
 
@@ -131,7 +130,7 @@ interface HtmlSourceFiles {
 const completeHtml = generateCompleteHtmlFromSources({
   contentHtml,
   wordPressCSS,
-  metadata
+  metadata,
 });
 ```
 
@@ -149,7 +148,13 @@ This allows intelligent regeneration—only regenerate when needed.
 ```typescript
 if (publishedPageId) {
   // Update existing page
-  result = await updateHTMLPage(publishedPageId, html, metaTitle, metaDesc, metaFields);
+  result = await updateHTMLPage(
+    publishedPageId,
+    html,
+    metaTitle,
+    metaDesc,
+    metaFields,
+  );
 } else {
   // Create new page (first time only)
   result = await createHTMLPage(html, metaTitle, metaDesc, metaFields);
@@ -174,6 +179,7 @@ interface HtmlMetadata {
 ```
 
 Metadata can be:
+
 - Auto-extracted from content (first H1/H2 becomes title, first paragraph becomes description)
 - Manually edited in the Publish tab
 - Stored in the database with the page
@@ -214,7 +220,7 @@ function MyComponent() {
   return (
     <>
       <button onClick={() => setIsOpen(true)}>Edit & Publish</button>
-      
+
       {isOpen && (
         <HtmlPreviewFullScreenEditor
           isOpen={isOpen}
@@ -274,13 +280,12 @@ Original modal component (preserved for backward compatibility):
 All tabs can be used independently:
 
 ```tsx
-import { SavePageTab, HtmlCodeFilesTab } from "@/features/html-pages/components/tabs";
+import {
+  SavePageTab,
+  HtmlCodeFilesTab,
+} from "@/features/html-pages/components/tabs";
 
-<SavePageTab
-  state={htmlPreviewState}
-  actions={htmlPreviewState}
-  user={user}
-/>
+<SavePageTab state={htmlPreviewState} actions={htmlPreviewState} user={user} />;
 ```
 
 ---
@@ -306,6 +311,7 @@ const htmlPreviewState = useHtmlPreviewState({
 **Returns:** Combined state and actions object with:
 
 **State:**
+
 - `contentHtml`, `wordPressCSS`, `metadata` - Source files
 - `currentMarkdown`, `initialMarkdown` - Markdown state
 - `isMarkdownDirty`, `isContentDirty` - Dirty flags
@@ -313,6 +319,7 @@ const htmlPreviewState = useHtmlPreviewState({
 - `isCreating`, `error` - System state
 
 **Actions:**
+
 - `handleRegenerateHtml(useMetadata?)` - Regenerate and publish
 - `handleSavePage()` - Publish with metadata
 - `handleRefreshMarkdown()` - Reset to original
@@ -333,7 +340,7 @@ const {
   getPage,
   isCreating,
   error,
-  clearError
+  clearError,
 } = useHTMLPages(userId);
 ```
 
@@ -346,15 +353,15 @@ const {
 **Database service** for HTML pages CRUD operations:
 
 ```javascript
-import { HTMLPageService } from '@/features/html-pages/services/htmlPageService';
+import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
 
 // Create page
 const result = await HTMLPageService.createPage(
   htmlContent,
-  metaTitle,        // Required: SEO meta title
-  metaDescription,  // Optional: SEO meta description
+  metaTitle, // Required: SEO meta title
+  metaDescription, // Optional: SEO meta description
   userId,
-  metaFields        // { metaKeywords, ogImage, canonicalUrl, isIndexable }
+  metaFields, // { metaKeywords, ogImage, canonicalUrl, isIndexable }
 );
 // Returns: { success, pageId, url, metaTitle, metaDescription, isIndexable, createdAt }
 
@@ -362,10 +369,10 @@ const result = await HTMLPageService.createPage(
 const result = await HTMLPageService.updatePage(
   pageId,
   htmlContent,
-  metaTitle,        // Required: SEO meta title
-  metaDescription,  // Optional: SEO meta description
+  metaTitle, // Required: SEO meta title
+  metaDescription, // Optional: SEO meta description
   userId,
-  metaFields        // { metaKeywords, ogImage, canonicalUrl, isIndexable }
+  metaFields, // { metaKeywords, ogImage, canonicalUrl, isIndexable }
 );
 
 // Get user's pages (returns meta_title, meta_description, is_indexable)
@@ -476,7 +483,7 @@ function PublishMarkdown() {
   return (
     <>
       <button onClick={() => setIsOpen(true)}>
-        {publishedPageId ? 'Edit Page' : 'Create Page'}
+        {publishedPageId ? "Edit Page" : "Create Page"}
       </button>
 
       {isOpen && (
@@ -494,25 +501,25 @@ function PublishMarkdown() {
 ### Example 2: Direct Service Usage
 
 ```javascript
-import { HTMLPageService } from '@/features/html-pages/services/htmlPageService';
+import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
 
 async function publishPage(userId) {
-  const htmlContent = '<h1>Hello World</h1><p>My content</p>';
-  
+  const htmlContent = "<h1>Hello World</h1><p>My content</p>";
+
   const result = await HTMLPageService.createPage(
     htmlContent,
-    'My Page Title',              // metaTitle (required)
-    'A short description',        // metaDescription (optional)
+    "My Page Title", // metaTitle (required)
+    "A short description", // metaDescription (optional)
     userId,
     {
-      metaKeywords: 'keyword1, keyword2',
-      ogImage: 'https://example.com/image.jpg',
-      canonicalUrl: 'https://example.com/canonical',
-      isIndexable: false  // Default: false (noindex)
-    }
+      metaKeywords: "keyword1, keyword2",
+      ogImage: "https://example.com/image.jpg",
+      canonicalUrl: "https://example.com/canonical",
+      isIndexable: false, // Default: false (noindex)
+    },
   );
 
-  console.log('Published at:', result.url);
+  console.log("Published at:", result.url);
   // https://mymatrx.com/p/uuid
 }
 ```
@@ -533,7 +540,7 @@ function CustomEditor() {
         actions={htmlPreviewState}
         user={user}
       />
-      
+
       <SavePageTab
         state={htmlPreviewState}
         actions={htmlPreviewState}
@@ -559,17 +566,17 @@ CREATE TABLE html_pages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   html_content TEXT NOT NULL,
   user_id UUID NOT NULL,
-  
+
   -- SEO Metadata (unified fields)
   meta_title VARCHAR(255) NOT NULL,
   meta_description TEXT,
   meta_keywords TEXT,
   og_image TEXT,
   canonical_url TEXT,
-  
+
   -- Search Engine Indexing Control
   is_indexable BOOLEAN DEFAULT FALSE,
-  
+
   -- Timestamps
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -581,6 +588,7 @@ CREATE INDEX idx_html_pages_created_at ON html_pages(created_at DESC);
 ```
 
 **Important Schema Notes:**
+
 - `meta_title` and `meta_description` are now the **only** title/description fields (no duplication)
 - `is_indexable` defaults to `FALSE` to prevent duplicate content issues with search engines
 - Pages are **noindex by default** - only set `is_indexable: true` for pages you want indexed
@@ -600,6 +608,7 @@ architecture `lib/supabase-html.ts` implemented and was removed 2026-07-09 (zero
 ### URL Format
 
 Published pages are accessible at:
+
 ```
 https://mymatrx.com/p/{page-uuid}
 ```
@@ -634,7 +643,7 @@ NEXT_PUBLIC_HTML_SITE_URL=https://mymatrx.com
 ✅ **Reset Support**: Revert to original markdown anytime  
 ✅ **Live Preview**: See exactly what will be published  
 ✅ **Copy Operations**: Multiple formats for different use cases  
-✅ **User-Scoped**: All pages are tied to user accounts with RLS  
+✅ **User-Scoped**: All pages are tied to user accounts with RLS
 
 ---
 
@@ -707,6 +716,14 @@ directly inside `<tbody>`.
 description field previously leaked the full (13KB+) HTML document into `content` because the scope
 builder always read the meta-description textarea's selection against the HTML buffer; fixed in
 `buildHtmlPageContextData.ts` / `useHtmlPageSurfaceScope.ts`.
+
+## Canonical SEO metadata rules (2026-07-29)
+
+All HTML page editors and save dialogs import title/description counts,
+recommendations, and limits from `features/marketing/seo/serp/metrics.ts`.
+They must not declare local SEO thresholds. The current policy is title
+15–60 characters and 600px on desktop/mobile; description 70–160 characters
+and 920px on desktop/mobile.
 
 **Known limitation — Monaco owns right-click on its own text.** `SmallCodeEditor`'s underlying Monaco
 instance stops the native `contextmenu` event before it reaches our `EditableContextMenu` wrapper, so

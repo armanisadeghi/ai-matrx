@@ -39,6 +39,15 @@ import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallC
 import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  getCharacterCountStatus,
+  getSEORecommendation,
+} from "@/features/html-pages/utils/html-preview-utils";
+import {
+  countSeoCharacters,
+  DESCRIPTION_LIMITS,
+  TITLE_LIMITS,
+} from "@/features/marketing/seo/serp/metrics";
 
 interface HtmlPreviewModalProps {
   isOpen: boolean;
@@ -164,52 +173,6 @@ ${wordPressCSS}
   const extractBodyContent = (completeHtml: string) => {
     const match = completeHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
     return match ? match[1] : htmlContent;
-  };
-
-  // SEO helper functions
-  const getCharacterCountStatus = (
-    text: string,
-    ideal: number,
-    max: number,
-  ) => {
-    const length = text.length;
-    if (length === 0) return { status: "empty", color: "text-gray-400" };
-    if (length <= ideal)
-      return { status: "good", color: "text-green-600 dark:text-green-400" };
-    if (length <= max)
-      return {
-        status: "warning",
-        color: "text-yellow-600 dark:text-yellow-400",
-      };
-    return { status: "error", color: "text-red-600 dark:text-red-400" };
-  };
-
-  const getSEORecommendation = (text: string, field: string) => {
-    const length = text.length;
-    switch (field) {
-      case "title":
-        if (length === 0) return "Page title is required";
-        if (length < 30) return "Consider a longer, more descriptive title";
-        if (length > 60) return "Title may be truncated in search results";
-        return "Good title length";
-      case "description":
-        if (length === 0) return "Description helps with SEO";
-        if (length < 120) return "Consider a longer description";
-        if (length > 160) return "Description may be truncated";
-        return "Good description length";
-      case "metaTitle":
-        if (length === 0) return "Will use page title if empty";
-        if (length < 30) return "Consider a longer meta title";
-        if (length > 60) return "Meta title may be truncated";
-        return "Good meta title length";
-      case "metaDescription":
-        if (length === 0) return "Will use page description if empty";
-        if (length < 120) return "Consider a longer meta description";
-        if (length > 160) return "Meta description may be truncated";
-        return "Good meta description length";
-      default:
-        return "";
-    }
   };
 
   // Function to extract title from HTML content
@@ -925,9 +888,10 @@ ${wordPressCSS}
                           />
                           <div className="flex justify-between items-center mt-1">
                             <span
-                              className={`text-xs ${getCharacterCountStatus(pageTitle, 50, 60).color}`}
+                              className={`text-xs ${getCharacterCountStatus(pageTitle, "title").color}`}
                             >
-                              {pageTitle.length}/60 characters
+                              {countSeoCharacters(pageTitle)}/
+                              {TITLE_LIMITS.maxChars} characters
                             </span>
                             <span className="text-xs text-gray-500 dark:text-gray-400">
                               {getSEORecommendation(pageTitle, "title")}
@@ -950,9 +914,10 @@ ${wordPressCSS}
                           />
                           <div className="flex justify-between items-center mt-1">
                             <span
-                              className={`text-xs ${getCharacterCountStatus(pageDescription, 140, 160).color}`}
+                              className={`text-xs ${getCharacterCountStatus(pageDescription, "description").color}`}
                             >
-                              {pageDescription.length}/160 characters
+                              {countSeoCharacters(pageDescription)}/
+                              {DESCRIPTION_LIMITS.maxChars} characters
                             </span>
                             <span className="text-xs text-gray-500 dark:text-gray-400">
                               {getSEORecommendation(
@@ -999,9 +964,10 @@ ${wordPressCSS}
                               />
                               <div className="flex justify-between items-center mt-1">
                                 <span
-                                  className={`text-xs ${getCharacterCountStatus(metaTitle, 50, 60).color}`}
+                                  className={`text-xs ${getCharacterCountStatus(metaTitle, "title").color}`}
                                 >
-                                  {metaTitle.length}/60 characters
+                                  {countSeoCharacters(metaTitle)}/
+                                  {TITLE_LIMITS.maxChars} characters
                                 </span>
                                 <span className="text-xs text-gray-500 dark:text-gray-400">
                                   {getSEORecommendation(metaTitle, "metaTitle")}
@@ -1026,9 +992,10 @@ ${wordPressCSS}
                               />
                               <div className="flex justify-between items-center mt-1">
                                 <span
-                                  className={`text-xs ${getCharacterCountStatus(metaDescription, 140, 160).color}`}
+                                  className={`text-xs ${getCharacterCountStatus(metaDescription, "description").color}`}
                                 >
-                                  {metaDescription.length}/160 characters
+                                  {countSeoCharacters(metaDescription)}/
+                                  {DESCRIPTION_LIMITS.maxChars} characters
                                 </span>
                                 <span className="text-xs text-gray-500 dark:text-gray-400">
                                   {getSEORecommendation(
@@ -1084,8 +1051,8 @@ ${wordPressCSS}
                               />
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 Drop one image — auto-generates a 1200×630 OG
-                                card, 1080² square, portrait, story, and
-                                YouTube thumbnail.
+                                card, 1080² square, portrait, story, and YouTube
+                                thumbnail.
                               </p>
                             </div>
 
@@ -1257,9 +1224,10 @@ ${wordPressCSS}
                         />
                         <div className="flex justify-between items-center mt-1">
                           <span
-                            className={`text-xs ${getCharacterCountStatus(pageTitle, 50, 60).color}`}
+                            className={`text-xs ${getCharacterCountStatus(pageTitle, "title").color}`}
                           >
-                            {pageTitle.length}/60 characters
+                            {countSeoCharacters(pageTitle)}/
+                            {TITLE_LIMITS.maxChars} characters
                           </span>
                           <span className="text-xs text-gray-500 dark:text-gray-400">
                             {getSEORecommendation(pageTitle, "title")}
@@ -1282,9 +1250,10 @@ ${wordPressCSS}
                         />
                         <div className="flex justify-between items-center mt-1">
                           <span
-                            className={`text-xs ${getCharacterCountStatus(pageDescription, 140, 160).color}`}
+                            className={`text-xs ${getCharacterCountStatus(pageDescription, "description").color}`}
                           >
-                            {pageDescription.length}/160 characters
+                            {countSeoCharacters(pageDescription)}/
+                            {DESCRIPTION_LIMITS.maxChars} characters
                           </span>
                           <span className="text-xs text-gray-500 dark:text-gray-400">
                             {getSEORecommendation(
@@ -1329,9 +1298,10 @@ ${wordPressCSS}
                             />
                             <div className="flex justify-between items-center mt-1">
                               <span
-                                className={`text-xs ${getCharacterCountStatus(metaTitle, 50, 60).color}`}
+                                className={`text-xs ${getCharacterCountStatus(metaTitle, "title").color}`}
                               >
-                                {metaTitle.length}/60 characters
+                                {countSeoCharacters(metaTitle)}/
+                                {TITLE_LIMITS.maxChars} characters
                               </span>
                               <span className="text-xs text-gray-500 dark:text-gray-400">
                                 {getSEORecommendation(metaTitle, "metaTitle")}
@@ -1356,9 +1326,10 @@ ${wordPressCSS}
                             />
                             <div className="flex justify-between items-center mt-1">
                               <span
-                                className={`text-xs ${getCharacterCountStatus(metaDescription, 140, 160).color}`}
+                                className={`text-xs ${getCharacterCountStatus(metaDescription, "description").color}`}
                               >
-                                {metaDescription.length}/160 characters
+                                {countSeoCharacters(metaDescription)}/
+                                {DESCRIPTION_LIMITS.maxChars} characters
                               </span>
                               <span className="text-xs text-gray-500 dark:text-gray-400">
                                 {getSEORecommendation(

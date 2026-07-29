@@ -43,6 +43,11 @@ import {
   RotateCcw,
   ArrowLeft,
 } from "lucide-react";
+import {
+  countSeoCharacters,
+  DESCRIPTION_LIMITS,
+  TITLE_LIMITS,
+} from "@/features/marketing/seo/serp/metrics";
 
 interface PageEditorProps {
   siteId: string;
@@ -364,14 +369,13 @@ export default function PageEditor({
   // Most recent restorable version — the highest version_number that isn't the
   // page's current content. Drives the menu's one-click "Restore Previous
   // Version" through the same ConfirmDialog the Versions tab uses.
-  const latestRestorableVersion =
-    versions.versions
-      .filter((v) => !v.is_current)
-      .reduce<number | null>(
-        (max, v) =>
-          max === null || v.version_number > max ? v.version_number : max,
-        null,
-      );
+  const latestRestorableVersion = versions.versions
+    .filter((v) => !v.is_current)
+    .reduce<number | null>(
+      (max, v) =>
+        max === null || v.version_number > max ? v.version_number : max,
+      null,
+    );
 
   const pageExtraSections = createCmsPageExtraSections({
     isNew,
@@ -558,346 +562,348 @@ export default function PageEditor({
       {(() => {
         const tabPanels = (
           <div className="flex-1 min-h-0 overflow-hidden">
-          {/* HTML */}
-          {activeTab === "html" && (
-            <div className="relative h-full">
-              <ProTextarea
-                ref={textareaRef}
-                value={htmlContent}
-                onChange={(e) => setHtmlContent(e.target.value)}
-                placeholder="<div>\n  <h1>Your page content here…</h1>\n</div>"
-                className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
-                wrapperClassName="absolute inset-0"
-                surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
-                getApplicationScope={getApplicationScope}
-              />
-            </div>
-          )}
-
-          {/* CSS */}
-          {activeTab === "css" && (
-            <div className="relative h-full">
-              <ProTextarea
-                ref={textareaRef}
-                value={cssContent}
-                onChange={(e) => setCssContent(e.target.value)}
-                placeholder="/* Page-specific styles */\n\nh1 {\n  color: #333;\n}"
-                className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
-                wrapperClassName="absolute inset-0"
-                surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
-                getApplicationScope={getApplicationScope}
-              />
-            </div>
-          )}
-
-          {/* JS */}
-          {activeTab === "js" && (
-            <div className="relative h-full">
-              <ProTextarea
-                ref={textareaRef}
-                value={jsContent}
-                onChange={(e) => setJsContent(e.target.value)}
-                placeholder="// Page-specific JavaScript\n\nconsole.log('Page loaded');"
-                className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
-                wrapperClassName="absolute inset-0"
-                surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
-                getApplicationScope={getApplicationScope}
-              />
-            </div>
-          )}
-
-          {/* Preview */}
-          {activeTab === "preview" && (
-            <div className="relative h-full bg-white">
-              <iframe
-                srcDoc={previewHtml}
-                title="Page Preview"
-                className="absolute inset-0 w-full h-full border-0"
-                sandbox="allow-scripts"
-              />
-            </div>
-          )}
-
-          {/* SEO */}
-          {activeTab === "seo" && (
-            <div className="h-full overflow-auto">
-              <div className="p-6 max-w-2xl mx-auto space-y-5">
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">
-                    Meta Title
-                    <span className="text-muted-foreground font-normal ml-2 text-xs">
-                      ({(metaTitle || title).length}/60 chars)
-                    </span>
-                  </label>
-                  <ProInput
-                    value={metaTitle}
-                    onChange={(e) => setMetaTitle(e.target.value)}
-                    placeholder={title || "SEO title…"}
-                    className="text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">
-                    Meta Description
-                    <span className="text-muted-foreground font-normal ml-2 text-xs">
-                      ({metaDescription.length}/160 chars)
-                    </span>
-                  </label>
-                  <ProTextarea
-                    ref={textareaRef}
-                    value={metaDescription}
-                    onChange={(e) => setMetaDescription(e.target.value)}
-                    placeholder="Brief page description for search engines…"
-                    rows={3}
-                    className="text-sm"
-                    surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
-                    getApplicationScope={getApplicationScope}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">
-                    Keywords
-                  </label>
-                  <ProInput
-                    value={metaKeywords}
-                    onChange={(e) => setMetaKeywords(e.target.value)}
-                    placeholder="keyword1, keyword2, keyword3"
-                    className="text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">
-                    OG Image URL
-                  </label>
-                  <Input
-                    value={ogImage}
-                    onChange={(e) => setOgImage(e.target.value)}
-                    placeholder="https://…"
-                    className="text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">
-                    Canonical URL
-                  </label>
-                  <Input
-                    value={canonicalUrl}
-                    onChange={(e) => setCanonicalUrl(e.target.value)}
-                    placeholder="https://…"
-                    className="text-sm"
-                  />
-                </div>
-
-                {/* Google preview */}
-                <div className="rounded-lg border border-border p-4 bg-muted/20 space-y-1">
-                  <p className="text-xs text-muted-foreground font-medium mb-2">
-                    Search Preview
-                  </p>
-                  <p className="text-blue-600 dark:text-blue-400 text-base font-medium leading-tight truncate">
-                    {metaTitle || title || "Page Title"}
-                  </p>
-                  <p className="text-emerald-700 dark:text-emerald-400 text-xs">
-                    example.com/{slug || "page-slug"}
-                  </p>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {metaDescription ||
-                      "No description set. Add a meta description to improve SEO."}
-                  </p>
-                </div>
+            {/* HTML */}
+            {activeTab === "html" && (
+              <div className="relative h-full">
+                <ProTextarea
+                  ref={textareaRef}
+                  value={htmlContent}
+                  onChange={(e) => setHtmlContent(e.target.value)}
+                  placeholder="<div>\n  <h1>Your page content here…</h1>\n</div>"
+                  className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
+                  wrapperClassName="absolute inset-0"
+                  surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+                  getApplicationScope={getApplicationScope}
+                />
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Settings */}
-          {activeTab === "settings" && (
-            <div className="h-full overflow-auto">
-              <div className="p-6 max-w-2xl mx-auto space-y-5">
-                <div className="grid grid-cols-2 gap-4">
+            {/* CSS */}
+            {activeTab === "css" && (
+              <div className="relative h-full">
+                <ProTextarea
+                  ref={textareaRef}
+                  value={cssContent}
+                  onChange={(e) => setCssContent(e.target.value)}
+                  placeholder="/* Page-specific styles */\n\nh1 {\n  color: #333;\n}"
+                  className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
+                  wrapperClassName="absolute inset-0"
+                  surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+                  getApplicationScope={getApplicationScope}
+                />
+              </div>
+            )}
+
+            {/* JS */}
+            {activeTab === "js" && (
+              <div className="relative h-full">
+                <ProTextarea
+                  ref={textareaRef}
+                  value={jsContent}
+                  onChange={(e) => setJsContent(e.target.value)}
+                  placeholder="// Page-specific JavaScript\n\nconsole.log('Page loaded');"
+                  className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
+                  wrapperClassName="absolute inset-0"
+                  surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+                  getApplicationScope={getApplicationScope}
+                />
+              </div>
+            )}
+
+            {/* Preview */}
+            {activeTab === "preview" && (
+              <div className="relative h-full bg-white">
+                <iframe
+                  srcDoc={previewHtml}
+                  title="Page Preview"
+                  className="absolute inset-0 w-full h-full border-0"
+                  sandbox="allow-scripts"
+                />
+              </div>
+            )}
+
+            {/* SEO */}
+            {activeTab === "seo" && (
+              <div className="h-full overflow-auto">
+                <div className="p-6 max-w-2xl mx-auto space-y-5">
                   <div>
                     <label className="text-sm font-medium text-foreground block mb-1.5">
-                      Slug
+                      Meta Title
+                      <span className="text-muted-foreground font-normal ml-2 text-xs">
+                        ({countSeoCharacters(metaTitle || title)}/
+                        {TITLE_LIMITS.maxChars} chars)
+                      </span>
                     </label>
-                    <Input
-                      value={slug}
-                      onChange={(e) => setSlug(e.target.value)}
-                      placeholder="page-slug"
-                      className="text-sm font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground block mb-1.5">
-                      Category
-                    </label>
-                    <Input
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      placeholder="general"
+                    <ProInput
+                      value={metaTitle}
+                      onChange={(e) => setMetaTitle(e.target.value)}
+                      placeholder={title || "SEO title…"}
                       className="text-sm"
                     />
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-foreground block mb-1.5">
-                      Page Type
+                      Meta Description
+                      <span className="text-muted-foreground font-normal ml-2 text-xs">
+                        ({countSeoCharacters(metaDescription)}/
+                        {DESCRIPTION_LIMITS.maxChars} chars)
+                      </span>
                     </label>
-                    <select
-                      value={pageType}
-                      onChange={(e) => setPageType(e.target.value)}
-                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-                    >
-                      <option value="standard">Standard</option>
-                      <option value="home">Home</option>
-                      <option value="service">Service</option>
-                      <option value="blog">Blog</option>
-                      <option value="listing">Listing</option>
-                    </select>
+                    <ProTextarea
+                      ref={textareaRef}
+                      value={metaDescription}
+                      onChange={(e) => setMetaDescription(e.target.value)}
+                      placeholder="Brief page description for search engines…"
+                      rows={3}
+                      className="text-sm"
+                      surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+                      getApplicationScope={getApplicationScope}
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium text-foreground block mb-1.5">
-                      Sort Order
+                      Keywords
                     </label>
-                    <Input
-                      type="number"
-                      value={sortOrder}
-                      onChange={(e) =>
-                        setSortOrder(parseInt(e.target.value) || 0)
-                      }
+                    <ProInput
+                      value={metaKeywords}
+                      onChange={(e) => setMetaKeywords(e.target.value)}
+                      placeholder="keyword1, keyword2, keyword3"
                       className="text-sm"
                     />
                   </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">
-                    Excerpt
-                  </label>
-                  <Textarea
-                    value={excerpt}
-                    onChange={(e) => setExcerpt(e.target.value)}
-                    placeholder="Short description for listing pages…"
-                    rows={2}
-                    className="text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">
-                    Tags
-                  </label>
-                  <Input
-                    value={tags}
-                    onChange={(e) => setTags(e.target.value)}
-                    placeholder="tag1, tag2, tag3"
-                    className="text-sm"
-                  />
-                </div>
-                <div className="flex items-center gap-6">
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <Checkbox
-                      checked={showInNav}
-                      onCheckedChange={(v) => setShowInNav(v === true)}
-                      className="shrink-0"
+                  <div>
+                    <label className="text-sm font-medium text-foreground block mb-1.5">
+                      OG Image URL
+                    </label>
+                    <Input
+                      value={ogImage}
+                      onChange={(e) => setOgImage(e.target.value)}
+                      placeholder="https://…"
+                      className="text-sm"
                     />
-                    Show in navigation
-                  </label>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground block mb-1.5">
+                      Canonical URL
+                    </label>
+                    <Input
+                      value={canonicalUrl}
+                      onChange={(e) => setCanonicalUrl(e.target.value)}
+                      placeholder="https://…"
+                      className="text-sm"
+                    />
+                  </div>
+
+                  {/* Google preview */}
+                  <div className="rounded-lg border border-border p-4 bg-muted/20 space-y-1">
+                    <p className="text-xs text-muted-foreground font-medium mb-2">
+                      Search Preview
+                    </p>
+                    <p className="text-blue-600 dark:text-blue-400 text-base font-medium leading-tight truncate">
+                      {metaTitle || title || "Page Title"}
+                    </p>
+                    <p className="text-emerald-700 dark:text-emerald-400 text-xs">
+                      example.com/{slug || "page-slug"}
+                    </p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {metaDescription ||
+                        "No description set. Add a meta description to improve SEO."}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Versions */}
-          {activeTab === "versions" && page && (
-            <div className="h-full overflow-auto">
-              <div className="p-6 max-w-2xl mx-auto space-y-4">
-                <div className="space-y-1">
-                  <h3 className="text-sm font-semibold text-foreground">
-                    Version History
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Every change is captured — edits, draft saves, publishes,
-                    and rollbacks. Restoring brings back that version&apos;s
-                    content as a new version; nothing is erased.
-                  </p>
-                </div>
-                {versions.error && (
-                  <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                    {versions.error}
+            {/* Settings */}
+            {activeTab === "settings" && (
+              <div className="h-full overflow-auto">
+                <div className="p-6 max-w-2xl mx-auto space-y-5">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-foreground block mb-1.5">
+                        Slug
+                      </label>
+                      <Input
+                        value={slug}
+                        onChange={(e) => setSlug(e.target.value)}
+                        placeholder="page-slug"
+                        className="text-sm font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground block mb-1.5">
+                        Category
+                      </label>
+                      <Input
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        placeholder="general"
+                        className="text-sm"
+                      />
+                    </div>
                   </div>
-                )}
-                {versions.isLoading ? (
-                  <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm">Loading versions…</span>
-                  </div>
-                ) : versions.versions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    No history for this page yet.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {versions.versions.map((v) => (
-                      <div
-                        key={v.id}
-                        className={`rounded-lg border p-3 flex items-center justify-between transition-colors ${
-                          v.is_current
-                            ? "border-primary/40 bg-primary/5"
-                            : "border-border hover:bg-muted/20"
-                        }`}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-foreground block mb-1.5">
+                        Page Type
+                      </label>
+                      <select
+                        value={pageType}
+                        onChange={(e) => setPageType(e.target.value)}
+                        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                            v{v.version_number}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                              {VERSION_OPERATION_LABEL[v.operation]}
-                              {v.is_current && (
-                                <Badge
-                                  variant="secondary"
-                                  className="text-[10px]"
-                                >
-                                  Current
-                                </Badge>
-                              )}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(v.occurred_at).toLocaleString(
-                                undefined,
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                },
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="gap-1.5 text-xs"
-                          disabled={!onRollback || v.is_current}
-                          title={
-                            v.is_current
-                              ? "This is the page's current content"
-                              : onRollback
-                                ? undefined
-                                : "Save the page before restoring"
-                          }
-                          onClick={() => handleRollback(v.version_number)}
-                        >
-                          <RotateCcw className="h-3 w-3" />
-                          Restore
-                        </Button>
-                      </div>
-                    ))}
+                        <option value="standard">Standard</option>
+                        <option value="home">Home</option>
+                        <option value="service">Service</option>
+                        <option value="blog">Blog</option>
+                        <option value="listing">Listing</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground block mb-1.5">
+                        Sort Order
+                      </label>
+                      <Input
+                        type="number"
+                        value={sortOrder}
+                        onChange={(e) =>
+                          setSortOrder(parseInt(e.target.value) || 0)
+                        }
+                        className="text-sm"
+                      />
+                    </div>
                   </div>
-                )}
+                  <div>
+                    <label className="text-sm font-medium text-foreground block mb-1.5">
+                      Excerpt
+                    </label>
+                    <Textarea
+                      value={excerpt}
+                      onChange={(e) => setExcerpt(e.target.value)}
+                      placeholder="Short description for listing pages…"
+                      rows={2}
+                      className="text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground block mb-1.5">
+                      Tags
+                    </label>
+                    <Input
+                      value={tags}
+                      onChange={(e) => setTags(e.target.value)}
+                      placeholder="tag1, tag2, tag3"
+                      className="text-sm"
+                    />
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={showInNav}
+                        onCheckedChange={(v) => setShowInNav(v === true)}
+                        className="shrink-0"
+                      />
+                      Show in navigation
+                    </label>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+
+            {/* Versions */}
+            {activeTab === "versions" && page && (
+              <div className="h-full overflow-auto">
+                <div className="p-6 max-w-2xl mx-auto space-y-4">
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Version History
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Every change is captured — edits, draft saves, publishes,
+                      and rollbacks. Restoring brings back that version&apos;s
+                      content as a new version; nothing is erased.
+                    </p>
+                  </div>
+                  {versions.error && (
+                    <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                      {versions.error}
+                    </div>
+                  )}
+                  {versions.isLoading ? (
+                    <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm">Loading versions…</span>
+                    </div>
+                  ) : versions.versions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No history for this page yet.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {versions.versions.map((v) => (
+                        <div
+                          key={v.id}
+                          className={`rounded-lg border p-3 flex items-center justify-between transition-colors ${
+                            v.is_current
+                              ? "border-primary/40 bg-primary/5"
+                              : "border-border hover:bg-muted/20"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                              v{v.version_number}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                                {VERSION_OPERATION_LABEL[v.operation]}
+                                {v.is_current && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-[10px]"
+                                  >
+                                    Current
+                                  </Badge>
+                                )}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(v.occurred_at).toLocaleString(
+                                  undefined,
+                                  {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                  },
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-1.5 text-xs"
+                            disabled={!onRollback || v.is_current}
+                            title={
+                              v.is_current
+                                ? "This is the page's current content"
+                                : onRollback
+                                  ? undefined
+                                  : "Save the page before restoring"
+                            }
+                            onClick={() => handleRollback(v.version_number)}
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                            Restore
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         );
         return activeTab === "preview" ? (

@@ -4,6 +4,10 @@
  */
 
 import { removeThinkingContent } from "@/components/matrx/buttons/markdown-copy-utils";
+import {
+  evaluateMetaDescription,
+  evaluateMetaTitle,
+} from "@/features/marketing/seo/serp/metrics";
 import { markdownToWordPressHTML } from "./markdown-wordpress-utils";
 
 /**
@@ -368,45 +372,40 @@ export interface CharacterCountStatus {
  */
 export function getCharacterCountStatus(
   text: string,
-  ideal: number,
-  max: number,
+  field: "title" | "description",
 ): CharacterCountStatus {
-  const length = text.length;
-  if (length === 0) return { status: "empty", color: "text-gray-400" };
-  if (length <= ideal)
-    return { status: "good", color: "text-green-600 dark:text-green-400" };
-  if (length <= max)
+  const evaluation =
+    field === "title" ? evaluateMetaTitle(text) : evaluateMetaDescription(text);
+  if (evaluation.charCount === 0)
+    return { status: "empty", color: "text-gray-400" };
+  if (evaluation.tooShort)
     return { status: "warning", color: "text-yellow-600 dark:text-yellow-400" };
-  return { status: "error", color: "text-red-600 dark:text-red-400" };
+  if (!evaluation.ok)
+    return { status: "error", color: "text-red-600 dark:text-red-400" };
+  return { status: "good", color: "text-green-600 dark:text-green-400" };
 }
 
 /**
  * Get SEO recommendation for a field
  */
-export function getSEORecommendation(text: string, field: string): string {
-  const length = text.length;
-  switch (field) {
-    case "title":
-      if (length === 0) return "Page title is required";
-      if (length < 30) return "Consider a longer, more descriptive title";
-      if (length > 60) return "Title may be truncated in search results";
-      return "Good title length";
-    case "description":
-      if (length === 0) return "Description helps with SEO";
-      if (length < 120) return "Consider a longer description";
-      if (length > 160) return "Description may be truncated";
-      return "Good description length";
-    case "metaTitle":
-      if (length === 0) return "Will use page title if empty";
-      if (length < 30) return "Consider a longer meta title";
-      if (length > 60) return "Meta title may be truncated";
-      return "Good meta title length";
-    case "metaDescription":
-      if (length === 0) return "Will use page description if empty";
-      if (length < 120) return "Consider a longer meta description";
-      if (length > 160) return "Meta description may be truncated";
-      return "Good meta description length";
-    default:
-      return "";
+export function getSEORecommendation(
+  text: string,
+  field: "title" | "description" | "metaTitle" | "metaDescription",
+): string {
+  const isTitle = field === "title" || field === "metaTitle";
+  const evaluation = isTitle
+    ? evaluateMetaTitle(text)
+    : evaluateMetaDescription(text);
+  if (evaluation.charCount === 0) {
+    if (field === "title") return "Page title is required";
+    if (field === "description") return "Description helps with SEO";
+    if (field === "metaTitle") return "Will use page title if empty";
+    return "Will use page description if empty";
   }
+  return (
+    evaluation.issues[0] ??
+    (isTitle
+      ? "Title is within the canonical SEO limits"
+      : "Description is within the canonical SEO limits")
+  );
 }

@@ -43,6 +43,11 @@ import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3
 import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { useMeasure } from "@uidotdev/usehooks";
+import {
+  countSeoCharacters,
+  DESCRIPTION_LIMITS,
+  TITLE_LIMITS,
+} from "@/features/marketing/seo/serp/metrics";
 
 type EditorTab = "meta" | "html" | "preview";
 
@@ -292,8 +297,8 @@ export default function HtmlPageEditor({
             style={{ fontSize: "16px" }}
           />
           <p className="text-[11px] text-muted-foreground mt-1">
-            Used as the HTML &lt;title&gt; and primary SEO title (50–60 chars
-            recommended).
+            Used as the HTML &lt;title&gt; and primary SEO title (
+            {TITLE_LIMITS.minChars}–{TITLE_LIMITS.maxChars} chars recommended).
           </p>
         </div>
 
@@ -316,7 +321,8 @@ export default function HtmlPageEditor({
             getApplicationScope={getMetaApplicationScope}
           />
           <p className="text-[11px] text-muted-foreground mt-1">
-            {metaDescription.length}/160 characters
+            {countSeoCharacters(metaDescription)}/{DESCRIPTION_LIMITS.maxChars}{" "}
+            characters
           </p>
         </div>
 
@@ -622,7 +628,11 @@ export default function HtmlPageEditor({
         }}
       />
       <PromoteToSiteDialog
-        htmlPage={promoteOpen ? { id: page.id, meta_title: metaTitle || page.meta_title } : null}
+        htmlPage={
+          promoteOpen
+            ? { id: page.id, meta_title: metaTitle || page.meta_title }
+            : null
+        }
         onOpenChange={(open) => setPromoteOpen(open)}
       />
     </>

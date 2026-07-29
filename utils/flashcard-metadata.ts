@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { siteConfig } from "@/config/extras/site";
 import { createCustomFaviconMetadata } from "@/utils/favicon-utils";
+import { DESCRIPTION_LIMITS } from "@/features/marketing/seo/serp/metrics";
 
 /** Teal-amber accent — distinct from primary nav palette; flashcards have no nav favicon entry. */
 const FLASHCARD_FAVICON_COLOR = "#b45309";
@@ -14,7 +15,7 @@ export function createFlashcardRouteMetadata(
   letter: string,
 ): Metadata {
   const socialTitle = `${composedTitle} | AI Matrx`;
-  const desc = description.slice(0, 160);
+  const desc = description.slice(0, DESCRIPTION_LIMITS.maxChars);
   return createCustomFaviconMetadata(
     { color: FLASHCARD_FAVICON_COLOR, letter },
     {

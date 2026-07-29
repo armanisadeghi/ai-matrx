@@ -1,3 +1,8 @@
+import {
+  evaluateMetaTitle,
+  TITLE_LIMITS,
+} from "@/features/marketing/seo/serp/metrics";
+
 interface RemovalDetail {
   attribute: string;
   match_type: string;
@@ -221,15 +226,16 @@ class ScraperDataUtils {
    */
   static analyzeTitleSEO(title: unknown): TitleAnalysis {
     const titleStr = typeof title === "string" ? title : "";
-    const length = titleStr.length;
+    const evaluation = evaluateMetaTitle(titleStr);
+    const length = evaluation.charCount;
 
     let status: "Too short" | "Too long" | "Good length";
     let statusClass: string;
 
-    if (length < 30) {
+    if (evaluation.tooShort) {
       status = "Too short";
       statusClass = "text-yellow-500 dark:text-yellow-400";
-    } else if (length > 60) {
+    } else if (!evaluation.ok) {
       status = "Too long";
       statusClass = "text-red-500 dark:text-red-400";
     } else {
@@ -302,18 +308,16 @@ class ScraperDataUtils {
     const suggestions: SEOSuggestion[] = [];
 
     // Title suggestions
-    if (titleAnalysis.length < 30) {
+    if (titleAnalysis.status === "Too short") {
       suggestions.push({
         type: "title",
-        message:
-          "Page title is too short. Consider expanding it to 50-60 characters for better SEO.",
+        message: `Page title is too short. Aim for ${TITLE_LIMITS.minChars}-${TITLE_LIMITS.maxChars} characters and stay within the canonical rendered-width limit.`,
         priority: "high",
       });
-    } else if (titleAnalysis.length > 60) {
+    } else if (titleAnalysis.status === "Too long") {
       suggestions.push({
         type: "title",
-        message:
-          "Page title exceeds recommended length. Consider shortening to 50-60 characters to prevent truncation in search results.",
+        message: `Page title exceeds the canonical character or rendered-width limit. Keep it at ${TITLE_LIMITS.maxChars} characters or fewer and within ${TITLE_LIMITS.desktopPx}px.`,
         priority: "high",
       });
     }

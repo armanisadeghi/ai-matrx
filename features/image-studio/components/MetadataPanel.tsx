@@ -17,10 +17,11 @@ import {
   Palette,
   Undo2,
   Zap,
-  X
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ImageMetadata, StudioSourceFile } from "../types";
+import { DESCRIPTION_LIMITS } from "@/features/marketing/seo/serp/metrics";
 
 interface MetadataPanelProps {
   file: StudioSourceFile;
@@ -113,8 +114,7 @@ export function MetadataPanel({
       meta={meta}
       renamedFrom={renamedFrom}
       canRevert={
-        file.previousFilenameBase != null ||
-        file.previousImageMetadata != null
+        file.previousFilenameBase != null || file.previousImageMetadata != null
       }
       onPatch={onPatch}
       onRevert={onRevert}
@@ -218,7 +218,7 @@ function MetadataReady({
       />
       <Field
         label="Description"
-        hint="Meta description (≈155 chars)."
+        hint={`Meta description (${DESCRIPTION_LIMITS.minChars}–${DESCRIPTION_LIMITS.maxChars} chars).`}
         value={meta.description}
         onChange={(v) => onPatch({ description: v })}
         multiline
