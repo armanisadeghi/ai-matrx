@@ -55,7 +55,10 @@ import type {
   UpdateSiteIdentityInput,
 } from "@/features/marketing/types";
 import { isJsonRecord } from "@/features/marketing/types";
+import type { Json } from "@/types/database.types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
+import { parseSnapshotImages } from "@/features/marketing/lib/snapshot-content";
+import type { SiteMediaPageRow } from "@/features/marketing/lib/snapshot-media";
 import {
   normalisePageUrl,
   pagePathOf,
@@ -2795,6 +2798,91 @@ export async function fetchSiteAuditTrendRows(
       });
     }
     if (batch.length < AUDIT_TREND_PAGE_SIZE) break;
+  }
+  return rows;
+}
+
+// ---------------------------------------------------------------------------
+// Site media inventory — every canonical page's latest snapshot reduced to its
+// media evidence (`images` + `head_tags` ONLY — never full snapshot rows).
+// Aggregation/dedupe is pure (lib/snapshot-media.ts); this only pages the
+// rows out of Supabase.
+// ---------------------------------------------------------------------------
+
+const MEDIA_PAGE_CAP = 5000;
+const MEDIA_PAGE_SIZE = 1000;
+
+export async function fetchSiteMediaRows(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<SiteMediaPageRow[]> {
+  const db = await authenticatedWebDb(supabase);
+  const pages: {
+    id: string;
+    url: string;
+    path: string | null;
+    latest_snapshot_id: string | null;
+  }[] = [];
+  for (let offset = 0; ; offset += MEDIA_PAGE_SIZE) {
+    if (offset >= MEDIA_PAGE_CAP) {
+      throw new Error(
+        `Site media inventory exceeded its ${MEDIA_PAGE_CAP}-page bound — refusing to return a silently truncated inventory.`,
+      );
+    }
+    const response = await db
+      .from("page")
+      .select("id, url, path, latest_snapshot_id")
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .not("latest_snapshot_id", "is", null)
+      .order("id", { ascending: true })
+      .range(offset, offset + MEDIA_PAGE_SIZE - 1)
+      .abortSignal(signal ?? new AbortController().signal);
+    const batch = assertData(response.data, response.error);
+    pages.push(...batch);
+    if (batch.length < MEDIA_PAGE_SIZE) break;
+  }
+
+  const snapshotIds = pages.flatMap((page) =>
+    page.latest_snapshot_id ? [page.latest_snapshot_id] : [],
+  );
+  const mediaBySnapshot = new Map<
+    string,
+    { images: Json; head_tags: Json; captured_at: string }
+  >();
+  for (let start = 0; start < snapshotIds.length; start += MEDIA_PAGE_SIZE) {
+    const chunk = snapshotIds.slice(start, start + MEDIA_PAGE_SIZE);
+    const response = await db
+      .from("snapshot")
+      .select("id, images, head_tags, captured_at")
+      .eq("site_id", siteId)
+      .in("id", chunk)
+      .abortSignal(signal ?? new AbortController().signal);
+    for (const snapshot of assertData(response.data, response.error)) {
+      mediaBySnapshot.set(snapshot.id, {
+        images: snapshot.images,
+        head_tags: snapshot.head_tags,
+        captured_at: snapshot.captured_at,
+      });
+    }
+  }
+
+  const rows: SiteMediaPageRow[] = [];
+  for (const page of pages) {
+    const media = page.latest_snapshot_id
+      ? mediaBySnapshot.get(page.latest_snapshot_id)
+      : undefined;
+    if (!media) continue;
+    const headTags = parseSnapshotHeadTags(media.head_tags);
+    rows.push({
+      pageId: page.id,
+      url: page.url,
+      path: page.path,
+      capturedAt: media.captured_at,
+      images: parseSnapshotImages(media.images),
+      ogImage: headTags.og.image,
+      twitterImage: headTags.twitter.image,
+    });
   }
   return rows;
 }

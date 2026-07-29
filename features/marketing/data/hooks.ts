@@ -69,6 +69,7 @@ import {
   updateBusinessFact,
   fetchSiteAuditRows,
   fetchSiteAuditTrendRows,
+  fetchSiteMediaRows,
   getPageContent,
   savePageContent,
   updatePageDesiredValues,
@@ -110,6 +111,8 @@ export const marketingKeys = {
     [...marketingKeys.site(siteId), "audit-rollup"] as const,
   auditTrend: (siteId: string) =>
     [...marketingKeys.site(siteId), "audit-trend"] as const,
+  siteMedia: (siteId: string) =>
+    [...marketingKeys.site(siteId), "media"] as const,
   homepageMeta: (siteId: string) =>
     [...marketingKeys.site(siteId), "homepage-meta"] as const,
   heroScreenshot: (siteId: string) =>
@@ -870,6 +873,20 @@ export function useSiteAuditTrend(siteId: string) {
     queryKey: marketingKeys.auditTrend(siteId),
     queryFn: async ({ signal }) =>
       buildSiteAuditTrend(await fetchSiteAuditTrendRows(siteId, signal)),
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * Site-wide media inventory — every canonical page's latest snapshot reduced
+ * to its parsed image inventory + social share images. Fetch is bounded and
+ * paged (service, `images` + `head_tags` columns only); dedupe/categorization
+ * is pure (lib/snapshot-media.ts).
+ */
+export function useSiteMedia(siteId: string) {
+  return useQuery({
+    queryKey: marketingKeys.siteMedia(siteId),
+    queryFn: ({ signal }) => fetchSiteMediaRows(siteId, signal),
     staleTime: 60_000,
   });
 }

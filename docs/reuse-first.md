@@ -167,6 +167,7 @@ delete yours and extend ours.
 | Strip markdown to plain text | `cleanMarkdown` | `utils/markdown-processors/clean-markdown-to-text.ts` |
 | Copy / strip / sanitize markdown for clipboard | markdown-copy helpers | `components/matrx/buttons/markdown-copy-utils.ts` |
 | Detect expiring S3 signed URLs | `isSignedUrl` | `lib/media/signed-url.ts` |
+| Categorize an image by size tier / photo grade / aspect (photo vs graphic vs icon, dimension inference from URL) | `categorizeSizeTier`, `photoGrade`, `categorizeAspect`, `resolveDimensions` | `lib/media/categorization.ts` |
 | Alarm on non-durable media URLs | `reportMediaDurabilityViolation` | `lib/media/durability.ts` |
 | Cmd/Ctrl/middle-click → new tab | `shouldOpenInNewTab` / `openInNewTab` | `utils/navigation/should-open-in-new-tab.ts` |
 | Toast success / error / info | `toast` from `sonner` | (package) — never `window.alert` |

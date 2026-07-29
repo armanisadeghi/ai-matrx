@@ -1,15 +1,27 @@
 import type { ResearchMedia } from "../../types";
 import {
-  isSvgUrl,
-  resolveMediaDimensions,
-  resolvedMaxDimension,
-  resolvedPixelArea,
+  ICON_MAX_DIM,
+  GRAPHIC_MAX_DIM,
+  SQUARE_ASPECT_TOLERANCE,
+  resolveDimensions,
+  type AspectBucket,
   type DimSource,
+  type PhotoGrade,
   type ResolvedDimensions,
-} from "./mediaDimensions";
+  type SizeTier,
+} from "@/lib/media/categorization";
+import * as core from "@/lib/media/categorization";
+import { toCategorizableMedia } from "./mediaDimensions";
 // YouTube-link detection — embeddable video URLs must reach the video bucket;
 // channel/profile URLs go to `youtubeChannels` instead.
 import { isYouTubeChannelUrl, youtubeId } from "@/lib/media/youtube";
+
+// The size-tier / photo-grade / aspect heuristics live in the shared core
+// (`@/lib/media/categorization`) — consumed identically by research and
+// marketing. This module keeps the ResearchMedia-typed API (and the
+// research-only pieces: YouTube buckets, debug payloads) and delegates.
+// Thresholds, generic URL heuristics, and the SizeTier/PhotoGrade/
+// AspectBucket types are imported straight from the core by consumers.
 
 /** True when the row's URL is an embeddable YouTube video link. */
 export function isYouTubeMedia(item: ResearchMedia): boolean {
@@ -20,31 +32,6 @@ export function isYouTubeMedia(item: ResearchMedia): boolean {
 export function isYouTubeChannelMedia(item: ResearchMedia): boolean {
   return isYouTubeChannelUrl(item.url);
 }
-
-export const ICON_MAX_DIM = 64;
-export const GRAPHIC_MAX_DIM = 200;
-/** Ratio within [1 − t, 1 + t] counts as square. */
-export const SQUARE_ASPECT_TOLERANCE = 0.12;
-
-// A "photo" is a substantial content image — big enough on BOTH sides, with
-// enough area, and not a banner strip. Anything that fails these is a graphic
-// (logo / thumbnail / banner / small avatar) and is shown small, never blown up
-// into a big photo tile. Tuned against real examples: 348×100 / 216×46 / 200×300
-// → graphic; 700×700 / 1280×720 / 2560×1706 → photo.
-export const PHOTO_MIN_SHORT_SIDE = 200; // the shorter side must be ≥ this
-export const PHOTO_MIN_LONG_SIDE = 320; // the longer side must be ≥ this
-export const PHOTO_MIN_AREA = 90_000; // ≈ 300×300
-export const BANNER_MAX_RATIO = 3; // wider/taller than 3:1 is a banner strip
-
-export type SizeTier = "photo" | "graphic" | "icon";
-
-/**
- * Display weight for a photo, from its resolution. Drives tile size in the
- * gallery so big, high-quality images render large and modest ones stay small
- * — instead of every image filling the same box.
- */
-export type PhotoGrade = "hero" | "large" | "standard" | "modest";
-export type AspectBucket = "landscape" | "square" | "portrait" | "unknown";
 
 export const CATEGORIZATION_RULES = {
   note: "rs_media.width/height are usually null — client infers from URL query/path when possible",
@@ -61,154 +48,36 @@ export const CATEGORIZATION_RULES = {
   },
 } as const;
 
-export function isLikelyIconUrl(url: string): boolean {
-  const u = url.toLowerCase();
-  return (
-    u.includes("favicon") ||
-    u.endsWith(".ico") ||
-    u.includes("/favicon") ||
-    /\/icons?\//.test(u) ||
-    /\/icon[-/]/.test(u) ||
-    /-icon\.(png|svg|webp|gif|jpe?g)(\?|$)/.test(u) ||
-    /apple-touch-icon/.test(u)
-  );
-}
-
-function altHintsIconOrLogo(alt: string | null): boolean {
-  if (!alt) return false;
-  const a = alt.toLowerCase();
-  return (
-    /\bicon\b/.test(a) ||
-    /\blogo\b/.test(a) ||
-    /\bavatar\b/.test(a) ||
-    a.includes("favicon")
-  );
-}
-
 export function isLikelyLogoOrIcon(item: ResearchMedia): boolean {
-  const u = item.url.toLowerCase();
-  return (
-    isLikelyIconUrl(item.url) ||
-    isSvgUrl(item.url) ||
-    u.includes("/logo") ||
-    /logo[-.]/.test(u) ||
-    u.includes("avatar") ||
-    altHintsIconOrLogo(item.alt_text)
-  );
+  return core.isLikelyLogoOrIcon(toCategorizableMedia(item));
 }
 
 export function isLikelyThumbnailOrSmallGraphic(item: ResearchMedia): boolean {
-  const u = item.url.toLowerCase();
-  if (
-    u.includes("/thumbs/") ||
-    u.includes("/thumbnails/") ||
-    u.includes("thumbnail") ||
-    u.includes("placeholder") ||
-    u.includes("-sm.") ||
-    u.includes("-thumb.")
-  ) {
-    return true;
-  }
-  if (/-lrg\.(png|jpe?g|webp)/i.test(u) || /\/thumbs\//i.test(u)) {
-    return true;
-  }
-  const resolved = resolveMediaDimensions(item);
-  const max = resolvedMaxDimension(resolved);
-  if (max > ICON_MAX_DIM && max < GRAPHIC_MAX_DIM) return true;
-  return false;
+  return core.isLikelyThumbnailOrSmallGraphic(toCategorizableMedia(item));
 }
 
 function getResolved(item: ResearchMedia): ResolvedDimensions {
-  return resolveMediaDimensions(item);
+  return resolveDimensions(toCategorizableMedia(item));
 }
 
 export function categorizeSizeTier(item: ResearchMedia): SizeTier {
-  if (item.media_type !== "image") return "photo";
-
-  if (isSvgUrl(item.url)) {
-    return isLikelyLogoOrIcon(item) ? "icon" : "graphic";
-  }
-
-  const resolved = getResolved(item);
-  const w = resolved.width ?? 0;
-  const h = resolved.height ?? 0;
-  const max = Math.max(w, h);
-  const min = Math.min(w, h);
-  const area = w * h;
-  const ratio = min > 0 ? max / min : 0;
-
-  if (max > 0) {
-    if (max <= ICON_MAX_DIM) return "icon";
-    // Substantial content image, and not a logo/icon/avatar by URL or alt.
-    const isSubstantial =
-      min >= PHOTO_MIN_SHORT_SIDE &&
-      max >= PHOTO_MIN_LONG_SIDE &&
-      area >= PHOTO_MIN_AREA &&
-      ratio <= BANNER_MAX_RATIO;
-    if (isSubstantial && !isLikelyLogoOrIcon(item)) return "photo";
-    // Everything else with known dims that isn't tiny → a graphic (logo,
-    // thumbnail, banner strip, small avatar). Shown small, never blown up.
-    return "graphic";
-  }
-
-  // No dimensions — fall back to URL/alt heuristics.
-  if (isLikelyLogoOrIcon(item)) return "icon";
-  if (isLikelyThumbnailOrSmallGraphic(item)) return "graphic";
-  return "photo";
+  return core.categorizeSizeTier(toCategorizableMedia(item));
 }
 
-/**
- * Resolution-derived display weight for a photo. `unknown`-dimension images
- * default to `standard`. Thresholds use the longer side OR total area so a
- * 2560×1706 hero and a 1600×1600 both read as large, while a 400×400 stays
- * modest.
- */
 export function photoGrade(item: ResearchMedia): PhotoGrade {
-  const resolved = getResolved(item);
-  const max = resolvedMaxDimension(resolved);
-  const area = resolvedPixelArea(resolved);
-  if (max === 0) return "standard";
-  if (max >= 1600 || area >= 2_200_000) return "hero";
-  if (max >= 900 || area >= 600_000) return "large";
-  if (max >= 520 || area >= 230_000) return "standard";
-  return "modest";
+  return core.photoGrade(toCategorizableMedia(item));
 }
 
-/**
- * A photo big enough to deserve a larger "featured" tile. Cut tuned to real
- * feedback: 700×700 / 1280×720 / 2560×1706 read large; 400×400 / 640×360 stay
- * in the small standard band.
- */
 export function isFeaturedPhoto(item: ResearchMedia): boolean {
-  const resolved = getResolved(item);
-  const max = resolvedMaxDimension(resolved);
-  const area = resolvedPixelArea(resolved);
-  return max >= 1000 || area >= 450_000;
-}
-
-export function aspectRatioFromResolved(
-  resolved: ResolvedDimensions,
-): number | null {
-  const w = resolved.width ?? 0;
-  const h = resolved.height ?? 0;
-  if (w <= 0 || h <= 0) return null;
-  return w / h;
+  return core.isFeaturedPhoto(toCategorizableMedia(item));
 }
 
 export function categorizeAspect(item: ResearchMedia): AspectBucket {
-  const ratio = aspectRatioFromResolved(getResolved(item));
-  if (ratio == null) return "unknown";
-  if (
-    ratio >= 1 - SQUARE_ASPECT_TOLERANCE &&
-    ratio <= 1 + SQUARE_ASPECT_TOLERANCE
-  ) {
-    return "square";
-  }
-  return ratio > 1 ? "landscape" : "portrait";
+  return core.categorizeAspect(toCategorizableMedia(item));
 }
 
 export function sortByAreaDesc(a: ResearchMedia, b: ResearchMedia): number {
-  return resolvedPixelArea(getResolved(b)) - resolvedPixelArea(getResolved(a));
+  return core.sortByAreaDesc(toCategorizableMedia(a), toCategorizableMedia(b));
 }
 
 export interface SlimMediaDebugEntry {
@@ -405,12 +274,5 @@ export function buildMediaDebugPayload(
 
 /** Display label using resolved dimensions (~ suffix = URL-inferred). */
 export function formatResolvedSizeLabel(item: ResearchMedia): string | null {
-  const resolved = getResolved(item);
-  const approx = resolved.source === "url" ? "~" : "";
-  if (resolved.width && resolved.height) {
-    return `${resolved.width}×${resolved.height}${approx}`;
-  }
-  if (resolved.width) return `${resolved.width}w${approx}`;
-  if (resolved.height) return `${resolved.height}h${approx}`;
-  return null;
+  return core.formatResolvedSizeLabel(toCategorizableMedia(item));
 }

@@ -12,6 +12,7 @@ import {
   FileText,
   Gauge,
   Grid3x3,
+  Images,
   Inbox,
   KeyRound,
   Link2,
@@ -73,6 +74,7 @@ function sectionSuffix(
     "coverage",
     "audit",
     "pages",
+    "media",
     "crawls",
     "analysis",
     "findings",
@@ -206,6 +208,11 @@ export function MarketingSiteLayoutClient({
             name: "Pages",
             href: `${base}/pages`,
             icon: FileText,
+          },
+          {
+            name: "Media",
+            href: `${base}/media`,
+            icon: Images,
           },
           {
             name: "Crawls",

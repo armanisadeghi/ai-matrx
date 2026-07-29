@@ -8,10 +8,12 @@ import type { ResearchMedia } from "../../types";
 import {
   buildMediaDebugPayload,
   CATEGORIZATION_RULES,
+} from "./mediaCategorization";
+import {
   GRAPHIC_MAX_DIM,
   ICON_MAX_DIM,
   SQUARE_ASPECT_TOLERANCE,
-} from "./mediaCategorization";
+} from "@/lib/media/categorization";
 import { toast } from "@/lib/toast";
 
 interface MediaDebugPanelProps {
