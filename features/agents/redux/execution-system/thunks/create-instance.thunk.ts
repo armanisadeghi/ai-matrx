@@ -73,6 +73,7 @@ import {
 } from "@/features/agents/types/instance.types";
 import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
 import type { ValueMappingMap } from "@/features/surfaces/types";
+import { setOverrides } from "../instance-model-overrides/instance-model-overrides.slice";
 
 // =============================================================================
 // Shared helper — reads agent snapshot data. The ONLY place agentId is used.
@@ -484,8 +485,6 @@ export const createInstanceFromShortcut = createAsyncThunk<
 
   // Apply LLM overrides from the shortcut config
   if (shortcut.llmOverrides && Object.keys(shortcut.llmOverrides).length > 0) {
-    const { setOverrides } =
-      await import("../instance-model-overrides/instance-model-overrides.slice");
     dispatch(setOverrides({ conversationId, changes: shortcut.llmOverrides }));
   }
 
@@ -642,8 +641,6 @@ export const createTestInstance = createAsyncThunk<
     }
 
     if (overrides && Object.keys(overrides).length > 0) {
-      const { setOverrides } =
-        await import("../instance-model-overrides/instance-model-overrides.slice");
       dispatch(setOverrides({ conversationId, changes: overrides }));
     }
 
