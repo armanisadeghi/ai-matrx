@@ -194,6 +194,10 @@ The boundary is: **ingestion pipelines own persistence; agents read from those t
 
 ## Change log
 
+- **2026-07-29 — Scraped metadata analysis canonicalized.** Title and
+  description status now comes from `features/marketing/seo/serp/metrics.ts`,
+  including pixel width and the shared character windows; no scraper-local
+  SEO thresholds remain.
 - **2026-07-24 — `matrx-user/scraper` manifest brought to canonical standard.** Added `urlPattern`/`intro` + 5 curated groups (target / extracted_content / page_metadata / results / run_state). New declared+emitted values: `target_url`, `search_keyword`, `max_pages` (the live config inputs), `results_overview` + `result_count` + `selected_result_index` (the sidebar page list), `search_hits` + `search_hit_count` (keyword web-search hits), `is_scraping`. Removed `scraped_content_html` and `scrape_http_status` — nothing on the FE ever emitted them (`ScraperResult` retains no raw HTML or status code). `scrape_mode` / `active_result_tab` / `scrape_success` flipped to honest `alwaysAvailable: true` (required in `createScraperScope`); `ScraperFloatingWorkspace` now forwards the full workspace state to `buildScraperContextData`.
 - **2026-07-24 — One-shot scraper analysis uses the canonical scoped
   launcher.** `useScraperAgentAnalysis` declares

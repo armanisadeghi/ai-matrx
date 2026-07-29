@@ -56,6 +56,11 @@ import {
 } from "./outputDefinitions";
 import { getBundleBySlug, getResourceManifest } from "../../service/resources";
 import { resolveBundle } from "../../resources/resolve";
+import {
+  countSeoCharacters,
+  DESCRIPTION_LIMITS,
+  TITLE_LIMITS,
+} from "@/features/marketing/seo/serp/metrics";
 
 /** Research content-engine generator agents (created as data; run live via
  *  /ai/agents/{id}). Each forks the runnable config of the blog generator. */
@@ -231,9 +236,9 @@ export default function OutputsStudio() {
           <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400">
             <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
             <span>
-              The <code>{REPORT_ONLY_BUNDLE_SLUG}</code> system bundle is missing
-              from the database, so the report was read the old way. Outputs still
-              work; apply{" "}
+              The <code>{REPORT_ONLY_BUNDLE_SLUG}</code> system bundle is
+              missing from the database, so the report was read the old way.
+              Outputs still work; apply{" "}
               <code>migrations/research_system_context_bundles.sql</code> to
               restore the canonical path.
             </span>
@@ -336,8 +341,9 @@ function DomainReportsCard({ topicId }: { topicId: string }) {
           </div>
           <div className="text-[11px] text-muted-foreground">
             Built from the research itself — search results, pages read,
-            analyses and syntheses — not from the finished report. Each opens with
-            its inputs already selected so you can see the cost before running.
+            analyses and syntheses — not from the finished report. Each opens
+            with its inputs already selected so you can see the cost before
+            running.
           </div>
         </div>
       </div>
@@ -1381,7 +1387,7 @@ function SeoView({ seo }: { seo: SeoPackage }) {
         <span className="font-medium">{seo.title}</span>
         {typeof seo.title === "string" && (
           <span className="ml-1.5 text-[10px] text-muted-foreground tabular-nums">
-            {seo.title.length}/60
+            {countSeoCharacters(seo.title)}/{TITLE_LIMITS.maxChars}
           </span>
         )}
       </SeoField>
@@ -1389,7 +1395,8 @@ function SeoView({ seo }: { seo: SeoPackage }) {
         <SeoField label="Meta description">
           {seo.meta_description}
           <span className="ml-1.5 text-[10px] text-muted-foreground tabular-nums">
-            {seo.meta_description.length}/155
+            {countSeoCharacters(seo.meta_description)}/
+            {DESCRIPTION_LIMITS.maxChars}
           </span>
         </SeoField>
       )}

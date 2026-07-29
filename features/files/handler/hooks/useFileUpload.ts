@@ -25,7 +25,11 @@ import { useCallback, useState } from "react";
 import { fileHandler } from "../handler";
 import { requestUpload } from "@/features/files/upload/UploadGuardHost";
 import type { UploadFilesArg } from "@/features/files/types";
-import type { FileSource, NormalizedFile, UploadOpts } from "../types";
+import type {
+  FileSource,
+  UploadedNormalizedFile,
+  UploadOpts,
+} from "../types";
 
 export interface UploadProgress {
   loaded: number;
@@ -67,7 +71,10 @@ export interface MultiUploadResult {
 
 export interface UseFileUploadResult {
   /** Upload one file (or any FileSource — paste, blob, base64, url). */
-  upload: (source: FileSource, opts?: UploadOpts) => Promise<NormalizedFile>;
+  upload: (
+    source: FileSource,
+    opts?: UploadOpts,
+  ) => Promise<UploadedNormalizedFile>;
   /**
    * Upload many files at once. Runs the SHA-256 dedup pre-flight and shows
    * the duplicate-resolution dialog when conflicts are found. Returns
@@ -79,7 +86,7 @@ export interface UseFileUploadResult {
   ) => Promise<MultiUploadResult>;
   uploading: boolean;
   progress: UploadProgress | null;
-  result: NormalizedFile | null;
+  result: UploadedNormalizedFile | null;
   error: Error | null;
   reset: () => void;
 }
@@ -87,14 +94,14 @@ export interface UseFileUploadResult {
 export function useFileUpload(): UseFileUploadResult {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
-  const [result, setResult] = useState<NormalizedFile | null>(null);
+  const [result, setResult] = useState<UploadedNormalizedFile | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
   const upload = useCallback(
     async (
       source: FileSource,
       opts: UploadOpts = {},
-    ): Promise<NormalizedFile> => {
+    ): Promise<UploadedNormalizedFile> => {
       setUploading(true);
       setError(null);
       setProgress(null);

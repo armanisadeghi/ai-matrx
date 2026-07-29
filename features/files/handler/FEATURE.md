@@ -2,7 +2,7 @@
 
 **Status:** `canonical`
 **Tier:** `1`
-**Last updated:** `2026-07-24`
+**Last updated:** `2026-07-29`
 
 ---
 
@@ -183,11 +183,14 @@ The previous parallel object-store path is fully removed. Compatibility readers,
 5. New file flows must use the handler from day one. Direct object-store SDK calls and direct media-block construction are regressions.
 6. Scope inheritance is visibility- and namespace-aware: public/shared uploads carry active `organization_id / project_id / task_id` in `metadata.scope` when available, except under the personal-organization `Shared Assets/**` / `Private Assets/**` library namespaces; personal uploads remain independent of ambient app scope unless explicitly opted in.
 7. Signed object-store URLs are private playback/download credentials, never share links. `shareableMediaUrl` rejects both AWS SigV2 and SigV4 URLs at copy/share boundaries; owned media must use its internal viewer URL, a durable public URL, or the canonical share-link RPC flow.
+8. A successful canonical upload returns `UploadedNormalizedFile`, whose `fileId` is required at both runtime and compile time. Agent attachment flows must hand that identity to `MediaRef`; an opaque share URL is display/recovery data, never the primary locator.
 
 ---
 
 ## Change log
 
+- `2026-07-29` — codex: upload identity now stays anchored to the upload endpoint's authoritative `file_id` while the follow-up file-record fetch enriches metadata. A missing/mismatched hydrated id screams in the console and is repaired from the creation acknowledgement; a completed upload can no longer collapse into a temporary/share-URL-only attachment.
+- **2026-07-29 — Uploaded agent images preserve identity and MIME end to end.** The handler classifier now consumes the existing MIME-first `getFilePreviewProfile` primitive, so an opaque `/share/{token}` URL with `image/jpeg` cannot be downgraded to a document. Successful uploads now return the stricter `UploadedNormalizedFile` and fail loudly if the hydrated row lacks `fileId`; upload and storage picker payloads share the truthful `FileResourceData.fileId` field. Agent-resource regression tests pin both the primary `file_id` path and the URL-only MIME recovery path.
 - **2026-07-24 — User-library uploads cannot inherit an unrelated active organization.** The canonical upload boundary now treats `Shared Assets/**` and `Private Assets/**` as personal-organization folder namespaces even when a file is public. This closes the feedback/app-asset regression introduced when backend folder placement validation began rejecting the same owner+path across organizations. Buffered progress/XHR failures now enter the Error Inspector through the same structured capture path as fetch-based requests, so the backend error code, detail, request id, method, and endpoint are preserved instead of leaving only a generic toast.
 - **2026-07-24 — Personal uploads are independent of ambient app scope.** The shared upload boundary now defaults `inheritActiveScope` to false for personal visibility while preserving true for public/shared uploads and explicit caller overrides. This fixes SmartAgentInput audio journal chunks and finalized recordings being rejected when their existing personal transcript folders belonged to a different organization than the UI's active organization.
 - **2026-07-23 — Agent paste/drop staging is immediate and canonical.** `useUploadAgentResources` now owns the shared stage → upload → attach lifecycle for every Smart input composer. It creates bounded local image previews and pending file tiles synchronously, uploads through `useFileUpload`, hands ready payloads to `useAttachResource`, and revokes the preview on completion/removal.

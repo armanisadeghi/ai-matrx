@@ -46,7 +46,7 @@ export function useRoomUrlSync(sessionId: string) {
     density,
     setDensity,
     chosenStageId,
-    setChosenStageId,
+    stageThread,
   } = useRoomView();
 
   // Hydration is two-phase: the non-thread params (view/density) settle on the
@@ -68,7 +68,6 @@ export function useRoomUrlSync(sessionId: string) {
     const d = params.get("density");
     if (isDensity(d) && d !== density) setDensity(d);
     // Run once; defaults are read at mount only (deps intentionally omitted).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Thread: once tiles exist, adopt the URL's thread id IF it's a real visible
@@ -76,11 +75,18 @@ export function useRoomUrlSync(sessionId: string) {
   useEffect(() => {
     if (hydratedThreadRef.current) return;
     if (visibleIds.length === 0) return; // wait for tiles
-    hydratedThreadRef.current = true;
-    if (chosenStageId) return; // an explicit choice already happened
     const wanted = new URLSearchParams(window.location.search).get("thread");
-    if (wanted && visibleIds.includes(wanted)) setChosenStageId(wanted);
-  }, [visibleIds, chosenStageId, setChosenStageId]);
+    if (!wanted) {
+      hydratedThreadRef.current = true;
+      return;
+    }
+    // User-state hydration can temporarily expose a different visible set
+    // before pinned/parked rows settle. Keep waiting for the deep-linked thread
+    // instead of permanently consuming the one-shot hydrate on that first pass.
+    if (!visibleIds.includes(wanted)) return;
+    hydratedThreadRef.current = true;
+    stageThread(wanted);
+  }, [visibleIds, chosenStageId, stageThread]);
 
   // ── PUSH (view state → URL) ─────────────────────────────────────────────
   // Only after the view hydrate pass, so we never overwrite the value we just

@@ -28,6 +28,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectShowFreeformInput } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectAllResourcesResolved } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
@@ -67,7 +68,6 @@ export function SmartAgentInputStacked({
   // transcript — submitting mid-voice drops the trailing audio and leaves the
   // recorder running.
   const [voiceBusy, setVoiceBusy] = useState(false);
-  const sendBlocked = disableSend || voiceBusy;
   // Hooks must run unconditionally — `conversationId` may be null on
   // first render, but the selectors short-circuit when it is and the
   // early-return below renders the uninitialized shell instead.
@@ -75,6 +75,10 @@ export function SmartAgentInputStacked({
     selectShowFreeformInput(conversationId ?? ""),
   );
   const isExecuting = useAppSelector(selectIsExecuting(conversationId ?? ""));
+  const allResourcesResolved = useAppSelector(
+    selectAllResourcesResolved(conversationId ?? ""),
+  );
+  const sendBlocked = disableSend || voiceBusy || !allResourcesResolved;
 
   const sendBtnClass =
     sendButtonVariant === "blue"

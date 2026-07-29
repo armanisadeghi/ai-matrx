@@ -225,6 +225,14 @@ export interface NormalizedFile {
   __source: FileSource;
 }
 
+/**
+ * Result of a successful canonical upload. Unlike a general NormalizedFile,
+ * a newly-persisted upload must always carry its durable cld_files identity.
+ */
+export interface UploadedNormalizedFile extends NormalizedFile {
+  fileId: string;
+}
+
 export type FileOrigin =
   | "owned"
   | "shared"

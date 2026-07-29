@@ -2,10 +2,9 @@
 
 // features/war-room/components/room/StageView.tsx
 //
-// The hero layout: a live RAIL of every thread (a glanceable watchlist) beside
-// the STAGE (the one thread you're driving). Click any rail thread → it snaps
-// onto the Stage with full state — every open thread alive in one space, resume
-// any instantly without losing context.
+// The focused room layout is true list → detail navigation. The list is the
+// glanceable watchlist; selecting any row replaces it with the full thread
+// surface. The thread's back control restores the list without losing state.
 //
 // Parked (hidden) threads fold into a quiet collapsible group at the bottom of
 // the rail, each rendered with the ui-sharp parked-chip treatment (live status
@@ -37,8 +36,13 @@ export function StageView({ sessionId }: { sessionId: string }) {
   const visibleIds = useAppSelector(selectOrderedGalleryThreadIds(sessionId));
   const hidden = useAppSelector(selectHiddenThreads(sessionId));
   const allIds = useAppSelector(selectThreadIdsForRoom(sessionId));
-  const { chosenStageId, setChosenStageId, stageThread, threadQuery } =
-    useRoomView();
+  const {
+    chosenStageId,
+    stageThread,
+    threadQuery,
+    threadDetailOpen,
+    closeThreadDetail,
+  } = useRoomView();
   const { commitOrder } = useThreadReorder(sessionId);
   // The rail lists only matches; the Stage keeps the thread you're driving
   // (resolved against the FULL list) so a search never yanks you off it.
@@ -57,9 +61,19 @@ export function StageView({ sessionId }: { sessionId: string }) {
   }, [sessionId, stagedId, visibleIds.length]);
 
   return (
-    <div className="h-full flex flex-col @4xl:flex-row gap-2.5 p-2.5 min-h-0">
+    <div
+      className={cn(
+        "h-full min-h-0 flex flex-col",
+        threadDetailOpen ? "gap-0 p-0" : "gap-2.5 p-2.5",
+      )}
+    >
       {/* ── Rail (watchlist of live threads) ── */}
-      <aside className="shrink-0 flex flex-col min-h-0 @4xl:w-[300px] @5xl:w-[340px]">
+      <aside
+        className={cn(
+          "mx-auto min-h-0 w-full max-w-2xl flex-col",
+          threadDetailOpen ? "hidden" : "flex",
+        )}
+      >
         <div className="shrink-0 flex items-center justify-between px-1 pb-1.5">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Threads
@@ -82,7 +96,7 @@ export function StageView({ sessionId }: { sessionId: string }) {
                   threadId={id}
                   sessionId={sessionId}
                   isStaged={stagedId === id}
-                  onStage={() => setChosenStageId(id)}
+                  onStage={() => stageThread(id)}
                 />
               ))
             ) : (
@@ -103,7 +117,7 @@ export function StageView({ sessionId }: { sessionId: string }) {
                       threadId={id}
                       sessionId={sessionId}
                       isStaged={stagedId === id}
-                      onStage={() => setChosenStageId(id)}
+                      onStage={() => stageThread(id)}
                       dragHandle={dragHandle}
                     />
                   )}
@@ -166,12 +180,18 @@ export function StageView({ sessionId }: { sessionId: string }) {
       </aside>
 
       {/* ── Stage (the focused thread) ── */}
-      <main className="flex-1 min-h-0 @max-4xl:min-h-[60vh]">
+      <main
+        className={cn(
+          "flex-1 min-h-0",
+          threadDetailOpen ? "block" : "hidden",
+        )}
+      >
         {stagedId ? (
           <StageThread
             key={stagedId}
             threadId={stagedId}
             sessionId={sessionId}
+            onBack={closeThreadDetail}
           />
         ) : (
           <EmptyStage

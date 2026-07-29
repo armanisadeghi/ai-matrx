@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { CheckCircle, AlertTriangle, FileText, Filter, Info } from "lucide-react";
+import {
+  CheckCircle,
+  AlertTriangle,
+  FileText,
+  Filter,
+  Info,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -11,7 +17,10 @@ import {
   SerpFieldBars,
   type SerpFieldMetrics,
 } from "@/features/marketing/seo/serp/SerpValidation";
-import { TITLE_LIMITS, DESCRIPTION_LIMITS } from "@/features/marketing/seo/serp/metrics";
+import {
+  TITLE_LIMITS,
+  DESCRIPTION_LIMITS,
+} from "@/features/marketing/seo/serp/metrics";
 import type { SerpEntry } from "@/features/marketing/seo/serp/types";
 
 /**
@@ -31,7 +40,7 @@ function entryTitleField(entry: SerpEntry): SerpFieldMetrics | null {
     chars: entry.titleChars ?? 0,
     charLimit: TITLE_LIMITS.maxChars,
     pixels: entry.titlePixels ?? 0,
-    pixelLimit: TITLE_LIMITS.displayPx,
+    pixelLimit: TITLE_LIMITS.desktopPx,
     ok: entry.titleOk ?? false,
     desktopOk: entry.titleDesktopOk,
     mobileOk: entry.titleMobileOk,
@@ -45,7 +54,7 @@ function entryDescriptionField(entry: SerpEntry): SerpFieldMetrics | null {
     chars: entry.descriptionChars ?? 0,
     charLimit: DESCRIPTION_LIMITS.maxChars,
     pixels: entry.descriptionPixels ?? 0,
-    pixelLimit: DESCRIPTION_LIMITS.displayPx,
+    pixelLimit: DESCRIPTION_LIMITS.desktopPx,
     ok: entry.descriptionOk ?? false,
     desktopOk: entry.descriptionDesktopOk,
     mobileOk: entry.descriptionMobileOk,
@@ -105,8 +114,8 @@ export function SerpToolOverlay({
               {checksTitle ? (
                 <li>
                   <strong className="text-foreground">Title:</strong> ≤
-                  {TITLE_LIMITS.maxChars} characters · ≤{TITLE_LIMITS.desktopPx}px
-                  desktop · ≤{TITLE_LIMITS.mobilePx}px mobile
+                  {TITLE_LIMITS.maxChars} characters · ≤{TITLE_LIMITS.desktopPx}
+                  px desktop · ≤{TITLE_LIMITS.mobilePx}px mobile
                 </li>
               ) : null}
               {checksDescription ? (
@@ -188,7 +197,9 @@ export function SerpToolOverlay({
                     Needs optimization
                   </Badge>
                 )}
-                <span className="text-sm text-muted-foreground">#{index + 1}</span>
+                <span className="text-sm text-muted-foreground">
+                  #{index + 1}
+                </span>
               </div>
 
               {/* The real thing — the simulated Google result */}
@@ -206,7 +217,9 @@ export function SerpToolOverlay({
               {/* Validation detail */}
               <div className="space-y-5 border-t border-border bg-muted/30 px-6 py-5">
                 {titleField ? <SerpFieldBars field={titleField} /> : null}
-                {descriptionField ? <SerpFieldBars field={descriptionField} /> : null}
+                {descriptionField ? (
+                  <SerpFieldBars field={descriptionField} />
+                ) : null}
                 {issues.length ? (
                   <ul className="space-y-1.5">
                     {issues.map((issue) => (
@@ -229,7 +242,9 @@ export function SerpToolOverlay({
       {filtered.length === 0 ? (
         <div className="py-12 text-center">
           <FileText className="mx-auto mb-4 h-16 w-16 text-muted-foreground/40" />
-          <p className="text-muted-foreground">No results match the selected filter</p>
+          <p className="text-muted-foreground">
+            No results match the selected filter
+          </p>
         </div>
       ) : null}
     </div>

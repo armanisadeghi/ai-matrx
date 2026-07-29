@@ -233,7 +233,12 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
     >
     <div className="@container h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       {/* ── Header — pr-14 clears the shell's fixed top-right avatar ── */}
-      <header className="shrink-0 border-b border-border pl-1.5 pr-14 h-11 flex items-center gap-1.5">
+      <header
+        className={cn(
+          "shrink-0 border-b border-border pl-1.5 pr-14 h-11 flex items-center gap-1.5",
+          roomView.threadDetailOpen && "hidden",
+        )}
+      >
         <button
           type="button"
           onClick={() => router.back()}

@@ -32,7 +32,12 @@ import {
 } from "@/lib/redux/slices/appContextSlice";
 import { FileUploadError } from "./errors";
 import { fromCloudFile } from "./input/normalize";
-import type { FileSource, NormalizedFile, UploadOpts } from "./types";
+import type {
+  FileSource,
+  NormalizedFile,
+  UploadedNormalizedFile,
+  UploadOpts,
+} from "./types";
 
 const DEFAULT_FOLDER = "Inbox";
 
@@ -68,7 +73,7 @@ export function shouldInheritActiveScope(
 export async function uploadInternal(
   source: FileSource,
   opts: UploadOpts,
-): Promise<NormalizedFile> {
+): Promise<UploadedNormalizedFile> {
   const file = await sourceToFile(source, opts.fileName);
   if (!file) {
     throw new FileUploadError(
@@ -114,7 +119,11 @@ export async function uploadInternal(
     // master record and downstream readers (selectors, realtime) get it.
     const { data: full } = await Files.getFile(asset.file_id);
     const cloudFile = apiFileRecordToCloudFile(full);
-    const normalized = fromCloudFile(cloudFile, source);
+    const normalized = preserveUploadedIdentity(
+      fromCloudFile(cloudFile, source),
+      asset.file_id,
+      "asset upload",
+    );
     return {
       ...normalized,
       asset,
@@ -157,7 +166,14 @@ export async function uploadInternal(
   // will see (visibility/owner/permissions/checksum/...).
   const { data: full } = await Files.getFile(result.fileId);
   const cloudFile = apiFileRecordToCloudFile(full);
-  const normalized = fromCloudFile(cloudFile, source);
+  // The upload response is the authoritative creation acknowledgement. A
+  // follow-up hydration may enrich metadata, but it must never erase or replace
+  // the id that the server just committed (an observed production response
+  // adapter did exactly that, leaving chat with only a temporary/share URL).
+  const normalized = preserveUploadedIdentity(
+    fromCloudFile(cloudFile, source),
+    result.fileId,
+  );
 
   // Stitch on the share-link fields — cloudUpload created them in the
   // same round-trip as the upload. URL precedence is deliberate: a PUBLIC
@@ -184,6 +200,42 @@ export async function uploadInternal(
   }
 
   return normalized;
+}
+
+/**
+ * Merge metadata from a post-upload hydration without letting that secondary
+ * read erase or replace the identity acknowledged by the creation response.
+ * This is shared by ordinary and asset uploads because both are the same
+ * two-step contract: create → hydrate.
+ */
+export function preserveUploadedIdentity(
+  hydrated: NormalizedFile,
+  authoritativeFileId: string,
+  label = "upload",
+): UploadedNormalizedFile {
+  if (hydrated.fileId !== authoritativeFileId) {
+    console.error(
+      `[file-handler] hydrated ${label} lost or changed its durable identity ` +
+        `(upload=${authoritativeFileId}, hydrated=${hydrated.fileId ?? "<missing>"}); ` +
+        `preserving the upload acknowledgement.`,
+    );
+  }
+  const uploaded = {
+    ...hydrated,
+    fileId: authoritativeFileId,
+  };
+  assertUploadedIdentity(uploaded);
+  return uploaded;
+}
+
+function assertUploadedIdentity(
+  file: NormalizedFile,
+): asserts file is UploadedNormalizedFile {
+  if (!file.fileId) {
+    throw new FileUploadError(
+      "Upload completed without a durable file identity; refusing to attach a temporary URL",
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
