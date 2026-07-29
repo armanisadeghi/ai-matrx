@@ -58,7 +58,15 @@ export function WorkingDocumentEditor({
   surfaceContext,
   readOnly = false,
 }: WorkingDocumentEditorProps) {
-  const { editorMode } = useWorkingDocViewState(conversationId);
+  const { editorMode: storedEditorMode } = useWorkingDocViewState(conversationId);
+  // The TUI modes (wysiwyg / markdown-split) have NO read-only rendering —
+  // coerce them to preview for view-only sharees so a stored rich-mode
+  // preference can't reopen an editable surface whose writes are RLS-doomed.
+  const editorMode =
+    readOnly &&
+    (storedEditorMode === "wysiwyg" || storedEditorMode === "markdown-split")
+      ? "preview"
+      : storedEditorMode;
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const handleChange = useCallback(

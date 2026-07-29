@@ -38,7 +38,6 @@ import {
   selectWorkingDocMaterialized,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
-import { useAccess } from "@/utils/permissions/access";
 import {
   attachScratchpadToConversationThunk,
   detachScratchpadFromConversationThunk,
@@ -147,6 +146,7 @@ export function WorkingDocumentPanel({
     unbind,
     linkToDocument,
     openInCanvas,
+    viewOnly,
   } = useWorkingDocument(conversationId, kind);
 
   // Note id awaiting a merge decision (user picked a note while the document
@@ -229,24 +229,9 @@ export function WorkingDocumentPanel({
   const materialized = useAppSelector(
     selectWorkingDocMaterialized(conversationId, kind),
   );
-
-  // ── View-vs-edit gate (the canonical access primitive). A viewer-level
-  // sharee gets a read-only editor: their UPDATE would be RLS-refused (0 rows)
-  // and surface as an unresolvable fake "concurrent edit" conflict loop.
-  // Unmaterialized reserved ids resolve `exists:false` → never read-only.
-  const docBindingId =
-    !isScratch && binding.kind === "cx_working_document" && binding.id
-      ? binding.id
-      : undefined;
-  const docAccess = useAccess(
-    docBindingId && materialized ? "working_document" : undefined,
-    docBindingId && materialized ? docBindingId : undefined,
-  );
-  const viewOnly =
-    !docAccess.loading &&
-    docAccess.exists &&
-    docAccess.level === "view" &&
-    !docAccess.isOwner;
+  // `viewOnly` comes from useWorkingDocument — the single write authority
+  // resolves the view-vs-edit gate itself and no-ops every durable write
+  // under it; the panel only renders the read-only chrome.
 
   // The working document's RichDocument identity. Drives the full action
   // toolkit (copy / read-aloud / save-to-notes/task / HTML page / email /
@@ -319,6 +304,7 @@ export function WorkingDocumentPanel({
             <WorkingDocumentViewControls
               conversationId={conversationId}
               showDiff={kind === "working"}
+              readOnly={viewOnly}
             />
           )}
 
@@ -571,7 +557,9 @@ export function WorkingDocumentPanel({
               onOpenChange={(open) =>
                 setWorkingDocHistoryOpen(conversationId, open)
               }
-              onApplySnapshot={(snapshotContent) => {
+              // Applying a snapshot is a WRITE — hidden for view-only sharees
+              // (their commit would be RLS-refused).
+              onApplySnapshot={viewOnly ? undefined : (snapshotContent) => {
                 onChange(snapshotContent);
                 flush();
                 setWorkingDocHistoryOpen(conversationId, false);

@@ -626,9 +626,19 @@ function AttachDocDeepLink({
   const openWorkingDocPanel = useOpenWorkingDocumentPanel();
   const attachedDocRef = useRef<string | null>(null);
   const docId = searchParams.get("attachDoc");
+  // The launcher mints the conversationId during render but registers the
+  // conversations-slice record in an effect. The pending-edge queue treats an
+  // UNKNOWN conversation as already-persisted (direct write), so attaching
+  // before the record exists would fire a doomed assoc_add instead of
+  // queueing — wait for registration.
+  const conversationRegistered = useAppSelector((state) =>
+    conversationId
+      ? Boolean(state.conversations.byConversationId[conversationId])
+      : false,
+  );
 
   useEffect(() => {
-    if (!docId || !conversationId || !ready) return;
+    if (!docId || !conversationId || !ready || !conversationRegistered) return;
     if (attachedDocRef.current === docId) return;
     if (!UUID_RE.test(docId)) return;
     attachedDocRef.current = docId;
@@ -648,7 +658,14 @@ function AttachDocDeepLink({
       "",
       `${window.location.pathname}${qs ? `?${qs}` : ""}`,
     );
-  }, [conversationId, dispatch, docId, openWorkingDocPanel, ready]);
+  }, [
+    conversationId,
+    conversationRegistered,
+    dispatch,
+    docId,
+    openWorkingDocPanel,
+    ready,
+  ]);
 
   return null;
 }

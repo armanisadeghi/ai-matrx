@@ -46,19 +46,30 @@ interface WorkingDocumentViewControlsProps {
    * disables the mode dropdown. Default true.
    */
   showDiff?: boolean;
+  /**
+   * View-only sharee: hide the rich/TUI edit modes — those editors have no
+   * read-only rendering, and a viewer's writes are RLS-doomed. Plain / Split /
+   * Preview all honor readOnly.
+   */
+  readOnly?: boolean;
 }
 
 export function WorkingDocumentViewControls({
   conversationId,
   className,
   showDiff = true,
+  readOnly = false,
 }: WorkingDocumentViewControlsProps) {
   const { mainView, editorMode, historyOpen, hasUnseenChange, saving } =
     useWorkingDocViewState(conversationId);
 
+  const modes = readOnly
+    ? WORKING_DOC_VIEW_MODES.filter(
+        (m) => m.mode !== "wysiwyg" && m.mode !== "markdown-split",
+      )
+    : WORKING_DOC_VIEW_MODES;
   const current =
-    WORKING_DOC_VIEW_MODES.find((m) => m.mode === editorMode) ??
-    WORKING_DOC_VIEW_MODES[0];
+    modes.find((m) => m.mode === editorMode) ?? modes[0];
   const CurrentIcon = current.icon;
   const editorActive = mainView === "editor";
 
@@ -92,7 +103,7 @@ export function WorkingDocumentViewControls({
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-[150px]">
-          {WORKING_DOC_VIEW_MODES.map(({ mode, label, icon: Icon }) => (
+          {modes.map(({ mode, label, icon: Icon }) => (
             <DropdownMenuItem
               key={mode}
               onSelect={() => {

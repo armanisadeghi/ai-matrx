@@ -192,6 +192,18 @@ async function persistOrQueueLink(
     );
     return "skipped";
   }
+  // Ephemeral (incognito) conversations never get a chat.conversation row —
+  // no confirm ever fires, so a queued op would leak for the session and
+  // nothing durable is expected anyway.
+  if (
+    state.conversations.byConversationId[args.conversationId]?.isEphemeral
+  ) {
+    console.info(
+      "[working-document] ephemeral conversation — document link kept in Redux only",
+      { conversationId: args.conversationId, documentId: args.documentId },
+    );
+    return "skipped";
+  }
   if (shouldQueueEdgeOps(state, args.conversationId)) {
     queueEdgeOp(args.conversationId, {
       op: "link",
