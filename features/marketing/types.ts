@@ -182,7 +182,34 @@ export interface UpdateBrandInput {
 export interface SiteListRow extends MarketingSite {
   health_score: number | null;
   scored_pages: number;
+  /** Canonical live pages (`web.page`, non-deleted). */
+  page_count: number;
+  /** Distinct pages Google Search Console has ever reported for the site. */
+  pages_in_gsc: number;
+  /** 28-day GSC click sum; null when Google has no data in the window. */
+  gsc_clicks_28d: number | null;
+  /** 28-day GSC impression sum; null when Google has no data in the window. */
+  gsc_impressions_28d: number | null;
+  /** Impression-weighted 28-day average position; null without data. */
+  gsc_position_28d: number | null;
+  /** Prior 28-day click sum (days 29-56); null when that window is empty. */
+  gsc_clicks_prev_28d: number | null;
+  /** Prior 28-day impression sum; null when that window is empty. */
+  gsc_impressions_prev_28d: number | null;
+  /** Distinct dates with GSC data in the prior window — deltas render only
+   *  when this is near-complete, so partial history never fakes a trend. */
+  gsc_prev_days: number;
+  /** Most recent date Google has reported any data for this site. */
+  gsc_latest_date: string | null;
 }
+
+/** One day of the site-level GSC rollup (`web.site_gsc_daily`). */
+export type SiteGscDailyPoint =
+  Database["web"]["Functions"]["site_gsc_daily"]["Returns"][number];
+
+/** One top page by clicks over a window (`web.site_gsc_top_pages`). */
+export type SiteGscTopPage =
+  Database["web"]["Functions"]["site_gsc_top_pages"]["Returns"][number];
 
 export interface PageListRow extends MarketingPage {
   /** Live sitemap memberships for this canonical page (0 = in no sitemap). */

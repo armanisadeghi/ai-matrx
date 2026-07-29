@@ -482,6 +482,20 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
   ],
   components: [
     {
+      name: "SiteKpiPeeks (GscMetricPeek / PagesPeek / MiniTrendChart / TrendDelta)",
+      filePath: "features/marketing/components/sites/SiteKpiPeeks.tsx",
+      description:
+        "Hover peeks for the sites-portfolio KPI cells: 30/90-day daily GSC trend (hand-rolled SVG chart — no charting lib) + top-10 pages via web.site_gsc_daily / web.site_gsc_top_pages, plus the page-inventory breakdown and the trend-delta chip (suppressed while prior-window GSC coverage is partial).",
+      tier: "official",
+    },
+    {
+      name: "SitePeekWindow (site quick view)",
+      filePath: "features/marketing/components/sites/SitePeekWindow.tsx",
+      description:
+        "Non-blocking draggable WindowPanel quick view for one site (KPI tiles, metric-switchable 90d chart, top pages). Opened from the sites-list row menu behind a dynamic() edge — AgentPeekWindow pattern.",
+      tier: "official",
+    },
+    {
       name: "KeywordResearchLauncher + LiveResearchFeed (features/marketing/seo/keyword-research)",
       filePath:
         "features/marketing/seo/keyword-research/components/KeywordResearchLauncher.tsx",

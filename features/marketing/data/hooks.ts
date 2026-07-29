@@ -71,6 +71,8 @@ import {
   fetchSiteAuditTrendRows,
   fetchSiteMediaRows,
   getPageContent,
+  getSiteGscDaily,
+  getSiteGscTopPages,
   savePageContent,
   updatePageDesiredValues,
   updatePageIntent,
@@ -159,6 +161,36 @@ export function useSites(state: MatrxDataTableQueryState) {
     queryKey: marketingKeys.sites(state),
     queryFn: ({ signal }) => listSites(state, signal),
     placeholderData: keepPreviousData,
+  });
+}
+
+/** Daily site-level GSC rollup for peeks/quick views. Fetch on open only. */
+export function useSiteGscDaily(siteId: string, days: number, enabled = true) {
+  return useQuery({
+    queryKey: [...marketingKeys.site(siteId), "gsc-daily", days] as const,
+    queryFn: ({ signal }) => getSiteGscDaily(siteId, days, signal),
+    enabled: Boolean(siteId) && enabled,
+    staleTime: 5 * 60_000,
+  });
+}
+
+/** Top pages by clicks for a site over a window. Fetch on open only. */
+export function useSiteGscTopPages(
+  siteId: string,
+  days: number,
+  limit: number,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: [
+      ...marketingKeys.site(siteId),
+      "gsc-top-pages",
+      days,
+      limit,
+    ] as const,
+    queryFn: ({ signal }) => getSiteGscTopPages(siteId, days, limit, signal),
+    enabled: Boolean(siteId) && enabled,
+    staleTime: 5 * 60_000,
   });
 }
 

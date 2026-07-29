@@ -47230,6 +47230,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "analysis_result_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
+          {
             foreignKeyName: "result_batch_fk"
             columns: ["batch_id"]
             isOneToOne: false
@@ -47345,6 +47352,13 @@ export type Database = {
             referencedRelation: "site"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "batch_item_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
         ]
       }
       batch_job: {
@@ -47422,6 +47436,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "site"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_job_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
           },
         ]
       }
@@ -47745,6 +47766,13 @@ export type Database = {
             referencedRelation: "site"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "crawl_event_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
         ]
       }
       crawl_schedule: {
@@ -47832,6 +47860,13 @@ export type Database = {
             referencedRelation: "site"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "crawl_schedule_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
         ]
       }
       crawl_session: {
@@ -47899,6 +47934,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "site"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crawl_session_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
           },
         ]
       }
@@ -48040,6 +48082,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "crawl_url_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
+          {
             foreignKeyName: "crawl_url_snapshot_id_fkey"
             columns: ["snapshot_id"]
             isOneToOne: false
@@ -48168,6 +48217,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "site"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discovered_item_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
           },
           {
             foreignKeyName: "discovered_item_snapshot_id_fkey"
@@ -48320,6 +48376,13 @@ export type Database = {
             referencedRelation: "site"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "finding_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
         ]
       }
       gsc_page_stat: {
@@ -48399,6 +48462,13 @@ export type Database = {
             referencedRelation: "site"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "gsc_page_stat_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
         ]
       }
       link_edge: {
@@ -48472,6 +48542,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "site"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_edge_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
           },
           {
             foreignKeyName: "link_edge_snapshot_id_fkey"
@@ -48617,6 +48694,13 @@ export type Database = {
             referencedRelation: "site"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "page_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
         ]
       }
       page_content: {
@@ -48683,6 +48767,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "site"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_content_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
           },
         ]
       }
@@ -48772,6 +48863,13 @@ export type Database = {
             referencedRelation: "site"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "page_evidence_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
         ]
       }
       page_sitemap: {
@@ -48853,6 +48951,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "site"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_sitemap_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
           },
           {
             foreignKeyName: "page_sitemap_sitemap_id_fkey"
@@ -48938,6 +49043,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "site"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
           },
         ]
       }
@@ -49074,6 +49186,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "site"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "screenshot_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
           },
           {
             foreignKeyName: "screenshot_snapshot_id_fkey"
@@ -49260,6 +49379,13 @@ export type Database = {
             referencedRelation: "site"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "site_item_config_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
         ]
       }
       sitemap: {
@@ -49346,6 +49472,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "site"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sitemap_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
           },
         ]
       }
@@ -49469,6 +49602,13 @@ export type Database = {
             referencedRelation: "site"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "snapshot_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
         ]
       }
     }
@@ -49519,6 +49659,13 @@ export type Database = {
             referencedRelation: "site"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "batch_item_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
         ]
       }
       v_cost_by_page: {
@@ -49549,6 +49696,13 @@ export type Database = {
             referencedRelation: "site"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "batch_item_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
         ]
       }
       v_cost_by_run: {
@@ -49565,6 +49719,13 @@ export type Database = {
             referencedRelation: "site"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "batch_item_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
         ]
       }
       v_cost_by_site: {
@@ -49579,6 +49740,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "site"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_item_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
           },
         ]
       }
@@ -49650,6 +49818,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "analysis_result_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
+          {
             foreignKeyName: "result_batch_fk"
             columns: ["batch_id"]
             isOneToOne: false
@@ -49693,6 +49868,13 @@ export type Database = {
             referencedRelation: "site"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "page_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
         ]
       }
       v_page_score: {
@@ -49723,6 +49905,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "site"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_result_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
           },
         ]
       }
@@ -49766,7 +49955,30 @@ export type Database = {
             referencedRelation: "site"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "finding_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
         ]
+      }
+      v_site_kpis: {
+        Row: {
+          gsc_clicks_28d: number | null
+          gsc_clicks_prev_28d: number | null
+          gsc_cur_days: number | null
+          gsc_impressions_28d: number | null
+          gsc_impressions_prev_28d: number | null
+          gsc_latest_date: string | null
+          gsc_position_28d: number | null
+          gsc_prev_days: number | null
+          page_count: number | null
+          pages_in_gsc: number | null
+          site_id: string | null
+        }
+        Relationships: []
       }
       v_site_score: {
         Row: {
@@ -49781,6 +49993,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "site"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_result_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
           },
         ]
       }
@@ -49919,6 +50138,26 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      site_gsc_daily: {
+        Args: { p_days?: number; p_site_id: string }
+        Returns: {
+          avg_position: number
+          clicks: number
+          impressions: number
+          stat_date: string
+        }[]
+      }
+      site_gsc_top_pages: {
+        Args: { p_days?: number; p_limit?: number; p_site_id: string }
+        Returns: {
+          avg_position: number
+          clicks: number
+          impressions: number
+          page_id: string
+          path: string
+          url: string
+        }[]
       }
     }
     Enums: {

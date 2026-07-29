@@ -40,6 +40,8 @@ import type {
   SitemapCoverage,
   SitemapPageRow,
   SiteSitemap,
+  SiteGscDailyPoint,
+  SiteGscTopPage,
   SiteListRow,
   SiteOverviewMetrics,
   SiteScreenshot,
@@ -55,7 +57,7 @@ import type {
   UpdateSiteIdentityInput,
 } from "@/features/marketing/types";
 import { isJsonRecord } from "@/features/marketing/types";
-import type { Json } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { parseSnapshotImages } from "@/features/marketing/lib/snapshot-content";
 import type { SiteMediaPageRow } from "@/features/marketing/lib/snapshot-media";
@@ -193,11 +195,48 @@ export const SITE_COLUMNS =
  */
 export const MARKETING_SITES_IS_DELIBERATE_ORG_BROWSE = true as const;
 
+/** Every KPI column exposed by `web.v_site_kpis` — ONE select string. */
+const SITE_KPI_COLUMNS =
+  "site_id, page_count, pages_in_gsc, gsc_clicks_28d, gsc_impressions_28d, gsc_position_28d, gsc_clicks_prev_28d, gsc_impressions_prev_28d, gsc_cur_days, gsc_prev_days, gsc_latest_date";
+
+/** Portfolio sort columns served by `web.v_site_kpis` (not `web.site`). */
+const SITE_KPI_SORT_COLUMNS = new Set([
+  "page_count",
+  "pages_in_gsc",
+  "gsc_clicks_28d",
+  "gsc_impressions_28d",
+  "gsc_position_28d",
+]);
+
+type SiteKpiRow = Database["web"]["Views"]["v_site_kpis"]["Row"];
+
+function mergeSiteListRow(
+  site: MarketingSite,
+  score: { site_score: number | null; scored_pages: number | null } | undefined,
+  kpis: SiteKpiRow | undefined,
+): SiteListRow {
+  return {
+    ...site,
+    health_score: score?.site_score ?? null,
+    scored_pages: Number(score?.scored_pages ?? 0),
+    page_count: Number(kpis?.page_count ?? 0),
+    pages_in_gsc: Number(kpis?.pages_in_gsc ?? 0),
+    gsc_clicks_28d: kpis?.gsc_clicks_28d ?? null,
+    gsc_impressions_28d: kpis?.gsc_impressions_28d ?? null,
+    gsc_position_28d: kpis?.gsc_position_28d ?? null,
+    gsc_clicks_prev_28d: kpis?.gsc_clicks_prev_28d ?? null,
+    gsc_impressions_prev_28d: kpis?.gsc_impressions_prev_28d ?? null,
+    gsc_prev_days: Number(kpis?.gsc_prev_days ?? 0),
+    gsc_latest_date: kpis?.gsc_latest_date ?? null,
+  };
+}
+
 export async function listSites(
   state: MatrxDataTableQueryState,
   signal?: AbortSignal,
 ): Promise<PagedResult<SiteListRow>> {
   const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
   const { from, to } = rangeFor(state);
   const sortColumns = {
     name: "name",
@@ -207,7 +246,10 @@ export async function listSites(
     updated_at: "updated_at",
     created_at: "created_at",
   } as const;
-  const requestedSort = state.sort?.id ?? "updated_at";
+  const requestedSort = state.sort?.id ?? "gsc_clicks_28d";
+  const kpiSort = SITE_KPI_SORT_COLUMNS.has(requestedSort)
+    ? requestedSort
+    : null;
   const sortColumn =
     sortColumns[requestedSort as keyof typeof sortColumns] ?? "updated_at";
   const ascending = state.sort?.direction === "asc";
@@ -232,36 +274,115 @@ export async function listSites(
   if (status) query = query.eq("status", status);
   if (visibility) query = query.eq("visibility", visibility);
 
+  if (kpiSort) {
+    // KPI sorts live on web.v_site_kpis, so the ORDER BY has to happen there:
+    // pull every matching site id (portfolio scale — hundreds, not millions),
+    // rank + page on the view, then hydrate the page of site rows.
+    const idResponse = await query
+      .order("id", { ascending: true })
+      .range(0, 1999)
+      .abortSignal(abortSignal);
+    const matching = assertData(idResponse.data, idResponse.error);
+    const total = idResponse.count ?? matching.length;
+    if (matching.length === 0) return { rows: [], total };
+    const siteById = new Map(matching.map((site) => [site.id, site]));
+
+    const kpiResponse = await db
+      .from("v_site_kpis")
+      .select(SITE_KPI_COLUMNS)
+      .in(
+        "site_id",
+        matching.map((site) => site.id),
+      )
+      .order(kpiSort, { ascending, nullsFirst: false })
+      .order("site_id", { ascending })
+      .range(from, to)
+      .abortSignal(abortSignal);
+    const kpiRows = assertData(kpiResponse.data, kpiResponse.error);
+    const pageIds = kpiRows.flatMap((row) => (row.site_id ? [row.site_id] : []));
+    if (pageIds.length === 0) return { rows: [], total };
+
+    const scoreResponse = await db
+      .from("v_site_score")
+      .select("site_id, site_score, scored_pages")
+      .in("site_id", pageIds)
+      .abortSignal(abortSignal);
+    const scores = assertData(scoreResponse.data, scoreResponse.error);
+    const scoreBySite = new Map(scores.map((score) => [score.site_id, score]));
+
+    return {
+      rows: kpiRows.flatMap((kpis) => {
+        const site = kpis.site_id ? siteById.get(kpis.site_id) : undefined;
+        if (!site) return [];
+        return [mergeSiteListRow(site, scoreBySite.get(site.id), kpis)];
+      }),
+      total,
+    };
+  }
+
   query = query.order(sortColumn, { ascending, nullsFirst: false });
   query = query.order("id", { ascending });
   const response = await query
     .range(from, to)
-    .abortSignal(signal ?? new AbortController().signal);
+    .abortSignal(abortSignal);
   const sites = assertData(response.data, response.error);
 
   if (sites.length === 0) return { rows: [], total: response.count ?? 0 };
-  const scoreResponse = await db
-    .from("v_site_score")
-    .select("site_id, site_score, scored_pages")
-    .in(
-      "site_id",
-      sites.map((site) => site.id),
-    )
-    .abortSignal(signal ?? new AbortController().signal);
+  const siteIds = sites.map((site) => site.id);
+  const [scoreResponse, kpiResponse] = await Promise.all([
+    db
+      .from("v_site_score")
+      .select("site_id, site_score, scored_pages")
+      .in("site_id", siteIds)
+      .abortSignal(abortSignal),
+    db
+      .from("v_site_kpis")
+      .select(SITE_KPI_COLUMNS)
+      .in("site_id", siteIds)
+      .abortSignal(abortSignal),
+  ]);
   const scores = assertData(scoreResponse.data, scoreResponse.error);
+  const kpiRows = assertData(kpiResponse.data, kpiResponse.error);
   const bySite = new Map(scores.map((score) => [score.site_id, score]));
+  const kpisBySite = new Map(kpiRows.map((row) => [row.site_id, row]));
 
   return {
-    rows: sites.map((site) => {
-      const score = bySite.get(site.id);
-      return {
-        ...site,
-        health_score: score?.site_score ?? null,
-        scored_pages: Number(score?.scored_pages ?? 0),
-      };
-    }),
+    rows: sites.map((site) =>
+      mergeSiteListRow(site, bySite.get(site.id), kpisBySite.get(site.id)),
+    ),
     total: response.count ?? 0,
   };
+}
+
+/** Site-level daily GSC rollup for the KPI peek chart. */
+export async function getSiteGscDaily(
+  siteId: string,
+  days: number,
+  signal?: AbortSignal,
+): Promise<SiteGscDailyPoint[]> {
+  const db = await authenticatedWebDb(supabase);
+  const response = await db
+    .rpc("site_gsc_daily", { p_site_id: siteId, p_days: days })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
+/** Top canonical pages by clicks over a window, for the KPI peek. */
+export async function getSiteGscTopPages(
+  siteId: string,
+  days: number,
+  limit: number,
+  signal?: AbortSignal,
+): Promise<SiteGscTopPage[]> {
+  const db = await authenticatedWebDb(supabase);
+  const response = await db
+    .rpc("site_gsc_top_pages", {
+      p_site_id: siteId,
+      p_days: days,
+      p_limit: limit,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
 }
 
 export async function listSiteOptions(
