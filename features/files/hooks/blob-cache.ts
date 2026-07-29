@@ -49,6 +49,7 @@ import {
   postBlobCacheClearUser,
   postBlobCacheInvalidate,
 } from "@/features/files/cache/register-service-worker";
+import { openBlobCacheDb } from "@/features/files/cache/idb-store";
 
 let identityUserId: string | null = null;
 
@@ -113,7 +114,6 @@ export async function hydrateFromIdb(fileId: string): Promise<CacheEntry | null>
     // we fall back to scanning the user's entries for a matching fileId.
     // This stays O(entries-per-user) which is fine for the realistic upper
     // bound (~hundreds of cached PDFs).
-    const { openBlobCacheDb } = await import("@/features/files/cache/idb-store");
     const db = await openBlobCacheDb();
     if (!db) return null;
     const matches = await db.blobs

@@ -50,6 +50,7 @@ import {
   satisfiesPermissionLevel,
 } from "./types";
 import { getShareableResource, getResourceTypeLabel } from "./registry";
+import { sendDirectActionMessage } from "@/features/messaging/service/sendDirectActionMessage";
 
 /**
  * Minimal query surface used by the dynamic-table helpers below. The registry
@@ -274,8 +275,8 @@ export async function shareWithUser(
 
       // (2) In-app DM with a clickable resource card. Lazy import keeps the
       // messaging service out of the permissions bundle.
-      import("@/features/messaging/service/sendDirectActionMessage")
-        .then(({ sendDirectActionMessage }) =>
+      Promise.resolve()
+        .then(() =>
           sendDirectActionMessage({
             currentUserId: user.id,
             recipientId: userId,

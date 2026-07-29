@@ -47,6 +47,7 @@ import {
   REHYDRATE_ACTION_TYPE,
   type RehydrateAction,
 } from "@/lib/sync/engine/rehydrate";
+import { resolveActiveOrgContext } from "@/lib/organizations/resolveActiveOrgContext";
 
 export interface AppContextState {
   /** Currently active organization */
@@ -460,9 +461,6 @@ export const appContextPolicy = definePolicy<AppContextState>({
   remote: {
     fetch: async ({ identity, signal }) => {
       if (identity.type !== "auth") return null; // guests have no server org
-      const { resolveActiveOrgContext } = await import(
-        "@/lib/organizations/resolveActiveOrgContext"
-      );
       const resolved = await resolveActiveOrgContext(identity.userId);
       if (signal.aborted || !resolved) return null;
       return resolved as Partial<AppContextState>;
