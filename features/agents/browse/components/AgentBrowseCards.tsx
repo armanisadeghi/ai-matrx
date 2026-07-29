@@ -4,7 +4,7 @@
 //
 // The card view, taking the best of both originals:
 //   from /agents/all — the clean card shape, the icon avatar, the favorite star
-//     in the corner, the archived pill;
+//     in the corner, the archived pill, card-click → options menu;
 //   from /transcripts — a small number of NAMED primary actions instead of a
 //     row of 10 unlabeled icons nobody can decode.
 //
@@ -14,12 +14,25 @@
 // actions a user actually reaches for, and the SAME complete "…" menu the
 // table row has. Nothing is lost; everything is findable in one place.
 
+import { useState } from "react";
 import Link from "next/link";
-import { Play, Pencil, Eye, Star, Archive, MoreHorizontal, Webhook } from "lucide-react";
+import {
+  Play,
+  Pencil,
+  Eye,
+  Star,
+  Archive,
+  MoreHorizontal,
+  Webhook,
+} from "lucide-react";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+  shouldOpenInNewTab,
+  openInNewTab,
+} from "@/utils/navigation/should-open-in-new-tab";
 import type { AgentBrowseRow } from "../types";
 
 interface Props {
@@ -58,6 +71,8 @@ export function AgentBrowseCards({
   menuFor,
   onToggleFavorite,
 }: Props) {
+  const [menuRowId, setMenuRowId] = useState<string | null>(null);
+
   return (
     <div
       className={cn(
@@ -70,7 +85,24 @@ export function AgentBrowseCards({
       {rows.map((row) => (
         <div
           key={row.id}
-          className="group flex flex-col rounded-lg border border-border bg-card transition-colors hover:border-primary/40"
+          role="button"
+          tabIndex={0}
+          title="Click to choose action"
+          onClick={(e) => {
+            // Cmd/ctrl-click → Run in a new tab (classic card behaviour).
+            if (shouldOpenInNewTab(e)) {
+              openInNewTab(`/agents/${row.id}/run`);
+              return;
+            }
+            setMenuRowId(row.id);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setMenuRowId(row.id);
+            }
+          }}
+          className="group flex cursor-pointer flex-col rounded-lg border border-border bg-card transition-colors hover:border-primary/40"
         >
           <div className="flex items-start gap-2.5 p-3 pb-2">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -80,6 +112,7 @@ export function AgentBrowseCards({
             <div className="min-w-0 flex-1">
               <Link
                 href={`/agents/${row.id}/run`}
+                onClick={(e) => e.stopPropagation()}
                 className="line-clamp-2 text-sm font-medium leading-snug hover:underline"
               >
                 {row.name}
@@ -112,16 +145,17 @@ export function AgentBrowseCards({
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center gap-0.5">
+            <div
+              className="flex shrink-0 items-center gap-0.5"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 type="button"
                 aria-label={
                   row.is_favorite ? "Remove from favorites" : "Add to favorites"
                 }
                 title={
-                  row.is_owner
-                    ? undefined
-                    : "Shared agents can't be favorited"
+                  row.is_owner ? undefined : "Shared agents can't be favorited"
                 }
                 disabled={!row.is_owner}
                 onClick={() => onToggleFavorite(row)}
@@ -134,7 +168,12 @@ export function AgentBrowseCards({
                   )}
                 />
               </button>
-              <ItemMenu config={menuFor(row)} align="end">
+              <ItemMenu
+                config={menuFor(row)}
+                align="end"
+                open={menuRowId === row.id}
+                onOpenChange={(next) => setMenuRowId(next ? row.id : null)}
+              >
                 <button
                   type="button"
                   aria-label={`Actions for ${row.name}`}
@@ -147,8 +186,16 @@ export function AgentBrowseCards({
           </div>
 
           <div className="mt-auto flex items-center gap-1 border-t border-border px-2 py-1">
-            <CardAction href={`/agents/${row.id}/run`} icon={Play} label="Run" />
-            <CardAction href={`/agents/${row.id}/build`} icon={Pencil} label="Edit" />
+            <CardAction
+              href={`/agents/${row.id}/run`}
+              icon={Play}
+              label="Run"
+            />
+            <CardAction
+              href={`/agents/${row.id}/build`}
+              icon={Pencil}
+              label="Edit"
+            />
             <CardAction href={`/agents/${row.id}`} icon={Eye} label="View" />
           </div>
         </div>

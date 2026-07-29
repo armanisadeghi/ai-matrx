@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
+  ArrowUpRight,
   Brain,
   CheckCircle2,
   Library,
@@ -12,24 +13,28 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { YouTubeDiscovery } from "@/features/marketing/discovery/youtube/YouTubeDiscovery";
 import { YouTubeResearchActions } from "@/features/marketing/discovery/youtube/YouTubeResearchActions";
 import {
+  getYouTubeLibraryVideo,
   getTopicYouTubeVideos,
-  processTopicYouTubeVideos,
+  streamYouTubeVideoAnalysis,
 } from "@/features/marketing/discovery/youtube/service";
 import type { YouTubeVideoLibraryRecord } from "@/features/marketing/discovery/youtube/types";
 import { useTopicId } from "../../context/ResearchContext";
 
 export default function ResearchYouTubePage() {
+  const dispatch = useAppDispatch();
   const topicId = useTopicId();
   const [view, setView] = useState<"discover" | "library">("discover");
   const [videos, setVideos] = useState<YouTubeVideoLibraryRecord[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<string | null>(null);
 
   const loadLibrary = async () => {
     setLoading(true);
@@ -80,23 +85,39 @@ export default function ResearchYouTubePage() {
 
   const processSelected = async () => {
     if (selected.size === 0) return;
+    const videoIds = [...selected];
     setProcessing(true);
+    setBatchProgress(`Connecting to video 1 of ${videoIds.length}…`);
     try {
-      const result = await processTopicYouTubeVideos(topicId, [...selected]);
-      const queued = result.queued ?? [];
+      for (const [index, videoId] of videoIds.entries()) {
+        setBatchProgress(`Analyzing video ${index + 1} of ${videoIds.length}…`);
+        await streamYouTubeVideoAnalysis(dispatch, videoId, false, {
+          onEvent: (event) => {
+            if (event.event === "info" && event.data.user_message) {
+              setBatchProgress(
+                `${index + 1}/${videoIds.length} · ${event.data.user_message}`,
+              );
+            }
+          },
+        });
+        const updated = await getYouTubeLibraryVideo(videoId);
+        setVideos((current) =>
+          current.map((video) =>
+            video.youtube_video_id === videoId ? updated : video,
+          ),
+        );
+      }
       toast.success(
-        queued.length > 0
-          ? `Started ${queued.length} video ${queued.length === 1 ? "analysis" : "analyses"}.`
-          : "Every selected video was already complete or processing.",
+        `Completed ${videoIds.length} video ${videoIds.length === 1 ? "analysis" : "analyses"}.`,
       );
       setSelected(new Set());
-      await loadLibrary();
     } catch (caught) {
       toast.error(
         caught instanceof Error ? caught.message : "Analysis could not start.",
       );
     } finally {
       setProcessing(false);
+      setBatchProgress(null);
     }
   };
 
@@ -146,7 +167,9 @@ export default function ResearchYouTubePage() {
               ) : (
                 <Brain className="mr-2 h-4 w-4" />
               )}
-              Analyze {selected.size} selected
+              {processing
+                ? (batchProgress ?? "Analyzing selected videos…")
+                : `Analyze ${selected.size} selected`}
             </Button>
           )}
         </div>
@@ -165,7 +188,7 @@ export default function ResearchYouTubePage() {
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
               Each video is linked to this topic, while its metadata, comments,
-              transcript, and Gemini research are stored once and reused
+              transcript, and structured analysis are stored once and reused
               everywhere.
             </p>
           </div>
@@ -240,6 +263,21 @@ export default function ResearchYouTubePage() {
                       <p className="mt-3 line-clamp-2 text-sm leading-5 text-muted-foreground">
                         {video.description || "No description supplied."}
                       </p>
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="mt-4 rounded-xl"
+                      >
+                        <Link
+                          href={marketingRoutes.youtubeVideo(
+                            video.youtube_video_id,
+                          )}
+                        >
+                          <ArrowUpRight className="mr-1.5 h-4 w-4" />
+                          Open full page
+                        </Link>
+                      </Button>
                       <YouTubeResearchActions
                         videoId={video.youtube_video_id}
                         initialStatus={video.processing_status}

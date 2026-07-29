@@ -37,18 +37,26 @@ same enriched YouTube Data API primitive as the automated research pipeline.
   loosen, or remove it, and can select exact under-10 or under-20-minute
   post-enrichment duration filters in addition to YouTube's native buckets.
 - Every surface is theme-aware while preserving the established dark design.
-- Result actions can copy the canonical YouTube link, and previews can copy the
-  displayed description text.
+- Result cards show views, likes, subscribers, and formatted video length as
+  first-class metrics. They link clearly to both the shared modal preview and
+  the permanent full-page route. Result actions can copy the canonical YouTube
+  link, and previews can copy the displayed description text.
 - Modal and direct-page previews share `YouTubeVideoPreviewContent`, use the
   privacy-enhanced YouTube embed primitive, and link between discovery and the
   durable direct route.
 - Every result is registered in the server's permanent global YouTube library
-  as soon as it is discovered. Analyze with Gemini and comment enrichment are
+  as soon as it is discovered. Analysis and comment enrichment are
   available on cards, modal previews, and direct preview pages. Completed
   structured analysis renders through the canonical Content IR
   `KindInstanceRender` path and the live `video_transcript_research` component;
   a parse failure renders the saved raw fallback instead of losing the paid
   response.
+- Analysis uses the canonical authenticated NDJSON stream. Cards, previews,
+  direct pages, and Research batches show live preparation/analysis/completion
+  messages, then reconcile the final saved record. The stream is presentation;
+  disconnecting never cancels the durable server work.
+- `KindInstanceRender` owns the structured artifact's visual shell. The YouTube
+  action component must not wrap it in another decorative card.
 - Topic association remains an explicit user choice on the Research YouTube
   step. Discovery alone never silently adds a source to a topic.
 
@@ -61,8 +69,12 @@ enrich comments, and open a result on YouTube. Topic selection lives at
 
 ## Changelog
 
+- **2026-07-28** — Promoted video length into the card metrics, added explicit
+  full-page navigation from every result surface, renamed the vendor-neutral
+  action to Analyze, replaced passive polling with live analysis streams, and
+  removed the redundant outer analysis card.
 - **2026-07-28** — Connected discovery and both preview forms to the canonical
-  permanent video library, Gemini processing, comment enrichment, processing
+  permanent video library, AI processing, comment enrichment, processing
   status polling, and the structured/fallback analysis renderer.
 - **2026-07-28** — Added each video's formatted duration to the shared preview
   metadata row alongside views and likes.

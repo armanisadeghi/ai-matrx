@@ -499,7 +499,10 @@ export function MatrxDataTable<T>({
                       id: "csv",
                       label: "CSV (current view)",
                       build: () => ({
-                        content: rowsToCsvFromColumns(processed, visibleColumns),
+                        content: rowsToCsvFromColumns(
+                          processed,
+                          visibleColumns,
+                        ),
                         extension: "csv",
                         mime: "text/csv",
                       }),
@@ -710,6 +713,7 @@ export function MatrxDataTable<T>({
                               dirty={dirty}
                               onCommit={(next) => commitCell(id, field, next)}
                               href={cellHref}
+                              editTrigger={col.editTrigger}
                             />
                           ) : cellHref ? (
                             <Link

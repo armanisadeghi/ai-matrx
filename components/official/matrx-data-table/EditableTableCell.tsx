@@ -42,17 +42,23 @@ interface EditableTableCellProps {
    * moves to a hover/focus-revealed pencil instead of click-text-to-edit.
    */
   href?: string;
+  /**
+   * `"pencil"` (or any `href`) → hover pencil only. `"click"` (default) →
+   * click the cell body to edit. Whole-row click owners use `"pencil"` so the
+   * body doesn't steal the gesture into edit mode.
+   */
+  editTrigger?: "click" | "pencil";
 }
 
-/** The link + hover-pencil shell shared by the string and popover editors. */
-function LinkedCellShell({
+/** Display + hover-pencil shell; optional real link when `href` is set. */
+function CellEditShell({
   href,
   display,
   dirty,
   className,
   editButton,
 }: {
-  href: string;
+  href?: string;
   display: React.ReactNode;
   dirty?: boolean;
   className?: string;
@@ -66,13 +72,17 @@ function LinkedCellShell({
         className,
       )}
     >
-      <Link
-        href={href}
-        onClick={(e) => e.stopPropagation()}
-        className="min-w-0 flex-1 truncate rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        {display}
-      </Link>
+      {href ? (
+        <Link
+          href={href}
+          onClick={(e) => e.stopPropagation()}
+          className="min-w-0 flex-1 truncate rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {display}
+        </Link>
+      ) : (
+        <span className="min-w-0 flex-1 truncate">{display}</span>
+      )}
       {editButton}
     </span>
   );
@@ -90,8 +100,11 @@ export function EditableTableCell({
   onCommit,
   className,
   href,
+  editTrigger = "click",
 }: EditableTableCellProps) {
   const [open, setOpen] = useState(false);
+  // A linked cell always edits via pencil — the body is a real navigable link.
+  const usePencil = Boolean(href) || editTrigger === "pencil";
 
   if (editType === "string") {
     return (
@@ -102,14 +115,15 @@ export function EditableTableCell({
         onCommit={onCommit}
         className={className}
         href={href}
+        usePencil={usePencil}
       />
     );
   }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      {href ? (
-        <LinkedCellShell
+      {usePencil ? (
+        <CellEditShell
           href={href}
           display={display}
           dirty={dirty}
@@ -171,6 +185,7 @@ function InlineStringEditor({
   onCommit,
   className,
   href,
+  usePencil,
 }: {
   value: string;
   display: React.ReactNode;
@@ -178,14 +193,15 @@ function InlineStringEditor({
   onCommit: (next: unknown) => void;
   className?: string;
   href?: string;
+  usePencil: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
 
   if (!editing) {
-    if (href) {
+    if (usePencil) {
       return (
-        <LinkedCellShell
+        <CellEditShell
           href={href}
           display={display}
           dirty={dirty}
@@ -426,7 +442,12 @@ function TagsEditor({
       )}
 
       <div className="flex justify-end gap-1 pt-1">
-        <Button size="sm" variant="ghost" className="h-7 px-2" onClick={onCancel}>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 px-2"
+          onClick={onCancel}
+        >
           <X className="h-3.5 w-3.5" />
         </Button>
         <Button size="sm" className="h-7 px-2" onClick={() => onCommit(tags)}>

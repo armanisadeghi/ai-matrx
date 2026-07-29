@@ -1,4 +1,7 @@
 import { apiGet, apiPost, buildPath } from "@/lib/api/typed-client";
+import { callApi } from "@/lib/api/call-api";
+import type { TypedStreamEvent } from "@/lib/api/types";
+import type { AppDispatch } from "@/lib/redux/store";
 import type {
   ProcessYouTubeVideosResponse,
   YouTubeSearchPage,
@@ -43,6 +46,31 @@ export async function processYouTubeVideo(
     { force },
   );
   return data;
+}
+
+export async function streamYouTubeVideoAnalysis(
+  dispatch: AppDispatch,
+  videoId: string,
+  force = false,
+  options: {
+    signal?: AbortSignal;
+    onEvent?: (event: TypedStreamEvent) => void;
+  } = {},
+): Promise<void> {
+  const result = await dispatch(
+    callApi({
+      path: "/research/youtube/videos/{video_id}/process/stream",
+      method: "POST",
+      pathParams: { video_id: videoId },
+      body: { force },
+      stream: true,
+      signal: options.signal,
+      onStreamEvent: options.onEvent,
+    }),
+  );
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
 }
 
 export async function enrichYouTubeComments(

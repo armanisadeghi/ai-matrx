@@ -120,10 +120,7 @@ export interface ItemMenuSubmenu extends ItemMenuEntryBase {
 }
 
 export type ItemMenuEntry =
-  | ItemMenuCommand
-  | ItemMenuCheckbox
-  | ItemMenuLink
-  | ItemMenuSubmenu;
+  ItemMenuCommand | ItemMenuCheckbox | ItemMenuLink | ItemMenuSubmenu;
 
 // ── Sections + config ───────────────────────────────────────────────────────
 
@@ -163,7 +160,13 @@ export interface ItemMenuProps {
   /** Dropdown alignment relative to trigger. Default "end". */
   align?: "start" | "center" | "end";
   side?: "top" | "right" | "bottom" | "left";
-  /** Observe open state (e.g. ItemRow pins the kebab visible while open). */
+  /**
+   * Controlled open state. Pass when a surface opens the menu from outside the
+   * trigger (e.g. whole-row click opens the same kebab menu). Omit for the
+   * default uncontrolled trigger-driven behaviour.
+   */
+  open?: boolean;
+  /** Observe / drive open state (e.g. ItemRow pins the kebab visible while open). */
   onOpenChange?: (open: boolean) => void;
   /**
    * Radix `onCloseAutoFocus` passthrough. ItemRow uses it to move focus into
@@ -303,6 +306,8 @@ export function isSubmenu(entry: ItemMenuEntry): entry is ItemMenuSubmenu {
   return entry.kind === "submenu";
 }
 
-export function resolveItemMenuConfig(input: ItemMenuConfigInput): ItemMenuConfig {
+export function resolveItemMenuConfig(
+  input: ItemMenuConfigInput,
+): ItemMenuConfig {
   return typeof input === "function" ? input() : input;
 }

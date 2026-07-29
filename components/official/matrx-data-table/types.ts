@@ -43,6 +43,13 @@ export interface MatrxColumnDef<T> {
    */
   editable?: CellEditType;
   /**
+   * How inline edit starts. Default `"click"` (click the cell body). `"pencil"`
+   * shows a hover/focus pencil; the cell body no longer starts edit — so a
+   * whole-row click can own that gesture. Forced to `"pencil"` when `href` is
+   * set (D112 — the body is a real link).
+   */
+  editTrigger?: "click" | "pencil";
+  /**
    * Options when `editable === "select"`. Also used by `"tags"` as the
    * suggestion list (existing values), while still allowing new entries.
    */

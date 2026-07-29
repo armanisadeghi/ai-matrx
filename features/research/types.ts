@@ -1388,6 +1388,23 @@ export interface AnalysisFailed {
   error: string;
 }
 
+export interface YouTubeAnalysisStarted {
+  type: "youtube_analysis_started";
+  video_id: string;
+}
+
+export interface YouTubeAnalysisActive {
+  type: "youtube_analysis_active";
+  video_id: string;
+  message: string;
+}
+
+export interface YouTubeAnalysisComplete {
+  type: "youtube_analysis_complete";
+  video_id: string;
+  video: components["schemas"]["YouTubeVideoLibraryRecord"];
+}
+
 export interface AnalyzeAllComplete {
   type: "analyze_all_complete";
   count: number;
@@ -1510,6 +1527,9 @@ export type ResearchDataEvent =
   | AnalysisStart
   | AnalysisComplete
   | AnalysisFailed
+  | YouTubeAnalysisStarted
+  | YouTubeAnalysisActive
+  | YouTubeAnalysisComplete
   | AnalyzeAllComplete
   | RetryComplete
   | RetryAllComplete
@@ -1571,6 +1591,9 @@ const RESEARCH_DATA_EVENT_TYPES = [
   "analysis_start",
   "analysis_complete",
   "analysis_failed",
+  "youtube_analysis_started",
+  "youtube_analysis_active",
+  "youtube_analysis_complete",
   "analyze_all_complete",
   "retry_complete",
   "retry_all_complete",

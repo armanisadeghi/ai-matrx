@@ -5,16 +5,11 @@
 // The dense view — maximum agents per screen for someone who knows what they
 // are looking for and wants to scan, not browse.
 //
-// Reworked from the first pass, which just dropped `ItemRow` into a 3-column
-// grid: names truncated at ~20 characters, there was no category or timestamp,
-// nothing was aligned column-to-column, and the favorite star occupied the
-// leading slot on every row whether or not the agent was starred — so the
-// names did not line up either.
-//
-// Now it is a real dense list: one row per agent, full width, with aligned
-// zones — star | name | category | tags | updated | kebab. It reads like a
-// table without table chrome, which is the point of a compact view.
+// One row per agent, full width, with aligned zones — star | name | category |
+// tags | updated | kebab. Whole-row click opens the same options menu as the
+// kebab (classic /agents behaviour). Name is a real link to Run.
 
+import { useState } from "react";
 import Link from "next/link";
 import { Star, Archive, MoreVertical } from "lucide-react";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
@@ -30,7 +25,6 @@ interface Props {
   showOwner: boolean;
   menuFor: (row: AgentBrowseRow) => () => ItemMenuConfig;
   onToggleFavorite: (row: AgentBrowseRow) => void;
-  onOpenRow: (row: AgentBrowseRow) => void;
 }
 
 export function AgentBrowseRows({
@@ -39,9 +33,9 @@ export function AgentBrowseRows({
   showOwner,
   menuFor,
   onToggleFavorite,
-  onOpenRow,
 }: Props) {
   const compact = density === "compact";
+  const [menuRowId, setMenuRowId] = useState<string | null>(null);
 
   return (
     <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
@@ -50,16 +44,12 @@ export function AgentBrowseRows({
           key={row.id}
           role="button"
           tabIndex={0}
-          onClick={() => onOpenRow(row)}
+          onClick={() => setMenuRowId(row.id)}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              onOpenRow(row);
+              setMenuRowId(row.id);
             }
-          }}
-          onAuxClick={(e) => {
-            // Middle-click opens in a new tab, matching the table and cards.
-            if (e.button === 1) window.open(`/agents/${row.id}/run`, "_blank");
           }}
           className={cn(
             "group flex w-full cursor-pointer items-center gap-3 px-3 text-left transition-colors hover:bg-muted/50",
@@ -89,9 +79,8 @@ export function AgentBrowseRows({
           </button>
 
           {/* D112: the name is a REAL link — keyboard focus, SR semantics,
-              cmd/middle-click — while the whole-row click stays a mouse
-              convenience. stopPropagation keeps the row handler from
-              double-firing on link clicks. */}
+              cmd/middle-click — while the whole-row click opens the options
+              menu. stopPropagation keeps the row handler from also firing. */}
           <Link
             href={`/agents/${row.id}/run`}
             onClick={(e) => e.stopPropagation()}
@@ -146,7 +135,12 @@ export function AgentBrowseRows({
             {relativeTime(row.updated_at)}
           </span>
 
-          <ItemMenu config={menuFor(row)} align="end">
+          <ItemMenu
+            config={menuFor(row)}
+            align="end"
+            open={menuRowId === row.id}
+            onOpenChange={(next) => setMenuRowId(next ? row.id : null)}
+          >
             <button
               type="button"
               aria-label={`Actions for ${row.name}`}

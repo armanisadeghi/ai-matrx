@@ -11,12 +11,13 @@
 //   * EVERY column sorts and filters (app policy). The controlled
 //     `columnFilters` state maps 1:1 onto `agx_list_scoped(p_filters)`, and
 //     finite-valued columns get real options with counts from the facets RPC.
-//   * The WHOLE ROW is clickable and shows a pointer cursor. Interactive cells
-//     (favorite star, the actions kebab, an open inline editor) stop
-//     propagation so they never trigger navigation.
+//   * The WHOLE ROW opens the agent options menu (same ItemMenu as the kebab) —
+//     matching classic /agents. Name stays a real link to Run; name/description
+//     edit only via the hover pencil.
 //   * Name / Description / Category / Tags edit in place. Edits stay local
 //     until the floating Save pill commits them.
 
+import { useState } from "react";
 import { MoreVertical, Star } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type {
@@ -50,7 +51,6 @@ interface Props {
   showSharedColumns: boolean;
   hiddenColumns: string[];
   menuFor: (row: AgentBrowseRow) => () => ItemMenuConfig;
-  onOpenRow: (row: AgentBrowseRow) => void;
   onToggleFavorite: (row: AgentBrowseRow) => void;
   onSaveEdits: (edits: Record<string, AgentRowEdit>) => Promise<void>;
   onQueryChange: (next: {
@@ -114,12 +114,15 @@ export function AgentBrowseTable({
   showSharedColumns,
   hiddenColumns,
   menuFor,
-  onOpenRow,
   onToggleFavorite,
   onSaveEdits,
   onQueryChange,
   emptyAction,
 }: Props) {
+  // ONE open menu at a time — row click and kebab share this state so the
+  // options surface is the same whether you click the row or the ⋮.
+  const [menuRowId, setMenuRowId] = useState<string | null>(null);
+
   const columns: MatrxColumnDef<AgentBrowseRow>[] = BROWSE_COLUMNS.filter(
     (spec) =>
       (showSharedColumns || !spec.scopedToShared) &&
@@ -137,13 +140,15 @@ export function AgentBrowseTable({
       // Finite value sets get real options WITH counts, so the user picks from
       // what exists instead of guessing at a text box. Columns that declare
       // their own fixed options (the date buckets) keep them.
-      filterOptions: spec.column.filterOptions ?? facetOptions?.map((v) => ({
-        value: v.value,
-        label:
-          v.value === "__none__"
-            ? (NONE_LABEL[spec.id] ?? "None")
-            : `${v.value} (${v.count})`,
-      })),
+      filterOptions:
+        spec.column.filterOptions ??
+        facetOptions?.map((v) => ({
+          value: v.value,
+          label:
+            v.value === "__none__"
+              ? (NONE_LABEL[spec.id] ?? "None")
+              : `${v.value} (${v.count})`,
+        })),
       editOptions:
         spec.column.editable === "select" || spec.column.editable === "tags"
           ? facetOptions
@@ -158,7 +163,9 @@ export function AgentBrowseTable({
   const favoriteCell = (row: AgentBrowseRow) => (
     <button
       type="button"
-      aria-label={row.is_favorite ? "Remove from favorites" : "Add to favorites"}
+      aria-label={
+        row.is_favorite ? "Remove from favorites" : "Add to favorites"
+      }
       disabled={!row.is_owner}
       onClick={(e) => {
         e.stopPropagation();
@@ -209,11 +216,11 @@ export function AgentBrowseTable({
       // The page owns the search box; a second one inside the table would be
       // two affordances fighting over one query.
       toolbar={{ search: false }}
-      // Row click navigates. The side panel and row-window are off because the
-      // "…" menu already carries Quick look and every other record action.
+      // Row click opens the options menu. Side panel / row-window stay off —
+      // the menu already carries Quick look and every other record action.
       detail={{ enabled: false }}
       window={{ enabled: false }}
-      onRowOpen={onOpenRow}
+      onRowOpen={(row) => setMenuRowId(row.id)}
       edit={{
         enabled: true,
         onSave: async (edits) => {
@@ -221,7 +228,12 @@ export function AgentBrowseTable({
         },
       }}
       rowActions={(row) => (
-        <ItemMenu config={menuFor(row)} align="end">
+        <ItemMenu
+          config={menuFor(row)}
+          align="end"
+          open={menuRowId === row.id}
+          onOpenChange={(next) => setMenuRowId(next ? row.id : null)}
+        >
           <button
             type="button"
             aria-label={`Actions for ${row.name}`}

@@ -51,13 +51,13 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 **YouTube library (2026-07-28).** `research.youtube_video` is a canonical
 system entity with one row per YouTube ID, shared across every topic/user so
-Gemini never processes the same immutable video twice. The Research YouTube
+the analysis engine never processes the same immutable video twice. The Research YouTube
 step searches with all normal discovery controls, visibly dims results already
 attached to the topic, and lets the user select/add any subset. Topic membership
 is the existing `rs_source` plus a canonical
 `research_source → youtube_video` association. Cards and previews can start
-global Gemini analysis or comment enrichment. The Library view shows processing
-state and supports batch analysis. When a global analysis completes, the server
+global analysis or comment enrichment. The Library view shows processing state
+and supports live streamed batch analysis. When a global analysis completes, the server
 materializes its transcript and structured findings into the existing
 `rs_content`/`rs_analysis` pipeline without a second model call, so synthesis
 and document generation consume it normally.

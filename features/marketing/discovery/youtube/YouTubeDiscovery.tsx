@@ -1,8 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { FormEvent, useState, type ComponentProps } from "react";
 import {
+  ArrowUpRight,
   CalendarDays,
   ChevronDown,
   ChevronLeft,
@@ -17,6 +19,7 @@ import {
   ThumbsUp,
   Users,
   ListPlus,
+  Clock3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
@@ -31,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Youtube } from "@/components/icons/brand-icons";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { youTubeWatchUrl } from "@/lib/media/youtube";
 import { YouTubeVideoPreviewDialog } from "./YouTubeVideoPreview";
 import {
@@ -790,12 +794,17 @@ function VideoCard({
           {video.channel_title ?? "YouTube creator"}
         </p>
         <h2 className="line-clamp-2 min-h-12 text-base font-semibold leading-6">
-          {video.title}
+          <Link
+            href={marketingRoutes.youtubeVideo(video.video_id)}
+            className="transition hover:text-red-600 hover:underline dark:hover:text-red-400"
+          >
+            {video.title}
+          </Link>
         </h2>
         <p className="mt-3 line-clamp-2 min-h-10 text-sm leading-5 text-muted-foreground dark:text-zinc-500">
           {video.description || "No description supplied."}
         </p>
-        <div className="mt-4 grid grid-cols-3 gap-2 border-y border-border py-3 dark:border-white/10">
+        <div className="mt-4 grid grid-cols-4 gap-2 border-y border-border py-3 dark:border-white/10">
           <Metric
             icon={Eye}
             value={formatYouTubeCount(video.view_count)}
@@ -811,6 +820,11 @@ function VideoCard({
             value={formatYouTubeCount(video.channel_subscriber_count)}
             label="subscribers"
           />
+          <Metric
+            icon={Clock3}
+            value={formatYouTubeDuration(video.duration)}
+            label="length"
+          />
         </div>
         <div className="mt-4 flex items-center justify-between gap-3 text-xs text-muted-foreground dark:text-zinc-500">
           <span className="flex items-center gap-1.5">
@@ -821,13 +835,23 @@ function VideoCard({
             <span>{engagement.toFixed(2)}% engagement</span>
           )}
         </div>
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.5rem_2.5rem] gap-2">
           <Button
             onClick={onPreview}
-            className="flex-1 rounded-xl bg-foreground text-background hover:bg-foreground/85 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+            className="min-w-0 rounded-xl bg-foreground text-background hover:bg-foreground/85 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
           >
             <Play className="mr-2 h-4 w-4" />
             Preview
+          </Button>
+          <Button
+            asChild
+            variant="outline"
+            className="min-w-0 rounded-xl border-border bg-transparent dark:border-white/10"
+          >
+            <Link href={marketingRoutes.youtubeVideo(video.video_id)}>
+              <ArrowUpRight className="mr-1.5 h-4 w-4" />
+              Full page
+            </Link>
           </Button>
           <Button
             asChild

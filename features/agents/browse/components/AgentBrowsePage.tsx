@@ -13,7 +13,6 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus, Network, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,15 +28,19 @@ import { AddToSetDialog } from "./AddToSetDialog";
 import { ClassicViewNotice } from "./ClassicViewNotice";
 import { DEFAULT_HIDDEN_COLUMNS } from "../columns";
 import { saveAgentRowEdits } from "../service";
-import { AGENT_LIST_SCOPES, type AgentBrowseRow, type AgentRowEdit } from "../types";
+import {
+  AGENT_LIST_SCOPES,
+  type AgentBrowseRow,
+  type AgentRowEdit,
+} from "../types";
 
 // Heavy, conditional, and only ever needed after a user action — the two rules
 // that make a dynamic import worth its cost.
 const AgentSneakPeekModal = dynamic(
   () =>
-    import(
-      "@/features/agents/components/agent-listings/AgentSneakPeekModal"
-    ).then((m) => ({ default: m.AgentSneakPeekModal })),
+    import("@/features/agents/components/agent-listings/AgentSneakPeekModal").then(
+      (m) => ({ default: m.AgentSneakPeekModal }),
+    ),
   { ssr: false },
 );
 const ShareModal = dynamic(
@@ -59,7 +62,6 @@ const SURFACE_KEY = "agents-browse";
 const SURFACE_DEFAULTS = { version: 4, hiddenColumns: DEFAULT_HIDDEN_COLUMNS };
 
 export function AgentBrowsePage() {
-  const router = useRouter();
   const { prefs, setPrefs, reset } = useListViewPrefs(
     SURFACE_KEY,
     SURFACE_DEFAULTS,
@@ -82,8 +84,6 @@ export function AgentBrowsePage() {
   // every row has the same owner. Offering them there is pure noise.
   const showSharedColumns = browse.query.scope.kind !== "mine";
 
-  const openRow = (row: AgentBrowseRow) => router.push(`/agents/${row.id}/run`);
-
   /**
    * Commit the table's pending inline edits. Each row is one UPDATE; the local
    * row is patched so the list reflects the change without a refetch flash,
@@ -98,7 +98,9 @@ export function AgentBrowsePage() {
       }),
     );
     toast.success(
-      entries.length === 1 ? "Agent updated" : `${entries.length} agents updated`,
+      entries.length === 1
+        ? "Agent updated"
+        : `${entries.length} agents updated`,
     );
   };
 
@@ -180,7 +182,6 @@ export function AgentBrowsePage() {
             showSharedColumns={showSharedColumns}
             hiddenColumns={prefs.hiddenColumns}
             menuFor={actions.menuFor}
-            onOpenRow={openRow}
             onToggleFavorite={actions.toggleFavorite}
             onSaveEdits={saveEdits}
             emptyAction={newAgentButton}
@@ -220,7 +221,6 @@ export function AgentBrowsePage() {
             showOwner={showSharedColumns}
             menuFor={actions.menuFor}
             onToggleFavorite={actions.toggleFavorite}
-            onOpenRow={openRow}
           />
         )}
 

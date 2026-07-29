@@ -10,13 +10,22 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import {
   enrichYouTubeComments,
   getYouTubeLibraryVideo,
-  processYouTubeVideo,
+  streamYouTubeVideoAnalysis,
 } from "./service";
 import type { YouTubeVideoLibraryRecord } from "./types";
+
+const ANALYSIS_PHASE_LABELS: Record<string, string> = {
+  connected: "Connected. Preparing the video…",
+  processing: "Preparing the video and saved metadata…",
+  analyzing:
+    "Watching the video, building the transcript, and checking its claims…",
+  complete: "Analysis complete. Loading the structured research…",
+};
 
 function objectValue(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -33,10 +42,13 @@ export function YouTubeResearchActions({
   initialStatus?: string | null;
   showAnalysis?: boolean;
 }) {
+  const dispatch = useAppDispatch();
   const [record, setRecord] = useState<YouTubeVideoLibraryRecord | null>(null);
   const [status, setStatus] = useState(initialStatus ?? "unprocessed");
   const [processing, setProcessing] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
+  const [progressMessage, setProgressMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!showAnalysis) return;
@@ -46,46 +58,124 @@ export function YouTubeResearchActions({
         if (!active) return;
         setRecord(result);
         setStatus(result.processing_status ?? "unprocessed");
+        setActionError(null);
       })
-      .catch(() => undefined);
+      .catch((caught: unknown) => {
+        if (!active) return;
+        setActionError(
+          caught instanceof Error
+            ? caught.message
+            : "The saved analysis could not be loaded.",
+        );
+      });
     return () => {
       active = false;
     };
   }, [showAnalysis, videoId]);
 
   useEffect(() => {
-    if (status !== "processing") return;
+    if (status !== "processing" || processing) return;
     const interval = window.setInterval(() => {
       getYouTubeLibraryVideo(videoId)
         .then((result) => {
           setRecord(result);
           setStatus(result.processing_status ?? "unprocessed");
+          setActionError(null);
           if (result.processing_status === "completed") {
+            setProgressMessage(null);
             toast.success("YouTube analysis is complete.");
           }
         })
-        .catch(() => undefined);
+        .catch((caught: unknown) => {
+          setActionError(
+            caught instanceof Error
+              ? caught.message
+              : "Live analysis status is temporarily unavailable.",
+          );
+        });
     }, 5000);
     return () => window.clearInterval(interval);
-  }, [status, videoId]);
+  }, [processing, status, videoId]);
 
   const analyze = async (force = false) => {
     setProcessing(true);
+    setStatus("processing");
+    setProgressMessage("Connecting to the live analysis…");
+    setActionError(null);
     try {
-      const result = await processYouTubeVideo(videoId, force);
-      if ((result.already_complete ?? []).includes(videoId)) {
+      await streamYouTubeVideoAnalysis(dispatch, videoId, force, {
+        onEvent: (event) => {
+          if (event.event === "phase") {
+            setProgressMessage(
+              ANALYSIS_PHASE_LABELS[event.data.phase] ?? event.data.phase,
+            );
+            return;
+          }
+          if (event.event === "info") {
+            setProgressMessage(
+              event.data.user_message ??
+                event.data.system_message ??
+                "Analysis is progressing…",
+            );
+            return;
+          }
+          if (event.event === "data") {
+            const data = objectValue(event.data);
+            if (data?.type === "youtube_analysis_active") {
+              setProgressMessage(
+                typeof data.message === "string"
+                  ? data.message
+                  : "Analysis is already running and will update here.",
+              );
+            }
+            if (data?.type === "youtube_analysis_complete") {
+              setProgressMessage("Analysis complete. Rendering the research…");
+            }
+            return;
+          }
+          if (event.event === "error") {
+            setActionError(
+              event.data.user_message ??
+                event.data.message ??
+                "Analysis could not be completed.",
+            );
+          }
+        },
+      });
+      const current = await getYouTubeLibraryVideo(videoId);
+      setRecord(current);
+      setStatus(current.processing_status ?? "unprocessed");
+      if (current.processing_status === "completed") {
+        setProgressMessage(null);
+        toast.success("Analysis is complete.");
+      } else if (current.processing_status === "processing") {
+        setProgressMessage(
+          "Analysis is continuing. This saved record will update automatically.",
+        );
+      } else {
+        setProgressMessage(null);
+        setActionError(
+          current.processing_error ?? "Analysis did not complete successfully.",
+        );
+      }
+    } catch (caught) {
+      const message =
+        caught instanceof Error ? caught.message : "Analysis could not start.";
+      setActionError(message);
+      try {
         const current = await getYouTubeLibraryVideo(videoId);
         setRecord(current);
         setStatus(current.processing_status ?? "unprocessed");
-        toast.success("This video has already been analyzed.");
-      } else {
-        setStatus("processing");
-        toast.success("Video analysis started. You can leave this page.");
+        if (current.processing_status === "processing") {
+          setProgressMessage(
+            "The live connection ended, but saved processing is continuing.",
+          );
+        }
+      } catch {
+        setStatus("failed");
+        setProgressMessage(null);
       }
-    } catch (caught) {
-      toast.error(
-        caught instanceof Error ? caught.message : "Analysis could not start.",
-      );
+      toast.error(message);
     } finally {
       setProcessing(false);
     }
@@ -93,9 +183,11 @@ export function YouTubeResearchActions({
 
   const loadComments = async () => {
     setLoadingComments(true);
+    setActionError(null);
     try {
       const updated = await enrichYouTubeComments(videoId);
       setRecord(updated);
+      setActionError(null);
       toast.success("YouTube comments were added to the video record.");
     } catch (caught) {
       toast.error(
@@ -127,11 +219,7 @@ export function YouTubeResearchActions({
           ) : (
             <Brain className="mr-2 h-4 w-4" />
           )}
-          {isRunning
-            ? "Analyzing…"
-            : isComplete
-              ? "Analysis complete"
-              : "Analyze with Gemini"}
+          {isRunning ? "Analyzing…" : isComplete ? "Analyzed" : "Analyze"}
         </Button>
         <Button
           type="button"
@@ -160,6 +248,26 @@ export function YouTubeResearchActions({
           </Button>
         )}
       </div>
+      {isRunning && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="overflow-hidden rounded-xl border border-red-500/20 bg-red-500/[0.045] px-3 py-2.5"
+        >
+          <div className="flex items-center gap-2 text-xs text-foreground/80">
+            <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-500" />
+            <span>{progressMessage ?? "Analysis is progressing…"}</span>
+          </div>
+          <div className="mt-2 h-1 overflow-hidden rounded-full bg-red-500/10">
+            <div className="h-full w-2/3 animate-pulse rounded-full bg-red-500/70" />
+          </div>
+        </div>
+      )}
+      {actionError && (
+        <p role="alert" className="text-xs text-red-600 dark:text-red-300">
+          {actionError}
+        </p>
+      )}
       {showAnalysis && record && <YouTubeAnalysis record={record} />}
     </div>
   );
@@ -189,17 +297,10 @@ function YouTubeAnalysis({ record }: { record: YouTubeVideoLibraryRecord }) {
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-muted/20 p-3 dark:border-white/10 dark:bg-white/[0.025]">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-red-600 dark:text-red-400">
-        Gemini research
-      </p>
-      <div className="mt-3">
-        <KindInstanceRender
-          kind="video_transcript_research"
-          value={analysis}
-          showRoutingNote={false}
-        />
-      </div>
-    </section>
+    <KindInstanceRender
+      kind="video_transcript_research"
+      value={analysis}
+      showRoutingNote={false}
+    />
   );
 }

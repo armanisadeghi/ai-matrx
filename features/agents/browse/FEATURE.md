@@ -75,15 +75,19 @@ drops the option you just deselected traps the user inside their own filter.
 
 ### 1. Row interaction
 
-- **The whole row is clickable** and shows a pointer cursor; it opens the agent.
-  Interactive cells (favorite star, the actions kebab, an open inline editor)
-  stop propagation so they never navigate.
-- **What you can see, you can change.** Name, Description, Category (dropdown)
-  and Tags (chips, free-text with existing values as suggestions) edit inline.
-  Edits stay local until the floating Save pill commits them, then persist via
-  one UPDATE per row. `"tags"` was added to the canonical
-  `MatrxDataTable` `CellEditType` for this — extended, not forked.
-- Row actions live behind a vertical kebab (⋮), one affordance per row.
+- **The whole row opens the options menu** (same `ItemMenu` as the kebab) —
+  matching classic `/agents`. Pointer cursor. Interactive cells (favorite star,
+  the kebab, an open inline editor, the Name link) stop propagation.
+- **Name is a real link to Run** (keyboard, SR, cmd/middle-click). Card and
+  dense views match.
+- **Name and Description edit only via the hover pencil.** Clicking the text
+  never enters edit mode — that gesture belongs to the row menu. Category
+  (dropdown) and Tags (chips) still edit on click. Edits stay local until the
+  floating Save pill commits them, then persist via one UPDATE per row.
+  `"tags"` and `editTrigger: "pencil"` live on the canonical `MatrxDataTable`
+  — extended, not forked.
+- Row actions also live behind a vertical kebab (⋮); row click and kebab share
+  one controlled open state so they can never drift.
 
 ### 2. Style persists, query does not
 
@@ -199,6 +203,10 @@ hostile at 2,000.
 
 ## Change log
 
+- **2026-07-28** — Restored classic row-click → options menu (table, dense
+  rows, cards). Name/Description inline edit is pencil-only
+  (`editTrigger: "pencil"` on `MatrxDataTable`); Name stays a real link to
+  Run. `ItemMenu` gained controlled `open` so the row and kebab share one menu.
 - **2026-07-28 (D112)** — Rows are no longer mouse-only. `MatrxDataTable`
   columns gained `href`: the title cell renders a real `next/link` (keyboard
   focus, SR link semantics, cmd/middle-click new tab) while the whole-row

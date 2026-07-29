@@ -115,11 +115,13 @@ function EntryInner({
   const Icon = entry.icon;
   const destructive = isCommand(entry) && entry.tone === "destructive";
   const shortcutText =
-    (isCommand(entry) || isCheckbox(entry))
+    isCommand(entry) || isCheckbox(entry)
       ? (entry.shortcut ?? entry.shortcutKey?.toUpperCase())
       : undefined;
   const secondLine =
-    entry.disabled && entry.disabledReason ? entry.disabledReason : entry.description;
+    entry.disabled && entry.disabledReason
+      ? entry.disabledReason
+      : entry.description;
 
   return (
     <>
@@ -129,14 +131,16 @@ function EntryInner({
             "h-4 w-4 shrink-0",
             destructive
               ? "text-destructive"
-              : entry.iconClassName ?? "text-muted-foreground",
+              : (entry.iconClassName ?? "text-muted-foreground"),
           )}
         />
       )}
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate">{entry.label}</span>
         {secondLine && (
-          <span className="truncate text-xs text-muted-foreground">{secondLine}</span>
+          <span className="truncate text-xs text-muted-foreground">
+            {secondLine}
+          </span>
         )}
       </span>
       {entry.badge && (
@@ -202,7 +206,11 @@ function MenuLeaf({
     return (
       <family.Sub>
         <family.SubTrigger disabled={entry.disabled} className="gap-2">
-          <EntryInner entry={entry} Shortcut={family.Shortcut} showShortcut={false} />
+          <EntryInner
+            entry={entry}
+            Shortcut={family.Shortcut}
+            showShortcut={false}
+          />
         </family.SubTrigger>
         <family.SubContent>
           <MenuSections
@@ -249,7 +257,10 @@ function MenuLeaf({
     <family.Item
       disabled={entry.disabled}
       onSelect={() => runCommand(entry)}
-      className={cn("gap-2", entry.tone === "destructive" && DESTRUCTIVE_ITEM_CLASS)}
+      className={cn(
+        "gap-2",
+        entry.tone === "destructive" && DESTRUCTIVE_ITEM_CLASS,
+      )}
     >
       <EntryInner entry={entry} Shortcut={family.Shortcut} />
     </family.Item>
@@ -272,8 +283,7 @@ function makeShortcutHandler(
       .filter((e) => !e.hidden && !e.disabled);
     const match = entries.find(
       (e) =>
-        (isCommand(e) || isCheckbox(e)) &&
-        e.shortcutKey?.toLowerCase() === key,
+        (isCommand(e) || isCheckbox(e)) && e.shortcutKey?.toLowerCase() === key,
     );
     if (!match) return;
     event.preventDefault();
@@ -294,21 +304,25 @@ export function ItemMenu({
   children,
   align = "end",
   side,
+  open: openProp,
   onOpenChange,
   onCloseAutoFocus,
   contentMinWidth = "12rem",
   presentation = "auto",
 }: ItemMenuProps) {
   const isMobile = useIsMobile();
-  const [open, setOpen] = useState(false);
-  const [resolved, setResolved] = useState<ItemMenuConfig | null>(null);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = openProp !== undefined;
+  const open = isControlled ? openProp : uncontrolledOpen;
+  // Resolve while open so controlled open (whole-row click) and trigger open
+  // share one path — no setState-during-render, no empty first frame.
+  const resolved = open ? resolveItemMenuConfig(config) : null;
   // Fades the overflowing edge so a long menu never looks like it ends at the
   // clip. Measured, so a short menu gets no fade at all.
   const scrollFade = useScrollFade();
 
   const handleOpenChange = (next: boolean) => {
-    if (next) setResolved(resolveItemMenuConfig(config));
-    setOpen(next);
+    if (!isControlled) setUncontrolledOpen(next);
     onOpenChange?.(next);
   };
 
@@ -332,7 +346,9 @@ export function ItemMenu({
             onOpenChange={handleOpenChange}
             config={resolved}
             onCommand={(entry) => isCommand(entry) && runCommand(entry)}
-            onToggle={(entry, next) => isCheckbox(entry) && runToggle(entry, next)}
+            onToggle={(entry, next) =>
+              isCheckbox(entry) && runToggle(entry, next)
+            }
           />
         )}
       </>
@@ -367,7 +383,9 @@ export function ItemMenu({
           )}
           style={{ minWidth: contentMinWidth }}
           onCloseAutoFocus={onCloseAutoFocus}
-          onKeyDown={makeShortcutHandler(resolved, () => handleOpenChange(false))}
+          onKeyDown={makeShortcutHandler(resolved, () =>
+            handleOpenChange(false),
+          )}
         >
           {resolved.header?.title && (
             <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
