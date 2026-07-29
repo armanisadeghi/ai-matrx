@@ -150,7 +150,6 @@ import { resolveRequestOverrides } from "../utils/request-overrides";
 import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
 import type { ToolSpec } from "@/features/agents/types/tool-injection.types";
 import { isUiGateKey } from "@/lib/redux/slices/agent-settings/ui-gates";
-import { clearUserInput } from "../instance-user-input/instance-user-input.slice";
 
 // Model-gated UI flags that may ride flattened in the builder's working state
 // (e.g. `tools: { allowed: true }`, `image_urls: true`). They must not be
@@ -921,6 +920,8 @@ export const executeManualInstance = createAsyncThunk<
       // Pre-persistence failure: clear the hidden input so the message doesn't
       // linger in the box. It survives as the optimistic user bubble + the
       // `lastSubmittedText` re-apply backup, so nothing is lost.
+      const { clearUserInput } =
+        await import("../instance-user-input/instance-user-input.slice");
       dispatch(clearUserInput(conversationId));
 
       return rejectWithValue(

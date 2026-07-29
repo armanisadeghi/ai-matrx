@@ -101,11 +101,6 @@ import {
 } from "../instance-ui-state/instance-ui-state.selectors";
 import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state.slice";
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
-import { consumePendingCacheBypass } from "../message-crud/cache-bypass.slice";
-import { syncConversationScopes } from "@/features/scopes/redux/thunks/syncConversationScopes";
-import { clearComposerIfUnsubmitted } from "../instance-user-input/clear-composer.thunk";
-import { clearUserInput } from "../instance-user-input/instance-user-input.slice";
-import { clearAllResources } from "../instance-resources/instance-resources.slice";
 
 /**
  * Build the three REQUIRED conversation-start fields for a first-turn request.
@@ -709,7 +704,8 @@ export const executeInstance = createAsyncThunk<
       // See ESCALATION brief: widening the config to include `dispatch:
       // AppDispatch` is the real fix but touches every dispatch() call in
       // this large thunk — too wide a blast radius to verify without tsc.
-      // Static import (build-graph consolidation, Test A): no cycle — slice is action-only.
+      const { consumePendingCacheBypass } =
+        await import("../message-crud/cache-bypass.slice");
       const pendingBypass = dispatch(
         consumePendingCacheBypass(conversationId) as never,
       ) as unknown as
@@ -844,6 +840,8 @@ export const executeInstance = createAsyncThunk<
       // already wrote the tags with REPLACE semantics; a union here would
       // re-add scopes the user just chose to drop.
       if (!isEphemeral && !scopeIdsOverride && payload.scope_ids?.length) {
+        const { syncConversationScopes } =
+          await import("@/features/scopes/redux/thunks/syncConversationScopes");
         void dispatch(syncConversationScopes(conversationId));
       }
 
@@ -928,6 +926,8 @@ export const executeInstance = createAsyncThunk<
         // path — route through the ONE sanctioned clear helper so a live
         // next-message draft is never wiped (and never trips a false violation
         // scream); the just-failed message clears as before.
+        const { clearComposerIfUnsubmitted } =
+          await import("../instance-user-input/clear-composer.thunk");
         dispatch(clearComposerIfUnsubmitted(conversationId, { via: "clear" }));
       }
       return rejectWithValue(message);
@@ -948,6 +948,10 @@ export const executeInstance = createAsyncThunk<
 export const clearAfterSend = createAsyncThunk<void, string>(
   "instances/clearAfterSend",
   async (conversationId, { dispatch }) => {
+    const { clearUserInput } =
+      await import("../instance-user-input/instance-user-input.slice");
+    const { clearAllResources } =
+      await import("../instance-resources/instance-resources.slice");
 
     dispatch(clearUserInput(conversationId));
     dispatch(clearAllResources(conversationId));
