@@ -50,6 +50,13 @@ const ShareModal = dynamic(
     })),
   { ssr: false },
 );
+const AgentActionModal = dynamic(
+  () =>
+    import("@/features/agents/components/agent-listings/AgentActionModal").then(
+      (m) => ({ default: m.AgentActionModal }),
+    ),
+  { ssr: false },
+);
 
 const SURFACE_KEY = "agents-browse";
 
@@ -182,6 +189,7 @@ export function AgentBrowsePage() {
             showSharedColumns={showSharedColumns}
             hiddenColumns={prefs.hiddenColumns}
             menuFor={actions.menuFor}
+            onOpenActionModal={actions.openActionModal}
             onToggleFavorite={actions.toggleFavorite}
             onSaveEdits={saveEdits}
             emptyAction={newAgentButton}
@@ -212,6 +220,7 @@ export function AgentBrowsePage() {
             density={prefs.density}
             showOwner={showSharedColumns}
             menuFor={actions.menuFor}
+            onOpenActionModal={actions.openActionModal}
             onToggleFavorite={actions.toggleFavorite}
           />
         ) : (
@@ -220,6 +229,7 @@ export function AgentBrowsePage() {
             density={prefs.density}
             showOwner={showSharedColumns}
             menuFor={actions.menuFor}
+            onOpenActionModal={actions.openActionModal}
             onToggleFavorite={actions.toggleFavorite}
           />
         )}
@@ -235,6 +245,24 @@ export function AgentBrowsePage() {
         )}
       </div>
 
+      {actions.actionAgent && (
+        <AgentActionModal
+          isOpen
+          onClose={actions.closeActionModal}
+          agentName={actions.actionAgent.name}
+          agentDescription={actions.actionAgent.description ?? undefined}
+          onRun={actions.actionModal.onRun}
+          onEdit={actions.actionModal.onEdit}
+          onView={actions.actionModal.onView}
+          onDuplicate={actions.actionModal.onDuplicate}
+          onShare={actions.actionModal.onShare}
+          onDelete={actions.actionModal.onDelete}
+          onCreateApp={actions.actionModal.onCreateApp}
+          showDelete={actions.actionAgent.is_owner}
+          isDeleting={actions.actionModal.isDeleting}
+          isDuplicating={actions.actionModal.isDuplicating}
+        />
+      )}
       {actions.peekAgentId && (
         <AgentSneakPeekModal
           agentId={actions.peekAgentId}

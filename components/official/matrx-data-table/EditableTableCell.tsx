@@ -67,7 +67,10 @@ function CellEditShell({
   return (
     <span
       className={cn(
-        "group/cell-link flex w-full min-w-0 items-center gap-1 rounded px-0.5",
+        // overflow-hidden + min-w-0: table cells grow to min-content by default,
+        // so a 10-page description must be clipped here — never via truncate on
+        // this flex row (nowrap would stretch the whole table horizontally).
+        "group/cell-link flex w-full min-w-0 max-w-full items-center gap-1 overflow-hidden rounded px-0.5",
         dirty && "ring-1 ring-primary/40 bg-primary/5",
         className,
       )}
@@ -76,12 +79,12 @@ function CellEditShell({
         <Link
           href={href}
           onClick={(e) => e.stopPropagation()}
-          className="min-w-0 flex-1 truncate rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+          className="min-w-0 flex-1 overflow-hidden truncate rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
         >
           {display}
         </Link>
       ) : (
-        <span className="min-w-0 flex-1 truncate">{display}</span>
+        <span className="block min-w-0 flex-1 overflow-hidden">{display}</span>
       )}
       {editButton}
     </span>

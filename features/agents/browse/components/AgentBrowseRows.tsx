@@ -6,11 +6,9 @@
 // are looking for and wants to scan, not browse.
 //
 // One row per agent, full width, with aligned zones — star | name | category |
-// tags | updated | kebab. Whole-row click opens the same options menu as the
-// kebab (classic /agents behaviour). Name is a real link to Run.
+// tags | updated | kebab. Whole-row click opens AgentActionModal (classic
+// chooser). Name is plain text so it does not navigate away.
 
-import { useState } from "react";
-import Link from "next/link";
 import { Star, Archive, MoreVertical } from "lucide-react";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
@@ -24,6 +22,7 @@ interface Props {
   density: "compact" | "comfortable";
   showOwner: boolean;
   menuFor: (row: AgentBrowseRow) => () => ItemMenuConfig;
+  onOpenActionModal: (row: AgentBrowseRow) => void;
   onToggleFavorite: (row: AgentBrowseRow) => void;
 }
 
@@ -32,10 +31,10 @@ export function AgentBrowseRows({
   density,
   showOwner,
   menuFor,
+  onOpenActionModal,
   onToggleFavorite,
 }: Props) {
   const compact = density === "compact";
-  const [menuRowId, setMenuRowId] = useState<string | null>(null);
 
   return (
     <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
@@ -44,11 +43,11 @@ export function AgentBrowseRows({
           key={row.id}
           role="button"
           tabIndex={0}
-          onClick={() => setMenuRowId(row.id)}
+          onClick={() => onOpenActionModal(row)}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              setMenuRowId(row.id);
+              onOpenActionModal(row);
             }
           }}
           className={cn(
@@ -78,20 +77,17 @@ export function AgentBrowseRows({
             />
           </button>
 
-          {/* D112: the name is a REAL link — keyboard focus, SR semantics,
-              cmd/middle-click — while the whole-row click opens the options
-              menu. stopPropagation keeps the row handler from also firing. */}
-          <Link
-            href={`/agents/${row.id}/run`}
-            onClick={(e) => e.stopPropagation()}
+          {/* Plain text — click bubbles to the row → AgentActionModal.
+              Do NOT link to Run/Build here; that steals the chooser. */}
+          <span
             className={cn(
-              "min-w-0 flex-1 truncate rounded font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring",
+              "min-w-0 flex-1 truncate font-medium",
               compact ? "text-xs" : "text-sm",
             )}
             title={row.name}
           >
             {row.name}
-          </Link>
+          </span>
 
           {row.is_archived && (
             <Archive className="h-3 w-3 shrink-0 text-muted-foreground" />
@@ -135,12 +131,7 @@ export function AgentBrowseRows({
             {relativeTime(row.updated_at)}
           </span>
 
-          <ItemMenu
-            config={menuFor(row)}
-            align="end"
-            open={menuRowId === row.id}
-            onOpenChange={(next) => setMenuRowId(next ? row.id : null)}
-          >
+          <ItemMenu config={menuFor(row)} align="end">
             <button
               type="button"
               aria-label={`Actions for ${row.name}`}

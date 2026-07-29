@@ -75,19 +75,19 @@ drops the option you just deselected traps the user inside their own filter.
 
 ### 1. Row interaction
 
-- **The whole row opens the options menu** (same `ItemMenu` as the kebab) —
-  matching classic `/agents`. Pointer cursor. Interactive cells (favorite star,
-  the kebab, an open inline editor, the Name link) stop propagation.
-- **Name is a real link to Run** (keyboard, SR, cmd/middle-click). Card and
-  dense views match.
+- **The whole row opens `AgentActionModal`** — the classic Run / Edit / View
+  chooser from `/agents/classic`. Pointer cursor. Name and description are
+  plain text (not links) so their clicks open the modal too. Interactive cells
+  (favorite star, the kebab, an open inline editor) stop propagation.
 - **Name and Description edit only via the hover pencil.** Clicking the text
-  never enters edit mode — that gesture belongs to the row menu. Category
-  (dropdown) and Tags (chips) still edit on click. Edits stay local until the
-  floating Save pill commits them, then persist via one UPDATE per row.
-  `"tags"` and `editTrigger: "pencil"` live on the canonical `MatrxDataTable`
-  — extended, not forked.
-- Row actions also live behind a vertical kebab (⋮); row click and kebab share
-  one controlled open state so they can never drift.
+  never enters edit mode and never navigates. Category (dropdown) and Tags
+  (chips) still edit on click. Edits stay local until the floating Save pill
+  commits them, then persist via one UPDATE per row. `"tags"` and
+  `editTrigger: "pencil"` live on the canonical `MatrxDataTable` — extended,
+  not forked. Description column is width-capped so long text cannot stretch
+  the table horizontally.
+- The kebab (⋮) still carries the FULL `ItemMenu` (every registry action).
+  Modal and menu share the same handlers from `useAgentRowActions`.
 
 ### 2. Style persists, query does not
 
@@ -203,10 +203,10 @@ hostile at 2,000.
 
 ## Change log
 
-- **2026-07-28** — Restored classic row-click → options menu (table, dense
-  rows, cards). Name/Description inline edit is pencil-only
-  (`editTrigger: "pencil"` on `MatrxDataTable`); Name stays a real link to
-  Run. `ItemMenu` gained controlled `open` so the row and kebab share one menu.
+- **2026-07-28** — Restored classic row-click → `AgentActionModal` (table,
+  dense rows, cards). Name is plain text again (not a Run/Build link) so
+  clicking it opens the chooser. Name/Description edit is pencil-only.
+  Description column width-capped. Kebab keeps the full `ItemMenu`.
 - **2026-07-28 (D112)** — Rows are no longer mouse-only. `MatrxDataTable`
   columns gained `href`: the title cell renders a real `next/link` (keyboard
   focus, SR link semantics, cmd/middle-click new tab) while the whole-row

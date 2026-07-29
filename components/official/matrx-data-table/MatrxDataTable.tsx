@@ -699,6 +699,20 @@ export function MatrxDataTable<T>({
                             col.align === "center" && "text-center",
                             col.align === "right" && "text-right",
                           )}
+                          style={
+                            col.width !== undefined
+                              ? {
+                                  width:
+                                    typeof col.width === "number"
+                                      ? `${col.width}px`
+                                      : col.width,
+                                  maxWidth:
+                                    typeof col.width === "number"
+                                      ? `${col.width}px`
+                                      : col.width,
+                                }
+                              : undefined
+                          }
                         >
                           {editable && col.editable ? (
                             <EditableTableCell

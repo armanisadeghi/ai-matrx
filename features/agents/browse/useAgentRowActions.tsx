@@ -6,6 +6,10 @@
 // actions open. One instance per page — the modals are singletons keyed by the
 // agent currently acted on, never one modal per row (that was 372 mounted
 // ShareModals on /agents/all).
+//
+// Row click opens AgentActionModal (classic Run/Edit/View chooser). The kebab
+// ItemMenu still carries the FULL action list — same handlers, never a second
+// code path.
 
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -20,6 +24,7 @@ import {
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { buildAgentMenu } from "./agentActionRegistry";
 import type { AgentBrowseRow } from "./types";
@@ -34,6 +39,21 @@ export interface AgentRowActionsHost {
    */
   toggleFavorite: (agent: AgentBrowseRow) => void;
   renameTo: (agent: AgentBrowseRow, next: string) => Promise<void>;
+  /** Classic row-click chooser (Run / Edit / View / …). */
+  openActionModal: (agent: AgentBrowseRow) => void;
+  closeActionModal: () => void;
+  actionAgent: AgentBrowseRow | null;
+  actionModal: {
+    onRun: () => void;
+    onEdit: () => void;
+    onView: () => void;
+    onDuplicate: () => void;
+    onShare: () => void;
+    onDelete: () => void;
+    onCreateApp: () => void;
+    isDeleting: boolean;
+    isDuplicating: boolean;
+  };
   /** Modal state the page must render. */
   peekAgentId: string | null;
   closePeek: () => void;
@@ -66,8 +86,13 @@ export function useAgentRowActions({
 
   const [peekAgentId, setPeekAgentId] = useState<string | null>(null);
   const [shareAgent, setShareAgent] = useState<AgentBrowseRow | null>(null);
-  const [addToSetAgent, setAddToSetAgent] = useState<AgentBrowseRow | null>(null);
+  const [addToSetAgent, setAddToSetAgent] = useState<AgentBrowseRow | null>(
+    null,
+  );
   const [renameAgent, setRenameAgent] = useState<AgentBrowseRow | null>(null);
+  const [actionAgent, setActionAgent] = useState<AgentBrowseRow | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
 
   /**
    * Single-field write through the canonical thunk, with our own revert — the
@@ -139,15 +164,73 @@ export function useAgentRowActions({
     [saveField],
   );
 
+  const runAgent = useCallback(
+    (agent: AgentBrowseRow) => router.push(`/agents/${agent.id}/run`),
+    [router],
+  );
+  const editAgent = useCallback(
+    (agent: AgentBrowseRow) => router.push(`/agents/${agent.id}/build`),
+    [router],
+  );
+  const viewAgent = useCallback(
+    (agent: AgentBrowseRow) => router.push(`/agents/${agent.id}`),
+    [router],
+  );
+
+  const duplicate = useCallback(
+    async (agent: AgentBrowseRow) => {
+      setIsDuplicating(true);
+      try {
+        await dispatch(duplicateAgent(agent.id)).unwrap();
+        toast.success(`Duplicated "${agent.name}"`);
+        refresh();
+      } catch (err) {
+        toast.error("Could not duplicate agent", {
+          description: err instanceof Error ? err.message : undefined,
+        });
+      } finally {
+        setIsDuplicating(false);
+      }
+    },
+    [dispatch, refresh],
+  );
+
+  const remove = useCallback(
+    async (agent: AgentBrowseRow) => {
+      const ok = await confirm({
+        title: `Delete "${agent.name}"?`,
+        description:
+          "This permanently removes the agent and its versions. This cannot be undone.",
+        variant: "destructive",
+        confirmLabel: "Delete",
+      });
+      if (!ok) return;
+      setIsDeleting(true);
+      try {
+        await dispatch(deleteAgent(agent.id)).unwrap();
+        removeRow(agent.id);
+        toast.success(`Deleted "${agent.name}"`);
+        setActionAgent(null);
+      } catch (err) {
+        toast.error("Could not delete agent", {
+          description: err instanceof Error ? err.message : undefined,
+        });
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+    [dispatch, removeRow],
+  );
+
   const menuFor = useCallback(
     (agent: AgentBrowseRow) => () =>
       buildAgentMenu({
         agent,
         isSuperAdmin,
 
-        onRun: () => router.push(`/agents/${agent.id}/run`),
-        onEdit: () => router.push(`/agents/${agent.id}/build`),
-        onView: () => router.push(`/agents/${agent.id}`),
+        onRun: () => runAgent(agent),
+        onEdit: () => editAgent(agent),
+        onView: () => viewAgent(agent),
         onPeek: () => setPeekAgentId(agent.id),
         onVersions: () => router.push(`/agents/${agent.id}/v/${agent.version}`),
         onEditDetails: () =>
@@ -158,17 +241,7 @@ export function useAgentRowActions({
             }),
           ),
 
-        onDuplicate: async () => {
-          try {
-            await dispatch(duplicateAgent(agent.id)).unwrap();
-            toast.success(`Duplicated "${agent.name}"`);
-            refresh();
-          } catch (err) {
-            toast.error("Could not duplicate agent", {
-              description: err instanceof Error ? err.message : undefined,
-            });
-          }
-        },
+        onDuplicate: () => void duplicate(agent),
 
         onShare: () => setShareAgent(agent),
         onAddToSet: () => setAddToSetAgent(agent),
@@ -202,34 +275,88 @@ export function useAgentRowActions({
           toast.success("Agent reference copied");
         },
 
-        onDelete: async () => {
-          const ok = await confirm({
-            title: `Delete "${agent.name}"?`,
-            description:
-              "This permanently removes the agent and its versions. This cannot be undone.",
-            variant: "destructive",
-            confirmLabel: "Delete",
-          });
-          if (!ok) return;
-          try {
-            await dispatch(deleteAgent(agent.id)).unwrap();
-            removeRow(agent.id);
-            toast.success(`Deleted "${agent.name}"`);
-          } catch (err) {
-            toast.error("Could not delete agent", {
-              description: err instanceof Error ? err.message : undefined,
-            });
-          }
-        },
+        onDelete: () => void remove(agent),
       }),
-    [dispatch, isSuperAdmin, refresh, removeRow, router, saveField, toggleFavorite],
+    [
+      dispatch,
+      duplicate,
+      editAgent,
+      isSuperAdmin,
+      remove,
+      router,
+      runAgent,
+      saveField,
+      toggleFavorite,
+      viewAgent,
+    ],
   );
+
+  const openActionModal = useCallback((agent: AgentBrowseRow) => {
+    setActionAgent(agent);
+  }, []);
+
+  const closeActionModal = useCallback(() => {
+    setActionAgent(null);
+  }, []);
+
+  const actionModal = useMemo(() => {
+    const agent = actionAgent;
+    return {
+      onRun: () => {
+        if (!agent) return;
+        runAgent(agent);
+        setActionAgent(null);
+      },
+      onEdit: () => {
+        if (!agent) return;
+        editAgent(agent);
+        setActionAgent(null);
+      },
+      onView: () => {
+        if (!agent) return;
+        viewAgent(agent);
+        setActionAgent(null);
+      },
+      onDuplicate: () => {
+        if (!agent) return;
+        void duplicate(agent);
+      },
+      onShare: () => {
+        if (!agent) return;
+        setShareAgent(agent);
+        // Keep the action modal open until share closes? Classic closes
+        // everything except share — AgentActionModal itself skips close on share.
+      },
+      onDelete: () => {
+        if (!agent) return;
+        void remove(agent);
+      },
+      onCreateApp: () => {
+        void announceComingSoon("agents.create-app");
+      },
+      isDeleting,
+      isDuplicating,
+    };
+  }, [
+    actionAgent,
+    duplicate,
+    editAgent,
+    isDeleting,
+    isDuplicating,
+    remove,
+    runAgent,
+    viewAgent,
+  ]);
 
   return useMemo(
     () => ({
       menuFor,
       toggleFavorite,
       renameTo,
+      openActionModal,
+      closeActionModal,
+      actionAgent,
+      actionModal,
       peekAgentId,
       closePeek: () => setPeekAgentId(null),
       shareAgent,
@@ -244,6 +371,10 @@ export function useAgentRowActions({
       menuFor,
       toggleFavorite,
       renameTo,
+      openActionModal,
+      closeActionModal,
+      actionAgent,
+      actionModal,
       peekAgentId,
       shareAgent,
       addToSetAgent,

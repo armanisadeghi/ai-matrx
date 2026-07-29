@@ -4,7 +4,7 @@
 //
 // The card view, taking the best of both originals:
 //   from /agents/all — the clean card shape, the icon avatar, the favorite star
-//     in the corner, the archived pill, card-click → options menu;
+//     in the corner, the archived pill, card-click → AgentActionModal;
 //   from /transcripts — a small number of NAMED primary actions instead of a
 //     row of 10 unlabeled icons nobody can decode.
 //
@@ -14,7 +14,6 @@
 // actions a user actually reaches for, and the SAME complete "…" menu the
 // table row has. Nothing is lost; everything is findable in one place.
 
-import { useState } from "react";
 import Link from "next/link";
 import {
   Play,
@@ -40,6 +39,7 @@ interface Props {
   density: "compact" | "comfortable";
   showOwner: boolean;
   menuFor: (row: AgentBrowseRow) => () => ItemMenuConfig;
+  onOpenActionModal: (row: AgentBrowseRow) => void;
   onToggleFavorite: (row: AgentBrowseRow) => void;
 }
 
@@ -69,10 +69,9 @@ export function AgentBrowseCards({
   density,
   showOwner,
   menuFor,
+  onOpenActionModal,
   onToggleFavorite,
 }: Props) {
-  const [menuRowId, setMenuRowId] = useState<string | null>(null);
-
   return (
     <div
       className={cn(
@@ -94,12 +93,12 @@ export function AgentBrowseCards({
               openInNewTab(`/agents/${row.id}/run`);
               return;
             }
-            setMenuRowId(row.id);
+            onOpenActionModal(row);
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              setMenuRowId(row.id);
+              onOpenActionModal(row);
             }
           }}
           className="group flex cursor-pointer flex-col rounded-lg border border-border bg-card transition-colors hover:border-primary/40"
@@ -110,13 +109,10 @@ export function AgentBrowseCards({
             </span>
 
             <div className="min-w-0 flex-1">
-              <Link
-                href={`/agents/${row.id}/run`}
-                onClick={(e) => e.stopPropagation()}
-                className="line-clamp-2 text-sm font-medium leading-snug hover:underline"
-              >
+              {/* Plain text — click bubbles to the card → AgentActionModal. */}
+              <p className="line-clamp-2 text-sm font-medium leading-snug">
                 {row.name}
-              </Link>
+              </p>
               {row.description && (
                 <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
                   {row.description}
@@ -168,12 +164,7 @@ export function AgentBrowseCards({
                   )}
                 />
               </button>
-              <ItemMenu
-                config={menuFor(row)}
-                align="end"
-                open={menuRowId === row.id}
-                onOpenChange={(next) => setMenuRowId(next ? row.id : null)}
-              >
+              <ItemMenu config={menuFor(row)} align="end">
                 <button
                   type="button"
                   aria-label={`Actions for ${row.name}`}

@@ -11,13 +11,12 @@
 //   * EVERY column sorts and filters (app policy). The controlled
 //     `columnFilters` state maps 1:1 onto `agx_list_scoped(p_filters)`, and
 //     finite-valued columns get real options with counts from the facets RPC.
-//   * The WHOLE ROW opens the agent options menu (same ItemMenu as the kebab) —
-//     matching classic /agents. Name stays a real link to Run; name/description
-//     edit only via the hover pencil.
+//   * The WHOLE ROW opens AgentActionModal (classic Run/Edit/View chooser).
+//     Name/description are plain text (not links); edit only via the hover
+//     pencil. The kebab still carries the full ItemMenu.
 //   * Name / Description / Category / Tags edit in place. Edits stay local
 //     until the floating Save pill commits them.
 
-import { useState } from "react";
 import { MoreVertical, Star } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type {
@@ -51,6 +50,7 @@ interface Props {
   showSharedColumns: boolean;
   hiddenColumns: string[];
   menuFor: (row: AgentBrowseRow) => () => ItemMenuConfig;
+  onOpenActionModal: (row: AgentBrowseRow) => void;
   onToggleFavorite: (row: AgentBrowseRow) => void;
   onSaveEdits: (edits: Record<string, AgentRowEdit>) => Promise<void>;
   onQueryChange: (next: {
@@ -114,15 +114,12 @@ export function AgentBrowseTable({
   showSharedColumns,
   hiddenColumns,
   menuFor,
+  onOpenActionModal,
   onToggleFavorite,
   onSaveEdits,
   onQueryChange,
   emptyAction,
 }: Props) {
-  // ONE open menu at a time — row click and kebab share this state so the
-  // options surface is the same whether you click the row or the ⋮.
-  const [menuRowId, setMenuRowId] = useState<string | null>(null);
-
   const columns: MatrxColumnDef<AgentBrowseRow>[] = BROWSE_COLUMNS.filter(
     (spec) =>
       (showSharedColumns || !spec.scopedToShared) &&
@@ -216,11 +213,11 @@ export function AgentBrowseTable({
       // The page owns the search box; a second one inside the table would be
       // two affordances fighting over one query.
       toolbar={{ search: false }}
-      // Row click opens the options menu. Side panel / row-window stay off —
-      // the menu already carries Quick look and every other record action.
+      // Row click opens AgentActionModal. Side panel / row-window stay off —
+      // the kebab menu already carries Quick look and every other record action.
       detail={{ enabled: false }}
       window={{ enabled: false }}
-      onRowOpen={(row) => setMenuRowId(row.id)}
+      onRowOpen={onOpenActionModal}
       edit={{
         enabled: true,
         onSave: async (edits) => {
@@ -228,12 +225,7 @@ export function AgentBrowseTable({
         },
       }}
       rowActions={(row) => (
-        <ItemMenu
-          config={menuFor(row)}
-          align="end"
-          open={menuRowId === row.id}
-          onOpenChange={(next) => setMenuRowId(next ? row.id : null)}
-        >
+        <ItemMenu config={menuFor(row)} align="end">
           <button
             type="button"
             aria-label={`Actions for ${row.name}`}

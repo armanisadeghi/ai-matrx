@@ -106,9 +106,9 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
       header: "Name",
       filter: "text",
       editable: "string",
-      // D112: title is a REAL link (keyboard, SR, middle-click → Run). Inline
-      // rename is pencil-only so the body never steals the row-click → menu.
-      href: (row) => `/agents/${row.id}/run`,
+      // Pencil-only: clicking the name opens AgentActionModal (row click),
+      // never navigates to Run/Build. Rename is the hover pencil only.
+      editTrigger: "pencil",
       cell: (row) => (
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate font-medium">{row.name}</span>
@@ -131,10 +131,17 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
       header: "Description",
       filter: "text",
       editable: "string",
-      // Pencil-only: click on the text opens the row options menu, not edit.
+      // Pencil-only: click on the text opens the action modal, not edit.
       editTrigger: "pencil",
+      // Cap the column: some agents ship multi-page descriptions, and without
+      // a bound the table sizes to min-content and scrolls forever sideways.
+      width: 320,
+      className: "max-w-[20rem] overflow-hidden",
       cell: (row) => (
-        <span className="line-clamp-1 text-muted-foreground">
+        <span
+          className="block truncate text-muted-foreground"
+          title={row.description ?? undefined}
+        >
           {row.description || "—"}
         </span>
       ),
