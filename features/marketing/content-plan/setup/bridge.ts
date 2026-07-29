@@ -180,7 +180,7 @@ export async function bridgeRealize(
   dispatch: AppDispatch,
   siteId: string,
   nodeIds: string[],
-  options: { dryRun: boolean },
+  options: { dryRun: boolean; cmsSite?: string },
 ): Promise<BridgeAlignResult> {
   const result = await dispatch(
     callApi({
@@ -188,6 +188,7 @@ export async function bridgeRealize(
       method: "POST",
       pathParams: { site_id: siteId },
       body: {
+        cms_site: options.cmsSite ?? null,
         actions: nodeIds.map((nodeId) => ({ action: "realize", node_id: nodeId })),
         dry_run: options.dryRun,
       },
@@ -200,14 +201,18 @@ export async function bridgeRealize(
 export async function bridgeStarterKit(
   dispatch: AppDispatch,
   siteId: string,
-  options: { force: boolean; dryRun: boolean },
+  options: { force: boolean; dryRun: boolean; cmsSite?: string },
 ): Promise<StarterKitOutcome> {
   const result = await dispatch(
     callApi({
       path: "/content-plan/sites/{site_id}/cms-starter-kit",
       method: "POST",
       pathParams: { site_id: siteId },
-      body: { force: options.force, dry_run: options.dryRun },
+      body: {
+        cms_site: options.cmsSite ?? null,
+        force: options.force,
+        dry_run: options.dryRun,
+      },
     }),
   );
   const data = requireBody(result, "cms-starter-kit");

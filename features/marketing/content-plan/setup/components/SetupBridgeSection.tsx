@@ -85,6 +85,11 @@ export function SetupBridgeSection({
 
   const linked = Boolean(cms?.link.linked && cms.link.cmsSiteId);
   const candidates = useLinkCandidates(Boolean(cms) && !linked);
+  // Always name the CMS side explicitly when we know it: the bridge then
+  // proves (and on first contact, records) the client_sites.web_site_id
+  // pairing instead of failing on a half-linked site — the state rung 1
+  // leaves behind if its reconcile step failed mid-flight.
+  const knownCmsSite = cms?.link.cmsSiteId ?? undefined;
 
   const [busy, setBusy] = useState<"link" | "kit" | "check" | "preview" | "apply" | null>(null);
   const [linkChoice, setLinkChoice] = useState<string>("__create__");
@@ -148,6 +153,7 @@ export function SetupBridgeSection({
       const outcome = await bridgeStarterKit(dispatch, site.id, {
         force,
         dryRun: false,
+        cmsSite: knownCmsSite,
       });
       await invalidateCms();
       toast.success(
@@ -182,7 +188,7 @@ export function SetupBridgeSection({
     setBusy("check");
     setAlignResult(null);
     try {
-      const next = await bridgeReconcile(dispatch, site.id);
+      const next = await bridgeReconcile(dispatch, site.id, { cmsSite: knownCmsSite });
       setReport(next);
       if (next.linksWritten > 0) {
         toast.success(`Proved and recorded ${next.linksWritten} plan↔page link(s).`);
@@ -211,7 +217,7 @@ export function SetupBridgeSection({
         dispatch,
         site.id,
         report.ghosts.map((ghost) => ghost.nodeId),
-        { dryRun },
+        { dryRun, cmsSite: knownCmsSite },
       );
       setAlignResult(outcome);
       if (!dryRun) {
@@ -219,7 +225,9 @@ export function SetupBridgeSection({
           invalidateCms(),
           queryClient.invalidateQueries({ queryKey: planKeys.nodes(site.id) }),
         ]);
-        const next = await bridgeReconcile(dispatch, site.id);
+        const next = await bridgeReconcile(dispatch, site.id, {
+          cmsSite: knownCmsSite,
+        });
         setReport(next);
         if (outcome.failed > 0) {
           toast.error(
@@ -253,7 +261,7 @@ export function SetupBridgeSection({
           label="CMS site"
           doneDetail={linked ? `Linked to "${cms?.link.cmsSlug}"` : null}
         >
-          {cmsUnknown ? (
+          {linked ? null : cmsUnknown ? (
             <span className="text-[11px] text-muted-foreground">
               Waiting for the CMS check…
             </span>
