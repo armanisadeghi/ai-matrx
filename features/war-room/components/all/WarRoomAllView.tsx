@@ -57,13 +57,7 @@ const MasterAgentWindow = dynamic(
 // so it's lazy-loaded the same way. It self-hides when nothing is being watched
 // — but it must always be MOUNTED so a tool/toast `openWatch` can pop a window
 // even when the Master panel is closed.
-const MasterWatchLayer = dynamic(
-  () =>
-    import("@/features/war-room/components/master/MasterWatchLayer").then(
-      (m) => m.MasterWatchLayer,
-    ),
-  { ssr: false, loading: () => null },
-);
+import { MasterWatchLayerDoor as MasterWatchLayer } from "@/features/war-room/components/master/MasterWatchLayerDoor";
 
 type WarRoomAllViewMode = "rooms" | "threads";
 

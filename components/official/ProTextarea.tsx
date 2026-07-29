@@ -140,7 +140,25 @@ import {
   type ProTextareaAgentActionId,
   type ProTextareaMenuMode,
 } from "./proTextareaAgentActions";
-import { ProTextareaAgentPanel } from "./ProTextareaAgentPanel";
+import dynamic from "next/dynamic";
+
+// FRONT-DOOR GATE (build-lab E1): the embedded agent panel drags the entire
+// 1,569-module conversation engine (AgentRunner -> AgentConversationDisplay ->
+// execution system). ProTextarea has ~66 importers across ~107 entry contexts;
+// a static import here compiles that cluster into every one of them. The panel
+// only renders after a user picks an agent action from the menu, so this is a
+// genuine deferral + ssr:false front door (one planned chunk group).
+const ProTextareaAgentPanel = dynamic(
+  () => import("./ProTextareaAgentPanel").then((m) => m.ProTextareaAgentPanel),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center p-6">
+        <Loader2 className="h-4 w-4 animate-spin" />
+      </div>
+    ),
+  },
+);
 import {
   ProTextFieldStatsBar,
   ProTextFieldStatsMenuItems,

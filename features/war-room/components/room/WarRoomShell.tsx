@@ -104,13 +104,7 @@ const RoomAgentWindow = dynamic(() => import("./RoomAgentWindow"), {
 // tool/toast `openWatch` can pop a window even when the Room Agent panel is
 // closed. Reused as-is from the master surface (the slice is shared; the layer
 // is just a renderer).
-const MasterWatchLayer = dynamic(
-  () =>
-    import("@/features/war-room/components/master/MasterWatchLayer").then(
-      (m) => m.MasterWatchLayer,
-    ),
-  { ssr: false, loading: () => null },
-);
+import { MasterWatchLayerDoor as MasterWatchLayer } from "@/features/war-room/components/master/MasterWatchLayerDoor";
 
 export function WarRoomShell({ sessionId }: { sessionId: string }) {
   return (

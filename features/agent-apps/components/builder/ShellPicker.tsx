@@ -10,7 +10,7 @@
 
 import { Check, Code } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SHELL_CATALOG } from "@/features/agent-apps/components/shells";
+import { SHELL_CATALOG } from "@/features/agent-apps/components/shells/catalog";
 import type { AgentAppShellKind } from "@/features/agent-apps/types";
 
 interface ShellPickerProps {
