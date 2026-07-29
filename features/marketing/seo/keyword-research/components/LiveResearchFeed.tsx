@@ -72,10 +72,17 @@ function LiveResearchRegion({
     text: string;
     data: KeywordRelationshipResearchData | null;
   }>({ text: "", data: null });
-  if (currentData && latest.text !== text) {
+  // NO REGRESSION at the render seam: a parse yielding NOTHING must never
+  // replace what the user is already reading. The old check only guarded
+  // against a null parse — a valid-but-EMPTY payload (lists: []) both poisoned
+  // the retained copy and won the render, which is the block "disappearing".
+  const currentHasData = currentData !== undefined && currentData.lists.length > 0;
+  if (currentHasData && latest.text !== text) {
     setLatest({ text, data: currentData });
   }
-  const serverData = currentData ?? latest.data;
+  const serverData = currentHasData
+    ? currentData
+    : (latest.data ?? currentData ?? null);
   if (!serverData) return null;
   return (
     <KeywordResearchBlock
@@ -143,10 +150,15 @@ function LiveClassificationRegion({
     text: string;
     data: KeywordClassificationBatchData | null;
   }>({ text: "", data: null });
-  if (currentData && latest.text !== text) {
+  // NO REGRESSION at the render seam — see LiveResearchRegion.
+  const currentHasData =
+    currentData !== undefined && currentData.results.length > 0;
+  if (currentHasData && latest.text !== text) {
     setLatest({ text, data: currentData });
   }
-  const serverData = currentData ?? latest.data;
+  const serverData = currentHasData
+    ? currentData
+    : (latest.data ?? currentData ?? null);
   if (!serverData) return null;
   return (
     <KeywordClassificationBatchBlock
