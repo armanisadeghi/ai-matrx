@@ -44,4 +44,37 @@ describe("shared vault UI contract", () => {
     expect(detailSource).not.toContain("Rotate");
     expect(detailSource).not.toContain("Field settings");
   });
+
+  test("keeps the full vault in a labeled three-pane workspace", () => {
+    const workspaceSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultWorkspace.tsx"),
+      "utf8",
+    );
+    const pageSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultPage.tsx"),
+      "utf8",
+    );
+
+    expect(pageSource).toContain('presentation="full"');
+    expect(workspaceSource).toContain(
+      "lg:grid-cols-[13rem_21rem_minmax(0,1fr)]",
+    );
+    expect(workspaceSource).toContain("VaultWorkspaceListRow");
+    expect(workspaceSource).toContain("VAULT_LABELS.credentialName");
+    expect(workspaceSource).toContain("VAULT_LABELS.credentialType");
+  });
+
+  test("starts creation with the four basic purposes", () => {
+    const createSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultCreateDialog.tsx"),
+      "utf8",
+    );
+
+    expect(createSource).toContain("What are you saving?");
+    expect(createSource).toContain("WEBSITE_LOGIN_DEFINITION_KEY");
+    expect(createSource).toContain('"api_key"');
+    expect(createSource).toContain("ENV_VALUE_DEFINITION_KEY");
+    expect(createSource).toContain("Custom credential");
+    expect(createSource).toContain("Browse all");
+  });
 });

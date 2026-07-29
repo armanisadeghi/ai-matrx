@@ -24,9 +24,14 @@ import { useMemo, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
+  ChevronDown,
+  Eye,
+  EyeOff,
   Globe,
+  KeyRound,
   Loader2,
   Plus,
+  RefreshCw,
   Search,
   Trash2,
   UserPlus,
@@ -55,8 +60,9 @@ import {
   CredenzaTitle,
 } from "@/components/ui/credenza-modal/credenza";
 
-import { parseEnvAssignment } from "../utils";
+import { generateVaultPassword, parseEnvAssignment } from "../utils";
 import {
+  ENV_VALUE_DEFINITION_KEY,
   FAMILY_LABELS,
   FIELD_KEY_RE,
   HANDLING_LABELS,
@@ -110,6 +116,22 @@ const GENERATED_FIELD_KEY = "password";
 const RESERVED_METADATA_KEYS: readonly string[] = ["login_urls", "notes"];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const BASIC_PURPOSE_DESCRIPTIONS: Readonly<Record<string, string>> = {
+  [WEBSITE_LOGIN_DEFINITION_KEY]:
+    "Save a website, username or email, and password for manual use or secure browser filling.",
+  api_key: "Save one API key or access token for a service.",
+  [ENV_VALUE_DEFINITION_KEY]:
+    "Save a named value that workflows or sandboxes can use.",
+};
+
+function purposeDescription(definition: CredentialDefinition): string | null {
+  return (
+    BASIC_PURPOSE_DESCRIPTIONS[definition.key] ??
+    definition.payload.description ??
+    null
+  );
+}
 
 function isMetadataField(def: CredentialFieldDef): boolean {
   return def.storage_class === "metadata";
@@ -434,6 +456,7 @@ function DefinitionPicker({
   onCustom: () => void;
 }) {
   const [query, setQuery] = useState("");
+  const [showCatalog, setShowCatalog] = useState(false);
 
   const grouped = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -461,76 +484,159 @@ function DefinitionPicker({
     );
   }, [definitions, query]);
 
+  const quickDefinitions = [
+    WEBSITE_LOGIN_DEFINITION_KEY,
+    "api_key",
+    ENV_VALUE_DEFINITION_KEY,
+  ]
+    .map((key) => definitions.find((definition) => definition.key === key))
+    .filter((definition): definition is CredentialDefinition =>
+      Boolean(definition),
+    );
+
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search 120+ credential types"
-            className="pl-8"
-            aria-label="Search credential types"
-          />
-        </div>
-        <Button variant="outline" size="sm" onClick={onCustom}>
-          <Wrench className="mr-2 h-4 w-4" />
-          Custom
-        </Button>
+      <div>
+        <p className="text-sm font-semibold">What are you saving?</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Choose the purpose first. Matrx will show the correct labeled fields
+          for that credential.
+        </p>
       </div>
 
-      {definitions.length === 0 ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">
-          The credential catalog is empty or still loading — use Custom to build
-          one from generic fields.
-        </p>
-      ) : grouped.length === 0 ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">
-          No credential type matches “{query}”. Use Custom instead.
-        </p>
-      ) : (
-        <div className="space-y-4">
-          {grouped.map(([family, defs]) => (
-            <div key={family}>
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {FAMILY_LABELS[family]}
-              </p>
-              <div className="grid gap-1.5 sm:grid-cols-2">
-                {defs.map((def) => (
-                  <button
-                    key={def.key}
-                    type="button"
-                    onClick={() => onPick(def)}
-                    className="min-w-0 rounded-md border border-border bg-card p-2.5 text-left transition-colors hover:border-primary/40 hover:bg-accent/40"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="min-w-0 whitespace-normal break-words text-sm font-medium">
-                        {def.payload.label}
-                      </p>
-                      {def.payload.provider_key && (
-                        <Badge
-                          variant="outline"
-                          className="shrink-0 font-normal"
-                        >
-                          preset
-                        </Badge>
-                      )}
-                    </div>
-                    {def.payload.description && (
-                      <p className="mt-0.5 whitespace-normal break-words text-xs text-muted-foreground">
-                        {def.payload.description}
-                      </p>
-                    )}
-                  </button>
-                ))}
+      {!showCatalog ? (
+        <>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {quickDefinitions.map((definition) => (
+              <DefinitionButton
+                key={definition.key}
+                definition={definition}
+                onPick={() => onPick(definition)}
+              />
+            ))}
+            <button
+              type="button"
+              onClick={onCustom}
+              className="min-w-0 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/40"
+            >
+              <div className="flex items-center gap-2">
+                <Wrench className="h-4 w-4 shrink-0 text-primary" />
+                <p className="whitespace-normal break-words text-sm font-medium">
+                  Custom credential
+                </p>
               </div>
+              <p className="mt-1 whitespace-normal break-words text-xs text-muted-foreground">
+                Build a labeled group of values when none of the common purposes
+                fit.
+              </p>
+            </button>
+          </div>
+
+          {definitions.length === 0 ? (
+            <p className="rounded-md border border-dashed border-border p-3 text-center text-xs text-muted-foreground">
+              The credential catalog is empty or still loading. You can still
+              create a custom credential.
+            </p>
+          ) : (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="w-full"
+              onClick={() => setShowCatalog(true)}
+            >
+              Browse all {definitions.length} credential types
+              <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="flex items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search credential types"
+                className="pl-8"
+                aria-label="Search credential types"
+              />
             </div>
-          ))}
-        </div>
+            <Button variant="outline" size="sm" onClick={onCustom}>
+              <Wrench className="mr-2 h-4 w-4" />
+              Custom
+            </Button>
+          </div>
+
+          {grouped.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No credential type matches “{query}”. Use Custom instead.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {grouped.map(([family, defs]) => (
+                <div key={family}>
+                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {FAMILY_LABELS[family]}
+                  </p>
+                  <div className="grid gap-1.5 sm:grid-cols-2">
+                    {defs.map((definition) => (
+                      <DefinitionButton
+                        key={definition.key}
+                        definition={definition}
+                        onPick={() => onPick(definition)}
+                        showPreset
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
+  );
+}
+
+function DefinitionButton({
+  definition,
+  onPick,
+  showPreset = false,
+}: {
+  definition: CredentialDefinition;
+  onPick: () => void;
+  showPreset?: boolean;
+}) {
+  const Icon =
+    definition.key === WEBSITE_LOGIN_DEFINITION_KEY ? Globe : KeyRound;
+  const description = purposeDescription(definition);
+
+  return (
+    <button
+      type="button"
+      onClick={onPick}
+      className="min-w-0 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/40"
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <Icon className="h-4 w-4 shrink-0 text-primary" />
+        <p className="min-w-0 flex-1 whitespace-normal break-words text-sm font-medium">
+          {definition.payload.label}
+        </p>
+        {showPreset && definition.payload.provider_key && (
+          <Badge variant="outline" className="shrink-0 font-normal">
+            preset
+          </Badge>
+        )}
+      </div>
+      {description && (
+        <p className="mt-1 whitespace-normal break-words text-xs text-muted-foreground">
+          {description}
+        </p>
+      )}
+    </button>
   );
 }
 
@@ -541,6 +647,59 @@ interface FieldDraft {
   value: string;
   envKey: string;
   inject: boolean;
+}
+
+function FieldRuntimeSettings({
+  draft,
+  onChange,
+  placeholder,
+}: {
+  draft: FieldDraft;
+  onChange: (patch: Partial<FieldDraft>) => void;
+  placeholder: string;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="flex min-w-0 flex-1 basis-48 items-center gap-2">
+        <Label
+          htmlFor={`vault-env-${draft.def.field_key}`}
+          className="shrink-0 text-xs text-muted-foreground"
+        >
+          {VAULT_LABELS.runtimeKey}
+        </Label>
+        <Input
+          id={`vault-env-${draft.def.field_key}`}
+          value={draft.envKey}
+          onChange={(event) => onChange({ envKey: event.target.value })}
+          placeholder={placeholder}
+          className="h-8 font-mono text-xs"
+          aria-invalid={
+            Boolean(draft.envKey) && !VALID_KEY_RE.test(draft.envKey)
+          }
+        />
+      </div>
+      <p className="basis-full text-[11px] text-muted-foreground">
+        Workflows and sandboxes use the runtime key to reference this value by
+        name.
+      </p>
+      <label
+        className="flex items-center gap-2 text-xs text-muted-foreground"
+        title={
+          draft.envKey
+            ? undefined
+            : "Name the runtime key first — a sandbox variable needs a name."
+        }
+      >
+        {VAULT_LABELS.sandboxAccess}
+        <Switch
+          checked={draft.inject && Boolean(draft.envKey)}
+          disabled={!draft.envKey}
+          onCheckedChange={(checked) => onChange({ inject: checked })}
+          aria-label={`Inject ${draft.def.label} into sandboxes`}
+        />
+      </label>
+    </div>
+  );
 }
 
 function DefinitionForm({
@@ -606,6 +765,9 @@ function DefinitionForm({
   );
   const [recipientEmail, setRecipientEmail] = useState("");
   const [passwordMode, setPasswordMode] = useState<PasswordMode>("provided");
+  const [shownFieldKeys, setShownFieldKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   const setDraft = (index: number, patch: Partial<FieldDraft>) =>
     setDrafts((current) =>
@@ -740,9 +902,9 @@ function DefinitionForm({
         void submit();
       }}
     >
-      {definition.payload.description && (
+      {purposeDescription(definition) && (
         <p className="text-xs text-muted-foreground">
-          {definition.payload.description}
+          {purposeDescription(definition)}
         </p>
       )}
       {(definition.payload.setup_hints ?? []).length > 0 && (
@@ -923,64 +1085,97 @@ function DefinitionForm({
               </p>
             ) : (
               <>
-                <Input
-                  id={`vault-field-${draft.def.field_key}`}
-                  type={
-                    (draft.def.handling ?? "revealable") === "visible"
-                      ? "text"
-                      : "password"
-                  }
-                  value={draft.value}
-                  onChange={(e) => setDraft(index, { value: e.target.value })}
-                  placeholder={draft.def.placeholder_example ?? ""}
-                  className="font-mono"
-                  autoComplete="off"
-                />
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex min-w-0 flex-1 basis-48 items-center gap-2">
-                    <Label
-                      htmlFor={`vault-env-${draft.def.field_key}`}
-                      className="shrink-0 text-xs text-muted-foreground"
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input
+                    id={`vault-field-${draft.def.field_key}`}
+                    type={
+                      (draft.def.handling ?? "revealable") === "visible" ||
+                      shownFieldKeys.has(draft.def.field_key)
+                        ? "text"
+                        : "password"
+                    }
+                    value={draft.value}
+                    onChange={(e) => setDraft(index, { value: e.target.value })}
+                    placeholder={draft.def.placeholder_example ?? ""}
+                    className="min-w-48 flex-1 font-mono"
+                    autoComplete="off"
+                  />
+                  {(draft.def.handling ?? "revealable") !== "visible" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-9"
+                      onClick={() =>
+                        setShownFieldKeys((current) => {
+                          const next = new Set(current);
+                          if (next.has(draft.def.field_key)) {
+                            next.delete(draft.def.field_key);
+                          } else {
+                            next.add(draft.def.field_key);
+                          }
+                          return next;
+                        })
+                      }
+                      aria-label={`${shownFieldKeys.has(draft.def.field_key) ? "Hide" : "Show"} ${draft.def.label}`}
                     >
-                      {VAULT_LABELS.runtimeKey}
-                    </Label>
-                    <Input
-                      id={`vault-env-${draft.def.field_key}`}
-                      value={draft.envKey}
-                      onChange={(e) =>
-                        setDraft(index, { envKey: e.target.value })
-                      }
+                      {shownFieldKeys.has(draft.def.field_key) ? (
+                        <EyeOff className="mr-1.5 h-4 w-4" />
+                      ) : (
+                        <Eye className="mr-1.5 h-4 w-4" />
+                      )}
+                      {shownFieldKeys.has(draft.def.field_key)
+                        ? "Hide"
+                        : "Show"}
+                    </Button>
+                  )}
+                  {draft.def.field_key === GENERATED_FIELD_KEY && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-9"
+                      onClick={() => {
+                        setDraft(index, { value: generateVaultPassword() });
+                        setShownFieldKeys((current) => {
+                          const next = new Set(current);
+                          next.add(draft.def.field_key);
+                          return next;
+                        });
+                      }}
+                    >
+                      <RefreshCw className="mr-1.5 h-4 w-4" />
+                      Generate
+                    </Button>
+                  )}
+                </div>
+                {definition.key === ENV_VALUE_DEFINITION_KEY ? (
+                  <div className="flex flex-wrap items-center gap-3 rounded-md bg-muted/30 p-2">
+                    <FieldRuntimeSettings
+                      draft={draft}
+                      onChange={(patch) => setDraft(index, patch)}
                       placeholder="DATA_FOR_SEO_EMAIL"
-                      className="h-8 font-mono text-xs"
-                      aria-invalid={
-                        Boolean(draft.envKey) &&
-                        !VALID_KEY_RE.test(draft.envKey)
-                      }
                     />
                   </div>
-                  <p className="basis-full text-[11px] text-muted-foreground">
-                    Workflows find this value by its runtime key. Catalog
-                    credentials provide it automatically when required.
-                  </p>
-                  <label
-                    className="flex items-center gap-2 text-xs text-muted-foreground"
-                    title={
-                      draft.envKey
-                        ? undefined
-                        : "Name the environment key first — a sandbox variable needs a name."
+                ) : (
+                  <details
+                    className="rounded-md border border-border bg-muted/20 px-3 py-2"
+                    open={
+                      draft.inject || Boolean(draft.envKey) ? true : undefined
                     }
                   >
-                    {VAULT_LABELS.sandboxAccess}
-                    <Switch
-                      checked={draft.inject && Boolean(draft.envKey)}
-                      disabled={!draft.envKey}
-                      onCheckedChange={(checked) =>
-                        setDraft(index, { inject: checked })
-                      }
-                      aria-label={`Inject ${draft.def.label} into sandboxes`}
-                    />
-                  </label>
-                </div>
+                    <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+                      Advanced field settings
+                    </summary>
+                    <div className="mt-3">
+                      <FieldRuntimeSettings
+                        draft={draft}
+                        onChange={(patch) => setDraft(index, patch)}
+                        placeholder="OPTIONAL_RUNTIME_KEY"
+                      />
+                    </div>
+                  </details>
+                )}
               </>
             )}
           </div>

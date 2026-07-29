@@ -13,10 +13,8 @@ import { VaultWorkspace } from "./VaultWorkspace";
 export function VaultPage() {
   return (
     <div className="h-full overflow-hidden">
-      <div className="h-full overflow-y-auto">
-        <div className="mx-auto max-w-6xl px-4 pb-10 pt-[var(--shell-header-h)] md:px-6">
-          <VaultWorkspace principal={{ type: "user" }} />
-        </div>
+      <div className="h-full min-h-0 pt-[var(--shell-header-h)]">
+        <VaultWorkspace principal={{ type: "user" }} presentation="full" />
       </div>
     </div>
   );
