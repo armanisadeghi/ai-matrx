@@ -26,7 +26,11 @@ import type {
 } from "@/features/agents/types/instance.types";
 import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
 import { toast } from "@/lib/toast";
-import type { ValueMapping, ValueMappingMap } from "@/features/surfaces/types";
+import type {
+  ValueMapping,
+  ValueMappingMap,
+  WritePolicyMap,
+} from "@/features/surfaces/types";
 import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/bind-agent-to-surface.service";
 import {
   mergeValueMappingLayers,
@@ -161,6 +165,8 @@ interface ShortcutMappingSource {
   valueMappings: ValueMappingMap | null;
   scopeMappings: Record<string, string> | null;
   contextMappings: Record<string, string> | null;
+  /** The shortcut's per-write-target overrides — strongest layer of the merge. */
+  writePolicies?: WritePolicyMap | null;
 }
 
 async function resolveLaunchMappingLayers(
@@ -174,8 +180,18 @@ async function resolveLaunchMappingLayers(
   }
   if (shortcut) {
     const shortcutMappings = resolveShortcutMappings(shortcut);
-    if (Object.keys(shortcutMappings).length > 0) {
-      layers.push({ name: "shortcut", mappings: shortcutMappings });
+    const shortcutPolicies = shortcut.writePolicies ?? null;
+    // A shortcut that ONLY overrides write policies is still the strongest
+    // layer — dropping it would discard the user's manual/ask/auto choice.
+    if (
+      Object.keys(shortcutMappings).length > 0 ||
+      (shortcutPolicies && Object.keys(shortcutPolicies).length > 0)
+    ) {
+      layers.push({
+        name: "shortcut",
+        mappings: shortcutMappings,
+        writePolicies: shortcutPolicies,
+      });
     }
   }
   if (layers.length === 0) return null;
@@ -211,10 +227,15 @@ function applyLaunchWritePolicies(
   agentId: string,
   surfaceName: string | null | undefined,
 ): void {
-  if (!resolved || Object.keys(resolved.writePolicies).length === 0) return;
+  // No surface ⇒ no targets these could ever apply to. No resolution ⇒ leave
+  // whatever stands (we learned nothing new about the binding).
+  if (!surfaceName || !resolved) return;
+  // Register even an EMPTY map: keyed replacement is how removing an override
+  // from the binding actually takes effect on relaunch (adversarial find D4).
   registerSurfaceWritePolicies(
     resolved.writePolicies,
-    `${agentId}::${surfaceName ?? "none"}`,
+    `${agentId}::${surfaceName}`,
+    surfaceName,
   );
 }
 
@@ -554,13 +575,15 @@ export const launchAgentExecution = createAsyncThunk<
           err,
         );
         const shortcutOnly = resolveShortcutMappings(shortcut);
+        const shortcutOnlyPolicies = shortcut.writePolicies ?? {};
         resolvedLayers =
-          Object.keys(shortcutOnly).length > 0
+          Object.keys(shortcutOnly).length > 0 ||
+          Object.keys(shortcutOnlyPolicies).length > 0
             ? {
                 merged: shortcutOnly,
                 provenance: {},
                 inertLayers: [],
-                writePolicies: {},
+                writePolicies: shortcutOnlyPolicies,
               }
             : null;
       }

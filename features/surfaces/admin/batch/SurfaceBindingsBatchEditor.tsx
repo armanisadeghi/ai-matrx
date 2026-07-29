@@ -46,8 +46,15 @@ import {
   selectActiveSurfaces,
   selectSurfacesStatus,
 } from "@/features/surfaces/redux/selectors";
+import { WritePolicyEditor } from "@/features/surfaces/components/bind/WritePolicyEditor";
+import { getManifest } from "@/features/surfaces/manifests/registry";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import type { AgentSurfaceBinding } from "@/features/surfaces/services/bind-agent-to-surface.service";
-import type { SurfaceValue, ValueMappingMap } from "@/features/surfaces/types";
+import type {
+  SurfaceValue,
+  ValueMappingMap,
+  WritePolicyMap,
+} from "@/features/surfaces/types";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 
 const BLANK = "blank";
@@ -143,6 +150,15 @@ export function SurfaceBindingsBatchEditor({
   );
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [sharedMappings, setSharedMappings] = useState<ValueMappingMap>({});
+  // Per-surface write-policy EDITS, tagged with the scope they were made
+  // under. The rendered value derives at render time: the user's edit for
+  // this scope, else the surface's stored overrides at this scope — so the
+  // batch save ROUND-TRIPS them (the upsert replaces the edge payload
+  // wholesale) and a scope change discards stale edits without an effect.
+  const [policyEdits, setPolicyEdits] = useState<{
+    scopeKey: string;
+    bySurface: Record<string, WritePolicyMap>;
+  }>({ scopeKey: "", bySurface: {} });
   const [applying, setApplying] = useState(false);
   const [result, setResult] = useState<{
     created: number;
@@ -238,6 +254,29 @@ export function SurfaceBindingsBatchEditor({
     return names;
   }, [selectedKeys, bindings]);
 
+  // Scope-keyed derivation — edits made under a different scope are ignored
+  // (a different tier is a different binding row with its own overrides).
+  const policyScopeKey = `${scope}:${scopeId ?? ""}`;
+  const policyEditsBySurface =
+    policyEdits.scopeKey === policyScopeKey ? policyEdits.bySurface : {};
+  const storedPoliciesFor = (surfaceName: string): WritePolicyMap =>
+    bindings.find(
+      (b) =>
+        b.surfaceName === surfaceName && bindingMatchesScope(b, scope, scopeId),
+    )?.writePolicies ?? {};
+  const policiesFor = (surfaceName: string): WritePolicyMap =>
+    policyEditsBySurface[surfaceName] ?? storedPoliciesFor(surfaceName);
+
+  // Surfaces in the batch that declare write targets — only these render a
+  // policy editor; the rest still round-trip their stored overrides on apply.
+  const policyEditableSurfaces = useMemo(
+    () =>
+      Array.from(targetSurfaceNames)
+        .filter((name) => (getManifest(name)?.writeTargets?.length ?? 0) > 0)
+        .sort((a, b) => a.localeCompare(b)),
+    [targetSurfaceNames],
+  );
+
   const scopeNeedsId =
     scope === AGENT_SCOPES.USER ||
     scope === AGENT_SCOPES.ORGANIZATION ||
@@ -274,10 +313,14 @@ export function SurfaceBindingsBatchEditor({
       ),
     );
 
+    // Round-trip: edited map when the user touched it, else the surface's
+    // stored overrides at this scope — the wholesale payload replacement
+    // must never silently clear them.
     const payload = Array.from(targetSurfaceNames).map((surfaceName) => ({
       surfaceName,
       scope: scopeInput,
       valueMappings: structuredClone(sharedMappings),
+      writePolicies: { ...policiesFor(surfaceName) },
     }));
 
     setApplying(true);
@@ -415,6 +458,43 @@ export function SurfaceBindingsBatchEditor({
               onSetSelection={setSelectedKeys}
             />
           </section>
+
+          {/* Per-surface write policies */}
+          {policyEditableSurfaces.length > 0 && (
+            <section className="space-y-1.5">
+              <Label className="text-xs">Agent write access</Label>
+              <p className="text-[11px] text-muted-foreground">
+                Per-target apply-policy overrides, edited per surface (each
+                surface declares its own write targets). Untouched surfaces
+                keep their stored overrides.
+              </p>
+              <div className="space-y-3">
+                {policyEditableSurfaces.map((surfaceName) => (
+                  <div key={surfaceName} className="space-y-1">
+                    <div className="text-[11px] font-medium text-foreground">
+                      {getSurfaceDisplayLabel(surfaceName)}
+                    </div>
+                    <WritePolicyEditor
+                      compact
+                      surfaceName={surfaceName}
+                      value={policiesFor(surfaceName)}
+                      disabled={applying}
+                      onChange={(next) => {
+                        setPolicyEdits({
+                          scopeKey: policyScopeKey,
+                          bySurface: {
+                            ...policyEditsBySurface,
+                            [surfaceName]: next,
+                          },
+                        });
+                        setResult(null);
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Result */}
           {result && (

@@ -17,7 +17,11 @@ import {
   type BulkUpsertBindingInput,
   type BulkUpsertResult,
 } from "@/features/surfaces/services/bind-agent-to-surface.service";
-import type { SurfaceValue, ValueMappingMap } from "@/features/surfaces/types";
+import type {
+  SurfaceValue,
+  ValueMappingMap,
+  WritePolicyMap,
+} from "@/features/surfaces/types";
 import {
   setListStatus,
   setListError,
@@ -132,6 +136,13 @@ export interface UpsertBindingArgs {
   surfaceName: string;
   scope: ScopeInput;
   valueMappings: ValueMappingMap;
+  /**
+   * Per-write-target applyPolicy overrides. The save REPLACES the edge
+   * payload wholesale — callers editing an existing binding MUST round-trip
+   * the binding's current map (merged with their edit) or the stored
+   * overrides are cleared.
+   */
+  writePolicies?: WritePolicyMap;
 }
 
 export const upsertAgentSurfaceBindingThunk = createAsyncThunk<

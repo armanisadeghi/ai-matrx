@@ -1,5 +1,7 @@
 -- surface_binding payload v2 + agent.menu_surface write_policies column.
 -- APPLIED LIVE 2026-07-29 via Supabase MCP (project txzxabzwovsujtloxrus).
+-- migrate: skip: applied live via MCP; a re-run would stamp the whole schema
+-- row and could revert a future payload-schema v3 back to v2.
 --
 -- Bindings (and shortcuts — the same system, one opinionated layer stronger)
 -- may override a surface write target's applyPolicy per target. The SURFACE
@@ -43,4 +45,3 @@ where kind = 'surface_binding';
 -- live; see the Supabase migration `menu_surface_write_policies` for the
 -- verbatim view body — reproducing 60 lines of view SQL here would invite
 -- drift against the live definition, which is the source of truth.
--- migrate: skip: applied live via MCP; the view body lives in the DB.

@@ -29,6 +29,8 @@ import {
   SurfaceVariableBindingList,
   type BindingTarget,
 } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
+import { WritePolicyEditor } from "@/features/surfaces/components/bind/WritePolicyEditor";
+import { getManifest } from "@/features/surfaces/manifests/registry";
 import {
   loadBindingsForAgent,
   loadSurfaceValues,
@@ -361,6 +363,21 @@ export function ShortcutEditorNext({
             )}
           </Section>
 
+          {form.surfaceName &&
+            (getManifest(form.surfaceName)?.writeTargets?.length ?? 0) > 0 && (
+              <Section
+                title="Agent write access"
+                hint="What the agent may change on this surface, and whether it must ask. The shortcut is the strongest override layer — it merges over the agent's surface bindings at launch."
+              >
+                <WritePolicyEditor
+                  surfaceName={form.surfaceName}
+                  value={form.writePolicies ?? {}}
+                  onChange={(next) => update("writePolicies", next)}
+                  disabled={busy}
+                />
+              </Section>
+            )}
+
           {/* Label sits at the bottom — by the time users get here, they
               know what this shortcut does and a sane name (the agent's
               name) is already in the box. */}
@@ -459,6 +476,7 @@ function freshDraft(): EditableShortcut {
     surfaceName: null,
     scopeMappings: null,
     valueMappings: {},
+    writePolicies: null,
     contextMappings: null,
     displayMode: "modal-full",
     showVariablePanel: true,
@@ -500,6 +518,7 @@ function hydrateFromShortcut(s: AgentShortcut): EditableShortcut {
     surfaceName: s.surfaceName,
     scopeMappings: s.scopeMappings,
     valueMappings: s.valueMappings ?? {},
+    writePolicies: s.writePolicies ?? null,
     contextMappings: s.contextMappings,
     displayMode: s.displayMode,
     showVariablePanel: s.showVariablePanel,

@@ -18,6 +18,7 @@
  */
 
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { components } from "@/types/python-generated/api-types";
 
 // ---------------------------------------------------------------------------
 // SurfaceValue — schema for one named value a surface declares.
@@ -275,6 +276,61 @@ export interface SurfaceWriteTarget {
 }
 
 // ---------------------------------------------------------------------------
+// SurfaceClientTool — a client-side TOOL the surface offers to bound agents.
+// ---------------------------------------------------------------------------
+
+/**
+ * The wire contract for a surface client tool's arguments — the exact JSON
+ * Schema shape aidream's `InlineToolSpec.input_schema` accepts
+ * (`{type:"object", properties, required}`). Generated type, never widened.
+ */
+export type SurfaceClientToolInputSchema =
+  components["schemas"]["CustomToolInputSchema"];
+
+/**
+ * A client-side tool this surface offers to agents bound to it — the ACTION
+ * half of the 360 loop, beside `writeTargets` (the data-write half). Declared
+ * in code; the page registers one handler per tool via `useSurfaceClientTools`
+ * (`runtime/SurfaceRuntimeContext.tsx`); execution lands through
+ * `executeSurfaceClientTool` (`runtime/surface-client-tools.ts`).
+ *
+ * At launch, every declared+mounted+handled tool is emitted on the request as
+ * a `ToolSpecInline` (`kind:"inline"` — the supported way to offer a
+ * client-delegated tool the server has no registry entry for), so the agent
+ * can call it; the `tool_delegated` event routes back to the page's handler.
+ *
+ * Code-only (like `writeTargets` v1): not yet mirrored to the DB.
+ */
+export interface SurfaceClientTool {
+  /**
+   * lower_snake_case, unique within the surface (same regex as values). This
+   * is the model-facing tool name — it must also satisfy the server's tool
+   * name rule (`[a-zA-Z0-9_:-]{1,64}`). Prefix with the surface's domain
+   * (e.g. `content_plan_focus_node`) — the tool namespace is global per
+   * conversation, and a collision with a registered/widget tool name is
+   * silently skipped at injection time.
+   */
+  name: string;
+  /** The ONE canonical human label ("Focus node"). THE NAMING LAW applies. */
+  label: string;
+  /**
+   * What the AGENT is told — when to call it, what it does on the page, and
+   * what the result means. This is model-facing prose, not UI copy.
+   */
+  description: string;
+  /** JSON Schema for the tool's arguments — the wire contract. */
+  inputSchema: SurfaceClientToolInputSchema;
+  /**
+   * What calling it does to the page — same meanings as
+   * `SurfaceWriteTarget.mode`: `"ui"` (ephemeral view/selection state),
+   * `"draft"` (staged into editor state; the user still saves), `"entity"`
+   * (persisted immediately through the page's canonical write path).
+   * Omitted = `"ui"` is the safe reading.
+   */
+  mode?: SurfaceWriteTarget["mode"];
+}
+
+// ---------------------------------------------------------------------------
 // SurfaceManifest — what a single surface declares.
 // ---------------------------------------------------------------------------
 
@@ -370,6 +426,16 @@ export interface SurfaceManifest {
    */
   writeTargets?: readonly SurfaceWriteTarget[];
   /**
+   * Client-side TOOLS this surface offers to bound agents (the action half of
+   * the 360 loop). Declared+mounted+handled tools are injected as inline
+   * specs at launch and executed on the page via the surface client-tool
+   * runtime (`runtime/surface-client-tools.ts`). A declared tool with no
+   * registered handler is NOT offered to the agent (and a delegated call to
+   * one fails LOUDLY) — never silently. Code-only for now (not mirrored to
+   * the DB).
+   */
+  clientTools?: readonly SurfaceClientTool[];
+  /**
    * Opt out of the automatic generic-baseline injection (`selection`,
    * `text_before`, `text_after`, `content`, `context`) performed in
    * `registry.ts`. Set ONLY for a surface that genuinely has no
@@ -399,6 +465,26 @@ export type SurfaceWritePolicy = "manual" | "ask" | "auto";
 
 /** target name → policy override. Stored in the surface_binding payload (v2). */
 export type WritePolicyMap = Record<string, SurfaceWritePolicy>;
+
+export function isSurfaceWritePolicy(v: unknown): v is SurfaceWritePolicy {
+  return v === "manual" || v === "ask" || v === "auto";
+}
+
+/**
+ * Keep only well-formed `target → policy` entries from an untrusted JSONB
+ * blob; junk entries degrade to absent. The ONE sanitizer for every
+ * WritePolicyMap read path (binding edge payload, shortcut storage).
+ */
+export function sanitizeWritePolicyMap(raw: unknown): WritePolicyMap {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: WritePolicyMap = {};
+  for (const [target, policy] of Object.entries(
+    raw as Record<string, unknown>,
+  )) {
+    if (isSurfaceWritePolicy(policy)) out[target] = policy;
+  }
+  return out;
+}
 
 export type ValueMappingType =
   "surface_value" | "direct_value" | "prompt_user" | "unmapped";

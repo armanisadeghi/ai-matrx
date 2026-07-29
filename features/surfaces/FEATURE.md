@@ -141,8 +141,37 @@ internal platform use — never a washed-down user variant beside a private one:
   payload (v2), merged through the same weakest→strongest layers as value
   mappings, registered at launch (`registerSurfaceWritePolicies`), resolved at
   apply time. A binding may tighten but can NEVER open a `manual` target.
-  User-facing editor for `write_policies` is not built yet — the pipeline
-  honors it end to end (see the canonical-stream handoff).
+  **Editor UI (built 2026-07-29):** the ONE controlled editor is
+  [`components/bind/WritePolicyEditor.tsx`](./components/bind/WritePolicyEditor.tsx)
+  (Default/Manual/Ask/Auto per declared target; the `manual` floor is shown
+  disabled, never silently ignored). Consumers: the per-agent 5-panel shell's
+  **Agent access** column ([`admin/columns/AgentAccessColumn.tsx`](./admin/columns/AgentAccessColumn.tsx),
+  converted from the old Playground stub — saves through
+  `upsertAgentSurfaceBindingThunk`, creating a personal mapping-less binding
+  when none exists), the batch editor's per-surface "Agent write access"
+  section, and the shortcut editor (`ShortcutEditorNext`). **Round-trip law:**
+  the `surface_binding` payload is replaced WHOLESALE on save, so every save
+  path carries the binding's current `value_mappings` + the FULL policy map
+  (BindingColumn, the batch editor, and the Agent access column all do).
+  **Shortcut storage (no DDL):** the shortcut's overrides live INSIDE
+  `agent.shortcut.value_mappings` under the reserved `__write_policies` key —
+  serializer pair in `features/agents/redux/agent-shortcuts/converters.ts`
+  (`parseShortcutWritePolicies` / `packShortcutValueMappings`;
+  `parseValueMappings` strips the key). The launch thunk pushes the
+  shortcut's `writePolicies` on the `"shortcut"` layer, so a policy-only
+  shortcut still participates in the merge.
+
+## Surface client tools — page actions offered to bound agents (v1, 2026-07-29)
+
+The ACTION tier of the 360 loop: a surface declares client-side TOOLS an agent on that surface can call to do live things on the page. Same registration the platform's internal tool families use (war-room / scribe: inline specs + `tool_delegated` routing) — never a parallel system.
+
+- **Declare** — `SurfaceManifest.clientTools` (`SurfaceClientTool` in [types.ts](./types.ts)): `name` (lower_snake, globally unique per conversation — prefix with the surface domain), `label`, `description` (model-facing prose), `inputSchema` (the generated `CustomToolInputSchema` wire shape), `mode?: ui | draft | entity` (same meanings as write targets). Code-only v1, like `writeTargets` — not yet mirrored to the DB.
+- **Register** — `useSurfaceClientTools(surfaceName, handlers)` in [runtime/SurfaceRuntimeContext.tsx](./runtime/SurfaceRuntimeContext.tsx) (exact ref-proxy/module-registry pattern of `useSurfaceWriteHandlers`; any depth; latest closure always wins). A handler `(input: unknown) => Promise<unknown> | unknown` runs the action and returns the tool output the agent receives.
+- **Execute** — ONE seam: `executeSurfaceClientTool(name, input, opts?)` in [runtime/surface-client-tools.ts](./runtime/surface-client-tools.ts). Never throws (envelope `{ok} | {ok:false,error}`), deepest declaring mounted surface wins (same stack walk as `applySurfaceWrite`), LOUD on every contract break (toast + `captureError` source `surface-writeback`): tool undeclared, declared-but-unwired, handler threw. `listLiveSurfaceClientTools()` mirrors `listLiveWriteTargets` (declared+mounted+hasHandler).
+- **Reach the agent (WIRED)** — `buildToolInjection` (`features/agents/redux/execution-system/utils/build-tool-injection.ts`) reads `listLiveSurfaceClientTools()` fresh every turn and emits each declared+mounted+handled tool as a `ToolSpecInline` (`kind:"inline"` — aidream's supported path for client-delegated tools with no server registry entry; the server schema-validates args and emits `tool_delegated`). No per-conversation arming needed; skipped under the disable-injection brake; declared-but-unwired tools are NOT offered (console.warn). Name collisions with already-present specs are skipped.
+- **Resolve the call (WIRED)** — `surfaceDelegatedToolCall` routes any name declared by ANY registered manifest (`isDeclaredSurfaceClientToolName` — manifest-wide so an unmounted page still yields a precise error, not `unsupported_client_tool`) to `dispatchSurfaceClientTool` (`thunks/dispatch-surface-client-tool.thunk.ts`), which runs `executeSurfaceClientTool` and posts through the single `submitToolResult` funnel — the hard-suspended loop always resumes.
+- **Policy** — the dispatcher is run-immediately (like scribe). A tool whose effect needs a human gate should route its handler through `applySurfaceWrite` (which carries `applyPolicy`/`write_policies`) or gate itself.
+- **Not built yet (honest gaps):** no live adopter surface declares `clientTools` yet; no DB mirror (server-side agents can't see a surface's tools); no `check:surface-drift` validation of `clientTools` (name regex/uniqueness); server tools that write + refresh the page are a later tier.
 
 ## Header Surface Context windows
 
@@ -261,6 +290,10 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
 
 ## Change Log
+
+- **2026-07-29 — Write-policy editor UI shipped (per-agent shell, batch editor, shortcut editor).** New shared `components/bind/WritePolicyEditor.tsx` (Default/Manual/Ask/Auto segmented control per declared target; `manual` floor shown disabled). Playground stub column CONVERTED to `admin/columns/AgentAccessColumn.tsx` (panel id `playground` → `agent-access`; header toggle now ShieldCheck). Round-trip fixes: `upsertAgentSurfaceBinding` return now carries `writePolicies`; `UpsertBindingArgs`/`BulkUpsertBindingInput` accept `writePolicies`; BindingColumn and the batch editor now preserve stored overrides on every save (previously a mappings save WIPED them — wholesale payload replacement). Shortcut overrides stored in `agent.shortcut.value_mappings` under reserved `__write_policies` (no DDL; converter pair is the one serializer); launch thunk pushes them as the `"shortcut"` layer.
+
+- **2026-07-29 — Surface client tools v1 (declaration → registration → execution → launch injection, all wired; zero adopters yet).** `SurfaceClientTool`/`clientTools` on the manifest, `useSurfaceClientTools` + `getRegisteredSurfaceClientTools` registration (SurfaceRuntimeContext), `executeSurfaceClientTool` / `listLiveSurfaceClientTools` / `isDeclaredSurfaceClientToolName` runtime (`runtime/surface-client-tools.ts`), automatic inline-spec injection in `buildToolInjection` (live mounted tools, per turn), delegation routing branch in `surfaceDelegatedToolCall` → new `dispatchSurfaceClientTool` thunk (single `submitToolResult` funnel). See "Surface client tools" section for the honest gap list (no adopter, no DB mirror, no drift-check coverage).
 
 - **2026-07-29 — Surface writeback v1 + content-plan surface family (5 surfaces).** `SurfaceWriteTarget`/`writeTargets` on the manifest (see section above), `applySurfaceWrite` runtime over the provider stack, `getWriteHandlers` on `SurfaceRuntimeProvider`, `apply_surface_write` kind action, new `surface-writeback` error-capture source, drift-check validation (name regex/unique, mode, updatesValue→declared value, group). Content Plan split into per-view surfaces — the `?view=` param is a different page with different agents: `content-plan-list` (front door, `open_site` ui-target), `content-plan` (plan-editor base tree/table/map, `select_node` ui-target; `brief_writer` role moved off it), `content-plan-setup` (inherits; `select_archetype`/`set_family_counts`/`set_family_names` staged targets, `site_shaper` role), `content-plan-entities` (inherits; `entity_curator` role), `content-plan-node` (the step-inside node panel; 10 draft field targets + `save_node` entity target, `brief_writer` role). Emitters + handlers live in PlanSitesList / ContentPlanWorkbench / SetupView / EntityManager / NodePanel (nested providers, deepest wins). `resolveMarketingSurface` gained the content-plan branch — the flat prefix row was DEAD (the marketing resolver swallowed it into `matrx-user/marketing`). DB synced via the canonical endpoint + verified live (7/21/23/30/40 values, roles mirrored, stale parent `brief_writer` role row deleted). Browser-verified all five views render with providers, zero console errors; an end-to-end `apply_surface_write` from a rendered kind component is NOT yet exercised.
 

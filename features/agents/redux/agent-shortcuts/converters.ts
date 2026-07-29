@@ -37,7 +37,9 @@ import {
 } from "@/features/agents/types/agent-execution-config.types";
 import {
   isValueMappingMap,
+  sanitizeWritePolicyMap,
   type ValueMappingMap,
+  type WritePolicyMap,
 } from "@/features/surfaces/types";
 
 // ---------------------------------------------------------------------------
@@ -83,9 +85,55 @@ function rJsonObject<T>(row: LooseRow, key: string): T | null {
   return null;
 }
 
+/**
+ * Reserved key inside the shortcut's `value_mappings` JSONB that carries the
+ * shortcut's per-write-target apply-policy overrides (`WritePolicyMap`).
+ *
+ * Storage decision (no DDL): `agent.shortcut` has no metadata JSONB, and
+ * every shortcut read path (direct row, the four RPCs, the REST rows)
+ * already returns `value_mappings` wholesale — so the policies ride inside
+ * it under this key. The pair below is the ONE serializer/deserializer:
+ * `parseValueMappings` STRIPS the key (so `isValueMappingMap` consumers
+ * never see it), `parseShortcutWritePolicies` LIFTS it, and
+ * `packShortcutValueMappings` nests it back on write. Never read or write
+ * the key anywhere else.
+ */
+export const SHORTCUT_WRITE_POLICIES_KEY = "__write_policies";
+
 export function parseValueMappings(raw: unknown): ValueMappingMap | null {
   if (raw === null || raw === undefined) return null;
-  return isValueMappingMap(raw) ? raw : null;
+  if (typeof raw !== "object" || Array.isArray(raw)) return null;
+  const { [SHORTCUT_WRITE_POLICIES_KEY]: _writePolicies, ...rest } =
+    raw as Record<string, unknown>;
+  return isValueMappingMap(rest) ? rest : null;
+}
+
+/** Lift the shortcut's stored write-policy overrides out of `value_mappings`. */
+export function parseShortcutWritePolicies(
+  raw: unknown,
+): WritePolicyMap | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const nested = (raw as Record<string, unknown>)[SHORTCUT_WRITE_POLICIES_KEY];
+  if (nested === undefined || nested === null) return null;
+  const sanitized = sanitizeWritePolicyMap(nested);
+  return Object.keys(sanitized).length > 0 ? sanitized : null;
+}
+
+/**
+ * Nest the policies back into the `value_mappings` column value. Both halves
+ * MUST be supplied together — the column is one blob, so writing one half
+ * without the other clears whatever was stored for the missing half.
+ */
+export function packShortcutValueMappings(
+  valueMappings: ValueMappingMap | null,
+  writePolicies: WritePolicyMap | null,
+): Record<string, unknown> | null {
+  const policies = writePolicies ? sanitizeWritePolicyMap(writePolicies) : {};
+  if (Object.keys(policies).length === 0) return valueMappings;
+  return {
+    ...(valueMappings ?? {}),
+    [SHORTCUT_WRITE_POLICIES_KEY]: policies,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -137,6 +185,7 @@ export function dbRowToAgentShortcut(row: ShortcutRow): AgentShortcut {
     surfaceName: rString(loose, "surface_name"),
     scopeMappings: (row.scope_mappings as Record<string, string>) ?? null,
     valueMappings: parseValueMappings(loose.value_mappings),
+    writePolicies: parseShortcutWritePolicies(loose.value_mappings),
     contextMappings: rJsonObject<Record<string, string>>(
       loose,
       "context_mappings",
@@ -289,7 +338,10 @@ export function agentShortcutToInsert(shortcut: AgentShortcut): ShortcutInsert {
     enabled_features: shortcut.enabledFeatures,
     surface_name: shortcut.surfaceName,
     scope_mappings: shortcut.scopeMappings,
-    value_mappings: shortcut.valueMappings,
+    value_mappings: packShortcutValueMappings(
+      shortcut.valueMappings,
+      shortcut.writePolicies ?? null,
+    ),
     context_mappings: shortcut.contextMappings,
 
     display_mode: shortcut.displayMode,
@@ -357,8 +409,31 @@ export function agentShortcutToUpdate(
     update.surface_name = partial.surfaceName;
   if (partial.scopeMappings !== undefined)
     update.scope_mappings = partial.scopeMappings;
-  if (partial.valueMappings !== undefined)
-    update.value_mappings = partial.valueMappings;
+  if (
+    partial.valueMappings !== undefined ||
+    partial.writePolicies !== undefined
+  ) {
+    // Both halves live in ONE JSONB column; a one-sided patch clears the
+    // other half. The thunk seams (saveShortcut / saveShortcutField /
+    // updateShortcut) fill the missing half from the existing record —
+    // reaching here one-sided means a caller bypassed them.
+    if (
+      partial.valueMappings === undefined ||
+      partial.writePolicies === undefined
+    ) {
+      console.error(
+        "[agent-shortcuts] value_mappings patch is one-sided — valueMappings and writePolicies share one column; the missing half is being CLEARED. Pass both (the thunks do this automatically).",
+        {
+          hasValueMappings: partial.valueMappings !== undefined,
+          hasWritePolicies: partial.writePolicies !== undefined,
+        },
+      );
+    }
+    update.value_mappings = packShortcutValueMappings(
+      partial.valueMappings ?? null,
+      partial.writePolicies ?? null,
+    );
+  }
   if (partial.contextMappings !== undefined)
     update.context_mappings = partial.contextMappings;
 

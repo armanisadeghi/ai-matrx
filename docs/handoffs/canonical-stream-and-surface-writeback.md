@@ -164,25 +164,62 @@ into ONE system, and make policy user-controllable from the binding. All built:
 
 ### Still open (the rest of the vision, in order)
 
-1. **Binding-editor UI for `write_policies`** — the pipeline honors it, but no
-   UI writes it yet. Add a per-target policy picker to the binding editor
-   (`/agents/[id]/surfaces` 5-panel shell + the batch editor) and the shortcut
-   editor. NOTE: `bindAgentToSurface` replaces the payload wholesale — the
-   editor must round-trip the existing `write_policies` when saving mappings.
-2. **Surface-scoped client tools** — the next tier: a surface declares/registers
-   client-side tools (precedent: the text/code patching client tools +
-   `instanceClientTools` + the capability system), the bound agent gets them and
-   triggers live page behavior; big surfaces add server tools that write and
-   refresh. Design this on the SurfaceManifest (declare) + SurfaceRuntimeProvider
-   (register impls) + tool injection funnel (aidream `apply_unified_tools`).
-3. **Content writes** — the most important target: `draft_content` /
-   planned-content modification via a `draft` mode write target on
-   marketing-page, so agents can propose the page body itself for review.
-4. **`keyword_search_metrics` UI-state read** — the metrics/keyword components
-   could read already-attached keywords via `useCurrentSurfaceUiState` to show
-   "already on page" states (publish from `PageWorkspace`).
-5. **Agent-facing kind skills** — update the three kinds' skills/teaching blocks
+1. **Agent-facing kind skills** — update the three kinds' skills/teaching blocks
    to mention the apply affordances so agents describe them to users.
+2. **`create_shortcut_from_agent_surface` RPC does not copy `write_policies`** —
+   a shortcut minted from a binding starts with the binding's mappings but not
+   its policy overrides. Needs a DB RPC change (the FE thunk just calls it).
+3. **Surface client tools have zero adopters** — the seam is live end-to-end
+   (declare → register → inject → dispatch) but no manifest declares one yet,
+   and they have no DB mirror / `check:surface-drift` coverage.
+4. **Cross-agent policy residual** — launch registrations are keyed per
+   launch + surface, but two agents launched on the SAME surface in one tab
+   session share the surface's policy resolution (documented in
+   `surface-writeback.ts`; needs per-request policy scoping if it ever bites).
+
+## Round 3 (2026-07-29) — policy UI, draft content, client tools
+
+Three parallel builders + an adversarial reviewer; all six reviewer findings
+(D1–D6) fixed before commit. What shipped:
+
+- **Write-policy UI everywhere the binding lives.** The unused "Playground"
+  right panel in the agent-surfaces admin shell is now **Agent access**
+  (`features/surfaces/admin/columns/AgentAccessColumn.tsx`): per-target
+  Default / Manual / Ask / Auto on the binding's `write_policies`, via the
+  shared `WritePolicyEditor` (`features/surfaces/components/bind/`), which
+  renders the manual floor as locked — an override can never open a target the
+  surface declared `manual`. The same editor sits in the batch bindings editor
+  and both bind panels; every save path round-trips the other half of the edge
+  payload (reviewer findings D2/D3).
+- **Shortcuts carry policies with NO DDL** — stored inside the shortcut's
+  `value_mappings` JSONB under the reserved `__write_policies` key;
+  `features/agents/redux/agent-shortcuts/converters.ts` is the ONE
+  serializer pair (parse strips the key so `isValueMappingMap` consumers never
+  see it; pack nests it back; all three save seams auto-fill the missing half
+  so a one-sided patch can't clear the other). ShortcutEditorNext gained the
+  "Agent write access" section; launch treats shortcut policies as the
+  strongest mapping layer.
+- **`page_draft_content` write target** (draft/ask) on marketing-page — stages
+  agent-proposed body markdown (`{markdown, mode: replace|append}`) into the
+  page's UNSAVED draft editor state (`PageDraftContentCard`), never straight to
+  the DB. Plus the `page_keywords` UI-state publish from
+  `MarketingPageWriteTargets` so keyword kind components can mark what's
+  already on the page.
+- **Surface client tools (vision tier 3)** — `SurfaceManifest.clientTools`
+  (declare) + `useSurfaceClientTools` (page registers handlers) +
+  automatic inline-spec injection in `build-tool-injection.ts` (only
+  declared+mounted+handled tools are offered; skipped under the
+  disable-injection brake) + `dispatch-surface-client-tool.thunk.ts` in the
+  delegated-call router (never throws, always resumes the loop). Runtime:
+  `features/surfaces/runtime/surface-client-tools.ts`, deepest-declaring
+  mounted surface wins, same walk as `applySurfaceWrite`.
+- **Reviewer fixes**: D1 surface-name import (canonical const lives in
+  `features/marketing/lib/marketing-page-scope.ts`), D2/D3 policy round-trip on
+  every binding save path, D4 policy registrations are surface-scoped + keyed
+  (stale launches can't leak policies across surfaces), D5 `versionRef`
+  (post-write version tracking so consecutive applies don't trip the
+  optimistic lock), D6 `-- migrate: skip:` marker moved into the first 25
+  lines of `surface_binding_write_policies.sql` (ledger checksum updated).
 
 ## Adversarial review — what it caught
 

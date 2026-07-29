@@ -22,7 +22,10 @@ import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { SEO_KEYWORD_TOKEN } from "@/features/marketing/content-plan/types";
 import type { KeywordWithMarket } from "@/features/marketing/seo/keyword-research/types";
-import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
+import {
+  normalizeKeywordPhrase,
+  pickKeywordMarket,
+} from "@/features/marketing/seo/keyword/data";
 import { extractErrorMessage } from "@/utils/errors";
 
 export const WEB_PAGE_TOKEN = "web_page";
@@ -116,6 +119,41 @@ export async function addPageSupportingKeyword(
       ...(orgId ? { orgId } : {}),
     }),
   );
+}
+
+/** One keyword on the page's board — the cached shape under
+ * `pageKeywordsQueryKey` (PageKeywordsCard renders it; the surface scope and
+ * the `page_keywords` UI-state publisher read the same cache entry). */
+export interface PageKeywordBoardEntry {
+  keywordId: string;
+  phrase: string;
+  role: string;
+  volume: number | null;
+  competition: string | null;
+}
+
+/** The ONE queryFn for `pageKeywordsQueryKey(pageId)` — every subscriber uses
+ * this so the cache holds a single, consistent shape. */
+export async function fetchPageKeywordBoard(
+  pageId: string,
+): Promise<PageKeywordBoardEntry[]> {
+  const edges = await listPageKeywordEdges(pageId);
+  const rows = await fetchKeywordsByIds(edges.map((edge) => edge.otherId));
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  return edges
+    .map((edge): PageKeywordBoardEntry | null => {
+      const row = byId.get(edge.otherId);
+      if (!row) return null;
+      const market = pickKeywordMarket(row.keyword_market);
+      return {
+        keywordId: row.id,
+        phrase: row.phrase,
+        role: edge.role ?? PAGE_KEYWORD_SUPPORTING_ROLE,
+        volume: market?.search_volume ?? null,
+        competition: market?.competition ?? null,
+      };
+    })
+    .filter((entry): entry is PageKeywordBoardEntry => entry !== null);
 }
 
 export interface PageKeywordBatchAddResult {

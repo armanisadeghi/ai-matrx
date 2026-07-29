@@ -779,6 +779,18 @@ const writeTargets: SurfaceWriteTarget[] = [
     sortOrder: 110,
   },
   {
+    name: "page_draft_content",
+    label: "Draft content",
+    description:
+      "Propose the page's draft BODY (markdown). Value: { markdown: string, mode?: 'replace' | 'append' } — 'replace' (default) swaps the whole staged draft, 'append' adds after the current draft. STAGED into the Draft content editor's unsaved state for the user to review — nothing persists until the user clicks Save draft.",
+    valueType: "object",
+    updatesValue: "draft_content",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "authoring",
+    sortOrder: 115,
+  },
+  {
     name: "page_supporting_keywords",
     label: "Supporting keywords",
     description:
@@ -791,6 +803,19 @@ const writeTargets: SurfaceWriteTarget[] = [
     sortOrder: 120,
   },
 ];
+
+/**
+ * UI-state keys this surface publishes (`publishSurfaceUiState`, read by
+ * rendered blocks via `useCurrentSurfaceUiState`) — the read twin of the
+ * write targets above. Code-only, like `writeTargets`; publisher:
+ * `MarketingPageWriteTargets.tsx`.
+ *
+ * - `page_keywords`: `{ target: string | null, supporting: string[] }` — the
+ *   page's current primary target keyword plus the attached supporting
+ *   keyword phrases (the `keyword_batch` association edges, primary
+ *   excluded). Lets a keyword kind-component mark already-attached phrases
+ *   without knowing which page it landed on. Cleared on unmount.
+ */
 
 export const marketingPageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-page",

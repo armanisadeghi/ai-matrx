@@ -13,7 +13,7 @@ import { SurfacesListColumn } from "./columns/SurfacesListColumn";
 import { AgentColumn } from "./columns/AgentColumn";
 import { BindingColumn } from "./columns/BindingColumn";
 import { SurfaceDetailsColumn } from "./columns/SurfaceDetailsColumn";
-import { PlaygroundColumn } from "./columns/PlaygroundColumn";
+import { AgentAccessColumn } from "./columns/AgentAccessColumn";
 
 export const SURFACES_ADMIN_COOKIE = "panels:agent-surfaces";
 
@@ -21,7 +21,7 @@ const GROUP_KEY = "surfaces-admin";
 
 /**
  * 5-panel admin shell:
- *   surfaces-list  |  agent  |  binding (filler)  |  surface-details  |  playground
+ *   surfaces-list  |  agent  |  binding (filler)  |  surface-details  |  agent-access
  *
  * The center "binding" panel is non-collapsible so it always absorbs
  * delta when other panels collapse. This mirrors the mac-mail reference
@@ -131,18 +131,18 @@ function DesktopResizable({
       >
         <SurfaceDetailsColumn agent={agent} />
       </RegisteredPanel>
-      <Handle hideWhenCollapsed={["surface-details", "playground"]} />
+      <Handle hideWhenCollapsed={["surface-details", "agent-access"]} />
 
       <RegisteredPanel
-        registerAs="playground"
+        registerAs="agent-access"
         groupKey={GROUP_KEY}
-        id="playground"
+        id="agent-access"
         collapsible
         collapsedSize="0%"
         defaultSize="16%"
         minSize="4%"
       >
-        <PlaygroundColumn />
+        <AgentAccessColumn agent={agent} />
       </RegisteredPanel>
     </ClientGroup>
   );
@@ -173,7 +173,7 @@ function MobileStack({
         <SurfaceDetailsColumn agent={agent} />
       </div>
       <div className="min-h-[200px]">
-        <PlaygroundColumn />
+        <AgentAccessColumn agent={agent} />
       </div>
     </div>
   );

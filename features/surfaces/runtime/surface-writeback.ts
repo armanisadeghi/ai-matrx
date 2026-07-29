@@ -132,6 +132,12 @@ interface WritePolicyRegistration {
   /** Replacement identity — a re-launch of the same (agent, surface) replaces
    * its prior registration instead of stacking forever. */
   key: string | null;
+  /**
+   * The surface the binding was FOR. Overrides apply only to targets resolved
+   * on this surface — without this, two surfaces sharing a target NAME shared
+   * each other's overrides (adversarial find D4, 2026-07-29).
+   */
+  surfaceName: string;
   policies: WritePolicyMap;
 }
 
@@ -146,22 +152,32 @@ let policyRegistrations: WritePolicyRegistration[] = [];
  */
 export function registerSurfaceWritePolicies(
   policies: WritePolicyMap,
-  key?: string,
+  key: string | undefined,
+  surfaceName: string,
 ): () => void {
   const id = ++nextPolicyRegId;
+  // ALWAYS register, even with an empty map: an empty registration REPLACES a
+  // stale keyed one, which is how "the user removed their overrides and
+  // relaunched" actually takes effect (skipping empty maps left the removed
+  // policy applying until reload).
   policyRegistrations = [
     ...policyRegistrations.filter((r) => !key || r.key !== key),
-    { id, key: key ?? null, policies },
+    { id, key: key ?? null, surfaceName, policies },
   ];
   return () => {
     policyRegistrations = policyRegistrations.filter((r) => r.id !== id);
   };
 }
 
-/** Effective policy for a target: newest override that names it, else default. */
-function resolveApplyPolicy(target: SurfaceWriteTarget): SurfaceWritePolicy {
+/** Effective policy for a target: newest override registered FOR the surface
+ * the target resolved on that names it, else the surface default. */
+function resolveApplyPolicy(
+  target: SurfaceWriteTarget,
+  surfaceName: string,
+): SurfaceWritePolicy {
   const surfaceDefault = target.applyPolicy ?? "manual";
   for (let i = policyRegistrations.length - 1; i >= 0; i--) {
+    if (policyRegistrations[i].surfaceName !== surfaceName) continue;
     const override = policyRegistrations[i].policies[target.name];
     if (!override) continue;
     // A binding may TIGHTEN (auto→ask→manual) freely; it may loosen only what
@@ -195,7 +211,7 @@ async function agentWriteAllowed(
   surfaceName: string,
   actorLabel: string | undefined,
 ): Promise<SurfaceWriteResult | true> {
-  const policy = resolveApplyPolicy(target);
+  const policy = resolveApplyPolicy(target, surfaceName);
   if (policy === "auto") return true;
   if (policy === "manual") {
     // Return `fail`'s OWN result so the toast the user sees and the error the

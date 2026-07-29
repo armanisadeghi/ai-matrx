@@ -26,6 +26,7 @@ import { getSurfaceAncestry } from "@/features/surfaces/manifests/registry";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import {
   isValueMappingMap,
+  sanitizeWritePolicyMap,
   type ValueMappingMap,
 } from "@/features/surfaces/types";
 import type { MappingLayer } from "@/features/surfaces/utils/merge-value-mappings";
@@ -174,7 +175,7 @@ function fromRow(row: MenuSurfaceBindingRow): AgentSurfaceBinding {
     valueMappings: isValueMappingMap(row.value_mappings)
       ? (row.value_mappings as ValueMappingMap)
       : {},
-    writePolicies: sanitizeWritePolicies(row.write_policies),
+    writePolicies: sanitizeWritePolicyMap(row.write_policies),
     createdAt: row.created_at,
   };
 }
@@ -182,17 +183,6 @@ function fromRow(row: MenuSurfaceBindingRow): AgentSurfaceBinding {
 const MENU_SURFACE_COLUMNS =
   "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, write_policies, created_at, role";
 
-/** Keep only well-formed target → policy entries; junk degrades to absent. */
-function sanitizeWritePolicies(raw: unknown): WritePolicyMap {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
-  const out: WritePolicyMap = {};
-  for (const [target, policy] of Object.entries(raw as Record<string, unknown>)) {
-    if (policy === "manual" || policy === "ask" || policy === "auto") {
-      out[target] = policy;
-    }
-  }
-  return out;
-}
 
 // ---------------------------------------------------------------------------
 // Writes
@@ -418,6 +408,7 @@ export async function upsertAgentSurfaceBinding(args: {
     projectId: scope.projectId ?? null,
     taskId: scope.taskId ?? null,
     valueMappings,
+    writePolicies: writePolicies ? sanitizeWritePolicyMap(writePolicies) : {},
     createdAt: new Date().toISOString(),
   };
 }
@@ -510,6 +501,13 @@ export interface BulkUpsertBindingInput {
   surfaceName: string;
   scope: ScopeInput;
   valueMappings: ValueMappingMap;
+  /**
+   * Per-write-target applyPolicy overrides. The upsert REPLACES the edge
+   * payload wholesale, so batch callers MUST pass the surface's full map
+   * (existing overrides merged with the edit) — omitting this clears every
+   * stored override for the binding.
+   */
+  writePolicies?: WritePolicyMap;
 }
 
 export interface BulkUpsertResult {
@@ -529,6 +527,7 @@ export async function bulkUpsertAgentSurfaceBindings(args: {
         surfaceName: b.surfaceName,
         scope: b.scope,
         valueMappings: b.valueMappings,
+        writePolicies: b.writePolicies,
       }),
     ),
   );
