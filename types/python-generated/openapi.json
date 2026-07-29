@@ -108188,6 +108188,17 @@
       },
       "YouTubeSearchPage": {
         "properties": {
+          "search_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search Id"
+          },
           "query": {
             "type": "string",
             "title": "Query"

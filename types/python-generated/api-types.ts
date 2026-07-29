@@ -39181,6 +39181,8 @@ export interface components {
         };
         /** YouTubeSearchPage */
         YouTubeSearchPage: {
+            /** Search Id */
+            search_id?: string | null;
             /** Query */
             query: string;
             /** Results */
