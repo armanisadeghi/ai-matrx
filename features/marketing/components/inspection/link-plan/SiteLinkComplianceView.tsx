@@ -452,7 +452,7 @@ export function SiteLinkComplianceView() {
         <StatChip value={totals.pagesWithPolicies} label="anchor policies" />
         <StatChip
           value={totals.pagesWithInboundPlans + totals.pagesWithOutboundPlans}
-          label="pages with link plans"
+          label="link plans declared"
         />
         <StatChip
           value={
