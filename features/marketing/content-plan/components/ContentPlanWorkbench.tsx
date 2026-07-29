@@ -37,7 +37,9 @@ import {
   useReparentPlanNode,
 } from "../data/hooks";
 import { updatePlanNode } from "../data/service";
+import { usePlanGenerate } from "../hooks/useContentPlanAi";
 import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
+import { PlanGenerateBar } from "./PlanGenerateBar";
 import type { PlanNodeRow } from "../types";
 import { useContentPlanSites } from "./ContentPlanHeader";
 import { EntityManager } from "./EntityManager";
@@ -91,6 +93,7 @@ export function ContentPlanWorkbench({
   const entities = usePlanEntities(siteId);
   const profiles = usePlanProfiles(site?.organization_id ?? null);
   const reparent = useReparentPlanNode(siteId ?? "none");
+  const generate = usePlanGenerate(siteId);
 
   const statusCategories = useCategories({
     dimension: CATEGORY_DIMENSIONS.planStatus,
@@ -215,6 +218,21 @@ export function ContentPlanWorkbench({
             This site has no brand — the database rejects plan rows for it
             (loudly, by design). Assign a brand in Marketing → Sites, then plan.
           </div>
+        ) : null}
+
+        {/* AI generation strip — plan-bearing views only; Setup and
+          Entities have their own jobs. */}
+        {siteId &&
+        site?.brand_id &&
+        !nodes.isLoading &&
+        !nodes.isError &&
+        (view === "tree" || view === "table" || view === "map") ? (
+          <PlanGenerateBar
+            nodeCount={nodeRows.length}
+            run={generate.run}
+            onStart={(options) => void generate.start(options)}
+            onDismiss={generate.reset}
+          />
         ) : null}
 
         <div className="min-h-0 flex-1">

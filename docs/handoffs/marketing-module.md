@@ -18,7 +18,7 @@ Sibling handoffs own the deep verticals — read the one for the area you touch:
 | --- | --- |
 | Websites vertical (brands, crawls, coverage, GSC) **+ the `web.*` access model** | [marketing-brand-coverage-program.md](marketing-brand-coverage-program.md) |
 | Page workspace authoring layer (desired values, drafts, keywords, tasks) | [marketing-page-workspace-evolution.md](marketing-page-workspace-evolution.md) |
-| Content Plan client (`plan` schema UI) | [content-plan-client.md](content-plan-client.md) · server: aidream `docs/handoffs/content-plan-server.md` · SoR `common-docs/systems/content-planning/FEATURE.md` |
+| Content Plan (client + server + CMS bridge — ONE plan→live work order since 2026-07-28) | `common-docs/systems/cms-system/CMS-BUILDOUT-HANDOFF.md` (§3 Plan-side workstream) · SoR `common-docs/systems/content-planning/FEATURE.md` |
 | SEO vertical server side (rank/keyword/backlink collection, providers, budgets) | aidream `docs/handoffs/seo-vertical.md` + `aidream/docs/seo/MASTER_CAPABILITY_LIST.md` |
 | `seo` chat-tool renderer | [seo-tool-renderer.md](seo-tool-renderer.md) |
 | Live coordination board + parking lot | [../MARKETING_PROGRAM_BOARD.md](../MARKETING_PROGRAM_BOARD.md) |

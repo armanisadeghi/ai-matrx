@@ -8,7 +8,7 @@
  * site…) — shown verbatim inside a friendly toast, never masked.
  */
 import { useMemo, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Loader2, Sparkles, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -34,6 +34,7 @@ import {
   useReparentPlanNode,
   useUpdatePlanNode,
 } from "../data/hooks";
+import { usePlanDeepen } from "../hooks/useContentPlanAi";
 import {
   PLAN_NODE_TYPES,
   TECHNICAL_DEPTHS,
@@ -64,6 +65,8 @@ export function NodePanel({
 }) {
   const update = useUpdatePlanNode(siteId);
   const remove = useDeletePlanNode(siteId);
+  const deepen = usePlanDeepen(siteId);
+  const deepening = deepen.run.status === "running";
 
   const [draft, setDraft] = useState<PlanNodeUpdate>({});
   // Raw textarea text for brief — split into the string[] draft only on
@@ -148,6 +151,25 @@ export function NodePanel({
             </p>
           ) : null}
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 gap-1.5 px-2 text-xs"
+          disabled={deepening}
+          title={
+            deepening
+              ? (deepen.run.stage ?? "Deepening…")
+              : "AI: research this page and write its brief + sources"
+          }
+          onClick={() => void deepen.start(node.id)}
+        >
+          {deepening ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Sparkles className="h-3.5 w-3.5" />
+          )}
+          {deepening ? "Deepening…" : "Deepen"}
+        </Button>
         <Button
           size="sm"
           className="h-7"

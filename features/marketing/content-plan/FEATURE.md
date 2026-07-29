@@ -21,11 +21,25 @@ plan CRUD through it.
 
 ## Entry points
 
-- `/marketing/content-plan?site=<web.site id>&view=setup|tree|table|map|entities` — the
-  workspace (`app/(core)/marketing/content-plan/page.tsx`). Header chrome (site picker, view
-  switch, refresh) injects into the shell PageHeader
-  (`components/ContentPlanHeader.tsx`); state rides the URL
+- `/marketing/content-plan` — the LIST page and the feature's front door
+  (`app/(core)/marketing/content-plan/page.tsx` → `components/PlanSitesList.tsx`):
+  every RLS-visible site as a canonical entry-list row with live plan
+  aggregates (pages, status mix, keyword coverage, last activity — one
+  `listPlanSiteStats` sweep), per-row ItemMenu (open any view / Setup / the
+  marketing site record), `useListViewPrefs("content-plan-sites")`. Row click
+  opens the workspace (a no-plan site lands on Setup). Legacy `?site=` URLs
+  server-redirect. Header: `components/ContentPlanListHeader.tsx`.
+- `/marketing/content-plan/[siteId]?view=setup|tree|table|map|entities` — the
+  workspace (`app/(core)/marketing/content-plan/[siteId]/page.tsx`). The site
+  is a ROUTED segment; only the view rides the query. Header chrome
+  (back-to-plans link, site picker, view switch, refresh) injects into the
+  shell PageHeader (`components/ContentPlanHeader.tsx`); state rides the URL
   (`hooks/usePlanWorkspaceParams.ts`).
+- AI actions (`hooks/useContentPlanAi.ts`) — the feature's ONLY aidream
+  calls: Generate plan (`PlanGenerateBar` strip on tree/table/map, streams
+  `/content-plan/sites/{id}/generate`) and Deepen (NodePanel header button,
+  streams `/content-plan/nodes/{id}/deepen`). Everything else stays
+  Supabase-direct.
 - Nav: Marketing Hub → "Content Plan" (`features/shell/constants/nav-data.ts`).
 - `data/service.ts` — THE plan write path on the client. Every entrance
   (UI, future envelope-apply, generators) delegates here; nothing else calls
@@ -247,6 +261,21 @@ plan CRUD through it.
   pattern as `features/marketing`). No barrels.
 
 ## Change log
+
+- 2026-07-28 — Claude: **canonical routing + list page + AI buttons.**
+  `/marketing/content-plan` became the canonical entry LIST (PlanSitesList on
+  MatrxDataTable, per-site plan aggregates via `listPlanSiteStats`, row menu,
+  prefs `content-plan-sites`); the workspace moved to
+  `/marketing/content-plan/[siteId]` (site = routed segment, `?site=`
+  redirects; site switch = push, view switch = replace). Headers split
+  (ContentPlanListHeader vs ContentPlanHeader + back link; the header's
+  auto-select effect died with the list page). Deliverable 3 wired:
+  `useContentPlanAi.ts` streams generate/deepen via `callApi` (phase line,
+  mid-stream tree refetch, errors via `describeBackendFailure`), surfaced as
+  the PlanGenerateBar strip and the NodePanel Deepen button. Fixed a dead
+  root-level `/content-plan` link in PlanNodePatchRenderer. Handoff docs for
+  this feature merged into
+  `common-docs/systems/cms-system/CMS-BUILDOUT-HANDOFF.md`.
 
 - 2026-07-28 — Claude: **the twin learned the SITE CONCEPT LIBRARY — live
   regression fixed.** A concurrent aidream session rewrote
