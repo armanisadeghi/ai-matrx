@@ -4,10 +4,10 @@
 // first). The module is built around this so future reports plug into the
 // registry (features/reports/registry.ts).
 
-import { redirect } from "next/navigation";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ReportsLanding } from "@/features/reports/components/ReportsLanding";
+import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 
 export const metadata = {
   title: "Reports | AI Matrx",
@@ -16,7 +16,15 @@ export const metadata = {
 
 export default async function ReportsPage() {
   const { isAuthenticated } = await getServerAuth();
-  if (!isAuthenticated) redirect("/login?next=/reports");
+  if (!isAuthenticated) {
+    return (
+      <ModuleSignInGate
+        title="Reports"
+        route="/reports"
+        description="Cross-cutting reports over your workspace — agent drift detection and more."
+      />
+    );
+  }
 
   return (
     <>
