@@ -46,6 +46,14 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/war-room/new",
+      label: "Create-then-open redirect",
+      description:
+        "Creates a session via createWarRoomSession and replaces into /war-room/[id]. The shell sidebar's create-war-room action pushes here so navActions carries zero import edge to the war-room engine (D115 class).",
+      filePath: "features/war-room/shared/WarRoomNew.tsx",
+      status: "Live",
+    },
+    {
       url: "/war-room/admin",
       label: "This admin map",
       description: "Super-admin index of every War Room resource.",

@@ -28,6 +28,13 @@
  * `await import()`ed INSIDE the handler body, so it compiles into its own
  * chunk and loads on first click. One static thunk import here once dragged
  * 420 modules / 3.7 MB into every route (the war-room engine, 2026-07).
+ * ESCALATION for MEGA-CLUSTER targets (whole-feature engines, registries):
+ * even the handler-body `await import()` manufactures an async chunk group
+ * multiplied across every context reaching this file (D115, 2026-07-28 —
+ * +14 GB build RSS from one such edge). For those, don't import at all:
+ * router.push() to a thin `/feature/new` route that owns the work
+ * (create-war-room is the exemplar), or use a callback registry the feature
+ * populates at its own init. See the code-splitting skill, rule 6 caveat.
  */
 
 import { useRouter } from "next/navigation";
@@ -60,15 +67,14 @@ export function useNavActions(): ShellNavActionHandlers {
       dispatch(openOverlay({ overlayId: "taskQuickCreateWindow", data: {} }));
     },
     "create-war-room": () => {
-      // Creates the session server-side, then navigates into it. The thunk
-      // raises its own error toast on failure (returns null). The war-room
-      // engine is the heaviest graph in the app — loaded here, on click only.
-      void (async () => {
-        const { createWarRoomSession } =
-          await import("@/features/war-room/redux/thunks");
-        const session = await dispatch(createWarRoomSession());
-        if (session) router.push(`/war-room/${session.id}`);
-      })();
+      // Route inversion, NOT an import edge: /war-room/new creates the session
+      // and redirects into it. The war-room engine is the heaviest graph in
+      // the app (671 modules), and even an `await import()` of it from this
+      // shell-reachable file manufactures an async chunk group multiplied
+      // across every route context (the D115 detonator shape — code-splitting
+      // skill, rule 6 caveat). The engine compiles into /war-room/new's own
+      // route entry instead.
+      router.push("/war-room/new");
     },
     "create-note": () => {
       // Creates a blank draft note in the DB, then opens it. Matches the
