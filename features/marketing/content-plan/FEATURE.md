@@ -159,7 +159,21 @@ plan CRUD through it.
    site surfaces verbatim; force only behind a destructive confirm), 3 realize
    planned pages (reconcile report → **dry-run preview mandatory before
    apply**; per-item results shown verbatim — the bridge isolates per item, so
-   partial success is reported as exactly that).
+   partial success is reported as exactly that), 4 **generate content from
+   briefs** (`POST /content-plan/sites/{id}/cms-fill[/preview|/status|/cancel]`
+   — aidream's DURABLE fill pipeline: `plan.cms_fill_job/_item` DB frontier,
+   SKIP-LOCKED leases, boot-resume, so a 200-page run survives deploys and the
+   rung is restart-agnostic — the section hydrates the latest job on mount and
+   polls live queue counts every 2.5s while one runs; **previewing ONE authored
+   page is mandatory before fan-out** and renders composed global CSS + header
+   + fragment + footer in a sandboxed iframe; failures/dead-letters listed
+   verbatim; Stop cancels claiming without killing in-flight pages), 5
+   **publish the site** (`POST /content-plan/sites/{id}/cms-publish`,
+   2026-07-29 — bulk publish of every pending page through aidream's ONE
+   per-page publish path; dry-run preview mandatory, apply behind a
+   destructive confirm since this is the rung that changes the LIVE site;
+   per-page results + `remaining_candidates` shown verbatim, and linked plan
+   nodes advance to `published`).
 4. **Entities** (`EntityManager.tsx`): `plan.entity` CRUD per site.
 5. **Agent writes** land directly in the DB (chat tools today, aidream
    generator later) and appear on refetch — the header Refresh invalidates
@@ -275,6 +289,20 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-29 — Claude: **"Generate content" rung (Make-it-real rung 4; publish
+  became 5).** `setup/bridge.ts bridgeFill{Preview,Start,Status,Cancel}` →
+  aidream's durable cms-fill pipeline (frontier in `plan.cms_fill_job/_item`,
+  crash-safe per the durable work-queue standard). Mandatory one-page authored
+  preview (sandboxed iframe composing the site's real global CSS + header/
+  footer + the generated fragment) before the fan-out confirm; progress polled
+  from queue counts (restart-agnostic — hydrates any running job on mount);
+  failures shown verbatim; Stop = server-side cancel.
+- 2026-07-29 — Claude: **"Publish the site" rung (Make-it-real rung 4).**
+  `setup/bridge.ts bridgePublish` → aidream `POST
+  /content-plan/sites/{id}/cms-publish` (new `publish_many` capability —
+  aidream v0.1.684+); `SetupBridgeSection` rung 4 with mandatory dry-run
+  preview, destructive confirm on apply, per-page verbatim results and a
+  re-run hint when `remaining_candidates > 0`.
 - 2026-07-28 — Claude: **plan structure lint** — `setup/lint.ts` (pure,
   jest-covered) + `PlanLintSection` rendered in the Setup work-order column
   above the Make-it-real rungs: home missing/multiple + orphans (blocking),

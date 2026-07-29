@@ -15,7 +15,13 @@
  *                      realize every ghost as a draft CMS page. ALWAYS
  *                      dry-run preview before apply; nothing is written the
  *                      user has not seen.
- *   4. Publish site  — bulk publish every page with something pending
+ *   4. Generate content — the durable fill pipeline: author every linked
+ *                      draft's html_content from its plan node's brief +
+ *                      keyword + attributes (aidream cms-fill job; DB
+ *                      frontier, crash-safe, restart-agnostic). ALWAYS
+ *                      preview ONE authored page before fanning out; live
+ *                      progress is polled from queue counts.
+ *   5. Publish site  — bulk publish every page with something pending
  *                      (never published, or draft newer than live) through
  *                      the server's ONE per-page publish path. Dry-run
  *                      preview first, always; apply is behind a destructive
@@ -26,7 +32,7 @@
  * the bridge isolates per item, so partial success is a real outcome and is
  * reported as exactly that.
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
@@ -36,6 +42,8 @@ import {
   Link2,
   Loader2,
   RefreshCw,
+  Sparkles,
+  Square,
 } from "lucide-react";
 
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -58,6 +66,10 @@ import { planKeys } from "../../data/hooks";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { slugify } from "../archetypes";
 import {
+  bridgeFillCancel,
+  bridgeFillPreview,
+  bridgeFillStart,
+  bridgeFillStatus,
   bridgePublish,
   bridgeRealize,
   bridgeReconcile,
@@ -66,6 +78,8 @@ import {
   type BridgeAlignResult,
   type BridgePublishResult,
   type BridgeReport,
+  type FillPreviewResult,
+  type FillStatus,
 } from "../bridge";
 import { setupKeys } from "../hooks";
 import { normalizeDomain, type CmsFacts } from "../readiness";
@@ -100,12 +114,73 @@ export function SetupBridgeSection({
   const knownCmsSite = cms?.link.cmsSiteId ?? undefined;
 
   const [busy, setBusy] = useState<
-    "link" | "kit" | "check" | "preview" | "apply" | "publishPreview" | "publishApply" | null
+    | "link"
+    | "kit"
+    | "check"
+    | "preview"
+    | "apply"
+    | "fillPreview"
+    | "fillStart"
+    | "fillCancel"
+    | "publishPreview"
+    | "publishApply"
+    | null
   >(null);
   const [linkChoice, setLinkChoice] = useState<string>("__create__");
   const [report, setReport] = useState<BridgeReport | null>(null);
   const [alignResult, setAlignResult] = useState<BridgeAlignResult | null>(null);
+  const [fillPreview, setFillPreview] = useState<FillPreviewResult | null>(null);
+  const [fillStatus, setFillStatus] = useState<FillStatus | null>(null);
   const [publishResult, setPublishResult] = useState<BridgePublishResult | null>(null);
+
+  const fillRunning = fillStatus?.status === "pending" || fillStatus?.status === "processing";
+
+  // Restart-agnostic progress: hydrate the latest fill job once linked, then
+  // poll live queue counts while one is running. A page reload (or a server
+  // deploy mid-run) changes nothing — the DB frontier is the truth.
+  useEffect(() => {
+    if (!linked) return;
+    let stop = false;
+    const read = async () => {
+      try {
+        const status = await bridgeFillStatus(dispatch, site.id);
+        if (!stop) setFillStatus(status.status === "none" ? null : status);
+      } catch {
+        // Transient poll failure — the next tick retries; never toast a loop.
+      }
+    };
+    void read();
+    const timer = setInterval(() => {
+      if (fillRunning) void read();
+    }, 2500);
+    return () => {
+      stop = true;
+      clearInterval(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linked, fillRunning, site.id]);
+
+  // Announce the run's end exactly once and refresh the CMS facts the other
+  // rungs read (a filled page changes has-content everywhere).
+  const prevFillStatusRef = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = prevFillStatusRef.current;
+    const current = fillStatus?.status ?? null;
+    prevFillStatusRef.current = current;
+    const wasRunning = prev === "pending" || prev === "processing";
+    const ended = current !== null && current !== "pending" && current !== "processing";
+    if (!wasRunning || !ended) return;
+    void invalidateCms();
+    if (fillStatus && (fillStatus.failed > 0 || fillStatus.deadLetter > 0)) {
+      toast.error(
+        `Content generation finished: ${fillStatus.succeeded} written, ` +
+          `${fillStatus.failed + fillStatus.deadLetter} failed — see the rows below.`,
+      );
+    } else if (current === "completed") {
+      toast.success(`Content generation finished: ${fillStatus?.succeeded ?? 0} page(s) written.`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fillStatus?.status]);
 
   const invalidateCms = () =>
     Promise.all([
@@ -260,7 +335,61 @@ export function SetupBridgeSection({
     }
   };
 
-  // ── rung 4: publish — dry-run preview, then destructive-confirmed apply ───
+  // ── rung 4: generate content — preview ONE authored page, then fan out ────
+  const handleFillPreview = async () => {
+    setBusy("fillPreview");
+    try {
+      const outcome = await bridgeFillPreview(dispatch, site.id, {
+        cmsSite: knownCmsSite,
+      });
+      setFillPreview(outcome);
+      toast.success(`Authored "${outcome.title}" (${outcome.route}) — nothing was written.`);
+    } catch (error) {
+      toast.error(`Content preview failed: ${extractErrorMessage(error)}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleFillStart = async () => {
+    const estimate = report?.matched ?? null;
+    const ok = await confirm({
+      title: "Generate content for the drafted pages?",
+      description:
+        `Every unpublished draft page linked to a plan node on CMS site "${cms?.link.cmsSlug ?? ""}" ` +
+        `gets its content written from its brief${estimate ? ` (~${estimate} page(s))` : ""}. ` +
+        "Pages that already have content are skipped; nothing is published. " +
+        "The job is crash-safe and survives restarts — you can leave this page.",
+      confirmLabel: "Generate content",
+    });
+    if (!ok) return;
+    setBusy("fillStart");
+    try {
+      const started = await bridgeFillStart(dispatch, site.id, { cmsSite: knownCmsSite });
+      for (const line of started.skipped) toast.info(line);
+      toast.success(`Generating content for ${started.seeded} page(s)…`);
+      setFillStatus(await bridgeFillStatus(dispatch, site.id));
+    } catch (error) {
+      toast.error(`Content generation failed to start: ${extractErrorMessage(error)}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleFillCancel = async () => {
+    if (!fillStatus?.jobId) return;
+    setBusy("fillCancel");
+    try {
+      setFillStatus(await bridgeFillCancel(dispatch, site.id, fillStatus.jobId));
+      toast.info("Content generation stopped — in-flight pages finish, nothing else starts.");
+    } catch (error) {
+      toast.error(`Cancel failed: ${extractErrorMessage(error)}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // ── rung 5: publish — dry-run preview, then destructive-confirmed apply ───
   const handlePublish = async (dryRun: boolean) => {
     if (!dryRun) {
       const pending = publishResult?.wouldPublish ?? 0;
@@ -315,8 +444,8 @@ export function SetupBridgeSection({
   return (
     <SetupSection title="Make it real">
       <p className="mb-2 text-xs leading-relaxed text-muted-foreground">
-        The checklist above measures; these steps act. Steps 1–3 are safe to
-        re-run and never publish anything; step 4 is the deliberate one — it
+        The checklist above measures; these steps act. Steps 1–4 are safe to
+        re-run and never publish anything; step 5 is the deliberate one — it
         takes the drafted site live, behind a preview and a confirm.
       </p>
       <ol className="divide-y divide-border overflow-hidden rounded-md border border-border">
@@ -459,10 +588,156 @@ export function SetupBridgeSection({
             ) : null}
           </div>
         </Rung>
+
+        {/* ── 4 · Generate content ── */}
+        <Rung
+          index={4}
+          done={Boolean(
+            fillStatus &&
+              fillStatus.status === "completed" &&
+              fillStatus.failed === 0 &&
+              fillStatus.deadLetter === 0 &&
+              fillStatus.succeeded > 0,
+          )}
+          label="Generate content from briefs"
+          doneDetail={
+            fillStatus && fillStatus.status === "completed"
+              ? `${fillStatus.succeeded} page(s) written`
+              : null
+          }
+          blockedReason={linked ? null : "Link a CMS site first."}
+        >
+          <div className="flex flex-wrap items-center gap-1.5">
+            {fillRunning ? (
+              <>
+                <span className="inline-flex items-center gap-1.5 text-[11px] tabular-nums text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {fillStatus.succeeded + fillStatus.failed + fillStatus.deadLetter} /{" "}
+                  {fillStatus.total} pages
+                  {fillStatus.inProgress > 0 ? ` · ${fillStatus.inProgress} writing now` : ""}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1.5 px-2.5 text-xs"
+                  disabled={busy !== null}
+                  onClick={() => void handleFillCancel()}
+                >
+                  {busy === "fillCancel" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Square className="h-3.5 w-3.5" />
+                  )}
+                  Stop
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1.5 px-2.5 text-xs"
+                  disabled={!linked || busy !== null}
+                  onClick={() => void handleFillPreview()}
+                >
+                  {busy === "fillPreview" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  )}
+                  Preview one page
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-7 gap-1.5 px-2.5 text-xs"
+                  disabled={!linked || busy !== null || fillPreview === null}
+                  title={
+                    fillPreview === null
+                      ? "Preview one authored page first — nothing fans out sight-unseen."
+                      : undefined
+                  }
+                  onClick={() => void handleFillStart()}
+                >
+                  {busy === "fillStart" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
+                  Generate content
+                </Button>
+              </>
+            )}
+          </div>
+        </Rung>
+
+        {/* ── 5 · Publish ── */}
+        <Rung
+          index={5}
+          done={Boolean(
+            publishResult && !publishResult.dryRun && publishResult.failed === 0 &&
+              publishResult.remainingCandidates === 0,
+          )}
+          label="Publish the site"
+          doneDetail={
+            publishResult && !publishResult.dryRun && publishResult.failed === 0
+              ? `${publishResult.published} page(s) published`
+              : null
+          }
+          blockedReason={linked ? null : "Link a CMS site first."}
+        >
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 px-2.5 text-xs"
+              disabled={!linked || busy !== null}
+              onClick={() => void handlePublish(true)}
+            >
+              {busy === "publishPreview" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              Preview publish
+            </Button>
+            <Button
+              size="sm"
+              className="h-7 gap-1.5 px-2.5 text-xs"
+              disabled={
+                !linked ||
+                busy !== null ||
+                publishPending === null ||
+                publishPending === 0
+              }
+              title={
+                publishPending === null
+                  ? "Preview first — nothing goes live the user has not seen."
+                  : publishPending === 0
+                    ? "Nothing has pending changes."
+                    : undefined
+              }
+              onClick={() => void handlePublish(false)}
+            >
+              {busy === "publishApply" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Globe className="h-3.5 w-3.5" />
+              )}
+              {publishPending !== null && publishPending > 0
+                ? `Publish ${publishPending} page${publishPending === 1 ? "" : "s"}`
+                : "Publish"}
+            </Button>
+          </div>
+        </Rung>
       </ol>
 
       {report ? <ReportSummary report={report} /> : null}
       {alignResult ? <AlignSummary result={alignResult} /> : null}
+      {fillPreview ? (
+        <FillPreviewPanel preview={fillPreview} onClose={() => setFillPreview(null)} />
+      ) : null}
+      {fillStatus ? <FillStatusSummary status={fillStatus} /> : null}
+      {publishResult ? <PublishSummary result={publishResult} /> : null}
     </SetupSection>
   );
 }
@@ -535,6 +810,152 @@ function ReportSummary({ report }: { report: BridgeReport }) {
           {line}
         </p>
       ))}
+    </div>
+  );
+}
+
+/**
+ * One authored page, rendered the way the real site will render it: the
+ * site's global CSS + header + fragment + footer composed into a sandboxed
+ * iframe (scripts blocked). What you see is the server's actual output.
+ */
+function FillPreviewPanel({
+  preview,
+  onClose,
+}: {
+  preview: FillPreviewResult;
+  onClose: () => void;
+}) {
+  const srcDoc =
+    "<!doctype html><html><head><meta charset='utf-8'>" +
+    "<meta name='viewport' content='width=device-width, initial-scale=1'>" +
+    `<style>${preview.globalCss}</style><style>${preview.css}</style></head>` +
+    `<body>${preview.headerHtml}${preview.html}${preview.footerHtml}</body></html>`;
+  return (
+    <div className="mt-2 overflow-hidden rounded-md border border-border">
+      <div className="flex items-center gap-2 border-b border-border bg-muted/40 px-2.5 py-1.5 text-[11px]">
+        <span className="font-medium text-foreground">
+          Authored preview: {preview.title} ({preview.route})
+        </span>
+        <span className="min-w-0 flex-1 truncate text-muted-foreground">
+          {preview.metaTitle}
+        </span>
+        <button
+          type="button"
+          className="shrink-0 text-muted-foreground hover:text-foreground"
+          onClick={onClose}
+        >
+          Close
+        </button>
+      </div>
+      <iframe
+        title={`Authored preview of ${preview.route}`}
+        sandbox=""
+        srcDoc={srcDoc}
+        className="h-96 w-full bg-white"
+      />
+      <p className="border-t border-border bg-muted/40 px-2.5 py-1 text-[11px] text-muted-foreground">
+        Nothing was written — this is what &quot;Generate content&quot; will produce for
+        every drafted page.
+      </p>
+    </div>
+  );
+}
+
+/** Live fill progress + failures, verbatim from queue counts. */
+function FillStatusSummary({ status }: { status: FillStatus }) {
+  const done = status.succeeded + status.failed + status.deadLetter;
+  const failures = status.failed + status.deadLetter;
+  return (
+    <div
+      className={cn(
+        "mt-2 rounded-md border px-2.5 py-1.5 text-[11px]",
+        failures > 0
+          ? "border-destructive/40 bg-destructive/10"
+          : "border-border bg-muted/40",
+      )}
+    >
+      <p className="font-medium tabular-nums text-foreground">
+        Content generation {status.status}: {done}/{status.total} pages ·{" "}
+        {status.succeeded} written
+        {status.inProgress > 0 ? ` · ${status.inProgress} writing now` : ""}
+        {failures > 0 ? ` · ${failures} failed` : ""}
+      </p>
+      {status.total > 0 ? (
+        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${Math.round((done / status.total) * 100)}%` }}
+          />
+        </div>
+      ) : null}
+      {status.error ? <p className="mt-0.5 text-warning">{status.error}</p> : null}
+      {status.problems.slice(0, 30).map((problem) => (
+        <p key={`${problem.route}-${problem.status}`} className="mt-0.5 text-foreground">
+          {problem.route} — {problem.status} after {problem.attempts} attempt
+          {problem.attempts === 1 ? "" : "s"}
+          {problem.error ? `: ${problem.error}` : ""}
+        </p>
+      ))}
+      {status.problems.length > 30 ? (
+        <p className="mt-0.5 text-muted-foreground">
+          …and {status.problems.length - 30} more rows with the same treatment.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** Per-page publish results, verbatim — the server isolates per item. */
+function PublishSummary({ result }: { result: BridgePublishResult }) {
+  const failures = result.items.filter((item) => item.status === "failed");
+  return (
+    <div
+      className={cn(
+        "mt-2 max-h-44 overflow-y-auto rounded-md border px-2.5 py-1.5 text-[11px]",
+        failures.length > 0
+          ? "border-destructive/40 bg-destructive/10"
+          : "border-success/40 bg-success/10",
+      )}
+    >
+      <p className="font-medium text-foreground">
+        {result.dryRun ? "Dry run — nothing went live. " : ""}
+        {result.dryRun ? result.wouldPublish : result.published}{" "}
+        {result.dryRun ? "would publish" : "published"}
+        {result.skippedNoChanges > 0 ? ` · ${result.skippedNoChanges} already current` : ""}
+        {failures.length > 0 ? ` · ${failures.length} failed` : ""}
+        {result.remainingCandidates > 0
+          ? ` · ${result.remainingCandidates} more pending (re-run to continue)`
+          : ""}
+      </p>
+      {result.statusesAdvanced.length > 0 ? (
+        <p className="mt-0.5 text-muted-foreground">
+          {result.statusesAdvanced.length} plan node(s) advanced to published.
+        </p>
+      ) : null}
+      {[...result.warnings].map((line) => (
+        <p key={line} className="mt-0.5 text-warning">
+          {line}
+        </p>
+      ))}
+      {result.items.slice(0, 30).map((item, index) => (
+        <p
+          key={item.pageId || index}
+          className={cn(
+            "mt-0.5",
+            item.status === "failed" ? "text-foreground" : "text-muted-foreground",
+          )}
+        >
+          {item.route ?? item.slug}
+          {item.reason ? ` — ${item.reason === "never_published" ? "first publish" : "draft pending"}` : ""}
+          {item.error ? ` — ${item.error}` : ""}
+        </p>
+      ))}
+      {result.items.length > 30 ? (
+        <p className="mt-0.5 text-muted-foreground">
+          …and {result.items.length - 30} more rows with the same treatment.
+        </p>
+      ) : null}
     </div>
   );
 }

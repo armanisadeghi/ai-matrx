@@ -96,6 +96,51 @@ export interface BridgePublishResult {
   warnings: string[];
 }
 
+export interface FillPreviewResult {
+  nodeId: string;
+  pageId: string;
+  route: string;
+  title: string;
+  html: string;
+  css: string;
+  metaTitle: string;
+  metaDescription: string;
+  model: string;
+  wrote: boolean;
+  globalCss: string;
+  headerHtml: string;
+  footerHtml: string;
+}
+
+export interface FillStartResult {
+  jobId: string;
+  seeded: number;
+  skipped: string[];
+}
+
+export interface FillProblem {
+  route: string;
+  status: string;
+  attempts: number;
+  error: string | null;
+}
+
+export interface FillStatus {
+  jobId: string | null;
+  /** "none" = no fill job has ever run for this site. */
+  status: string;
+  total: number;
+  pending: number;
+  inProgress: number;
+  succeeded: number;
+  failed: number;
+  deadLetter: number;
+  startedAt: string | null;
+  finishedAt: string | null;
+  error: string | null;
+  problems: FillProblem[];
+}
+
 export interface StarterKitOutcome {
   dryRun: boolean;
   operation: string;
@@ -282,6 +327,131 @@ export async function bridgePublish(
     }),
   );
   return parsePublish(requireBody(result, "cms-publish"));
+}
+
+// ── fill drafts from briefs (the content-generation rung) ───────────────────
+
+function parseFillStatus(data: Record<string, unknown>): FillStatus {
+  const num = (key: string): number =>
+    typeof data[key] === "number" ? (data[key] as number) : 0;
+  const problems: FillProblem[] = [];
+  for (const row of Array.isArray(data.problems) ? data.problems : []) {
+    if (!row || typeof row !== "object") continue;
+    const record = row as Record<string, unknown>;
+    problems.push({
+      route: str(record.route),
+      status: str(record.status),
+      attempts: typeof record.attempts === "number" ? record.attempts : 0,
+      error: str(record.error) || null,
+    });
+  }
+  return {
+    jobId: str(data.job_id) || null,
+    status: str(data.status) || "none",
+    total: num("total"),
+    pending: num("pending"),
+    inProgress: num("in_progress"),
+    succeeded: num("succeeded"),
+    failed: num("failed"),
+    deadLetter: num("dead_letter"),
+    startedAt: str(data.started_at) || null,
+    finishedAt: str(data.finished_at) || null,
+    error: str(data.error) || null,
+    problems,
+  };
+}
+
+/** Author ONE page from its brief and return it — the look before the fan-out. */
+export async function bridgeFillPreview(
+  dispatch: AppDispatch,
+  siteId: string,
+  options: { cmsSite?: string; nodeId?: string; write?: boolean },
+): Promise<FillPreviewResult> {
+  const result = await dispatch(
+    callApi({
+      path: "/content-plan/sites/{site_id}/cms-fill/preview",
+      method: "POST",
+      pathParams: { site_id: siteId },
+      body: {
+        cms_site: options.cmsSite ?? null,
+        node_id: options.nodeId ?? null,
+        write: options.write === true,
+      },
+    }),
+  );
+  const data = requireBody(result, "cms-fill/preview");
+  return {
+    nodeId: str(data.node_id),
+    pageId: str(data.page_id),
+    route: str(data.route) || "/",
+    title: str(data.title),
+    html: str(data.html),
+    css: str(data.css),
+    metaTitle: str(data.meta_title),
+    metaDescription: str(data.meta_description),
+    model: str(data.model),
+    wrote: data.wrote === true,
+    globalCss: str(data.global_css),
+    headerHtml: str(data.header_html),
+    footerHtml: str(data.footer_html),
+  };
+}
+
+/** Start the durable fill job (seeds the DB frontier, returns immediately). */
+export async function bridgeFillStart(
+  dispatch: AppDispatch,
+  siteId: string,
+  options: { cmsSite?: string; overwrite?: boolean },
+): Promise<FillStartResult> {
+  const result = await dispatch(
+    callApi({
+      path: "/content-plan/sites/{site_id}/cms-fill",
+      method: "POST",
+      pathParams: { site_id: siteId },
+      body: {
+        cms_site: options.cmsSite ?? null,
+        overwrite: options.overwrite === true,
+      },
+    }),
+  );
+  const data = requireBody(result, "cms-fill");
+  return {
+    jobId: str(data.job_id),
+    seeded: typeof data.seeded === "number" ? data.seeded : 0,
+    skipped: Array.isArray(data.skipped) ? data.skipped.map(String) : [],
+  };
+}
+
+/** Live progress — derived server-side from queue counts (restart-agnostic). */
+export async function bridgeFillStatus(
+  dispatch: AppDispatch,
+  siteId: string,
+): Promise<FillStatus> {
+  const result = await dispatch(
+    callApi({
+      path: "/content-plan/sites/{site_id}/cms-fill/status",
+      method: "GET",
+      pathParams: { site_id: siteId },
+    }),
+  );
+  return parseFillStatus(requireBody(result, "cms-fill/status"));
+}
+
+/** Stop a running fill job (in-flight pages finish; nothing else is claimed). */
+export async function bridgeFillCancel(
+  dispatch: AppDispatch,
+  siteId: string,
+  jobId: string,
+): Promise<FillStatus> {
+  const result = await dispatch(
+    callApi({
+      path: "/content-plan/sites/{site_id}/cms-fill/cancel",
+      method: "POST",
+      pathParams: { site_id: siteId },
+      body: { job_id: jobId },
+    }),
+  );
+  return parseFillStatus(requireBody(result, "cms-fill/cancel"));
 }
 
 /** Seed the paired CMS site's shell (global CSS + header/footer + nav). */
