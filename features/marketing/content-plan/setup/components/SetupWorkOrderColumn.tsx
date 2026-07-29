@@ -21,7 +21,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-import { humanizeKey, type ExpandedArchetype } from "../archetypes";
+import { humanizeKey, slugify, type ExpandedArchetype } from "../archetypes";
+import type { Concept, ResolvedConcept } from "../concepts";
 import type { ChecklistItem, ItemState, Readiness } from "../readiness";
 import { SetupSection, Stat } from "./SetupSection";
 
@@ -41,8 +42,11 @@ export function SetupWorkOrderColumn({
   names,
   userNamedKeys,
   dirtyKeys,
+  catalog,
+  conceptNames,
   onCountChange,
   onNamesChange,
+  onConceptNameChange,
   onReset,
   pageTypeName,
   newCount,
@@ -57,8 +61,14 @@ export function SetupWorkOrderColumn({
   /** Which of those the USER supplied (the rest came from the plan itself). */
   userNamedKeys: Set<string>;
   dirtyKeys: Set<string>;
+  /** The concept MENU — carries each concept's name options + hub class. */
+  catalog: Record<string, Concept>;
+  /** Effective chosen display names per concept (committed + local picks). */
+  conceptNames: Record<string, string>;
   onCountChange: (familyKey: string, next: number) => void;
   onNamesChange: (familyKey: string, next: string[] | null) => void;
+  /** null = back to the variant's own naming. */
+  onConceptNameChange: (conceptKey: string, next: string | null) => void;
   onReset: () => void;
   pageTypeName: (slug: string | null) => string;
   /** How many routes this commit would create — the headline number. */
@@ -103,21 +113,28 @@ export function SetupWorkOrderColumn({
           <p className="mb-2 text-xs leading-relaxed text-muted-foreground">
             A shape is a SELECTION from the concept menu — what it takes, at
             which variant, and what it deliberately leaves for you to add later.
+            Pick a name and the URL follows it; a hub hosts the educational
+            trees under its own route.
           </p>
           {expanded.concepts.length > 0 ? (
             <ul className="divide-y divide-border overflow-hidden rounded-md border border-border">
               {expanded.concepts.map((item) => (
-                <li
+                <ConceptRow
                   key={item.concept}
-                  className="flex items-baseline justify-between gap-3 bg-card px-2.5 py-1.5"
-                >
-                  <span className="truncate text-xs font-medium text-foreground">
-                    {item.label}
-                  </span>
-                  <span className="shrink-0 truncate text-[11px] text-muted-foreground">
-                    {item.variantLabel}
-                  </span>
-                </li>
+                  item={item}
+                  concept={catalog[item.concept]}
+                  hubLabel={
+                    item.nestedUnder
+                      ? (expanded.concepts.find(
+                          (other) => other.concept === item.nestedUnder,
+                        )?.name ??
+                        catalog[item.nestedUnder]?.label ??
+                        item.nestedUnder)
+                      : null
+                  }
+                  chosen={conceptNames[item.concept] ?? null}
+                  onPick={(next) => onConceptNameChange(item.concept, next)}
+                />
               ))}
             </ul>
           ) : null}
@@ -387,6 +404,160 @@ export function SetupWorkOrderColumn({
         </div>
       </SetupSection>
     </div>
+  );
+}
+
+/**
+ * One selected concept: its resolved variant, its NAME (enum chips + custom —
+ * the slug follows the chosen name; the canonical concept key stays as
+ * provenance), and its hub placement when hub resolution nested it.
+ */
+function ConceptRow({
+  item,
+  concept,
+  hubLabel,
+  chosen,
+  onPick,
+}: {
+  item: ResolvedConcept;
+  /** The catalog entry — undefined only if the library and shape disagree. */
+  concept: Concept | undefined;
+  /** Display name of the hub this concept nested under, when it did. */
+  hubLabel: string | null;
+  /** The effective chosen name (committed or local pick); null = default. */
+  chosen: string | null;
+  onPick: (next: string | null) => void;
+}) {
+  const [customOpen, setCustomOpen] = useState(false);
+  const options = concept?.nameOptions ?? [];
+  const isHub = concept?.hub !== null && concept?.hub !== undefined;
+  // Custom names are allowed on EVERY concept (the enum is suggestions, never
+  // a constraint). Two exceptions: home (no slug to follow the name — renaming
+  // only changes a label nobody navigates by), and variants composing SEVERAL
+  // top-level pages (legal's privacy+terms) — one name has nothing unambiguous
+  // to apply to, and the expander rejects it loudly.
+  const resolvedVariant = concept?.variants[item.variant];
+  const multiTopPages = (resolvedVariant?.pages.length ?? 0) > 1;
+  const namable = item.concept !== "home" && !multiTopPages;
+  const effectiveName = item.name ?? chosen;
+  const isCustom =
+    effectiveName !== null && !options.some((option) => option === effectiveName);
+
+  return (
+    <li className="bg-card px-2.5 py-1.5">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="flex min-w-0 items-baseline gap-1.5">
+          <span className="truncate text-xs font-medium text-foreground">
+            {effectiveName ?? item.label}
+          </span>
+          {effectiveName !== null && effectiveName !== item.label ? (
+            <span
+              className="shrink-0 text-[11px] text-muted-foreground"
+              title={`Stored as the "${item.concept}" concept — the name changes the label and URL, never the identity.`}
+            >
+              ({item.label})
+            </span>
+          ) : null}
+          {isHub ? (
+            <span
+              className="shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium leading-none text-primary"
+              title="Content hub: the educational trees in this shape nest under this section's route."
+            >
+              hub
+            </span>
+          ) : null}
+        </span>
+        <span className="shrink-0 truncate text-[11px] text-muted-foreground">
+          {item.variantLabel}
+        </span>
+      </div>
+      {hubLabel ? (
+        <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+          Nests under {hubLabel} — commercial sections keep their own top level.
+        </p>
+      ) : null}
+      {namable ? (
+        <div className="mt-1 flex flex-wrap items-center gap-1">
+          {options.map((option) => {
+            const active = effectiveName === option;
+            return (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={active}
+                title={`/${slugify(option)}`}
+                className={cn(
+                  "rounded border px-1.5 py-0.5 text-[11px] leading-4 transition-colors",
+                  active
+                    ? "border-primary/50 bg-primary/15 font-medium text-primary"
+                    : "border-border text-muted-foreground hover:bg-accent",
+                )}
+                onClick={() => {
+                  setCustomOpen(false);
+                  onPick(active ? null : option);
+                }}
+              >
+                {option}
+              </button>
+            );
+          })}
+          {isCustom && !customOpen ? (
+            <span className="inline-flex items-center gap-1 rounded border border-primary/50 bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium leading-4 text-primary">
+              {effectiveName}
+              <button
+                type="button"
+                aria-label={`Clear the custom ${item.label} name`}
+                onClick={() => onPick(null)}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ) : null}
+          {customOpen ? (
+            <form
+              className="flex items-center gap-1"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const field = event.currentTarget.elements.namedItem("custom");
+                const raw = field instanceof HTMLInputElement ? field.value.trim() : "";
+                onPick(raw ? raw : null);
+                setCustomOpen(false);
+              }}
+            >
+              <Input
+                name="custom"
+                autoFocus
+                defaultValue={isCustom ? (effectiveName ?? "") : ""}
+                placeholder={`Name this section`}
+                aria-label={`Custom name for ${item.label}`}
+                /* 16px on mobile: anything smaller makes iOS zoom on focus. */
+                className="h-6 w-36 px-1.5 text-base sm:text-[11px]"
+              />
+              <Button type="submit" size="sm" className="h-6 px-2 text-[11px]">
+                Use
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-6 px-1.5 text-[11px]"
+                onClick={() => setCustomOpen(false)}
+              >
+                Cancel
+              </Button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              className="text-[11px] font-medium text-primary hover:underline"
+              onClick={() => setCustomOpen(true)}
+            >
+              Custom…
+            </button>
+          )}
+        </div>
+      ) : null}
+    </li>
   );
 }
 

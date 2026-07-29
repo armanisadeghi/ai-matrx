@@ -81,11 +81,12 @@ function expandSafely(
   counts: Record<string, number>,
   names: Record<string, string[]>,
   catalog: Record<string, Concept>,
+  conceptNames: Record<string, string> = {},
 ): Expansion {
   if (!archetype) return { expanded: null, error: null };
   try {
     return {
-      expanded: expandArchetype(archetype, { counts, names, catalog }),
+      expanded: expandArchetype(archetype, { counts, names, catalog, conceptNames }),
       error: null,
     };
   } catch (error) {
@@ -168,6 +169,9 @@ export function SetupView() {
   const [namesByArchetype, setNamesByArchetype] = useState<
     Record<string, Record<string, string[]>>
   >({});
+  const [conceptNamesByArchetype, setConceptNamesByArchetype] = useState<
+    Record<string, Record<string, string>>
+  >({});
   const [committing, setCommitting] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(
     null,
@@ -212,8 +216,24 @@ export function SetupView() {
     (selected ? namesByArchetype[selected.key] : undefined) ?? {};
   const planNames = namesFromPlan(baseFamilies, nodeRows);
   const names: Record<string, string[]> = { ...planNames, ...userNames };
+  // Committed name picks seed the picker; the user's local picks override.
+  const userConceptNames: Record<string, string> =
+    (selected ? conceptNamesByArchetype[selected.key] : undefined) ?? {};
+  const committedConceptNames: Record<string, string> =
+    selected && committed && committed.key === selected.key
+      ? committed.conceptNames
+      : {};
+  const conceptNames: Record<string, string> = {};
+  for (const [key, value] of Object.entries({
+    ...committedConceptNames,
+    ...userConceptNames,
+  })) {
+    // An empty local pick means "back to the variant's own naming" — it must
+    // also cancel a committed name, so it is filtered here, never passed down.
+    if (value.trim()) conceptNames[key] = value;
+  }
 
-  const expansion = expandSafely(selected, counts, names, catalog);
+  const expansion = expandSafely(selected, counts, names, catalog, conceptNames);
   const expanded = expansion.expanded;
 
   const readiness = expanded
@@ -249,6 +269,7 @@ export function SetupView() {
       }
       if (userNames[family.key]) dirtyKeys.add(family.key);
     }
+    for (const key of Object.keys(userConceptNames)) dirtyKeys.add(key);
   }
 
   const setCount = (familyKey: string, next: number) => {
@@ -278,6 +299,22 @@ export function SetupView() {
     }
   };
 
+  const setConceptName = (conceptKey: string, next: string | null) => {
+    if (!selected) return;
+    setConceptNamesByArchetype((current) => {
+      const forArchetype = { ...(current[selected.key] ?? {}) };
+      if (next === null) {
+        // A committed name can only be cancelled by an explicit empty pick —
+        // deleting the key would fall back to the committed value.
+        if (committedConceptNames[conceptKey]) forArchetype[conceptKey] = "";
+        else delete forArchetype[conceptKey];
+      } else {
+        forArchetype[conceptKey] = next;
+      }
+      return { ...current, [selected.key]: forArchetype };
+    });
+  };
+
   const resetOverrides = () => {
     if (!selected) return;
     setCountsByArchetype((current) => {
@@ -286,6 +323,11 @@ export function SetupView() {
       return next;
     });
     setNamesByArchetype((current) => {
+      const next = { ...current };
+      delete next[selected.key];
+      return next;
+    });
+    setConceptNamesByArchetype((current) => {
       const next = { ...current };
       delete next[selected.key];
       return next;
@@ -351,6 +393,12 @@ export function SetupView() {
             currentSettings: site.settings,
             archetypeKey: expanded.archetype,
             counts: expanded.counts,
+            // Derived from the resolved report, exactly as aidream records it.
+            conceptNames: Object.fromEntries(
+              expanded.concepts
+                .filter((item) => item.name)
+                .map((item) => [item.concept, item.name as string]),
+            ),
           });
           await queryClient.invalidateQueries({
             queryKey: marketingKeys.siteOptions(),
@@ -487,8 +535,11 @@ export function SetupView() {
               names={names}
               userNamedKeys={new Set(Object.keys(userNames))}
               dirtyKeys={dirtyKeys}
+              catalog={catalog}
+              conceptNames={conceptNames}
               onCountChange={setCount}
               onNamesChange={setNames}
+              onConceptNameChange={setConceptName}
               onReset={resetOverrides}
               newCount={preview.counts.new}
               pageTypeName={(slug) =>
