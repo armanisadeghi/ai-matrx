@@ -247,78 +247,79 @@ const nextConfig = {
     // A/B build benchmark (MATRX_PROFILE=core): off 10.6min / on 12.0min (+13%) —
     // accepted cost. Do not flip this off without also rewriting the memoization doctrine.
     reactCompiler: true,
-    // experimental: {
-    //     // MEMORY (measured 2026-07-26, experiment fleet v0.4.93-99):
-    //     // - turbopackMemoryLimit alone (45GiB): compile SUCCEEDED in 19.4min where
-    //     //   baseline OOM'd; then died when 29 page-data workers spawned on top.
-    //     // - cpus caps those workers (default = cores-1 = 29 on Vercel Turbo).
-    //     // 40GiB (not 45) leaves ~20GB headroom for the worker phase.
-    //     //
-    //     // cpus 8 → 4 (2026-07-27): after the graph-splitting campaign, compile
-    //     // passes reliably (21.9 → 15.7 min) but v0.4.124/125/126/128/130 all
-    //     // SIGKILL'd with a confirmed OOM 6-10s into "Collecting page data using
-    //     // 8 workers" (5 red / 2 green at that line). Worker COUNT is the direct
-    //     // multiplier on that phase's peak concurrent memory (heap flags are
-    //     // stripped from these workers — vercel/next.js#95745), so halving the
-    //     // pool halves the peak; the phase itself costs only ~1-2 min. If builds
-    //     // still OOM at page-data with 4 workers, next levers are rootReducer
-    //     // lazy-injection (shrinks every per-page server bundle) or building
-    //     // off-Vercel (GH Actions + `vercel deploy --prebuilt`).
-    //     // 40GiB → 30GiB (2026-07-26): the measurement below says peak RSS is
-    //     // 58.49 GiB on a 60 GB build machine — a ~1.5 GB margin. That is why
-    //     // this is marginal rather than broken: v0.4.121/122/129 went green and
-    //     // then EVERY build from v0.4.130 to v0.4.136 died as the graph grew,
-    //     // all with the same signature (SIGKILL ~8-10 min into compile, before
-    //     // any "Collecting page data" line — so the cpus 8→4 worker fix above
-    //     // does not cover this phase).
-    //     //
-    //     // This limit is Turbopack's cache-vs-GC target: higher = more retained
-    //     // graph, less collection, more RSS. Lowering it makes compile collect
-    //     // earlier and trade time for headroom. Slower is the correct trade —
-    //     // as the source-map note below already puts it, a build that OOMs
-    //     // ships nothing.
-    //     //
-    //     // If this is still not enough, do NOT keep shaving it blind: the real
-    //     // levers are rootReducer lazy-injection (shrinks every per-page server
-    //     // bundle) or building off-Vercel (GH Actions + `vercel deploy
-    //     // --prebuilt`), and the graph itself needs to come down.
-    //     // 30GiB → 40GiB (2026-07-28 13:17, v0.4.195, Arman ruling closing D107):
-    //     // theory was the 30GiB drop was NOT the OOM fix — the v0.4.137 edge
-    //     // lazy-import revert was — so 40GiB was restored for compile speed.
-    //     // 40GiB → 30GiB AGAIN (2026-07-28 ~18:00): that theory is disproven.
-    //     // Under the restored 40GiB, v0.4.195-198 went green but degraded
-    //     // (12m → 13m → 19m — ceiling-thrash signature; measured peak RSS at
-    //     // 40GiB is 58.49GiB on the 60GB machine, ~1.5GiB margin), then
-    //     // v0.4.199-203 ALL OOM'd with the exact pre-30GiB signatures: SIGKILL
-    //     // mid-compile (199) or 3s after "Collecting page data using 4 workers"
-    //     // spawned (200/202/203), with no code/config/machine/cache delta that
-    //     // explains it. 30GiB is load-bearing at the current graph size. Do not
-    //     // raise it again without headroom evidence from
-    //     // `next build --experimental-debug-memory-usage` at the CURRENT graph.
-    //     turbopackMemoryLimit: 32212254720,
-    //     cpus: 4,
-    //     serverActions: {
-    //         bodySizeLimit: "10mb",
-    //     },
-    //     // Optimize lucide-react (the 1400+ icon barrel file) and zustand to avoid massive SSR chunks
-    //     optimizePackageImports: ['lucide-react', 'zustand'],
-    //     // SOURCE MAPS OFF (A1) — memory, not speed, is the binding constraint.
-    //     // Measured with `next build --experimental-debug-memory-usage`: peak RSS
-    //     // 62.81 → 58.49 GiB (−4.32 GiB) with these two flags. Full production
-    //     // server/ output previously held 14,198 .js.map files / 1.40 GB against
-    //     // 0.99 GB of actual server JS.
-    //     //
-    //     // `productionBrowserSourceMaps: false` only governs BROWSER maps
-    //     // (static/ had zero .map). Server maps are a separate path:
-    //     // `serverSourceMaps` + Turbopack emission. Explicitly force both off.
-    //     // (Next docs: turbopackSourceMaps build default tracks
-    //     // productionBrowserSourceMaps — still set false here so it cannot drift.)
-    //     //
-    //     // TRADE-OFF: production server stack traces point at compiled output,
-    //     // which degrades lib/diagnostics. A build that OOMs ships nothing.
-    //     turbopackSourceMaps: false,
-    //     serverSourceMaps: false,
-    // },
+    experimental: {
+        // MEMORY (measured 2026-07-26, experiment fleet v0.4.93-99):
+        // - turbopackMemoryLimit alone (45GiB): compile SUCCEEDED in 19.4min where
+        //   baseline OOM'd; then died when 29 page-data workers spawned on top.
+        // - cpus caps those workers (default = cores-1 = 29 on Vercel Turbo).
+        // 40GiB (not 45) leaves ~20GB headroom for the worker phase.
+        //
+        // cpus 8 → 4 (2026-07-27): after the graph-splitting campaign, compile
+        // passes reliably (21.9 → 15.7 min) but v0.4.124/125/126/128/130 all
+        // SIGKILL'd with a confirmed OOM 6-10s into "Collecting page data using
+        // 8 workers" (5 red / 2 green at that line). Worker COUNT is the direct
+        // multiplier on that phase's peak concurrent memory (heap flags are
+        // stripped from these workers — vercel/next.js#95745), so halving the
+        // pool halves the peak; the phase itself costs only ~1-2 min.
+        // cpus 4 → 1 (2026-07-28): v0.4.209 compiled successfully under the
+        // 30GiB cap, then OOM-killed three seconds after page-data spawned four
+        // workers. Serializing that short phase removes its multiplicative
+        // memory peak without disturbing the compile cap.
+        // 40GiB → 30GiB (2026-07-26): the measurement below says peak RSS is
+        // 58.49 GiB on a 60 GB build machine — a ~1.5 GB margin. That is why
+        // this is marginal rather than broken: v0.4.121/122/129 went green and
+        // then EVERY build from v0.4.130 to v0.4.136 died as the graph grew,
+        // all with the same signature (SIGKILL ~8-10 min into compile, before
+        // any "Collecting page data" line — so the cpus 8→4 worker fix above
+        // does not cover this phase).
+        //
+        // This limit is Turbopack's cache-vs-GC target: higher = more retained
+        // graph, less collection, more RSS. Lowering it makes compile collect
+        // earlier and trade time for headroom. Slower is the correct trade —
+        // as the source-map note below already puts it, a build that OOMs
+        // ships nothing.
+        //
+        // If this is still not enough, do NOT keep shaving it blind: the real
+        // levers are rootReducer lazy-injection (shrinks every per-page server
+        // bundle) or building off-Vercel (GH Actions + `vercel deploy
+        // --prebuilt`), and the graph itself needs to come down.
+        // 30GiB → 40GiB (2026-07-28 13:17, v0.4.195, Arman ruling closing D107):
+        // theory was the 30GiB drop was NOT the OOM fix — the v0.4.137 edge
+        // lazy-import revert was — so 40GiB was restored for compile speed.
+        // 40GiB → 30GiB AGAIN (2026-07-28 ~18:00): that theory is disproven.
+        // Under the restored 40GiB, v0.4.195-198 went green but degraded
+        // (12m → 13m → 19m — ceiling-thrash signature; measured peak RSS at
+        // 40GiB is 58.49GiB on the 60GB machine, ~1.5GiB margin), then
+        // v0.4.199-203 ALL OOM'd with the exact pre-30GiB signatures: SIGKILL
+        // mid-compile (199) or 3s after "Collecting page data using 4 workers"
+        // spawned (200/202/203), with no code/config/machine/cache delta that
+        // explains it. 30GiB is load-bearing at the current graph size. Do not
+        // raise it again without headroom evidence from
+        // `next build --experimental-debug-memory-usage` at the CURRENT graph.
+        turbopackMemoryLimit: 32212254720,
+        cpus: 1,
+        serverActions: {
+            bodySizeLimit: "10mb",
+        },
+        // Optimize lucide-react (the 1400+ icon barrel file) and zustand to avoid massive SSR chunks
+        optimizePackageImports: ['lucide-react', 'zustand'],
+        // SOURCE MAPS OFF (A1) — memory, not speed, is the binding constraint.
+        // Measured with `next build --experimental-debug-memory-usage`: peak RSS
+        // 62.81 → 58.49 GiB (−4.32 GiB) with these two flags. Full production
+        // server/ output previously held 14,198 .js.map files / 1.40 GB against
+        // 0.99 GB of actual server JS.
+        //
+        // `productionBrowserSourceMaps: false` only governs BROWSER maps
+        // (static/ had zero .map). Server maps are a separate path:
+        // `serverSourceMaps` + Turbopack emission. Explicitly force both off.
+        // (Next docs: turbopackSourceMaps build default tracks
+        // productionBrowserSourceMaps — still set false here so it cannot drift.)
+        //
+        // TRADE-OFF: production server stack traces point at compiled output,
+        // which degrades lib/diagnostics. A build that OOMs ships nothing.
+        turbopackSourceMaps: false,
+        serverSourceMaps: false,
+    },
     // Turbopack configuration (Next.js 16 default bundler)
     turbopack: {
         // jspdf's package `exports` map resolves the "node" condition to
