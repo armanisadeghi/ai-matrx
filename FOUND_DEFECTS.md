@@ -13,6 +13,14 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D119 — any EDITOR can flip a canonical entity's `visibility` (incl. to `public`) at the DB layer (2026-07-29)
+
+`std_update` RLS on canonical tables (verified on `workbench.working_documents`) gates UPDATE at `editor` for ALL columns — `visibility` included. Only the ShareModal UI is owner-gated; an editor-sharee can `PATCH ... SET visibility='public'` via PostgREST directly, exposing the row to every authenticated user. `setVisibilityColumn`'s "owner-only writes are enforced by RLS" comment (`utils/permissions/service.ts`) is false for std-variant tables. Fix candidates: a column-level trigger/guard (visibility changes require owner or admin-level access) applied per the canonical RLS pipeline, platform-wide — not per table. Surfaced by the working-document sharing work but applies to every std entity-variant table. **Decides: Arman** (security posture change, cross-cutting).
+
+### D118 — conveying `working_document → conversation` edges let an editor-sharee re-share and amplify access (2026-07-29)
+
+The edge is access-conveying (`container_side='target'`, `conveys_max='editor'`). An editor-sharee B who attaches owner A's document to B's own conversation and shares that conversation conveys up to EDITOR on A's document to third parties — invisible to A, and at odds with the sharing invariant that non-owners cannot re-share. First became reachable when cross-user attach shipped (2026-07-29); the FE now blocks the doomed *viewer* attach path, but *editor* attach conveyance is by-design DB behavior. Options: drop `conveys_max` to `viewer` for this pair, or require doc-OWNER (not editor) for new conveying edges in `assoc_add`. **Decides: Arman** (access-architecture policy; cross-repo doc `common-docs/systems/access-architecture/FEATURE.md`).
+
 ### D117 — `content_ir_kind_instance` registry row declares the `visibility` enum in the boolean `is_public_column` slot (2026-07-29)
 
 `platform.shareable_resource_registry.content_ir_kind_instance` has `is_public_column='visibility'` — but that column holds the canonical `platform.visibility` ENUM, not a boolean. A non-null `is_public_column` routes ShareModal's public toggle through `make_resource_public` (boolean write) instead of the canonical `setVisibilityColumn` enum path, and `getResourceVisibility` will read the enum string as a boolean. Fix: set `is_public_column=null` in the live registry + TS mirror + snapshot together (the canonical-visibility shape), then verify ShareModal's Public tab against a kind instance. Found while regenerating the snapshot (which had drifted 6 rows behind the live DB); mirrored verbatim for parity in the meantime. **Decides: anyone — small, but touch all three surfaces in one commit.**
