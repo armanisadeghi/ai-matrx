@@ -52,6 +52,7 @@ if $STRICT; then
         "Backend boundary approvals|pnpm exec tsx scripts/check-backend-boundaries.ts --strict"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts --strict"
+        "Entity registry generation drift|pnpm check:entity-types"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts --strict"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts --strict"
     )
@@ -75,6 +76,7 @@ else
         "Backend boundary approvals|pnpm exec tsx scripts/check-backend-boundaries.ts"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
+        "Entity registry generation drift|pnpm check:entity-types"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts"
         # Advisory-only for now: known Wave-5 backlog (confident-title claims,

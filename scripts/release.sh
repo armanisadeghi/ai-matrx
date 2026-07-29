@@ -332,6 +332,39 @@ Fix the failures above (or re-run from aidream:
 
 apply_frontend_migrations
 
+# ── Entity registry sync (live DB → generated TypeScript metadata) ────────────
+# The token union is compiled for type safety, but every metadata value comes
+# from platform.entity_types. Admin edits must never leave a release carrying a
+# stale runtime snapshot. Regenerate after migrations, commit only the generated
+# file if it changed, then verify byte-for-byte drift before continuing.
+if $DRY_RUN; then
+    info "Checking generated entity metadata (dry-run — read-only)..."
+    if pnpm check:entity-types; then
+        ok "Generated entity metadata matches platform.entity_types."
+    else
+        warn "Entity registry drift found. A real release would regenerate and commit it."
+    fi
+else
+    info "Synchronizing generated entity metadata from platform.entity_types..."
+    if ! pnpm gen:entity-types; then
+        fail "Entity metadata generation failed. The release was not committed or pushed."
+    fi
+    if ! git diff --quiet -- types/generated/entity-types.generated.ts; then
+        echo "" >&2
+        echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}" >&2
+        echo -e "${RED}║  ENTITY REGISTRY DRIFT — committing regenerated metadata    ║${NC}" >&2
+        echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}" >&2
+        git commit --only -m \
+            "chore(entity-types): sync generated registry from database" \
+            -- types/generated/entity-types.generated.ts
+        ok "Generated entity metadata re-synced and committed."
+    fi
+    if ! pnpm check:entity-types; then
+        fail "Generated entity metadata still differs from platform.entity_types."
+    fi
+    ok "Generated entity metadata matches platform.entity_types."
+fi
+
 # ── Protocol mirror sync (docs/protocol ↔ aidream, byte-identical pact) ──────
 # MATRX_ENVELOPE.md + MATRX_REFERENCES.md + matrx_envelope_registry.generated.json
 # are contractually byte-identical across both repos; aidream is canonical

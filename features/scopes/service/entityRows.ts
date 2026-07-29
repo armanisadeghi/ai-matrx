@@ -51,7 +51,7 @@ function requireTitleColumn(
   const info = getEntityInfo(token);
   if (!info.titleColumn) {
     const error =
-      `Entity "${token}" has no titleColumn in the registry overlay — ` +
+      `Entity "${token}" has no title_column in platform.entity_types — ` +
       `add one in features/scopes/registry/entityRegistry.ts before ${op}`;
     console.error(`[entityRows] ${error}`);
     return { ok: false, error };

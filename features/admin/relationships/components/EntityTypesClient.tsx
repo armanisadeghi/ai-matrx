@@ -387,8 +387,8 @@ export function EntityTypesClient({ entityTypes }: Props) {
       if (error) throw error;
       toast.success(
         editor.mode === "create"
-          ? `${editor.token} registered — run pnpm gen:entity-types to update the TS vocabulary`
-          : `${editor.token} saved`,
+          ? `${editor.token} registered in the database — frontend metadata auto-syncs on the next release`
+          : `${editor.token} saved in the database — frontend metadata auto-syncs on the next release`,
       );
       setEditor(null);
       setSidePanelId(null);

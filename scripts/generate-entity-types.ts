@@ -29,7 +29,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { config as loadEnv } from "dotenv";
 
@@ -38,6 +38,14 @@ loadEnv({ path: ".env" });
 
 export const GENERATED_REL = "types/generated/entity-types.generated.ts";
 const OUT_PATH = join(__dirname, "..", "types", "generated", "entity-types.generated.ts");
+const ENTITY_REGISTRY_PATH = join(
+  __dirname,
+  "..",
+  "features",
+  "scopes",
+  "registry",
+  "entityRegistry.ts",
+);
 
 /** One row of `platform.entity_types` (the columns this generator consumes). */
 export interface EntityTypeSourceRow {
@@ -324,7 +332,6 @@ async function main(): Promise<void> {
   const source = renderGeneratedSource(rows, schemas, referenceCategories);
 
   if (check) {
-    const { readFileSync, existsSync } = await import("node:fs");
     if (!existsSync(OUT_PATH)) {
       console.error(`\n  ✗ ${GENERATED_REL} is missing. Run: pnpm gen:entity-types\n`);
       process.exit(1);
@@ -337,7 +344,30 @@ async function main(): Promise<void> {
       );
       process.exit(1);
     }
+    const registrySource = readFileSync(ENTITY_REGISTRY_PATH, "utf8");
+    const overlaySource = registrySource.match(
+      /const ENTITY_OVERLAY:[\s\S]*?=\s*\{([\s\S]*?)\n\};\n\n\/\*\* Fallback icon/,
+    )?.[1];
+    if (overlaySource === undefined) {
+      console.error(
+        "\n  ✗ Could not locate ENTITY_OVERLAY in entityRegistry.ts; " +
+          "the database-metadata duplication guard cannot run.\n",
+      );
+      process.exit(1);
+    }
+    const forbiddenOverlayField = overlaySource.match(
+      /\b(titleColumn|contentRole)\s*:/,
+    )?.[1];
+    if (forbiddenOverlayField !== undefined) {
+      console.error(
+        `\n  ✗ ENTITY_OVERLAY declares database-owned "${forbiddenOverlayField}".\n` +
+          "    Set title_column/content_role in platform.entity_types and regenerate; " +
+          "handwritten fallbacks are forbidden.\n",
+      );
+      process.exit(1);
+    }
     console.log(`  ✓ ${GENERATED_REL} matches the live registry (${rows.length} tokens).`);
+    console.log("  ✓ ENTITY_OVERLAY contains no database-owned metadata.");
     return;
   }
 

@@ -13,10 +13,9 @@
 //   1. The GENERATED registry `ENTITY_TYPE_METADATA` (mirrored 1:1 from
 //      `platform.entity_types`) — the source of truth for `schema`, `table`,
 //      `label`, `scopeable`, `category`. NEVER hand-maintained.
-//   2. A thin FE-only OVERLAY below for the ONE thing the DB can't carry: a
-//      Lucide `Icon` (a React component), plus the human `titleColumn` used to
-//      read picker candidates. Add a token here ONCE and every association card,
-//      picker and count grid picks it up.
+//   2. A thin FE-only OVERLAY below for things the DB cannot carry: Lucide
+//      `Icon` components, client routes, plural labels, and exceptional
+//      candidate loaders. Database-owned metadata is forbidden in the overlay.
 //
 // OWNERSHIP + ORG ARE CONVENTIONS, NOT PER-TOKEN CONFIG. Verified live across
 // every cardable table after the 2026 schema reorg: each carries `created_by`
@@ -85,9 +84,7 @@ export const DEFAULT_ORG_COLUMN = "organization_id";
 // every entity brings knowledge in (source), produces it (destination), does
 // both (hybrid), operates on it without truth of its own (utility), or
 // organizes other entities (container). Resource surfaces group by this.
-// Rescued from the deprecated `features/organizations/resource-catalogue.ts`
-// into the canonical registry — when `platform.entity_types` grows a
-// `content_role` column, these assignments move into the generated metadata.
+// `platform.entity_types.content_role` is the only per-entity authority.
 
 export type ContentRole =
   "utility" | "source" | "destination" | "hybrid" | "container";
@@ -158,31 +155,22 @@ export function isContentRole(value: string | null): value is ContentRole {
 }
 
 /**
- * FE-only presentation + query hints for an entity token. The icon is the one
- * thing `platform.entity_types` structurally cannot hold; `titleColumn` is the
- * human-readable column for the picker. Owner/org default to the conventions
- * above — only set the overrides for a table that genuinely diverges.
+ * FE-only presentation + query hints for an entity token. Database-owned
+ * metadata (`title_column`, `content_role`, schema/table/label, etc.) is
+ * deliberately absent. Owner/org default to the conventions above — only set
+ * the overrides for a table that genuinely diverges.
  */
 export interface EntityOverlay {
   /** Lucide icon for tiles, chips and picker rows. */
   Icon: LucideIcon;
   /** Plural display label. Defaults to `${label}s` when omitted. */
   labelPlural?: string;
-  /**
-   * Column on the backing table that reads as a human title in the picker.
-   * Omit when the entity has no single obvious title column — the candidate
-   * picker then can't list it (e.g. containers like scope, whose candidates
-   * come from the scope tree, not a generic table read).
-   */
-  titleColumn?: string;
   /** Override `DEFAULT_OWNER_COLUMN` only when this table diverges. */
   ownerColumn?: string | null;
   /** Override `DEFAULT_ORG_COLUMN` only when this table diverges. */
   orgColumn?: string | null;
   /** Build a route to open one record of this type (new-tab navigation). */
   hrefFor?: (id: string) => string;
-  /** Knowledge-model grouping bucket. Defaults to `destination`. */
-  contentRole?: ContentRole;
   /**
    * Candidate-source override for tokens whose backing table can't be read
    * client-side (e.g. `data_store` — the `rag` schema isn't PostgREST-exposed).
@@ -200,9 +188,10 @@ export interface EntityOverlay {
 
 // ─── The overlay table ──────────────────────────────────────────────────────
 // Keyed by canonical token (the only set FK-valid for platform.associations).
-// Keep entries terse — icon + titleColumn. `schema` / `table` / `label` come
-// from the generated metadata; owner/org come from the conventions. ADDING A
-// NEW CARD = one line here.
+// Keep entries terse — code-native presentation/action metadata only.
+// `schema` / `table` / `label` / `titleColumn` / `contentRole` come from the
+// generated DB metadata; owner/org come from the conventions. Adding a valid
+// DB `content_role` makes an entity cardable; this overlay is optional polish.
 //
 // Every token below is verified live against `platform.entity_types` +
 // information_schema (schema/table/title column all confirmed). Non-canonical
@@ -214,47 +203,33 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   agent: {
     Icon: Webhook,
     labelPlural: "Agents",
-    titleColumn: "name",
-    contentRole: "utility",
     hrefFor: (id) => `/agents/${id}`,
   },
   agent_shortcut: {
     Icon: Zap,
     labelPlural: "Agent Shortcuts",
-    titleColumn: "label",
-    contentRole: "utility",
   },
   app: {
     Icon: AppWindow,
     labelPlural: "Agent Apps",
-    titleColumn: "name",
-    contentRole: "utility",
   },
   skill: {
     Icon: Sparkles,
     labelPlural: "Skills",
-    titleColumn: "label",
-    contentRole: "utility",
   },
   workflow: {
     Icon: Workflow,
     labelPlural: "Workflows",
-    titleColumn: "name",
-    contentRole: "utility",
   },
   content_template: {
     Icon: LayoutTemplate,
     labelPlural: "Content Templates",
-    titleColumn: "label",
-    contentRole: "utility",
   },
   // Pick Lists / user lists (`/lists`) — canonical token is structured_list
   // (legacy names picklist / udt_picklists / user_lists are dead).
   structured_list: {
     Icon: ListOrdered,
     labelPlural: "Lists",
-    titleColumn: "list_name",
-    contentRole: "utility",
     hrefFor: (id) => `/lists/${id}`,
   },
 
@@ -262,136 +237,99 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   file: {
     Icon: FileText,
     labelPlural: "Files",
-    titleColumn: "file_name",
-    contentRole: "source",
     hrefFor: (id) => `/files/f/${id}`,
   },
   folder: {
     Icon: Folder,
     labelPlural: "Folders",
-    titleColumn: "folder_name",
-    contentRole: "source",
   },
   transcript: {
     Icon: AudioLines,
     labelPlural: "Transcripts",
-    titleColumn: "title",
-    contentRole: "source",
   },
   dataset: {
     Icon: Table,
     labelPlural: "Datasets",
-    titleColumn: "description",
-    contentRole: "hybrid",
     hrefFor: (id) => `/data/${id}`,
   },
   workbook: {
     Icon: Sheet,
     labelPlural: "Workbooks",
-    titleColumn: "description",
-    contentRole: "hybrid",
     hrefFor: (id) => `/workbooks/${id}`,
   },
-  // RAG knowledge store — the scope-gate for knowledge_search retrieval. `rag.*` is
-  // NOT PostgREST-exposed, so deliberately NO titleColumn (a generic candidate
-  // read would fail); stores list through the Python API via the registered
-  // candidate source. Edges MUST stamp `label` = store name at attach time —
-  // titles can't be re-read client-side.
+  // RAG knowledge store — the scope-gate for knowledge_search retrieval.
+  // Although the DB registry owns title_column='name', `rag.*` is not
+  // PostgREST-exposed, so candidates list through the registered source.
+  // Edges MUST stamp `label` = store name at attach time — titles can't be
+  // re-read client-side.
   data_store: {
     Icon: Database,
     labelPlural: "Data Stores",
-    contentRole: "source",
     listCandidates: listDataStoreCandidates,
   },
   studio_session: {
     Icon: Mic,
     labelPlural: "Audio Sessions",
-    titleColumn: "title",
-    contentRole: "source",
   },
   // ─── Code (canonical `code.*` entities — attachable to orgs, war rooms, etc.) ─
   code_file: {
     Icon: FileCode2,
     labelPlural: "Code Files",
-    titleColumn: "name",
-    contentRole: "source",
     hrefFor: (id) => `/code?tab=${encodeURIComponent(`code-file:${id}`)}`,
   },
   code_folder: {
     Icon: FolderGit2,
     labelPlural: "Code Folders",
-    titleColumn: "name",
-    contentRole: "container",
   },
   code_repository: {
     Icon: GitBranch,
     labelPlural: "Code Repositories",
-    titleColumn: "name",
-    contentRole: "container",
   },
 
   // ─── Outputs ────────────────────────────────────────────────────────────--
   note: {
     Icon: NotebookText,
     labelPlural: "Notes",
-    titleColumn: "label",
     hrefFor: (id) => `/notes?active=${id}`,
-    contentRole: "hybrid",
   },
   udt_document: {
     Icon: FileText,
     labelPlural: "Documents",
-    titleColumn: "document_name",
     hrefFor: (id) => `/documents/${id}`,
-    contentRole: "hybrid",
   },
   working_document: {
     Icon: FilePen,
     labelPlural: "Working Documents",
-    titleColumn: "title",
-    contentRole: "destination",
   },
   conversation: {
     Icon: MessagesSquare,
     labelPlural: "Conversations",
-    titleColumn: "title",
-    contentRole: "destination",
     hrefFor: (id) => `/chat/${id}`,
   },
   flashcard_set: {
     Icon: Layers,
     labelPlural: "Flashcard Sets",
-    titleColumn: "title",
-    contentRole: "destination",
   },
   quiz_session: {
     Icon: ListChecks,
     labelPlural: "Quizzes",
-    titleColumn: "title",
-    contentRole: "destination",
   },
 
   // ─── Workspaces (containers — also valid as cards) ─────────────────────────
   project: {
     Icon: FolderKanban,
     labelPlural: "Projects",
-    titleColumn: "name",
-    contentRole: "container",
   },
   task: {
     Icon: ListTodo,
     labelPlural: "Tasks",
-    titleColumn: "title",
     hrefFor: (id) => `/tasks/${id}`,
-    contentRole: "container",
   },
 
   // ─── CRM (crm.party — the ONE record for an external person/company) ──────
   party: {
     Icon: Contact,
     labelPlural: "People & Companies",
-    // titleColumn ("display_name") comes from the DB metadata.
-    contentRole: "source",
     hrefFor: (id) => `/crm/${id}`,
   },
   crm_campaign: {
@@ -399,31 +337,25 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Campaigns",
     // No hrefFor yet — the campaign builder is a later wave; adding a route
     // here before it exists would mint dead links on every association card.
-    contentRole: "container",
   },
 
   // ─── Web (canonical pages — the marketing page workspace anchors here) ────
   web_page: {
     Icon: Globe,
     labelPlural: "Canonical Pages",
-    // titleColumn comes from the DB metadata ('url'); hrefFor resolves the
-    // nested brand/site route via a tiny server redirect.
+    // hrefFor resolves the nested brand/site route via a tiny server redirect.
     hrefFor: (id) => `/marketing/pages/${id}`,
-    contentRole: "source",
   },
 
-  // ─── Container display only (candidates come from the scope tree, not a
-  //     generic table read — so NO titleColumn → not listable as candidates) ──
-  scope: { Icon: Tag, labelPlural: "Scopes", contentRole: "container" },
+  // ─── Container display metadata ───────────────────────────────────────────
+  scope: { Icon: Tag, labelPlural: "Scopes" },
   scope_type: {
     Icon: Layers3,
     labelPlural: "Scope Types",
-    contentRole: "container",
   },
   organization: {
     Icon: Building2,
     labelPlural: "Organizations",
-    contentRole: "container",
   },
 };
 
@@ -469,9 +401,16 @@ export function getEntityInfo(token: EntityTypeToken): EntityInfo {
   const meta = ENTITY_TYPE_METADATA[token];
   const overlay = ENTITY_OVERLAY[token];
   const labelPlural = overlay?.labelPlural ?? `${meta.label}s`;
-  // DB registry first (admin-managed via /administration/database/relationships/
-  // entity-types), FE overlay as legacy fallback only.
-  const titleColumn = meta.titleColumn ?? overlay?.titleColumn ?? null;
+  const titleColumn = meta.titleColumn;
+  const contentRole = isContentRole(meta.contentRole)
+    ? meta.contentRole
+    : "destination";
+  if (!isContentRole(meta.contentRole)) {
+    console.error(
+      `[entityRegistry] "${token}" has invalid or missing content_role ` +
+        `in platform.entity_types; using destination as a loud recovery.`,
+    );
+  }
   // `null` override means "this table has no such column"; `undefined` (the
   // common case) falls back to the convention.
   const ownerColumn =
@@ -495,9 +434,7 @@ export function getEntityInfo(token: EntityTypeToken): EntityInfo {
     hrefFor: overlay?.hrefFor ?? null,
     scopeable: meta.scopeable,
     category: meta.category,
-    contentRole: isContentRole(meta.contentRole)
-      ? meta.contentRole
-      : (overlay?.contentRole ?? "destination"),
+    contentRole,
     listCandidates: overlay?.listCandidates ?? null,
     canListCandidates:
       titleColumn !== null || overlay?.listCandidates !== undefined,
@@ -543,26 +480,23 @@ export function tryGetEntityInfoByTable(
  * `platform.entity_types.reference_pickable` (admin-managed at
  * /administration/database/relationships/entity-types), no longer gated by the FE
  * overlay. A pickable token still needs a way to list candidates: a
- * `title_column` in the registry (or legacy overlay) or an FE
- * `listCandidates` override. A pickable token with neither is a config
- * defect — it is excluded and screamed about, never silently shown broken.
+ * `title_column` in the registry or an FE `listCandidates` override. A
+ * pickable token with neither is a config defect — it is excluded and
+ * screamed about, never silently shown broken.
  */
 /**
- * Tokens with a hand-curated FE overlay (real icon, href, content role) —
- * the DEFAULT set for association card grids, resource sections, and attach
- * pickers, where rendering all ~118 pickable registry types would be noise.
- * The reference "Allowed types" chooser deliberately uses the OPEN
- * `listableTokens()` set instead — do not swap the two.
+ * Tokens the DB classifies as knowledge resources via a valid `content_role`.
+ * This is the default set for association card grids, resource sections, and
+ * attach pickers. The reference "Allowed types" chooser deliberately uses the
+ * broader `listableTokens()` set instead.
  */
 export function curatedTokens(): EntityTypeToken[] {
-  return (Object.keys(ENTITY_OVERLAY) as EntityTypeToken[]).filter((t) => {
+  return (Object.keys(ENTITY_TYPE_METADATA) as EntityTypeToken[]).filter((t) => {
     const meta = ENTITY_TYPE_METADATA[t];
     const o = ENTITY_OVERLAY[t];
     return (
-      meta !== undefined &&
-      (meta.titleColumn != null ||
-        o?.titleColumn != null ||
-        o?.listCandidates !== undefined)
+      isContentRole(meta.contentRole) &&
+      (meta.titleColumn != null || o?.listCandidates !== undefined)
     );
   });
 }
@@ -574,9 +508,7 @@ export function listableTokens(): EntityTypeToken[] {
       if (!meta.referencePickable) return false;
       const o = ENTITY_OVERLAY[t];
       const canList =
-        meta.titleColumn != null ||
-        o?.titleColumn != null ||
-        o?.listCandidates !== undefined;
+        meta.titleColumn != null || o?.listCandidates !== undefined;
       if (!canList) {
         console.error(
           `[entityRegistry] "${t}" is reference_pickable in platform.entity_types ` +

@@ -46,7 +46,6 @@ import {
   Terminal,
   FileText,
   Table,
-  List,
   Sheet,
   AudioLines,
   Globe,
@@ -59,6 +58,9 @@ import {
   FolderKanban,
   ListTodo,
 } from "lucide-react";
+import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
+
+const STRUCTURED_LIST_INFO = getEntityInfo("structured_list");
 
 /**
  * The four content roles. Mirrors the knowledge model: every entity either
@@ -345,20 +347,21 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "structured_list",
-    label: "List",
-    labelPlural: "Lists",
-    role: "source",
-    icon: List,
+    label: STRUCTURED_LIST_INFO.label,
+    labelPlural: STRUCTURED_LIST_INFO.labelPlural,
+    role: STRUCTURED_LIST_INFO.contentRole,
+    icon: STRUCTURED_LIST_INFO.Icon,
     description: "Reusable, optionally grouped lists of editable option objects.",
-    table: "udt_structured_lists",
+    table: STRUCTURED_LIST_INFO.table,
+    schemaName: STRUCTURED_LIST_INFO.schema,
     // udt_structured_lists DOES carry organization_id (verified live 2026-06-27);
     // the prior `false` was stale catalogue drift that hid org-owned lists from
     // both the inventory count and the org shared-items list.
     hasOrgColumn: true,
     shareKey: "structured_list",
-    titleColumn: "description",
+    titleColumn: STRUCTURED_LIST_INFO.titleColumn,
     orgRoute: null,
-    scopeable: true,
+    scopeable: STRUCTURED_LIST_INFO.scopeable,
   },
   {
     key: "workbook",
