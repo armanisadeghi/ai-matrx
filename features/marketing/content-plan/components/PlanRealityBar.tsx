@@ -21,6 +21,9 @@ import {
 
 import type { RealityReport } from "../hooks/usePlanReality";
 
+/** Cap synchronous DOM for huge crawls (allgreen-scale: thousands). */
+const ORPHAN_RENDER_CAP = 300;
+
 /** Best-effort display line for an orphan/ghost record (server sends
  * loosely-shaped rows — prefer the meaningful keys, fall back to values). */
 function recordLine(record: Record<string, string>): string {
@@ -35,41 +38,60 @@ function recordLine(record: Record<string, string>): string {
 
 export function PlanRealityBar({
   report,
+  showTreeHint,
   onDismiss,
 }: {
   report: RealityReport;
+  /** Only the tree view renders live dots — don't promise them elsewhere. */
+  showTreeHint: boolean;
   onDismiss: () => void;
 }) {
   const [orphansOpen, setOrphansOpen] = useState(false);
   const matched = report.matched?.length ?? 0;
   const ghosts = report.ghosts?.length ?? 0;
   const orphans = report.orphans ?? [];
+  // Zero matches AND zero orphans means the crawler has nothing for this
+  // site — say that, instead of implying every planned page is dead.
+  const noCrawlData = matched === 0 && orphans.length === 0;
 
   return (
     <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-3 py-1.5 text-xs">
       <Radar className="h-3.5 w-3.5 shrink-0 text-primary" />
       <span className="min-w-0 flex-1 truncate text-foreground">
-        Reality check:{" "}
-        <span className="font-medium">{matched} planned pages are live</span>
-        {" · "}
-        {ghosts} planned but not on the site yet
-        {orphans.length > 0 ? (
+        {noCrawlData ? (
           <>
-            {" · "}
-            <button
-              type="button"
-              className="font-medium text-primary underline-offset-2 hover:underline"
-              onClick={() => setOrphansOpen(true)}
-            >
-              {orphans.length} live URL{orphans.length === 1 ? "" : "s"} the
-              plan doesn&rsquo;t know
-            </button>
+            Reality check: no crawl data for this site yet — crawl it first
+            (site → Crawls), then re-run.
           </>
-        ) : null}
+        ) : (
+          <>
+            Reality check:{" "}
+            <span className="font-medium">
+              {matched} planned pages are live
+            </span>
+            {" · "}
+            {ghosts} planned but not on the site yet
+            {orphans.length > 0 ? (
+              <>
+                {" · "}
+                <button
+                  type="button"
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                  onClick={() => setOrphansOpen(true)}
+                >
+                  {orphans.length} live URL{orphans.length === 1 ? "" : "s"}{" "}
+                  the plan doesn&rsquo;t know
+                </button>
+              </>
+            ) : null}
+          </>
+        )}
       </span>
-      <span className="hidden shrink-0 text-muted-foreground sm:inline">
-        Live pages carry a dot in the tree
-      </span>
+      {showTreeHint && !noCrawlData ? (
+        <span className="hidden shrink-0 text-muted-foreground sm:inline">
+          Live pages carry a green dot
+        </span>
+      ) : null}
       <Button
         variant="ghost"
         size="sm"
@@ -91,7 +113,7 @@ export function PlanRealityBar({
             a future disposition pass retire/redirect them.
           </p>
           <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto px-4 py-2">
-            {orphans.map((record, index) => (
+            {orphans.slice(0, ORPHAN_RENDER_CAP).map((record, index) => (
               <li
                 key={index}
                 className="break-all rounded border border-border px-2 py-1.5 font-mono text-xs text-foreground"
@@ -99,6 +121,13 @@ export function PlanRealityBar({
                 {recordLine(record)}
               </li>
             ))}
+            {orphans.length > ORPHAN_RENDER_CAP ? (
+              <li className="px-2 py-1.5 text-xs text-muted-foreground">
+                Showing {ORPHAN_RENDER_CAP} of {orphans.length} — the full set
+                lives in the reconcile report (and the disposition view will
+                own bulk triage).
+              </li>
+            ) : null}
           </ul>
         </SheetContent>
       </Sheet>

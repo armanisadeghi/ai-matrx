@@ -255,7 +255,11 @@ export function ContentPlanWorkbench({
 
         {reality.report &&
         (view === "tree" || view === "table" || view === "map") ? (
-          <PlanRealityBar report={reality.report} onDismiss={reality.dismiss} />
+          <PlanRealityBar
+            report={reality.report}
+            showTreeHint={view === "tree"}
+            onDismiss={reality.dismiss}
+          />
         ) : null}
 
         {/* AI generation strip — plan-bearing views only; Setup and

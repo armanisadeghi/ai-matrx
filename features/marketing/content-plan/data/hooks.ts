@@ -65,6 +65,7 @@ export const planKeys = {
     ["content-plan", "site-keyword-values", siteId] as const,
   topics: (search: string) => ["content-plan", "topics", search] as const,
   siteStats: () => ["content-plan", "site-stats"] as const,
+  reality: (siteId: string) => ["content-plan", "reality", siteId] as const,
 };
 
 /** Per-site plan aggregates for the /marketing/content-plan list page. */

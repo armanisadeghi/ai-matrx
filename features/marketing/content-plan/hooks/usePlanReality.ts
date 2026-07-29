@@ -26,7 +26,7 @@ export type RealityMatch = components["schemas"]["ReconcileMatch"];
 
 export function usePlanReality(siteId: string | null) {
   const queryClient = useQueryClient();
-  const key = [...planKeys.all, "reality", siteId ?? "none"] as const;
+  const key = planKeys.reality(siteId ?? "none");
 
   const query = useQuery<RealityReport>({
     queryKey: key,

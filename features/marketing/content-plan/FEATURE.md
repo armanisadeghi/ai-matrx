@@ -318,6 +318,20 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-29 — Claude: **plan-vs-reality overlay (Deliverable 4).** Header
+  Radar button runs aidream's crawl reconciler
+  (`POST /content-plan/sites/{id}/reconcile`); report held in ONE cache entry
+  (`hooks/usePlanReality.ts`, `planKeys.reality`) shared by the header
+  trigger and the workbench overlay: `PlanRealityBar` strip
+  (matched/ghost counts, orphans sheet capped at 300 rows, explicit
+  "no crawl data yet" state instead of implying content death) + green
+  live-dots on matched tree rows (`liveById` prop). Manual-run only —
+  reconcile writes `realizes` edges server-side. Live-verified on
+  datadestruction.com (2 live · 2 ghosts · 750 orphans); Sonnet adversarial
+  review fixes applied (key convention, view-scoped hint copy, orphan cap,
+  no-crawl copy). Table/map badges + the allgreen disposition view remain
+  follow-ups in the work order.
+
 - 2026-07-29 — Claude: **per-view surface family + surface writeback v1.**
   Split the one workspace surface into five (list / base / setup / entities /
   node — see Entry points); moved `brief_writer` to the node surface, added
