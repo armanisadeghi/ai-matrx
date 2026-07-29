@@ -44,6 +44,7 @@ export function NewNodeDialog({
   siteId,
   organizationId,
   parent,
+  nodes,
   open,
   onOpenChange,
   onCreated,
@@ -53,6 +54,11 @@ export function NewNodeDialog({
   organizationId: string;
   /** null = create a root node (home or a top-level pillar/index). */
   parent: PlanNodeRow | null;
+  /** The live plan — lets the dialog NAME a route conflict before the DB
+   * rejects it ("/about is taken by 'About Dr. Smith'"). The raw unique-index
+   * error told the user nothing, and the occupying page is often collapsed
+   * out of view under Home. The DB stays the authority. */
+  nodes: PlanNodeRow[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (node: PlanNodeRow) => void;
@@ -102,6 +108,20 @@ export function NewNodeDialog({
       : slugTouched
         ? slug
         : convertToKebabCase(label);
+
+  // The route this node would land at. Children of Home are TOP-LEVEL URLs
+  // (Home's route is "/"), which is exactly the case that confused people:
+  // a collapsed Home hides the page that owns /about.
+  const parentBase = (parent?.route ?? "").replace(/\/+$/, "");
+  const prospectiveRoute =
+    nodeType === "home"
+      ? "/"
+      : effectiveSlug.trim()
+        ? `${parentBase}/${effectiveSlug.trim()}`
+        : null;
+  const conflict = prospectiveRoute
+    ? (nodes.find((node) => node.route === prospectiveRoute) ?? null)
+    : null;
 
   const submit = () => {
     // Late-bind the "planned" default: categories may not have been loaded
@@ -199,8 +219,19 @@ export function NewNodeDialog({
                 }}
                 placeholder="knee-pain-treatment"
                 className="h-8 font-mono"
+                aria-invalid={Boolean(conflict)}
               />
             </div>
+          ) : null}
+          {conflict ? (
+            <p className="rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-xs text-foreground">
+              <span className="font-mono">{prospectiveRoute}</span> already
+              exists — <span className="font-medium">“{conflict.label}”</span>
+              {conflict.parent_id
+                ? " (it may be collapsed under its parent in the tree)"
+                : ""}
+              . Pick a different slug, or edit that page instead.
+            </p>
           ) : null}
         </div>
         <DialogFooter>
@@ -213,7 +244,7 @@ export function NewNodeDialog({
           </Button>
           <Button
             size="sm"
-            disabled={!label.trim() || create.isPending}
+            disabled={!label.trim() || Boolean(conflict) || create.isPending}
             onClick={submit}
           >
             {create.isPending ? "Creating…" : "Create"}

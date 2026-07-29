@@ -377,6 +377,7 @@ export function ContentPlanWorkbench({
           <NewNodeDialog
             siteId={siteId}
             organizationId={site.organization_id}
+            nodes={nodeRows}
             parent={
               newNodeParentId ? (nodeById.get(newNodeParentId) ?? null) : null
             }

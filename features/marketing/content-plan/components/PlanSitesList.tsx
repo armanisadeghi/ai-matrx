@@ -14,6 +14,7 @@
  */
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   Columns3,
   ExternalLink,
@@ -21,6 +22,7 @@ import {
   ListTree,
   Map as MapIcon,
   MoreVertical,
+  PanelsTopLeft,
   Plus,
   Table2,
   Users,
@@ -53,6 +55,8 @@ import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
 
+import { CmsSiteService } from "@/features/cms/services/cmsService";
+import { resolveCmsLink } from "../setup/readiness";
 import { planStatusColor } from "../constants";
 import { countBy, formatUpdated, withCounts } from "../utils";
 import { usePlanSiteStats } from "../data/hooks";
@@ -101,6 +105,15 @@ export function PlanSitesList() {
   const router = useRouter();
   const { sites, orgSites } = useContentPlanSites();
   const stats = usePlanSiteStats();
+  // ONE CMS list for the whole page — resolves each row's CMS counterpart so
+  // the menu can jump straight into the CMS admin. Failure is non-fatal: the
+  // entry simply doesn't render.
+  const cmsSites = useQuery({
+    queryKey: ["content-plan", "cms-site-options"],
+    queryFn: () => CmsSiteService.listSites(),
+    staleTime: 60 * 1000,
+    retry: 1,
+  });
 
   const { prefs, setPrefs } = useListViewPrefs(
     "content-plan-sites",
@@ -211,6 +224,20 @@ export function PlanSitesList() {
       {
         id: "related",
         items: [
+          ...(() => {
+            const link = resolveCmsLink(row.site, cmsSites.data ?? []);
+            return link.linked && link.cmsSiteId
+              ? [
+                  {
+                    id: "open-cms",
+                    kind: "link" as const,
+                    label: "Open in CMS",
+                    icon: PanelsTopLeft,
+                    href: `/cms/${link.cmsSiteId}`,
+                  },
+                ]
+              : [];
+          })(),
           {
             id: "site-record",
             kind: "link",
