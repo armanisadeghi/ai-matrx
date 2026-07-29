@@ -35,7 +35,9 @@ import {
   selectActiveScratchpadId,
   selectAttachedScratchpadIds,
   selectWorkingDocEnabled,
+  selectWorkingDocMaterialized,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 import {
   attachScratchpadToConversationThunk,
   detachScratchpadFromConversationThunk,
@@ -223,6 +225,9 @@ export function WorkingDocumentPanel({
   }, [mainView, livePatch.latestCallId, conversationId]);
 
   const isBound = binding.kind === "note" && !!binding.id;
+  const materialized = useAppSelector(
+    selectWorkingDocMaterialized(conversationId, kind),
+  );
 
   // The working document's RichDocument identity. Drives the full action
   // toolkit (copy / read-aloud / save-to-notes/task / HTML page / email /
@@ -431,6 +436,21 @@ export function WorkingDocumentPanel({
                   </button>
                 }
               />
+              {/* Share the durable document row (users / orgs / public / link).
+                  Only once the row EXISTS — an unmaterialized reserved id has
+                  nothing to grant on. ShareModal resolves ownership itself. */}
+              {materialized &&
+                binding.kind === "cx_working_document" &&
+                !!binding.id && (
+                  <ShareButton
+                    resourceType="working_document"
+                    resourceId={binding.id}
+                    resourceName={title || docTitleFallback}
+                    variant="ghost"
+                    size="sm"
+                    showStatus={false}
+                  />
+                )}
             </>
           )}
         </div>

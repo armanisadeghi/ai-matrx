@@ -237,6 +237,7 @@ function renderBody(result: ResolvedShareToken, token: string): React.ReactNode 
   switch (result.resourceType) {
     case "note":
     case "content_template":
+    case "working_document":
       return <MarkdownRenderer result={result} />;
     case "code_file":
       return <CodeRenderer result={result} />;

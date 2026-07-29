@@ -23,9 +23,11 @@ import {
   BottomSheetHeader,
   BottomSheetBody,
 } from "@/components/official/bottom-sheet/BottomSheet";
+import { cn } from "@/lib/utils";
 import {
   listUserDocuments,
   type CxWorkingDocument,
+  type DocumentListScope,
   type WorkingDocumentKind,
 } from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
 
@@ -63,7 +65,14 @@ interface DocumentLinkPickerBodyProps {
   filtered: CxWorkingDocument[];
   onPick: (documentId: string) => void;
   listMaxHeight?: string;
+  scope: DocumentListScope;
+  onScopeChange: (scope: DocumentListScope) => void;
 }
+
+const SCOPES: Array<{ value: DocumentListScope; label: string }> = [
+  { value: "mine", label: "Mine" },
+  { value: "shared", label: "Shared with me" },
+];
 
 function DocumentLinkPickerBody({
   kind,
@@ -74,6 +83,8 @@ function DocumentLinkPickerBody({
   filtered,
   onPick,
   listMaxHeight = "max-h-[300px]",
+  scope,
+  onScopeChange,
 }: DocumentLinkPickerBodyProps) {
   const isScratch = kind === "scratch";
   const Icon = isScratch ? NotebookPen : FileText;
@@ -93,6 +104,28 @@ function DocumentLinkPickerBody({
             style={{ fontSize: "16px" }}
           />
         </div>
+        {/* Scratchpads are personal by design — no shared scope for them. */}
+        {!isScratch && (
+          <div className="mt-1.5 flex gap-1" role="tablist" aria-label="Document scope">
+            {SCOPES.map((s) => (
+              <button
+                key={s.value}
+                type="button"
+                role="tab"
+                aria-selected={scope === s.value}
+                onClick={() => onScopeChange(s.value)}
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors",
+                  scope === s.value
+                    ? "border-primary/40 bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:bg-accent",
+                )}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div
@@ -107,7 +140,11 @@ function DocumentLinkPickerBody({
           <div className="px-3 py-6 text-center text-destructive">{error}</div>
         ) : filtered.length === 0 ? (
           <div className="px-3 py-6 text-center text-muted-foreground">
-            {search.trim() ? "No matches" : `No other ${noun}s to link yet`}
+            {search.trim()
+              ? "No matches"
+              : scope === "shared"
+                ? `No ${noun}s shared with you yet`
+                : `No other ${noun}s to link yet`}
           </div>
         ) : (
           filtered.map((doc) => (
@@ -156,29 +193,45 @@ export function DocumentLinkPicker({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [scope, setScope] = useState<DocumentListScope>("mine");
 
   const isScratch = kind === "scratch";
   const noun = isScratch ? "scratchpad" : "document";
   const sheetTitle = `Link ${noun}`;
 
+  const loadDocs = useCallback(
+    (nextScope: DocumentListScope) => {
+      setIsLoading(true);
+      setError(null);
+      void listUserDocuments(kind, 50, nextScope)
+        .then((loaded) => setItems(loaded))
+        .catch(() => {
+          setError(`Could not load ${noun}s`);
+          setItems([]);
+        })
+        .finally(() => setIsLoading(false));
+    },
+    [kind, noun],
+  );
+
   const handleOpenChange = useCallback(
     (next: boolean) => {
       setOpen(next);
       if (next) {
-        setIsLoading(true);
-        setError(null);
-        void listUserDocuments(kind)
-          .then((loaded) => setItems(loaded))
-          .catch(() => {
-            setError(`Could not load ${noun}s`);
-            setItems([]);
-          })
-          .finally(() => setIsLoading(false));
+        loadDocs(scope);
       } else {
         setSearch("");
       }
     },
-    [kind, noun],
+    [loadDocs, scope],
+  );
+
+  const handleScopeChange = useCallback(
+    (nextScope: DocumentListScope) => {
+      setScope(nextScope);
+      loadDocs(nextScope);
+    },
+    [loadDocs],
   );
 
   const filtered = useMemo(() => {
@@ -212,6 +265,8 @@ export function DocumentLinkPicker({
       filtered={filtered}
       onPick={handlePick}
       listMaxHeight={isMobile ? "max-h-[50dvh]" : "max-h-[300px]"}
+      scope={scope}
+      onScopeChange={handleScopeChange}
     />
   );
 

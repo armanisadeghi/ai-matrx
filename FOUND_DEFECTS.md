@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D117 — `content_ir_kind_instance` registry row declares the `visibility` enum in the boolean `is_public_column` slot (2026-07-29)
+
+`platform.shareable_resource_registry.content_ir_kind_instance` has `is_public_column='visibility'` — but that column holds the canonical `platform.visibility` ENUM, not a boolean. A non-null `is_public_column` routes ShareModal's public toggle through `make_resource_public` (boolean write) instead of the canonical `setVisibilityColumn` enum path, and `getResourceVisibility` will read the enum string as a boolean. Fix: set `is_public_column=null` in the live registry + TS mirror + snapshot together (the canonical-visibility shape), then verify ShareModal's Public tab against a kind instance. Found while regenerating the snapshot (which had drifted 6 rows behind the live DB); mirrored verbatim for parity in the meantime. **Decides: anyone — small, but touch all three surfaces in one commit.**
+
 ### D116 — delete the two bespoke stream renderers (Arman ruling 2026-07-28)
 
 Hand-rolled stream rendering is banned platform-wide (CLAUDE.md; `features/content-ir/FEATURE.md` § No bespoke stream renderers). Two callers exist and must go:

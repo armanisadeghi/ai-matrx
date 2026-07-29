@@ -198,19 +198,43 @@ export async function commitWorkingDocumentContent(
 }
 
 /**
- * List the current user's documents of a given kind, newest-edited first.
- * Powers the "attach an existing document" picker (cross-conversation linking).
+ * Explicit list scope (THE VIEW LAW: RLS is the ceiling, never the list
+ * definition). `mine` = documents I created; `shared` = documents RLS lets me
+ * read that someone ELSE created (direct grants, org access, reachability
+ * through a shared conversation).
+ */
+export type DocumentListScope = "mine" | "shared";
+
+async function currentUserId(): Promise<string | null> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return session?.user?.id ?? null;
+}
+
+/**
+ * List documents of a given kind, newest-edited first, under an EXPLICIT
+ * scope. Powers the "attach an existing document" picker (cross-conversation
+ * + cross-user linking).
  */
 export async function listUserDocuments(
   kind: WorkingDocumentKind,
   limit = 50,
+  scope: DocumentListScope = "mine",
 ): Promise<CxWorkingDocument[]> {
-  const { data, error } = await WD()
+  const uid = await currentUserId();
+  if (!uid) return []; // guests own nothing and are granted nothing
+  let query = WD()
     .select("*")
     .eq("kind", kind)
     .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .limit(limit);
+  query =
+    scope === "mine"
+      ? query.eq("created_by", uid)
+      : query.neq("created_by", uid);
+  const { data, error } = await query;
   if (error) {
     throw new Error(`[working-document] list failed: ${error.message}`);
   }
@@ -229,14 +253,20 @@ export interface CxWorkingDocumentSummary {
 }
 
 /**
- * List the current user's recent documents across BOTH kinds, newest-edited
- * first — the data behind the DocumentsWorkspace rail. RLS scopes to the owner.
+ * List the current user's OWN recent documents across BOTH kinds,
+ * newest-edited first — the data behind the DocumentsWorkspace rail. Scope is
+ * declared explicitly (`created_by = uid`, THE VIEW LAW): now that working
+ * documents are shareable, a bare RLS read would silently flood this personal
+ * rail with every document shared with the user.
  */
 export async function listRecentUserDocuments(
   limit = 100,
 ): Promise<CxWorkingDocumentSummary[]> {
+  const uid = await currentUserId();
+  if (!uid) return [];
   const { data, error } = await WD()
     .select("id, metadata, kind, title, content, updated_at")
+    .eq("created_by", uid)
     .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .limit(limit);
