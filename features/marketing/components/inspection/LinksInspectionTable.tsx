@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ExternalLink, Globe, Link2Off, Network, Table2 } from "lucide-react";
+import {
+  ClipboardList,
+  ExternalLink,
+  Globe,
+  Link2Off,
+  Network,
+  Table2,
+} from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
@@ -46,6 +53,7 @@ import {
 } from "@/features/marketing/lib/copy-payloads";
 import { ExternalLinksView } from "@/features/marketing/components/inspection/link-graph/ExternalLinksView";
 import { LinkGraphView } from "@/features/marketing/components/inspection/link-graph/LinkGraphView";
+import { SiteLinkComplianceView } from "@/features/marketing/components/inspection/link-plan/SiteLinkComplianceView";
 import { displayUrl } from "@/features/marketing/components/inspection/link-graph/model";
 import { cn } from "@/lib/utils";
 
@@ -82,7 +90,7 @@ function sourceUrl(row: InspectionLinkRow): string {
   return row.source_page?.url ?? row.source_page_id;
 }
 
-type LinksViewMode = "graph" | "external" | "table";
+type LinksViewMode = "graph" | "external" | "table" | "plan";
 
 function hostnameOf(url: string): string | null {
   try {
@@ -175,8 +183,13 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
   const graphEdges = useLinkGraphEdges(site.id, null, false);
   // Graph is the default view — the URL only records the exception.
   const viewParam = searchParams.get("view");
+  // "plan" (site link compliance) is site-scoped — never a crawl view.
   const view: LinksViewMode =
-    viewParam === "table" || viewParam === "external" ? viewParam : "graph";
+    viewParam === "table" ||
+    viewParam === "external" ||
+    (viewParam === "plan" && !crawlId)
+      ? viewParam
+      : "graph";
   const setView = (next: LinksViewMode) => {
     const params = new URLSearchParams(searchParams.toString());
     next === "graph" ? params.delete("view") : params.set("view", next);
@@ -464,9 +477,12 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
               [
                 { id: "graph", label: "Graph", icon: Network },
                 { id: "external", label: "External", icon: Globe },
+                { id: "plan", label: "Plan", icon: ClipboardList },
                 { id: "table", label: "Table", icon: Table2 },
               ] as const
-            ).map((option) => (
+            )
+              .filter((option) => option.id !== "plan" || !crawlId)
+              .map((option) => (
               <button
                 key={option.id}
                 type="button"
@@ -494,6 +510,8 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
           />
         ) : view === "external" ? (
           <ExternalLinksView crawlId={crawlId} />
+        ) : view === "plan" ? (
+          <SiteLinkComplianceView />
         ) : links.isError ? (
           <QueryError error={links.error} onRetry={() => void links.refetch()} />
         ) : (

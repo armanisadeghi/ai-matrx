@@ -23,7 +23,7 @@ export function DesiredSection({
   children,
   className,
 }: {
-  title?: string;
+  title?: ReactNode;
   /** One-line explanation under the divider (optional). */
   hint?: string;
   dirty: boolean;
