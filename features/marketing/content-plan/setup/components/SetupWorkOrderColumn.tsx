@@ -47,6 +47,7 @@ export function SetupWorkOrderColumn({
   pageTypeName,
   newCount,
   bridgeSlot,
+  lintSlot,
 }: {
   expanded: ExpandedArchetype;
   readiness: Readiness;
@@ -69,6 +70,8 @@ export function SetupWorkOrderColumn({
    * checklist diagnoses, the rungs act on the same facts.
    */
   bridgeSlot?: React.ReactNode;
+  /** Plan lint card (PlanLintSection) — diagnoses BEFORE the rungs act. */
+  lintSlot?: React.ReactNode;
 }) {
   const [namingOpen, setNamingOpen] = useState<string | null>(null);
 
@@ -360,6 +363,8 @@ export function SetupWorkOrderColumn({
             : "Measured against the linked CMS site — tokens, components, navigation, and assets are real counts, not assumptions."}
         </p>
       </SetupSection>
+
+      {lintSlot}
 
       {bridgeSlot}
 

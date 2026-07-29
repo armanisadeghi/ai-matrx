@@ -275,6 +275,14 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-28 — Claude: **plan structure lint** — `setup/lint.ts` (pure,
+  jest-covered) + `PlanLintSection` rendered in the Setup work-order column
+  above the Make-it-real rungs: home missing/multiple + orphans (blocking),
+  bad slugs / missing routes / duplicate sibling labels (review), empty
+  briefs / missing keywords (coverage). Whole-tree pre-flight instead of
+  one-by-one reconcile surprises; an aidream `content_plan validate` twin can
+  adopt the same rules later (pin with a shared fixture if so).
+
 - 2026-07-28 — Claude: **Setup gained the "Make it real" rungs.** New
   `setup/bridge.ts` (aidream `cms-reconcile`/`cms-align`/`cms-starter-kit`
   clients + `recordCmsLink` settings merge-write) and

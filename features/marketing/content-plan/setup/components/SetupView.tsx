@@ -56,6 +56,7 @@ import {
   recordSiteArchetype,
   type CommitResult,
 } from "../service";
+import { PlanLintSection } from "./PlanLintSection";
 import { SetupBridgeSection } from "./SetupBridgeSection";
 import { SetupPreviewColumn } from "./SetupPreviewColumn";
 import { SetupShapeColumn } from "./SetupShapeColumn";
@@ -493,6 +494,7 @@ export function SetupView() {
               pageTypeName={(slug) =>
                 slug ? (pageTypeNameBySlug.get(slug) ?? slug) : "No page type"
               }
+              lintSlot={<PlanLintSection nodes={nodes.data ?? []} />}
               bridgeSlot={
                 site ? (
                   <SetupBridgeSection site={site} cms={cms.data ?? null} />
