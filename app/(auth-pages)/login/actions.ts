@@ -79,8 +79,10 @@ export async function login(redirectToArg: string, formData: FormData) {
         finalRedirect = '/dashboard';
     }
 
-    // Redirect to the original URL if available, otherwise to dashboard
-    redirect(finalRedirect);
+    // Success lands via a FULL-DOCUMENT navigation (see HardRedirectForm):
+    // a soft redirect() here runs in a possibly-stale tab's old runtime and
+    // 404s on the destination's chunks ("This page is out of date" on /welcome).
+    return { hardRedirect: finalRedirect };
 }
 
 export async function signup(redirectToArg: string, formData: FormData) {
@@ -122,8 +124,8 @@ export async function signup(redirectToArg: string, formData: FormData) {
         finalRedirect = '/dashboard';
     }
 
-    // Redirect to the original URL if available, otherwise to dashboard
-    redirect(finalRedirect);
+    // Full-document landing — see the note in login() above.
+    return { hardRedirect: finalRedirect };
 }
 
 export async function loginWithGoogle(redirectToArg: string, formData?: FormData) {

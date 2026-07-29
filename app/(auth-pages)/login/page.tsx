@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { IconBrandGithub, IconBrandGoogle, IconBrandApple } from "@tabler/icons-react";
 import AuthPageContainer from "@/components/auth/auth-page-container";
+import { HardRedirectForm } from "@/components/auth/HardRedirectForm";
 import { AuthMessageType } from '@/components/form-message';
 import { GuestFingerprintField } from "../sign-up/GuestFingerprintField";
 
@@ -74,7 +75,7 @@ export default async function SignIn({ searchParams }: SignInProps) {
             }
             message={message}
         >
-            <form action={loginWithRedirect} className="space-y-4 sm:space-y-6">
+            <HardRedirectForm action={loginWithRedirect} className="space-y-4 sm:space-y-6">
                 {/* Hidden input to pass redirectTo in case the binding fails */}
                 <input type="hidden" name="redirectTo" value={redirectTo} />
 
@@ -131,7 +132,7 @@ export default async function SignIn({ searchParams }: SignInProps) {
                         Sign in
                     </SubmitButton>
                 </div>
-            </form>
+            </HardRedirectForm>
 
             <div className="mt-4 sm:mt-6">
                 <div className="relative">

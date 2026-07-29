@@ -16,6 +16,7 @@ Status: **live**. Owns the app-level error boundary UI and the deploy-skew syste
 | Boundaries | `ErrorBoundaryView.tsx` (all route `error.tsx` delegate here), `app/global-error.tsx` | Chunk-shaped error → calm "This page is out of date" prompt with Refresh button. Non-chunk errors → normal error UI + `captureReactRenderError` into the Error Inspector. |
 | Detection helpers | `chunk-load-recovery.ts` | `isChunkLoadError()`, `notifyStaleChunk()` (dispatches `matrx:stale-chunk`), `STALE_CHUNK_EVENT`, `APP_BOOTED_FLAG`. Keep the boot script's inlined regexes/names in sync with these. |
 | Overlay chunks | `features/overlays/boundary/lazyOverlay.tsx` | Per-overlay boundary + hung-import timeout; reload there is a user-clicked last-resort button only. |
+| Auth landing | `components/auth/HardRedirectForm.tsx` | Password login/signup success lands via **full-document navigation** (`window.location.assign`), never a soft server-action `redirect()`. A stale /login tab's old runtime otherwise soft-navigates and 404s on the destination's chunks — /welcome (the universal first landing) was the top victim. Auth actions return `{ hardRedirect }` on success; error paths keep `redirect()`. |
 
 ## Invariants
 
@@ -26,4 +27,5 @@ Status: **live**. Owns the app-level error boundary UI and the deploy-skew syste
 
 ## Change Log
 
+- 2026-07-29 — Users reported "This page is out of date" on /welcome: stale /login tabs soft-navigated after sign-in and 404'd on the new build's chunks. Added `HardRedirectForm` — auth success now lands via full-document navigation; deleted dead `sign-up/Basic.tsx` + `AlternativeSignUp.tsx`.
 - 2026-07-10 — Killed all post-boot auto-reloads (boot script, `ErrorBoundaryView`, `global-error`); added `NewVersionWatcher` + `/api/version` consent toast; boot script now disarms after boot via `__MATRX_APP_BOOTED__`.

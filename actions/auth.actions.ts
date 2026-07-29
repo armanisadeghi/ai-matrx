@@ -10,7 +10,9 @@ import { promoteGuestToUser } from "@/lib/services/guest-promotion";
 import { stashGuestFingerprintForOAuth } from "@/lib/services/guest-oauth-transfer";
 import { safeRelativePath } from "@/utils/auth/safe-redirect";
 
-export async function signUpAction(formData: FormData): Promise<void> {
+export async function signUpAction(
+  formData: FormData,
+): Promise<{ hardRedirect: string } | void> {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
   const confirmPassword = formData.get("confirmPassword")?.toString();
@@ -86,7 +88,9 @@ export async function signUpAction(formData: FormData): Promise<void> {
       if (process.env.NODE_ENV === "development") {
         console.log("SignUpAction - guest promoted in place, signed in");
       }
-      return redirect(safeRedirectTo);
+      // Full-document landing (see HardRedirectForm) — a soft redirect() in a
+      // stale tab 404s on the destination's chunks.
+      return { hardRedirect: safeRedirectTo };
     }
 
     if (promotion.promoted === false && promotion.reason === "email_in_use") {
@@ -179,7 +183,8 @@ export async function signUpAction(formData: FormData): Promise<void> {
 
   // If we have both user and session, the user is immediately signed in (confirmation disabled)
   if (data.user && data.session) {
-    return redirect(safeRedirectTo);
+    // Full-document landing (see HardRedirectForm).
+    return { hardRedirect: safeRedirectTo };
   }
 
   // If we get here, something unexpected happened
@@ -211,7 +216,8 @@ export async function signInAction(formData: FormData) {
     return encodedRedirect("error", "/login", error.message);
   }
 
-  return redirect(safeRedirectTo);
+  // Full-document landing (see HardRedirectForm).
+  return { hardRedirect: safeRedirectTo };
 }
 
 export async function signInWithGoogleAction(formData: FormData) {
