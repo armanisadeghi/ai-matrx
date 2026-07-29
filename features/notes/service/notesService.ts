@@ -67,6 +67,29 @@ export async function fetchNoteListItems(): Promise<NoteListItem[]> {
 }
 
 /**
+ * Fetch a batch of notes by id (any note the caller can read — attached
+ * observation notes may belong to teammates, so no created_by filter).
+ * Deleted notes are excluded; missing/inaccessible ids are simply absent.
+ */
+export async function fetchNotesByIds(ids: string[]): Promise<Note[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .schema("workbench")
+    .from("notes")
+    .select("*")
+    .in("id", ids)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching notes by ids:", error);
+    throw error;
+  }
+
+  return hydrateNoteContextLinks(data ?? []);
+}
+
+/**
  * Fetch a single note by ID
  */
 export async function fetchNoteById(id: string): Promise<Note | null> {
