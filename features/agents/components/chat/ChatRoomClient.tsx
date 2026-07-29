@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
@@ -203,50 +203,6 @@ export function ChatRoomClient({
     );
   }, [conversationIdProp, dispatch, isIncognito, liveConversationId]);
 
-  // ── ?attachDoc= deep link (fresh routes only) ────────────────────────────
-  // The working document's registry share URL is `/chat/new?attachDoc={id}`:
-  // a shared/linked document opens a NEW chat with that document attached.
-  // The link is adopted into Redux immediately and its conversation edge is
-  // queued until the conversation is server-confirmed (first message), so it
-  // works on a not-yet-persisted chat. Read from window.location (client-only
-  // effect) rather than useSearchParams to avoid a Suspense boundary here; the
-  // param is consumed once per document id and stripped from the URL.
-  const openWorkingDocPanel = useOpenWorkingDocumentPanel();
-  const attachedDocRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!liveConversationId || conversationIdProp || !authReady) return;
-    const params = new URLSearchParams(window.location.search);
-    const docId = params.get("attachDoc");
-    if (!docId || attachedDocRef.current === docId) return;
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(docId)) {
-      return;
-    }
-    attachedDocRef.current = docId;
-    void dispatch(
-      linkConversationDocumentThunk({
-        conversationId: liveConversationId,
-        kind: "working",
-        documentId: docId,
-      }),
-    );
-    openWorkingDocPanel({
-      conversationId: liveConversationId,
-      initialKind: "working",
-    });
-    params.delete("attachDoc");
-    const qs = params.toString();
-    window.history.replaceState(
-      window.history.state,
-      "",
-      `${window.location.pathname}${qs ? `?${qs}` : ""}`,
-    );
-  }, [
-    authReady,
-    conversationIdProp,
-    dispatch,
-    liveConversationId,
-    openWorkingDocPanel,
-  ]);
 
   // ── Existing-conversation load (only on /chat/[conversationId]) ──────────
   // One in-flight load at a time, cancelled on prop change.
@@ -630,6 +586,86 @@ export function ChatRoomClient({
           />
         </div>
       </div>
+      {/* ?attachDoc= deep link (fresh routes only) — the working document's
+          registry share URL is /chat/new?attachDoc={id}. Own local Suspense:
+          useSearchParams requires a boundary, and neither chat page provides
+          one; keeping it here means query-only client navigations (the case a
+          window.location read misses — this component is REUSED, not
+          remounted, across chat navigations) still fire the attach. */}
+      {isFreshRoute && (
+        <Suspense fallback={null}>
+          <AttachDocDeepLink
+            conversationId={liveConversationId}
+            ready={authReady}
+          />
+        </Suspense>
+      )}
     </SurfaceRuntimeProvider>
   );
+}
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Consumes `?attachDoc=<documentId>` on a fresh chat route: links the shared
+ * document into the new conversation (adopted into Redux immediately; the
+ * conversation edge rides the pending-edge queue until the row commits) and
+ * opens the document panel. The param is consumed once per document id and
+ * stripped shallowly so a refresh doesn't re-attach after a manual detach.
+ */
+function AttachDocDeepLink({
+  conversationId,
+  ready,
+}: {
+  conversationId: string | null;
+  ready: boolean;
+}) {
+  const dispatch = useAppDispatch();
+  const searchParams = useSearchParams();
+  const openWorkingDocPanel = useOpenWorkingDocumentPanel();
+  const attachedDocRef = useRef<string | null>(null);
+  const docId = searchParams.get("attachDoc");
+  // The launcher mints the conversationId during render but registers the
+  // conversations-slice record in an effect. The pending-edge queue treats an
+  // UNKNOWN conversation as already-persisted (direct write), so attaching
+  // before the record exists would fire a doomed assoc_add instead of
+  // queueing — wait for registration.
+  const conversationRegistered = useAppSelector((state) =>
+    conversationId
+      ? Boolean(state.conversations.byConversationId[conversationId])
+      : false,
+  );
+
+  useEffect(() => {
+    if (!docId || !conversationId || !ready || !conversationRegistered) return;
+    if (attachedDocRef.current === docId) return;
+    if (!UUID_RE.test(docId)) return;
+    attachedDocRef.current = docId;
+    void dispatch(
+      linkConversationDocumentThunk({
+        conversationId,
+        kind: "working",
+        documentId: docId,
+      }),
+    );
+    openWorkingDocPanel({ conversationId, initialKind: "working" });
+    const params = new URLSearchParams(window.location.search);
+    params.delete("attachDoc");
+    const qs = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${qs ? `?${qs}` : ""}`,
+    );
+  }, [
+    conversationId,
+    conversationRegistered,
+    dispatch,
+    docId,
+    openWorkingDocPanel,
+    ready,
+  ]);
+
+  return null;
 }

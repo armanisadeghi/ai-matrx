@@ -146,6 +146,7 @@ export function WorkingDocumentPanel({
     unbind,
     linkToDocument,
     openInCanvas,
+    viewOnly,
   } = useWorkingDocument(conversationId, kind);
 
   // Note id awaiting a merge decision (user picked a note while the document
@@ -228,6 +229,9 @@ export function WorkingDocumentPanel({
   const materialized = useAppSelector(
     selectWorkingDocMaterialized(conversationId, kind),
   );
+  // `viewOnly` comes from useWorkingDocument — the single write authority
+  // resolves the view-vs-edit gate itself and no-ops every durable write
+  // under it; the panel only renders the read-only chrome.
 
   // The working document's RichDocument identity. Drives the full action
   // toolkit (copy / read-aloud / save-to-notes/task / HTML page / email /
@@ -300,6 +304,7 @@ export function WorkingDocumentPanel({
             <WorkingDocumentViewControls
               conversationId={conversationId}
               showDiff={kind === "working"}
+              readOnly={viewOnly}
             />
           )}
 
@@ -368,7 +373,7 @@ export function WorkingDocumentPanel({
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            disabled={isBound}
+            disabled={isBound || viewOnly}
             placeholder={
               isScratch ? "Name this scratchpad…" : "Name this document…"
             }
@@ -385,11 +390,13 @@ export function WorkingDocumentPanel({
               ? saving
                 ? "Saving…"
                 : "Private — agent reads, never edits"
-              : isBound
-                ? binding.label || "Bound note"
-                : saving
-                  ? "Saving…"
-                  : "Auto-saved"}
+              : viewOnly
+                ? "View only — shared with you"
+                : isBound
+                  ? binding.label || "Bound note"
+                  : saving
+                    ? "Saving…"
+                    : "Auto-saved"}
           </span>
           {isBound && (
             <button
@@ -404,22 +411,26 @@ export function WorkingDocumentPanel({
           )}
           {!isScratch && (
             <>
-              <NotePickerPopover
-                onSelectNote={(noteId) => {
-                  // No existing content → adopt directly, nothing to lose.
-                  if (!content.trim()) bindToNote(noteId, "replace");
-                  else setPendingNoteId(noteId);
-                }}
-                align="end"
-                trigger={
-                  <button
-                    type="button"
-                    className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
-                  >
-                    {isBound ? "Change" : "Bind note"}
-                  </button>
-                }
-              />
+              {/* Binding a note REPLACES the doc content — meaningless (and
+                  RLS-refused) on a view-only shared doc. */}
+              {!viewOnly && (
+                <NotePickerPopover
+                  onSelectNote={(noteId) => {
+                    // No existing content → adopt directly, nothing to lose.
+                    if (!content.trim()) bindToNote(noteId, "replace");
+                    else setPendingNoteId(noteId);
+                  }}
+                  align="end"
+                  trigger={
+                    <button
+                      type="button"
+                      className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
+                    >
+                      {isBound ? "Change" : "Bind note"}
+                    </button>
+                  }
+                />
+              )}
               <DocumentLinkPicker
                 kind={kind}
                 align="end"
@@ -527,6 +538,7 @@ export function WorkingDocumentPanel({
                 draft={draft}
                 onChange={onChange}
                 onFlush={flush}
+                readOnly={viewOnly}
                 actionsSource={wdSource}
                 surfaceContext={resolvedSurfaceContext}
                 placeholder={
@@ -545,7 +557,9 @@ export function WorkingDocumentPanel({
               onOpenChange={(open) =>
                 setWorkingDocHistoryOpen(conversationId, open)
               }
-              onApplySnapshot={(snapshotContent) => {
+              // Applying a snapshot is a WRITE — hidden for view-only sharees
+              // (their commit would be RLS-refused).
+              onApplySnapshot={viewOnly ? undefined : (snapshotContent) => {
                 onChange(snapshotContent);
                 flush();
                 setWorkingDocHistoryOpen(conversationId, false);

@@ -34,6 +34,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { supabase } from "@/utils/supabase/client";
 import { saveNoteField } from "@/features/notes/redux/thunks";
 import { useAutoLabel } from "@/features/notes/hooks/useAutoLabel";
+import { useAccess } from "@/utils/permissions/access";
 import {
   USER_SCRATCHPAD_CONTEXT_KEY,
   USER_SCRATCHPAD_LABEL,
@@ -503,6 +504,15 @@ export interface UseWorkingDocumentResult {
   setTitle: (title: string) => void;
   /** Open this document as an item in the Canvas (the unified live workspace). */
   openInCanvas: () => void;
+  /**
+   * True when the current user has only VIEW access to the bound document (a
+   * viewer-level sharee). This hook is the single write authority, and every
+   * durable write path in it (autosave commit, keep-mine, title persistence,
+   * auto-label) no-ops under viewOnly — an RLS-refused UPDATE touches 0 rows
+   * silently and would otherwise surface as a bogus, unresolvable
+   * "concurrent edit" conflict loop. UIs use this to render read-only chrome.
+   */
+  viewOnly: boolean;
 }
 
 export function useWorkingDocument(
@@ -532,6 +542,33 @@ export function useWorkingDocument(
   const conflictRef = useRef(conflict);
   conflictRef.current = conflict;
 
+  // ── View-vs-edit gate — THE write choke point. Resolved here (not in each
+  // UI) so every durable write this hook owns is gated in one place: the
+  // debounced commit, keep-mine, title persistence, and auto-label. Scratch
+  // docs are personal (never shared); unmaterialized reserved ids resolve
+  // `exists:false` and stay writable.
+  const docAccess = useAccess(
+    kind === "working" &&
+      binding.kind === "cx_working_document" &&
+      binding.id &&
+      materialized
+      ? "working_document"
+      : undefined,
+    kind === "working" &&
+      binding.kind === "cx_working_document" &&
+      binding.id &&
+      materialized
+      ? binding.id
+      : undefined,
+  );
+  const viewOnly =
+    !docAccess.loading &&
+    docAccess.exists &&
+    docAccess.level === "view" &&
+    !docAccess.isOwner;
+  const viewOnlyRef = useRef(viewOnly);
+  viewOnlyRef.current = viewOnly;
+
   // Keep the instanceContext entry current for every mount of this hook (the
   // dedicated SmartInput bridge guarantees the always-on case).
   useWorkingDocumentContextSync(conversationId, kind);
@@ -552,6 +589,13 @@ export function useWorkingDocument(
   const commit = useCallback(
     (value: string) => {
       if (!dirtyRef.current) return;
+      // View-only sharee: the UPDATE would be RLS-refused (0 rows) and
+      // masquerade as an eternal fake conflict. Drop the durable write; the
+      // draft stays local-session-only, and the UI says "View only".
+      if (viewOnlyRef.current) {
+        dirtyRef.current = false;
+        return;
+      }
       // Don't auto-save over an unresolved conflict — the user must reconcile
       // first (their draft is preserved meanwhile).
       if (conflictRef.current) return;
@@ -728,6 +772,8 @@ export function useWorkingDocument(
       dispatch(setWorkingDocTitle({ conversationId, kind, title }));
       // Persist to the durable row only once it exists; before materialize the
       // title lives in Redux and is carried up by materializeWorkingDocument.
+      // View-only sharee: never persist (RLS-refused; incl. auto-label fires).
+      if (viewOnlyRef.current) return;
       if (
         binding.kind === "cx_working_document" &&
         binding.id &&
@@ -760,7 +806,8 @@ export function useWorkingDocument(
     content,
     currentLabel: title,
     onLabelChange: setTitle,
-    enabled,
+    // Auto-naming is a WRITE — never fire it on a view-only shared doc.
+    enabled: enabled && !viewOnly,
     maxLength: 60,
   });
 
@@ -796,6 +843,12 @@ export function useWorkingDocument(
       }
       // keep-mine: write the user's current draft, based on the agent's version
       // so it lands. If another edit raced in the meantime, re-surface.
+      // View-only sharee: the write is RLS-doomed and would re-conflict
+      // forever — clear the (bogus) conflict instead of looping.
+      if (viewOnlyRef.current) {
+        dispatch(clearWorkingDocConflict({ conversationId, kind }));
+        return;
+      }
       const docId = binding.id;
       const mine = draftRef.current;
       dispatch(markWorkingDocSaving({ conversationId, kind, saving: true }));
@@ -825,17 +878,23 @@ export function useWorkingDocument(
                 agentContent: res.document.content,
               }),
             );
+            dispatch(
+              markWorkingDocSaving({ conversationId, kind, saving: false }),
+            );
           }
         })
-        .catch(() =>
+        .catch(() => {
           dispatch(
             markWorkingDocError({
               conversationId,
               kind,
               error: "Could not save your version.",
             }),
-          ),
-        );
+          );
+          dispatch(
+            markWorkingDocSaving({ conversationId, kind, saving: false }),
+          );
+        });
     },
     [dispatch, conversationId, kind, binding.kind, binding.id],
   );
@@ -874,5 +933,6 @@ export function useWorkingDocument(
     linkToDocument,
     setTitle,
     openInCanvas,
+    viewOnly,
   };
 }
