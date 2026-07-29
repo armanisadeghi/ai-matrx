@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D115 — in-session tool-viz repaint REVERTED (build detonator) — reimplement without the import edge (2026-07-28)
+
+The v0.4.198/199 repaint pair (`165034fb8` toolStateEffects kind-components effect; `6a74e4ddc` DB tool-renderer repaint: `DbToolRendererImpl` version consumer, `toolRendererCache` invalidation, `useToolRendererVersion`) was bisect-proven to cost **+14.3GB peak build RSS (35.4→49.7GB local) and +50-57% compile time**, which OOM-killed every Vercel build v0.4.199-210; reverted in v0.4.212 (probes: 211/212, local A/B in worktrees). Mechanism: the effect's `await import()` of `@/features/content-ir/registry/component-registry` (and `dbKindComponentCache`) from `toolStateEffects.ts` — a module statically reachable via `process-stream.ts` from ~every context — split the giant content-ir registry cluster (which carries a documented eager-init CYCLE) into new async chunk groups per context. THE FRAGMENTATION LAW, `await import()` edition: the sanctioned handler-body dynamic import still detonates when the target graph is enormous AND the importer is ubiquitous. **Fix pattern: invert the dependency** — content-ir registers an invalidation callback into a tiny shared registry at its own init (it is always initialized wherever a `__kind` block can render); `toolStateEffects` fires the callback by name with zero import edge to content-ir. The user-facing bugs these fixed (stale compiled kind component / stale DB tool renderer until hard refresh) are LIVE AGAIN until reimplemented.
+
 ### D110 — stray or broken Cloudflare Workers build is red on frontend releases (2026-07-27)
 
 GitHub check `Workers Builds: ai-matrx-admin` fails on release commits while Vercel is green and serving. No Wrangler/Cloudflare config exists in the repo; the check comes from an external Cloudflare integration. **Decides: Arman** — retire the integration, or configure the deployment it expects.
