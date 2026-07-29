@@ -24,6 +24,7 @@
  * LOUDLY into `problems`, never silently counted or invented.
  */
 import { callApi, type ApiCallResult } from "@/lib/api/call-api";
+import { describeBackendFailure, parseStreamError } from "@/lib/api/errors";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 import type { AppDispatch } from "@/lib/redux/store";
@@ -361,12 +362,18 @@ function parseFillStatus(data: Record<string, unknown>): FillStatus {
   };
 }
 
-/** Author ONE page from its brief and return it — the look before the fan-out. */
+/**
+ * Author ONE page from its brief and return it — the look before the fan-out.
+ * A full LLM authoring pass takes minutes, so this STREAMS (the platform's
+ * >1s rule): the result arrives as one `plan_cms_fill_preview` data event.
+ */
 export async function bridgeFillPreview(
   dispatch: AppDispatch,
   siteId: string,
   options: { cmsSite?: string; nodeId?: string; write?: boolean },
 ): Promise<FillPreviewResult> {
+  let preview: FillPreviewResult | null = null;
+  let streamError: string | null = null;
   const result = await dispatch(
     callApi({
       path: "/content-plan/sites/{site_id}/cms-fill/preview",
@@ -377,24 +384,43 @@ export async function bridgeFillPreview(
         node_id: options.nodeId ?? null,
         write: options.write === true,
       },
+      stream: true,
+      onStreamEvent: (event) => {
+        if (event.event === "error") {
+          streamError = describeBackendFailure(parseStreamError(event.data)).headline;
+          return;
+        }
+        if (event.event !== "data" || !event.data || typeof event.data !== "object") {
+          return;
+        }
+        const data = event.data as Record<string, unknown>;
+        if (data.type !== "plan_cms_fill_preview") return;
+        preview = {
+          nodeId: str(data.node_id),
+          pageId: str(data.page_id),
+          route: str(data.route) || "/",
+          title: str(data.title),
+          html: str(data.html),
+          css: str(data.css),
+          metaTitle: str(data.meta_title),
+          metaDescription: str(data.meta_description),
+          model: str(data.model),
+          wrote: data.wrote === true,
+          globalCss: str(data.global_css),
+          headerHtml: str(data.header_html),
+          footerHtml: str(data.footer_html),
+        };
+      },
     }),
   );
-  const data = requireBody(result, "cms-fill/preview");
-  return {
-    nodeId: str(data.node_id),
-    pageId: str(data.page_id),
-    route: str(data.route) || "/",
-    title: str(data.title),
-    html: str(data.html),
-    css: str(data.css),
-    metaTitle: str(data.meta_title),
-    metaDescription: str(data.meta_description),
-    model: str(data.model),
-    wrote: data.wrote === true,
-    globalCss: str(data.global_css),
-    headerHtml: str(data.header_html),
-    footerHtml: str(data.footer_html),
-  };
+  if (result.error) {
+    throw new Error(result.error.message || "The cms-fill/preview call failed.");
+  }
+  if (streamError) throw new Error(streamError);
+  if (!preview) {
+    throw new Error("The authoring stream ended without a preview payload.");
+  }
+  return preview;
 }
 
 /** Start the durable fill job (seeds the DB frontier, returns immediately). */
