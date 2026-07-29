@@ -1,3 +1,10 @@
+// Server Component layout. Guests never see the surfaces hub (or the
+// /surfaces/<name> detail pages) — there is no marketing landing for this
+// feature yet, so they get the shared ModuleSignInGate panel
+// (module-landing-pages doctrine).
+
+import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/surfaces", {
@@ -7,10 +14,20 @@ export const metadata = createRouteMetadata("/surfaces", {
   letter: "Sf",
 });
 
-export default function SurfacesLayout({
+export default async function SurfacesLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { isAuthenticated } = await getServerAuth();
+  if (!isAuthenticated) {
+    return (
+      <ModuleSignInGate
+        title="Surfaces"
+        route="/surfaces"
+        description="Pick which agents power each page of your workspace and tune per-surface settings."
+      />
+    );
+  }
   return children;
 }

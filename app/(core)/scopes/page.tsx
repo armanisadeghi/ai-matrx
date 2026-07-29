@@ -1,12 +1,9 @@
 import { ScopesHub } from "@/features/scopes/components/management/ScopesHub";
 import { ScopesHubHeader } from "@/features/scopes/components/management/ScopesHubHeader";
-import ScopesLanding from "@/features/auth/components/module-landing/landings/ScopesLanding";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
-
-export default async function ScopesIndexPage() {
-  const { isAuthenticated } = await getServerAuth();
-  if (!isAuthenticated) return <ScopesLanding />;
+// Guest branch lives in ./layout.tsx (ScopesLanding) so /scopes/settings and
+// /scopes/templates are covered too — this page renders for authed users only.
+export default function ScopesIndexPage() {
   return (
     <>
       <ScopesHubHeader />
