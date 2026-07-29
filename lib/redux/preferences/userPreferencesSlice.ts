@@ -25,8 +25,6 @@ import type {
   TutorTeachingMode,
   TutorPersonalityStyle,
 } from "@/features/education/tutor/settings";
-import { supabase } from "@/utils/supabase/client";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 // Define types for each module's preferences
 export interface DisplayPreferences {
@@ -1506,6 +1504,7 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
     debounceMs: 250, // prefs edits are noisy (typing, slider drags)
     fetch: async ({ identity, signal }) => {
       if (identity.type !== "auth") return null; // guests have no server state
+      const { supabase } = await import("@/utils/supabase/client");
       const { data, error } = await supabase
         .schema("users")
         .from("user_preferences")
@@ -1518,6 +1517,8 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
     },
     write: async ({ identity, signal, body }) => {
       if (identity.type !== "auth") return; // guests only live in client storage
+      const { supabase } = await import("@/utils/supabase/client");
+      const { ensureOrgId } = await import("@/lib/organizations/personalOrg");
       await supabase
         .schema("users")
         .from("user_preferences")
