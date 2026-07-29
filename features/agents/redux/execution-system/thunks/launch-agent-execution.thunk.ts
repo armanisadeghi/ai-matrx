@@ -67,6 +67,10 @@ import {
   logProjectCreateAiStage,
   warnProjectCreateAi,
 } from "@/features/projects/debug/projectCreateAiDebug";
+// D115 inversion contract: guarantee resume-instance.thunk module-inits (it
+// self-registers into resume-registry for submit-tool-results). Side-effect
+// import only — no cycle: nothing below resume imports this module.
+import "./resume-instance.thunk";
 
 export interface LaunchResult {
   /** The conversation id — client-generated, honored by the server end-to-end. */
