@@ -42,6 +42,8 @@ const args = process.argv.slice(2);
 const TOP = Number(args[args.indexOf("--top") + 1]) || 40;
 const jsonIdx = args.indexOf("--json");
 const JSON_OUT = jsonIdx >= 0 ? args[jsonIdx + 1] : null;
+const whyIdx = args.indexOf("--why");
+const WHY = whyIdx >= 0 ? args[whyIdx + 1] : null; // substring of a module path
 
 // ── scan files ───────────────────────────────────────────────────────────────
 function walk(dir: string, out: string[]) {
@@ -124,6 +126,54 @@ for (const f of fileSet) closureSize.set(f, closure(f).size);
 const entries = [...fileSet].filter((f) => f.startsWith("app/") && ENTRY_RE.test("/" + f));
 const contextCount = new Map<string, number>();
 for (const e of entries) for (const mod of closure(e)) contextCount.set(mod, (contextCount.get(mod) ?? 0) + 1);
+
+// ── --why mode: trace HOW entries reach a module ─────────────────────────────
+if (WHY) {
+  const target = [...fileSet].find((f) => f.includes(WHY));
+  if (!target) { console.error(`no module matching "${WHY}"`); process.exit(1); }
+  const importersOf = new Map<string, string[]>();
+  for (const [from, outs] of staticAdj) for (const to of outs) {
+    if (!importersOf.has(to)) importersOf.set(to, []);
+    importersOf.get(to)!.push(from);
+  }
+  const directImporters = (importersOf.get(target) ?? [])
+    .map((f) => ({ f, ctx: contextCount.get(f) ?? 0 }))
+    .sort((a, b) => b.ctx - a.ctx);
+  const reaching: string[] = [];
+  const samplePaths: string[][] = [];
+  for (const e of entries) {
+    // BFS with parents to find a shortest path e → target
+    const parent = new Map<string, string>();
+    const q = [e]; const seen = new Set([e]); let found = false;
+    while (q.length && !found) {
+      const cur = q.shift()!;
+      for (const nxt of staticAdj.get(cur) ?? []) {
+        if (seen.has(nxt)) continue;
+        seen.add(nxt); parent.set(nxt, cur);
+        if (nxt === target) { found = true; break; }
+        q.push(nxt);
+      }
+    }
+    if (found) {
+      reaching.push(e);
+      if (samplePaths.length < 6) {
+        const path = [target]; let cur = target;
+        while (parent.has(cur)) { cur = parent.get(cur)!; path.unshift(cur); }
+        samplePaths.push(path);
+      }
+    }
+  }
+  console.log(`\n━━ WHY: ${target} ━━ size=${closureSize.get(target)} · reached by ${reaching.length}/${entries.length} entries\n`);
+  console.log(`── direct static importers (by their own entry reach) ──`);
+  for (const d of directImporters.slice(0, 25)) console.log(`  ctx=${String(d.ctx).padEnd(5)} ${d.f}`);
+  console.log(`\n── sample shortest chains (entry → … → target) ──`);
+  for (const p of samplePaths) console.log("  " + p.join("\n    → ") + "\n");
+  const byGroup = new Map<string, number>();
+  for (const e of reaching) { const g = e.split("/").slice(0, 3).join("/"); byGroup.set(g, (byGroup.get(g) ?? 0) + 1); }
+  console.log(`── reaching entries by route area ──`);
+  for (const [g, n] of [...byGroup.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20)) console.log(`  ${String(n).padEnd(5)} ${g}`);
+  process.exit(0);
+}
 
 // ── report 1: the compile bill ───────────────────────────────────────────────
 type BillRow = { module: string; size: number; contexts: number; bill: number };
