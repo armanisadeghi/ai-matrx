@@ -203,6 +203,12 @@ const SITE_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
     description: "Inspect sitemap documents and page membership.",
     letter: "Sm",
   },
+  structure: {
+    titlePrefix: "Structure",
+    description:
+      "Explore the site's routing tree with page totals at every level.",
+    letter: "Tr",
+  },
 };
 
 function normalizePathname(pathname: string): string {

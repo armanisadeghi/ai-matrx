@@ -212,8 +212,9 @@ const MARKETING_SITE_VERTICAL_SURFACES: Readonly<Record<string, string>> = {
   discovery: "matrx-user/marketing-discovery",
   integrations: "matrx-user/marketing-integrations",
   keywords: "matrx-user/marketing-site-keywords",
-  // access / settings / cost stay on the site surface — they configure the
-  // same entity and don't warrant their own agent bindings.
+  // access / settings / cost / structure stay on the site surface — they
+  // configure or re-project the same entity and don't warrant their own
+  // agent bindings.
 };
 
 function resolveMarketingSurface(stripped: string): string | null {
