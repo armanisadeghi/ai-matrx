@@ -235,7 +235,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/VersionHealth"
+                }
               }
             }
           }
@@ -18796,7 +18798,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/KeywordVideoSearchResult"
+                }
               }
             }
           },
@@ -59404,6 +59408,102 @@
         "type": "object",
         "title": "CmsReconcileBody"
       },
+      "CmsReconcileConflict": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "node_route": {
+            "type": "string",
+            "title": "Node Route"
+          },
+          "node_label": {
+            "type": "string",
+            "title": "Node Label"
+          },
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "page_route": {
+            "type": "string",
+            "title": "Page Route"
+          },
+          "live_url": {
+            "type": "string",
+            "title": "Live Url"
+          },
+          "is_published": {
+            "type": "boolean",
+            "title": "Is Published",
+            "default": false
+          },
+          "resolve_options": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Resolve Options"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "node_id",
+          "node_route",
+          "node_label",
+          "page_id",
+          "page_route",
+          "live_url"
+        ],
+        "title": "CmsReconcileConflict"
+      },
+      "CmsReconcileGhost": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "route": {
+            "type": "string",
+            "title": "Route"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "node_type": {
+            "type": "string",
+            "title": "Node Type"
+          },
+          "realizable": {
+            "type": "boolean",
+            "title": "Realizable"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "node_id",
+          "route",
+          "label",
+          "node_type",
+          "realizable"
+        ],
+        "title": "CmsReconcileGhost"
+      },
       "CmsReconcileMatch": {
         "properties": {
           "node_id": {
@@ -59448,6 +59548,73 @@
         ],
         "title": "CmsReconcileMatch"
       },
+      "CmsReconcileOrphan": {
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "route": {
+            "type": "string",
+            "title": "Route"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "is_published": {
+            "type": "boolean",
+            "title": "Is Published",
+            "default": false
+          },
+          "live_url": {
+            "type": "string",
+            "title": "Live Url"
+          },
+          "stale_link_node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale Link Node Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "route",
+          "slug",
+          "live_url"
+        ],
+        "title": "CmsReconcileOrphan"
+      },
       "CmsReconcileReport": {
         "properties": {
           "web_site_id": {
@@ -59471,32 +59638,28 @@
           },
           "ghosts": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/CmsReconcileGhost"
             },
             "type": "array",
             "title": "Ghosts"
           },
           "orphans": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/CmsReconcileOrphan"
             },
             "type": "array",
             "title": "Orphans"
           },
           "conflicts": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/CmsReconcileConflict"
             },
             "type": "array",
             "title": "Conflicts"
           },
           "retired": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/CmsReconcileRetired"
             },
             "type": "array",
             "title": "Retired"
@@ -59523,6 +59686,35 @@
         ],
         "title": "CmsReconcileReport"
       },
+      "CmsReconcileRetired": {
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "route": {
+            "type": "string",
+            "title": "Route"
+          },
+          "live_url": {
+            "type": "string",
+            "title": "Live Url"
+          },
+          "excluded_at": {
+            "type": "string",
+            "title": "Excluded At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "route",
+          "live_url",
+          "excluded_at"
+        ],
+        "title": "CmsReconcileRetired"
+      },
       "CmsRedirectsResult": {
         "properties": {
           "web_site_id": {
@@ -59539,8 +59731,7 @@
           },
           "redirects": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/RedirectRead"
             },
             "type": "array",
             "title": "Redirects"
@@ -76966,6 +77157,24 @@
         ],
         "title": "KeywordResearchResult"
       },
+      "KeywordVideoSearchResult": {
+        "properties": {
+          "stored_count": {
+            "type": "integer",
+            "title": "Stored Count"
+          },
+          "keyword_id": {
+            "type": "string",
+            "title": "Keyword Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stored_count",
+          "keyword_id"
+        ],
+        "title": "KeywordVideoSearchResult"
+      },
       "KeywordVolumeBatchReceipt": {
         "properties": {
           "run_id": {
@@ -80956,6 +81165,38 @@
         ],
         "title": "MaskResponse"
       },
+      "McpDiscoveredTool": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "output_schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "parameters"
+        ],
+        "title": "McpDiscoveredTool"
+      },
       "McpInvokeRequest": {
         "properties": {
           "tool_name": {
@@ -80965,7 +81206,9 @@
             "description": "Local tool name on the remote server."
           },
           "arguments": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Arguments"
           }
@@ -81030,8 +81273,7 @@
           },
           "tools": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/McpDiscoveredTool"
             },
             "type": "array",
             "title": "Tools"
@@ -83370,7 +83612,9 @@
       "OAuthTokenPersistRequest": {
         "properties": {
           "tokens": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Tokens",
             "description": "Raw OAuth token-endpoint response body (access_token, refresh_token?, expires_in?, scope?, ...)."
@@ -90793,6 +91037,63 @@
           "original_text"
         ],
         "title": "RedactionSpanInput"
+      },
+      "RedirectRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "client_id": {
+            "type": "string",
+            "title": "Client Id"
+          },
+          "from_route": {
+            "type": "string",
+            "title": "From Route"
+          },
+          "to_route": {
+            "type": "string",
+            "title": "To Route"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "client_id",
+          "from_route",
+          "to_route",
+          "source"
+        ],
+        "title": "RedirectRead"
       },
       "RefreshNodeTypesResponse": {
         "properties": {
@@ -107270,7 +107571,9 @@
             "title": "Action"
           },
           "metadata": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Metadata"
           },
@@ -108177,7 +108480,9 @@
             "default": "all_members"
           },
           "lifecycle": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Lifecycle"
           },
@@ -108416,7 +108721,9 @@
           "lifecycle": {
             "anyOf": [
               {
-                "additionalProperties": true,
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
                 "type": "object"
               },
               {
@@ -108945,6 +109252,35 @@
           "content_text"
         ],
         "title": "VerifyRequestChunk"
+      },
+      "VersionHealth": {
+        "properties": {
+          "git_sha": {
+            "type": "string",
+            "title": "Git Sha"
+          },
+          "built_at": {
+            "type": "string",
+            "title": "Built At"
+          },
+          "branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch"
+          }
+        },
+        "type": "object",
+        "required": [
+          "git_sha",
+          "built_at"
+        ],
+        "title": "VersionHealth"
       },
       "Viewport": {
         "properties": {

@@ -21468,6 +21468,43 @@ export interface components {
              */
             write_links?: boolean;
         };
+        /** CmsReconcileConflict */
+        CmsReconcileConflict: {
+            /** Node Id */
+            node_id: string;
+            /** Node Route */
+            node_route: string;
+            /** Node Label */
+            node_label: string;
+            /** Page Id */
+            page_id: string;
+            /** Page Route */
+            page_route: string;
+            /** Live Url */
+            live_url: string;
+            /**
+             * Is Published
+             * @default false
+             */
+            is_published?: boolean;
+            /** Resolve Options */
+            resolve_options?: string[];
+        };
+        /** CmsReconcileGhost */
+        CmsReconcileGhost: {
+            /** Node Id */
+            node_id: string;
+            /** Route */
+            route: string;
+            /** Label */
+            label: string;
+            /** Node Type */
+            node_type: string;
+            /** Realizable */
+            realizable: boolean;
+            /** Reason */
+            reason?: string | null;
+        };
         /** CmsReconcileMatch */
         CmsReconcileMatch: {
             /** Node Id */
@@ -21491,6 +21528,28 @@ export interface components {
              */
             linked?: boolean;
         };
+        /** CmsReconcileOrphan */
+        CmsReconcileOrphan: {
+            /** Page Id */
+            page_id: string;
+            /** Route */
+            route: string;
+            /** Slug */
+            slug: string;
+            /** Category */
+            category?: string | null;
+            /**
+             * Is Published
+             * @default false
+             */
+            is_published?: boolean;
+            /** Live Url */
+            live_url: string;
+            /** Stale Link Node Id */
+            stale_link_node_id?: string | null;
+            /** Reason */
+            reason?: string | null;
+        };
         /** CmsReconcileReport */
         CmsReconcileReport: {
             /** Web Site Id */
@@ -21502,21 +21561,13 @@ export interface components {
             /** Matched */
             matched?: components["schemas"]["CmsReconcileMatch"][];
             /** Ghosts */
-            ghosts?: {
-                [key: string]: unknown;
-            }[];
+            ghosts?: components["schemas"]["CmsReconcileGhost"][];
             /** Orphans */
-            orphans?: {
-                [key: string]: unknown;
-            }[];
+            orphans?: components["schemas"]["CmsReconcileOrphan"][];
             /** Conflicts */
-            conflicts?: {
-                [key: string]: unknown;
-            }[];
+            conflicts?: components["schemas"]["CmsReconcileConflict"][];
             /** Retired */
-            retired?: {
-                [key: string]: unknown;
-            }[];
+            retired?: components["schemas"]["CmsReconcileRetired"][];
             /**
              * Links Written
              * @default 0
@@ -21524,6 +21575,17 @@ export interface components {
             links_written?: number;
             /** Warnings */
             warnings?: string[];
+        };
+        /** CmsReconcileRetired */
+        CmsReconcileRetired: {
+            /** Page Id */
+            page_id: string;
+            /** Route */
+            route: string;
+            /** Live Url */
+            live_url: string;
+            /** Excluded At */
+            excluded_at: string;
         };
         /** CmsRedirectsResult */
         CmsRedirectsResult: {
@@ -21534,9 +21596,7 @@ export interface components {
             /** Cms Site Slug */
             cms_site_slug: string;
             /** Redirects */
-            redirects?: {
-                [key: string]: unknown;
-            }[];
+            redirects?: components["schemas"]["RedirectRead"][];
             /**
              * Count
              * @default 0
@@ -27962,6 +28022,13 @@ export interface components {
             volume?: components["schemas"]["KeywordVolumeRefreshResult"] | null;
             classification?: components["schemas"]["KeywordClassifyResult"] | null;
         };
+        /** KeywordVideoSearchResult */
+        KeywordVideoSearchResult: {
+            /** Stored Count */
+            stored_count: number;
+            /** Keyword Id */
+            keyword_id: string;
+        };
         /** KeywordVolumeBatchReceipt */
         KeywordVolumeBatchReceipt: {
             /** Run Id */
@@ -29277,6 +29344,15 @@ export interface components {
              */
             notes?: string[];
         };
+        /** McpDiscoveredTool */
+        McpDiscoveredTool: {
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            parameters: components["schemas"]["JsonValue"];
+            output_schema?: components["schemas"]["JsonValue"] | null;
+        };
         /** McpInvokeRequest */
         McpInvokeRequest: {
             /**
@@ -29286,7 +29362,7 @@ export interface components {
             tool_name: string;
             /** Arguments */
             arguments?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /** McpInvokeResponse */
@@ -29305,9 +29381,7 @@ export interface components {
             /** Server Slug */
             server_slug: string | null;
             /** Tools */
-            tools: {
-                [key: string]: unknown;
-            }[];
+            tools: components["schemas"]["McpDiscoveredTool"][];
         };
         /**
          * MediaRef
@@ -30271,7 +30345,7 @@ export interface components {
              * @description Raw OAuth token-endpoint response body (access_token, refresh_token?, expires_in?, scope?, ...).
              */
             tokens: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Token Endpoint */
             token_endpoint: string;
@@ -32967,6 +33041,23 @@ export interface components {
              * @default n/a
              */
             confidence_tier?: string;
+        };
+        /** RedirectRead */
+        RedirectRead: {
+            /** Id */
+            id: string;
+            /** Client Id */
+            client_id: string;
+            /** From Route */
+            from_route: string;
+            /** To Route */
+            to_route: string;
+            /** Source */
+            source: string;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
         };
         /** RefreshNodeTypesResponse */
         RefreshNodeTypesResponse: {
@@ -38959,7 +39050,7 @@ export interface components {
             action: string;
             /** Metadata */
             metadata?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Created At */
             created_at: string;
@@ -39312,7 +39403,7 @@ export interface components {
             access_mode?: string;
             /** Lifecycle */
             lifecycle?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Login Urls */
             login_urls?: string[];
@@ -39372,7 +39463,7 @@ export interface components {
             provider_key?: string | null;
             /** Lifecycle */
             lifecycle?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /**
              * Clear Notes
@@ -39558,6 +39649,15 @@ export interface components {
             chunk_id: string;
             /** Content Text */
             content_text: string;
+        };
+        /** VersionHealth */
+        VersionHealth: {
+            /** Git Sha */
+            git_sha: string;
+            /** Built At */
+            built_at: string;
+            /** Branch */
+            branch?: string | null;
         };
         /** Viewport */
         Viewport: {
@@ -40874,7 +40974,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["VersionHealth"];
                 };
             };
         };
@@ -53502,7 +53602,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["KeywordVideoSearchResult"];
                 };
             };
             /** @description Validation Error */
