@@ -26,14 +26,12 @@ import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog
 import { selectInboxItems } from "@/features/agents/redux/execution-system/inbox/inbox.selectors";
 import {
   enqueueInboxMessage,
-  queueMessage,
   promoteQueuedToSteer,
   retractInboxItem,
   editInboxItem,
 } from "@/features/agents/redux/execution-system/inbox/inbox.thunks";
 import {
   removeInboxItem,
-  setInboxItemText,
   type ConversationInboxItem,
 } from "@/features/agents/redux/execution-system/inbox/inbox.slice";
 
@@ -43,12 +41,10 @@ interface InboxQueueStripProps {
 
 function statusLabel(item: ConversationInboxItem): string {
   if (item.status === "failed") return item.error ?? "Failed to send";
-  if (item.status === "dispatching") return "Sending…";
   if (item.status === "sending") return "Handing to the agent…";
-  if (item.status === "pending") {
-    return "Steering — delivered at the agent's next pause";
-  }
-  return "Queued — sends when the agent finishes";
+  return item.mode === "queue"
+    ? "Queued — sends when the agent finishes"
+    : "Steering — delivered at the agent's next pause";
 }
 
 export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
@@ -68,10 +64,8 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
     <div className="flex flex-col gap-1 px-2 pb-1 shrink-0">
       {visible.map((item) => {
         const failed = item.status === "failed";
-        const busy =
-          item.status === "sending" || item.status === "dispatching";
-        const editable =
-          item.status === "queued" || item.status === "pending";
+        const busy = item.status === "sending";
+        const editable = item.status === "pending";
         return (
           <div
             key={item.injectionId}
@@ -112,21 +106,19 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
                       injectionId: item.injectionId,
                     }),
                   );
-                  if (item.mode === "steer") {
-                    dispatch(
-                      enqueueInboxMessage({ conversationId, text: item.text }),
-                    );
-                  } else {
-                    dispatch(
-                      queueMessage({ conversationId, text: item.text }),
-                    );
-                  }
+                  dispatch(
+                    enqueueInboxMessage({
+                      conversationId,
+                      text: item.text,
+                      mode: item.mode,
+                    }),
+                  );
                 }}
               >
                 <RotateCcw className="h-3.5 w-3.5" />
               </button>
             )}
-            {item.status === "queued" && (
+            {item.mode === "queue" && item.status === "pending" && (
               <button
                 type="button"
                 title="Deliver now — don't wait for the run to end; the agent picks it up at its next pause"
@@ -195,24 +187,14 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
           if (!editing) return;
           setEditBusy(true);
           try {
-            if (editing.mode === "queue") {
-              // Client-held — a plain local edit.
-              dispatch(
-                setInboxItemText({
-                  conversationId,
-                  injectionId: editing.injectionId,
-                  text,
-                }),
-              );
-            } else {
-              await dispatch(
-                editInboxItem({
-                  conversationId,
-                  injectionId: editing.injectionId,
-                  text,
-                }),
-              );
-            }
+            // Both modes are server-held rows — one PATCH path.
+            await dispatch(
+              editInboxItem({
+                conversationId,
+                injectionId: editing.injectionId,
+                text,
+              }),
+            );
             setEditing(null);
           } finally {
             setEditBusy(false);

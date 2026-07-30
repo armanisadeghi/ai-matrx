@@ -80,6 +80,20 @@ export class StreamCancelledError extends Error {
 }
 
 /**
+ * Thrown on a 409 `run_in_flight` from the continue endpoint (turns only).
+ * The server's turn lock says a run is still live on this conversation —
+ * normal after an interrupt (the old run is winding down) or when another
+ * device raced us. Retryable with backoff; `executeInstance` owns the bounded
+ * retry (same requestId, same optimistic bubble — never a duplicate turn).
+ */
+export class RunInFlightError extends Error {
+  override name = "RunInFlightError" as const;
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+/**
  * Thrown on a 409 `resume_conflict` from `/resume` (resume only). The server's
  * atomic run claim says another run is still live for this user_request —
  * usually the suspending run hasn't persisted `status='paused'` yet (a fast
@@ -362,10 +376,18 @@ export async function runAiStream(
           errorCode === "not_found"
         ) {
           const m =
-            /^(resume_conflict|not_resumable|outstanding_delegated_calls|user_request_not_found):/.exec(
+            /^(resume_conflict|not_resumable|outstanding_delegated_calls|user_request_not_found|run_in_flight):/.exec(
               serverMessage,
             );
           if (m) errorCode = m[1];
+          // Turn-lock 409s may arrive with the code only in the message body
+          // (envelope variants) — the phrase is distinctive enough to trust.
+          if (
+            (!errorCode || errorCode === "conflict") &&
+            /agent is still working/i.test(serverMessage)
+          ) {
+            errorCode = "run_in_flight";
+          }
         }
       } catch {
         /* non-JSON error body */
@@ -404,6 +426,13 @@ export async function runAiStream(
           dispatch(setInstanceStatus({ conversationId, status: "paused" }));
           dispatch(setRequestStatus({ requestId, status: "complete" }));
           return { requestId, conversationId };
+        }
+        if (errorCode === "run_in_flight") {
+          // The server's turn lock — a run is still live (an interrupted run
+          // winding down, or another device racing us). Retryable; the caller
+          // owns the bounded backoff. No error statuses, no composer clear.
+          unregisterAbortController(conversationId);
+          throw new RunInFlightError(serverMessage);
         }
         throw new Error(`Conversation already exists: ${serverMessage}`);
       } else if (code === 404) {
@@ -494,6 +523,10 @@ export async function runAiStream(
     // user-facing surface: a conflicting live run means the conversation is
     // (or is about to be) running fine without us.
     if (error instanceof ResumeConflictError) {
+      throw error;
+    }
+    if (error instanceof RunInFlightError) {
+      // Deliberately no cleanup: the caller retries the SAME request.
       throw error;
     }
 

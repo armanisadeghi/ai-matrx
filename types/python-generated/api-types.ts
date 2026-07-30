@@ -1449,7 +1449,18 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Cancel Request */
+        /**
+         * Cancel Request
+         * @description Stop a running request at its next iteration boundary.
+         *
+         *     ``mode=cancel`` (default) — plain stop: everything streamed persists
+         *     normally as visible history.
+         *     ``mode=interrupt`` — stop-and-fork (the INTERRUPT send mode): the tail
+         *     produced after the last clean boundary persists HIDDEN
+         *     (is_visible_to_user=False + is_visible_to_model=False) so the user's
+         *     follow-up replies to the last thing they actually saw. Costs are kept
+         *     either way — the in-flight provider call finishes and bills in full.
+         */
         post: operations["cancel_request_ai_cancel__request_id__post"];
         delete?: never;
         options?: never;
@@ -6622,6 +6633,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -23546,6 +23581,33 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
+        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -26948,6 +27010,13 @@ export interface components {
              */
             text: string;
             /**
+             * Delivery
+             * @description STEER (next_boundary, default): delivered at the agent's next natural pause mid-run. QUEUE (turn_end): held until the run is COMPLETELY done, then delivered as the next message — one queued message per turn, FIFO.
+             * @default next_boundary
+             * @enum {string}
+             */
+            delivery?: "next_boundary" | "turn_end";
+            /**
              * Is Visible To User
              * @description Whether the injected message is shown in the user's transcript.
              * @default true
@@ -26984,6 +27053,11 @@ export interface components {
             text?: string | null;
             /** Status */
             status: string;
+            /**
+             * Delivery
+             * @default next_boundary
+             */
+            delivery?: string;
             /** Queued At */
             queued_at?: string | null;
             /**
@@ -27583,7 +27657,7 @@ export interface components {
          */
         JsonSchemaProperty: {
             /** Type */
-            type?: ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null") | ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null")[] | null;
+            type?: ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string") | ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string")[] | null;
             /** Description */
             description?: string | null;
             /** Enum */
@@ -42859,7 +42933,9 @@ export interface operations {
     };
     cancel_request_ai_cancel__request_id__post: {
         parameters: {
-            query?: never;
+            query?: {
+                mode?: string;
+            };
             header?: never;
             path: {
                 request_id: string;
@@ -52411,6 +52487,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
