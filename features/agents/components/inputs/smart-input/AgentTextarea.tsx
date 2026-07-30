@@ -138,19 +138,23 @@ export function AgentTextarea({
   const showExpand =
     !singleRow && (isExpanded || (isSubmitting ? 0 : charCount) > 80);
 
-  // Send is ALWAYS a send. While a run is streaming, smartExecute routes the
-  // text to the Turn-Boundary Inbox (queued; the running agent answers it at
-  // its next pause on the same stream) instead of starting a colliding turn —
-  // see docs/TURN_BOUNDARY_INBOX.md. Stopping the run is the action bar's
-  // explicit Stop button, never a side effect of pressing Enter.
+  // Send is ALWAYS a send — never a disguised Stop. While a run is streaming,
+  // smartExecute applies the three send modes (docs/TURN_BOUNDARY_INBOX.md):
+  //   Enter        → QUEUE: waits until the agent is completely done, then
+  //                  sends as the next turn (default).
+  //   ⌘/Ctrl+Enter → STEER: delivered at the agent's next pause, mid-run.
+  //   ⌘/Ctrl+Shift+Enter → INTERRUPT: stop the run, then send.
+  // Stopping without sending is the action bar's explicit Stop button.
   const handleSend = useCallback(() => {
     if (disableSend) return;
     dispatch(smartExecute({ conversationId, surfaceKey }));
   }, [disableSend, conversationId, surfaceKey, dispatch]);
 
-  // Interrupt-and-send: ⌘/Ctrl+Shift+Enter while a run is streaming cuts the
-  // run (server-side cancel at its next boundary, everything streamed
-  // persists) and submits the composer text as the next turn.
+  const handleSteerSend = useCallback(() => {
+    if (disableSend) return;
+    dispatch(smartExecute({ conversationId, surfaceKey, whileRunning: "steer" }));
+  }, [disableSend, conversationId, surfaceKey, dispatch]);
+
   const handleInterruptSend = useCallback(() => {
     if (disableSend) return;
     dispatch(interruptAndSend({ conversationId, surfaceKey }));
@@ -188,10 +192,17 @@ export function AgentTextarea({
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key !== "Enter") return;
       const withCmd = e.metaKey || e.ctrlKey;
-      // ⌘/Ctrl+Shift+Enter during a run → interrupt & send now.
+      // ⌘/Ctrl+Shift+Enter during a run → INTERRUPT: stop, then send.
       if (withCmd && e.shiftKey && isExecuting) {
         e.preventDefault();
         if (!disableSend && charCount > 0) handleInterruptSend();
+        return;
+      }
+      // ⌘/Ctrl+Enter during a run (submitOnEnter ON — the combo is otherwise
+      // unused there) → STEER: deliver at the agent's next pause.
+      if (withCmd && !e.shiftKey && isExecuting && submitOnEnter) {
+        e.preventDefault();
+        if (!disableSend && charCount > 0) handleSteerSend();
         return;
       }
       // submitOnEnter ON  → Enter sends, Shift+Enter is a newline.
@@ -200,7 +211,7 @@ export function AgentTextarea({
       if (!shouldSend) return;
       e.preventDefault();
       // While streaming, an empty Enter is a no-op (never an implicit stop);
-      // with text it queues via the inbox. While idle it submits normally.
+      // with text it QUEUES (sends when the run finishes). Idle → normal send.
       if (disableSend) return;
       if (isExecuting && charCount === 0) return;
       handleSend();
@@ -211,6 +222,7 @@ export function AgentTextarea({
       isExecuting,
       charCount,
       handleSend,
+      handleSteerSend,
       handleInterruptSend,
     ],
   );

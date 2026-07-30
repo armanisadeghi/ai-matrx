@@ -19,8 +19,10 @@ import { callApi } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
+import { selectIsExecuting } from "../selectors/aggregate.selectors";
 import {
   addInboxItem,
+  setInboxItemStatus,
   confirmInboxItem,
   failInboxItem,
   setInboxItemText,
@@ -34,6 +36,154 @@ type InboxEnqueueResponse = components["schemas"]["InboxEnqueueResponse"];
 type InboxItemWire = components["schemas"]["InboxItem"];
 
 const localInjectionId = (): string => `inbox_local_${crypto.randomUUID()}`;
+
+// ─── QUEUE mode — hold until the run fully ends, then send as a normal turn ──
+
+export interface QueueMessageArgs {
+  conversationId: string;
+  text: string;
+  /** Re-insert at the head (drain-race requeue keeps FIFO order). */
+  front?: boolean;
+}
+
+/**
+ * QUEUE a message: it waits until the agent is completely done with the
+ * current run, then sends as THE NEXT normal turn (FIFO — several queued
+ * messages send one per turn, each waiting for the previous answer to
+ * finish). Editable/withdrawable until it officially sends. This is the
+ * DEFAULT behavior for a send while a run is live (Arman's ruling —
+ * docs/TURN_BOUNDARY_INBOX.md "The three send modes").
+ */
+export const queueMessage = createAsyncThunk<
+  void,
+  QueueMessageArgs,
+  { state: RootState; dispatch: AppDispatch }
+>(
+  "conversationInbox/queueMessage",
+  async ({ conversationId, text, front = false }, { dispatch, getState }) => {
+    dispatch(
+      addInboxItem({
+        injectionId: localInjectionId(),
+        conversationId,
+        mode: "queue",
+        kind: "user_message",
+        text,
+        status: "queued",
+        isVisibleToUser: true,
+        queuedAt: new Date().toISOString(),
+        front,
+      }),
+    );
+    ensureQueueDrainWatcher(conversationId, dispatch, getState);
+  },
+);
+
+/**
+ * One watcher per conversation drains its QUEUE: wait for the run to end,
+ * send the head item as a normal turn (via smartExecute's userTextOverride —
+ * the composer's live draft is never touched), wait for THAT run to end,
+ * repeat. The watcher dies when the queue is empty and is re-armed by the
+ * next queueMessage. Client-held by design — see the durability note in
+ * docs/TURN_BOUNDARY_INBOX.md.
+ */
+const activeQueueWatchers = new Set<string>();
+
+const QUEUE_POLL_MS = 400;
+
+function ensureQueueDrainWatcher(
+  conversationId: string,
+  dispatch: AppDispatch,
+  getState: () => RootState,
+): void {
+  if (activeQueueWatchers.has(conversationId)) return;
+  activeQueueWatchers.add(conversationId);
+
+  void (async () => {
+    try {
+      for (;;) {
+        const items =
+          getState().conversationInbox?.byConversationId[conversationId] ?? [];
+        const head = items.find(
+          (i) => i.mode === "queue" && i.status === "queued",
+        );
+        if (!head) return;
+
+        if (selectIsExecuting(conversationId)(getState())) {
+          await new Promise((r) => setTimeout(r, QUEUE_POLL_MS));
+          continue;
+        }
+
+        dispatch(
+          setInboxItemStatus({
+            conversationId,
+            injectionId: head.injectionId,
+            status: "dispatching",
+          }),
+        );
+        // Dynamic import breaks the cycle: smart-execute routes INTO this
+        // module for queue/steer adds; the drain routes back OUT through it
+        // so every gate (pending asks, sandbox, scopes) applies to a queued
+        // send exactly as to a typed one.
+        const { smartExecute } = await import("../thunks/smart-execute.thunk");
+        const result = await dispatch(
+          smartExecute({ conversationId, textOverride: head.text }),
+        );
+        if (smartExecute.rejected.match(result)) {
+          if (selectIsExecuting(conversationId)(getState())) {
+            // Transient loss to a just-started run — keep the item queued and
+            // let the loop wait that run out.
+            dispatch(
+              setInboxItemStatus({
+                conversationId,
+                injectionId: head.injectionId,
+                status: "queued",
+              }),
+            );
+            await new Promise((r) => setTimeout(r, QUEUE_POLL_MS));
+            continue;
+          }
+          dispatch(
+            failInboxItem({
+              conversationId,
+              injectionId: head.injectionId,
+              error:
+                typeof result.payload === "string"
+                  ? result.payload
+                  : (result.error.message ?? "Send failed"),
+            }),
+          );
+          continue;
+        }
+        dispatch(
+          removeInboxItem({ conversationId, injectionId: head.injectionId }),
+        );
+      }
+    } finally {
+      activeQueueWatchers.delete(conversationId);
+    }
+  })();
+}
+
+/**
+ * Promote a waiting QUEUE item to STEER — "don't wait for the run to end,
+ * deliver at the agent's next pause." Removes the local item and hands the
+ * text to the server inbox.
+ */
+export const promoteQueuedToSteer = createAsyncThunk<
+  void,
+  { conversationId: string; injectionId: string },
+  { state: RootState; dispatch: AppDispatch }
+>(
+  "conversationInbox/promoteQueuedToSteer",
+  async ({ conversationId, injectionId }, { dispatch, getState }) => {
+    const item = getState().conversationInbox?.byConversationId[
+      conversationId
+    ]?.find((i) => i.injectionId === injectionId);
+    if (!item || item.mode !== "queue" || item.status !== "queued") return;
+    dispatch(removeInboxItem({ conversationId, injectionId }));
+    await dispatch(enqueueInboxMessage({ conversationId, text: item.text }));
+  },
+);
 
 export interface EnqueueInboxMessageArgs {
   conversationId: string;
@@ -50,10 +200,11 @@ export interface EnqueueInboxMessageResult {
 }
 
 /**
- * Queue a message into a running conversation. Optimistic: the card appears
- * immediately as "sending", flips to "pending" on the server ack, and to
- * delivered (removed — the transcript owns it) when the stream's
- * `injection_consumed` names it.
+ * STEER a running conversation: deliver the message at the agent's next
+ * natural pause, mid-run, on the already-open stream (server-held Turn-
+ * Boundary Inbox). Optimistic: the card appears immediately as "sending",
+ * flips to "pending" on the server ack, and is removed (the transcript owns
+ * it) when the stream's `injection_consumed` names it.
  */
 export const enqueueInboxMessage = createAsyncThunk<
   EnqueueInboxMessageResult,
@@ -71,6 +222,7 @@ export const enqueueInboxMessage = createAsyncThunk<
       addInboxItem({
         injectionId: localId,
         conversationId,
+        mode: "steer",
         kind,
         text,
         status: "sending",
@@ -238,6 +390,7 @@ export const hydrateInbox = createAsyncThunk<
   const items: ConversationInboxItem[] = wire.map((w) => ({
     injectionId: w.injection_id,
     conversationId,
+    mode: "steer",
     kind: (w.kind as InboxItemKind) ?? "user_message",
     text: w.text ?? "",
     status: "pending",

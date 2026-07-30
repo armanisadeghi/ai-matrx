@@ -364,7 +364,7 @@ export function NewChatLandingInput({
             )}
             title={
               isExecuting
-                ? "Queue message — the agent answers it at its next pause"
+                ? "Queue message — sends when the agent finishes"
                 : voiceBusy
                   ? "Finish recording to send"
                   : !allResourcesResolved

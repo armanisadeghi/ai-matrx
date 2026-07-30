@@ -21,13 +21,28 @@ import {
   selectResourcePayloads,
 } from "../instance-resources/instance-resources.selectors";
 import { selectIsExecuting } from "../selectors/aggregate.selectors";
-import { enqueueInboxMessage } from "../inbox/inbox.thunks";
+import { enqueueInboxMessage, queueMessage } from "../inbox/inbox.thunks";
 import { callCancelRequest } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 
 interface SmartExecuteArgs {
   conversationId: string;
   surfaceKey?: string;
+  /**
+   * When a run is live on this conversation, which of the three send modes
+   * (docs/TURN_BOUNDARY_INBOX.md — Arman's ruling) this send uses:
+   *   "queue" (default) — wait until the run FULLY ends, then send as the
+   *     next normal turn (FIFO, editable until sent).
+   *   "steer" — deliver at the agent's next natural pause mid-run, answered
+   *     on the already-open stream.
+   * Interrupt is its own thunk (`interruptAndSend`). Ignored while idle.
+   */
+  whileRunning?: "queue" | "steer";
+  /**
+   * Send THIS text instead of the composer's content (the QUEUE drain).
+   * Composer state is never read, snapshotted, or cleared for these sends.
+   */
+  textOverride?: string;
 }
 
 /**
@@ -49,15 +64,21 @@ export const smartExecute = createAsyncThunk<
   { state: RootState; dispatch: AppDispatch }
 >(
   "instances/smartExecute",
-  async ({ conversationId, surfaceKey }, { getState, dispatch }) => {
+  async (
+    { conversationId, surfaceKey, whileRunning = "queue", textOverride },
+    { getState, dispatch },
+  ) => {
     const state = getState();
+    const isOverrideSend = textOverride !== undefined;
 
     // A pending resource has only a local preview; it has no durable file_id
     // and is intentionally excluded from selectResourcePayloads. Sending now
     // would persist a text-only turn while the upload continued in the
     // background. This thunk-level guard protects every submit surface,
     // including callers that bypass the disabled composer controls.
-    if (!selectAllResourcesResolved(conversationId)(state)) {
+    // Override (queued) sends are text-only and skip it — a still-uploading
+    // attachment belongs to the composer's OWN next send, not the queue.
+    if (!isOverrideSend && !selectAllResourcesResolved(conversationId)(state)) {
       console.error(
         `[smart-execute] blocked conversation "${conversationId}" while attachments are still resolving; ` +
           `sending now would silently omit them.`,
@@ -75,43 +96,60 @@ export const smartExecute = createAsyncThunk<
     // text as the answer to those asks instead; that resolves the tool calls
     // and the normal `continuation_needed → resumeInstance` flow continues the
     // conversation with the user's message embedded. No separate turn is run.
-    const composerText = selectUserInputText(conversationId)(state) ?? "";
+    const composerText =
+      textOverride ?? selectUserInputText(conversationId)(state) ?? "";
     const consumedByPendingAsks = dispatch(
       resolvePendingAsksWithInput(conversationId, composerText),
     );
     if (consumedByPendingAsks) {
-      // Mirror the normal submit lifecycle so the composer clears cleanly:
-      // markInputSubmitted snapshots the text as lastSubmittedText, which lets
-      // clearUserInput wipe it (draft-protection only blocks clearing text that
-      // diverged from the just-submitted message).
-      const userValuesForClear =
-        state.instanceVariableValues?.byConversationId[conversationId]
-          ?.userValues ?? {};
-      dispatch(
-        markInputSubmitted({ conversationId, userValues: userValuesForClear }),
-      );
-      dispatch(clearUserInput(conversationId));
+      if (!isOverrideSend) {
+        // Mirror the normal submit lifecycle so the composer clears cleanly:
+        // markInputSubmitted snapshots the text as lastSubmittedText, which
+        // lets clearUserInput wipe it (draft-protection only blocks clearing
+        // text that diverged from the just-submitted message). Override sends
+        // never touch the composer.
+        const userValuesForClear =
+          state.instanceVariableValues?.byConversationId[conversationId]
+            ?.userValues ?? {};
+        dispatch(
+          markInputSubmitted({
+            conversationId,
+            userValues: userValuesForClear,
+          }),
+        );
+        dispatch(clearUserInput(conversationId));
+      }
       return;
     }
 
-    // ── Queue-while-running (Turn-Boundary Inbox) ────────────────────────────
-    // A send into a conversation whose run is STILL LIVE must not start a
-    // second concurrent turn (double stream, abort-registry eviction, server
-    // 409s). The server supports exactly this case: queue the message via
-    // `POST /ai/conversations/{id}/inbox` and the running agent answers it on
-    // the stream that's already open, at its next natural pause
-    // (docs/TURN_BOUNDARY_INBOX.md). The client is the judge of "run active" —
-    // we opened the stream. NOTE: this keys on THIS conversation being live,
-    // so the autoclear split (input focus already moved to a fresh, idle
-    // conversation) keeps its parallel-iteration behavior untouched.
+    // ── Send while a run is live — the three send modes ─────────────────────
+    // (Arman's ruling, 2026-07-29 — docs/TURN_BOUNDARY_INBOX.md.) A send into
+    // a conversation whose run is STILL LIVE must never start a second
+    // concurrent turn (double stream, abort-registry eviction, interleaved
+    // history). Instead:
+    //   QUEUE (default) — hold client-side until the run FULLY ends, then
+    //     send as the next normal turn (the queueMessage watcher drains FIFO).
+    //   STEER — hand to the server inbox; the running agent picks it up at
+    //     its next natural pause and answers on the already-open stream.
+    // The client is the judge of "run active" — we opened the stream. This
+    // keys on THIS conversation being live, so the autoclear split (input
+    // focus already moved to a fresh, idle conversation) keeps its
+    // parallel-iteration behavior untouched. An override send reaching a
+    // live run lost the drain race — requeue it at the FRONT.
     if (selectIsExecuting(conversationId)(state)) {
-      const queueText = composerText.trim();
-      if (!queueText) return; // nothing to queue
+      const sendText = composerText.trim();
+      if (!sendText) return; // nothing to queue
+      if (isOverrideSend) {
+        dispatch(
+          queueMessage({ conversationId, text: sendText, front: true }),
+        );
+        return;
+      }
       if (selectResourcePayloads(conversationId)(state).length > 0) {
-        // The inbox is text-only; silently dropping attachments would be the
-        // classic lost-file bug. Keep everything in the composer and tell the
-        // user how to proceed.
-        toast.info("Attachments can't be queued mid-run", {
+        // Queued/steered sends are text-only; silently dropping attachments
+        // would be the classic lost-file bug. Keep everything in the composer
+        // and tell the user how to proceed.
+        toast.info("Attachments can't be sent while the agent is running", {
           description:
             "Stop the agent first, or remove the attachment to queue this message.",
         });
@@ -124,9 +162,13 @@ export const smartExecute = createAsyncThunk<
         markInputSubmitted({ conversationId, userValues: userValuesForClear }),
       );
       dispatch(clearUserInput(conversationId));
-      await dispatch(
-        enqueueInboxMessage({ conversationId, text: queueText }),
-      );
+      if (whileRunning === "steer") {
+        await dispatch(
+          enqueueInboxMessage({ conversationId, text: sendText }),
+        );
+      } else {
+        await dispatch(queueMessage({ conversationId, text: sendText }));
+      }
       return;
     }
 
@@ -140,7 +182,16 @@ export const smartExecute = createAsyncThunk<
     const gate = await dispatch(
       ensureSandboxOrDecide({ conversationId }),
     ).unwrap();
-    if (gate === "blocked") return;
+    if (gate === "blocked") {
+      // A gate-blocked override (queued) send must FAIL, not silently vanish —
+      // the drain watcher keeps the card with the error so nothing is lost.
+      if (isOverrideSend) {
+        throw new Error(
+          "Blocked by the sandbox gate — resolve the sandbox and retry",
+        );
+      }
+      return;
+    }
 
     // Route mode — read once; also reused for the execute dispatch below.
     const apiEndpointMode =
@@ -162,7 +213,14 @@ export const smartExecute = createAsyncThunk<
       const scopeGate = await dispatch(
         ensureConversationScopesOrAsk(conversationId),
       );
-      if (scopeGate.blocked) return;
+      if (scopeGate.blocked) {
+        if (isOverrideSend) {
+          throw new Error(
+            "Blocked by the scope gate — answer the scope prompt and retry",
+          );
+        }
+        return;
+      }
       scopeIdsOverride = scopeGate.scopeIdsOverride;
     }
 
@@ -170,11 +228,14 @@ export const smartExecute = createAsyncThunk<
 
     // Phase 1 — capture the current text + userValues so we can pre-populate
     // the post-split conversation (and so the "re-apply" snapshot is available
-    // after phase 2 clears the textarea on `conversationId`).
-    const userValues =
-      state.instanceVariableValues?.byConversationId[conversationId]
-        ?.userValues ?? {};
-    dispatch(markInputSubmitted({ conversationId, userValues }));
+    // after phase 2 clears the textarea on `conversationId`). Override sends
+    // skip this: the composer holds (at most) an unrelated live draft.
+    if (!isOverrideSend) {
+      const userValues =
+        state.instanceVariableValues?.byConversationId[conversationId]
+          ?.userValues ?? {};
+      dispatch(markInputSubmitted({ conversationId, userValues }));
+    }
 
     // Fire the execute on the CURRENT conversation — do NOT await yet.
     // We want to split the input focus before the stream lands so the user
@@ -186,10 +247,25 @@ export const smartExecute = createAsyncThunk<
     // sends the live agent definition in the request body; the server reads
     // nothing from the agent record. Any non-manual surface keeps the
     // existing agent-mode path.
+    if (apiEndpointMode === "manual" && isOverrideSend) {
+      // executeManualInstance reads only the composer; sending it now would
+      // submit the WRONG text (the user's live draft) as the queued message.
+      // Builder/manual surfaces are iterate-style and don't queue in practice
+      // — fail loudly rather than mis-send.
+      throw new Error(
+        "Queued sends are not supported on manual-mode (Agent Builder) conversations",
+      );
+    }
     const executePromise =
       apiEndpointMode === "manual"
         ? dispatch(executeManualInstance({ conversationId }))
-        : dispatch(executeInstance({ conversationId, scopeIdsOverride }));
+        : dispatch(
+            executeInstance({
+              conversationId,
+              scopeIdsOverride,
+              userTextOverride: textOverride,
+            }),
+          );
 
     // The split (auto-clear "iterate") mints a NEW, historyless conversation and
     // repoints the input focus at it. That is ONLY valid for a conversation
@@ -200,7 +276,7 @@ export const smartExecute = createAsyncThunk<
     // iterate; otherwise refuse and scream (loud recovery). Reaching the else
     // means auto-clear got turned on for a non-iterate conversation — a rogue
     // path that bypassed the `showAutoClearToggle`-gated toggle.
-    if (autoClear && surfaceKey) {
+    if (autoClear && surfaceKey && !isOverrideSend) {
       const lifecycle =
         state.conversations.byConversationId[conversationId]
           ?.conversationLifecycle;
@@ -221,7 +297,21 @@ export const smartExecute = createAsyncThunk<
       }
     }
 
-    await executePromise;
+    const executeResult = await executePromise;
+    // Surface a failed child to OUR caller (the queue-drain watcher marks its
+    // card failed off this). createAsyncThunk children resolve their action
+    // even on rejection, so without this smartExecute would report success
+    // over a dead send.
+    if (
+      executeInstance.rejected.match(executeResult) ||
+      executeManualInstance.rejected.match(executeResult)
+    ) {
+      const reason =
+        typeof executeResult.payload === "string"
+          ? executeResult.payload
+          : (executeResult.error?.message ?? "Send failed");
+      throw new Error(reason);
+    }
   },
 );
 
