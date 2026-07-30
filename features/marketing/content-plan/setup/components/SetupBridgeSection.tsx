@@ -160,6 +160,12 @@ export function SetupBridgeSection({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linked, fillRunning, site.id]);
 
+  const invalidateCms = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: setupKeys.cms(site.id) }),
+      queryClient.invalidateQueries({ queryKey: marketingKeys.siteOptions() }),
+    ]);
+
   // Announce the run's end exactly once and refresh the CMS facts the other
   // rungs read (a filled page changes has-content everywhere).
   const prevFillStatusRef = useRef<string | null>(null);
@@ -181,12 +187,6 @@ export function SetupBridgeSection({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fillStatus?.status]);
-
-  const invalidateCms = () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: setupKeys.cms(site.id) }),
-      queryClient.invalidateQueries({ queryKey: marketingKeys.siteOptions() }),
-    ]);
 
   // ── rung 1: create (or pick) the CMS counterpart and link both sides ──────
   const handleLink = async () => {

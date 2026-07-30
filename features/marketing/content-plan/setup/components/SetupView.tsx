@@ -20,7 +20,7 @@
  * writes (starter kit, plan↔CMS reconcile/realize) that genuinely need the
  * server's write policy + activity-log seams — never plain DB reads.
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -28,6 +28,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import type { MarketingSite } from "@/features/marketing/types";
+import {
+  useAllTopics,
+  useResearchDocument,
+} from "@/features/research/hooks/useResearchState";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { createContentPlanSetupScope } from "@/features/surfaces/manifests/content-plan-setup.manifest";
@@ -51,6 +55,18 @@ import {
   type FamilyPlan,
 } from "../archetypes";
 import type { Concept } from "../concepts";
+import {
+  buildArchetypeOptionsJson,
+  buildCurrentPlanSummary,
+  useSetupAgents,
+} from "../ai";
+import {
+  clearSetupDraft,
+  fetchFreshSite,
+  readSetupDraft,
+  saveSetupDraft,
+  type SetupDraft,
+} from "../draft";
 import { useArchetypeLibrary, useCmsFacts } from "../hooks";
 import { buildPreview } from "../preview";
 import { buildReadiness } from "../readiness";
@@ -62,6 +78,7 @@ import {
   type CommitResult,
 } from "../service";
 import { PlanLintSection } from "./PlanLintSection";
+import { SetupAiBar, type SetupAiRunSummary } from "./SetupAiBar";
 import { SetupBridgeSection } from "./SetupBridgeSection";
 import { SetupPreviewColumn } from "./SetupPreviewColumn";
 import { SetupShapeColumn } from "./SetupShapeColumn";
@@ -182,6 +199,87 @@ export function SetupView() {
     null,
   );
   const [result, setResult] = useState<CommitResult | null>(null);
+
+  // ── AI grounding + step agents ──────────────────────────────────────────
+  const [researchTopicId, setResearchTopicId] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [lastAiRun, setLastAiRun] = useState<SetupAiRunSummary | null>(null);
+  const allTopics = useAllTopics();
+  const researchDoc = useResearchDocument(researchTopicId ?? "");
+  const agents = useSetupAgents(siteId);
+  const researchReport =
+    researchDoc.data?.status === "success" && researchDoc.data.content?.trim()
+      ? researchDoc.data.content
+      : null;
+
+  // ── draft persistence — every step saves, nothing is lost on navigation ─
+  // Seed ONCE per site from settings.content_plan.setup_draft (the sanctioned
+  // adjust-state-during-render pattern — an effect would cascade renders),
+  // then autosave (debounced) whenever any choice changes. `lastSavedRef`
+  // carries the last serialization known to be on the server, so identical
+  // states never write.
+  const [seed, setSeed] = useState<{
+    siteId: string;
+    /** Serialization of the stored draft, null when none existed. */
+    serialized: string | null;
+  } | null>(null);
+  const lastSavedRef = useRef<{ siteId: string; serialized: string } | null>(null);
+
+  if (site && siteId && seed?.siteId !== siteId) {
+    const draft = readSetupDraft(site.settings);
+    setSeed({
+      siteId,
+      serialized: draft ? JSON.stringify({ ...draft, updatedAt: null }) : null,
+    });
+    if (draft) {
+      if (draft.archetypeKey) setPickedKey(draft.archetypeKey);
+      if (Object.keys(draft.countsByArchetype).length > 0) {
+        setCountsByArchetype(draft.countsByArchetype);
+      }
+      if (Object.keys(draft.namesByArchetype).length > 0) {
+        setNamesByArchetype(draft.namesByArchetype);
+      }
+      if (Object.keys(draft.conceptNamesByArchetype).length > 0) {
+        setConceptNamesByArchetype(draft.conceptNamesByArchetype);
+      }
+      if (draft.researchTopicId) setResearchTopicId(draft.researchTopicId);
+    }
+  }
+
+  useEffect(() => {
+    if (!siteId || seed?.siteId !== siteId) return;
+    const draft: SetupDraft = {
+      archetypeKey: pickedKey,
+      countsByArchetype,
+      namesByArchetype,
+      conceptNamesByArchetype,
+      researchTopicId,
+      updatedAt: null,
+    };
+    const serialized = JSON.stringify(draft);
+    if (lastSavedRef.current?.siteId !== siteId) {
+      // First pass after mount — the baseline is the stored draft when one
+      // seeded, else the current (default) state. Only a CHANGE writes.
+      lastSavedRef.current = { siteId, serialized: seed.serialized ?? serialized };
+    }
+    if (lastSavedRef.current.serialized === serialized) return;
+    const timer = setTimeout(() => {
+      lastSavedRef.current = { siteId, serialized };
+      saveSetupDraft(siteId, draft).catch((error) => {
+        // LOUD: an autosave that silently stops saving is the original bug.
+        toast.error(`Setup draft not saved: ${extractErrorMessage(error)}`);
+      });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [
+    siteId,
+    seed,
+    pickedKey,
+    countsByArchetype,
+    namesByArchetype,
+    conceptNamesByArchetype,
+    researchTopicId,
+  ]);
 
   const archetypes = library.data?.archetypes ?? [];
   const catalog = library.data?.catalog ?? {};
@@ -339,6 +437,96 @@ export function SetupView() {
     });
   };
 
+  // ── the AI steps — read the research report, stage into THIS state ──────
+  const handleRecommendShape = async () => {
+    if (!researchReport || !site) return;
+    setAiError(null);
+    try {
+      const plan = await agents.recommendShape({
+        research_report: researchReport,
+        site_domain: site.domain ?? site.name ?? "",
+        site_context: "",
+        archetype_options: buildArchetypeOptionsJson(archetypes, baseline),
+        current_plan_summary: buildCurrentPlanSummary(committed, nodeRows),
+        target_page_count: "",
+        guidance: "",
+      });
+      if (!archetypes.some((item) => item.key === plan.archetypeKey)) {
+        throw new Error(
+          `The planner picked "${plan.archetypeKey}", which is not in the shape library — nothing was applied.`,
+        );
+      }
+      const validFamilies = new Set(
+        (baseline.get(plan.archetypeKey)?.families ?? []).map((item) => item.key),
+      );
+      const recommendedCounts: Record<string, number> = {};
+      for (const item of plan.familyCounts) {
+        if (validFamilies.has(item.familyKey)) {
+          recommendedCounts[item.familyKey] = item.count;
+        }
+      }
+      setPickedKey(plan.archetypeKey);
+      setResult(null);
+      setCountsByArchetype((current) => ({
+        ...current,
+        [plan.archetypeKey]: recommendedCounts,
+      }));
+      if (plan.conceptNames.length > 0) {
+        setConceptNamesByArchetype((current) => ({
+          ...current,
+          [plan.archetypeKey]: {
+            ...(current[plan.archetypeKey] ?? {}),
+            ...Object.fromEntries(
+              plan.conceptNames.map((item) => [item.conceptKey, item.name]),
+            ),
+          },
+        }));
+      }
+      const countSummary = Object.entries(recommendedCounts)
+        .map(([key, value]) => `${key} × ${value}`)
+        .join(", ");
+      setLastAiRun({
+        kind: "shape",
+        headline: `Recommended "${plan.archetypeKey}"${countSummary ? ` (${countSummary})` : ""} — staged, you commit.`,
+        detail: plan.rationale,
+      });
+    } catch (error) {
+      setAiError(extractErrorMessage(error));
+    }
+  };
+
+  const handleNameFamily = async (familyKey: string) => {
+    if (!researchReport || !site || !expanded) return;
+    const family = expanded.families.find((item) => item.key === familyKey);
+    if (!family) return;
+    setAiError(null);
+    try {
+      const outcome = await agents.nameFamily(familyKey, {
+        research_report: researchReport,
+        site_domain: site.domain ?? site.name ?? "",
+        family_key: family.key,
+        family_label: family.label,
+        family_route: family.route,
+        target_count: String(counts[family.key] ?? family.count),
+        existing_names: (names[family.key] ?? []).join("\n"),
+        guidance: "",
+      });
+      setNames(
+        familyKey,
+        outcome.names.map((item) => item.label),
+      );
+      setLastAiRun({
+        kind: "names",
+        headline: `Named ${outcome.names.length} ${family.label.toLowerCase()} page(s) from the report — staged, you commit.`,
+        detail:
+          outcome.notes ||
+          outcome.names.map((item) => item.label).join(", "),
+      });
+    } catch (error) {
+      setAiError(extractErrorMessage(error));
+    }
+  };
+
   const missingTypes = expanded
     ? missingPageTypes(expanded.roots, pageTypeIdBySlug)
     : [];
@@ -392,10 +580,13 @@ export function SetupView() {
 
       if (outcome.created > 0) {
         try {
+          // Draft autosaves bump the site row's version — the guarded record
+          // write must run against the FRESH row, not the query cache's copy.
+          const fresh = await fetchFreshSite(siteId);
           await recordSiteArchetype({
             siteId,
-            expectedVersion: site.version,
-            currentSettings: site.settings,
+            expectedVersion: fresh.version,
+            currentSettings: fresh.settings,
             archetypeKey: expanded.archetype,
             counts: expanded.counts,
             // Derived from the resolved report, exactly as aidream records it.
@@ -431,6 +622,15 @@ export function SetupView() {
         toast.success(
           `Created ${outcome.created} page(s). ${outcome.existing} already existed.`,
         );
+        // Fully committed — the plan itself is the truth now (Setup re-derives
+        // names from live nodes), so the in-progress draft is done.
+        try {
+          await clearSetupDraft(siteId);
+        } catch (error) {
+          toast.error(
+            `Pages created, but the setup draft was not cleared: ${extractErrorMessage(error)}`,
+          );
+        }
       }
     } catch (error) {
       toast.error(`Scaffolding failed: ${extractErrorMessage(error)}`);
@@ -618,6 +818,24 @@ export function SetupView() {
         </div>
       ) : null}
 
+      <SetupAiBar
+        topics={allTopics.data ?? []}
+        topicsLoading={allTopics.isLoading}
+        selectedTopicId={researchTopicId}
+        onSelectTopic={(topicId) => {
+          setResearchTopicId(topicId);
+          setAiError(null);
+        }}
+        document={researchDoc.data ?? null}
+        documentLoading={Boolean(researchTopicId) && researchDoc.isLoading}
+        onRecommendShape={() => void handleRecommendShape()}
+        shapeBusy={agents.shapeBusy}
+        anyAgentBusy={agents.shapeBusy || agents.namingFamilyKey !== null}
+        lastRun={lastAiRun}
+        error={aiError}
+        onDismissError={() => setAiError(null)}
+      />
+
       {/* Mobile: ONE page scroll, panels stacked at natural height. md+: a
         fixed grid where each column owns its own scroll. */}
       <div
@@ -668,6 +886,9 @@ export function SetupView() {
               onNamesChange={setNames}
               onConceptNameChange={setConceptName}
               onReset={resetOverrides}
+              aiReady={Boolean(researchReport)}
+              aiNamingKey={agents.namingFamilyKey}
+              onAiNames={(familyKey) => void handleNameFamily(familyKey)}
               newCount={preview.counts.new}
               pageTypeName={(slug) =>
                 slug ? (pageTypeNameBySlug.get(slug) ?? slug) : "No page type"
