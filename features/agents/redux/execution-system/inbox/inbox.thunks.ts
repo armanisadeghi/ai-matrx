@@ -19,10 +19,8 @@ import { callApi } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
-import { selectIsExecuting } from "../selectors/aggregate.selectors";
 import {
   addInboxItem,
-  setInboxItemStatus,
   confirmInboxItem,
   failInboxItem,
   setInboxItemText,
@@ -30,6 +28,7 @@ import {
   hydrateInboxItems,
   type ConversationInboxItem,
   type InboxItemKind,
+  type InboxItemMode,
 } from "./inbox.slice";
 
 type InboxEnqueueResponse = components["schemas"]["InboxEnqueueResponse"];
@@ -37,137 +36,20 @@ type InboxItemWire = components["schemas"]["InboxItem"];
 
 const localInjectionId = (): string => `inbox_local_${crypto.randomUUID()}`;
 
-// ─── QUEUE mode — hold until the run fully ends, then send as a normal turn ──
+/** mode ↔ wire `delivery` — the server owns the semantics for both. */
+const deliveryForMode: Record<InboxItemMode, "turn_end" | "next_boundary"> = {
+  queue: "turn_end",
+  steer: "next_boundary",
+};
 
-export interface QueueMessageArgs {
-  conversationId: string;
-  text: string;
-  /** Re-insert at the head (drain-race requeue keeps FIFO order). */
-  front?: boolean;
-}
-
-/**
- * QUEUE a message: it waits until the agent is completely done with the
- * current run, then sends as THE NEXT normal turn (FIFO — several queued
- * messages send one per turn, each waiting for the previous answer to
- * finish). Editable/withdrawable until it officially sends. This is the
- * DEFAULT behavior for a send while a run is live (Arman's ruling —
- * docs/TURN_BOUNDARY_INBOX.md "The three send modes").
- */
-export const queueMessage = createAsyncThunk<
-  void,
-  QueueMessageArgs,
-  { state: RootState; dispatch: AppDispatch }
->(
-  "conversationInbox/queueMessage",
-  async ({ conversationId, text, front = false }, { dispatch, getState }) => {
-    dispatch(
-      addInboxItem({
-        injectionId: localInjectionId(),
-        conversationId,
-        mode: "queue",
-        kind: "user_message",
-        text,
-        status: "queued",
-        isVisibleToUser: true,
-        queuedAt: new Date().toISOString(),
-        front,
-      }),
-    );
-    ensureQueueDrainWatcher(conversationId, dispatch, getState);
-  },
-);
-
-/**
- * One watcher per conversation drains its QUEUE: wait for the run to end,
- * send the head item as a normal turn (via smartExecute's userTextOverride —
- * the composer's live draft is never touched), wait for THAT run to end,
- * repeat. The watcher dies when the queue is empty and is re-armed by the
- * next queueMessage. Client-held by design — see the durability note in
- * docs/TURN_BOUNDARY_INBOX.md.
- */
-const activeQueueWatchers = new Set<string>();
-
-const QUEUE_POLL_MS = 400;
-
-function ensureQueueDrainWatcher(
-  conversationId: string,
-  dispatch: AppDispatch,
-  getState: () => RootState,
-): void {
-  if (activeQueueWatchers.has(conversationId)) return;
-  activeQueueWatchers.add(conversationId);
-
-  void (async () => {
-    try {
-      for (;;) {
-        const items =
-          getState().conversationInbox?.byConversationId[conversationId] ?? [];
-        const head = items.find(
-          (i) => i.mode === "queue" && i.status === "queued",
-        );
-        if (!head) return;
-
-        if (selectIsExecuting(conversationId)(getState())) {
-          await new Promise((r) => setTimeout(r, QUEUE_POLL_MS));
-          continue;
-        }
-
-        dispatch(
-          setInboxItemStatus({
-            conversationId,
-            injectionId: head.injectionId,
-            status: "dispatching",
-          }),
-        );
-        // Dynamic import breaks the cycle: smart-execute routes INTO this
-        // module for queue/steer adds; the drain routes back OUT through it
-        // so every gate (pending asks, sandbox, scopes) applies to a queued
-        // send exactly as to a typed one.
-        const { smartExecute } = await import("../thunks/smart-execute.thunk");
-        const result = await dispatch(
-          smartExecute({ conversationId, textOverride: head.text }),
-        );
-        if (smartExecute.rejected.match(result)) {
-          if (selectIsExecuting(conversationId)(getState())) {
-            // Transient loss to a just-started run — keep the item queued and
-            // let the loop wait that run out.
-            dispatch(
-              setInboxItemStatus({
-                conversationId,
-                injectionId: head.injectionId,
-                status: "queued",
-              }),
-            );
-            await new Promise((r) => setTimeout(r, QUEUE_POLL_MS));
-            continue;
-          }
-          dispatch(
-            failInboxItem({
-              conversationId,
-              injectionId: head.injectionId,
-              error:
-                typeof result.payload === "string"
-                  ? result.payload
-                  : (result.error.message ?? "Send failed"),
-            }),
-          );
-          continue;
-        }
-        dispatch(
-          removeInboxItem({ conversationId, injectionId: head.injectionId }),
-        );
-      }
-    } finally {
-      activeQueueWatchers.delete(conversationId);
-    }
-  })();
-}
+const modeForDelivery = (delivery: string | null | undefined): InboxItemMode =>
+  delivery === "turn_end" ? "queue" : "steer";
 
 /**
  * Promote a waiting QUEUE item to STEER — "don't wait for the run to end,
- * deliver at the agent's next pause." Removes the local item and hands the
- * text to the server inbox.
+ * deliver at the agent's next pause." The server has no delivery-PATCH, so
+ * this is retract + re-enqueue; a 409 on the retract means it already
+ * delivered (nothing to promote).
  */
 export const promoteQueuedToSteer = createAsyncThunk<
   void,
@@ -179,15 +61,27 @@ export const promoteQueuedToSteer = createAsyncThunk<
     const item = getState().conversationInbox?.byConversationId[
       conversationId
     ]?.find((i) => i.injectionId === injectionId);
-    if (!item || item.mode !== "queue" || item.status !== "queued") return;
-    dispatch(removeInboxItem({ conversationId, injectionId }));
-    await dispatch(enqueueInboxMessage({ conversationId, text: item.text }));
+    if (!item || item.mode !== "queue" || item.status !== "pending") return;
+    const outcome = await dispatch(
+      retractInboxItem({ conversationId, injectionId }),
+    ).unwrap();
+    if (outcome !== "retracted") return; // delivered already, or withdraw failed
+    await dispatch(
+      enqueueInboxMessage({ conversationId, text: item.text, mode: "steer" }),
+    );
   },
 );
 
 export interface EnqueueInboxMessageArgs {
   conversationId: string;
   text: string;
+  /**
+   * QUEUE ("queue" → wire delivery "turn_end"): held until the run is
+   * COMPLETELY done, then delivered as the next message — one per turn, FIFO.
+   * STEER ("steer" → "next_boundary"): delivered at the agent's next pause
+   * mid-run. Both server-held; both answered on the already-open stream.
+   */
+  mode?: InboxItemMode;
   kind?: InboxItemKind;
   /** Steering instructions may hide from the visible transcript. */
   isVisibleToUser?: boolean;
@@ -213,7 +107,13 @@ export const enqueueInboxMessage = createAsyncThunk<
 >(
   "conversationInbox/enqueue",
   async (
-    { conversationId, text, kind = "user_message", isVisibleToUser = true },
+    {
+      conversationId,
+      text,
+      mode = "queue",
+      kind = "user_message",
+      isVisibleToUser = true,
+    },
     thunkApi,
   ) => {
     const { dispatch } = thunkApi;
@@ -222,7 +122,7 @@ export const enqueueInboxMessage = createAsyncThunk<
       addInboxItem({
         injectionId: localId,
         conversationId,
-        mode: "steer",
+        mode,
         kind,
         text,
         status: "sending",
@@ -239,6 +139,7 @@ export const enqueueInboxMessage = createAsyncThunk<
         body: {
           kind,
           text,
+          delivery: deliveryForMode[mode],
           is_visible_to_user: isVisibleToUser,
           is_visible_to_model: true,
         },
@@ -274,9 +175,11 @@ export const enqueueInboxMessage = createAsyncThunk<
 /**
  * Retract a still-pending queued message. 409 = it already drained (the
  * agent is answering it) — remove the card and let the transcript take over.
+ * Returns the outcome so callers (promoteQueuedToSteer) can distinguish a
+ * clean withdrawal from a delivery race.
  */
 export const retractInboxItem = createAsyncThunk<
-  void,
+  "retracted" | "already_drained" | "error",
   { conversationId: string; injectionId: string },
   { state: RootState; dispatch: AppDispatch }
 >(
@@ -285,7 +188,7 @@ export const retractInboxItem = createAsyncThunk<
     // Local-only cards (failed POST / still sending) just disappear.
     if (injectionId.startsWith("inbox_local_")) {
       dispatch(removeInboxItem({ conversationId, injectionId }));
-      return;
+      return "retracted";
     }
 
     const result = await dispatch(
@@ -305,15 +208,16 @@ export const retractInboxItem = createAsyncThunk<
       toast.info("Already delivered", {
         description: "The agent picked this message up before it could be withdrawn.",
       });
-      return;
+      return "already_drained";
     }
     if (result.error && result.error.status !== 404) {
       toast.error("Couldn't withdraw the queued message", {
         description: result.error.message ?? undefined,
       });
-      return;
+      return "error";
     }
     dispatch(removeInboxItem({ conversationId, injectionId }));
+    return "retracted";
   },
 );
 
@@ -390,7 +294,7 @@ export const hydrateInbox = createAsyncThunk<
   const items: ConversationInboxItem[] = wire.map((w) => ({
     injectionId: w.injection_id,
     conversationId,
-    mode: "steer",
+    mode: modeForDelivery(w.delivery),
     kind: (w.kind as InboxItemKind) ?? "user_message",
     text: w.text ?? "",
     status: "pending",

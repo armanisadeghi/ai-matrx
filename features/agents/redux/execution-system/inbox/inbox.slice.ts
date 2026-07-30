@@ -14,14 +14,16 @@
  *   INTERRUPT — stop now, fork clean, message becomes the reply. Lives in
  *     smart-execute (`interruptAndSend`), not in this queue.
  *
- * Item lifecycle by mode:
+ * BOTH modes are SERVER-HELD (2026-07-30 — `chat.pending_injection.delivery`:
+ * queue = 'turn_end', steer = 'next_boundary'), so queued messages survive
+ * reloads, crashed tabs, and phones turned off — the running agent works
+ * through them without any client. Item lifecycle (both modes):
  *
- *   queue:  queued → dispatching → (removed — it became a normal turn) | failed
- *   steer:  sending → pending → (removed on `injection_consumed` — the
- *           transcript owns it) | failed
+ *   sending → pending → (removed on `injection_consumed` — the transcript
+ *   owns it) | failed
  *
- * Retract/edit act on `queued` and `pending` items; a 409 on a steer item
- * means it drained first (treat as delivered).
+ * Retract/edit act on `pending` items; a 409 means it drained first (treat
+ * as delivered).
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
@@ -30,10 +32,8 @@ import { destroyInstance } from "../conversations/conversations.slice";
 export type InboxItemMode = "queue" | "steer";
 
 export type InboxItemStatus =
-  | "queued" // queue: waiting for the run to end
-  | "dispatching" // queue: being sent as a normal turn right now
-  | "sending" // steer: POST in flight
-  | "pending" // steer: server accepted, waiting for the next pause
+  | "sending" // POST in flight
+  | "pending" // server accepted; waiting its delivery point
   | "failed";
 
 export type InboxItemKind = "user_message" | "system_message";
@@ -76,38 +76,14 @@ const conversationInboxSlice = createSlice({
   name: "conversationInbox",
   initialState,
   reducers: {
-    /**
-     * Add an item. `front` re-inserts at the head — used when a QUEUE drain
-     * loses a race to a just-started run and the head item must keep its
-     * FIFO position.
-     */
-    addInboxItem(
-      state,
-      action: PayloadAction<ConversationInboxItem & { front?: boolean }>,
-    ) {
-      const { front, ...item } = action.payload;
+    /** Optimistic add at enqueue time (status "sending", local temp id). */
+    addInboxItem(state, action: PayloadAction<ConversationInboxItem>) {
+      const item = action.payload;
       const items = bucket(state, item.conversationId);
       if (items.some((i) => i.injectionId === item.injectionId)) {
         return; // idempotent
       }
-      if (front) items.unshift(item);
-      else items.push(item);
-    },
-
-    /** Flip a queue item's status (queued ↔ dispatching). */
-    setInboxItemStatus(
-      state,
-      action: PayloadAction<{
-        conversationId: string;
-        injectionId: string;
-        status: InboxItemStatus;
-      }>,
-    ) {
-      const items = state.byConversationId[action.payload.conversationId];
-      const item = items?.find(
-        (i) => i.injectionId === action.payload.injectionId,
-      );
-      if (item) item.status = action.payload.status;
+      items.push(item);
     },
 
     /** POST accepted — swap the local temp id for the server injection_id. */
@@ -193,14 +169,10 @@ const conversationInboxSlice = createSlice({
       }>,
     ) {
       const { conversationId, items } = action.payload;
-      // Server truth replaces only the server-held (steer/pending) view.
-      // Client-held state survives: queue items, in-flight steer POSTs,
-      // failed cards.
+      // Server truth replaces the pending view; in-flight POSTs and failed
+      // cards (client-only states) survive.
       const local = (state.byConversationId[conversationId] ?? []).filter(
-        (i) =>
-          i.mode === "queue" ||
-          i.status === "sending" ||
-          i.status === "failed",
+        (i) => i.status === "sending" || i.status === "failed",
       );
       state.byConversationId[conversationId] = [...items, ...local];
     },
@@ -214,7 +186,6 @@ const conversationInboxSlice = createSlice({
 
 export const {
   addInboxItem,
-  setInboxItemStatus,
   confirmInboxItem,
   failInboxItem,
   setInboxItemText,

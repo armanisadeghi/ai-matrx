@@ -4,7 +4,7 @@ import { selectAutoClearConversation } from "../instance-ui-state/instance-ui-st
 import { executeInstance } from "./execute-instance.thunk";
 import { executeManualInstance } from "./execute-manual-instance.thunk";
 import { splitInputIntoNewConversation } from "./create-instance.thunk";
-import { abortConversation } from "./abort-registry";
+import { abortConversation, hasAbortController } from "./abort-registry";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import { setRequestStatus } from "../active-requests/active-requests.slice";
 import {
@@ -21,7 +21,7 @@ import {
   selectResourcePayloads,
 } from "../instance-resources/instance-resources.selectors";
 import { selectIsExecuting } from "../selectors/aggregate.selectors";
-import { enqueueInboxMessage, queueMessage } from "../inbox/inbox.thunks";
+import { enqueueInboxMessage } from "../inbox/inbox.thunks";
 import { callCancelRequest } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 
@@ -30,19 +30,16 @@ interface SmartExecuteArgs {
   surfaceKey?: string;
   /**
    * When a run is live on this conversation, which of the three send modes
-   * (docs/TURN_BOUNDARY_INBOX.md — Arman's ruling) this send uses:
-   *   "queue" (default) — wait until the run FULLY ends, then send as the
-   *     next normal turn (FIFO, editable until sent).
-   *   "steer" — deliver at the agent's next natural pause mid-run, answered
-   *     on the already-open stream.
+   * (docs/TURN_BOUNDARY_INBOX.md — Arman's ruling) this send uses. Both are
+   * SERVER-HELD inbox items answered on the already-open stream:
+   *   "queue" (default) — delivery "turn_end": waits until the run is
+   *     COMPLETELY done, then delivered as the next message (FIFO, one per
+   *     turn, editable until delivered — survives reloads/closed tabs).
+   *   "steer" — delivery "next_boundary": delivered at the agent's next
+   *     natural pause mid-run.
    * Interrupt is its own thunk (`interruptAndSend`). Ignored while idle.
    */
   whileRunning?: "queue" | "steer";
-  /**
-   * Send THIS text instead of the composer's content (the QUEUE drain).
-   * Composer state is never read, snapshotted, or cleared for these sends.
-   */
-  textOverride?: string;
 }
 
 /**
@@ -65,20 +62,17 @@ export const smartExecute = createAsyncThunk<
 >(
   "instances/smartExecute",
   async (
-    { conversationId, surfaceKey, whileRunning = "queue", textOverride },
+    { conversationId, surfaceKey, whileRunning = "queue" },
     { getState, dispatch },
   ) => {
     const state = getState();
-    const isOverrideSend = textOverride !== undefined;
 
     // A pending resource has only a local preview; it has no durable file_id
     // and is intentionally excluded from selectResourcePayloads. Sending now
     // would persist a text-only turn while the upload continued in the
     // background. This thunk-level guard protects every submit surface,
     // including callers that bypass the disabled composer controls.
-    // Override (queued) sends are text-only and skip it — a still-uploading
-    // attachment belongs to the composer's OWN next send, not the queue.
-    if (!isOverrideSend && !selectAllResourcesResolved(conversationId)(state)) {
+    if (!selectAllResourcesResolved(conversationId)(state)) {
       console.error(
         `[smart-execute] blocked conversation "${conversationId}" while attachments are still resolving; ` +
           `sending now would silently omit them.`,
@@ -96,55 +90,41 @@ export const smartExecute = createAsyncThunk<
     // text as the answer to those asks instead; that resolves the tool calls
     // and the normal `continuation_needed → resumeInstance` flow continues the
     // conversation with the user's message embedded. No separate turn is run.
-    const composerText =
-      textOverride ?? selectUserInputText(conversationId)(state) ?? "";
+    const composerText = selectUserInputText(conversationId)(state) ?? "";
     const consumedByPendingAsks = dispatch(
       resolvePendingAsksWithInput(conversationId, composerText),
     );
     if (consumedByPendingAsks) {
-      if (!isOverrideSend) {
-        // Mirror the normal submit lifecycle so the composer clears cleanly:
-        // markInputSubmitted snapshots the text as lastSubmittedText, which
-        // lets clearUserInput wipe it (draft-protection only blocks clearing
-        // text that diverged from the just-submitted message). Override sends
-        // never touch the composer.
-        const userValuesForClear =
-          state.instanceVariableValues?.byConversationId[conversationId]
-            ?.userValues ?? {};
-        dispatch(
-          markInputSubmitted({
-            conversationId,
-            userValues: userValuesForClear,
-          }),
-        );
-        dispatch(clearUserInput(conversationId));
-      }
+      // Mirror the normal submit lifecycle so the composer clears cleanly:
+      // markInputSubmitted snapshots the text as lastSubmittedText, which lets
+      // clearUserInput wipe it (draft-protection only blocks clearing text that
+      // diverged from the just-submitted message).
+      const userValuesForClear =
+        state.instanceVariableValues?.byConversationId[conversationId]
+          ?.userValues ?? {};
+      dispatch(
+        markInputSubmitted({ conversationId, userValues: userValuesForClear }),
+      );
+      dispatch(clearUserInput(conversationId));
       return;
     }
 
     // ── Send while a run is live — the three send modes ─────────────────────
-    // (Arman's ruling, 2026-07-29 — docs/TURN_BOUNDARY_INBOX.md.) A send into
-    // a conversation whose run is STILL LIVE must never start a second
+    // (Arman's ruling — docs/TURN_BOUNDARY_INBOX.md.) A send into a
+    // conversation whose run is STILL LIVE must never start a second
     // concurrent turn (double stream, abort-registry eviction, interleaved
-    // history). Instead:
-    //   QUEUE (default) — hold client-side until the run FULLY ends, then
-    //     send as the next normal turn (the queueMessage watcher drains FIFO).
-    //   STEER — hand to the server inbox; the running agent picks it up at
-    //     its next natural pause and answers on the already-open stream.
-    // The client is the judge of "run active" — we opened the stream. This
-    // keys on THIS conversation being live, so the autoclear split (input
-    // focus already moved to a fresh, idle conversation) keeps its
-    // parallel-iteration behavior untouched. An override send reaching a
-    // live run lost the drain race — requeue it at the FRONT.
+    // history; the server's turn lock now refuses it too). Both modes hand
+    // the message to the SERVER inbox — QUEUE (delivery turn_end, default)
+    // waits for the run to be completely done and then delivers one message
+    // per turn; STEER (next_boundary) delivers at the agent's next pause.
+    // Either way the running agent answers on the already-open stream and
+    // the message survives reloads. The client is the judge of "run active"
+    // — we opened the stream. This keys on THIS conversation being live, so
+    // the autoclear split (input focus already moved to a fresh, idle
+    // conversation) keeps its parallel-iteration behavior untouched.
     if (selectIsExecuting(conversationId)(state)) {
       const sendText = composerText.trim();
       if (!sendText) return; // nothing to queue
-      if (isOverrideSend) {
-        dispatch(
-          queueMessage({ conversationId, text: sendText, front: true }),
-        );
-        return;
-      }
       if (selectResourcePayloads(conversationId)(state).length > 0) {
         // Queued/steered sends are text-only; silently dropping attachments
         // would be the classic lost-file bug. Keep everything in the composer
@@ -162,13 +142,13 @@ export const smartExecute = createAsyncThunk<
         markInputSubmitted({ conversationId, userValues: userValuesForClear }),
       );
       dispatch(clearUserInput(conversationId));
-      if (whileRunning === "steer") {
-        await dispatch(
-          enqueueInboxMessage({ conversationId, text: sendText }),
-        );
-      } else {
-        await dispatch(queueMessage({ conversationId, text: sendText }));
-      }
+      await dispatch(
+        enqueueInboxMessage({
+          conversationId,
+          text: sendText,
+          mode: whileRunning,
+        }),
+      );
       return;
     }
 
@@ -182,16 +162,7 @@ export const smartExecute = createAsyncThunk<
     const gate = await dispatch(
       ensureSandboxOrDecide({ conversationId }),
     ).unwrap();
-    if (gate === "blocked") {
-      // A gate-blocked override (queued) send must FAIL, not silently vanish —
-      // the drain watcher keeps the card with the error so nothing is lost.
-      if (isOverrideSend) {
-        throw new Error(
-          "Blocked by the sandbox gate — resolve the sandbox and retry",
-        );
-      }
-      return;
-    }
+    if (gate === "blocked") return;
 
     // Route mode — read once; also reused for the execute dispatch below.
     const apiEndpointMode =
@@ -213,14 +184,7 @@ export const smartExecute = createAsyncThunk<
       const scopeGate = await dispatch(
         ensureConversationScopesOrAsk(conversationId),
       );
-      if (scopeGate.blocked) {
-        if (isOverrideSend) {
-          throw new Error(
-            "Blocked by the scope gate — answer the scope prompt and retry",
-          );
-        }
-        return;
-      }
+      if (scopeGate.blocked) return;
       scopeIdsOverride = scopeGate.scopeIdsOverride;
     }
 
@@ -228,14 +192,11 @@ export const smartExecute = createAsyncThunk<
 
     // Phase 1 — capture the current text + userValues so we can pre-populate
     // the post-split conversation (and so the "re-apply" snapshot is available
-    // after phase 2 clears the textarea on `conversationId`). Override sends
-    // skip this: the composer holds (at most) an unrelated live draft.
-    if (!isOverrideSend) {
-      const userValues =
-        state.instanceVariableValues?.byConversationId[conversationId]
-          ?.userValues ?? {};
-      dispatch(markInputSubmitted({ conversationId, userValues }));
-    }
+    // after phase 2 clears the textarea on `conversationId`).
+    const userValues =
+      state.instanceVariableValues?.byConversationId[conversationId]
+        ?.userValues ?? {};
+    dispatch(markInputSubmitted({ conversationId, userValues }));
 
     // Fire the execute on the CURRENT conversation — do NOT await yet.
     // We want to split the input focus before the stream lands so the user
@@ -247,25 +208,10 @@ export const smartExecute = createAsyncThunk<
     // sends the live agent definition in the request body; the server reads
     // nothing from the agent record. Any non-manual surface keeps the
     // existing agent-mode path.
-    if (apiEndpointMode === "manual" && isOverrideSend) {
-      // executeManualInstance reads only the composer; sending it now would
-      // submit the WRONG text (the user's live draft) as the queued message.
-      // Builder/manual surfaces are iterate-style and don't queue in practice
-      // — fail loudly rather than mis-send.
-      throw new Error(
-        "Queued sends are not supported on manual-mode (Agent Builder) conversations",
-      );
-    }
     const executePromise =
       apiEndpointMode === "manual"
         ? dispatch(executeManualInstance({ conversationId }))
-        : dispatch(
-            executeInstance({
-              conversationId,
-              scopeIdsOverride,
-              userTextOverride: textOverride,
-            }),
-          );
+        : dispatch(executeInstance({ conversationId, scopeIdsOverride }));
 
     // The split (auto-clear "iterate") mints a NEW, historyless conversation and
     // repoints the input focus at it. That is ONLY valid for a conversation
@@ -276,7 +222,7 @@ export const smartExecute = createAsyncThunk<
     // iterate; otherwise refuse and scream (loud recovery). Reaching the else
     // means auto-clear got turned on for a non-iterate conversation — a rogue
     // path that bypassed the `showAutoClearToggle`-gated toggle.
-    if (autoClear && surfaceKey && !isOverrideSend) {
+    if (autoClear && surfaceKey) {
       const lifecycle =
         state.conversations.byConversationId[conversationId]
           ?.conversationLifecycle;
@@ -378,19 +324,18 @@ export const cancelExecution = createAsyncThunk<
 );
 
 /**
- * Interrupt ("stop & redirect") — cut the run and send the composer text as
- * the next turn. The safe sequencing matters: a new turn POSTed while the old
- * run is still finalizing would run CONCURRENTLY with it (the continue
- * endpoint takes no run claim), interleaving history writes. So:
+ * INTERRUPT ("stop & redirect") — the third send mode. Instantly stop from
+ * the user's perspective, keep the costs, hide the abandoned tail, send the
+ * composer text as the reply. Mechanics (docs/TURN_BOUNDARY_INBOX.md):
  *
- *   1. Signal the server (`POST /ai/cancel/{request_id}`) — the run stops at
- *      its next iteration boundary and persists everything streamed.
- *   2. Keep OUR read of the stream open and wait for the run to leave
- *      running/streaming — stream end is the persistence signal.
- *   3. Then submit normally through `smartExecute`.
- *
- * If the stream never closes inside the window (dead socket), abort locally
- * and send anyway — at that point the boundary poll has long since fired.
+ *   1. `POST /ai/cancel/{request_id}?mode=interrupt` — the server stops the
+ *      run at its next boundary and persists the abandoned tail HIDDEN
+ *      (is_visible_to_user/model = false, pairing-safe). Costs are kept.
+ *   2. Abort OUR read of the stream immediately — the UI stops rendering NOW
+ *      (the same instant-stop illusion ChatGPT/Claude use; the server winds
+ *      down in the background).
+ *   3. Retry-send the composer text: the server's turn lock 409s
+ *      (`run_in_flight`) until the old run finalizes, then admits the turn.
  */
 export const interruptAndSend = createAsyncThunk<
   void,
@@ -408,41 +353,63 @@ export const interruptAndSend = createAsyncThunk<
 
     const serverRequestId = latestServerRequestId(initial, conversationId);
     if (serverRequestId) {
-      const result = await dispatch(callCancelRequest(serverRequestId));
-      if (result.error) {
-        console.warn("[interrupt-and-send] server cancel failed — falling back to local abort", {
-          conversationId,
-          serverRequestId,
-          error: result.error,
-        });
-        abortConversation(conversationId);
-      }
-    } else {
-      // No stream has opened yet (or it predates header capture) — local
-      // abort is all we have.
-      abortConversation(conversationId);
-    }
-
-    // Wait for the run to settle. The in-flight provider call is allowed to
-    // finish (platform rule — its cost is committed the moment it started),
-    // so this can take as long as the current model turn.
-    const INTERRUPT_SETTLE_TIMEOUT_MS = 120_000;
-    const POLL_MS = 250;
-    const deadline = Date.now() + INTERRUPT_SETTLE_TIMEOUT_MS;
-    while (Date.now() < deadline) {
-      if (!selectIsExecuting(conversationId)(getState())) break;
-      await new Promise((resolve) => setTimeout(resolve, POLL_MS));
-    }
-    if (selectIsExecuting(conversationId)(getState())) {
-      console.warn(
-        "[interrupt-and-send] run did not settle in time — aborting locally and sending",
-        { conversationId },
+      void dispatch(callCancelRequest(serverRequestId, "interrupt")).then(
+        (result) => {
+          if (result.error) {
+            console.warn(
+              "[interrupt-and-send] server interrupt signal failed (best-effort)",
+              { conversationId, serverRequestId, error: result.error },
+            );
+          }
+        },
       );
-      abortConversation(conversationId);
-      dispatch(setInstanceStatus({ conversationId, status: "cancelled" }));
-      dispatch(resetSubmissionPhase(conversationId));
     }
 
-    await dispatch(smartExecute({ conversationId, surfaceKey }));
+    // Instant local stop — the user is done watching this run.
+    abortConversation(conversationId);
+    dispatch(setInstanceStatus({ conversationId, status: "cancelled" }));
+    dispatch(resetSubmissionPhase(conversationId));
+
+    // Let the aborted fetch unwind and unregister its abort controller —
+    // executeInstance's concurrent-turn guard keys on it, and a stale entry
+    // would misroute the reply into the (dying) run's queue.
+    const ABORT_SETTLE_DEADLINE = Date.now() + 5_000;
+    while (
+      hasAbortController(conversationId) &&
+      Date.now() < ABORT_SETTLE_DEADLINE
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+
+    // Send the reply, retrying while the server's turn lock reports the old
+    // run still winding down (bounded by the current provider call).
+    const RETRY_WINDOW_MS = 120_000;
+    const RETRY_DELAY_MS = 750;
+    const deadline = Date.now() + RETRY_DELAY_MS + RETRY_WINDOW_MS;
+    for (;;) {
+      const result = await dispatch(
+        smartExecute({ conversationId, surfaceKey }),
+      );
+      if (!smartExecute.rejected.match(result)) return;
+      const reason =
+        typeof result.payload === "string"
+          ? result.payload
+          : (result.error?.message ?? "");
+      const runInFlight = /run_in_flight/i.test(reason);
+      if (!runInFlight || Date.now() > deadline) {
+        if (runInFlight) {
+          console.error(
+            "[interrupt-and-send] old run never settled inside the retry window",
+            { conversationId },
+          );
+          toast.error("Couldn't send the message", {
+            description:
+              "The previous run is still winding down — try sending again.",
+          });
+        }
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+    }
   },
 );

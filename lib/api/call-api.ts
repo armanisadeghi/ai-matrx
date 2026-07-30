@@ -1397,11 +1397,22 @@ export function callConversationContinue(
 
 // ─── Cancel: Abort a running request ─────────────────────────────────────────
 
-export function callCancelRequest(requestId: string) {
+/**
+ * Stop a running request at its next iteration boundary.
+ * `mode: "interrupt"` = stop-and-fork (the INTERRUPT send mode): the server
+ * hides the tail produced after the last clean boundary
+ * (is_visible_to_user/model = false) so the user's follow-up replies to the
+ * last thing they actually saw. Plain "cancel" keeps everything visible.
+ */
+export function callCancelRequest(
+  requestId: string,
+  mode: "cancel" | "interrupt" = "cancel",
+) {
   return callApi({
     path: "/ai/cancel/{request_id}",
     method: "POST",
     pathParams: { request_id: requestId },
+    queryParams: mode === "interrupt" ? { mode } : undefined,
     stream: false,
   });
 }
