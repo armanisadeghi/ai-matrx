@@ -43255,6 +43255,87 @@ export type Database = {
           o_id: string
         }[]
       }
+      gsc_perf_breakdown: {
+        Args: {
+          p_compare_end?: string
+          p_compare_start?: string
+          p_dimension: string
+          p_end: string
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_site_id: string
+          p_sort?: string
+          p_sort_dir?: string
+          p_start: string
+        }
+        Returns: {
+          avg_position: number
+          clicks: number
+          cmp_avg_position: number
+          cmp_clicks: number
+          cmp_ctr: number
+          cmp_impressions: number
+          ctr: number
+          impressions: number
+          key: string
+          keyword_id: string
+          page_id: string
+          total_count: number
+        }[]
+      }
+      gsc_perf_freshness: {
+        Args: { p_site_id: string }
+        Returns: {
+          dimension_profile: string
+          max_date: string
+          min_date: string
+          row_count: number
+        }[]
+      }
+      gsc_perf_resolve_profile: {
+        Args: { p_dimension: string; p_filters: Json }
+        Returns: string
+      }
+      gsc_perf_summary: {
+        Args: {
+          p_compare_end?: string
+          p_compare_start?: string
+          p_end: string
+          p_filters?: Json
+          p_site_id: string
+          p_start: string
+        }
+        Returns: {
+          avg_position: number
+          clicks: number
+          cmp_avg_position: number
+          cmp_clicks: number
+          cmp_ctr: number
+          cmp_impressions: number
+          ctr: number
+          impressions: number
+        }[]
+      }
+      gsc_perf_timeseries: {
+        Args: {
+          p_compare_end?: string
+          p_compare_start?: string
+          p_end: string
+          p_filters?: Json
+          p_site_id: string
+          p_start: string
+        }
+        Returns: {
+          avg_position: number
+          clicks: number
+          ctr: number
+          day: string
+          impressions: number
+          period: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
