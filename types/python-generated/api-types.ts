@@ -4781,6 +4781,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/scraper/browser-fetch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Render ONE URL in the pooled browser and return its HTML */
+        post: operations["browser_fetch_scraper_browser_fetch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/scraper/quick-scrape": {
         parameters: {
             query?: never;
@@ -19217,24 +19234,6 @@ export interface components {
             /** Organization Id */
             organization_id?: string | null;
         };
-        /** GscSearchPerformanceSyncBody */
-        GscSearchPerformanceSyncBody: {
-            /** Organization Id */
-            organization_id?: string | null;
-            /** Project Id */
-            project_id?: string | null;
-            /** Task Id */
-            task_id?: string | null;
-            /** Window Days */
-            window_days?: number | null;
-            /**
-             * Force Refresh
-             * @default false
-             */
-            force_refresh?: boolean;
-            /** Request Id */
-            request_id?: string | null;
-        };
         /** BingSearchPerformanceSyncBody */
         BingSearchPerformanceSyncBody: {
             /** Organization Id */
@@ -19683,6 +19682,65 @@ export interface components {
             scopes?: string[];
             /** Expires At */
             expires_at: number;
+        };
+        /**
+         * BrowserFetchRequest
+         * @description One-shot browser-rendered fetch of a single URL.
+         *
+         *     The stateless sibling of the /browser/* session API: no session to create
+         *     or close, no DOM automation — render the page in the pooled headless
+         *     Chromium and return the post-JS HTML. This is the remote escalation path
+         *     for Chromium-less hosts (aidream runs no browser by design; see its
+         *     Dockerfile note): when a plain HTTP fetch is blocked or returns a JS
+         *     shell, the host calls this instead of failing the page.
+         */
+        BrowserFetchRequest: {
+            /** Url */
+            url: string;
+            /**
+             * Timeout Ms
+             * @default 25000
+             */
+            timeout_ms?: number;
+            /**
+             * Use Proxy
+             * @default true
+             */
+            use_proxy?: boolean;
+        };
+        /**
+         * BrowserFetchResult
+         * @description Typed OUT shape for /browser-fetch — one model, never a hand-built dict.
+         */
+        BrowserFetchResult: {
+            /** Success */
+            success: boolean;
+            /**
+             * Status Code
+             * @default 0
+             */
+            status_code?: number;
+            /** Final Url */
+            final_url: string;
+            /** Title */
+            title?: string | null;
+            /**
+             * Content Type
+             * @default
+             */
+            content_type?: string;
+            /**
+             * Html
+             * @default
+             */
+            html?: string;
+            /** Error */
+            error?: string | null;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
         };
         /** BrowserLoginMatch */
         BrowserLoginMatch: {
@@ -26530,6 +26588,8 @@ export interface components {
              * @default true
              */
             apply?: boolean;
+            /** Research Topic Id */
+            research_topic_id?: string | null;
         };
         /**
          * GenerateTagsRequest
@@ -26689,6 +26749,24 @@ export interface components {
              * @default false
              */
             is_default?: boolean;
+        };
+        /** GscSearchPerformanceSyncBody */
+        GscSearchPerformanceSyncBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Window Days */
+            window_days?: number | null;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+            /** Request Id */
+            request_id?: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -49047,6 +49125,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    browser_fetch_scraper_browser_fetch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrowserFetchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowserFetchResult"];
                 };
             };
             /** @description Validation Error */

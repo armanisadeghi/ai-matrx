@@ -10119,6 +10119,57 @@
         }
       }
     },
+    "/seo/sites/{site_id}/gsc/search-performance/sync": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Sync Gsc Search Performance",
+        "description": "On-demand streamed Google Search Console SEARCH_PERFORMANCE collection\nfor one bound site — the canonical (all-dimension) twin of the Bing route\nbelow: builds the ``CollectionRequest`` from the site's live binding (the\nSSOT — never a caller-supplied property/credential) and runs it through\nthe ONE ``run_collection`` funnel. Persists every dimension profile to\n``seo.search_performance_daily``.",
+        "operationId": "sync_gsc_search_performance_seo_sites__site_id__gsc_search_performance_sync_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GscSearchPerformanceSyncBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/sites/{site_id}/bing/search-performance/sync": {
       "post": {
         "tags": [
@@ -12053,6 +12104,47 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scraper/browser-fetch": {
+      "post": {
+        "tags": [
+          "Scraper"
+        ],
+        "summary": "Render ONE URL in the pooled browser and return its HTML",
+        "operationId": "browser_fetch_scraper_browser_fetch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BrowserFetchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserFetchResult"
+                }
               }
             }
           },
@@ -53671,6 +53763,93 @@
         "title": "BrokeredGrant",
         "description": "What was granted — embedded in every credential for client display\nand debugging; the authoritative copy lives in the signed token."
       },
+      "BrowserFetchRequest": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "maximum": 30000,
+            "minimum": 1000,
+            "title": "Timeout Ms",
+            "default": 25000
+          },
+          "use_proxy": {
+            "type": "boolean",
+            "title": "Use Proxy",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "BrowserFetchRequest",
+        "description": "One-shot browser-rendered fetch of a single URL.\n\nThe stateless sibling of the /browser/* session API: no session to create\nor close, no DOM automation — render the page in the pooled headless\nChromium and return the post-JS HTML. This is the remote escalation path\nfor Chromium-less hosts (aidream runs no browser by design; see its\nDockerfile note): when a plain HTTP fetch is blocked or returns a JS\nshell, the host calls this instead of failing the page."
+      },
+      "BrowserFetchResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code",
+            "default": 0
+          },
+          "final_url": {
+            "type": "string",
+            "title": "Final Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "content_type": {
+            "type": "string",
+            "title": "Content Type",
+            "default": ""
+          },
+          "html": {
+            "type": "string",
+            "title": "Html",
+            "default": ""
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "final_url"
+        ],
+        "title": "BrowserFetchResult",
+        "description": "Typed OUT shape for /browser-fetch — one model, never a hand-built dict."
+      },
       "BrowserLoginMatch": {
         "properties": {
           "item_id": {
@@ -73110,6 +73289,17 @@
             "type": "boolean",
             "title": "Apply",
             "default": true
+          },
+          "research_topic_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Research Topic Id"
           }
         },
         "additionalProperties": false,
@@ -73531,6 +73721,75 @@
           "redirect_uri"
         ],
         "title": "GscOauthStartRequest"
+      },
+      "GscSearchPerformanceSyncBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "window_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 90,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Days"
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "GscSearchPerformanceSyncBody"
       },
       "HTTPValidationError": {
         "properties": {

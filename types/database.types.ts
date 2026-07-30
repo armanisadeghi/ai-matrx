@@ -43294,6 +43294,7 @@ export type Database = {
           row_count: number
         }[]
       }
+      gsc_perf_like_escape: { Args: { p_value: string }; Returns: string }
       gsc_perf_resolve_profile: {
         Args: { p_dimension: string; p_filters: Json }
         Returns: string
