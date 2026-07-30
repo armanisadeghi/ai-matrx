@@ -18,6 +18,7 @@ import {
   Link2,
   ListTree,
   Map,
+  Network,
   Plug,
   ScanSearch,
   Settings,
@@ -74,6 +75,7 @@ function sectionSuffix(
     "coverage",
     "audit",
     "pages",
+    "structure",
     "media",
     "crawls",
     "analysis",
@@ -208,6 +210,11 @@ export function MarketingSiteLayoutClient({
             name: "Pages",
             href: `${base}/pages`,
             icon: FileText,
+          },
+          {
+            name: "Structure",
+            href: `${base}/structure`,
+            icon: Network,
           },
           {
             name: "Media",

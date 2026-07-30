@@ -61,6 +61,7 @@ import type { Database, Json } from "@/types/database.types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { parseSnapshotImages } from "@/features/marketing/lib/snapshot-content";
 import type { SiteMediaPageRow } from "@/features/marketing/lib/snapshot-media";
+import type { StructurePageRow } from "@/features/marketing/lib/route-tree";
 import {
   normalisePageUrl,
   pagePathOf,
@@ -3004,6 +3005,53 @@ export async function fetchSiteMediaRows(
       ogImage: headTags.og.image,
       twitterImage: headTags.twitter.image,
     });
+  }
+  return rows;
+}
+
+// ---------------------------------------------------------------------------
+// Site structure (routing tree) — bounded fetch of every canonical page's
+// identity fields from the v_page_list projection. Tree assembly is pure
+// (lib/route-tree.ts); this only pages the rows out of Supabase.
+// ---------------------------------------------------------------------------
+
+const STRUCTURE_PAGE_CAP = 20000;
+const STRUCTURE_PAGE_SIZE = 1000;
+
+export async function fetchSiteStructureRows(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<StructurePageRow[]> {
+  const db = await authenticatedWebDb(supabase);
+  const rows: StructurePageRow[] = [];
+  for (let offset = 0; ; offset += STRUCTURE_PAGE_SIZE) {
+    if (offset >= STRUCTURE_PAGE_CAP) {
+      throw new Error(
+        `Site structure exceeded its ${STRUCTURE_PAGE_CAP}-page bound — refusing to render a silently truncated tree.`,
+      );
+    }
+    const response = await db
+      .from("v_page_list")
+      .select(
+        "page_id, url, path, observed_title, http_status_last, sitemap_count",
+      )
+      .eq("site_id", siteId)
+      .order("page_id", { ascending: true })
+      .range(offset, offset + STRUCTURE_PAGE_SIZE - 1)
+      .abortSignal(signal ?? new AbortController().signal);
+    const batch = assertData(response.data, response.error);
+    for (const row of batch) {
+      if (!row.page_id || !row.url) continue;
+      rows.push({
+        pageId: row.page_id,
+        url: row.url,
+        path: row.path,
+        title: row.observed_title,
+        httpStatus: row.http_status_last,
+        inSitemap: (row.sitemap_count ?? 0) > 0,
+      });
+    }
+    if (batch.length < STRUCTURE_PAGE_SIZE) break;
   }
   return rows;
 }

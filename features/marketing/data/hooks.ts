@@ -70,6 +70,7 @@ import {
   fetchSiteAuditRows,
   fetchSiteAuditTrendRows,
   fetchSiteMediaRows,
+  fetchSiteStructureRows,
   getPageContent,
   getSiteGscDaily,
   getSiteGscTopPages,
@@ -92,6 +93,10 @@ import {
   buildSiteAuditTrend,
   type SiteAuditRollup,
 } from "@/features/marketing/lib/audit-rollup";
+import {
+  buildSiteRouteTree,
+  type SiteRouteTree,
+} from "@/features/marketing/lib/route-tree";
 import type {
   PageCoverageFilter,
   SitemapPagesFilter,
@@ -115,6 +120,8 @@ export const marketingKeys = {
     [...marketingKeys.site(siteId), "audit-trend"] as const,
   siteMedia: (siteId: string) =>
     [...marketingKeys.site(siteId), "media"] as const,
+  siteStructure: (siteId: string) =>
+    [...marketingKeys.site(siteId), "structure"] as const,
   homepageMeta: (siteId: string) =>
     [...marketingKeys.site(siteId), "homepage-meta"] as const,
   heroScreenshot: (siteId: string) =>
@@ -905,6 +912,20 @@ export function useSiteAuditTrend(siteId: string) {
     queryKey: marketingKeys.auditTrend(siteId),
     queryFn: async ({ signal }) =>
       buildSiteAuditTrend(await fetchSiteAuditTrendRows(siteId, signal)),
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * Site routing tree — every canonical page's URL path folded into the
+ * Structure workspace's tree. Fetch is bounded and paged (service,
+ * `v_page_list` identity fields only); assembly is pure (lib/route-tree.ts).
+ */
+export function useSiteStructure(siteId: string) {
+  return useQuery<SiteRouteTree>({
+    queryKey: marketingKeys.siteStructure(siteId),
+    queryFn: async ({ signal }) =>
+      buildSiteRouteTree(await fetchSiteStructureRows(siteId, signal)),
     staleTime: 60_000,
   });
 }

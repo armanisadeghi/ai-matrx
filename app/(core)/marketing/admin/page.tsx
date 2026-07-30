@@ -229,6 +229,15 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/marketing/brands/[brandId]/sites/[siteId]/structure",
+      label: "Site structure",
+      description:
+        "Routing tree over the canonical page registry with per-level page totals, cumulative counts, and route gaps.",
+      filePath:
+        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/structure/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/marketing/brands/[brandId]/sites/[siteId]/coverage",
       label: "Coverage matrix",
       description:
