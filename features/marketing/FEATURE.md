@@ -242,6 +242,7 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-07-30 — Claude: **brand cockpit stays balanced under bulk facts.** Business facts now group by kind (`groupFactsByKind` + `FACT_KIND_ORDER`: identity/editorial kinds first, bulk contact kinds last); a kind with ≥3 facts collapses to a bounded group — header (icon + label + count) + 4-fact preview + "Show all N" toggle — with phones/faxes/emails two-up on wide cards and addresses one-up. Per-fact edit/delete stays on every row (`BusinessFactRow`, compact variant inside groups). Hero protections: description `line-clamp-3`, social icon strip caps at 8 (+N overflow). Verified against the All Green Recycling shape (16 addresses + 14 phones): the top section keeps its shape, everything remains reachable below.
 - 2026-07-29 — Codex: **Visual page feedback now uses the canonical image
   annotation window and association system.** The page Plan lane has a
   one-click Visual feedback composer for upload, clipboard, current-page
