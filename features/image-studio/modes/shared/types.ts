@@ -51,6 +51,11 @@ export interface ModeShellProps {
   cloudFileId?: string | null;
   /** Where the result should be filed in the cloud library. */
   defaultFolder?: string;
+  /**
+   * Existing file to version in place when Save is clicked.
+   * Omit this for a derivative/"save as new" result.
+   */
+  saveFileId?: string | null;
   /** Page vs modal presentation. */
   presentation?: ModePresentation;
   /** Called after a successful save. */

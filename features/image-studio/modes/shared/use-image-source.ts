@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ImageSource } from "./types";
+import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 
 /**
  * Resolve an `ImageSource` to a single, browser-loadable URL plus a
@@ -22,28 +23,30 @@ export function useImageSource(source: ImageSource | null): {
   filename: string;
   ready: boolean;
 } {
-  const [url, setUrl] = useState<string | null>(null);
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const cloudFileUrl = useFileSrc(
+    source?.kind === "cloudFileId"
+      ? {
+          kind: "file_id",
+          fileId: source.cloudFileId,
+          mime: "image/*",
+        }
+      : null,
+  );
 
   useEffect(() => {
-    if (!source) {
-      setUrl(null);
-      return undefined;
-    }
-    if (source.kind === "file") {
-      const objectUrl = URL.createObjectURL(source.file);
-      setUrl(objectUrl);
-      return () => {
-        URL.revokeObjectURL(objectUrl);
-      };
-    }
-    if (source.kind === "url") {
-      setUrl(source.url);
-      return undefined;
-    }
-    // cloudFileId — the caller is expected to convert to a `url` source
-    // before passing in. If we ever receive one here, leave url null.
-    setUrl(null);
-    return undefined;
+    if (source?.kind !== "file") return undefined;
+    let active = true;
+    const nextObjectUrl = URL.createObjectURL(source.file);
+    // Object URL creation synchronizes with a browser resource. Publish it
+    // after the effect body so React never receives a synchronous effect write.
+    queueMicrotask(() => {
+      if (active) setObjectUrl(nextObjectUrl);
+    });
+    return () => {
+      active = false;
+      URL.revokeObjectURL(nextObjectUrl);
+    };
   }, [source]);
 
   const filename =
@@ -53,7 +56,20 @@ export function useImageSource(source: ImageSource | null): {
         ? (source.suggestedFilename ?? deriveFilenameFromUrl(source.url))
         : "image";
 
-  return { url, filename, ready: url !== null };
+  const resolvedUrl =
+    source?.kind === "file"
+      ? objectUrl
+      : source?.kind === "url"
+        ? source.url
+        : source?.kind === "cloudFileId"
+          ? cloudFileUrl
+          : null;
+
+  return {
+    url: resolvedUrl,
+    filename,
+    ready: resolvedUrl !== null,
+  };
 }
 
 function deriveFilenameFromUrl(url: string): string {

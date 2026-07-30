@@ -445,6 +445,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: false,
   },
+  imageAnnotationWindow: {
+    label: "Image Annotation",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   imageUploaderWindow: {
     label: "Image Uploader Window",
     instanceMode: "multi",

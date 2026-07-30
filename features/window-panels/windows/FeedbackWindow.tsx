@@ -14,11 +14,11 @@ import {
   Clipboard,
   ExternalLink,
   HelpCircle,
-  ImageIcon,
   Lightbulb,
   Loader2,
   MessageSquare,
   Monitor,
+  PenLine,
   Plus,
   Send,
   Settings2,
@@ -54,15 +54,22 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
 import { useScreenCapture } from "@/hooks/useScreenCapture";
-import { openImageViewer } from "@/features/window-panels/windows/image/openImageViewer";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
+import { useOpenImageAnnotationWindow } from "@/features/overlays/openers/imageAnnotationWindow";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type AttachmentSlot =
   | { status: "pending"; id: string }
   | { status: "error"; id: string; message: string }
-  | { status: "ready"; id: string; url: string };
+  | {
+      status: "ready";
+      id: string;
+      url: string;
+      fileId?: string;
+      filename?: string;
+    };
 
 interface FeedbackStats {
   total: number;
@@ -237,7 +244,6 @@ function FeedbackFooterRight({ form }: { form: FeedbackFormState }) {
 type FeedbackFormState = ReturnType<typeof useFeedbackForm>;
 
 function useFeedbackForm({ onClose }: { onClose: () => void }) {
-  const dispatch = useAppDispatch();
   const pathname = usePathname();
   const reduxUser = useAppSelector(selectUser);
   const isAdmin = useAppSelector(selectIsAdmin);
@@ -272,13 +278,12 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
   const [assignableAdmins, setAssignableAdmins] = useState<
     FeedbackAssignableAdmin[]
   >([]);
-  const [isLoadingAdminOptions, setIsLoadingAdminOptions] = useState(false);
+  const [isLoadingAdminOptions, setIsLoadingAdminOptions] = useState(true);
 
   // Fetch the admin-only dropdown data once when the window opens for an admin.
   useEffect(() => {
     if (!isAdmin) return undefined;
     let cancelled = false;
-    setIsLoadingAdminOptions(true);
     Promise.all([
       fetch("/api/admin/feedback/categories", { cache: "no-store" })
         .then((r) => (r.ok ? r.json() : { categories: [] }))
@@ -320,6 +325,7 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
 
   // ── Image upload ─────────────────────────────────────────────────────────
   const { upload: handlerUpload } = useFileUpload();
+  const openImageAnnotation = useOpenImageAnnotationWindow();
 
   const { captureTab, captureScreen, isCapturing } = useScreenCapture({
     hideSelectors: [".feedback-window-panel"],
@@ -332,11 +338,27 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
     return id;
   }, []);
 
-  const resolveSlot = useCallback((id: string, url: string) => {
-    setAttachments((prev) =>
-      prev.map((a) => (a.id === id ? { status: "ready", id, url } : a)),
-    );
-  }, []);
+  const resolveSlot = useCallback(
+    (
+      id: string,
+      result: { url: string; fileId?: string; filename?: string },
+    ) => {
+      setAttachments((prev) =>
+        prev.map((attachment) =>
+          attachment.id === id
+            ? {
+                status: "ready",
+                id,
+                url: result.url,
+                fileId: result.fileId,
+                filename: result.filename,
+              }
+            : attachment,
+        ),
+      );
+    },
+    [],
+  );
 
   const errorSlot = useCallback((id: string, message: string) => {
     setAttachments((prev) =>
@@ -350,14 +372,18 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
         const normalized = await handlerUpload(
           { kind: "file", file },
           {
-            folderPath: "Shared Assets/feedback-images",
+            folderPath: CloudFolders.FEEDBACK_IMAGES,
             visibility: "public",
             createShareLink: true,
             shareLinkPermissionLevel: "viewer",
           },
         );
         if (normalized.url) {
-          resolveSlot(slotId, normalized.url);
+          resolveSlot(slotId, {
+            url: normalized.url,
+            fileId: normalized.fileId,
+            filename: file.name,
+          });
           toast.success("Screenshot attached!");
         } else {
           errorSlot(slotId, "no URL returned");
@@ -415,14 +441,18 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
         const normalized = await handlerUpload(
           { kind: "file", file },
           {
-            folderPath: "Shared Assets/feedback-images",
+            folderPath: CloudFolders.FEEDBACK_IMAGES,
             visibility: "public",
             createShareLink: true,
             shareLinkPermissionLevel: "viewer",
           },
         );
         if (normalized.url) {
-          resolveSlot(slotId, normalized.url);
+          resolveSlot(slotId, {
+            url: normalized.url,
+            fileId: normalized.fileId,
+            filename: file.name,
+          });
           toast.success("Image pasted and uploaded");
         } else {
           errorSlot(slotId, "no URL returned");
@@ -469,6 +499,8 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
         status: "ready" as const,
         id: `upload-${Date.now()}-${Math.random()}`,
         url: r.url,
+        fileId: r.fileId,
+        filename: r.details?.filename,
       })),
     ]);
   }, []);
@@ -476,6 +508,28 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
   const removeAttachment = useCallback((id: string) => {
     setAttachments((prev) => prev.filter((a) => a.id !== id));
   }, []);
+
+  const annotateAttachment = useCallback(
+    (slot: Extract<AttachmentSlot, { status: "ready" }>) => {
+      openImageAnnotation({
+        sourceFileId: slot.fileId ?? null,
+        sourceUrl: slot.fileId ? null : slot.url,
+        sourceFilename: slot.filename ?? null,
+        defaultFolder: CloudFolders.FEEDBACK_IMAGES,
+        title: "Mark up feedback screenshot",
+        overwriteSource: Boolean(slot.fileId),
+        onSaved: ({ result }) => {
+          resolveSlot(slot.id, {
+            url: result.shareUrl,
+            fileId: result.fileId,
+            filename: result.filename,
+          });
+          toast.success("Feedback screenshot updated");
+        },
+      });
+    },
+    [openImageAnnotation, resolveSlot],
+  );
 
   const handlePasteButton = useCallback(async () => {
     try {
@@ -652,7 +706,6 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
 
   return {
     // routing / identity
-    dispatch,
     pathname,
     reduxUser,
     isAdmin,
@@ -690,6 +743,7 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
     handleTabCapture,
     handleScreenCapture,
     handleUploadComplete,
+    annotateAttachment,
     removeAttachment,
     cancelSubmit,
     handleSubmit,
@@ -705,7 +759,6 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
 
 function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
   const {
-    dispatch,
     pathname,
     reduxUser,
     isAdmin,
@@ -738,6 +791,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
     handleTabCapture,
     handleScreenCapture,
     handleUploadComplete,
+    annotateAttachment,
     removeAttachment,
     handleSubmit,
     handleKeyDown,
@@ -979,6 +1033,9 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
         <p className="text-xs font-medium text-muted-foreground">
           Screenshots <span className="font-normal opacity-60">(optional)</span>
         </p>
+        <p className="text-[10px] text-muted-foreground">
+          Click any thumbnail to draw, circle, or write on it.
+        </p>
 
         <FileUploadWithStorage
           folderRoot="userContent"
@@ -1029,15 +1086,9 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
               <AttachmentThumbnail
                 key={slot.id}
                 slot={slot}
-                readyImages={uploadedImages}
-                onView={(idx) =>
-                  openImageViewer(dispatch, {
-                    images: uploadedImages,
-                    initialIndex: idx,
-                    title: "Feedback Attachments",
-                    instanceId: "feedback",
-                  })
-                }
+                onAnnotate={() => {
+                  if (slot.status === "ready") annotateAttachment(slot);
+                }}
                 onRemove={() => removeAttachment(slot.id)}
               />
             ))}
@@ -1080,22 +1131,16 @@ function StatPill({
 
 function AttachmentThumbnail({
   slot,
-  readyImages,
-  onView,
+  onAnnotate,
   onRemove,
 }: {
   slot: AttachmentSlot;
-  /** All currently ready URLs (used to compute the correct viewer index). */
-  readyImages: string[];
-  onView: (readyIndex: number) => void;
+  onAnnotate: () => void;
   onRemove: () => void;
 }) {
   const isReady = slot.status === "ready";
   const isPending = slot.status === "pending";
   const isError = slot.status === "error";
-
-  // Index within the ready-only list so the viewer opens the right image
-  const readyIndex = isReady ? readyImages.indexOf(slot.url) : -1;
 
   return (
     <div className="relative group w-14 h-14 rounded-md overflow-hidden border border-border bg-muted shrink-0">
@@ -1123,9 +1168,10 @@ function AttachmentThumbnail({
       {isReady && (
         <button
           type="button"
-          onClick={() => onView(readyIndex)}
+          onClick={onAnnotate}
           className="block w-full h-full"
-          aria-label="View image fullsize"
+          aria-label="Mark up attachment"
+          title="Click to draw, circle, or write on this screenshot"
         >
           <InlineMediaRef
             ref={slot.url ?? null}
@@ -1137,7 +1183,7 @@ function AttachmentThumbnail({
             alt="Attachment"
           />
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-            <ImageIcon className="w-4 h-4 text-white drop-shadow" />
+            <PenLine className="w-4 h-4 text-white drop-shadow" />
           </div>
         </button>
       )}

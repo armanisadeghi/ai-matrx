@@ -100,6 +100,7 @@ export const OVERLAY_IDS = [
   "galleryWindow",
   "hierarchyCreationWindow",
   "htmlPreview",
+  "imageAnnotationWindow",
   "imageUploaderWindow",
   "imageViewer",
   "instanceUIStateWindow",

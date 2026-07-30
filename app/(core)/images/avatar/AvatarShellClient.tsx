@@ -1,9 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { ImageSource } from "@/features/image-studio/modes/shared/types";
-import { ModeImagePicker } from "../_shared/ModeImagePicker";
+import { ModeImagePicker } from "@/features/image-studio/components/ModeImagePicker";
 
 const AvatarModeShell = dynamic(
   () =>
@@ -24,13 +24,11 @@ export default function AvatarShellClient({
   cloudFileId,
   folder,
 }: Props) {
-  const initial = useMemo<ImageSource | null>(() => {
+  const [source, setSource] = useState<ImageSource | null>(() => {
     if (urlParam) return { kind: "url", url: urlParam };
     if (cloudFileId) return { kind: "cloudFileId", cloudFileId };
     return null;
-  }, [urlParam, cloudFileId]);
-
-  const [source, setSource] = useState<ImageSource | null>(initial);
+  });
 
   return (
     <div className="w-full h-full flex flex-col min-h-0 bg-background">
@@ -43,7 +41,7 @@ export default function AvatarShellClient({
       ) : (
         <ModeImagePicker
           title="Pick a photo for your avatar"
-          onPick={(file) => setSource({ kind: "file", file })}
+          onPick={setSource}
         />
       )}
     </div>

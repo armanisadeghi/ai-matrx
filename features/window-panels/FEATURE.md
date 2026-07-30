@@ -40,6 +40,12 @@ lib/redux/slices/
 
 ## Change Log
 
+- 2026-07-29 — Added the callback-aware, multi-instance
+  `imageAnnotationWindow`. It lazy-hosts the existing image-studio
+  `AnnotateModeShell`, accepts owned file ids or fresh upload/capture sources,
+  and returns the saved `SaveResult` through `callbackManager`; the window owns
+  no second editor or upload path and is ephemeral because callback groups
+  cannot survive reload.
 - 2026-07-28 — Added the CRM window pair: `crmManagerWindow` hosts the full
   scoped route experience, while `crmCreatePartyWindow` hosts the shared
   person/company capture core. Both use the canonical overlay IDs, lazy

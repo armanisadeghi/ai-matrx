@@ -96,6 +96,7 @@ import {
 import { ContentStats } from "@/features/marketing/components/pages/cards/ContentStats";
 import { SitemapMembershipsCard } from "@/features/marketing/components/pages/cards/SitemapMembershipsCard";
 import { PageCapturesCard } from "@/features/marketing/components/pages/cards/PageCapturesCard";
+import { PageVisualFeedback } from "@/features/marketing/components/pages/PageVisualFeedback";
 import { PageAnalyzerCard } from "@/features/marketing/components/pages/cards/PageAnalyzerCard";
 import { PageDraftContentCard } from "@/features/marketing/components/pages/cards/PageDraftContentCard";
 import { PageTasksCard } from "@/features/marketing/components/pages/cards/PageTasksCard";
@@ -783,6 +784,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             label: page.path || page.url,
           }}
         >
+          <PageVisualFeedback page={page} />
           <AssociationCardGrid />
         </PrimaryEntityProvider>
       </section>

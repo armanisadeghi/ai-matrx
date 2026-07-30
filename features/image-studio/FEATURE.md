@@ -20,22 +20,29 @@ Four modes, one feature: **Convert** (resize to platform presets), **Edit** (ful
 | `/images/library`     | Per-user Supabase data          | Variants the user has saved — grouped by session, public URLs.                                                                                                                                             |
 | `/images/from-base64` | Interactive tool                | Paste a base64 string (raw or `data:` URL) → preview + metadata + save to cloud. Pure browser decode (no API hop), uploads via the cloud-files share-link primitive.                                       |
 
-Edit / Annotate / Avatar use a shared `app/(a)/images/_shared/ModeImagePicker` landing when no source is provided via `?url=` or `?cloudFileId=`. Each tool fills the layout's main column directly — height is fully owned by `app/(a)/images/layout.tsx`.
+Annotate and Avatar use the shared
+`features/image-studio/components/ModeImagePicker.tsx` landing when no source
+is provided via `?url=` or `?cloudFileId=`. The same picker hosts upload,
+clipboard, URL, and optional page/screen capture inside the annotation window.
+Each tool fills the layout's main column directly — height is fully owned by
+`app/(core)/images/layout.tsx`.
 
 ## Architecture
 
-Routes live as flat siblings under `app/(a)/images/` alongside the manager-group routes. The full route shell (`layout.tsx`, sidebar, registry, hub landing) is owned by `app/(a)/images/` — see `features/image-manager/FEATURE.md` for the manager-group siblings and `app/(a)/images/_components/imagesRoutes.ts` for the full registry.
+Routes live as flat siblings under `app/(core)/images/` alongside the
+manager-group routes. The full route shell (`layout.tsx`, sidebar, registry,
+hub landing) is owned by `app/(core)/images/` — see
+`features/image-manager/FEATURE.md` for the manager-group siblings and
+`app/(core)/images/_components/imagesRoutes.ts` for the full registry.
 
 ```
-app/(a)/images/                    (route shell — see image-manager FEATURE.md)
+app/(core)/images/                 (route shell — see image-manager FEATURE.md)
 ├── layout.tsx                     CloudFilesRealtimeProvider + BrowseImageProvider + sidebar
 ├── _components/
 │   ├── imagesRoutes.ts            registry — { path, label, Icon, group }
 │   ├── ImagesSidebar.tsx          shared sidebar, active item via usePathname()
 │   ├── ImagesLandingHero.tsx
 │   └── ManagerLandingHero.tsx
-├── _shared/
-│   └── ModeImagePicker.tsx        shared image input — used by edit/annotate/avatar
 ├── studio/page.tsx                renders <StudioLandingHero/>
 ├── edit/{page.tsx, EditShellClient.tsx}
 ├── annotate/{page.tsx, AnnotateShellClient.tsx}
@@ -72,6 +79,7 @@ features/image-studio/
 │   └── avatar/
 │       └── AvatarModeShell.tsx    react-easy-crop circular crop + Smart Crop
 ├── components/
+│   ├── ModeImagePicker.tsx        upload / paste / URL / optional capture source picker
 │   ├── ImageStudioShell.tsx       3-column interactive shell (Convert mode)
 │   ├── StudioDropZone.tsx         drag-drop + paste
 │   ├── StudioFileCard.tsx         per-file row with variant grid

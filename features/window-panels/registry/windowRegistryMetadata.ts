@@ -930,6 +930,26 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "multi",
   },
 
+  // ── Image Annotation ─────────────────────────────────────────────────────
+  {
+    slug: "image-annotation-window",
+    overlayId: "imageAnnotationWindow",
+    kind: "window",
+    label: "Image Annotation",
+    defaultData: {
+      callbackGroupId: null,
+      sourceFileId: null,
+      sourceUrl: null,
+      sourceFilename: null,
+      defaultFolder: null,
+      title: null,
+      overwriteSource: false,
+    },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+    instanceMode: "multi",
+  },
+
   // ── Curated Icon Picker ───────────────────────────────────────────────────
   // Floating gallery for picking from the curated icon set. Open via
   // `useOpenCuratedIconPickerWindow()` and listen for the `picked` event.

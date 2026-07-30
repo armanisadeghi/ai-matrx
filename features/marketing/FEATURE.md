@@ -241,6 +241,15 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-07-29 — Codex: **Visual page feedback now uses the canonical image
+  annotation window and association system.** The page Plan lane has a
+  one-click Visual feedback composer for upload, clipboard, current-page
+  capture, or screen capture. Every current and historical crawl screenshot
+  also has a Mark up action. Saving creates a flattened PNG through the
+  universal file handler and writes the existing `file → web_page`
+  `platform.associations` edge with source provenance; no feedback table,
+  screenshot variant, or parallel persistence path was added. Attached markup
+  can be previewed, edited in place, or detached from the page.
 - 2026-07-29 — Codex: canonicalized every active frontend SEO title/description
   counter, recommendation, scraper analysis, SERP preview, CMS/page editor,
   research output, image metadata hint, and flashcard truncation onto

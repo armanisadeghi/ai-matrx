@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ImageOff, Monitor, Smartphone, Trash2 } from "lucide-react";
+import {
+  ImageOff,
+  Monitor,
+  PenLine,
+  Smartphone,
+  Trash2,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -10,6 +16,7 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
 import { CaptureAttachments } from "@/features/marketing/components/pages/CaptureAttachments";
 import { CaptureObservations } from "@/features/marketing/components/pages/CaptureObservations";
+import { usePageVisualFeedback } from "@/features/marketing/components/pages/PageVisualFeedback";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import {
   useDeleteScreenshot,
@@ -44,6 +51,7 @@ export function PageCapturesCard({ page }: { page: MarketingPage }) {
   const screenshots = usePageScreenshots(site.id, pageId);
   const deleteMutation = useDeleteScreenshot(site.id);
   const openFilePreview = useOpenFilePreviewWindow();
+  const visualFeedback = usePageVisualFeedback(page);
   const [deleting, setDeleting] = useState<SiteScreenshot | null>(null);
 
   // Same row filter + desktop/mobile classification the surface scope emits
@@ -165,6 +173,21 @@ export function PageCapturesCard({ page }: { page: MarketingPage }) {
                     kind={kind}
                     page={page}
                   />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      visualFeedback.openCapture(
+                        current.file_id,
+                        `${kind} capture`,
+                      )
+                    }
+                    className="flex h-6 shrink-0 items-center gap-1 rounded-md border border-border px-1.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+                    title="Draw, circle, or write on this capture and attach it as visual feedback"
+                    aria-label={`Mark up ${kind} capture`}
+                  >
+                    <PenLine className="h-3 w-3" />
+                    Mark up
+                  </button>
                 </div>
                 {captures.length > 1 ? (
                   <ul className="mt-1.5 grid gap-1">
@@ -195,6 +218,20 @@ export function PageCapturesCard({ page }: { page: MarketingPage }) {
                               Snapshot
                             </Link>
                           ) : null}
+                          <button
+                            type="button"
+                            title="Mark up this capture"
+                            aria-label="Mark up this capture"
+                            onClick={() =>
+                              visualFeedback.openCapture(
+                                capture.file_id,
+                                `${kind} capture`,
+                              )
+                            }
+                            className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+                          >
+                            <PenLine className="h-3 w-3" />
+                          </button>
                           <button
                             type="button"
                             title="Delete capture"

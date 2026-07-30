@@ -26,8 +26,9 @@ import { saveEditedImage } from "../shared/save-edited-image";
 import type { ModeShellProps } from "../shared/types";
 import { detectFaces } from "../../api/python";
 import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "../../constants/backend-capabilities";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
 
-const ANNOTATE_FOLDER = "Images/Annotated";
+const ANNOTATE_FOLDER = CloudFolders.IMAGES_ANNOTATED;
 
 interface RenderEvent {
   dataUrl: string;
@@ -36,7 +37,9 @@ interface RenderEvent {
 
 export function AnnotateModeShell({
   source,
+  cloudFileId,
   defaultFolder = ANNOTATE_FOLDER,
+  saveFileId,
   presentation = "page",
   onSave,
   onCancel,
@@ -58,7 +61,13 @@ export function AnnotateModeShell({
           filename: replaceExt(filename, "png", "-annotated"),
           folderPath: defaultFolder,
           mime: "image/png",
-          metadata: { kind: "annotation", source_filename: filename },
+          fileId: saveFileId ?? undefined,
+          changeSummary: saveFileId ? "Updated image annotations" : undefined,
+          metadata: {
+            kind: "annotation",
+            source_filename: filename,
+            source_file_id: cloudFileId ?? null,
+          },
         });
         toast.success("Annotated image saved.");
         onSave?.(result);
@@ -69,7 +78,7 @@ export function AnnotateModeShell({
         setSaving(false);
       }
     },
-    [defaultFolder, filename, onSave],
+    [cloudFileId, defaultFolder, filename, onSave, saveFileId],
   );
 
   const startEditor = useCallback(async () => {
@@ -120,7 +129,10 @@ export function AnnotateModeShell({
       toast.info("Face detection is coming soon.");
       return;
     }
-    if (source?.kind !== "cloudFileId") {
+    const sourceFileId =
+      cloudFileId ??
+      (source?.kind === "cloudFileId" ? source.cloudFileId : null);
+    if (!sourceFileId) {
       toast.info(
         "Face blur needs the image to be saved first — upload, then re-open.",
       );
@@ -128,7 +140,7 @@ export function AnnotateModeShell({
     }
     setAiBusy("faces");
     try {
-      const { faces } = await detectFaces({ source_id: source.cloudFileId });
+      const { faces } = await detectFaces({ source_id: sourceFileId });
       if (faces.length === 0) {
         toast.info("No faces detected.");
         return;

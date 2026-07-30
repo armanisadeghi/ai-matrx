@@ -493,6 +493,13 @@ const FeedbackWindow = lazyOverlay(
     })),
   { ssr: false },
 );
+const ImageAnnotationWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/window-panels/windows/image-annotation/ImageAnnotationWindow"
+    ),
+  { ssr: false },
+);
 const FilePreviewWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/cloud-files/FilePreviewWindow"),
@@ -1698,6 +1705,9 @@ export default function OverlayController() {
     htmlPreview: useAppSelector((s) => selectOpenInstances(s, "htmlPreview")),
     imageUploaderWindow: useAppSelector((s) =>
       selectOpenInstances(s, "imageUploaderWindow"),
+    ),
+    imageAnnotationWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "imageAnnotationWindow"),
     ),
     imageViewer: useAppSelector((s) => selectOpenInstances(s, "imageViewer")),
     multiFileSmartCodeEditorWindow: useAppSelector((s) =>
@@ -3880,6 +3890,55 @@ export default function OverlayController() {
               typeof data?.allowUrlPaste === "boolean"
                 ? data.allowUrlPaste
                 : undefined
+            }
+          />
+        );
+      })}
+
+      {/* imageAnnotationWindow — multi-instance */}
+      {instancesById.imageAnnotationWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        return (
+          <ImageAnnotationWindow
+            key={inst.instanceId}
+            isOpen
+            instanceId={inst.instanceId}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "imageAnnotationWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+            sourceFileId={
+              typeof data?.sourceFileId === "string"
+                ? data.sourceFileId
+                : null
+            }
+            sourceUrl={
+              typeof data?.sourceUrl === "string" ? data.sourceUrl : null
+            }
+            sourceFilename={
+              typeof data?.sourceFilename === "string"
+                ? data.sourceFilename
+                : null
+            }
+            defaultFolder={
+              typeof data?.defaultFolder === "string"
+                ? data.defaultFolder
+                : null
+            }
+            title={typeof data?.title === "string" ? data.title : null}
+            overwriteSource={
+              typeof data?.overwriteSource === "boolean"
+                ? data.overwriteSource
+                : false
             }
           />
         );
