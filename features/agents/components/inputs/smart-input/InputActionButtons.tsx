@@ -280,7 +280,7 @@ export function InputActionButtons({
             tabIndex={-1}
             title={
               isExecuting
-                ? "Queue message — the agent answers it at its next pause (⌘⇧Enter interrupts & sends now)"
+                ? "Queue message — sends when the agent finishes (⌘Enter steers in now, ⌘⇧Enter interrupts)"
                 : voiceBusy
                   ? "Finish recording to send"
                   : "Send Message"

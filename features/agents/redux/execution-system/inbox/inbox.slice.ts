@@ -1,44 +1,55 @@
 /**
- * conversationInbox slice — queued "send while the agent is running" messages.
+ * conversationInbox slice — messages sent while the agent is running.
  *
- * The Turn-Boundary Inbox (docs/TURN_BOUNDARY_INBOX.md) lets a user send a
- * message into a conversation whose run is still streaming: the message is
- * queued server-side (`POST /ai/conversations/{id}/inbox`) and the running
- * agent drains it at its next natural pause, answering on the SAME stream.
+ * THE THREE SEND MODES (Arman's ruling 2026-07-29 — full statement in
+ * docs/TURN_BOUNDARY_INBOX.md; never re-litigate these semantics):
  *
- * This slice tracks the client-visible lifecycle of those queued items:
+ *   QUEUE (default) — the message waits until the run FULLY ends, then sends
+ *     as the next normal turn. A real FIFO queue, client-held, editable until
+ *     it officially sends. mode: "queue".
+ *   STEER — deliver at the agent's NEXT natural pause mid-run (rides with a
+ *     tool result); server-held (`POST /ai/conversations/{id}/inbox`, the
+ *     Turn-Boundary Inbox), answered on the already-open stream, editable
+ *     until drained. mode: "steer".
+ *   INTERRUPT — stop now, fork clean, message becomes the reply. Lives in
+ *     smart-execute (`interruptAndSend`), not in this queue.
  *
- *   sending   → optimistic card, POST in flight (temp id `inbox_local_*`)
- *   pending   → server accepted; waiting for the agent's next turn boundary
- *   delivered → the stream's `injection_consumed` event named this item;
- *               the message is now part of the conversation transcript
- *   failed    → the POST failed terminally (card carries the error)
+ * Item lifecycle by mode:
  *
- * Retract (DELETE) and edit (PATCH) act only on `pending` items; a 409 from
- * either means the item drained first — the reducer flips it to `delivered`.
+ *   queue:  queued → dispatching → (removed — it became a normal turn) | failed
+ *   steer:  sending → pending → (removed on `injection_consumed` — the
+ *           transcript owns it) | failed
  *
- * Delivered/cancelled items are REMOVED from the queue (the transcript owns
- * the delivered message; the queue only shows what is still waiting).
+ * Retract/edit act on `queued` and `pending` items; a 409 on a steer item
+ * means it drained first (treat as delivered).
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { destroyInstance } from "../conversations/conversations.slice";
 
-export type InboxItemStatus = "sending" | "pending" | "failed";
+export type InboxItemMode = "queue" | "steer";
+
+export type InboxItemStatus =
+  | "queued" // queue: waiting for the run to end
+  | "dispatching" // queue: being sent as a normal turn right now
+  | "sending" // steer: POST in flight
+  | "pending" // steer: server accepted, waiting for the next pause
+  | "failed";
 
 export type InboxItemKind = "user_message" | "system_message";
 
 export interface ConversationInboxItem {
-  /** Server `injection_id` once accepted; `inbox_local_<uuid>` while sending. */
+  /** Server `injection_id` (steer, once accepted); `inbox_local_<uuid>` otherwise. */
   injectionId: string;
   conversationId: string;
+  mode: InboxItemMode;
   kind: InboxItemKind;
   text: string;
   status: InboxItemStatus;
   isVisibleToUser: boolean;
   /** ISO timestamp — enqueue time (client clock until hydrated). */
   queuedAt: string;
-  /** Terminal POST failure message (status === "failed" only). */
+  /** Terminal failure message (status === "failed" only). */
   error?: string | null;
 }
 
@@ -65,13 +76,38 @@ const conversationInboxSlice = createSlice({
   name: "conversationInbox",
   initialState,
   reducers: {
-    /** Optimistic add at enqueue time (status "sending", local temp id). */
-    addInboxItem(state, action: PayloadAction<ConversationInboxItem>) {
-      const items = bucket(state, action.payload.conversationId);
-      if (items.some((i) => i.injectionId === action.payload.injectionId)) {
+    /**
+     * Add an item. `front` re-inserts at the head — used when a QUEUE drain
+     * loses a race to a just-started run and the head item must keep its
+     * FIFO position.
+     */
+    addInboxItem(
+      state,
+      action: PayloadAction<ConversationInboxItem & { front?: boolean }>,
+    ) {
+      const { front, ...item } = action.payload;
+      const items = bucket(state, item.conversationId);
+      if (items.some((i) => i.injectionId === item.injectionId)) {
         return; // idempotent
       }
-      items.push(action.payload);
+      if (front) items.unshift(item);
+      else items.push(item);
+    },
+
+    /** Flip a queue item's status (queued ↔ dispatching). */
+    setInboxItemStatus(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        injectionId: string;
+        status: InboxItemStatus;
+      }>,
+    ) {
+      const items = state.byConversationId[action.payload.conversationId];
+      const item = items?.find(
+        (i) => i.injectionId === action.payload.injectionId,
+      );
+      if (item) item.status = action.payload.status;
     },
 
     /** POST accepted — swap the local temp id for the server injection_id. */
@@ -157,8 +193,14 @@ const conversationInboxSlice = createSlice({
       }>,
     ) {
       const { conversationId, items } = action.payload;
+      // Server truth replaces only the server-held (steer/pending) view.
+      // Client-held state survives: queue items, in-flight steer POSTs,
+      // failed cards.
       const local = (state.byConversationId[conversationId] ?? []).filter(
-        (i) => i.status === "sending" || i.status === "failed",
+        (i) =>
+          i.mode === "queue" ||
+          i.status === "sending" ||
+          i.status === "failed",
       );
       state.byConversationId[conversationId] = [...items, ...local];
     },
@@ -172,6 +214,7 @@ const conversationInboxSlice = createSlice({
 
 export const {
   addInboxItem,
+  setInboxItemStatus,
   confirmInboxItem,
   failInboxItem,
   setInboxItemText,

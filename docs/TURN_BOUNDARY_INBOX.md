@@ -12,28 +12,56 @@
 
 ---
 
-## What changed for us
+## 🎯 THE THREE SEND MODES — Arman's vision (ruling 2026-07-29, do not re-derive)
 
-Two new capabilities on an existing conversation, plus one new stream event:
+Every "send while the agent is running" is exactly one of these three user
+intents. This section is the product truth; every composer, thunk, and doc
+serves it. Never collapse two modes into one, never make Send a disguised
+Stop, and never invent a fourth mode.
 
-1. **Send while a run is streaming (inbox).** The user no longer has to wait for
-   the agent to finish or cancel it. While a run streams, a "send" queues the
-   message; the running agent picks it up at its next natural pause and answers it
-   on the same stream.
-2. **Manage queued messages** — list / retract / edit while still pending.
-3. **Interrupt ("stop & redirect").** Cut the run now, keep what the model already
-   said (as a truncated assistant turn with a marker), and send a new direction.
+1. **QUEUE (the DEFAULT).** *"User wants to send a message but doesn't want it
+   to go until the agent is completely done with everything it's doing and the
+   turn ends."* The message sits and waits for everything to end; when we are
+   DONE, THE NEXT QUEUED MESSAGE submits — it is a real FIFO **queue**, not
+   just one message. Editable (and withdrawable) until it's officially sent.
+   → Client-held (`conversationInbox` slice, `mode:"queue"`); the drain
+   watcher sends each item as a normal turn once the run fully settles, one
+   per turn.
+
+2. **STEER.** *"Allow the agent to do whatever it's doing right now, but at
+   the next natural turn point, add the user's message."* In an agentic flow
+   this normally means it rides in with a tool result, so the agent sees the
+   result AND what the user wants to add. Usually delivered fast; can still
+   queue several back-to-back (FIFO). Editable until it's officially
+   delivered.
+   → Server-held (`POST /ai/conversations/{id}/inbox`, drained at the next
+   turn boundary, answered on the already-open stream, `injection_consumed`
+   acks delivery).
+
+3. **INTERRUPT.** *"User sees the agent doing something he doesn't like — this
+   instantly STOPS whatever the agent is doing and essentially sends the user
+   message as a reply."* Done right it is a clean **fork at the last clean
+   point**: no tool-result mismatches, nothing corrupted. The run already in
+   flight is NOT thrown away for cost purposes — **let it finish, keep the
+   costs** — but its abandoned tail (partial text, unfinished tool calls) is
+   marked `is_visible_to_user=false` AND `is_visible_to_model=false`, so it
+   costs correctly and hurts nothing else.
+   → Client half shipped (`interruptAndSend`: server cancel → wait for the
+   stream to close → send). The instant-fork server half (immediate new turn
+   + invisible abandoned tail) is a pending aidream build — see "Interrupt
+   flow" below for what runs today.
 
 ## The one rule for the client
 
 We are the most reliable judge of "is a run active" — **we opened the stream and
 know if it's still emitting.** So the client decides, the server never guesses:
 
-| Situation | Call | Result |
+| Situation | Mode | Mechanics |
 |---|---|---|
-| **No open stream** (idle) | normal send `POST /ai/conversations/{id}` | runs immediately, streams |
-| **Open stream** (busy), and we want to *add* to it | `POST /ai/conversations/{id}/inbox` | queues; answered on the open stream at the next boundary |
-| **Open stream** (busy), and we want to *redirect* | `POST /ai/cancel/{request_id}`, wait for the stream to end, then normal send | stops the run at its next boundary (everything streamed persists), fresh run answers the new message — see "Interrupt flow" below |
+| **No open stream** (idle) | normal send | `POST /ai/conversations/{id}` — runs immediately, streams |
+| **Open stream**, message should wait its turn | **QUEUE** (default: Enter / Send button) | client-held FIFO; drain watcher sends it as the next normal turn when the run fully ends |
+| **Open stream**, message should reach the agent mid-run | **STEER** (⌘Enter, or "Deliver now" on a queued card) | `POST /ai/conversations/{id}/inbox`; answered on the open stream at the next boundary |
+| **Open stream**, stop and redirect | **INTERRUPT** (⌘⇧Enter) | today: `POST /ai/cancel/{request_id}` → wait for stream end → normal send. Target: instant fork (server work pending) |
 
 ## Inbox endpoint
 
@@ -100,14 +128,32 @@ streamed persists as normal history** (no truncation, so no marker is needed).
   hard-cancellation path (task cancelled mid-provider-call — shutdown or a
   `detach_on_disconnect=False` caller), where text really is truncated.
 
-## FE client checklist — SHIPPED 2026-07-29
+**Target (Arman's INTERRUPT vision — server build pending, aidream):** the
+stop should be INSTANT from the user's perspective — a clean fork at the last
+clean point. The in-flight provider call still finishes (its cost is committed;
+**keep the costs**), but the abandoned tail — partial assistant text and any
+unfinished tool calls — persists with `is_visible_to_user=false` AND
+`is_visible_to_model=false`, hidden as a complete, pairing-safe unit (never
+orphan a `tool_use` from its `tool_result`). The user's message then sends
+immediately as the reply without waiting for the old call to wind down. Until
+that ships, `interruptAndSend` waits for the stream to end before sending —
+correct, just not instant.
 
-- [x] Composer **enabled while streaming**; `smartExecute` routes a send during
-      a live run to `enqueueInboxMessage` → `POST …/inbox` (single funnel —
-      never POST `/inbox` from anywhere else), idle sends run normally. Second
-      layer: `executeInstance` refuses a concurrent turn and reconciles to the
-      inbox, loudly. Slice: `conversationInbox`
+## FE client checklist — SHIPPED 2026-07-29/30
+
+- [x] Composer **enabled while streaming**; `smartExecute` applies the three
+      send modes: default **QUEUE** (`queueMessage` — client FIFO + drain
+      watcher sending each item as a normal turn via `userTextOverride`, the
+      composer's live draft untouched), explicit **STEER**
+      (`whileRunning:"steer"` → `enqueueInboxMessage` → `POST …/inbox`, the
+      single funnel — never POST `/inbox` from anywhere else). Second layer:
+      `executeInstance` refuses a concurrent turn and reconciles to the QUEUE,
+      loudly. Slice: `conversationInbox`
       (`features/agents/redux/execution-system/inbox/`).
+      ⚠️ Durability note: QUEUE items are client-held — a page reload loses
+      not-yet-sent queued messages (steer items survive server-side). A
+      server-held deferred queue (`deliver:"turn_end"` inbox kind) is the
+      future fix if this bites.
 - [x] Queued messages render as "waiting its turn" cards (`InboxQueueStrip`,
       mounted by SmartAgentInput both variants + CompactAssistantInput +
       NewChatLandingInput); on `injection_consumed`, `process-stream` retires

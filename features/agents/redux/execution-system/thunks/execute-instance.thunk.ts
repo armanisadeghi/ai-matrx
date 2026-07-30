@@ -157,6 +157,15 @@ export function assembleRequest(
      * with the conversation's durable tags.
      */
     scopeIdsOverride?: string[];
+    /**
+     * Send THIS text as the turn instead of reading the composer. Used by the
+     * QUEUE drain (a message queued while the agent was running, sent when
+     * the run finishes — docs/TURN_BOUNDARY_INBOX.md): the composer may hold
+     * the user's live NEXT draft, which must not be read, cleared, or
+     * snapshotted. Override sends are TEXT-ONLY — composer attachments,
+     * message parts, and editor pills belong to the composer's own next send.
+     */
+    userTextOverride?: string;
   },
 ): AssembledAgentStartRequest | null {
   const instance = state.conversations.byConversationId[conversationId];
@@ -175,10 +184,13 @@ export function assembleRequest(
   // trailing newlines, leading spaces — all of it is meaningful
   // (e.g. fenced code blocks, indented markdown, deliberate blank lines).
   // We send exactly what the user typed.
+  const isTextOverride = opts?.userTextOverride !== undefined;
   const userInputState =
     state.instanceUserInput.byConversationId[conversationId];
-  const rawTextInput = userInputState?.text ?? "";
-  const messageParts = userInputState?.messageParts;
+  const rawTextInput = isTextOverride
+    ? (opts?.userTextOverride ?? "")
+    : (userInputState?.text ?? "");
+  const messageParts = isTextOverride ? undefined : userInputState?.messageParts;
 
   // Editor pills (errors / code snippets) round-trip via XML in the user
   // message text. The contract above protects user-typed content; this is
@@ -186,15 +198,20 @@ export function assembleRequest(
   // round-trip persistence (so the message renders identically when reloaded
   // from the DB). Append after the typed text — never prepend, since the
   // user's prose should still lead the message.
-  const editorResourceXml = selectEditorResourceXml(conversationId)(state);
+  const editorResourceXml = isTextOverride
+    ? ""
+    : selectEditorResourceXml(conversationId)(state);
   const textInput = editorResourceXml
     ? rawTextInput
       ? `${rawTextInput}\n\n${editorResourceXml}`
       : editorResourceXml
     : rawTextInput;
 
-  // Resources → ContentBlock[] (editor pills are filtered out by the selector)
-  const resourcePayloads = selectResourcePayloads(conversationId)(state);
+  // Resources → ContentBlock[] (editor pills are filtered out by the selector).
+  // Override sends are text-only — see userTextOverride above.
+  const resourcePayloads = isTextOverride
+    ? []
+    : selectResourcePayloads(conversationId)(state);
   // Variables for the request — three-tier merge, but untouched scope-bound vars are
   // omitted so the server resolves them from the active scope (see selector).
   const variables = selectVariablesForRequest(conversationId)(state);
@@ -373,6 +390,13 @@ interface ExecuteInstanceArgs {
    * a union would re-add scopes the user just chose to drop.
    */
   scopeIdsOverride?: string[];
+  /**
+   * Send THIS text as the turn instead of the composer's content (QUEUE drain
+   * — see assembleRequest's opt of the same name). Composer state is neither
+   * read, snapshotted (`markInputSubmitted`), nor cleared for override sends;
+   * the user's live next draft stays untouched.
+   */
+  userTextOverride?: string;
 }
 
 interface ExecuteInstanceResult {
@@ -387,7 +411,13 @@ export const executeInstance = createAsyncThunk<
 >(
   "instances/execute",
   async (
-    { conversationId, debug = false, retry = false, scopeIdsOverride },
+    {
+      conversationId,
+      debug = false,
+      retry = false,
+      scopeIdsOverride,
+      userTextOverride,
+    },
     { getState, dispatch, rejectWithValue },
   ) => {
     const requestId = generateRequestId();
@@ -410,25 +440,35 @@ export const executeInstance = createAsyncThunk<
       // Inbox — reconcile there instead of killing the request, and scream:
       // reaching this line means a caller bypassed smartExecute's routing.
       if (hasAbortController(conversationId)) {
+        if (userTextOverride !== undefined) {
+          // A queue-drain send lost a race to a just-started run. The drain
+          // watcher owns the item — reject and let it retry/fail the card;
+          // requeueing here would duplicate it.
+          console.error(
+            `[execute-instance] refused a concurrent queued send on ` +
+              `"${conversationId}" — a stream opened underneath the drain.`,
+          );
+          return rejectWithValue(
+            "A run started before this queued message could send — it stays queued",
+          );
+        }
         const pendingText =
           state.instanceUserInput.byConversationId[conversationId]?.text ?? "";
         console.error(
           `[execute-instance] refused a concurrent turn on conversation ` +
             `"${conversationId}" — a stream is already open. ` +
             (pendingText.trim()
-              ? "Reconciled: queued the composer text via the Turn-Boundary Inbox."
-              : "No composer text to queue; the duplicate dispatch was dropped.") +
+              ? "Reconciled: the message was QUEUED and will send when the run finishes."
+              : "No message text to queue; the duplicate dispatch was dropped.") +
             " Callers must route sends through smartExecute.",
         );
         if (pendingText.trim()) {
-          const { enqueueInboxMessage } = await import("../inbox/inbox.thunks");
-          dispatch(
-            enqueueInboxMessage({ conversationId, text: pendingText.trim() }),
-          );
+          const { queueMessage } = await import("../inbox/inbox.thunks");
+          dispatch(queueMessage({ conversationId, text: pendingText.trim() }));
           dispatch(clearUserInput(conversationId));
         }
         return rejectWithValue(
-          "Concurrent turn refused — message queued to the running agent",
+          "Concurrent turn refused — message queued until the run finishes",
         );
       }
 
@@ -436,7 +476,10 @@ export const executeInstance = createAsyncThunk<
       // Verbatim — never trim/normalize the user's typed text.
       const userInputEntry =
         state.instanceUserInput.byConversationId[conversationId];
-      const userMessageParts = userInputEntry?.messageParts ?? undefined;
+      const userMessageParts =
+        userTextOverride !== undefined
+          ? undefined
+          : (userInputEntry?.messageParts ?? undefined);
 
       // ── Draft-protection: record what THIS send is submitting ──────────────
       // The stream's clear-on-send paths (`markInputPersisted` on user-request
@@ -451,8 +494,12 @@ export const executeInstance = createAsyncThunk<
       // a false violation. Mark it here for any caller that hasn't (phase still
       // "idle"). No-op for smartExecute (phase already "pending") → zero impact
       // on the canonical chat. Skipped for retry (no input is sent).
+      // Skipped for override sends too: the composer holds (at most) the
+      // user's live NEXT draft — snapshotting it as lastSubmittedText would
+      // let a later clear-on-send wipe a message that was never sent.
       if (
         !retry &&
+        userTextOverride === undefined &&
         userInputEntry?.submissionPhase === "idle" &&
         userInputEntry.text.length > 0
       ) {
@@ -472,7 +519,7 @@ export const executeInstance = createAsyncThunk<
       // the next message. Runs for EVERY send (smartExecute + direct callers);
       // never for retry (no input/attachments are sent). Parallel to
       // markInputSubmitted above; see instance-resources.slice + process-stream.
-      if (!retry) {
+      if (!retry && userTextOverride === undefined) {
         dispatch(markResourcesSubmitted(conversationId));
       }
       // We pull the text from the assembled payload below so the optimistic
@@ -484,6 +531,7 @@ export const executeInstance = createAsyncThunk<
       // Assemble the request (sync — pure selector logic).
       const payload = assembleRequest(state, conversationId, {
         scopeIdsOverride,
+        userTextOverride,
       });
       if (!payload) {
         throw new Error(`Failed to assemble request for ${conversationId}`);
@@ -929,7 +977,7 @@ export const executeInstance = createAsyncThunk<
         forceLocalConversationId: isEphemeral,
         // A retry sends no input and reads none — leave the box untouched
         // (it may hold an unrelated draft). Initial sends clear on failure.
-        clearInputOnError: !retry,
+        clearInputOnError: !retry && userTextOverride === undefined,
         userMessageClientTempId,
       });
     } catch (error) {
@@ -957,11 +1005,12 @@ export const executeInstance = createAsyncThunk<
           error: { error_type: "client_error", message },
         }),
       );
-      if (!retry) {
+      if (!retry && userTextOverride === undefined) {
         // Pre-stream failure clear-on-send. Same class as run-ai-stream's error
         // path — route through the ONE sanctioned clear helper so a live
         // next-message draft is never wiped (and never trips a false violation
-        // scream); the just-failed message clears as before.
+        // scream); the just-failed message clears as before. Override sends
+        // never touch the composer.
         const { clearComposerIfUnsubmitted } =
           await import("../instance-user-input/clear-composer.thunk");
         dispatch(clearComposerIfUnsubmitted(conversationId, { via: "clear" }));
