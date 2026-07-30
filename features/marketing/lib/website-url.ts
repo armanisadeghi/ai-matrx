@@ -43,3 +43,19 @@ export function normalizeWebsiteUrl(value: string): URL {
 export function normalizeWebsiteUrlValue(value: string): string {
   return normalizeWebsiteUrl(value).toString();
 }
+
+/**
+ * Renderable form of a discovered image URL. Discovery persists whatever the
+ * site served — including `http://` URLs, which an https page silently blocks
+ * as mixed content (a blank logo with no error). Everything we'd embed serves
+ * https today, so upgrade the scheme at render time; non-http values pass
+ * through untouched.
+ */
+export function secureImageUrl(value: string): string;
+export function secureImageUrl(value: string | null): string | null;
+export function secureImageUrl(value: string | null): string | null {
+  if (!value) return value;
+  return value.startsWith("http://")
+    ? `https://${value.slice("http://".length)}`
+    : value;
+}

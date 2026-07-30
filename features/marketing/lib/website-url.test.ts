@@ -1,4 +1,8 @@
-import { normalizeWebsiteUrl, normalizeWebsiteUrlValue } from "./website-url";
+import {
+  normalizeWebsiteUrl,
+  normalizeWebsiteUrlValue,
+  secureImageUrl,
+} from "./website-url";
 
 describe("normalizeWebsiteUrl", () => {
   it("adds HTTPS to a bare domain", () => {
@@ -39,4 +43,22 @@ describe("normalizeWebsiteUrl", () => {
       expect(() => normalizeWebsiteUrl(value)).toThrow();
     },
   );
+});
+
+describe("secureImageUrl", () => {
+  it("upgrades http to https so the image is not mixed-content blocked", () => {
+    expect(secureImageUrl("http://example.com/logo.png?v=1")).toBe(
+      "https://example.com/logo.png?v=1",
+    );
+  });
+
+  it("leaves https and other values untouched", () => {
+    expect(secureImageUrl("https://example.com/logo.png")).toBe(
+      "https://example.com/logo.png",
+    );
+    expect(secureImageUrl("data:image/png;base64,abc")).toBe(
+      "data:image/png;base64,abc",
+    );
+    expect(secureImageUrl(null)).toBeNull();
+  });
 });

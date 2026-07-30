@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { Globe2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MarketingSite } from "@/features/marketing/types";
+import { secureImageUrl } from "@/features/marketing/lib/website-url";
 import {
   siteConnectionStatuses,
   type SiteConnectionState,
@@ -59,17 +61,33 @@ export function SiteConnectionChips({
   );
 }
 
-/** Favicon-or-logo identity mark with a neutral fallback. */
+/**
+ * Favicon-or-logo identity mark with a neutral fallback. Small marks default
+ * to favicon-first (crisp at 28px); hero-sized marks pass `prefer="logo"` so
+ * the real logo wins when the brand has one. A URL that fails to load falls
+ * through to the next candidate and finally the neutral globe — never a
+ * blank box.
+ */
 export function SiteIdentityMark({
   site,
   size = 28,
+  prefer = "favicon",
   className,
 }: {
   site: Pick<MarketingSite, "favicon_url" | "logo_url" | "name">;
   size?: number;
+  prefer?: "favicon" | "logo";
   className?: string;
 }) {
-  const src = site.favicon_url || site.logo_url;
+  const [failed, setFailed] = useState<Record<string, true>>({});
+  const ordered =
+    prefer === "logo"
+      ? [site.logo_url, site.favicon_url]
+      : [site.favicon_url, site.logo_url];
+  const src = ordered
+    .filter((url): url is string => Boolean(url))
+    .map((url) => secureImageUrl(url))
+    .find((url) => !failed[url]);
   return (
     <span
       className={cn(
@@ -80,15 +98,14 @@ export function SiteIdentityMark({
     >
       {src ? (
         // Site identity marks are the site's own public URLs, not our media.
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={src}
           alt=""
           width={size}
           height={size}
           className="h-full w-full object-contain"
-          onError={(event) => {
-            event.currentTarget.style.display = "none";
+          onError={() => {
+            setFailed((state) => ({ ...state, [src]: true }));
           }}
         />
       ) : (

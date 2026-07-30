@@ -5,15 +5,29 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AtSign,
+  BadgeCheck,
+  Building2,
+  Clock,
   ExternalLink,
+  FileText,
   Globe2,
   Images,
   Inbox,
+  Info,
   ListTree,
+  Mail,
+  Map,
   MapPin,
+  Palette,
   Pencil,
+  Phone,
+  Printer,
+  Quote,
+  Star,
   Trash2,
+  Type,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
@@ -53,12 +67,28 @@ import {
   SiteConnectionChips,
   SiteIdentityMark,
 } from "@/features/marketing/components/shared/SiteConnectionChips";
+import {
+  PropertyKindMark,
+  propertyPublicUrl,
+  toPropertyKind,
+} from "@/features/marketing/components/shared/PropertyKindMark";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { isJsonRecord, parseBrandProfile } from "@/features/marketing/types";
+import { secureImageUrl } from "@/features/marketing/lib/website-url";
+import {
+  BRAND_ASSET_KIND_LABELS,
+  BUSINESS_FACT_KIND_LABELS,
+  PROPERTY_KIND_LABELS,
+  isBrandAssetKind,
+  isBusinessFactKind,
+  isJsonRecord,
+  parseBrandProfile,
+} from "@/features/marketing/types";
 import type {
   BrandAsset,
+  BrandAssetKind,
   BrandProperty,
   BusinessFact,
+  BusinessFactKind,
   MarketingSite,
 } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
@@ -106,9 +136,60 @@ function factValueText(fact: BusinessFact): string {
 function assetPreviewUrl(asset: BrandAsset): string | null {
   return asset.source_url &&
     /\.(png|jpe?g|webp|gif|svg|ico)(\?|$)/i.test(asset.source_url)
-    ? asset.source_url
+    ? secureImageUrl(asset.source_url)
     : null;
 }
+
+/** Color assets carry their value in `data` (hex/value) or a `#hex` title. */
+function assetColorValue(asset: BrandAsset): string | null {
+  if (asset.kind !== "color") return null;
+  if (isJsonRecord(asset.data)) {
+    const candidate = asset.data.hex ?? asset.data.value ?? asset.data.color;
+    if (typeof candidate === "string" && candidate) return candidate;
+  }
+  return asset.title && /^#([0-9a-f]{3,8})$/i.test(asset.title)
+    ? asset.title
+    : null;
+}
+
+/**
+ * Best previewable asset URL for the given kinds, in priority order —
+ * `is_primary` wins within a kind, then `sort_order`. Lets the hero fall back
+ * to the confirmed asset library when the brand row has no logo/favicon URL.
+ */
+function firstAssetUrl(
+  assets: BrandAsset[],
+  kinds: BrandAssetKind[],
+): string | null {
+  for (const kind of kinds) {
+    const match = assets
+      .filter((asset) => asset.kind === kind && assetPreviewUrl(asset))
+      .sort(
+        (a, b) =>
+          Number(b.is_primary) - Number(a.is_primary) ||
+          a.sort_order - b.sort_order,
+      )[0];
+    if (match) return assetPreviewUrl(match);
+  }
+  return null;
+}
+
+const FACT_KIND_ICONS: Record<BusinessFactKind, LucideIcon> = {
+  phone: Phone,
+  fax: Printer,
+  email: Mail,
+  address: MapPin,
+  hours: Clock,
+  tagline: Quote,
+  legal_name: Building2,
+  title: Type,
+  description: FileText,
+  site_name: Globe2,
+  social_profile: AtSign,
+  service_area: Map,
+  registration: BadgeCheck,
+  other: Info,
+};
 
 export function BrandWorkspace({ brandId }: { brandId: string }) {
   const router = useRouter();
@@ -188,6 +269,25 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
     : null;
   const factRows = facts.data ?? [];
   const assetRows = assets.data ?? [];
+
+  // The brand's best identity marks: explicit brand URLs first, then the
+  // confirmed asset library — a brand with confirmed logos never shows a
+  // placeholder globe just because nobody copied a URL onto the brand row.
+  const heroIdentity = {
+    name: current.name,
+    logo_url:
+      current.logo_url ||
+      firstAssetUrl(assetRows, ["logo", "logo_dark", "wordmark"]),
+    favicon_url: current.favicon_url || firstAssetUrl(assetRows, ["favicon"]),
+  };
+  const heroCover =
+    secureImageUrl(current.og_image_url) ||
+    firstAssetUrl(assetRows, ["og_image", "hero_image", "twitter_image"]);
+  const sortedAssets = [...assetRows].sort(
+    (a, b) =>
+      Number(b.is_primary) - Number(a.is_primary) ||
+      a.sort_order - b.sort_order,
+  );
 
   // Surface scope — assembled at trigger time from what the cockpit already
   // loaded. No fetching; keys are omitted when their data is not loaded yet.
@@ -358,7 +458,12 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
       <main className="h-full overflow-y-auto bg-textured p-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:p-4 sm:pt-[calc(var(--shell-header-h)+0.75rem)]">
         <div className="grid w-full gap-3">
           <section className="flex flex-wrap items-start gap-4 rounded-lg border border-border bg-card p-4">
-            <SiteIdentityMark site={current} size={56} />
+            <SiteIdentityMark
+              site={heroIdentity}
+              size={72}
+              prefer="logo"
+              className="bg-background p-1.5"
+            />
             <div className="min-w-0 flex-1">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 {current.name}
@@ -379,6 +484,36 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                 {current.industry ? (
                   <Badge variant="outline">{current.industry}</Badge>
                 ) : null}
+                {socialProperties.length > 0 ? (
+                  <span className="ml-1 inline-flex items-center gap-1">
+                    {socialProperties.map((property) => {
+                      const href = propertyPublicUrl(property);
+                      const label =
+                        PROPERTY_KIND_LABELS[toPropertyKind(property.kind)];
+                      const title = property.handle
+                        ? `${label} · ${property.handle}`
+                        : label;
+                      return href ? (
+                        <a
+                          key={property.id}
+                          href={href}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={title}
+                          className="transition-transform hover:scale-110"
+                        >
+                          <PropertyKindMark kind={property.kind} size={24} />
+                        </a>
+                      ) : (
+                        <PropertyKindMark
+                          key={property.id}
+                          kind={property.kind}
+                          size={24}
+                        />
+                      );
+                    })}
+                  </span>
+                ) : null}
               </div>
               {current.description ? (
                 <p className="mt-2 max-w-prose text-sm leading-6 text-muted-foreground">
@@ -386,6 +521,19 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                 </p>
               ) : null}
             </div>
+            {heroCover ? (
+              // The brand's own public og/hero image — the share-card face of
+              // the brand, straight from discovery.
+              <img
+                src={heroCover}
+                alt=""
+                loading="lazy"
+                className="hidden h-20 w-auto max-w-40 shrink-0 rounded-md border border-border object-cover sm:block"
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+              />
+            ) : null}
             <div className="flex shrink-0 items-center gap-1.5">
               <CopyButtons size="icon" {...brandCopy} />
               {pending.data ? (
@@ -500,32 +648,43 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                 </div>
               ) : (
                 <ul className="divide-y divide-border">
-                  {socialProperties.map((property) => (
+                  {socialProperties.map((property) => {
+                    const href = propertyPublicUrl(property);
+                    const handle = property.handle
+                      ? `@${property.handle.replace(/^@/, "")}`
+                      : null;
+                    return (
                     <li
                       key={property.id}
-                      className="flex items-center gap-3 px-3 py-2"
+                      className={
+                        href
+                          ? "flex cursor-pointer items-center gap-3 px-3 py-2 transition-colors hover:bg-muted/30"
+                          : "flex items-center gap-3 px-3 py-2"
+                      }
+                      onClick={() => {
+                        if (href) window.open(href, "_blank", "noreferrer");
+                      }}
                     >
-                      <AtSign className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <PropertyKindMark kind={property.kind} size={32} />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium capitalize text-foreground">
-                          {property.kind.replace(/_/g, " ")}
-                          {property.display_name
-                            ? ` · ${property.display_name}`
-                            : ""}
+                        <p className="text-sm font-medium text-foreground">
+                          {property.display_name ||
+                            PROPERTY_KIND_LABELS[toPropertyKind(property.kind)]}
+                          {property.display_name && handle ? (
+                            <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                              {handle}
+                            </span>
+                          ) : null}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {property.url || property.handle || "—"}
+                          {(!property.display_name && handle) ||
+                            (href
+                              ? href.replace(/^https?:\/\/(www\.)?/, "")
+                              : "—")}
                         </p>
                       </div>
-                      {property.url ? (
-                        <a
-                          href={property.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-muted-foreground hover:text-foreground"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
+                      {href ? (
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
                       ) : null}
                       <div className="flex shrink-0 items-center gap-0.5">
                         <RowActionButton
@@ -545,7 +704,8 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                         </RowActionButton>
                       </div>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               )}
             </SectionCard>
@@ -566,15 +726,24 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                 </p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {(facts.data ?? []).map((fact) => (
+                  {(facts.data ?? []).map((fact) => {
+                    const FactIcon = isBusinessFactKind(fact.kind)
+                      ? FACT_KIND_ICONS[fact.kind]
+                      : Info;
+                    return (
                     <li
                       key={fact.id}
                       className="flex items-center gap-3 px-3 py-2"
                     >
-                      <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border/60 bg-muted/40">
+                        <FactIcon className="h-4 w-4 text-muted-foreground" />
+                      </span>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                          {fact.label || fact.kind.replace(/_/g, " ")}
+                          {fact.label ||
+                            (isBusinessFactKind(fact.kind)
+                              ? BUSINESS_FACT_KIND_LABELS[fact.kind]
+                              : fact.kind.replace(/_/g, " "))}
                         </p>
                         <p className="truncate text-sm text-foreground">
                           {factValueText(fact)}
@@ -596,7 +765,8 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                         </RowActionButton>
                       </div>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               )}
             </SectionCard>
@@ -621,14 +791,33 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
               </div>
             ) : (
               <ul className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4 lg:grid-cols-6">
-                {(assets.data ?? []).map((asset) => {
+                {sortedAssets.map((asset) => {
                   const preview = assetPreviewUrl(asset);
+                  const color = assetColorValue(asset);
+                  const kindLabel = isBrandAssetKind(asset.kind)
+                    ? BRAND_ASSET_KIND_LABELS[asset.kind]
+                    : asset.kind.replace(/_/g, " ");
                   return (
                     <li
                       key={asset.id}
                       className="group overflow-hidden rounded-md border border-border bg-muted/20"
                     >
-                      <div className="relative flex aspect-square items-center justify-center bg-card p-2">
+                      <div
+                        className={
+                          asset.source_url
+                            ? "relative flex aspect-square cursor-pointer items-center justify-center bg-card p-2"
+                            : "relative flex aspect-square items-center justify-center bg-card p-2"
+                        }
+                        onClick={() => {
+                          if (asset.source_url) {
+                            window.open(
+                              asset.source_url,
+                              "_blank",
+                              "noreferrer",
+                            );
+                          }
+                        }}
+                      >
                         {preview ? (
                           // Confirmed assets reference the brand's own public URLs.
                           <img
@@ -637,9 +826,25 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                             className="max-h-full max-w-full object-contain"
                             loading="lazy"
                           />
+                        ) : color ? (
+                          <span
+                            className="h-14 w-14 rounded-full border border-border shadow-inner"
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          />
+                        ) : asset.kind === "color" ? (
+                          <Palette className="h-6 w-6 text-muted-foreground/50" />
                         ) : (
                           <Globe2 className="h-6 w-6 text-muted-foreground/50" />
                         )}
+                        {asset.is_primary ? (
+                          <span
+                            title="Primary asset"
+                            className="absolute left-1 top-1 flex h-5 w-5 items-center justify-center rounded-md bg-card/90 shadow-sm"
+                          >
+                            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                          </span>
+                        ) : null}
                         <div className="absolute right-1 top-1 flex items-center gap-0.5 rounded-md bg-card/90 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
                           <RowActionButton
                             title="Edit asset"
@@ -656,9 +861,10 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                           </RowActionButton>
                         </div>
                       </div>
-                      <p className="truncate border-t border-border px-2 py-1 text-[10px] font-medium capitalize text-muted-foreground">
-                        {asset.kind.replace(/_/g, " ")}
+                      <p className="truncate border-t border-border px-2 py-1 text-[10px] font-medium text-muted-foreground">
+                        {kindLabel}
                         {asset.title ? ` · ${asset.title}` : ""}
+                        {color ? ` · ${color}` : ""}
                       </p>
                     </li>
                   );
