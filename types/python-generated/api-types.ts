@@ -3953,6 +3953,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sites/{site_id}/gsc/search-performance/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Gsc Search Performance
+         * @description On-demand streamed Google Search Console SEARCH_PERFORMANCE collection
+         *     for one bound site — the canonical (all-dimension) twin of the Bing route
+         *     below: builds the ``CollectionRequest`` from the site's live binding (the
+         *     SSOT — never a caller-supplied property/credential) and runs it through
+         *     the ONE ``run_collection`` funnel. Persists every dimension profile to
+         *     ``seo.search_performance_daily``.
+         */
+        post: operations["sync_gsc_search_performance_seo_sites__site_id__gsc_search_performance_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/sites/{site_id}/bing/search-performance/sync": {
         parameters: {
             query?: never;
@@ -19191,6 +19216,24 @@ export interface components {
             owner_type?: string;
             /** Organization Id */
             organization_id?: string | null;
+        };
+        /** GscSearchPerformanceSyncBody */
+        GscSearchPerformanceSyncBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Window Days */
+            window_days?: number | null;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+            /** Request Id */
+            request_id?: string | null;
         };
         /** BingSearchPerformanceSyncBody */
         BingSearchPerformanceSyncBody: {
@@ -47607,6 +47650,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BacklinkRefreshBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_gsc_search_performance_seo_sites__site_id__gsc_search_performance_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GscSearchPerformanceSyncBody"];
             };
         };
         responses: {

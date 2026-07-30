@@ -13,9 +13,13 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D120 — website-factory audit: 12 content-plan/CMS defects on a dispatch board (2026-07-30)
+### D121 — website-factory audit: 12 content-plan/CMS defects on a dispatch board (2026-07-30)
 
 The 2026-07-30 content-plan/CMS readiness audit found 12 defects — renderer ignoring `theme_config` (my-matrx), plan statuses blind to CMS publishes (1 node "published" vs 42 live pages), FE CMS writes bypassing `matrx-content-guard`, nondeterministic duplicate header/footer render, agent-only capabilities with no human UI (starter kit, header/footer toggles, theme/nav/footer editing), the never-exercised `plan.cms_fill_job` queue with no chaos test, and doc drift. Each is a self-contained assignment with status tracking in [docs/handoffs/website-factory-bug-dispatch.md](docs/handoffs/website-factory-bug-dispatch.md) (WF-1…WF-12); vision-level gaps live in [docs/handoffs/website-factory-vision.md](docs/handoffs/website-factory-vision.md). Close this entry when the board is empty. **Decides: Arman assigns; WF-1/WF-2/WF-3 are HIGH.**
+
+### D120 — `components/ui/chart.tsx` is `// @ts-nocheck` (2026-07-30)
+
+The shadcn-style recharts wrapper (`ChartContainer`/`ChartTooltipContent`/…) opts its whole file out of the type gate in a repo whose CLAUDE.md forbids `any`. Consumers (cx-dashboard usage charts, education StudyTrends, flashcard perf) build on untyped props with zero drift detection. Fix: type the wrapper against recharts ^3.9's real types (its payload generics are the usual pain point) and delete the pragma; new chart surfaces should meanwhile type recharts directly (the Search Console `PerformanceChart` does — use it as the reference) rather than deepening this wrapper. **Decides: anyone.**
 
 ### D119 — any EDITOR can flip a canonical entity's `visibility` (incl. to `public`) at the DB layer (2026-07-29)
 

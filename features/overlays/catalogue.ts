@@ -430,6 +430,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  gscDrilldownWindow: {
+    label: "Search Console Drill-down",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   hierarchyCreationWindow: {
     label: "Hierarchy Creation Window",
     instanceMode: "singleton",

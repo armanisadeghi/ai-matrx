@@ -1,0 +1,68 @@
+/**
+ * On-demand canonical GSC sync — the ONE compute call this feature makes.
+ *
+ * `POST /seo/sites/{site_id}/gsc/search-performance/sync` (aidream): builds
+ * the collection from the site's live GSC binding, streams detached NDJSON,
+ * and persists all six dimension profiles into
+ * `seo.search_performance_daily`. Work never stops on disconnect.
+ * (Distinct from the legacy scraper `sites/{id}/gsc/sync`, which feeds only
+ * the page×date `web.gsc_page_stat` table.)
+ */
+
+import { callApi } from "@/lib/api/call-api";
+import { parseStreamError } from "@/lib/api/errors";
+import type { TypedStreamEvent } from "@/lib/api/types";
+import type { AppDispatch } from "@/lib/redux/store";
+
+export interface GscSyncCallbacks {
+  signal?: AbortSignal;
+  onEvent?: (event: TypedStreamEvent) => void;
+}
+
+export interface GscSyncResult {
+  runId: string | null;
+}
+
+export async function syncGscSearchPerformance(
+  dispatch: AppDispatch,
+  siteId: string,
+  organizationId: string | null,
+  options: { windowDays?: number } = {},
+  callbacks: GscSyncCallbacks = {},
+): Promise<GscSyncResult> {
+  let runId: string | null = null;
+  let streamError: Error | null = null;
+  const response = await dispatch(
+    callApi({
+      path: "/seo/sites/{site_id}/gsc/search-performance/sync",
+      method: "POST",
+      pathParams: { site_id: siteId },
+      // window_days omitted => the server's incremental watermark window.
+      body: options.windowDays ? { window_days: options.windowDays } : {},
+      ...(organizationId
+        ? { scopeOverrides: { organization_id: organizationId } }
+        : {}),
+      stream: true,
+      signal: callbacks.signal,
+      onStreamEvent: (event) => {
+        callbacks.onEvent?.(event);
+        if (event.event === "data") {
+          const data = event.data as { kind?: unknown; run_id?: unknown };
+          if (data.kind === "seo.receipt" && typeof data.run_id === "string") {
+            runId = data.run_id;
+          }
+        }
+        if (event.event === "error") {
+          streamError = parseStreamError(event.data);
+        }
+      },
+    }),
+  );
+  if (response.error) {
+    throw new Error(response.error.message);
+  }
+  if (streamError) {
+    throw streamError;
+  }
+  return { runId };
+}

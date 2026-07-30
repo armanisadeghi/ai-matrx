@@ -299,6 +299,11 @@ const FullscreenBrokerState = lazyOverlay(
   () => import("@/features/applet/runner/response/FullscreenBrokerState"),
   { ssr: false },
 );
+const GscDrilldownWindow = lazyOverlay(
+  () =>
+    import("@/features/marketing/search-console/windows/GscDrilldownWindow"),
+  { ssr: false },
+);
 const BrowserFrameWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/iframe/BrowserFrameWindow"),
   { ssr: false },
@@ -1701,6 +1706,9 @@ export default function OverlayController() {
     ),
     fullScreenEditor: useAppSelector((s) =>
       selectOpenInstances(s, "fullScreenEditor"),
+    ),
+    gscDrilldownWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "gscDrilldownWindow"),
     ),
     htmlPreview: useAppSelector((s) => selectOpenInstances(s, "htmlPreview")),
     imageUploaderWindow: useAppSelector((s) =>
@@ -4690,6 +4698,54 @@ export default function OverlayController() {
           </SidePanelSurface>
         );
       })()}
+
+      {/* gscDrilldownWindow — multi-instance */}
+      {instancesById.gscDrilldownWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        if (typeof data?.siteId !== "string" || typeof data?.dimension !== "string") {
+          return null;
+        }
+        return (
+          <GscDrilldownWindow
+            key={inst.instanceId}
+            instanceId={inst.instanceId}
+            stackIndex={
+              typeof data.stackIndex === "number" ? data.stackIndex : 0
+            }
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "gscDrilldownWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            siteId={data.siteId}
+            siteName={typeof data.siteName === "string" ? data.siteName : null}
+            dimension={
+              data.dimension as import("@/features/marketing/search-console/types").GscDimension
+            }
+            filters={
+              (data.filters ?? {}) as import("@/features/marketing/search-console/types").GscFilters
+            }
+            range={
+              (typeof data.range === "string"
+                ? data.range
+                : "90d") as import("@/features/marketing/search-console/types").GscRangeKey
+            }
+            customFrom={
+              typeof data.customFrom === "string" ? data.customFrom : null
+            }
+            customTo={typeof data.customTo === "string" ? data.customTo : null}
+            compare={
+              (typeof data.compare === "string"
+                ? data.compare
+                : "none") as import("@/features/marketing/search-console/types").GscCompareMode
+            }
+            title={typeof data.title === "string" ? data.title : undefined}
+          />
+        );
+      })}
 
       {/* quickDataWindow */}
       {(() => {
