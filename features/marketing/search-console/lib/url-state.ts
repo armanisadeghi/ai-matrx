@@ -198,11 +198,11 @@ export function allowedFilterKeysForTab(
 ): readonly (keyof GscFilters)[] {
   switch (tab) {
     case "overview":
-      return [
-        ...QUERY_PAGE_FILTER_KEYS,
-        ...COUNTRY_DEVICE_FILTER_KEYS,
-        "search_appearance",
-      ];
+      // Overview renders query- AND page-dimension breakdown tables, so its
+      // filter group is the query/page group — a country/device/appearance
+      // filter would raise in those tables even though the summary/chart
+      // alone could serve it. Country/device analysis lives on its own tabs.
+      return QUERY_PAGE_FILTER_KEYS;
     case "queries":
     case "pages":
       return QUERY_PAGE_FILTER_KEYS;
