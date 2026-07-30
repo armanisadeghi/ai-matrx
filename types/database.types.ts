@@ -14415,6 +14415,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      crawl_variant_tagging_drift: {
+        Args: never
+        Returns: {
+          bad_visibility: boolean
+          master_id: string
+          missing_tags: boolean
+          org_mismatch: boolean
+          variant_id: string
+        }[]
+      }
       has_access_for: {
         Args: {
           p_file_id: string
