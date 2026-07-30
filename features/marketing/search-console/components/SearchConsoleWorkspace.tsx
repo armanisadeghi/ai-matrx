@@ -16,7 +16,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -120,7 +120,7 @@ export function SearchConsoleWorkspace() {
     const dates = rows
       .filter((r) => r.dimension_profile !== "search_appearance")
       .map((r) => r.max_date);
-    return dates.length > 0 ? dates.sort().at(-1)! : null;
+    return dates.length > 0 ? [...dates].sort().at(-1) ?? null : null;
   }, [freshness.data]);
   const hasAnyData = (freshness.data ?? []).length > 0;
 
@@ -168,6 +168,13 @@ export function SearchConsoleWorkspace() {
 
   const tabDimension =
     state.tab === "overview" ? null : TAB_DIMENSION[state.tab];
+
+  const panelRange = {
+    range: state.range,
+    customFrom: state.customFrom,
+    customTo: state.customTo,
+    compare: state.compare,
+  };
 
   return (
     <>
@@ -327,8 +334,9 @@ export function SearchConsoleWorkspace() {
                       dimension="query"
                       periods={periods}
                       filters={state.filters}
-                      surfaceLabel="Search Console — Overview top queries"
+                      copySurface="Search Console — Overview top queries"
                       onDrill={onDrill("query")}
+                      panelRange={panelRange}
                       pageSize={10}
                       compactHeight
                     />
@@ -340,8 +348,9 @@ export function SearchConsoleWorkspace() {
                       dimension="page"
                       periods={periods}
                       filters={state.filters}
-                      surfaceLabel="Search Console — Overview top pages"
+                      copySurface="Search Console — Overview top pages"
                       onDrill={onDrill("page")}
+                      panelRange={panelRange}
                       pageSize={10}
                       compactHeight
                     />
@@ -378,12 +387,13 @@ export function SearchConsoleWorkspace() {
                       dimension={tabDimension}
                       periods={periods}
                       filters={state.filters}
-                      surfaceLabel={`Search Console — ${
+                      copySurface={`Search Console — ${
                         GSC_TABS.find((t) => t.key === state.tab)?.label ??
                         state.tab
                       }`}
                       onDrill={onDrill(tabDimension)}
                       drillHint={DRILL_HINTS[tabDimension]}
+                      panelRange={panelRange}
                     />
                   ) : null}
                 </div>

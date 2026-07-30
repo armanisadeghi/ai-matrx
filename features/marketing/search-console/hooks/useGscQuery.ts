@@ -50,7 +50,10 @@ export function useGscSummary(
       periodsKey(periods),
       filtersKey(filters),
     ],
-    queryFn: ({ signal }) => getGscSummary(siteId!, periods, filters, signal),
+    queryFn: ({ signal }) => {
+      if (!siteId) throw new Error("No site selected");
+      return getGscSummary(siteId, periods, filters, signal);
+    },
     enabled: !!siteId,
     staleTime: STALE_MS,
     placeholderData: keepPreviousData,
@@ -71,8 +74,10 @@ export function useGscTimeseries(
       periodsKey(periods),
       filtersKey(filters),
     ],
-    queryFn: ({ signal }) =>
-      getGscTimeseries(siteId!, periods, filters, signal),
+    queryFn: ({ signal }) => {
+      if (!siteId) throw new Error("No site selected");
+      return getGscTimeseries(siteId, periods, filters, signal);
+    },
     enabled: !!siteId,
     staleTime: STALE_MS,
     placeholderData: keepPreviousData,
@@ -101,8 +106,10 @@ export function useGscBreakdown(
       query.page,
       query.pageSize,
     ],
-    queryFn: ({ signal }) =>
-      getGscBreakdown(siteId!, periods, filters, query, signal),
+    queryFn: ({ signal }) => {
+      if (!siteId) throw new Error("No site selected");
+      return getGscBreakdown(siteId, periods, filters, query, signal);
+    },
     enabled: !!siteId && (options.enabled ?? true),
     staleTime: STALE_MS,
     placeholderData: keepPreviousData,
@@ -112,7 +119,10 @@ export function useGscBreakdown(
 export function useGscFreshness(siteId: string | null) {
   return useQuery({
     queryKey: ["marketing", "gsc", "freshness", siteId],
-    queryFn: ({ signal }) => getGscFreshness(siteId!, signal),
+    queryFn: ({ signal }) => {
+      if (!siteId) throw new Error("No site selected");
+      return getGscFreshness(siteId, signal);
+    },
     enabled: !!siteId,
     staleTime: STALE_MS,
   });

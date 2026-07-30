@@ -98,6 +98,7 @@ export const OVERLAY_IDS = [
   "findReplace",
   "fullScreenEditor",
   "galleryWindow",
+  "gscDrilldownWindow",
   "hierarchyCreationWindow",
   "htmlPreview",
   "imageAnnotationWindow",

@@ -13,8 +13,10 @@
  * wrapper), which resolves rows through the table's `data-row-id` stamps.
  */
 
-import { useState } from "react";
-import { SearchX } from "lucide-react";
+import { useRef, useState } from "react";
+import { Columns2, Filter, PanelTop, SearchX } from "lucide-react";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type {
   MatrxColumnDef,
@@ -26,10 +28,13 @@ import {
 } from "@/features/marketing/lib/copy-payloads";
 import { useGscBreakdown } from "@/features/marketing/search-console/hooks/useGscQuery";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
+import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
 import type {
   GscBreakdownRow,
+  GscCompareMode,
   GscDimension,
   GscFilters,
+  GscRangeKey,
   GscResolvedPeriods,
   GscSortKey,
 } from "@/features/marketing/search-console/types";
@@ -108,11 +113,12 @@ export function GscDimensionTable({
   dimension,
   periods,
   filters,
-  surfaceLabel,
+  copySurface,
   onDrill,
   drillHint,
   pageSize = 50,
   compactHeight = false,
+  panelRange,
 }: {
   siteId: string;
   siteName: string | null;
@@ -120,13 +126,24 @@ export function GscDimensionTable({
   periods: GscResolvedPeriods;
   filters: GscFilters;
   /** Where this table lives, for copy payloads — e.g. "Search Console — Queries". */
-  surfaceLabel: string;
+  copySurface: string;
   /** Row click. GSC parity: queries↔pages cross-filter; panels re-drill. */
   onDrill?: (row: GscBreakdownRow) => void;
   /** One line under the toolbar naming what a row click does. */
   drillHint?: string;
   pageSize?: number;
   compactHeight?: boolean;
+  /**
+   * The unresolved range state. When present, rows gain a right-click menu
+   * with "open in floating panel" drill actions (the panel needs the range
+   * to resolve its own periods).
+   */
+  panelRange?: {
+    range: GscRangeKey;
+    customFrom: string | null;
+    customTo: string | null;
+    compare: GscCompareMode;
+  };
 }) {
   const hasCompare = periods.compare !== null;
   const labels = DIMENSION_LABELS[dimension];
@@ -153,6 +170,49 @@ export function GscDimensionTable({
 
   const rows = breakdown.data?.rows ?? [];
   const total = breakdown.data?.total ?? 0;
+
+  // Right-click drills: one NonEditableContextMenu serves every row via
+  // resolveContextOnOpen + the table's data-row-id stamps; extraSections
+  // items read the row captured at open time.
+  const openDrilldown = useOpenGscDrilldownWindow();
+  const clickedRowRef = useRef<GscBreakdownRow | null>(null);
+  const resolveRowContext = (target: HTMLElement | null) => {
+    const key = target
+      ?.closest("[data-row-id]")
+      ?.getAttribute("data-row-id");
+    const row = key ? (rows.find((r) => r.key === key) ?? null) : null;
+    clickedRowRef.current = row;
+    if (!row) return null;
+    return {
+      content: humanLines([
+        [labels.column, keyCell(dimension, row)],
+        ["Clicks", formatCount(row.clicks)],
+        ["Impressions", formatCount(row.impressions)],
+        ["CTR", formatCtr(row.ctr)],
+        ["Position", formatPosition(row.avg_position)],
+      ]),
+    };
+  };
+  const openRowPanel = (sameDimension: boolean) => {
+    const row = clickedRowRef.current;
+    if (!row || !panelRange) return;
+    const drill = panelDrillFor(dimension, row);
+    openDrilldown({
+      siteId,
+      siteName,
+      dimension: sameDimension ? dimension : drill.dimension,
+      filters: sameDimension
+        ? { ...filters }
+        : { ...filters, ...drill.filters },
+      range: panelRange.range,
+      customFrom: panelRange.customFrom,
+      customTo: panelRange.customTo,
+      compare: panelRange.compare,
+      title: sameDimension
+        ? `${labels.column} — ${siteName ?? "Search Console"}`
+        : drill.label,
+    });
+  };
 
   const columns: MatrxColumnDef<GscBreakdownRow>[] = [
     {
@@ -303,7 +363,15 @@ export function GscDimensionTable({
       : []),
   ];
 
-  return (
+  const PANEL_DRILL_LABELS: Record<GscDimension, string> = {
+    query: "Pages for this query — floating panel",
+    page: "Queries for this page — floating panel",
+    country: "Devices in this country — floating panel",
+    device: "Countries on this device — floating panel",
+    search_appearance: "This appearance type — floating panel",
+  };
+
+  const table = (
     <div className="flex h-full min-h-0 flex-col">
       {breakdown.isError ? (
         <div className="flex h-full items-center justify-center rounded-md border border-destructive/40 bg-destructive/5 p-4">
@@ -337,7 +405,7 @@ export function GscDimensionTable({
           copy={{
             label: `Search ${labels.noun}`,
             listLabel: `Search Console ${labels.noun} table`,
-            location: webLocation(surfaceLabel),
+            location: webLocation(copySurface),
             rowKind: `web-gsc-${dimension.replace(/_/g, "-")}`,
             listKind: `web-gsc-${dimension.replace(/_/g, "-")}-table`,
             rowDescription: `One ${labels.noun}'s search performance for the selected site, period, and filters.`,
@@ -388,5 +456,60 @@ export function GscDimensionTable({
         />
       )}
     </div>
+  );
+
+  if (!panelRange) return table;
+
+  return (
+    <NonEditableContextMenu
+      sourceFeature="marketing"
+      contextData={{ content: "" }}
+      resolveContextOnOpen={resolveRowContext}
+      extraSections={[
+        {
+          id: "gsc-drill",
+          label: "Search Console",
+          anchor: "after-compare",
+          items: [
+            {
+              kind: "item",
+              id: "gsc-drill-panel",
+              label: PANEL_DRILL_LABELS[dimension],
+              icon: PanelTop,
+              description:
+                "Open this row's breakdown in a floating panel you can keep beside others",
+              onSelect: () => openRowPanel(false),
+            },
+            {
+              kind: "item",
+              id: "gsc-view-panel",
+              label: "This view — floating panel",
+              icon: Columns2,
+              description:
+                "Float this whole table (current filters and period) for side-by-side comparison",
+              onSelect: () => openRowPanel(true),
+            },
+            ...(onDrill
+              ? [
+                  {
+                    kind: "item" as const,
+                    id: "gsc-filter-row",
+                    label: "Drill into this row here",
+                    icon: Filter,
+                    description:
+                      "Apply this row as a dashboard filter (same as clicking it)",
+                    onSelect: () => {
+                      const row = clickedRowRef.current;
+                      if (row) onDrill(row);
+                    },
+                  },
+                ]
+              : []),
+          ],
+        },
+      ]}
+    >
+      {table}
+    </NonEditableContextMenu>
   );
 }
