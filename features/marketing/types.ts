@@ -386,6 +386,10 @@ export const BRAND_ASSET_KINDS = [
 ] as const;
 export type BrandAssetKind = (typeof BRAND_ASSET_KINDS)[number];
 
+export function isBrandAssetKind(value: string): value is BrandAssetKind {
+  return BRAND_ASSET_KINDS.some((kind) => kind === value);
+}
+
 export const BRAND_ASSET_KIND_LABELS: Record<BrandAssetKind, string> = {
   logo: "Logo",
   logo_dark: "Logo (dark)",
@@ -441,6 +445,10 @@ export const BUSINESS_FACT_KINDS = [
   "other",
 ] as const;
 export type BusinessFactKind = (typeof BUSINESS_FACT_KINDS)[number];
+
+export function isBusinessFactKind(value: string): value is BusinessFactKind {
+  return BUSINESS_FACT_KINDS.some((kind) => kind === value);
+}
 
 export const BUSINESS_FACT_KIND_LABELS: Record<BusinessFactKind, string> = {
   phone: "Phone",

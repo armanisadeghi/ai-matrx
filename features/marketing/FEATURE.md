@@ -2,7 +2,7 @@
 
 **Status:** active  
 **Tier:** 1  
-**Last updated:** 2026-07-26
+**Last updated:** 2026-07-30
 
 ## The feature is multi-pillar — websites are ONE pillar
 
@@ -202,6 +202,7 @@ Grants: `migrations/web_marketing_crud_grants.sql` added the missing authenticat
 - **Promotion targets the model that renders the result.** Social candidates become `web.property` rows; media becomes `web.brand_asset`; facts/identity copy becomes `web.business_fact`. Confirmed logo/favicon/social-card assets also synchronize the brand/site identity URL fields consumed by summary cards. `web.discovered_item.resolved_*_id` records that exact target.
 - **Other is labeled, never anonymous.** The review inbox accepts an optional human label for every promoted record and requires one for `other`; manual fact/asset editors enforce the same rule through `business_fact.label` / `brand_asset.title`. A custom label does not mint a new domain type or Content-IR Shape.
 - Site/brand identity URLs (logo, favicon, og image) are the brand's own public URLs. Scraper-produced media (screenshots) goes through the canonical AWS file pipeline and renders via `InlineMediaRef` + `file_id` — never a Supabase Storage URL.
+- **Discovered image URLs render through `secureImageUrl`** (`lib/website-url.ts`) — discovery persists `http://` URLs verbatim, and an https page silently blocks them as mixed content (a blank logo, no error). Identity marks render via `SiteIdentityMark` (candidate fallthrough logo↔favicon → neutral globe — never a blank box; `prefer="logo"` for hero sizes) and a brand's social properties render via **`PropertyKindMark`** (`components/shared/PropertyKindMark.tsx` — official platform glyph on the platform's brand color, the one deliberate exception to semantic-token colors; `propertyPublicUrl` derives a canonical profile URL from a bare handle). A generic icon for a known platform is a defect.
 - Persisted data always flows browser ↔ Supabase under the caller's JWT and RLS. Never add a Python, AI Dream, or Next.js read proxy.
 - Crawler commands/live NDJSON go browser ↔ scraper directly. Durable rows written by the crawler are subsequently read from Supabase.
 - A canonical page is not a crawl URL. A page's current content is its latest accepted snapshot, not a page column.
@@ -241,7 +242,7 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
-- 2026-07-29 — Codex: canonicalized every active frontend SEO title/description
+- 2026-07-30 — Claude: **brand cockpit display upgrade.** New shared `PropertyKindMark` (platform glyph + official brand color tile; `propertyPublicUrl` handle→URL derivation; `Google` glyph added to `components/icons/brand-icons.tsx`) replaces the generic `AtSign` on cockpit social rows and adds a clickable social icon strip to the brand hero. Hero identity is logo-first at 72px (`SiteIdentityMark` gained `prefer="logo"` + failed-candidate fallthrough) and falls back to the confirmed asset library (`is_primary`-first) when the brand row has no logo/favicon URL; the og/hero share image renders as a hero cover thumb. Business facts get kind-specific icons + canonical labels (new `isBusinessFactKind`/`isBrandAssetKind` guards in `types.ts`); asset tiles sort primary-first, show canonical Type labels, a primary star, color swatches for `color` assets, and click through to the source URL. **Root-cause fix:** `secureImageUrl` upgrades persisted `http://` image URLs at render time — mixed-content blocking is why brand logos silently never rendered.
   counter, recommendation, scraper analysis, SERP preview, CMS/page editor,
   research output, image metadata hint, and flashcard truncation onto
   `seo/serp/metrics.ts`. Mobile now uses the same product allowance as desktop:

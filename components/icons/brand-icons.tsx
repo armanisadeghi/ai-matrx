@@ -13,6 +13,7 @@ import {
     FaChrome,
     FaTrello,
     FaGitlab,
+    FaGoogle,
 } from "react-icons/fa6";
 import { SiFigma } from "react-icons/si";
 
@@ -52,3 +53,4 @@ export const Chrome = asLucideIcon(FaChrome, "Chrome");
 export const Trello = asLucideIcon(FaTrello, "Trello");
 export const Gitlab = asLucideIcon(FaGitlab, "Gitlab");
 export const Figma = asLucideIcon(SiFigma, "Figma");
+export const Google = asLucideIcon(FaGoogle, "Google");
