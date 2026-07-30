@@ -65,6 +65,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { planKeys } from "../../data/hooks";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { slugify } from "../archetypes";
+import { fetchFreshSite } from "../draft";
 import {
   bridgeFillCancel,
   bridgeFillPreview,
@@ -160,6 +161,12 @@ export function SetupBridgeSection({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linked, fillRunning, site.id]);
 
+  const invalidateCms = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: setupKeys.cms(site.id) }),
+      queryClient.invalidateQueries({ queryKey: marketingKeys.siteOptions() }),
+    ]);
+
   // Announce the run's end exactly once and refresh the CMS facts the other
   // rungs read (a filled page changes has-content everywhere).
   const prevFillStatusRef = useRef<string | null>(null);
@@ -181,12 +188,6 @@ export function SetupBridgeSection({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fillStatus?.status]);
-
-  const invalidateCms = () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: setupKeys.cms(site.id) }),
-      queryClient.invalidateQueries({ queryKey: marketingKeys.siteOptions() }),
-    ]);
 
   // ── rung 1: create (or pick) the CMS counterpart and link both sides ──────
   const handleLink = async () => {
@@ -219,10 +220,14 @@ export function SetupBridgeSection({
       }
       // Plan side first (settings.cms), then the bridge pairing — the first
       // reconcile with cms_site writes client_sites.web_site_id.
+      // FRESH row, not the query cache's copy: Setup's draft autosaves bump
+      // `version` continuously, so the cached version is deterministically
+      // stale and the guarded write would match zero rows.
+      const freshSite = await fetchFreshSite(site.id);
       await recordCmsLink({
         siteId: site.id,
-        expectedVersion: site.version,
-        currentSettings: site.settings,
+        expectedVersion: freshSite.version,
+        currentSettings: freshSite.settings,
         cmsSiteId,
         cmsSlug,
       });

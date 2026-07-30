@@ -63,7 +63,13 @@ export function usePlanGenerate(siteId: string | null) {
   const lastInvalidate = useRef(0);
 
   const start = useCallback(
-    async (options?: { maxNodes?: number; guidance?: string }) => {
+    async (options?: {
+      maxNodes?: number;
+      guidance?: string;
+      /** Ground the waves in this research topic's final Document. Omitted →
+       * the server falls back to the site's recorded research link. */
+      researchTopicId?: string | null;
+    }) => {
       if (!siteId || inFlight.current) return;
       inFlight.current = true;
       setRun({ status: "running", stage: "Starting the generator…" });
@@ -78,6 +84,7 @@ export function usePlanGenerate(siteId: string | null) {
             max_nodes: options?.maxNodes ?? 40,
             guidance: options?.guidance ?? null,
             apply: true,
+            research_topic_id: options?.researchTopicId ?? null,
           },
           stream: true,
           onStreamEvent: (event) => {

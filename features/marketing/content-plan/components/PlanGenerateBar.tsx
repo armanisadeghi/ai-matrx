@@ -21,17 +21,23 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 import type { PlanAiRunState } from "../hooks/useContentPlanAi";
+import { ResearchTopicSelect } from "./ResearchTopicSelect";
 
 export function PlanGenerateBar({
   nodeCount,
   run,
   onStart,
   onDismiss,
+  researchTopicId,
+  onResearchTopicChange,
 }: {
   nodeCount: number;
   run: PlanAiRunState;
   onStart: (options: { maxNodes: number; guidance?: string }) => void;
   onDismiss: () => void;
+  /** The research topic grounding the generator (the site's recorded link). */
+  researchTopicId: string | null;
+  onResearchTopicChange: (topicId: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [maxNodes, setMaxNodes] = useState(40);
@@ -87,6 +93,22 @@ export function PlanGenerateBar({
           </Button>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-80 space-y-3">
+          <div>
+            <Label className="mb-1 block text-xs font-medium">
+              Research grounding
+            </Label>
+            <ResearchTopicSelect
+              value={researchTopicId}
+              onChange={onResearchTopicChange}
+              triggerClassName="h-8 w-full text-sm"
+              ariaLabel="Research topic grounding the generator"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              The topic&apos;s final research report is handed to the three
+              research agents — real services, locations, and topics instead
+              of guesses.
+            </p>
+          </div>
           <div>
             <Label className="mb-1 block text-xs font-medium">
               Page budget

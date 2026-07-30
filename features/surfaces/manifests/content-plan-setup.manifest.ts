@@ -199,7 +199,7 @@ export const contentPlanSetupManifest: SurfaceManifest = {
   label: "Content Plan Setup",
   readiness: "partial",
   readinessNote:
-    "Emitter + write handlers wired in SetupView; bridge-rung state (CMS link, fill job) not yet declared; write targets code-only (not mirrored to DB).",
+    "Emitter + write handlers wired in SetupView; site_shaper bound to the Content Plan Shape Planner (manifest + ui.ui_surface_agent_role synced 2026-07-30); bridge-rung state (CMS link, fill job) not yet declared; write targets code-only (not mirrored to DB).",
   urlPattern: "/marketing/content-plan/[siteId]?view=setup",
   inheritsFrom: "matrx-user/content-plan",
   intro: `<surface_intro>
@@ -221,7 +221,10 @@ A "conflict" route means a page already lives at that route under a different pa
       description:
         "Recommends the site's shape and work order — which archetype, which counts, which real page names — grounded in the brand, vertical, and any existing plan. Results stage via this surface's write targets.",
       kind: "single",
-      defaultAgentId: null,
+      // Platform agent "Content Plan Shape Planner" (agx_agent, created via
+      // the AI Dream MCP 2026-07-30) — same agent the Setup view's
+      // "Recommend shape & counts" button runs (setup/ai.ts).
+      defaultAgentId: "b600975c-fc8f-4f1d-ab36-670be436a038",
       sortOrder: 100,
     },
   ],

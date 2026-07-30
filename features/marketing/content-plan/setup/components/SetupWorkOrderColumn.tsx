@@ -14,7 +14,15 @@
  * live. Eight stepper clicks plus eight renames collapse into one paste.
  */
 import { useState } from "react";
-import { ListPlus, Minus, Plus, RotateCcw, X } from "lucide-react";
+import {
+  Lightbulb,
+  ListPlus,
+  Loader2,
+  Minus,
+  Plus,
+  RotateCcw,
+  X,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +60,9 @@ export function SetupWorkOrderColumn({
   newCount,
   bridgeSlot,
   lintSlot,
+  aiReady = false,
+  aiNamingKey = null,
+  onAiNames,
 }: {
   expanded: ExpandedArchetype;
   readiness: Readiness;
@@ -82,6 +93,12 @@ export function SetupWorkOrderColumn({
   bridgeSlot?: React.ReactNode;
   /** Plan lint card (PlanLintSection) — diagnoses BEFORE the rungs act. */
   lintSlot?: React.ReactNode;
+  /** A research report is loaded — the per-family AI naming can run. */
+  aiReady?: boolean;
+  /** The family key an AI naming run is in flight for, or null. */
+  aiNamingKey?: string | null;
+  /** Run the Family Namer agent for one family (SetupView owns the run). */
+  onAiNames?: (familyKey: string) => void;
 }) {
   const [namingOpen, setNamingOpen] = useState<string | null>(null);
 
@@ -305,17 +322,40 @@ export function SetupWorkOrderColumn({
                           {supplied.length} from the plan
                         </span>
                       ) : null}
-                      <button
-                        type="button"
-                        className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
-                        onClick={() =>
-                          setNamingOpen(naming ? null : family.key)
-                        }
-                      >
-                        <ListPlus className="h-3 w-3" />
-                        {supplied ? "Edit names" : "Name them"}
-                        <span className="sr-only"> for {family.label}</span>
-                      </button>
+                      <span className="ml-auto inline-flex items-center gap-3">
+                        {onAiNames ? (
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:no-underline"
+                            disabled={!aiReady || aiNamingKey !== null}
+                            title={
+                              aiReady
+                                ? `Name the ${family.label.toLowerCase()} pages from the research report`
+                                : "Pick a research topic with a finished report in the AI grounding bar first"
+                            }
+                            onClick={() => onAiNames(family.key)}
+                          >
+                            {aiNamingKey === family.key ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Lightbulb className="h-3 w-3" />
+                            )}
+                            AI names
+                            <span className="sr-only"> for {family.label}</span>
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+                          onClick={() =>
+                            setNamingOpen(naming ? null : family.key)
+                          }
+                        >
+                          <ListPlus className="h-3 w-3" />
+                          {supplied ? "Edit names" : "Name them"}
+                          <span className="sr-only"> for {family.label}</span>
+                        </button>
+                      </span>
                     </div>
                   ) : null}
 

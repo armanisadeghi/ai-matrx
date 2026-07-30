@@ -36,40 +36,45 @@ function useServiceQuery<T>(
   enabled = true,
 ): UseQueryResult<T> {
   const [data, setData] = useState<T | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  // Loading is DERIVED (`settledKey !== fetchKey`), never set synchronously
+  // inside the effect — the react-hooks lint forbids the setState cascade the
+  // old `setIsLoading(true)`-on-run pattern caused. Stale data stays visible
+  // while a refetch is in flight, exactly as before.
+  const [settledKey, setSettledKey] = useState<string | null>(null);
+  const fetchKey = JSON.stringify([refreshKey, ...deps]);
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   useEffect(() => {
-    if (!enabled) {
-      setIsLoading(false);
-      return undefined;
-    }
+    if (!enabled) return undefined;
     let cancelled = false;
-    setIsLoading(true);
-    setError(null);
 
     fetcher()
       .then((result) => {
-        if (!cancelled) setData(result);
+        if (cancelled) return;
+        setData(result);
+        setError(null);
+        setSettledKey(fetchKey);
       })
       .catch((err) => {
-        if (!cancelled)
-          setError(err instanceof Error ? err.message : "Unknown error");
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Unknown error");
+        setSettledKey(fetchKey);
       });
 
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, refreshKey, ...deps]);
+  }, [enabled, fetchKey]);
 
-  return { data, isLoading, error, refresh };
+  return {
+    data,
+    isLoading: enabled && settledKey !== fetchKey,
+    error,
+    refresh,
+  };
 }
 
 // ============================================================================
@@ -294,6 +299,15 @@ export function useCurationData(topicId: string) {
 export function useResearchDocument(topicId: string) {
   return useServiceQuery<ResearchDocument | null>(
     () => service.getDocument(topicId),
+    [topicId],
+    !!topicId,
+  );
+}
+
+/** Newest SUCCESSFUL report — the AI-grounding read (see service note). */
+export function useLatestSuccessfulResearchDocument(topicId: string) {
+  return useServiceQuery<ResearchDocument | null>(
+    () => service.getLatestSuccessfulDocument(topicId),
     [topicId],
     !!topicId,
   );

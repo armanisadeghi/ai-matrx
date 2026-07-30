@@ -38,6 +38,17 @@ plan CRUD through it.
 - AI actions (`hooks/useContentPlanAi.ts`) — Generate plan (`PlanGenerateBar`
   strip on tree/table/map, streams `/content-plan/sites/{id}/generate`) and
   Deepen (NodePanel header button, streams `/content-plan/nodes/{id}/deepen`).
+- **Setup step agents (`setup/ai.ts`)** — every Setup step has a real AI,
+  grounded in the RESEARCH system's final report (the "Document",
+  `research.rs_document.content`, picked by topic in the `SetupAiBar` strip):
+  the **Content Plan Shape Planner** (`b600975c-…`, archetype + counts +
+  concept names) and the **Content Plan Family Namer** (`7a16db8c-…`, real
+  page names for one family — services, locations, guides). Both are platform
+  agents (agx, created via the AI Dream MCP) with json_schema output, run
+  HEADLESS through `launchAgentExecution` + JSON extraction (the
+  useGenerateQuiz pattern). Results stage into the view's own setters — the
+  USER commits. The `site_shaper` surface role is bound to the Shape Planner
+  (manifest + `ui.ui_surface_agent_role`).
 - Plan↔CMS bridge (`setup/bridge.ts`, consumed by
   `setup/components/SetupBridgeSection.tsx`) — the OTHER sanctioned aidream
   calls: `POST /content-plan/sites/{id}/cms-reconcile | cms-align |
@@ -265,6 +276,17 @@ plan CRUD through it.
     landing `/learn/guides/…`. No hub selected → members stay top-level;
     commercial concepts are never moved. The UI shows a `hub` badge and a
     "Nests under X" note; aidream's generator honors the same placement.
+- **Every Setup step SAVES — the work-order DRAFT persists as you go.**
+  `setup/draft.ts` autosaves the in-progress choices (selected shape, counts,
+  pasted/AI names, concept picks, research topic) to
+  `web.site.settings.content_plan.setup_draft` (debounced, version-guarded
+  read-modify-write with one retry; a failed save toasts LOUDLY — a silent
+  autosave failure is the original twenty-minutes-of-typing-lost bug). The
+  draft is a DIFFERENT fact from the committed record (sibling key, never
+  merged into `archetype`), seeds the view once per site on open, and is
+  cleared on a fully-successful commit. Because draft saves bump the site
+  row's `version`, the commit's `recordSiteArchetype` reads the FRESH row
+  (`fetchFreshSite`) instead of the query cache's copy.
 - **The committed work order lives in ONE place:**
   `web.site.settings.content_plan.archetype = {key, counts, concept_names?,
   instantiated_at}` — byte-identical to what aidream's `_record_site_archetype`
@@ -318,6 +340,61 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-30 — Claude (round 3): **adversarial-review fixes** (20-agent
+  find+refute workflow over both repos' diffs; 14 confirmed). Setup now seeds
+  from the FRESH site row (`fetchFreshSite`), never the 60s-stale siteOptions
+  cache; the debounced autosave FLUSHES on unmount and before commit
+  (pendingRef + committingRef — a cancelled debounce was the lost-typing bug
+  reborn); `lastSavedRef` marks saved only AFTER the write lands (failed
+  saves retry via pending); draft/link writes invalidate
+  `marketingKeys.siteOptions()`; SetupView keyed by siteId;
+  SetupBridgeSection's `recordCmsLink` reads the fresh row (autosaves bump
+  `version` deterministically); the generate popover sends an explicit topic
+  only on an in-session pick. NEW canonical read
+  `getLatestSuccessfulDocument` (+ hook) in features/research — the
+  AI-grounding consumers now match aidream's `_load_research_report`
+  semantics (a failed newest re-assembly no longer hides a good older
+  report); `useServiceQuery` refactored to derived loading (pre-existing
+  setState-in-effect lint errors). aidream: `send_warning` calls wrapped in
+  typed `WarningPayload` (plain strings crashed the emitter — pre-existing
+  calls fixed on sight), research grounding is fail-degrade (never kills a
+  paid run), `_record_site_archetype` re-reads the row before its settings
+  write (FE autosaves made the stale-snapshot clobber real), and
+  `research_topic_id` is authorized through `iam.has_access_for(user,
+  'research_topic', id, 'viewer')` — fail-closed (it was a cross-org report
+  exfiltration hole).
+- 2026-07-30 — Claude (round 2): **research grounding everywhere + entity
+  curation.** ONE site↔research link — `settings.content_plan
+  .research_topic_id` (`SITE_RESEARCH_TOPIC_KEY`, FE-written via
+  `recordSiteResearchTopic` in `setup/draft.ts`; aidream's generator AND
+  deepen read the same key server-side, twin constant in its
+  `archetypes.py`). New shared `components/ResearchTopicSelect.tsx` (consumed
+  by SetupAiBar + the Generate popover); PlanGenerateBar gained a
+  research-grounding picker and `usePlanGenerate` passes
+  `research_topic_id` to `/generate`; Setup topic picks record the link;
+  NodePanel Deepen is grounded automatically (no FE change). Third platform
+  agent "Content Plan Entity Curator"
+  (`c43e4497-3093-4b18-a906-b088127d8b9c`, Sonnet 5) wired as
+  EntityManager's "Suggest from research" (confirm-before-create; provenance
+  in `attributes.research`); `entity_curator` role bound in manifest + DB.
+  Boy-scout: ContentPlanWorkbench pre-existing rules-of-hooks violation
+  (useCallback after early return).
+- 2026-07-30 — Claude: **Setup got real step AI + save-as-you-go.** Two new
+  platform agents created via the AI Dream MCP (Claude Sonnet 5, json_schema
+  output): "Content Plan Shape Planner" (`b600975c-fc8f-4f1d-ab36-670be436a038`)
+  and "Content Plan Family Namer" (`7a16db8c-48eb-4997-a8d0-dc4a8892d7c5`).
+  New `SetupAiBar` strip (research-topic picker over `useAllTopics` +
+  `useResearchDocument` — the final report grounds every run) with
+  "Recommend shape & counts"; per-family "AI names" buttons on the count rows
+  (pages families). Runs are headless `launchAgentExecution` + JSON
+  extraction (`setup/ai.ts`); results stage through the existing setters.
+  NEW draft persistence `setup/draft.ts` → `settings.content_plan.setup_draft`
+  (autosave every change, seed on open, clear on full commit; commit's record
+  write now re-reads the fresh site row). `site_shaper` role bound to the
+  Shape Planner in the manifest + `ui.ui_surface_agent_role` (live). Known
+  gap: the shell-header Agents panel lists `agent.card`-backed bindings only,
+  so these definition-tier agents don't appear there — the on-page bar is the
+  entry point.
 - 2026-07-29 — Claude: **plan-vs-reality overlay (Deliverable 4).** Header
   Radar button runs aidream's crawl reconciler
   (`POST /content-plan/sites/{id}/reconcile`); report held in ONE cache entry

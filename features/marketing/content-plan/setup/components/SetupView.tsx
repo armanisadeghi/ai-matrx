@@ -20,7 +20,7 @@
  * writes (starter kit, plan↔CMS reconcile/realize) that genuinely need the
  * server's write policy + activity-log seams — never plain DB reads.
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import type { MarketingSite } from "@/features/marketing/types";
+import { useLatestSuccessfulResearchDocument } from "@/features/research/hooks/useResearchState";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { createContentPlanSetupScope } from "@/features/surfaces/manifests/content-plan-setup.manifest";
@@ -51,6 +52,20 @@ import {
   type FamilyPlan,
 } from "../archetypes";
 import type { Concept } from "../concepts";
+import {
+  buildArchetypeOptionsJson,
+  buildCurrentPlanSummary,
+  useSetupAgents,
+} from "../ai";
+import {
+  clearSetupDraft,
+  fetchFreshSite,
+  readSetupDraft,
+  readSiteResearchTopicId,
+  recordSiteResearchTopic,
+  saveSetupDraft,
+  type SetupDraft,
+} from "../draft";
 import { useArchetypeLibrary, useCmsFacts } from "../hooks";
 import { buildPreview } from "../preview";
 import { buildReadiness } from "../readiness";
@@ -62,6 +77,7 @@ import {
   type CommitResult,
 } from "../service";
 import { PlanLintSection } from "./PlanLintSection";
+import { SetupAiBar, type SetupAiRunSummary } from "./SetupAiBar";
 import { SetupBridgeSection } from "./SetupBridgeSection";
 import { SetupPreviewColumn } from "./SetupPreviewColumn";
 import { SetupShapeColumn } from "./SetupShapeColumn";
@@ -182,6 +198,164 @@ export function SetupView() {
     null,
   );
   const [result, setResult] = useState<CommitResult | null>(null);
+
+  // ── AI grounding + step agents ──────────────────────────────────────────
+  const [researchTopicId, setResearchTopicId] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [lastAiRun, setLastAiRun] = useState<SetupAiRunSummary | null>(null);
+  // Newest SUCCESSFUL report — matches aidream's `_load_research_report`, so
+  // a failed re-assembly never hides a perfectly good older report.
+  const researchDoc = useLatestSuccessfulResearchDocument(researchTopicId ?? "");
+  const agents = useSetupAgents(siteId);
+  const researchReport =
+    researchDoc.data?.status === "success" && researchDoc.data.content?.trim()
+      ? researchDoc.data.content
+      : null;
+
+  // ── draft persistence — every step saves, nothing is lost on navigation ─
+  // Seed ONCE per site from the FRESH row (never the siteOptions query cache
+  // — it can be minutes stale while autosaves advance the server draft), then
+  // autosave (debounced) whenever any choice changes. `lastSavedRef` carries
+  // the last serialization known to be on the server; `pendingRef` carries an
+  // armed-but-unwritten change so unmount and commit FLUSH it instead of
+  // dropping it — a cancelled debounce is exactly the lost-typing bug this
+  // module exists to kill.
+  const [seed, setSeed] = useState<{
+    siteId: string;
+    /** Serialization of the stored draft, null when none existed. */
+    serialized: string | null;
+  } | null>(null);
+  const lastSavedRef = useRef<{ siteId: string; serialized: string } | null>(null);
+  const pendingRef = useRef<{
+    siteId: string;
+    draft: SetupDraft;
+    serialized: string;
+  } | null>(null);
+  const committingRef = useRef(false);
+
+  useEffect(() => {
+    if (!siteId) return;
+    let cancelled = false;
+    void fetchFreshSite(siteId)
+      .then((fresh) => {
+        if (cancelled) return;
+        const draft = readSetupDraft(fresh.settings);
+        if (draft) {
+          if (draft.archetypeKey) setPickedKey(draft.archetypeKey);
+          if (Object.keys(draft.countsByArchetype).length > 0) {
+            setCountsByArchetype(draft.countsByArchetype);
+          }
+          if (Object.keys(draft.namesByArchetype).length > 0) {
+            setNamesByArchetype(draft.namesByArchetype);
+          }
+          if (Object.keys(draft.conceptNamesByArchetype).length > 0) {
+            setConceptNamesByArchetype(draft.conceptNamesByArchetype);
+          }
+          if (draft.researchTopicId) setResearchTopicId(draft.researchTopicId);
+        }
+        // No in-progress draft topic → the site's recorded research link
+        // (the same one aidream's generator/deepen read) is the default.
+        if (!draft?.researchTopicId) {
+          const linked = readSiteResearchTopicId(fresh.settings);
+          if (linked) setResearchTopicId(linked);
+        }
+        setSeed({
+          siteId,
+          serialized: draft
+            ? JSON.stringify({ ...draft, updatedAt: null })
+            : null,
+        });
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        // Loud, and STILL enable autosave (baseline = current defaults) —
+        // a failed seed read must not silently disable persistence.
+        toast.error(
+          `Could not load the saved setup draft: ${extractErrorMessage(error)}`,
+        );
+        setSeed({ siteId, serialized: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [siteId]);
+
+  const invalidateSiteOptions = () =>
+    void queryClient.invalidateQueries({ queryKey: marketingKeys.siteOptions() });
+
+  useEffect(() => {
+    if (!siteId || seed?.siteId !== siteId) return;
+    const draft: SetupDraft = {
+      archetypeKey: pickedKey,
+      countsByArchetype,
+      namesByArchetype,
+      conceptNamesByArchetype,
+      researchTopicId,
+      updatedAt: null,
+    };
+    const serialized = JSON.stringify(draft);
+    if (lastSavedRef.current?.siteId !== siteId) {
+      // First pass after mount — the baseline is the stored draft when one
+      // seeded, else the current (default) state. Only a CHANGE writes.
+      lastSavedRef.current = { siteId, serialized: seed.serialized ?? serialized };
+    }
+    if (lastSavedRef.current.serialized === serialized) {
+      pendingRef.current = null;
+      return;
+    }
+    const pending = { siteId, draft, serialized };
+    pendingRef.current = pending;
+    const timer = setTimeout(() => {
+      // A commit in flight owns the guarded writes — leave the pending change
+      // for the commit's own flush (or the unmount flush) instead of racing
+      // its version-guarded record/clear.
+      if (committingRef.current) return;
+      if (pendingRef.current !== pending) return;
+      pendingRef.current = null;
+      saveSetupDraft(siteId, draft)
+        .then(() => {
+          // Marked saved only AFTER the write lands — a failed save keeps the
+          // old baseline so the same state is retried (next edit, unmount
+          // flush, or commit flush), never silently abandoned.
+          lastSavedRef.current = { siteId, serialized };
+          invalidateSiteOptions();
+        })
+        .catch((error) => {
+          if (!pendingRef.current) pendingRef.current = pending;
+          // LOUD: an autosave that silently stops saving is the original bug.
+          toast.error(`Setup draft not saved: ${extractErrorMessage(error)}`);
+        });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [
+    siteId,
+    seed,
+    pickedKey,
+    countsByArchetype,
+    namesByArchetype,
+    conceptNamesByArchetype,
+    researchTopicId,
+  ]);
+
+  // Unmount FLUSH — the last ≤800ms of edits must survive a view toggle or
+  // navigation. Reads refs only, so the first-render closure is safe.
+  useEffect(() => {
+    return () => {
+      const pending = pendingRef.current;
+      if (!pending) return;
+      pendingRef.current = null;
+      lastSavedRef.current = {
+        siteId: pending.siteId,
+        serialized: pending.serialized,
+      };
+      void saveSetupDraft(pending.siteId, pending.draft)
+        .then(() => invalidateSiteOptions())
+        .catch((error) => {
+          toast.error(`Setup draft not saved: ${extractErrorMessage(error)}`);
+        });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const archetypes = library.data?.archetypes ?? [];
   const catalog = library.data?.catalog ?? {};
@@ -339,6 +513,96 @@ export function SetupView() {
     });
   };
 
+  // ── the AI steps — read the research report, stage into THIS state ──────
+  const handleRecommendShape = async () => {
+    if (!researchReport || !site) return;
+    setAiError(null);
+    try {
+      const plan = await agents.recommendShape({
+        research_report: researchReport,
+        site_domain: site.domain ?? site.name ?? "",
+        site_context: "",
+        archetype_options: buildArchetypeOptionsJson(archetypes, baseline),
+        current_plan_summary: buildCurrentPlanSummary(committed, nodeRows),
+        target_page_count: "",
+        guidance: "",
+      });
+      if (!archetypes.some((item) => item.key === plan.archetypeKey)) {
+        throw new Error(
+          `The planner picked "${plan.archetypeKey}", which is not in the shape library — nothing was applied.`,
+        );
+      }
+      const validFamilies = new Set(
+        (baseline.get(plan.archetypeKey)?.families ?? []).map((item) => item.key),
+      );
+      const recommendedCounts: Record<string, number> = {};
+      for (const item of plan.familyCounts) {
+        if (validFamilies.has(item.familyKey)) {
+          recommendedCounts[item.familyKey] = item.count;
+        }
+      }
+      setPickedKey(plan.archetypeKey);
+      setResult(null);
+      setCountsByArchetype((current) => ({
+        ...current,
+        [plan.archetypeKey]: recommendedCounts,
+      }));
+      if (plan.conceptNames.length > 0) {
+        setConceptNamesByArchetype((current) => ({
+          ...current,
+          [plan.archetypeKey]: {
+            ...(current[plan.archetypeKey] ?? {}),
+            ...Object.fromEntries(
+              plan.conceptNames.map((item) => [item.conceptKey, item.name]),
+            ),
+          },
+        }));
+      }
+      const countSummary = Object.entries(recommendedCounts)
+        .map(([key, value]) => `${key} × ${value}`)
+        .join(", ");
+      setLastAiRun({
+        kind: "shape",
+        headline: `Recommended "${plan.archetypeKey}"${countSummary ? ` (${countSummary})` : ""} — staged, you commit.`,
+        detail: plan.rationale,
+      });
+    } catch (error) {
+      setAiError(extractErrorMessage(error));
+    }
+  };
+
+  const handleNameFamily = async (familyKey: string) => {
+    if (!researchReport || !site || !expanded) return;
+    const family = expanded.families.find((item) => item.key === familyKey);
+    if (!family) return;
+    setAiError(null);
+    try {
+      const outcome = await agents.nameFamily(familyKey, {
+        research_report: researchReport,
+        site_domain: site.domain ?? site.name ?? "",
+        family_key: family.key,
+        family_label: family.label,
+        family_route: family.route,
+        target_count: String(counts[family.key] ?? family.count),
+        existing_names: (names[family.key] ?? []).join("\n"),
+        guidance: "",
+      });
+      setNames(
+        familyKey,
+        outcome.names.map((item) => item.label),
+      );
+      setLastAiRun({
+        kind: "names",
+        headline: `Named ${outcome.names.length} ${family.label.toLowerCase()} page(s) from the report — staged, you commit.`,
+        detail:
+          outcome.notes ||
+          outcome.names.map((item) => item.label).join(", "),
+      });
+    } catch (error) {
+      setAiError(extractErrorMessage(error));
+    }
+  };
+
   const missingTypes = expanded
     ? missingPageTypes(expanded.roots, pageTypeIdBySlug)
     : [];
@@ -376,9 +640,27 @@ export function SetupView() {
     if (!ok) return;
 
     setCommitting(true);
+    committingRef.current = true;
     setResult(null);
     setProgress({ done: 0, total: 0 });
     try {
+      // FLUSH any pending debounced edit FIRST — an autosave landing between
+      // fetchFreshSite and the version-guarded record write below would fail
+      // the record over a self-inflicted race; from here `committingRef`
+      // keeps the timer from firing until the commit is done.
+      const pendingAtCommit = pendingRef.current;
+      if (pendingAtCommit) {
+        pendingRef.current = null;
+        try {
+          await saveSetupDraft(pendingAtCommit.siteId, pendingAtCommit.draft);
+          lastSavedRef.current = {
+            siteId: pendingAtCommit.siteId,
+            serialized: pendingAtCommit.serialized,
+          };
+        } catch (error) {
+          toast.error(`Setup draft not saved: ${extractErrorMessage(error)}`);
+        }
+      }
       const outcome = await commitArchetype({
         siteId,
         organizationId: site.organization_id,
@@ -392,10 +674,13 @@ export function SetupView() {
 
       if (outcome.created > 0) {
         try {
+          // Draft autosaves bump the site row's version — the guarded record
+          // write must run against the FRESH row, not the query cache's copy.
+          const fresh = await fetchFreshSite(siteId);
           await recordSiteArchetype({
             siteId,
-            expectedVersion: site.version,
-            currentSettings: site.settings,
+            expectedVersion: fresh.version,
+            currentSettings: fresh.settings,
             archetypeKey: expanded.archetype,
             counts: expanded.counts,
             // Derived from the resolved report, exactly as aidream records it.
@@ -431,11 +716,22 @@ export function SetupView() {
         toast.success(
           `Created ${outcome.created} page(s). ${outcome.existing} already existed.`,
         );
+        // Fully committed — the plan itself is the truth now (Setup re-derives
+        // names from live nodes), so the in-progress draft is done.
+        try {
+          await clearSetupDraft(siteId);
+          invalidateSiteOptions();
+        } catch (error) {
+          toast.error(
+            `Pages created, but the setup draft was not cleared: ${extractErrorMessage(error)}`,
+          );
+        }
       }
     } catch (error) {
       toast.error(`Scaffolding failed: ${extractErrorMessage(error)}`);
     } finally {
       setCommitting(false);
+      committingRef.current = false;
       setProgress(null);
     }
   };
@@ -618,6 +914,33 @@ export function SetupView() {
         </div>
       ) : null}
 
+      <SetupAiBar
+        selectedTopicId={researchTopicId}
+        onSelectTopic={(topicId) => {
+          setResearchTopicId(topicId);
+          setAiError(null);
+          // Record the site↔research link — aidream's generator and deepen
+          // read the same key, so one pick grounds every later AI step.
+          if (siteId) {
+            void recordSiteResearchTopic(siteId, topicId)
+              .then(() => invalidateSiteOptions())
+              .catch((error) => {
+                toast.error(
+                  `Research link not recorded on the site: ${extractErrorMessage(error)}`,
+                );
+              });
+          }
+        }}
+        document={researchDoc.data ?? null}
+        documentLoading={Boolean(researchTopicId) && researchDoc.isLoading}
+        onRecommendShape={() => void handleRecommendShape()}
+        shapeBusy={agents.shapeBusy}
+        anyAgentBusy={agents.shapeBusy || agents.namingFamilyKey !== null}
+        lastRun={lastAiRun}
+        error={aiError}
+        onDismissError={() => setAiError(null)}
+      />
+
       {/* Mobile: ONE page scroll, panels stacked at natural height. md+: a
         fixed grid where each column owns its own scroll. */}
       <div
@@ -668,6 +991,9 @@ export function SetupView() {
               onNamesChange={setNames}
               onConceptNameChange={setConceptName}
               onReset={resetOverrides}
+              aiReady={Boolean(researchReport)}
+              aiNamingKey={agents.namingFamilyKey}
+              onAiNames={(familyKey) => void handleNameFamily(familyKey)}
               newCount={preview.counts.new}
               pageTypeName={(slug) =>
                 slug ? (pageTypeNameBySlug.get(slug) ?? slug) : "No page type"
