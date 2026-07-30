@@ -10,6 +10,8 @@ vision: [this doc §Vision — Arman's words, 2026-07-30 chat]
 The system that takes a `web.site` content plan and produces a real, professional, multi-page
 website through many specialized agent steps. This doc is the tracking spine: Arman's vision,
 where each missing piece inserts into what exists today, and the ordered work list.
+Point-fix defects found in the same audit are assignable one-by-one on
+[website-factory-bug-dispatch.md](./website-factory-bug-dispatch.md) (WF-1…WF-12).
 
 ## Vision — Arman's words (2026-07-30)
 
