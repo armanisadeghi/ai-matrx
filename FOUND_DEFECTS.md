@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D120 — `components/ui/chart.tsx` is `// @ts-nocheck` (2026-07-30)
+
+The shadcn-style recharts wrapper (`ChartContainer`/`ChartTooltipContent`/…) opts its whole file out of the type gate in a repo whose CLAUDE.md forbids `any`. Consumers (cx-dashboard usage charts, education StudyTrends, flashcard perf) build on untyped props with zero drift detection. Fix: type the wrapper against recharts ^3.9's real types (its payload generics are the usual pain point) and delete the pragma; new chart surfaces should meanwhile type recharts directly (the Search Console `PerformanceChart` does — use it as the reference) rather than deepening this wrapper. **Decides: anyone.**
+
 ### D119 — any EDITOR can flip a canonical entity's `visibility` (incl. to `public`) at the DB layer (2026-07-29)
 
 `std_update` RLS on canonical tables (verified on `workbench.working_documents`) gates UPDATE at `editor` for ALL columns — `visibility` included. Only the ShareModal UI is owner-gated; an editor-sharee can `PATCH ... SET visibility='public'` via PostgREST directly, exposing the row to every authenticated user. `setVisibilityColumn`'s "owner-only writes are enforced by RLS" comment (`utils/permissions/service.ts`) is false for std-variant tables. Fix candidates: a column-level trigger/guard (visibility changes require owner or admin-level access) applied per the canonical RLS pipeline, platform-wide — not per table. Surfaced by the working-document sharing work but applies to every std entity-variant table. **Decides: Arman** (security posture change, cross-cutting).
