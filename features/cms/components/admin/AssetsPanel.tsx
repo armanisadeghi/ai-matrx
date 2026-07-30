@@ -17,7 +17,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from "@/lib/toast";
 import { fileHandler } from "@/features/files/handler/handler";
 import { AssetInUseError, CmsAssetService } from '../../services/cmsService';
-import type { AssetComponentUsage, AssetPageUsage, ClientAsset, ClientSite } from '../../types';
+import type { AssetComponentUsage, AssetPageUsage, ClientAsset, ClientSiteSummary } from '../../types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -81,7 +81,7 @@ interface DeleteState {
     inUse: boolean;
 }
 
-export default function AssetsPanel({ sites }: { sites: ClientSite[] }) {
+export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
     const [siteId, setSiteId] = useState<string>(sites[0]?.id ?? '');
     const [assets, setAssets] = useState<ClientAsset[]>([]);
     const [isLoading, setIsLoading] = useState(false);

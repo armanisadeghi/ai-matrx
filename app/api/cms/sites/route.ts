@@ -318,10 +318,13 @@ export async function POST(request: NextRequest) {
       case "admin_list_sites": {
         await requireSuperAdmin();
 
+        // Same SUMMARY contract as `list` above — `ClientSiteSummary`, never a
+        // full row. `data_api_key` is read only to compute the boolean and is
+        // stripped before it leaves the route.
         const { data, error } = await db
           .from("client_sites")
           .select(
-            "id, slug, name, domain, is_active, owner_user_id, settings, created_at, updated_at",
+            "id, slug, name, domain, is_active, owner_user_id, favicon, settings, created_at, updated_at, data_api_key",
           )
           .order("name");
 
@@ -330,7 +333,11 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        return NextResponse.json({ sites: data ?? [] });
+        const sites = (data ?? []).map(({ data_api_key, ...site }) => ({
+          ...site,
+          has_data_api_key: Boolean(data_api_key),
+        }));
+        return NextResponse.json({ sites });
       }
 
       case "admin_update_policy": {

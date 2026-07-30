@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { useCmsAdminActivity } from '../../hooks/useCmsAdminActivity';
-import type { ClientSite } from '../../types';
+import type { ClientSiteSummary } from '../../types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -62,7 +62,7 @@ function ActorBadge({ actor }: { actor: string | undefined }) {
     );
 }
 
-export default function ActivityFeedPanel({ sites }: { sites: ClientSite[] }) {
+export default function ActivityFeedPanel({ sites }: { sites: ClientSiteSummary[] }) {
     const [siteId, setSiteId] = useState<string>('all');
     const [entityType, setEntityType] = useState<string>('all');
     const [actor, setActor] = useState<string>('all');

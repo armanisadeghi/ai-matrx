@@ -40,7 +40,7 @@ function entryTitleField(entry: SerpEntry): SerpFieldMetrics | null {
     chars: entry.titleChars ?? 0,
     charLimit: TITLE_LIMITS.maxChars,
     pixels: entry.titlePixels ?? 0,
-    pixelLimit: TITLE_LIMITS.desktopPx,
+    pixelLimit: TITLE_LIMITS.maxPx,
     ok: entry.titleOk ?? false,
     desktopOk: entry.titleDesktopOk,
     mobileOk: entry.titleMobileOk,
@@ -54,7 +54,7 @@ function entryDescriptionField(entry: SerpEntry): SerpFieldMetrics | null {
     chars: entry.descriptionChars ?? 0,
     charLimit: DESCRIPTION_LIMITS.maxChars,
     pixels: entry.descriptionPixels ?? 0,
-    pixelLimit: DESCRIPTION_LIMITS.desktopPx,
+    pixelLimit: DESCRIPTION_LIMITS.maxPx,
     ok: entry.descriptionOk ?? false,
     desktopOk: entry.descriptionDesktopOk,
     mobileOk: entry.descriptionMobileOk,
@@ -114,16 +114,15 @@ export function SerpToolOverlay({
               {checksTitle ? (
                 <li>
                   <strong className="text-foreground">Title:</strong> ≤
-                  {TITLE_LIMITS.maxChars} characters · ≤{TITLE_LIMITS.desktopPx}
-                  px desktop · ≤{TITLE_LIMITS.mobilePx}px mobile
+                  {TITLE_LIMITS.maxChars} characters · ≤{TITLE_LIMITS.maxPx}px
+                  rendered width
                 </li>
               ) : null}
               {checksDescription ? (
                 <li>
                   <strong className="text-foreground">Description:</strong> ≤
                   {DESCRIPTION_LIMITS.maxChars} characters · ≤
-                  {DESCRIPTION_LIMITS.desktopPx}px desktop · ≤
-                  {DESCRIPTION_LIMITS.mobilePx}px mobile
+                  {DESCRIPTION_LIMITS.maxPx}px rendered width
                 </li>
               ) : null}
             </ul>

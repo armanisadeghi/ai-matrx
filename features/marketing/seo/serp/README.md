@@ -8,18 +8,23 @@ Presentational core — no Redux, no data fetching. Give it text, it renders.
 
 `char-widths.ts` + `metrics.ts` are an **exact mirror** of the Python
 implementation in aidream `packages/matrx-scraper/matrx_scraper/meta_metrics.py`
-— same character-width table, same limits (title 600px on desktop/mobile ·
-60/15ch, description 920px on desktop/mobile · 160/70ch), same issue strings.
-The same string yields the same
-number in the browser, in SSR, in a test, and in the scraper at crawl time.
-**Parity is enforced by `metrics.parity.test.ts`** against Python-generated
-fixtures (`__fixtures__/meta-metrics-parity.json`). Change a limit, a width, or
-an issue string → change BOTH implementations in the same unit of work and
-regenerate the fixture. Never re-declare a limit — import from `metrics.ts`.
-Google does not publish separate numeric title/description length limits; it
-truncates snippets to fit the device. Our product policy therefore uses the
-same allowance for both device evaluations while retaining both result fields
-for compatibility and future changes.
+— same character-width table, same limits (title `maxPx` 600 · 60/15ch,
+description `maxPx` 920 · 160/70ch), same issue strings. The same string yields
+the same number in the browser, in SSR, in a test, and in the scraper at crawl
+time. **Parity is enforced by `metrics.parity.test.ts`** against
+Python-generated fixtures (`__fixtures__/meta-metrics-parity.json`). Change a
+limit, a width, or an issue string → change BOTH implementations in the same
+unit of work and regenerate the fixture. Never re-declare a limit — import from
+`metrics.ts`.
+
+**ONE pixel limit per field, never a desktop/mobile pair.** Google truncates on
+rendered pixel width and publishes no separate desktop/mobile metadata rule. The
+code used to carry a desktop limit AND a mobile limit holding the same value, so
+one overflowing title emitted TWO audit issues saying the same thing (customer
+report c2fad99f, 2026-07-28). `desktopPx` / `mobilePx` / `desktopOk` / `mobileOk`
+survive only as aliases of the one `maxPx` check so persisted rows and existing
+readers keep working — **never diverge them**. The desktop vs mobile SERP
+*previews* stay: those are two real renderings, not two rules.
 
 ## Persisted metrics — contract v1
 

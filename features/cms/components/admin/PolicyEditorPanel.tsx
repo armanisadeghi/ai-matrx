@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { CmsSiteService } from '../../services/cmsService';
-import type { AgentWritePolicy, ClientSite } from '../../types';
+import type { AgentWritePolicy, ClientSiteSummary } from '../../types';
+import { toClientSiteSummary } from '../../types';
 import {
     Select,
     SelectContent,
@@ -22,18 +23,20 @@ const POLICY_META: Record<AgentWritePolicy, { label: string; icon: typeof Shield
 };
 
 interface Props {
-    sites: ClientSite[];
-    onSiteUpdated: (site: ClientSite) => void;
+    sites: ClientSiteSummary[];
+    onSiteUpdated: (site: ClientSiteSummary) => void;
 }
 
 export default function PolicyEditorPanel({ sites, onSiteUpdated }: Props) {
     const [savingId, setSavingId] = useState<string | null>(null);
 
-    const handleChange = async (site: ClientSite, policy: AgentWritePolicy) => {
+    const handleChange = async (site: ClientSiteSummary, policy: AgentWritePolicy) => {
         setSavingId(site.id);
         try {
             const updated = await CmsSiteService.adminUpdatePolicy(site.id, { agentWritePolicy: policy });
-            onSiteUpdated(updated);
+            // The write returns a FULL row; the list holds summaries. Narrow through
+            // the one canonical converter so the two shapes can never diverge.
+            onSiteUpdated(toClientSiteSummary(updated));
             toast.success(`"${site.name}" agent policy set to ${POLICY_META[policy].label}`);
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'Failed to update policy');

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { CmsPageService } from '../../services/cmsService';
 import { clientPageUrl, clientSiteRootUrl, sitePreviewToken } from '../../utils/pageUrls';
-import type { ClientPageSummary, ClientSite } from '../../types';
+import type { ClientPageSummary, ClientSiteSummary } from '../../types';
 import {
     Select,
     SelectContent,
@@ -18,7 +18,7 @@ import { ExternalLink, Eye, Loader2, RefreshCw, FileText } from 'lucide-react';
 
 type AdminPage = ClientPageSummary & { client_id: string };
 
-export default function SitePageTreePanel({ sites }: { sites: ClientSite[] }) {
+export default function SitePageTreePanel({ sites }: { sites: ClientSiteSummary[] }) {
     const [siteId, setSiteId] = useState<string>(sites[0]?.id ?? '');
     const [pages, setPages] = useState<AdminPage[]>([]);
     const [isLoading, setIsLoading] = useState(true);

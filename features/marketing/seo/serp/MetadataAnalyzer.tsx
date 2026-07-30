@@ -91,8 +91,9 @@ export function MetadataAnalyzer({
 
   const titleCharOk = titleEval.charCount <= TITLE_LIMITS.maxChars;
   const descCharOk = descEval.charCount <= DESCRIPTION_LIMITS.maxChars;
-  const titleAllOk = titleEval.desktopOk && titleEval.mobileOk && titleCharOk;
-  const descAllOk = descEval.desktopOk && descEval.mobileOk && descCharOk;
+  // One pixel rule, not a desktop/mobile pair — see `TITLE_LIMITS`.
+  const titleAllOk = titleEval.desktopOk && titleCharOk;
+  const descAllOk = descEval.desktopOk && descCharOk;
   const hasData = titleEval.charCount > 0 || descEval.charCount > 0;
 
   async function handleFetchMetadata() {
@@ -242,7 +243,7 @@ export function MetadataAnalyzer({
                       chars: titleEval.charCount,
                       charLimit: TITLE_LIMITS.maxChars,
                       pixels: titleEval.pixelWidth,
-                      pixelLimit: TITLE_LIMITS.desktopPx,
+                      pixelLimit: TITLE_LIMITS.maxPx,
                       ok: titleEval.ok,
                       desktopOk: titleEval.desktopOk,
                       mobileOk: titleEval.mobileOk,
@@ -259,7 +260,7 @@ export function MetadataAnalyzer({
                       chars: descEval.charCount,
                       charLimit: DESCRIPTION_LIMITS.maxChars,
                       pixels: descEval.pixelWidth,
-                      pixelLimit: DESCRIPTION_LIMITS.desktopPx,
+                      pixelLimit: DESCRIPTION_LIMITS.maxPx,
                       ok: descEval.ok,
                       desktopOk: descEval.desktopOk,
                       mobileOk: descEval.mobileOk,
@@ -317,8 +318,8 @@ export function MetadataAnalyzer({
                 Desktop
               </span>
               <span className="ml-auto text-[10px] text-muted-foreground">
-                Max {TITLE_LIMITS.desktopPx}px title ·{" "}
-                {DESCRIPTION_LIMITS.desktopPx}
+                Max {TITLE_LIMITS.maxPx}px title ·{" "}
+                {DESCRIPTION_LIMITS.maxPx}
                 px description
               </span>
             </div>
@@ -342,8 +343,8 @@ export function MetadataAnalyzer({
                 Mobile
               </span>
               <span className="ml-auto text-[10px] text-muted-foreground">
-                Max {TITLE_LIMITS.mobilePx}px title ·{" "}
-                {DESCRIPTION_LIMITS.mobilePx}px description
+                Max {TITLE_LIMITS.maxPx}px title ·{" "}
+                {DESCRIPTION_LIMITS.maxPx}px description
               </span>
             </div>
             <CardContent className="border-0 p-0">

@@ -25,8 +25,18 @@ export const TITLE_FONT_PX = 20;
 /** Google renders meta descriptions in ~13px Roboto/Google Sans (weight 400). */
 export const DESCRIPTION_FONT_PX = 13;
 
+/**
+ * ONE pixel limit per field, not a desktop/mobile pair. Google truncates on
+ * rendered PIXEL WIDTH and publishes no separate desktop/mobile metadata rule
+ * (customer report c2fad99f, 2026-07-28). The two limits had always carried
+ * the same value, so a single overflow emitted TWO issues saying the same
+ * thing in the audit report. `desktopPx` / `mobilePx` remain as aliases of the
+ * one `maxPx` so existing readers keep working — never diverge them.
+ */
+
 /** Meta-title limits (mirror of `calculate_meta_title_metrics`). */
 export const TITLE_LIMITS = {
+  maxPx: 600,
   desktopPx: 600,
   mobilePx: 600,
   maxChars: 60,
@@ -35,6 +45,7 @@ export const TITLE_LIMITS = {
 
 /** Meta-description limits (mirror of `calculate_meta_description_metrics`). */
 export const DESCRIPTION_LIMITS = {
+  maxPx: 920,
   desktopPx: 920,
   mobilePx: 920,
   maxChars: 160,
@@ -87,8 +98,9 @@ export function evaluateMetaTitle(title: string): MetaEvaluation {
     };
   }
   const pixelWidth = measureSerpWidth(title, "title");
-  const desktopOk = pixelWidth <= TITLE_LIMITS.desktopPx;
-  const mobileOk = pixelWidth <= TITLE_LIMITS.mobilePx;
+  const widthOk = pixelWidth <= TITLE_LIMITS.maxPx;
+  const desktopOk = widthOk;
+  const mobileOk = widthOk;
   const tooShort = charCount < TITLE_LIMITS.minChars;
   const tooLong = charCount > TITLE_LIMITS.maxChars;
   const seoLengthOk = !tooShort && !tooLong;
@@ -101,13 +113,9 @@ export function evaluateMetaTitle(title: string): MetaEvaluation {
     issues.push(
       `Title is too long (${charCount} chars; maximum is ${TITLE_LIMITS.maxChars})`,
     );
-  if (!desktopOk)
+  if (!widthOk)
     issues.push(
-      `Title exceeds the desktop width limit (${Math.round(pixelWidth)}px > ${TITLE_LIMITS.desktopPx}px) and may be truncated`,
-    );
-  if (!mobileOk)
-    issues.push(
-      `Title exceeds the mobile width limit (${Math.round(pixelWidth)}px > ${TITLE_LIMITS.mobilePx}px) and may be truncated on mobile`,
+      `Title exceeds the width limit (${Math.round(pixelWidth)}px > ${TITLE_LIMITS.maxPx}px) and may be truncated`,
     );
   return {
     pixelWidth: Math.round(pixelWidth),
@@ -116,7 +124,7 @@ export function evaluateMetaTitle(title: string): MetaEvaluation {
     mobileOk,
     seoLengthOk,
     tooShort,
-    ok: desktopOk && mobileOk && seoLengthOk,
+    ok: widthOk && seoLengthOk,
     issues,
   };
 }
@@ -136,8 +144,9 @@ export function evaluateMetaDescription(description: string): MetaEvaluation {
     };
   }
   const pixelWidth = measureSerpWidth(description, "description");
-  const desktopOk = pixelWidth <= DESCRIPTION_LIMITS.desktopPx;
-  const mobileOk = pixelWidth <= DESCRIPTION_LIMITS.mobilePx;
+  const widthOk = pixelWidth <= DESCRIPTION_LIMITS.maxPx;
+  const desktopOk = widthOk;
+  const mobileOk = widthOk;
   const tooShort = charCount < DESCRIPTION_LIMITS.minChars;
   const tooLong = charCount > DESCRIPTION_LIMITS.maxChars;
   const seoLengthOk = !tooShort && !tooLong;
@@ -150,13 +159,9 @@ export function evaluateMetaDescription(description: string): MetaEvaluation {
     issues.push(
       `Description is too long (${charCount} chars; maximum is ${DESCRIPTION_LIMITS.maxChars})`,
     );
-  if (!desktopOk)
+  if (!widthOk)
     issues.push(
-      `Description exceeds the desktop width limit (${Math.round(pixelWidth)}px > ${DESCRIPTION_LIMITS.desktopPx}px) and may be truncated`,
-    );
-  if (!mobileOk)
-    issues.push(
-      `Description exceeds the mobile width limit (${Math.round(pixelWidth)}px > ${DESCRIPTION_LIMITS.mobilePx}px) and may be truncated on mobile`,
+      `Description exceeds the width limit (${Math.round(pixelWidth)}px > ${DESCRIPTION_LIMITS.maxPx}px) and may be truncated`,
     );
   return {
     pixelWidth: Math.round(pixelWidth),
@@ -165,7 +170,7 @@ export function evaluateMetaDescription(description: string): MetaEvaluation {
     mobileOk,
     seoLengthOk,
     tooShort,
-    ok: desktopOk && mobileOk && seoLengthOk,
+    ok: widthOk && seoLengthOk,
     issues,
   };
 }

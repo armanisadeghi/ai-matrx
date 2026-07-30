@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { CmsSiteService } from '../../services/cmsService';
-import type { ClientSite } from '../../types';
+import type { ClientSiteSummary } from '../../types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, AlertCircle, Radio } from 'lucide-react';
 import ActivityFeedPanel from './ActivityFeedPanel';
@@ -12,7 +12,7 @@ import ApprovalsQueuePanel from './ApprovalsQueuePanel';
 import AssetsPanel from './AssetsPanel';
 
 export default function CmsAgentsAdminClient() {
-    const [sites, setSites] = useState<ClientSite[]>([]);
+    const [sites, setSites] = useState<ClientSiteSummary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +32,7 @@ export default function CmsAgentsAdminClient() {
         fetchSites();
     }, [fetchSites]);
 
-    const handleSiteUpdated = (updated: ClientSite) => {
+    const handleSiteUpdated = (updated: ClientSiteSummary) => {
         setSites((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
     };
 

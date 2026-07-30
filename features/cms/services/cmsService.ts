@@ -139,8 +139,13 @@ export const CmsSiteService = {
 
     // ── Admin (requireSuperAdmin, fleet-wide, bypasses ownership) ─────────
 
-    async adminListSites(): Promise<ClientSite[]> {
-        const res = await callApi<{ sites: ClientSite[] }>('sites', 'admin_list_sites');
+    /**
+     * SUMMARY rows only — same contract as `listSites`, fleet-wide instead of
+     * owner-scoped. Need a full row (`theme_config`, `navigation`, …)?
+     * `getSite(id)`.
+     */
+    async adminListSites(): Promise<ClientSiteSummary[]> {
+        const res = await callApi<{ sites: ClientSiteSummary[] }>('sites', 'admin_list_sites');
         return res.sites;
     },
 

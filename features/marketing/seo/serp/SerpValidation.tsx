@@ -1,10 +1,10 @@
-import { CheckCircle, XCircle, Monitor, Smartphone } from "lucide-react";
+import { CheckCircle, XCircle, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { pctOf } from "./metrics";
 
 /**
  * Shared SERP validation chrome — the char/pixel progress bars, the
- * desktop/mobile device checks, and the compact metric chips.
+ * rendered-width verdict, and the compact metric chips.
  *
  * Used everywhere a meta title/description is scored: the calculator page's
  * Analysis panel, the SEO tool overlay's per-result detail, and the inline
@@ -60,18 +60,12 @@ function ProgressBar({
   );
 }
 
-export function SerpDeviceCheck({
-  device,
-  ok,
-}: {
-  device: "desktop" | "mobile";
-  ok: boolean;
-}) {
-  const Icon = device === "desktop" ? Monitor : Smartphone;
+/** Pass/fail for the ONE rendered-width rule (see `TITLE_LIMITS.maxPx`). */
+export function SerpWidthCheck({ ok }: { ok: boolean }) {
   return (
     <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2">
-      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-      <span className="text-xs capitalize text-foreground">{device}</span>
+      <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
+      <span className="text-xs text-foreground">Rendered width</span>
       <span className="ml-auto">
         {ok ? (
           <CheckCircle className="h-4 w-4 text-success" />
@@ -83,7 +77,7 @@ export function SerpDeviceCheck({
   );
 }
 
-/** Full bars + device checks for one field (title or description). */
+/** Full bars + width verdict for one field (title or description). */
 export function SerpFieldBars({ field }: { field: SerpFieldMetrics }) {
   const charPct = pctOf(field.chars, field.charLimit);
   const pixelPct = pctOf(field.pixels, field.pixelLimit);
@@ -105,11 +99,12 @@ export function SerpFieldBars({ field }: { field: SerpFieldMetrics }) {
         label={`Characters (${field.charLimit} limit)`}
         detail={`${field.chars}/${field.charLimit}`}
       />
+      {/* ONE width verdict, not a desktop/mobile pair — Google truncates on
+          rendered pixel width with no separate device rule, so the two chips
+          always agreed and read as two independent checks (report c2fad99f).
+          `desktopOk` is the one flag; `mobileOk` is its alias. */}
       {field.desktopOk !== undefined || field.mobileOk !== undefined ? (
-        <div className="grid grid-cols-2 gap-2">
-          <SerpDeviceCheck device="desktop" ok={field.desktopOk ?? field.ok} />
-          <SerpDeviceCheck device="mobile" ok={field.mobileOk ?? field.ok} />
-        </div>
+        <SerpWidthCheck ok={field.desktopOk ?? field.mobileOk ?? field.ok} />
       ) : null}
     </div>
   );

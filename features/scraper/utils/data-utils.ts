@@ -317,7 +317,7 @@ class ScraperDataUtils {
     } else if (titleAnalysis.status === "Too long") {
       suggestions.push({
         type: "title",
-        message: `Page title exceeds the canonical character or rendered-width limit. Keep it at ${TITLE_LIMITS.maxChars} characters or fewer and within ${TITLE_LIMITS.desktopPx}px.`,
+        message: `Page title exceeds the canonical character or rendered-width limit. Keep it at ${TITLE_LIMITS.maxChars} characters or fewer and within ${TITLE_LIMITS.maxPx}px.`,
         priority: "high",
       });
     }

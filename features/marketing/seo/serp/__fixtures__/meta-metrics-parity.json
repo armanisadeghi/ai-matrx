@@ -8,7 +8,9 @@
       "mobile_ok": false,
       "seo_length_ok": false,
       "too_short": true,
-      "issues": ["Title is empty"],
+      "issues": [
+        "Title is empty"
+      ],
       "title_ok": false
     },
     "description": {
@@ -18,7 +20,9 @@
       "mobile_ok": false,
       "seo_length_ok": false,
       "too_short": true,
-      "issues": ["Description is empty"],
+      "issues": [
+        "Description is empty"
+      ],
       "description_ok": false
     }
   },
@@ -31,7 +35,9 @@
       "mobile_ok": false,
       "seo_length_ok": false,
       "too_short": true,
-      "issues": ["Title is empty"],
+      "issues": [
+        "Title is empty"
+      ],
       "title_ok": false
     },
     "description": {
@@ -41,7 +47,9 @@
       "mobile_ok": false,
       "seo_length_ok": false,
       "too_short": true,
-      "issues": ["Description is empty"],
+      "issues": [
+        "Description is empty"
+      ],
       "description_ok": false
     }
   },
@@ -54,7 +62,9 @@
       "mobile_ok": true,
       "seo_length_ok": false,
       "too_short": true,
-      "issues": ["Title is too short (5 chars; minimum is 15)"],
+      "issues": [
+        "Title is too short (5 chars; minimum is 15)"
+      ],
       "title_ok": false
     },
     "description": {
@@ -64,7 +74,9 @@
       "mobile_ok": true,
       "seo_length_ok": false,
       "too_short": true,
-      "issues": ["Description is too short (5 chars; minimum is 70)"],
+      "issues": [
+        "Description is too short (5 chars; minimum is 70)"
+      ],
       "description_ok": false
     }
   },
@@ -87,7 +99,9 @@
       "mobile_ok": true,
       "seo_length_ok": false,
       "too_short": true,
-      "issues": ["Description is too short (55 chars; minimum is 70)"],
+      "issues": [
+        "Description is too short (55 chars; minimum is 70)"
+      ],
       "description_ok": false
     }
   },
@@ -110,7 +124,9 @@
       "mobile_ok": true,
       "seo_length_ok": false,
       "too_short": true,
-      "issues": ["Description is too short (54 chars; minimum is 70)"],
+      "issues": [
+        "Description is too short (54 chars; minimum is 70)"
+      ],
       "description_ok": false
     }
   },
@@ -125,8 +141,7 @@
       "too_short": false,
       "issues": [
         "Title is too long (129 chars; maximum is 60)",
-        "Title exceeds the desktop width limit (1148px > 600px) and may be truncated",
-        "Title exceeds the mobile width limit (1148px > 600px) and may be truncated on mobile"
+        "Title exceeds the width limit (1148px > 600px) and may be truncated"
       ],
       "title_ok": false
     },
@@ -152,8 +167,7 @@
       "too_short": false,
       "issues": [
         "Title is too long (151 chars; maximum is 60)",
-        "Title exceeds the desktop width limit (1278px > 600px) and may be truncated",
-        "Title exceeds the mobile width limit (1278px > 600px) and may be truncated on mobile"
+        "Title exceeds the width limit (1278px > 600px) and may be truncated"
       ],
       "title_ok": false
     },
@@ -179,8 +193,7 @@
       "too_short": false,
       "issues": [
         "Title is too long (71 chars; maximum is 60)",
-        "Title exceeds the desktop width limit (664px > 600px) and may be truncated",
-        "Title exceeds the mobile width limit (664px > 600px) and may be truncated on mobile"
+        "Title exceeds the width limit (664px > 600px) and may be truncated"
       ],
       "title_ok": false
     },
@@ -204,7 +217,9 @@
       "mobile_ok": true,
       "seo_length_ok": false,
       "too_short": false,
-      "issues": ["Title is too long (63 chars; maximum is 60)"],
+      "issues": [
+        "Title is too long (63 chars; maximum is 60)"
+      ],
       "title_ok": false
     },
     "description": {
@@ -214,7 +229,9 @@
       "mobile_ok": true,
       "seo_length_ok": false,
       "too_short": true,
-      "issues": ["Description is too short (63 chars; minimum is 70)"],
+      "issues": [
+        "Description is too short (63 chars; minimum is 70)"
+      ],
       "description_ok": false
     }
   },
@@ -237,7 +254,9 @@
       "mobile_ok": true,
       "seo_length_ok": false,
       "too_short": true,
-      "issues": ["Description is too short (35 chars; minimum is 70)"],
+      "issues": [
+        "Description is too short (35 chars; minimum is 70)"
+      ],
       "description_ok": false
     }
   },
@@ -260,7 +279,9 @@
       "mobile_ok": true,
       "seo_length_ok": false,
       "too_short": true,
-      "issues": ["Description is too short (40 chars; minimum is 70)"],
+      "issues": [
+        "Description is too short (40 chars; minimum is 70)"
+      ],
       "description_ok": false
     }
   },
@@ -275,8 +296,7 @@
       "too_short": false,
       "issues": [
         "Title is too long (64 chars; maximum is 60)",
-        "Title exceeds the desktop width limit (605px > 600px) and may be truncated",
-        "Title exceeds the mobile width limit (605px > 600px) and may be truncated on mobile"
+        "Title exceeds the width limit (605px > 600px) and may be truncated"
       ],
       "title_ok": false
     },
@@ -287,7 +307,9 @@
       "mobile_ok": true,
       "seo_length_ok": false,
       "too_short": true,
-      "issues": ["Description is too short (64 chars; minimum is 70)"],
+      "issues": [
+        "Description is too short (64 chars; minimum is 70)"
+      ],
       "description_ok": false
     }
   },
@@ -310,7 +332,9 @@
       "mobile_ok": true,
       "seo_length_ok": false,
       "too_short": true,
-      "issues": ["Description is too short (41 chars; minimum is 70)"],
+      "issues": [
+        "Description is too short (41 chars; minimum is 70)"
+      ],
       "description_ok": false
     }
   },
@@ -325,8 +349,7 @@
       "too_short": false,
       "issues": [
         "Title is too long (138 chars; maximum is 60)",
-        "Title exceeds the desktop width limit (1199px > 600px) and may be truncated",
-        "Title exceeds the mobile width limit (1199px > 600px) and may be truncated on mobile"
+        "Title exceeds the width limit (1199px > 600px) and may be truncated"
       ],
       "title_ok": false
     },

@@ -7,9 +7,10 @@
  * per-site framing owned by `matrx-user/cms-site` and below) but gives an
  * agent enough to find, compare, or create a site by name before drilling in.
  *
- * The hub loads FULL `client_sites` rows (`CmsSiteService.listSites()`), so
- * the summary carries more than id/name: domain, active flag, agent write
- * policy, and whether the site has minted its public data key. The site's
+ * The hub loads SUMMARY rows (`CmsSiteService.listSites()` →
+ * `ClientSiteSummary`), which still carry more than id/name: domain, active
+ * flag, agent write policy, and whether the site has minted its public data
+ * key — but NOT `theme_config` / `navigation` / `footer_config`. The site's
  * `data_api_key` VALUE is deliberately never emitted — `has_data_api_key`
  * carries the only fact an agent needs, and the key itself belongs in the
  * Collections tab UI where it can be revealed/rotated deliberately.
