@@ -1449,7 +1449,18 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Cancel Request */
+        /**
+         * Cancel Request
+         * @description Stop a running request at its next iteration boundary.
+         *
+         *     ``mode=cancel`` (default) — plain stop: everything streamed persists
+         *     normally as visible history.
+         *     ``mode=interrupt`` — stop-and-fork (the INTERRUPT send mode): the tail
+         *     produced after the last clean boundary persists HIDDEN
+         *     (is_visible_to_user=False + is_visible_to_model=False) so the user's
+         *     follow-up replies to the last thing they actually saw. Costs are kept
+         *     either way — the in-flight provider call finishes and bills in full.
+         */
         post: operations["cancel_request_ai_cancel__request_id__post"];
         delete?: never;
         options?: never;
@@ -26948,6 +26959,13 @@ export interface components {
              */
             text: string;
             /**
+             * Delivery
+             * @description STEER (next_boundary, default): delivered at the agent's next natural pause mid-run. QUEUE (turn_end): held until the run is COMPLETELY done, then delivered as the next message — one queued message per turn, FIFO.
+             * @default next_boundary
+             * @enum {string}
+             */
+            delivery?: "next_boundary" | "turn_end";
+            /**
              * Is Visible To User
              * @description Whether the injected message is shown in the user's transcript.
              * @default true
@@ -26984,6 +27002,11 @@ export interface components {
             text?: string | null;
             /** Status */
             status: string;
+            /**
+             * Delivery
+             * @default next_boundary
+             */
+            delivery?: string;
             /** Queued At */
             queued_at?: string | null;
             /**
@@ -42859,7 +42882,9 @@ export interface operations {
     };
     cancel_request_ai_cancel__request_id__post: {
         parameters: {
-            query?: never;
+            query?: {
+                mode?: string;
+            };
             header?: never;
             path: {
                 request_id: string;

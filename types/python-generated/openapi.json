@@ -3226,6 +3226,7 @@
           "AI"
         ],
         "summary": "Cancel Request",
+        "description": "Stop a running request at its next iteration boundary.\n\n``mode=cancel`` (default) — plain stop: everything streamed persists\nnormally as visible history.\n``mode=interrupt`` — stop-and-fork (the INTERRUPT send mode): the tail\nproduced after the last clean boundary persists HIDDEN\n(is_visible_to_user=False + is_visible_to_model=False) so the user's\nfollow-up replies to the last thing they actually saw. Costs are kept\neither way — the in-flight provider call finishes and bills in full.",
         "operationId": "cancel_request_ai_cancel__request_id__post",
         "parameters": [
           {
@@ -3235,6 +3236,16 @@
             "schema": {
               "type": "string",
               "title": "Request Id"
+            }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "cancel",
+              "title": "Mode"
             }
           }
         ],
@@ -74367,6 +74378,16 @@
             "title": "Text",
             "description": "The message text to inject."
           },
+          "delivery": {
+            "type": "string",
+            "enum": [
+              "next_boundary",
+              "turn_end"
+            ],
+            "title": "Delivery",
+            "description": "STEER (next_boundary, default): delivered at the agent's next natural pause mid-run. QUEUE (turn_end): held until the run is COMPLETELY done, then delivered as the next message — one queued message per turn, FIFO.",
+            "default": "next_boundary"
+          },
           "is_visible_to_user": {
             "type": "boolean",
             "title": "Is Visible To User",
@@ -74442,6 +74463,11 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "delivery": {
+            "type": "string",
+            "title": "Delivery",
+            "default": "next_boundary"
           },
           "queued_at": {
             "anyOf": [

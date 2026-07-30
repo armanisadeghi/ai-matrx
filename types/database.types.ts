@@ -5211,6 +5211,7 @@ export type Database = {
           content: Json
           conversation_id: string
           created_at: string
+          delivery: string
           enqueued_seq: number
           id: string
           is_visible_to_model: boolean
@@ -5229,6 +5230,7 @@ export type Database = {
           content?: Json
           conversation_id: string
           created_at?: string
+          delivery?: string
           enqueued_seq?: never
           id?: string
           is_visible_to_model?: boolean
@@ -5247,6 +5249,7 @@ export type Database = {
           content?: Json
           conversation_id?: string
           created_at?: string
+          delivery?: string
           enqueued_seq?: never
           id?: string
           is_visible_to_model?: boolean
@@ -14415,6 +14418,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      crawl_site_conveys: {
+        Args: { p_file_id: string; p_user_id: string }
+        Returns: boolean
+      }
       crawl_variant_tagging_drift: {
         Args: never
         Returns: {
