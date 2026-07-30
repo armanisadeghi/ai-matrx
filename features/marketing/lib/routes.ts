@@ -27,6 +27,11 @@ export const marketingRoutes = {
   youtubeDiscovery: () => "/marketing/discovery/youtube",
   youtubeVideo: (videoId: string) =>
     `/marketing/discovery/youtube/videos/${encodeURIComponent(videoId)}`,
+  /** The Search Console data dashboard (cross-site landing + `?site=` deep view). */
+  searchConsole: (siteId?: string) =>
+    siteId
+      ? `/marketing/search-console?site=${siteId}`
+      : "/marketing/search-console",
   /** In-app index of the PUBLIC SEO utilities (they live under `/seo/*`). */
   tools: () => "/marketing/tools",
   batches: () => "/marketing/batches",

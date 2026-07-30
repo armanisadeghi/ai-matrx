@@ -101,6 +101,12 @@ const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
       "Map keyword relationships with AI research and explore live market data.",
     letter: "Kr",
   },
+  "/marketing/search-console": {
+    titlePrefix: "Search Console",
+    description:
+      "The full Search Console dataset — queries, pages, countries, devices — with drill-downs, comparisons, and 16 months of history.",
+    letter: "Sc",
+  },
   "/marketing/tools": {
     titlePrefix: "SEO Tools",
     description: "Analyzers that run against any public URL.",

@@ -653,6 +653,7 @@ export function MatrxDataTable<T>({
                 return (
                   <tr
                     key={id}
+                    data-row-id={id}
                     data-state={isSelected ? "selected" : undefined}
                     onClick={(e) => {
                       // A click that started on a real link (the D112 title

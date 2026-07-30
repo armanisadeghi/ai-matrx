@@ -422,8 +422,8 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
       "Find expert source material, understand how the market searches, and track where you appear.",
     iconName: "Search",
     landingItems: [
+      "Search Console dashboard",
       "Keyword research",
-      "YouTube discovery",
       "Cross-site rank tracking",
       "AI visibility",
     ],
@@ -441,6 +441,13 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         description:
           "Find videos and compare creator authority, engagement, and research value.",
         iconName: "Video",
+      },
+      {
+        label: "Search Console",
+        href: marketingRoutes.searchConsole(),
+        description:
+          "The full Search Console dataset — queries, pages, countries, devices — with drill-downs, comparisons, and 16 months of history.",
+        iconName: "SearchCheck",
       },
       {
         label: "Rank Tracking",

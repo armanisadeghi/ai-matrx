@@ -87,9 +87,15 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       url: "/marketing/ranks",
       label: "Rank Tracking",
       description:
-        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+        "Cross-site rank portfolio — every tracked keyword across every brand and site (CrossSiteRanksHub).",
       filePath: "app/(core)/marketing/ranks/page.tsx",
-      status: "Coming soon",
+    },
+    {
+      url: "/marketing/search-console",
+      label: "Search Console",
+      description:
+        "The GSC data dashboard — cross-site portfolio + per-site deep view (?site=): KPI band, performance chart with compare, query/page/country/device/appearance tables over the seo.gsc_perf_* RPCs, GSC-parity drill-downs.",
+      filePath: "app/(core)/marketing/search-console/page.tsx",
     },
     {
       url: "/marketing/ai-visibility",
