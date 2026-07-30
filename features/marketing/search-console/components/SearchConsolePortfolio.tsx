@@ -80,7 +80,10 @@ export function SearchConsolePortfolio({
         tabIndex={0}
         onClick={() => onSelectSite(site.id)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") onSelectSite(site.id);
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelectSite(site.id);
+          }
         }}
         className="group flex cursor-pointer flex-col gap-2 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent"
       >

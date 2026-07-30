@@ -17,6 +17,7 @@ import { KpiBand } from "@/features/marketing/search-console/components/KpiBand"
 import { PerformanceChart } from "@/features/marketing/search-console/components/PerformanceChart";
 import { GscDimensionTable } from "@/features/marketing/search-console/components/GscDimensionTable";
 import {
+  useGscFreshness,
   useGscSummary,
   useGscTimeseries,
 } from "@/features/marketing/search-console/hooks/useGscQuery";
@@ -33,6 +34,12 @@ import type {
 
 export interface GscDrilldownWindowProps {
   onClose: () => void;
+  /** The overlay instanceId — doubles as the window-manager id so re-open
+   * can focus/restore this exact panel. */
+  instanceId: string;
+  /** How many drill-down panels were already open at open time — cascades
+   * the initial rect so panels never stack perfectly occluded. */
+  stackIndex?: number;
   siteId: string;
   siteName?: string | null;
   dimension: GscDimension;
@@ -54,6 +61,8 @@ const DIMENSION_TITLES: Record<GscDimension, string> = {
 
 export default function GscDrilldownWindow({
   onClose,
+  instanceId,
+  stackIndex = 0,
   siteId,
   siteName = null,
   dimension,
@@ -69,9 +78,17 @@ export default function GscDrilldownWindow({
     "clicks",
     "impressions",
   ]);
+  const freshness = useGscFreshness(siteId);
+  const dataThrough = useMemo(() => {
+    const dates = (freshness.data ?? [])
+      .filter((r) => r.dimension_profile !== "search_appearance")
+      .map((r) => r.max_date);
+    return dates.length > 0 ? [...dates].sort().at(-1) ?? null : null;
+  }, [freshness.data]);
   const periods = useMemo(
-    () => resolvePeriods({ range, customFrom, customTo, compare }),
-    [range, customFrom, customTo, compare],
+    () =>
+      resolvePeriods({ range, customFrom, customTo, compare }, new Date(), dataThrough),
+    [range, customFrom, customTo, compare, dataThrough],
   );
   const summary = useGscSummary(siteId, periods, filters);
   const timeseries = useGscTimeseries(siteId, periods, filters);
@@ -87,12 +104,25 @@ export default function GscDrilldownWindow({
     summary: summary.data ?? null,
   });
 
+  // Cascade so simultaneous panels land offset, never perfectly occluded.
+  const cascade = (stackIndex % 8) * 32;
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  const rect = {
+    width: Math.min(860, vw - 32),
+    height: Math.min(620, vh - 32),
+    x: Math.max(0, Math.min((vw - 860) / 2 + cascade, vw - 320)),
+    y: Math.max(0, Math.min((vh - 620) / 4 + cascade, vh - 240)),
+  };
+
   return (
     <WindowPanel
+      id={instanceId}
       title={panelTitle}
-      width={860}
-      height={620}
+      initialRect={rect}
       onClose={onClose}
+      overlayId="gscDrilldownWindow"
+      overlayInstanceId={instanceId}
       actionsRight={
         <CopyButtons
           size="xs"

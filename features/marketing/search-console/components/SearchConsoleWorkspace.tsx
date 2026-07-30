@@ -25,8 +25,10 @@ import { formatCompactDate } from "@/features/marketing/components/shared/Market
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import {
+  allowedFilterKeysForTab,
   buildSearchConsoleUrl,
   parseSearchConsoleUrl,
+  pruneFiltersForTab,
   resolvePeriods,
   type SearchConsoleUrlState,
 } from "@/features/marketing/search-console/lib/url-state";
@@ -103,7 +105,13 @@ export function SearchConsoleWorkspace() {
     () => parseSearchConsoleUrl(searchParams),
     [searchParams],
   );
-  const periods = useMemo(() => resolvePeriods(state), [state]);
+  // Render-safe filters: a shared/hand-edited URL can carry filters the
+  // active tab's dimension cannot serve — prune instead of letting the RPC
+  // raise gsc_filter_combination_unsupported into the UI.
+  const filters = useMemo(
+    () => pruneFiltersForTab(state.tab, state.filters),
+    [state.tab, state.filters],
+  );
 
   const siteOptions = useSiteOptions();
   const site =
@@ -111,10 +119,7 @@ export function SearchConsoleWorkspace() {
   const siteName = site ? (site.name ?? site.domain) : null;
   const gscBound = site ? siteHasGscBinding(site) : false;
 
-  const summary = useGscSummary(state.siteId, periods, state.filters);
-  const timeseries = useGscTimeseries(state.siteId, periods, state.filters);
   const freshness = useGscFreshness(state.siteId);
-
   const dataThrough = useMemo(() => {
     const rows = freshness.data ?? [];
     const dates = rows
@@ -123,6 +128,16 @@ export function SearchConsoleWorkspace() {
     return dates.length > 0 ? [...dates].sort().at(-1) ?? null : null;
   }, [freshness.data]);
   const hasAnyData = (freshness.data ?? []).length > 0;
+
+  // GSC parity: preset windows end at the freshest data day, not the wall
+  // clock — a lagging sync must not read as a traffic collapse.
+  const periods = useMemo(
+    () => resolvePeriods(state, new Date(), dataThrough),
+    [state, dataThrough],
+  );
+
+  const summary = useGscSummary(state.siteId, periods, filters);
+  const timeseries = useGscTimeseries(state.siteId, periods, filters);
 
   const applyState = (next: SearchConsoleUrlState) => {
     startNavigation(() => {
@@ -136,7 +151,7 @@ export function SearchConsoleWorkspace() {
     applyState({
       ...state,
       tab: drill.tab,
-      filters: { ...state.filters, ...drill.filters },
+      filters: pruneFiltersForTab(drill.tab, { ...filters, ...drill.filters }),
     });
   };
 
@@ -175,6 +190,18 @@ export function SearchConsoleWorkspace() {
     customTo: state.customTo,
     compare: state.compare,
   };
+
+  // Remount tables when the slice changes so page/search/sort never leak
+  // across sites, filters, or periods (GSC resets to page 1 on scope change).
+  const sliceKey = [
+    periods.current.start,
+    periods.current.end,
+    periods.compare?.start ?? "",
+    Object.entries(filters)
+      .map(([k, v]) => `${k}=${v}`)
+      .sort()
+      .join("&"),
+  ].join("|");
 
   return (
     <>
@@ -260,15 +287,22 @@ export function SearchConsoleWorkspace() {
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-accent hover:text-foreground",
                     )}
-                    onClick={() => applyState({ ...state, tab: tab.key })}
+                    onClick={() =>
+                      applyState({
+                        ...state,
+                        tab: tab.key,
+                        filters: pruneFiltersForTab(tab.key, filters),
+                      })
+                    }
                   >
                     {tab.label}
                   </button>
                 ))}
               </div>
               <FilterBar
-                filters={state.filters}
-                onChange={(filters) => applyState({ ...state, filters })}
+                filters={filters}
+                allowedKeys={allowedFilterKeysForTab(state.tab)}
+                onChange={(next) => applyState({ ...state, filters: next })}
               />
             </div>
 
@@ -304,7 +338,7 @@ export function SearchConsoleWorkspace() {
                   siteId={state.siteId}
                   siteName={siteName}
                   periods={periods}
-                  filters={state.filters}
+                  filters={filters}
                   summary={summary.data}
                   isLoading={summary.isLoading}
                   visibleMetrics={visibleMetrics}
@@ -322,18 +356,19 @@ export function SearchConsoleWorkspace() {
                   siteId={state.siteId}
                   siteName={siteName}
                   periods={periods}
-                  filters={state.filters}
+                  filters={filters}
                   rows={timeseries.data ?? []}
                   visibleMetrics={visibleMetrics}
                 />
                 <div className="grid min-h-[22rem] grid-cols-1 gap-2 xl:grid-cols-2">
                   <div className="flex min-h-[22rem] flex-col overflow-hidden rounded-md">
                     <GscDimensionTable
+                      key={`q|${state.siteId}|${sliceKey}`}
                       siteId={state.siteId}
                       siteName={siteName}
                       dimension="query"
                       periods={periods}
-                      filters={state.filters}
+                      filters={filters}
                       copySurface="Search Console — Overview top queries"
                       onDrill={onDrill("query")}
                       panelRange={panelRange}
@@ -343,11 +378,12 @@ export function SearchConsoleWorkspace() {
                   </div>
                   <div className="flex min-h-[22rem] flex-col overflow-hidden rounded-md">
                     <GscDimensionTable
+                      key={`p|${state.siteId}|${sliceKey}`}
                       siteId={state.siteId}
                       siteName={siteName}
                       dimension="page"
                       periods={periods}
-                      filters={state.filters}
+                      filters={filters}
                       copySurface="Search Console — Overview top pages"
                       onDrill={onDrill("page")}
                       panelRange={panelRange}
@@ -363,7 +399,7 @@ export function SearchConsoleWorkspace() {
                   siteId={state.siteId}
                   siteName={siteName}
                   periods={periods}
-                  filters={state.filters}
+                  filters={filters}
                   summary={summary.data}
                   isLoading={summary.isLoading}
                   visibleMetrics={visibleMetrics}
@@ -381,12 +417,12 @@ export function SearchConsoleWorkspace() {
                 <div className="min-h-0 flex-1">
                   {tabDimension ? (
                     <GscDimensionTable
-                      key={tabDimension}
+                      key={`${tabDimension}|${state.siteId}|${sliceKey}`}
                       siteId={state.siteId}
                       siteName={siteName}
                       dimension={tabDimension}
                       periods={periods}
-                      filters={state.filters}
+                      filters={filters}
                       copySurface={`Search Console — ${
                         GSC_TABS.find((t) => t.key === state.tab)?.label ??
                         state.tab

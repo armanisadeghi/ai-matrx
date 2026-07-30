@@ -485,6 +485,11 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       description:
         "Keyword Intelligence — the canonical per-keyword dossier (market, classification, relationships, site performance, rankings, SERP, research). Registered agent surface matrx-user/keyword-intelligence.",
     },
+    {
+      overlayId: "gscDrilldownWindow",
+      description:
+        "Search Console drill-down panel (multi-instance): any (site, dimension, filters, period) slice as KPI band + mini chart + dimension table; panel rows re-drill into further panels for side-by-side comparison. Opened from row right-clicks on /marketing/search-console via useOpenGscDrilldownWindow.",
+    },
   ],
   components: [
     {

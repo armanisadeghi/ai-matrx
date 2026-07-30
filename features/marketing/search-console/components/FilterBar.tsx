@@ -77,9 +77,12 @@ function chipValue(key: GscFilterKey, value: string): string {
 export function FilterBar({
   filters,
   onChange,
+  allowedKeys,
 }: {
   filters: GscFilters;
   onChange: (next: GscFilters) => void;
+  /** The keys the active tab's dimension can serve (url-state owns the map). */
+  allowedKeys?: readonly GscFilterKey[];
 }) {
   const [open, setOpen] = useState(false);
   const [draftKey, setDraftKey] = useState<GscFilterKey>("query_contains");
@@ -94,6 +97,7 @@ export function FilterBar({
     Object.keys(FILTER_LABELS) as GscFilterKey[]
   ).filter((key) => {
     if (filters[key]) return false;
+    if (allowedKeys && !allowedKeys.includes(key)) return false;
     if (group === "query_page") return QUERY_PAGE_KEYS.includes(key);
     if (group === "country_device") return COUNTRY_DEVICE_KEYS.includes(key);
     if (group === "appearance") return false;

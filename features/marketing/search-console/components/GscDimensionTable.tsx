@@ -15,6 +15,7 @@
 
 import { useRef, useState } from "react";
 import { Columns2, Filter, PanelTop, SearchX } from "lucide-react";
+import { toast } from "@/lib/toast";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
@@ -193,24 +194,38 @@ export function GscDimensionTable({
       ]),
     };
   };
-  const openRowPanel = (sameDimension: boolean) => {
-    const row = clickedRowRef.current;
-    if (!row || !panelRange) return;
-    const drill = panelDrillFor(dimension, row);
+  const openViewPanel = () => {
+    if (!panelRange) return;
     openDrilldown({
       siteId,
       siteName,
-      dimension: sameDimension ? dimension : drill.dimension,
-      filters: sameDimension
-        ? { ...filters }
-        : { ...filters, ...drill.filters },
+      dimension,
+      filters: { ...filters },
       range: panelRange.range,
       customFrom: panelRange.customFrom,
       customTo: panelRange.customTo,
       compare: panelRange.compare,
-      title: sameDimension
-        ? `${labels.column} — ${siteName ?? "Search Console"}`
-        : drill.label,
+      title: `${labels.column} — ${siteName ?? "Search Console"}`,
+    });
+  };
+  const openRowDrillPanel = () => {
+    const row = clickedRowRef.current;
+    if (!panelRange) return;
+    if (!row) {
+      toast.error("Right-click a data row to drill into it.");
+      return;
+    }
+    const drill = panelDrillFor(dimension, row);
+    openDrilldown({
+      siteId,
+      siteName,
+      dimension: drill.dimension,
+      filters: { ...filters, ...drill.filters },
+      range: panelRange.range,
+      customFrom: panelRange.customFrom,
+      customTo: panelRange.customTo,
+      compare: panelRange.compare,
+      title: drill.label,
     });
   };
 
@@ -392,7 +407,15 @@ export function GscDimensionTable({
             mode: "controlled",
             totalItems: total,
             state: query,
-            onStateChange: setQuery,
+            onStateChange: (next) =>
+              setQuery(
+                next.sort
+                  ? next
+                  : // A third header click clears the sort, but the RPC has no
+                    // unsorted mode — normalize so the header shows what the
+                    // server actually does.
+                    { ...next, sort: { id: "clicks", direction: "desc" } },
+              ),
           }}
           toolbar={{
             searchPlaceholder: `Search ${labels.noun}s…`,
@@ -478,7 +501,7 @@ export function GscDimensionTable({
               icon: PanelTop,
               description:
                 "Open this row's breakdown in a floating panel you can keep beside others",
-              onSelect: () => openRowPanel(false),
+              onSelect: openRowDrillPanel,
             },
             {
               kind: "item",
@@ -487,7 +510,7 @@ export function GscDimensionTable({
               icon: Columns2,
               description:
                 "Float this whole table (current filters and period) for side-by-side comparison",
-              onSelect: () => openRowPanel(true),
+              onSelect: openViewPanel,
             },
             ...(onDrill
               ? [
@@ -500,7 +523,11 @@ export function GscDimensionTable({
                       "Apply this row as a dashboard filter (same as clicking it)",
                     onSelect: () => {
                       const row = clickedRowRef.current;
-                      if (row) onDrill(row);
+                      if (!row) {
+                        toast.error("Right-click a data row to drill into it.");
+                        return;
+                      }
+                      onDrill(row);
                     },
                   },
                 ]

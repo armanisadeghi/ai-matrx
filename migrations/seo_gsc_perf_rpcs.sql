@@ -10,12 +10,25 @@
 --     'query_page' (which suffers Google's anonymized-query loss). This is
 --     how GSC's own UI behaves.
 --   * Aggregates: CTR = SUM(clicks)/SUM(impressions); position =
---     impressions-weighted average — NEVER an average of averages.
---   * Latest-fact dedup: dedup_key is run-scoped, so two different
---     collection runs overlapping the same dates append same-grain facts.
---     Every aggregate takes DISTINCT ON (grain) ... ORDER BY created_at DESC.
+--     impressions-weighted average over rows WHERE average_position IS NOT
+--     NULL (a NULL-position row must contribute to NEITHER sum) — never an
+--     average of averages.
+--   * Winning-run dedup: dedup_key is RUN-scoped, so two collection runs
+--     overlapping the same dates append same-grain facts, and Google can
+--     RESTATE a day (drop a row entirely in the newer run). Per
+--     (profile, date) the newest run PRESENT IN THE FACT TABLE for that date
+--     (created_at DESC, run_id DESC — deterministic under same-transaction
+--     timestamps) wins, and ONLY its rows aggregate. Residual: a restatement
+--     to zero rows for an entire day leaves the older day visible (no facts
+--     exist to signal the newer run covered it) — accepted; GSC 'final'
+--     data does not restate whole days to empty in practice.
+--   * The winner per date is chosen BEFORE user filters apply — filters
+--     select within the winning run's rows, never change which run wins.
 --   * Filter groups may not cross profiles: (query/page) | (country/device) |
---     (search_appearance). An unsupported combination raises loudly.
+--     (search_appearance). An unsupported combination raises loudly, as does
+--     a half-set compare period (both bounds or neither).
+--   * ILIKE user values are wildcard-escaped (seo.gsc_perf_like_escape) —
+--     '%'/'_' in a query or URL filter match literally.
 --
 -- Filter contract (p_filters jsonb, blank/missing keys ignored):
 --   query_contains, query_eq, query_neq, page_contains, page_eq
@@ -25,6 +38,14 @@
 CREATE INDEX IF NOT EXISTS idx_seo_sperf_gsc_read
   ON seo.search_performance_daily (site_id, dimension_profile, date)
   WHERE provider = 'gsc';
+
+CREATE OR REPLACE FUNCTION seo.gsc_perf_like_escape(p_value text)
+RETURNS text
+LANGUAGE sql IMMUTABLE
+SET search_path = seo, pg_temp
+AS $$
+  SELECT replace(replace(replace(p_value, '\', '\\'), '%', '\%'), '_', '\_');
+$$;
 
 CREATE OR REPLACE FUNCTION seo.gsc_perf_resolve_profile(
   p_dimension text,
@@ -96,36 +117,49 @@ DECLARE
   f_de text := NULLIF(btrim(p_filters->>'device'), '');
   f_sa text := NULLIF(btrim(p_filters->>'search_appearance'), '');
 BEGIN
+  IF (p_compare_start IS NULL) <> (p_compare_end IS NULL) THEN
+    RAISE EXCEPTION 'gsc_compare_bounds_mismatch: set both compare bounds or neither';
+  END IF;
+
   RETURN QUERY
-  WITH latest AS (
-    SELECT DISTINCT ON (spd.date, spd.query, spd.page_id, spd.country, spd.device, spd.search_appearance)
-      spd.date AS d, spd.clicks AS c, spd.impressions AS i, spd.average_position AS pos
+  WITH winner AS (
+    SELECT DISTINCT ON (spd.date) spd.date AS d, spd.run_id AS rid
     FROM seo.search_performance_daily spd
     WHERE spd.provider = 'gsc'
       AND spd.site_id = p_site_id
       AND spd.dimension_profile = v_profile
       AND spd.date BETWEEN LEAST(COALESCE(p_compare_start, p_start), p_start)
                        AND GREATEST(COALESCE(p_compare_end, p_end), p_end)
-      AND (f_qc IS NULL OR spd.query ILIKE '%' || f_qc || '%')
+    ORDER BY spd.date, spd.created_at DESC, spd.run_id DESC
+  ),
+  latest AS (
+    SELECT spd.date AS d, spd.clicks AS c, spd.impressions AS i, spd.average_position AS pos
+    FROM seo.search_performance_daily spd
+    JOIN winner w ON w.d = spd.date AND w.rid = spd.run_id
+    WHERE spd.provider = 'gsc'
+      AND spd.site_id = p_site_id
+      AND spd.dimension_profile = v_profile
+      AND (f_qc IS NULL OR spd.query ILIKE '%' || seo.gsc_perf_like_escape(f_qc) || '%')
       AND (f_qe IS NULL OR spd.query = f_qe)
       AND (f_qn IS NULL OR spd.query IS DISTINCT FROM f_qn)
-      AND (f_pc IS NULL OR spd.extras->>'page_url' ILIKE '%' || f_pc || '%')
+      AND (f_pc IS NULL OR spd.extras->>'page_url' ILIKE '%' || seo.gsc_perf_like_escape(f_pc) || '%')
       AND (f_pe IS NULL OR spd.extras->>'page_url' = f_pe OR spd.page_id::text = f_pe)
       AND (f_co IS NULL OR spd.country = f_co)
       AND (f_de IS NULL OR spd.device = f_de)
       AND (f_sa IS NULL OR spd.search_appearance = f_sa)
-    ORDER BY spd.date, spd.query, spd.page_id, spd.country, spd.device, spd.search_appearance, spd.created_at DESC
   ),
   cur AS (
     SELECT COALESCE(SUM(l.c), 0)::bigint AS s_clicks,
            COALESCE(SUM(l.i), 0)::bigint AS s_imps,
-           SUM(l.pos * l.i) AS s_wpos
+           SUM(l.pos * l.i) FILTER (WHERE l.pos IS NOT NULL) AS s_wpos,
+           COALESCE(SUM(l.i) FILTER (WHERE l.pos IS NOT NULL), 0) AS s_pos_imps
     FROM latest l WHERE l.d BETWEEN p_start AND p_end
   ),
   cmp AS (
     SELECT COALESCE(SUM(l.c), 0)::bigint AS s_clicks,
            COALESCE(SUM(l.i), 0)::bigint AS s_imps,
-           SUM(l.pos * l.i) AS s_wpos
+           SUM(l.pos * l.i) FILTER (WHERE l.pos IS NOT NULL) AS s_wpos,
+           COALESCE(SUM(l.i) FILTER (WHERE l.pos IS NOT NULL), 0) AS s_pos_imps
     FROM latest l
     WHERE p_compare_start IS NOT NULL AND p_compare_end IS NOT NULL
       AND l.d BETWEEN p_compare_start AND p_compare_end
@@ -133,11 +167,11 @@ BEGIN
   SELECT cur.s_clicks,
          cur.s_imps,
          CASE WHEN cur.s_imps > 0 THEN round(cur.s_clicks::numeric / cur.s_imps, 6) END,
-         CASE WHEN cur.s_imps > 0 THEN round(cur.s_wpos / cur.s_imps, 2) END,
+         CASE WHEN cur.s_pos_imps > 0 THEN round(cur.s_wpos / cur.s_pos_imps, 2) END,
          CASE WHEN p_compare_start IS NOT NULL THEN cmp.s_clicks END,
          CASE WHEN p_compare_start IS NOT NULL THEN cmp.s_imps END,
          CASE WHEN p_compare_start IS NOT NULL AND cmp.s_imps > 0 THEN round(cmp.s_clicks::numeric / cmp.s_imps, 6) END,
-         CASE WHEN p_compare_start IS NOT NULL AND cmp.s_imps > 0 THEN round(cmp.s_wpos / cmp.s_imps, 2) END
+         CASE WHEN p_compare_start IS NOT NULL AND cmp.s_pos_imps > 0 THEN round(cmp.s_wpos / cmp.s_pos_imps, 2) END
   FROM cur, cmp;
 END;
 $$;
@@ -171,32 +205,44 @@ DECLARE
   f_de text := NULLIF(btrim(p_filters->>'device'), '');
   f_sa text := NULLIF(btrim(p_filters->>'search_appearance'), '');
 BEGIN
+  IF (p_compare_start IS NULL) <> (p_compare_end IS NULL) THEN
+    RAISE EXCEPTION 'gsc_compare_bounds_mismatch: set both compare bounds or neither';
+  END IF;
+
   RETURN QUERY
-  WITH latest AS (
-    SELECT DISTINCT ON (spd.date, spd.query, spd.page_id, spd.country, spd.device, spd.search_appearance)
-      spd.date AS d, spd.clicks AS c, spd.impressions AS i, spd.average_position AS pos
+  WITH winner AS (
+    SELECT DISTINCT ON (spd.date) spd.date AS d, spd.run_id AS rid
     FROM seo.search_performance_daily spd
     WHERE spd.provider = 'gsc'
       AND spd.site_id = p_site_id
       AND spd.dimension_profile = v_profile
       AND spd.date BETWEEN LEAST(COALESCE(p_compare_start, p_start), p_start)
                        AND GREATEST(COALESCE(p_compare_end, p_end), p_end)
-      AND (f_qc IS NULL OR spd.query ILIKE '%' || f_qc || '%')
+    ORDER BY spd.date, spd.created_at DESC, spd.run_id DESC
+  ),
+  latest AS (
+    SELECT spd.date AS d, spd.clicks AS c, spd.impressions AS i, spd.average_position AS pos
+    FROM seo.search_performance_daily spd
+    JOIN winner w ON w.d = spd.date AND w.rid = spd.run_id
+    WHERE spd.provider = 'gsc'
+      AND spd.site_id = p_site_id
+      AND spd.dimension_profile = v_profile
+      AND (f_qc IS NULL OR spd.query ILIKE '%' || seo.gsc_perf_like_escape(f_qc) || '%')
       AND (f_qe IS NULL OR spd.query = f_qe)
       AND (f_qn IS NULL OR spd.query IS DISTINCT FROM f_qn)
-      AND (f_pc IS NULL OR spd.extras->>'page_url' ILIKE '%' || f_pc || '%')
+      AND (f_pc IS NULL OR spd.extras->>'page_url' ILIKE '%' || seo.gsc_perf_like_escape(f_pc) || '%')
       AND (f_pe IS NULL OR spd.extras->>'page_url' = f_pe OR spd.page_id::text = f_pe)
       AND (f_co IS NULL OR spd.country = f_co)
       AND (f_de IS NULL OR spd.device = f_de)
       AND (f_sa IS NULL OR spd.search_appearance = f_sa)
-    ORDER BY spd.date, spd.query, spd.page_id, spd.country, spd.device, spd.search_appearance, spd.created_at DESC
   )
   SELECT l.d,
          'current'::text,
          COALESCE(SUM(l.c), 0)::bigint,
          COALESCE(SUM(l.i), 0)::bigint,
          CASE WHEN SUM(l.i) > 0 THEN round(SUM(l.c)::numeric / SUM(l.i), 6) END,
-         CASE WHEN SUM(l.i) > 0 THEN round(SUM(l.pos * l.i) / SUM(l.i), 2) END
+         CASE WHEN COALESCE(SUM(l.i) FILTER (WHERE l.pos IS NOT NULL), 0) > 0
+              THEN round((SUM(l.pos * l.i) FILTER (WHERE l.pos IS NOT NULL)) / (SUM(l.i) FILTER (WHERE l.pos IS NOT NULL)), 2) END
   FROM latest l
   WHERE l.d BETWEEN p_start AND p_end
   GROUP BY l.d
@@ -206,7 +252,8 @@ BEGIN
          COALESCE(SUM(l.c), 0)::bigint,
          COALESCE(SUM(l.i), 0)::bigint,
          CASE WHEN SUM(l.i) > 0 THEN round(SUM(l.c)::numeric / SUM(l.i), 6) END,
-         CASE WHEN SUM(l.i) > 0 THEN round(SUM(l.pos * l.i) / SUM(l.i), 2) END
+         CASE WHEN COALESCE(SUM(l.i) FILTER (WHERE l.pos IS NOT NULL), 0) > 0
+              THEN round((SUM(l.pos * l.i) FILTER (WHERE l.pos IS NOT NULL)) / (SUM(l.i) FILTER (WHERE l.pos IS NOT NULL)), 2) END
   FROM latest l
   WHERE p_compare_start IS NOT NULL AND p_compare_end IS NOT NULL
     AND l.d BETWEEN p_compare_start AND p_compare_end
@@ -257,6 +304,9 @@ DECLARE
   f_de text := NULLIF(btrim(p_filters->>'device'), '');
   f_sa text := NULLIF(btrim(p_filters->>'search_appearance'), '');
 BEGIN
+  IF (p_compare_start IS NULL) <> (p_compare_end IS NULL) THEN
+    RAISE EXCEPTION 'gsc_compare_bounds_mismatch: set both compare bounds or neither';
+  END IF;
   IF p_sort NOT IN ('clicks', 'impressions', 'ctr', 'position', 'key', 'delta_clicks') THEN
     RAISE EXCEPTION 'gsc_sort_unknown: %', p_sort;
   END IF;
@@ -268,9 +318,18 @@ BEGIN
   END IF;
 
   RETURN QUERY
-  WITH latest AS (
-    SELECT DISTINCT ON (spd.date, spd.query, spd.page_id, spd.country, spd.device, spd.search_appearance)
-      spd.date AS d,
+  WITH winner AS (
+    SELECT DISTINCT ON (spd.date) spd.date AS d, spd.run_id AS rid
+    FROM seo.search_performance_daily spd
+    WHERE spd.provider = 'gsc'
+      AND spd.site_id = p_site_id
+      AND spd.dimension_profile = v_profile
+      AND spd.date BETWEEN LEAST(COALESCE(p_compare_start, p_start), p_start)
+                       AND GREATEST(COALESCE(p_compare_end, p_end), p_end)
+    ORDER BY spd.date, spd.created_at DESC, spd.run_id DESC
+  ),
+  latest AS (
+    SELECT spd.date AS d,
       spd.clicks AS c,
       spd.impressions AS i,
       spd.average_position AS pos,
@@ -284,39 +343,44 @@ BEGIN
         ELSE spd.search_appearance
       END AS k
     FROM seo.search_performance_daily spd
+    JOIN winner w ON w.d = spd.date AND w.rid = spd.run_id
     WHERE spd.provider = 'gsc'
       AND spd.site_id = p_site_id
       AND spd.dimension_profile = v_profile
-      AND spd.date BETWEEN LEAST(COALESCE(p_compare_start, p_start), p_start)
-                       AND GREATEST(COALESCE(p_compare_end, p_end), p_end)
-      AND (f_qc IS NULL OR spd.query ILIKE '%' || f_qc || '%')
+      AND (f_qc IS NULL OR spd.query ILIKE '%' || seo.gsc_perf_like_escape(f_qc) || '%')
       AND (f_qe IS NULL OR spd.query = f_qe)
       AND (f_qn IS NULL OR spd.query IS DISTINCT FROM f_qn)
-      AND (f_pc IS NULL OR spd.extras->>'page_url' ILIKE '%' || f_pc || '%')
+      AND (f_pc IS NULL OR spd.extras->>'page_url' ILIKE '%' || seo.gsc_perf_like_escape(f_pc) || '%')
       AND (f_pe IS NULL OR spd.extras->>'page_url' = f_pe OR spd.page_id::text = f_pe)
       AND (f_co IS NULL OR spd.country = f_co)
       AND (f_de IS NULL OR spd.device = f_de)
       AND (f_sa IS NULL OR spd.search_appearance = f_sa)
-    ORDER BY spd.date, spd.query, spd.page_id, spd.country, spd.device, spd.search_appearance, spd.created_at DESC
   ),
+  -- page_id/keyword_id per key: the canonical link when the dimension IS
+  -- that entity ('page' → page_id, 'query' → keyword_id, or under an
+  -- equality filter pinning it); a deterministic (lowest-uuid)
+  -- representative otherwise — consumers must not treat the representative
+  -- as authoritative for grouped dimensions.
   cur AS (
     SELECT l.k,
-           (array_agg(l.pid) FILTER (WHERE l.pid IS NOT NULL))[1] AS pid,
-           (array_agg(l.kid) FILTER (WHERE l.kid IS NOT NULL))[1] AS kid,
+           (array_agg(l.pid ORDER BY l.pid) FILTER (WHERE l.pid IS NOT NULL))[1] AS pid,
+           (array_agg(l.kid ORDER BY l.kid) FILTER (WHERE l.kid IS NOT NULL))[1] AS kid,
            SUM(l.c)::bigint AS s_clicks,
            SUM(l.i)::bigint AS s_imps,
-           SUM(l.pos * l.i) AS s_wpos
+           SUM(l.pos * l.i) FILTER (WHERE l.pos IS NOT NULL) AS s_wpos,
+           COALESCE(SUM(l.i) FILTER (WHERE l.pos IS NOT NULL), 0) AS s_pos_imps
     FROM latest l
     WHERE l.d BETWEEN p_start AND p_end AND l.k IS NOT NULL
     GROUP BY l.k
   ),
   cmp AS (
     SELECT l.k,
-           (array_agg(l.pid) FILTER (WHERE l.pid IS NOT NULL))[1] AS pid,
-           (array_agg(l.kid) FILTER (WHERE l.kid IS NOT NULL))[1] AS kid,
+           (array_agg(l.pid ORDER BY l.pid) FILTER (WHERE l.pid IS NOT NULL))[1] AS pid,
+           (array_agg(l.kid ORDER BY l.kid) FILTER (WHERE l.kid IS NOT NULL))[1] AS kid,
            SUM(l.c)::bigint AS s_clicks,
            SUM(l.i)::bigint AS s_imps,
-           SUM(l.pos * l.i) AS s_wpos
+           SUM(l.pos * l.i) FILTER (WHERE l.pos IS NOT NULL) AS s_wpos,
+           COALESCE(SUM(l.i) FILTER (WHERE l.pos IS NOT NULL), 0) AS s_pos_imps
     FROM latest l
     WHERE p_compare_start IS NOT NULL AND p_compare_end IS NOT NULL
       AND l.d BETWEEN p_compare_start AND p_compare_end AND l.k IS NOT NULL
@@ -329,9 +393,11 @@ BEGIN
            COALESCE(cur.s_clicks, 0) AS c_clicks,
            COALESCE(cur.s_imps, 0) AS c_imps,
            cur.s_wpos AS c_wpos,
+           COALESCE(cur.s_pos_imps, 0) AS c_pos_imps,
            CASE WHEN p_compare_start IS NOT NULL THEN COALESCE(cmp.s_clicks, 0) END AS m_clicks,
            CASE WHEN p_compare_start IS NOT NULL THEN COALESCE(cmp.s_imps, 0) END AS m_imps,
-           cmp.s_wpos AS m_wpos
+           cmp.s_wpos AS m_wpos,
+           COALESCE(cmp.s_pos_imps, 0) AS m_pos_imps
     FROM cur FULL OUTER JOIN cmp ON cur.k = cmp.k
   ),
   filtered AS (
@@ -340,11 +406,11 @@ BEGIN
              WHEN 'clicks' THEN j.c_clicks::numeric
              WHEN 'impressions' THEN j.c_imps::numeric
              WHEN 'ctr' THEN CASE WHEN j.c_imps > 0 THEN j.c_clicks::numeric / j.c_imps END
-             WHEN 'position' THEN CASE WHEN j.c_imps > 0 THEN j.c_wpos / j.c_imps END
+             WHEN 'position' THEN CASE WHEN j.c_pos_imps > 0 THEN j.c_wpos / j.c_pos_imps END
              WHEN 'delta_clicks' THEN (j.c_clicks - COALESCE(j.m_clicks, 0))::numeric
            END AS s_val
     FROM joined j
-    WHERE v_search IS NULL OR j.k ILIKE '%' || v_search || '%'
+    WHERE v_search IS NULL OR j.k ILIKE '%' || seo.gsc_perf_like_escape(v_search) || '%'
   )
   SELECT f.k,
          f.pid,
@@ -352,11 +418,11 @@ BEGIN
          f.c_clicks::bigint,
          f.c_imps::bigint,
          CASE WHEN f.c_imps > 0 THEN round(f.c_clicks::numeric / f.c_imps, 6) END,
-         CASE WHEN f.c_imps > 0 THEN round(f.c_wpos / f.c_imps, 2) END,
+         CASE WHEN f.c_pos_imps > 0 THEN round(f.c_wpos / f.c_pos_imps, 2) END,
          f.m_clicks::bigint,
          f.m_imps::bigint,
          CASE WHEN f.m_imps > 0 THEN round(f.m_clicks::numeric / f.m_imps, 6) END,
-         CASE WHEN f.m_imps > 0 THEN round(f.m_wpos / f.m_imps, 2) END,
+         CASE WHEN f.m_pos_imps > 0 THEN round(f.m_wpos / f.m_pos_imps, 2) END,
          COUNT(*) OVER ()::bigint
   FROM filtered f
   ORDER BY
@@ -388,6 +454,7 @@ AS $$
   ORDER BY spd.dimension_profile;
 $$;
 
+GRANT EXECUTE ON FUNCTION seo.gsc_perf_like_escape(text) TO authenticated;
 GRANT EXECUTE ON FUNCTION seo.gsc_perf_resolve_profile(text, jsonb) TO authenticated;
 GRANT EXECUTE ON FUNCTION seo.gsc_perf_summary(uuid, date, date, date, date, jsonb) TO authenticated;
 GRANT EXECUTE ON FUNCTION seo.gsc_perf_timeseries(uuid, date, date, date, date, jsonb) TO authenticated;

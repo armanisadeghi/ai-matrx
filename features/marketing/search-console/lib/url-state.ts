@@ -21,7 +21,12 @@ import type {
 } from "@/features/marketing/search-console/types";
 import { GSC_RANGE_PRESETS, GSC_TABS } from "@/features/marketing/search-console/types";
 
-/** GSC finalizes data ~2 days behind; the dashboard's "today" is lagged. */
+/**
+ * GSC finalizes data ~2 days behind; the dashboard's "today" is lagged.
+ * Applied in UTC deliberately (GSC's own dates are property-timezone days;
+ * a stable UTC boundary beats per-viewer local windows) — and in practice
+ * `resolvePeriods`' `dataEnd` clamp pins the window to real data anyway.
+ */
 export const GSC_DATA_LAG_DAYS = 2;
 
 export interface SearchConsoleUrlState {
@@ -117,12 +122,6 @@ function shiftDays(iso: string, days: number): string {
   return isoDate(d);
 }
 
-function shiftYears(iso: string, years: number): string {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCFullYear(d.getUTCFullYear() + years);
-  return isoDate(d);
-}
-
 function rangeDayCount(range: GscDateRange): number {
   const start = new Date(`${range.start}T00:00:00Z`).getTime();
   const end = new Date(`${range.end}T00:00:00Z`).getTime();
@@ -130,9 +129,18 @@ function rangeDayCount(range: GscDateRange): number {
 }
 
 /**
- * Resolve the URL state into concrete date ranges. `prev` compares against
- * the immediately preceding window of equal length; `yoy` against the same
- * calendar window one year earlier.
+ * Resolve the URL state into concrete date ranges.
+ *
+ * `dataEnd` — the freshest day the site actually holds (from
+ * `gsc_perf_freshness`) — CLAMPS preset windows, exactly like GSC's own UI:
+ * when ingestion lags, the window ends at real data instead of comparing a
+ * part-empty current period against a full compare period. Custom ranges are
+ * honored verbatim.
+ *
+ * `prev` compares against the immediately preceding window of equal length;
+ * `yoy` shifts exactly 364 days (52 weeks) — always equal-length, weekday-
+ * aligned, and immune to the Feb-29 rollover that a calendar-year shift
+ * silently mangles.
  */
 export function resolvePeriods(
   state: Pick<
@@ -140,10 +148,13 @@ export function resolvePeriods(
     "range" | "customFrom" | "customTo" | "compare"
   >,
   now: Date = new Date(),
+  dataEnd: string | null = null,
 ): GscResolvedPeriods {
-  const end = isoDate(
+  const wallEnd = isoDate(
     new Date(now.getTime() - GSC_DATA_LAG_DAYS * 86_400_000),
   );
+  const end =
+    dataEnd && ISO_DATE.test(dataEnd) && dataEnd < wallEnd ? dataEnd : wallEnd;
   let current: GscDateRange;
   if (state.range === "custom" && state.customFrom && state.customTo) {
     current = { start: state.customFrom, end: state.customTo };
@@ -162,9 +173,85 @@ export function resolvePeriods(
     };
   } else if (state.compare === "yoy") {
     compare = {
-      start: shiftYears(current.start, -1),
-      end: shiftYears(current.end, -1),
+      start: shiftDays(current.start, -364),
+      end: shiftDays(current.end, -364),
     };
   }
   return { current, compare };
+}
+
+/** The filter keys each tab's dimension group can serve (RPC profile rule). */
+const QUERY_PAGE_FILTER_KEYS: readonly (keyof GscFilters)[] = [
+  "query_contains",
+  "query_eq",
+  "query_neq",
+  "page_contains",
+  "page_eq",
+];
+const COUNTRY_DEVICE_FILTER_KEYS: readonly (keyof GscFilters)[] = [
+  "country",
+  "device",
+];
+
+export function allowedFilterKeysForTab(
+  tab: GscTab,
+): readonly (keyof GscFilters)[] {
+  switch (tab) {
+    case "overview":
+      return [
+        ...QUERY_PAGE_FILTER_KEYS,
+        ...COUNTRY_DEVICE_FILTER_KEYS,
+        "search_appearance",
+      ];
+    case "queries":
+    case "pages":
+      return QUERY_PAGE_FILTER_KEYS;
+    case "countries":
+    case "devices":
+      return COUNTRY_DEVICE_FILTER_KEYS;
+    case "appearance":
+      return ["search_appearance"];
+  }
+}
+
+/**
+ * Reduce a filter bag to ONE dimension group (query/page > country/device >
+ * appearance). The UI never builds a cross-group mix, but a hand-edited URL
+ * can — and the RPCs raise on it. Sanitizing here keeps every reachable
+ * state renderable.
+ */
+export function sanitizeFilterGroups(filters: GscFilters): GscFilters {
+  const present = (keys: readonly (keyof GscFilters)[]) =>
+    keys.some((k) => {
+      const value = filters[k];
+      return typeof value === "string" && value.trim() !== "";
+    });
+  const keep: readonly (keyof GscFilters)[] = present(QUERY_PAGE_FILTER_KEYS)
+    ? QUERY_PAGE_FILTER_KEYS
+    : present(COUNTRY_DEVICE_FILTER_KEYS)
+      ? COUNTRY_DEVICE_FILTER_KEYS
+      : ["search_appearance"];
+  const next: GscFilters = {};
+  for (const key of keep) {
+    const value = filters[key];
+    if (typeof value === "string" && value.trim() !== "") next[key] = value;
+  }
+  return next;
+}
+
+/**
+ * Drop filters the target tab's dimension cannot serve — switching from a
+ * country-filtered Countries tab to Queries must shed the country filter
+ * instead of hard-raising `gsc_filter_combination_unsupported`. Also reduces
+ * hostile URLs to a single filter group.
+ */
+export function pruneFiltersForTab(tab: GscTab, filters: GscFilters): GscFilters {
+  const allowed = new Set<string>(allowedFilterKeysForTab(tab));
+  const next: GscFilters = {};
+  for (const [key, value] of Object.entries(sanitizeFilterGroups(filters))) {
+    if (allowed.has(key) && typeof value === "string" && value.trim() !== "") {
+      next[key as keyof GscFilters] = value;
+    }
+  }
+  return next;
 }

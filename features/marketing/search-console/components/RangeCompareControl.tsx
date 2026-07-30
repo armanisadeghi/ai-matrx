@@ -94,7 +94,26 @@ export function RangeCompareControl({
 
       <Popover open={customOpen} onOpenChange={setCustomOpen}>
         <PopoverTrigger asChild>
-          <span aria-hidden className="sr-only" />
+          {value.range === "custom" ? (
+            // Radix's Select won't re-fire onValueChange for the already
+            // selected "custom" item, so an applied custom range needs its
+            // own edit affordance.
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1 px-2 text-xs"
+              aria-label="Edit custom range"
+              onClick={() => {
+                setDraftFrom(value.customFrom ?? "");
+                setDraftTo(value.customTo ?? "");
+              }}
+            >
+              <CalendarRange className="h-3 w-3" />
+              Edit
+            </Button>
+          ) : (
+            <span aria-hidden className="sr-only" />
+          )}
         </PopoverTrigger>
         <PopoverContent align="end" className="w-64 space-y-2 p-3">
           <p className="text-xs font-medium text-foreground">Custom range</p>

@@ -20,9 +20,10 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   header — read it before touching any of this feature's numbers**:
   narrowest-profile resolution (property = truth for totals; bare
   query/page profiles avoid `query_page` sampling loss), CTR =
-  Σclicks/Σimpressions, impressions-weighted position, and the latest-fact
-  `DISTINCT ON` dedup (dedup_key is RUN-scoped — overlapping runs append
-  same-grain facts; every aggregate must take the newest).
+  Σclicks/Σimpressions, position weighted only over rows WITH a position,
+  wildcard-escaped ILIKE filters, and WINNING-RUN dedup (dedup_key is
+  RUN-scoped and Google restates days — per (profile, date) only the newest
+  run's rows aggregate, chosen before user filters apply).
 - Reads go browser → Supabase directly (`data.ts`); the ONE compute call is
   the sync trigger (`sync.ts` → aidream, streamed, health-gated by the
   site's GSC binding). The legacy `web.gsc_page_stat` pipeline is untouched
@@ -40,6 +41,13 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   (`lib/url-state.ts`): `?site&tab&range&compare&q&qc&qn&pg&pgc&country&device&appearance`
   (+ `from`/`to` for custom ranges) — every drill-down is a shareable link.
   View STYLE only would go to `useListViewPrefs`; query state never persists.
+  Preset windows CLAMP to the site's freshest data day (`gsc_perf_freshness`)
+  so a lagging sync never fakes a traffic collapse; `yoy` compare shifts
+  exactly 364 days (weekday-aligned, Feb-29-safe); tab switches and shared
+  URLs prune filters the target tab's dimension cannot serve
+  (`pruneFiltersForTab` — the RPC's combination guard is unreachable from
+  the UI); tables remount per (site, filters, period) slice so page/search/
+  sort never leak across scopes.
 - `KpiBand` — the four GSC metric tiles; each tile toggles its chart series
   (GSC parity), compare deltas underneath (position delta colors invert —
   lower is better).

@@ -4708,6 +4708,10 @@ export default function OverlayController() {
         return (
           <GscDrilldownWindow
             key={inst.instanceId}
+            instanceId={inst.instanceId}
+            stackIndex={
+              typeof data.stackIndex === "number" ? data.stackIndex : 0
+            }
             onClose={() =>
               dispatch(
                 closeOverlay({

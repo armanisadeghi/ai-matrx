@@ -11,8 +11,16 @@
  */
 
 import { useCallback } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import {
+  closeOverlay,
+  openOverlay,
+  selectOpenInstances,
+} from "@/lib/redux/slices/overlaySlice";
+import {
+  focusWindow,
+  restoreWindow,
+} from "@/lib/redux/slices/windowManagerSlice";
 import type {
   GscCompareMode,
   GscDimension,
@@ -57,14 +65,27 @@ function instanceIdFor(opts: OpenGscDrilldownWindowOptions): string {
 
 export function useOpenGscDrilldownWindow() {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   return useCallback(
     (opts: OpenGscDrilldownWindowOptions): GscDrilldownWindowHandle => {
       const instanceId = instanceIdFor(opts);
+      const open = selectOpenInstances(store.getState(), OVERLAY_ID);
+      if (open.some((inst) => inst.instanceId === instanceId)) {
+        // Same slice already floating: surface it (un-minimize + raise)
+        // instead of silently re-dispatching into an unchanged pile.
+        dispatch(restoreWindow(instanceId));
+        dispatch(focusWindow(instanceId));
+        return {
+          close: () =>
+            dispatch(closeOverlay({ overlayId: OVERLAY_ID, instanceId })),
+        };
+      }
       dispatch(
         openOverlay({
           overlayId: OVERLAY_ID,
           instanceId,
           data: {
+            stackIndex: open.length,
             siteId: opts.siteId,
             siteName: opts.siteName ?? null,
             dimension: opts.dimension,
