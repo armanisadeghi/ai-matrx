@@ -65,6 +65,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { planKeys } from "../../data/hooks";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { slugify } from "../archetypes";
+import { fetchFreshSite } from "../draft";
 import {
   bridgeFillCancel,
   bridgeFillPreview,
@@ -219,10 +220,14 @@ export function SetupBridgeSection({
       }
       // Plan side first (settings.cms), then the bridge pairing — the first
       // reconcile with cms_site writes client_sites.web_site_id.
+      // FRESH row, not the query cache's copy: Setup's draft autosaves bump
+      // `version` continuously, so the cached version is deterministically
+      // stale and the guarded write would match zero rows.
+      const freshSite = await fetchFreshSite(site.id);
       await recordCmsLink({
         siteId: site.id,
-        expectedVersion: site.version,
-        currentSettings: site.settings,
+        expectedVersion: freshSite.version,
+        currentSettings: freshSite.settings,
         cmsSiteId,
         cmsSlug,
       });

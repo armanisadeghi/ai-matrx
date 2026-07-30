@@ -52,6 +52,14 @@ export const SHAPE_PLANNER_AGENT_ID = "b600975c-fc8f-4f1d-ab36-670be436a038";
  */
 export const FAMILY_NAMER_AGENT_ID = "7a16db8c-48eb-4997-a8d0-dc4a8892d7c5";
 
+/**
+ * Platform agent "Content Plan Entity Curator" — permanent latest-version
+ * pointer (created 2026-07-30 via the AI Dream MCP). Variables:
+ * research_report, site_domain, existing_entities, guidance. Structured
+ * output: {entities: [{label, entity_type, description, reason}], notes}.
+ */
+export const ENTITY_CURATOR_AGENT_ID = "c43e4497-3093-4b18-a906-b088127d8b9c";
+
 const EXTRACTION_TIMEOUT_MS = 180_000;
 const POLL_INTERVAL_MS = 300;
 
@@ -64,6 +72,19 @@ export interface ShapePlanResult {
 
 export interface FamilyNamesResult {
   names: Array<{ label: string; reason: string }>;
+  notes: string;
+}
+
+export const ENTITY_TYPES = ["person", "source", "media", "org"] as const;
+export type CuratedEntityType = (typeof ENTITY_TYPES)[number];
+
+export interface EntityCurationResult {
+  entities: Array<{
+    label: string;
+    entityType: CuratedEntityType;
+    description: string;
+    reason: string;
+  }>;
   notes: string;
 }
 
@@ -128,6 +149,36 @@ export function coerceFamilyNames(value: unknown): FamilyNamesResult {
     });
   }
   return { names, notes: typeof root.notes === "string" ? root.notes : "" };
+}
+
+export function coerceEntityCuration(value: unknown): EntityCurationResult {
+  const root = asRecord(value, "Entity Curator output");
+  if (!Array.isArray(root.entities)) {
+    throw new Error("Entity Curator output has no entities array");
+  }
+  const entities: EntityCurationResult["entities"] = [];
+  for (const item of root.entities) {
+    const row = asRecord(item, "entities item");
+    if (typeof row.label !== "string" || !row.label.trim()) {
+      throw new Error("Entity Curator returned a nameless entity");
+    }
+    const entityType = ENTITY_TYPES.find((t) => t === row.entity_type);
+    if (!entityType) {
+      throw new Error(
+        `Entity Curator returned unknown entity_type ${JSON.stringify(row.entity_type)}`,
+      );
+    }
+    entities.push({
+      label: row.label.trim(),
+      entityType,
+      description: typeof row.description === "string" ? row.description : "",
+      reason: typeof row.reason === "string" ? row.reason : "",
+    });
+  }
+  return {
+    entities,
+    notes: typeof root.notes === "string" ? root.notes : "",
+  };
 }
 
 /** The archetype menu, serialized exactly as the Shape Planner's variable expects. */
@@ -213,6 +264,7 @@ export function useSetupAgents(siteId: string | null) {
   const [shapeBusy, setShapeBusy] = useState(false);
   /** The family key currently being named, or null. */
   const [namingFamilyKey, setNamingFamilyKey] = useState<string | null>(null);
+  const [entitiesBusy, setEntitiesBusy] = useState(false);
   const inFlight = useRef(false);
 
   async function run<T>(
@@ -263,5 +315,26 @@ export function useSetupAgents(siteId: string | null) {
     }
   }
 
-  return { recommendShape, nameFamily, shapeBusy, namingFamilyKey };
+  async function curateEntities(
+    variables: Record<string, string>,
+  ): Promise<EntityCurationResult> {
+    if (inFlight.current) throw new Error("An agent run is already in progress");
+    inFlight.current = true;
+    setEntitiesBusy(true);
+    try {
+      return await run(ENTITY_CURATOR_AGENT_ID, variables, coerceEntityCuration);
+    } finally {
+      inFlight.current = false;
+      setEntitiesBusy(false);
+    }
+  }
+
+  return {
+    recommendShape,
+    nameFamily,
+    curateEntities,
+    shapeBusy,
+    namingFamilyKey,
+    entitiesBusy,
+  };
 }

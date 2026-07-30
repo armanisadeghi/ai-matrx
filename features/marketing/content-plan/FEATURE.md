@@ -340,6 +340,45 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-30 — Claude (round 3): **adversarial-review fixes** (20-agent
+  find+refute workflow over both repos' diffs; 14 confirmed). Setup now seeds
+  from the FRESH site row (`fetchFreshSite`), never the 60s-stale siteOptions
+  cache; the debounced autosave FLUSHES on unmount and before commit
+  (pendingRef + committingRef — a cancelled debounce was the lost-typing bug
+  reborn); `lastSavedRef` marks saved only AFTER the write lands (failed
+  saves retry via pending); draft/link writes invalidate
+  `marketingKeys.siteOptions()`; SetupView keyed by siteId;
+  SetupBridgeSection's `recordCmsLink` reads the fresh row (autosaves bump
+  `version` deterministically); the generate popover sends an explicit topic
+  only on an in-session pick. NEW canonical read
+  `getLatestSuccessfulDocument` (+ hook) in features/research — the
+  AI-grounding consumers now match aidream's `_load_research_report`
+  semantics (a failed newest re-assembly no longer hides a good older
+  report); `useServiceQuery` refactored to derived loading (pre-existing
+  setState-in-effect lint errors). aidream: `send_warning` calls wrapped in
+  typed `WarningPayload` (plain strings crashed the emitter — pre-existing
+  calls fixed on sight), research grounding is fail-degrade (never kills a
+  paid run), `_record_site_archetype` re-reads the row before its settings
+  write (FE autosaves made the stale-snapshot clobber real), and
+  `research_topic_id` is authorized through `iam.has_access_for(user,
+  'research_topic', id, 'viewer')` — fail-closed (it was a cross-org report
+  exfiltration hole).
+- 2026-07-30 — Claude (round 2): **research grounding everywhere + entity
+  curation.** ONE site↔research link — `settings.content_plan
+  .research_topic_id` (`SITE_RESEARCH_TOPIC_KEY`, FE-written via
+  `recordSiteResearchTopic` in `setup/draft.ts`; aidream's generator AND
+  deepen read the same key server-side, twin constant in its
+  `archetypes.py`). New shared `components/ResearchTopicSelect.tsx` (consumed
+  by SetupAiBar + the Generate popover); PlanGenerateBar gained a
+  research-grounding picker and `usePlanGenerate` passes
+  `research_topic_id` to `/generate`; Setup topic picks record the link;
+  NodePanel Deepen is grounded automatically (no FE change). Third platform
+  agent "Content Plan Entity Curator"
+  (`c43e4497-3093-4b18-a906-b088127d8b9c`, Sonnet 5) wired as
+  EntityManager's "Suggest from research" (confirm-before-create; provenance
+  in `attributes.research`); `entity_curator` role bound in manifest + DB.
+  Boy-scout: ContentPlanWorkbench pre-existing rules-of-hooks violation
+  (useCallback after early return).
 - 2026-07-30 — Claude: **Setup got real step AI + save-as-you-go.** Two new
   platform agents created via the AI Dream MCP (Claude Sonnet 5, json_schema
   output): "Content Plan Shape Planner" (`b600975c-fc8f-4f1d-ab36-670be436a038`)

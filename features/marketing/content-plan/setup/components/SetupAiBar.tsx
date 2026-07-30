@@ -12,16 +12,8 @@
 import { BookMarked, Compass, Loader2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import type { ResearchDocument, ResearchTopic } from "@/features/research/types";
-
-const NO_TOPIC = "__none__";
+import { ResearchTopicSelect } from "@/features/marketing/content-plan/components/ResearchTopicSelect";
+import type { ResearchDocument } from "@/features/research/types";
 
 export interface SetupAiRunSummary {
   kind: "shape" | "names";
@@ -30,8 +22,6 @@ export interface SetupAiRunSummary {
 }
 
 export function SetupAiBar({
-  topics,
-  topicsLoading,
   selectedTopicId,
   onSelectTopic,
   document,
@@ -43,8 +33,6 @@ export function SetupAiBar({
   error,
   onDismissError,
 }: {
-  topics: ResearchTopic[];
-  topicsLoading: boolean;
   selectedTopicId: string | null;
   onSelectTopic: (topicId: string | null) => void;
   /** The newest rs_document for the selected topic (null = none yet). */
@@ -63,8 +51,7 @@ export function SetupAiBar({
   const reportStatus = (() => {
     if (!selectedTopicId) return "Pick a research topic to ground the AI steps.";
     if (documentLoading) return "Loading the research report…";
-    if (!document) return "This topic has no final report yet — run Document assembly in Research first.";
-    if (document.status !== "success") return "The newest report version failed — regenerate it in Research.";
+    if (!document) return "This topic has no successful final report yet — run Document assembly in Research first.";
     if (!document.content?.trim()) return "The report is empty — regenerate it in Research.";
     const size = Math.round((document.content?.length ?? 0) / 1000);
     return `Report v${document.version ?? 1} loaded (~${size}k chars).`;
@@ -75,31 +62,11 @@ export function SetupAiBar({
       <div className="flex flex-wrap items-center gap-2">
         <BookMarked className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
         <span className="text-xs font-medium text-foreground">AI grounding</span>
-        <Select
-          value={selectedTopicId ?? NO_TOPIC}
-          onValueChange={(value) =>
-            onSelectTopic(value === NO_TOPIC ? null : value)
-          }
-        >
-          <SelectTrigger
-            className="h-7 w-56 text-xs"
-            aria-label="Research topic grounding the AI steps"
-          >
-            <SelectValue
-              placeholder={topicsLoading ? "Loading topics…" : "Pick a research topic"}
-            />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={NO_TOPIC} className="text-xs">
-              No research selected
-            </SelectItem>
-            {topics.map((topic) => (
-              <SelectItem key={topic.id} value={topic.id} className="text-xs">
-                {topic.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <ResearchTopicSelect
+          value={selectedTopicId}
+          onChange={onSelectTopic}
+          ariaLabel="Research topic grounding the AI steps"
+        />
         <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
           {reportStatus}
         </span>

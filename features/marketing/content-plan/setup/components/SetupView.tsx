@@ -28,10 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import type { MarketingSite } from "@/features/marketing/types";
-import {
-  useAllTopics,
-  useResearchDocument,
-} from "@/features/research/hooks/useResearchState";
+import { useLatestSuccessfulResearchDocument } from "@/features/research/hooks/useResearchState";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { createContentPlanSetupScope } from "@/features/surfaces/manifests/content-plan-setup.manifest";
@@ -64,6 +61,8 @@ import {
   clearSetupDraft,
   fetchFreshSite,
   readSetupDraft,
+  readSiteResearchTopicId,
+  recordSiteResearchTopic,
   saveSetupDraft,
   type SetupDraft,
 } from "../draft";
@@ -204,8 +203,9 @@ export function SetupView() {
   const [researchTopicId, setResearchTopicId] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [lastAiRun, setLastAiRun] = useState<SetupAiRunSummary | null>(null);
-  const allTopics = useAllTopics();
-  const researchDoc = useResearchDocument(researchTopicId ?? "");
+  // Newest SUCCESSFUL report — matches aidream's `_load_research_report`, so
+  // a failed re-assembly never hides a perfectly good older report.
+  const researchDoc = useLatestSuccessfulResearchDocument(researchTopicId ?? "");
   const agents = useSetupAgents(siteId);
   const researchReport =
     researchDoc.data?.status === "success" && researchDoc.data.content?.trim()
@@ -213,38 +213,75 @@ export function SetupView() {
       : null;
 
   // ── draft persistence — every step saves, nothing is lost on navigation ─
-  // Seed ONCE per site from settings.content_plan.setup_draft (the sanctioned
-  // adjust-state-during-render pattern — an effect would cascade renders),
-  // then autosave (debounced) whenever any choice changes. `lastSavedRef`
-  // carries the last serialization known to be on the server, so identical
-  // states never write.
+  // Seed ONCE per site from the FRESH row (never the siteOptions query cache
+  // — it can be minutes stale while autosaves advance the server draft), then
+  // autosave (debounced) whenever any choice changes. `lastSavedRef` carries
+  // the last serialization known to be on the server; `pendingRef` carries an
+  // armed-but-unwritten change so unmount and commit FLUSH it instead of
+  // dropping it — a cancelled debounce is exactly the lost-typing bug this
+  // module exists to kill.
   const [seed, setSeed] = useState<{
     siteId: string;
     /** Serialization of the stored draft, null when none existed. */
     serialized: string | null;
   } | null>(null);
   const lastSavedRef = useRef<{ siteId: string; serialized: string } | null>(null);
+  const pendingRef = useRef<{
+    siteId: string;
+    draft: SetupDraft;
+    serialized: string;
+  } | null>(null);
+  const committingRef = useRef(false);
 
-  if (site && siteId && seed?.siteId !== siteId) {
-    const draft = readSetupDraft(site.settings);
-    setSeed({
-      siteId,
-      serialized: draft ? JSON.stringify({ ...draft, updatedAt: null }) : null,
-    });
-    if (draft) {
-      if (draft.archetypeKey) setPickedKey(draft.archetypeKey);
-      if (Object.keys(draft.countsByArchetype).length > 0) {
-        setCountsByArchetype(draft.countsByArchetype);
-      }
-      if (Object.keys(draft.namesByArchetype).length > 0) {
-        setNamesByArchetype(draft.namesByArchetype);
-      }
-      if (Object.keys(draft.conceptNamesByArchetype).length > 0) {
-        setConceptNamesByArchetype(draft.conceptNamesByArchetype);
-      }
-      if (draft.researchTopicId) setResearchTopicId(draft.researchTopicId);
-    }
-  }
+  useEffect(() => {
+    if (!siteId) return;
+    let cancelled = false;
+    void fetchFreshSite(siteId)
+      .then((fresh) => {
+        if (cancelled) return;
+        const draft = readSetupDraft(fresh.settings);
+        if (draft) {
+          if (draft.archetypeKey) setPickedKey(draft.archetypeKey);
+          if (Object.keys(draft.countsByArchetype).length > 0) {
+            setCountsByArchetype(draft.countsByArchetype);
+          }
+          if (Object.keys(draft.namesByArchetype).length > 0) {
+            setNamesByArchetype(draft.namesByArchetype);
+          }
+          if (Object.keys(draft.conceptNamesByArchetype).length > 0) {
+            setConceptNamesByArchetype(draft.conceptNamesByArchetype);
+          }
+          if (draft.researchTopicId) setResearchTopicId(draft.researchTopicId);
+        }
+        // No in-progress draft topic → the site's recorded research link
+        // (the same one aidream's generator/deepen read) is the default.
+        if (!draft?.researchTopicId) {
+          const linked = readSiteResearchTopicId(fresh.settings);
+          if (linked) setResearchTopicId(linked);
+        }
+        setSeed({
+          siteId,
+          serialized: draft
+            ? JSON.stringify({ ...draft, updatedAt: null })
+            : null,
+        });
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        // Loud, and STILL enable autosave (baseline = current defaults) —
+        // a failed seed read must not silently disable persistence.
+        toast.error(
+          `Could not load the saved setup draft: ${extractErrorMessage(error)}`,
+        );
+        setSeed({ siteId, serialized: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [siteId]);
+
+  const invalidateSiteOptions = () =>
+    void queryClient.invalidateQueries({ queryKey: marketingKeys.siteOptions() });
 
   useEffect(() => {
     if (!siteId || seed?.siteId !== siteId) return;
@@ -262,13 +299,32 @@ export function SetupView() {
       // seeded, else the current (default) state. Only a CHANGE writes.
       lastSavedRef.current = { siteId, serialized: seed.serialized ?? serialized };
     }
-    if (lastSavedRef.current.serialized === serialized) return;
+    if (lastSavedRef.current.serialized === serialized) {
+      pendingRef.current = null;
+      return;
+    }
+    const pending = { siteId, draft, serialized };
+    pendingRef.current = pending;
     const timer = setTimeout(() => {
-      lastSavedRef.current = { siteId, serialized };
-      saveSetupDraft(siteId, draft).catch((error) => {
-        // LOUD: an autosave that silently stops saving is the original bug.
-        toast.error(`Setup draft not saved: ${extractErrorMessage(error)}`);
-      });
+      // A commit in flight owns the guarded writes — leave the pending change
+      // for the commit's own flush (or the unmount flush) instead of racing
+      // its version-guarded record/clear.
+      if (committingRef.current) return;
+      if (pendingRef.current !== pending) return;
+      pendingRef.current = null;
+      saveSetupDraft(siteId, draft)
+        .then(() => {
+          // Marked saved only AFTER the write lands — a failed save keeps the
+          // old baseline so the same state is retried (next edit, unmount
+          // flush, or commit flush), never silently abandoned.
+          lastSavedRef.current = { siteId, serialized };
+          invalidateSiteOptions();
+        })
+        .catch((error) => {
+          if (!pendingRef.current) pendingRef.current = pending;
+          // LOUD: an autosave that silently stops saving is the original bug.
+          toast.error(`Setup draft not saved: ${extractErrorMessage(error)}`);
+        });
     }, 800);
     return () => clearTimeout(timer);
   }, [
@@ -280,6 +336,26 @@ export function SetupView() {
     conceptNamesByArchetype,
     researchTopicId,
   ]);
+
+  // Unmount FLUSH — the last ≤800ms of edits must survive a view toggle or
+  // navigation. Reads refs only, so the first-render closure is safe.
+  useEffect(() => {
+    return () => {
+      const pending = pendingRef.current;
+      if (!pending) return;
+      pendingRef.current = null;
+      lastSavedRef.current = {
+        siteId: pending.siteId,
+        serialized: pending.serialized,
+      };
+      void saveSetupDraft(pending.siteId, pending.draft)
+        .then(() => invalidateSiteOptions())
+        .catch((error) => {
+          toast.error(`Setup draft not saved: ${extractErrorMessage(error)}`);
+        });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const archetypes = library.data?.archetypes ?? [];
   const catalog = library.data?.catalog ?? {};
@@ -564,9 +640,27 @@ export function SetupView() {
     if (!ok) return;
 
     setCommitting(true);
+    committingRef.current = true;
     setResult(null);
     setProgress({ done: 0, total: 0 });
     try {
+      // FLUSH any pending debounced edit FIRST — an autosave landing between
+      // fetchFreshSite and the version-guarded record write below would fail
+      // the record over a self-inflicted race; from here `committingRef`
+      // keeps the timer from firing until the commit is done.
+      const pendingAtCommit = pendingRef.current;
+      if (pendingAtCommit) {
+        pendingRef.current = null;
+        try {
+          await saveSetupDraft(pendingAtCommit.siteId, pendingAtCommit.draft);
+          lastSavedRef.current = {
+            siteId: pendingAtCommit.siteId,
+            serialized: pendingAtCommit.serialized,
+          };
+        } catch (error) {
+          toast.error(`Setup draft not saved: ${extractErrorMessage(error)}`);
+        }
+      }
       const outcome = await commitArchetype({
         siteId,
         organizationId: site.organization_id,
@@ -626,6 +720,7 @@ export function SetupView() {
         // names from live nodes), so the in-progress draft is done.
         try {
           await clearSetupDraft(siteId);
+          invalidateSiteOptions();
         } catch (error) {
           toast.error(
             `Pages created, but the setup draft was not cleared: ${extractErrorMessage(error)}`,
@@ -636,6 +731,7 @@ export function SetupView() {
       toast.error(`Scaffolding failed: ${extractErrorMessage(error)}`);
     } finally {
       setCommitting(false);
+      committingRef.current = false;
       setProgress(null);
     }
   };
@@ -819,12 +915,21 @@ export function SetupView() {
       ) : null}
 
       <SetupAiBar
-        topics={allTopics.data ?? []}
-        topicsLoading={allTopics.isLoading}
         selectedTopicId={researchTopicId}
         onSelectTopic={(topicId) => {
           setResearchTopicId(topicId);
           setAiError(null);
+          // Record the site↔research link — aidream's generator and deepen
+          // read the same key, so one pick grounds every later AI step.
+          if (siteId) {
+            void recordSiteResearchTopic(siteId, topicId)
+              .then(() => invalidateSiteOptions())
+              .catch((error) => {
+                toast.error(
+                  `Research link not recorded on the site: ${extractErrorMessage(error)}`,
+                );
+              });
+          }
         }}
         document={researchDoc.data ?? null}
         documentLoading={Boolean(researchTopicId) && researchDoc.isLoading}

@@ -6,7 +6,8 @@
  * `plan_source_type` category dimension.
  */
 import { useState } from "react";
-import { Pencil, Plus, Trash2, Users } from "lucide-react";
+import { Lightbulb, Loader2, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -33,12 +34,19 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { getLatestSuccessfulDocument } from "@/features/research/service";
+
 import {
+  planKeys,
   useCreatePlanEntity,
   useDeletePlanEntity,
   usePlanEntities,
   useUpdatePlanEntity,
 } from "../data/hooks";
+import { createPlanEntity } from "../data/service";
+import { useSetupAgents } from "../setup/ai";
+import { fetchFreshSite, readSiteResearchTopicId } from "../setup/draft";
 import {
   PLAN_ENTITY_TYPES,
   type PlanEntityRow,
@@ -56,12 +64,97 @@ export function EntityManager({
 }) {
   const entities = usePlanEntities(siteId);
   const remove = useDeletePlanEntity(siteId);
+  const queryClient = useQueryClient();
+  const agents = useSetupAgents(siteId);
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<PlanEntityRow | null>(null);
   const [deleting, setDeleting] = useState<PlanEntityRow | null>(null);
 
   const rows = entities.data ?? [];
+
+  // The Entity Curator agent: read the site's linked research report and
+  // propose real E-E-A-T entities; the user confirms before anything writes.
+  const handleSuggestFromResearch = async () => {
+    try {
+      const fresh = await fetchFreshSite(siteId);
+      const topicId = readSiteResearchTopicId(fresh.settings);
+      if (!topicId) {
+        toast.error(
+          "No research topic is linked to this site yet — pick one in Setup's AI grounding bar (or the Generate popover) first.",
+        );
+        return;
+      }
+      const document = await getLatestSuccessfulDocument(topicId);
+      const report = (document?.content ?? "").trim();
+      if (!report) {
+        toast.error(
+          "The linked research topic has no successful final report — run Document assembly in Research first.",
+        );
+        return;
+      }
+      const outcome = await agents.curateEntities({
+        research_report: report,
+        site_domain: fresh.domain ?? fresh.name ?? "",
+        existing_entities: rows
+          .map((entity) => `${entity.entity_type}: ${entity.label}`)
+          .join("\n"),
+        guidance: "",
+      });
+      const existingLabels = new Set(
+        rows.map((entity) => entity.label.trim().toLowerCase()),
+      );
+      const fresh_suggestions = outcome.entities.filter(
+        (item) => !existingLabels.has(item.label.trim().toLowerCase()),
+      );
+      if (fresh_suggestions.length === 0) {
+        toast.success(
+          outcome.notes ||
+            "The curator found nothing new — everything it proposed already exists.",
+        );
+        return;
+      }
+      const ok = await confirm({
+        title: `Add ${fresh_suggestions.length} suggested entit${fresh_suggestions.length === 1 ? "y" : "ies"}?`,
+        description:
+          fresh_suggestions
+            .map((item) => `${item.entityType}: ${item.label}`)
+            .join(" · ") + (outcome.notes ? ` — ${outcome.notes}` : ""),
+        confirmLabel: "Add entities",
+      });
+      if (!ok) return;
+      let created = 0;
+      const failures: string[] = [];
+      for (const item of fresh_suggestions) {
+        try {
+          await createPlanEntity({
+            site_id: siteId,
+            organization_id: organizationId,
+            label: item.label,
+            entity_type: item.entityType,
+            attributes: {
+              research: { description: item.description, reason: item.reason },
+            },
+          });
+          created += 1;
+        } catch (error) {
+          failures.push(`${item.label}: ${extractErrorMessage(error)}`);
+        }
+      }
+      await queryClient.invalidateQueries({
+        queryKey: planKeys.entities(siteId),
+      });
+      if (failures.length > 0) {
+        toast.error(
+          `Added ${created}; ${failures.length} failed — ${failures[0]}`,
+        );
+      } else {
+        toast.success(`Added ${created} entit${created === 1 ? "y" : "ies"} from the research report.`);
+      }
+    } catch (error) {
+      toast.error(`Entity suggestion failed: ${extractErrorMessage(error)}`);
+    }
+  };
 
   // Surface: matrx-user/content-plan-entities — nested provider (deepest
   // wins while this view renders). Agents here see the FULL roster; the
@@ -109,16 +202,33 @@ export function EntityManager({
               site's content (E-E-A-T).
             </p>
           </div>
-          <Button
-            size="sm"
-            className="h-7 text-xs"
-            onClick={() => {
-              setEditing(null);
-              setEditorOpen(true);
-            }}
-          >
-            <Plus className="mr-1 h-3 w-3" /> New entity
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              disabled={agents.entitiesBusy}
+              title="Read the site's linked research report and propose the real people, standards, and sources this content should cite."
+              onClick={() => void handleSuggestFromResearch()}
+            >
+              {agents.entitiesBusy ? (
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              ) : (
+                <Lightbulb className="mr-1 h-3 w-3" />
+              )}
+              Suggest from research
+            </Button>
+            <Button
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                setEditing(null);
+                setEditorOpen(true);
+              }}
+            >
+              <Plus className="mr-1 h-3 w-3" /> New entity
+            </Button>
+          </div>
         </div>
 
         {entities.isLoading ? (

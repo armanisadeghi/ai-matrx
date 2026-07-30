@@ -1251,6 +1251,30 @@ export async function getDocument(
   return data;
 }
 
+/**
+ * The newest SUCCESSFUL report — what "the final Document" means to every
+ * consumer that feeds the report to an AI (content-plan grounding, exports).
+ * `getDocument` above returns the newest version regardless of status (the
+ * viewer wants to show a failed re-assembly); this one matches aidream's
+ * `_load_research_report` exactly, so a failed newest version never hides a
+ * perfectly good older report.
+ */
+export async function getLatestSuccessfulDocument(
+  topicId: string,
+): Promise<ResearchDocument | null> {
+  const { data, error } = await supabase
+    .schema("research")
+    .from("rs_document")
+    .select("*")
+    .eq("topic_id", topicId)
+    .eq("status", "success")
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function getDocumentVersions(
   topicId: string,
 ): Promise<ResearchDocument[]> {

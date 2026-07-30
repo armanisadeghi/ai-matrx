@@ -59,7 +59,7 @@ export const contentPlanEntitiesManifest: SurfaceManifest = {
   label: "Content Plan Entities",
   readiness: "partial",
   readinessNote:
-    "Emitter wired in EntityManager; per-entity attributes not audited field-by-field; no default agent bound to entity_curator yet.",
+    "Emitter wired in EntityManager; per-entity attributes not audited field-by-field; entity_curator bound to the Content Plan Entity Curator (manifest + ui.ui_surface_agent_role synced 2026-07-30).",
   urlPattern: "/marketing/content-plan/[siteId]?view=entities",
   inheritsFrom: "matrx-user/content-plan",
   intro: `<surface_intro>
@@ -79,7 +79,10 @@ Suggestions belong to the roster: who is missing, whose credentials matter for t
       description:
         "Builds and audits the site's E-E-A-T roster — proposing the people, sources, and organizations the content needs, and flagging credibility gaps for the vertical.",
       kind: "single",
-      defaultAgentId: null,
+      // Platform agent "Content Plan Entity Curator" (agx_agent, created via
+      // the AI Dream MCP 2026-07-30) — same agent EntityManager's "Suggest
+      // from research" button runs (setup/ai.ts).
+      defaultAgentId: "c43e4497-3093-4b18-a906-b088127d8b9c",
       sortOrder: 100,
     },
   ],

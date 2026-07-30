@@ -25,6 +25,7 @@ import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import type { AssociationEdge } from "@/features/scopes/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { marketingKeys } from "@/features/marketing/data/hooks";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -38,6 +39,10 @@ import {
 } from "../data/hooks";
 import { updatePlanNode } from "../data/service";
 import { usePlanDeepen, usePlanGenerate } from "../hooks/useContentPlanAi";
+import {
+  readSiteResearchTopicId,
+  recordSiteResearchTopic,
+} from "../setup/draft";
 import { liveMatchesById, usePlanReality } from "../hooks/usePlanReality";
 import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
 import { PlanGenerateBar } from "./PlanGenerateBar";
@@ -132,6 +137,36 @@ export function ContentPlanWorkbench({
   // The selected node's association edges live in the NodeAssociations
   // query cache; read them from the cache, never refetch.
   const queryClient = useQueryClient();
+
+  // Research grounding for the generator: the site's recorded link is the
+  // default; a session pick overrides it AND re-records the link (the same
+  // key Setup and aidream's generate/deepen read). Declared after
+  // `queryClient` — the handler invalidates the site-options cache so the
+  // link never goes stale for other consumers.
+  const [genTopicOverride, setGenTopicOverride] = useState<
+    string | null | undefined
+  >(undefined);
+  const generateTopicId =
+    genTopicOverride !== undefined
+      ? genTopicOverride
+      : readSiteResearchTopicId(site?.settings);
+  const handleGenerateTopicChange = (topicId: string | null) => {
+    setGenTopicOverride(topicId);
+    if (siteId) {
+      void recordSiteResearchTopic(siteId, topicId)
+        .then(() =>
+          queryClient.invalidateQueries({
+            queryKey: marketingKeys.siteOptions(),
+          }),
+        )
+        .catch((error) => {
+          toast.error(
+            `Research link not recorded on the site: ${extractErrorMessage(error)}`,
+          );
+        });
+    }
+  };
+
   const getScope = useCallback(
     () =>
       buildContentPlanScope({
@@ -210,18 +245,11 @@ export function ContentPlanWorkbench({
     setNewNodeOpen(true);
   };
 
-  if (sites.isError) {
-    return (
-      <div className="p-6 text-sm text-destructive">
-        Could not load sites: {extractErrorMessage(sites.error)}
-      </div>
-    );
-  }
-
   // Workspace-level write handler (manifest writeTargets): select_node opens
   // a plan node in the panel — the same UI move as a row/node click. The
   // per-view surfaces (setup/entities/node panel) mount their own nested
   // providers deeper in this tree and win resolution while active.
+  // (Declared BEFORE the error early-return — hooks must run every render.)
   const getWriteHandlers = useCallback(
     () => ({
       select_node: (value: unknown) => {
@@ -238,6 +266,14 @@ export function ContentPlanWorkbench({
     }),
     [nodeById],
   );
+
+  if (sites.isError) {
+    return (
+      <div className="p-6 text-sm text-destructive">
+        Could not load sites: {extractErrorMessage(sites.error)}
+      </div>
+    );
+  }
 
   return (
     <SurfaceRuntimeProvider
@@ -272,8 +308,15 @@ export function ContentPlanWorkbench({
           <PlanGenerateBar
             nodeCount={nodeRows.length}
             run={generate.run}
-            onStart={(options) => void generate.start(options)}
+            onStart={(options) =>
+              // Send an explicit topic ONLY when the user picked one this
+              // session — otherwise the server reads its own recorded link
+              // from the live row, which can never be cache-stale.
+              void generate.start({ ...options, researchTopicId: genTopicOverride })
+            }
             onDismiss={generate.reset}
+            researchTopicId={generateTopicId}
+            onResearchTopicChange={handleGenerateTopicChange}
           />
         ) : null}
 
@@ -295,7 +338,9 @@ export function ContentPlanWorkbench({
               Could not load the plan: {extractErrorMessage(nodes.error)}
             </p>
           ) : view === "setup" ? (
-            <SetupView />
+            // Keyed by site: a site switch must never carry one site's staged
+            // counts/names into another site's draft.
+            <SetupView key={siteId ?? "none"} />
           ) : view === "entities" && site ? (
             <EntityManager
               siteId={siteId}

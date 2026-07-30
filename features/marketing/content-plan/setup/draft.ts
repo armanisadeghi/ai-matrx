@@ -23,6 +23,14 @@ import { SITE_SETTINGS_KEY } from "./archetypes";
 
 export const SETUP_DRAFT_KEY = "setup_draft";
 
+/**
+ * The site's linked research topic (`research.rs_topic.id`) — the ONE place
+ * both sides read: this client's AI steps AND aidream's generator/deepen
+ * (its twin constant `SITE_RESEARCH_TOPIC_KEY` in
+ * aidream/services/content_plan/archetypes.py). The FE is the only writer.
+ */
+export const SITE_RESEARCH_TOPIC_KEY = "research_topic_id";
+
 export interface SetupDraft {
   /** The shape the user last had selected (null = never picked one). */
   archetypeKey: string | null;
@@ -145,6 +153,8 @@ function draftToStorage(draft: SetupDraft): Record<string, unknown> {
 export interface FreshSiteRow {
   settings: unknown;
   version: number;
+  domain: string | null;
+  name: string | null;
 }
 
 /**
@@ -155,12 +165,17 @@ export interface FreshSiteRow {
 export async function fetchFreshSite(siteId: string): Promise<FreshSiteRow> {
   const response = await (await authenticatedWebDb(supabase))
     .from("site")
-    .select("settings, version")
+    .select("settings, version, domain, name")
     .eq("id", siteId)
     .is("deleted_at", null)
     .single();
   if (response.error) throw response.error;
-  return { settings: response.data.settings, version: response.data.version };
+  return {
+    settings: response.data.settings,
+    version: response.data.version,
+    domain: response.data.domain,
+    name: response.data.name,
+  };
 }
 
 async function writeDraftOnce(
@@ -216,4 +231,33 @@ export async function clearSetupDraft(siteId: string): Promise<void> {
   if (await writeDraftOnce(siteId, mutate)) return;
   if (await writeDraftOnce(siteId, mutate)) return;
   throw new Error("Could not clear the setup draft — the site record kept changing.");
+}
+
+/** The site's recorded research-topic link, off already-loaded settings. */
+export function readSiteResearchTopicId(settings: unknown): string | null {
+  if (!isRecord(settings)) return null;
+  const block = settings[SITE_SETTINGS_KEY];
+  if (!isRecord(block)) return null;
+  const value = block[SITE_RESEARCH_TOPIC_KEY];
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+/**
+ * Record (or clear, with null) the site's research-topic link. Same guarded
+ * read-modify-write as the draft; aidream's generator and deepen read this
+ * key server-side, so one pick grounds EVERY later AI step on the site.
+ */
+export async function recordSiteResearchTopic(
+  siteId: string,
+  topicId: string | null,
+): Promise<void> {
+  const mutate = (block: Record<string, unknown>) => {
+    if (topicId) block[SITE_RESEARCH_TOPIC_KEY] = topicId;
+    else delete block[SITE_RESEARCH_TOPIC_KEY];
+  };
+  if (await writeDraftOnce(siteId, mutate)) return;
+  if (await writeDraftOnce(siteId, mutate)) return;
+  throw new Error(
+    "Could not record the research link — the site record kept changing.",
+  );
 }
