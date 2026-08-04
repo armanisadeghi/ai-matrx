@@ -13,6 +13,33 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D126 — 22 hand-rolled copies of the headless "launch agent → poll → extract JSON" loop (2026-08-04)
+
+The canonical primitive EXISTS and is almost unused: `executeBuiltinWithJsonExtraction` /
+`executeBuiltinWithCodeExtraction`
+([features/agents/redux/execution-system/thunks/execute-builtin-with-extraction.thunks.ts](features/agents/redux/execution-system/thunks/execute-builtin-with-extraction.thunks.ts))
+has exactly ONE consumer (`features/agent-apps/hooks/useAutoCreateApp.ts`). Meanwhile **22
+files** re-implement its body inline — `launchAgentExecution` + a `useAppStore()` + a
+`while (Date.now() - start < TIMEOUT)` poll on `selectJsonExtractionComplete` +
+`setTimeout(POLL_INTERVAL_MS)` — each with its own timeout, poll interval, error mapping, and
+instance cleanup (or lack of it):
+
+`features/education/**` (13: assessment ×4, convert, media/mindmap, spoken-practice ×2,
+tutor ×3, trust, study ×2, memory) · `features/flashcards/**` (5) · `features/content-ir/react/actions/useKindRequest.ts` ·
+`features/marketing/content-plan/setup/ai.ts`.
+
+This is the "duplicated hook logic" anti-pattern from [docs/reuse-first.md](docs/reuse-first.md) at
+scale. Every copy is a place a timeout tweak, an abort-on-unmount fix, or an instance leak has to
+be made 22 times — and each new feature copies the nearest neighbour, so it grows on its own.
+
+**Fix:** one hook (`useHeadlessAgentJson(agentId, variables)`) over the existing thunk, then
+convert the 22 call sites in batches per feature area. Not a rewrite of behaviour — the loops are
+already near-identical; the differences are the accidental ones. **Nobody should convert these
+blind:** each area needs its feature's tests/manual path exercised, so batch it per owner.
+
+Filed while merging the content-plan branch (which is copy #22 and correctly followed the local
+exemplar `useGenerateQuiz.ts` — the pattern, not that change, is the defect).
+
 ### D125 — stale `platform.entity_types` rows → SILENT access denial (2026-08-04; 13 of 18 FIXED, 5 open)
 
 **Fixed live 2026-08-04:** 10 rows `reg.*`→`rag.*`, 2 rows `user.*`→`users.*`. Guard added so this class cannot recur silently: `entity-registry-drift` in `pnpm check:schema` ([scripts/schema-check/checks/entity-registry-drift.ts](scripts/schema-check/checks/entity-registry-drift.ts)).
