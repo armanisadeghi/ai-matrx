@@ -106,13 +106,20 @@ export const GSC_METRICS: readonly {
   { key: "position", label: "Average position", color: "#e8710a" },
 ];
 
-export type GscTab =
-  | "overview"
+/** Tabs backed directly by a `gsc_perf_breakdown` dimension. */
+export type GscDimensionTab =
   | "queries"
   | "pages"
   | "countries"
   | "devices"
   | "appearance";
+
+export type GscTab =
+  | "overview"
+  | GscDimensionTab
+  | "digs"
+  | "watchlist"
+  | "new-pages";
 
 export const GSC_TABS: readonly { key: GscTab; label: string }[] = [
   { key: "overview", label: "Overview" },
@@ -121,16 +128,22 @@ export const GSC_TABS: readonly { key: GscTab; label: string }[] = [
   { key: "countries", label: "Countries" },
   { key: "devices", label: "Devices" },
   { key: "appearance", label: "Appearance" },
+  { key: "digs", label: "Dig Here" },
+  { key: "watchlist", label: "Watchlist" },
+  { key: "new-pages", label: "New Pages" },
 ];
 
-export const TAB_DIMENSION: Record<Exclude<GscTab, "overview">, GscDimension> =
-  {
-    queries: "query",
-    pages: "page",
-    countries: "country",
-    devices: "device",
-    appearance: "search_appearance",
-  };
+export const TAB_DIMENSION: Record<GscDimensionTab, GscDimension> = {
+  queries: "query",
+  pages: "page",
+  countries: "country",
+  devices: "device",
+  appearance: "search_appearance",
+};
+
+export function isDimensionTab(tab: GscTab): tab is GscDimensionTab {
+  return tab in TAB_DIMENSION;
+}
 
 export type GscSortKey =
   | "clicks"
@@ -139,6 +152,69 @@ export type GscSortKey =
   | "position"
   | "key"
   | "delta_clicks";
+
+/**
+ * Dig Here rule vocabulary — mirrored EXACTLY by the server whitelist inside
+ * `seo.gsc_perf_dig` (gsc_dig_metric_value). A metric prefixed `cmp_`/`delta_`
+ * requires an active compare period; the *_pct metrics are percent change
+ * ((cur - prev) / prev * 100, NULL when prev = 0).
+ */
+export type GscDigMetric =
+  | "clicks"
+  | "impressions"
+  | "ctr"
+  | "position"
+  | "cmp_clicks"
+  | "cmp_impressions"
+  | "cmp_ctr"
+  | "cmp_position"
+  | "delta_clicks"
+  | "delta_impressions"
+  | "delta_ctr"
+  | "delta_position"
+  | "delta_clicks_pct"
+  | "delta_impressions_pct";
+
+export const GSC_DIG_METRICS: readonly {
+  key: GscDigMetric;
+  label: string;
+  requiresCompare: boolean;
+}[] = [
+  { key: "clicks", label: "Clicks", requiresCompare: false },
+  { key: "impressions", label: "Impressions", requiresCompare: false },
+  { key: "ctr", label: "CTR", requiresCompare: false },
+  { key: "position", label: "Position", requiresCompare: false },
+  { key: "cmp_clicks", label: "Prev clicks", requiresCompare: true },
+  { key: "cmp_impressions", label: "Prev impressions", requiresCompare: true },
+  { key: "cmp_ctr", label: "Prev CTR", requiresCompare: true },
+  { key: "cmp_position", label: "Prev position", requiresCompare: true },
+  { key: "delta_clicks", label: "Δ clicks", requiresCompare: true },
+  { key: "delta_impressions", label: "Δ impressions", requiresCompare: true },
+  { key: "delta_ctr", label: "Δ CTR", requiresCompare: true },
+  { key: "delta_position", label: "Δ position", requiresCompare: true },
+  { key: "delta_clicks_pct", label: "Δ clicks %", requiresCompare: true },
+  {
+    key: "delta_impressions_pct",
+    label: "Δ impressions %",
+    requiresCompare: true,
+  },
+];
+
+export type GscDigOp = "gt" | "gte" | "lt" | "lte";
+
+export const GSC_DIG_OPS: readonly { key: GscDigOp; label: string }[] = [
+  { key: "gt", label: ">" },
+  { key: "gte", label: "≥" },
+  { key: "lt", label: "<" },
+  { key: "lte", label: "≤" },
+];
+
+/** One AND-ed condition of a dig rule. */
+export interface GscDigCondition {
+  metric: GscDigMetric;
+  op: GscDigOp;
+  value: number;
+}
 
 export interface GscBreakdownQuery {
   dimension: GscDimension;

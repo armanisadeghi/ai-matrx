@@ -48,6 +48,7 @@ import type {
 import {
   GSC_TABS,
   TAB_DIMENSION,
+  isDimensionTab,
 } from "@/features/marketing/search-console/types";
 import { FilterBar } from "@/features/marketing/search-console/components/FilterBar";
 import { GscDimensionTable } from "@/features/marketing/search-console/components/GscDimensionTable";
@@ -181,8 +182,9 @@ export function SearchConsoleWorkspace() {
     }
   };
 
-  const tabDimension =
-    state.tab === "overview" ? null : TAB_DIMENSION[state.tab];
+  const tabDimension = isDimensionTab(state.tab)
+    ? TAB_DIMENSION[state.tab]
+    : null;
 
   const panelRange = {
     range: state.range,

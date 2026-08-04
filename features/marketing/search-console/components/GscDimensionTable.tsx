@@ -27,6 +27,12 @@ import {
   humanLines,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+import {
+  buildGscKeyColumn,
+  buildGscMetricColumns,
+  gscKeyCell,
+  gscMetricCopyLines,
+} from "@/features/marketing/search-console/lib/columns";
 import { useGscBreakdown } from "@/features/marketing/search-console/hooks/useGscQuery";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
 import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
@@ -38,13 +44,6 @@ import type {
   GscRangeKey,
   GscResolvedPeriods,
   GscSortKey,
-} from "@/features/marketing/search-console/types";
-import {
-  countryLabel,
-  deviceLabel,
-  formatCount,
-  formatCtr,
-  formatPosition,
 } from "@/features/marketing/search-console/types";
 
 const DIMENSION_LABELS: Record<GscDimension, { column: string; noun: string }> =
@@ -64,49 +63,6 @@ const SORTABLE: ReadonlySet<string> = new Set([
   "position",
   "delta_clicks",
 ]);
-
-function keyCell(dimension: GscDimension, row: GscBreakdownRow): string {
-  if (dimension === "country") return countryLabel(row.key);
-  if (dimension === "device") return deviceLabel(row.key);
-  return row.key;
-}
-
-function deltaCell(
-  cur: number | null | undefined,
-  prev: number | null | undefined,
-  format: (v: number) => string,
-  lowerIsBetter = false,
-): { text: string; tone: "up" | "down" | "flat" } | null {
-  if (cur === null || cur === undefined || prev === null || prev === undefined)
-    return null;
-  const delta = cur - prev;
-  const improved = lowerIsBetter ? delta < 0 : delta > 0;
-  return {
-    text: `${delta > 0 ? "+" : ""}${format(delta)}`,
-    tone: delta === 0 ? "flat" : improved ? "up" : "down",
-  };
-}
-
-function DeltaSpan({
-  value,
-}: {
-  value: { text: string; tone: "up" | "down" | "flat" } | null;
-}) {
-  if (!value) return <span className="text-xs text-muted-foreground">—</span>;
-  return (
-    <span
-      className={
-        value.tone === "flat"
-          ? "text-xs tabular-nums text-muted-foreground"
-          : value.tone === "up"
-            ? "text-xs font-medium tabular-nums text-success"
-            : "text-xs font-medium tabular-nums text-destructive"
-      }
-    >
-      {value.text}
-    </span>
-  );
-}
 
 export function GscDimensionTable({
   siteId,
@@ -185,13 +141,7 @@ export function GscDimensionTable({
     clickedRowRef.current = row;
     if (!row) return null;
     return {
-      content: humanLines([
-        [labels.column, keyCell(dimension, row)],
-        ["Clicks", formatCount(row.clicks)],
-        ["Impressions", formatCount(row.impressions)],
-        ["CTR", formatCtr(row.ctr)],
-        ["Position", formatPosition(row.avg_position)],
-      ]),
+      content: humanLines(gscMetricCopyLines(labels.column, dimension, row)),
     };
   };
   const openViewPanel = () => {
@@ -230,152 +180,8 @@ export function GscDimensionTable({
   };
 
   const columns: MatrxColumnDef<GscBreakdownRow>[] = [
-    {
-      id: "key",
-      accessorKey: "key",
-      header: labels.column,
-      filter: false,
-      cell: (row) => (
-        <span
-          className="block max-w-[28rem] truncate text-xs font-medium text-foreground sm:max-w-[36rem]"
-          title={row.key}
-        >
-          {keyCell(dimension, row)}
-        </span>
-      ),
-    },
-    {
-      id: "clicks",
-      accessorKey: "clicks",
-      header: "Clicks",
-      align: "right",
-      filter: false,
-      cell: (row) => (
-        <span className="text-xs font-semibold tabular-nums">
-          {formatCount(row.clicks)}
-        </span>
-      ),
-    },
-    ...(hasCompare
-      ? [
-          {
-            id: "delta_clicks",
-            header: "Δ Clicks",
-            align: "right",
-            filter: false,
-            accessorFn: (row) => row.clicks - (row.cmp_clicks ?? 0),
-            cell: (row) => (
-              <DeltaSpan
-                value={deltaCell(row.clicks, row.cmp_clicks, (v) =>
-                  Math.round(v).toLocaleString(),
-                )}
-              />
-            ),
-          } satisfies MatrxColumnDef<GscBreakdownRow>,
-        ]
-      : []),
-    {
-      id: "impressions",
-      accessorKey: "impressions",
-      header: "Impressions",
-      align: "right",
-      filter: false,
-      cell: (row) => (
-        <span className="text-xs tabular-nums">
-          {formatCount(row.impressions)}
-        </span>
-      ),
-    },
-    ...(hasCompare
-      ? [
-          {
-            id: "delta_impressions",
-            header: "Δ Impr.",
-            align: "right",
-            sortable: false,
-            filter: false,
-            accessorFn: (row) => row.impressions - (row.cmp_impressions ?? 0),
-            cell: (row) => (
-              <DeltaSpan
-                value={deltaCell(row.impressions, row.cmp_impressions, (v) =>
-                  Math.round(v).toLocaleString(),
-                )}
-              />
-            ),
-          } satisfies MatrxColumnDef<GscBreakdownRow>,
-        ]
-      : []),
-    {
-      id: "ctr",
-      accessorKey: "ctr",
-      header: "CTR",
-      align: "right",
-      filter: false,
-      cell: (row) => (
-        <span className="text-xs tabular-nums">{formatCtr(row.ctr)}</span>
-      ),
-    },
-    ...(hasCompare
-      ? [
-          {
-            id: "delta_ctr",
-            header: "Δ CTR",
-            align: "right",
-            sortable: false,
-            filter: false,
-            accessorFn: (row) =>
-              row.ctr !== null && row.cmp_ctr !== null
-                ? row.ctr - row.cmp_ctr
-                : null,
-            cell: (row) => (
-              <DeltaSpan
-                value={deltaCell(
-                  row.ctr,
-                  row.cmp_ctr,
-                  (v) => `${(v * 100).toFixed(2)}pp`,
-                )}
-              />
-            ),
-          } satisfies MatrxColumnDef<GscBreakdownRow>,
-        ]
-      : []),
-    {
-      id: "position",
-      accessorKey: "avg_position",
-      header: "Position",
-      align: "right",
-      filter: false,
-      cell: (row) => (
-        <span className="text-xs tabular-nums">
-          {formatPosition(row.avg_position)}
-        </span>
-      ),
-    },
-    ...(hasCompare
-      ? [
-          {
-            id: "delta_position",
-            header: "Δ Pos.",
-            align: "right",
-            sortable: false,
-            filter: false,
-            accessorFn: (row) =>
-              row.avg_position !== null && row.cmp_avg_position !== null
-                ? row.avg_position - row.cmp_avg_position
-                : null,
-            cell: (row) => (
-              <DeltaSpan
-                value={deltaCell(
-                  row.avg_position,
-                  row.cmp_avg_position,
-                  (v) => v.toFixed(1),
-                  true,
-                )}
-              />
-            ),
-          } satisfies MatrxColumnDef<GscBreakdownRow>,
-        ]
-      : []),
+    buildGscKeyColumn<GscBreakdownRow>(dimension, labels.column),
+    ...buildGscMetricColumns<GscBreakdownRow>(hasCompare, "clicks-only"),
   ];
 
   const PANEL_DRILL_LABELS: Record<GscDimension, string> = {
@@ -434,23 +240,7 @@ export function GscDimensionTable({
             rowDescription: `One ${labels.noun}'s search performance for the selected site, period, and filters.`,
             listDescription: `The currently visible Search Console ${labels.noun} rows (respecting search, sort, filters, and pagination).`,
             humanRow: (row) =>
-              humanLines([
-                [labels.column, keyCell(dimension, row)],
-                ["Clicks", formatCount(row.clicks)],
-                ["Impressions", formatCount(row.impressions)],
-                ["CTR", formatCtr(row.ctr)],
-                ["Position", formatPosition(row.avg_position)],
-                [
-                  "Prev clicks",
-                  row.cmp_clicks != null ? formatCount(row.cmp_clicks) : null,
-                ],
-                [
-                  "Prev position",
-                  row.cmp_avg_position != null
-                    ? formatPosition(row.cmp_avg_position)
-                    : null,
-                ],
-              ]),
+              humanLines(gscMetricCopyLines(labels.column, dimension, row)),
             rowAttributes: (row) => ({
               ...gscScopeAttributes(siteId, siteName, periods, filters),
               dimension,
