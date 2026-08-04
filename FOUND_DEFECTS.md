@@ -13,6 +13,77 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D125 — stale `platform.entity_types` rows → SILENT access denial (2026-08-04; 13 of 18 FIXED, 5 open)
+
+**Fixed live 2026-08-04:** 10 rows `reg.*`→`rag.*`, 2 rows `user.*`→`users.*`. Guard added so this class cannot recur silently: `entity-registry-drift` in `pnpm check:schema` ([scripts/schema-check/checks/entity-registry-drift.ts](scripts/schema-check/checks/entity-registry-drift.ts)).
+
+**Still open — need a decision, all `is_active=true` and therefore silently denying today:**
+- `component_group` → `public.component_groups`, `field_component` → `public.field_components`, `prompt` → `public.prompts` — all three tables are in `graveyard`. De-register, or repoint deliberately?
+- `agent_user_kv` → `public.agent_user_kv` — the table exists in **no** schema at all.
+- (`profile` → `user.profiles` is stale but `is_active=false` and superseded by the `user_profile` token → `users.profiles`. Harmless; delete when convenient.)
+
+**Also pending:** `types/generated/entity-types.generated.ts` is now stale relative to the DB — run `pnpm gen:entity-types` (I couldn't: `pnpm install` fails in this environment on a registry auth error for `@jsr:registry`). `pnpm check:entity-types` will flag it until then.
+
+**Decides: Arman** (the graveyard 4).
+
+<details><summary>Original finding (2026-08-04)</summary>
+
+`iam.has_access_for_base` resolves an entity token to a table via `platform.entity_types`, then reads it through `platform.entity_row_access_attrs`, which swallows every exception (`WHEN others THEN NULL`) and returns `found=false`. A stale registry row therefore does not error — it **denies access invisibly**. Nothing in the logs, nothing in the type gate. Live audit of project `txzxabzwovsujtloxrus` (2026-08-04):
+
+- **10 rows `reg.*` → should be `rag.*`**: `kg_alerts`, `kg_sweep_queue`, `kg_sweep_run`, `kg_sweep_state`, `kg_value_matches`, `ner_canonicalizer_shadow`, `context_item_suggestions`, `scope_suggestions`, `scope_association_suggestions`, `scope_item_value_suggestions`
+- **3 rows `user.*` → should be `users.*`**: `invitation_codes`, `invitation_requests`, `profiles`
+- **3 rows point into `graveyard`**: `public.component_groups`, `public.field_components`, `public.prompts` — probably de-register rather than repoint
+- **1 row targets nothing anywhere**: `public.agent_user_kv`
+
+Fix: repoint the 13 renames, decide the graveyard 4, regenerate `types/generated/entity-types.generated.ts`. Then add the drift query as a standing guard (`pnpm check:schema` family) — nothing currently catches a registry row rotting, which is exactly the truth-vs-code guard class CLAUDE.md calls for:
+
+```sql
+select et.token, et.schema_name, et.table_name from platform.entity_types et
+left join information_schema.tables t
+  on t.table_schema=et.schema_name and t.table_name=et.table_name
+where t.table_name is null;
+```
+
+**Decides: anyone for the 13 renames; Arman for the graveyard 4.**
+</details>
+
+### D124 — RESOLVED 2026-08-04: `lib/scheduler-client/claim.ts` never stamped `claim_protocol`
+
+`claimTask` inserted `claimed_at` with no `metadata`, so every claim through this client failed `sch_run_claim_protocol_by_claimed_at_chk` — continuously, in production. Fixed: added a `CLAIM_PROTOCOL = 2` constant (documented as needing lockstep with `matrx_scheduler/queries.py::CLAIM_PROTOCOL`) and `metadata: { claim_protocol: CLAIM_PROTOCOL }` on the insert. **Open remainder:** `claimTask` has no in-repo caller, so the host that was failing is an external consumer of this client and still needs to pick up the fix — identify it and confirm its claims land.
+
+<details><summary>Original finding</summary>
+
+(kept for context) `scheduler.sch_run` enforces `CHECK (claimed_at IS NULL OR metadata->>'claim_protocol' = '2')`. `claimTask` (`lib/scheduler-client/claim.ts:95-109`) builds its insert row with `claimed_at` set and **no `metadata` key at all** — `claim_protocol` appears nowhere under `lib/scheduler-client/` or `features/scheduling/`. Every claim through this client fails on `sch_run_claim_protocol_by_claimed_at_chk`; live Postgres logs show bursts of 1-3 rejections every 1-3 minutes, continuously. aidream's scheduler is correct (`matrx_scheduler/queries.py:252`) and healthy (6,223 successes in 3 days), so the failing host is an **external consumer** of this client — `claimTask` has no in-repo caller. That host is running zero scheduled tasks right now. Fix: add `metadata: { claim_protocol: 2 }` to the insert row, and keep it in lockstep with aidream's `CLAIM_PROTOCOL` constant (bumping one without the other is what produced this).
+</details>
+
+### D123 — 🔴 legacy `p_table_name` RPCs: CONFIRMED anonymous RLS bypass (contained 2026-08-04) + still-unidentified caller
+
+**CONFIRMED EXPLOITED-CLASS, NOT THEORETICAL.** `public.dynamic_search(p_table_name, p_search_field, p_search_value, …)` is `SECURITY DEFINER`, owned by `postgres`, was `EXECUTE`-granted to `anon`, and takes an arbitrary table + field. Over plain HTTPS with only the **publishable key** it returned a full row from `public.dev_login_audit` (RLS on, zero policies) including `jwt_jti`, `requester_ip`, `target_user_id`, `requester_secret_hash`, plus `total_count: 55`. Any `public` table was anonymously readable. `fetch_all_fk_ifk` / `fetch_all_fk_ifk_direct` do the same (slower — they were saved only by the statement timeout, an accident, not a control).
+
+**Contained 2026-08-04 (live, via MCP):**
+- `REVOKE EXECUTE … FROM anon, PUBLIC` on **all 33** `public` functions taking a `p_table_name text` argument.
+- `REVOKE EXECUTE … FROM authenticated` on the 5 `SECURITY DEFINER` ones with **no internal gate**: `dynamic_search`, `duplicate_row`, `fetch_all_fk_ifk`, `fetch_all_fk_ifk_direct`, `admin_get_columns`. (Guest mode mints real `authenticated` users from a fingerprint, so `authenticated` was barely a barrier.)
+- Verified after: `42501 permission denied` for anon on `dynamic_search` and `fetch_all_fk_ifk`.
+- Left alone: the 4 definer functions that DO gate internally (`admin_upsert_entity_type`, `admin_upsert_shareable_resource`, `create_new_user_table_dynamic`, `update_user_table_metadata`), and `service_role`.
+
+**Open:**
+1. **Audit for prior abuse.** The hole was reachable by anyone holding the publishable key (which ships in the browser). Nobody has checked whether it was used.
+2. **Drop the whole family.** Containment is a grant change, not a fix; ~33 functions that take an arbitrary table name should not exist. Brief 8 of [docs/upgrades/type-debt/2026-07-01-fleet-briefs.md](docs/upgrades/type-debt/2026-07-01-fleet-briefs.md) already DECIDED to rip out this legacy dynamic-entity system.
+3. **The `ai_model` caller is STILL unidentified** — see below. Errors continued unchanged after revoking both `anon` and `authenticated`, so the caller holds **`service_role` or a direct Postgres connection**: a server-side process, not a browser and not the extension's client code. Neither ai-matrx nor aidream contains any reference to these RPC names.
+4. Some legit surface may have depended on a revoked grant. Nothing is known to have broken, but watch for `42501 permission denied for function` in the logs — restoring one grant is a one-liner.
+
+**Decides: Arman** (abuse audit + drop schedule).
+
+<details><summary>How the 16s error storm was traced to these RPCs</summary>
+
+Six legacy RPCs interpolate a caller-supplied `p_table_name` into `EXECUTE format('... FROM %I ...')` **unqualified**: `public.fetch_all_fk_ifk`, `fetch_all_fk_ifk_direct`, `fetch_filtered_with_fk_ifk` (×2 overloads), `fetch_paginated_with_ids_names`, `fetch_paginated_with_all_ids`. Two problems:
+
+1. **They are the source of `relation "ai_model" does not exist` firing every ~16s in production** (~5,400 failed round-trips/day). Reproduced byte-for-byte over PostgREST with only the publishable key. No DB object references `ai_model`; a plain `.from('ai_model')` read is ruled out (PostgREST answers `PGRST205` from cache and never reaches Postgres). The caller passes the retired table *name* as a string. `lib/redux/api.ts` (the old caller) is already deleted here — suspect matrx-extend or a stale deployed bundle.
+2. **`fetch_all_fk_ifk` / `fetch_all_fk_ifk_direct` are `SECURITY DEFINER`, owned by `postgres`, `EXECUTE` granted to `PUBLIC`/`anon`** — definer rights bypass RLS, so an anonymous caller appears able to read any `public` table, including RLS-enabled tables with zero policies (`api_request_log`). Reaching the `EXECUTE` as anon is confirmed; the read-a-real-row test was **not** run. Confirm, then `REVOKE EXECUTE ... FROM anon, PUBLIC` on all six and drop them once the caller is found.
+
+`.claude/skills/canonical-associations/WORK-QUEUE.md` row 11 tracks the audit — this is the concrete forcing function.
+</details>
+
 ### D122 — `history.row_versions` partition exhaustion froze 121 tables platform-wide for 4 days (2026-08-04) — FIXED, residual gaps open
 
 `history.row_versions` is RANGE-partitioned on `occurred_at` with **hand-created** monthly partitions. The last ended `2026-08-01T00:00Z` and nothing created the next, so `platform._version_capture()` — a trigger on **121 versioned tables** — failed every INSERT/UPDATE/DELETE with `23514 no partition of relation "row_versions" found for row`. `files.files` last accepted a row at 2026-07-31 22:09; no file, note, task, transcript, flashcard set, membership, or `chat.agent_run` was written for four days. **Fixed** 2026-08-04: `migrations/history_row_versions_partition_autoprovision.sql` (provisioner fn + 18-month runway + `row_versions_default` catch-all + pg_cron `ensure-row-version-partitions` + a `system_error` alarm if the default is ever used).

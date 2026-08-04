@@ -36,6 +36,21 @@ import type {
 /** Default claim lease — matches Python scanner.DEFAULT_LEASE_SECONDS. */
 const DEFAULT_LEASE_SECONDS = 600;
 
+/**
+ * Every transition into an executing state carries this protocol marker.
+ * `scheduler.sch_run` enforces it with two CHECK constraints:
+ *   sch_run_claim_protocol_chk            (status in claimed|running ⇒ marker = '2')
+ *   sch_run_claim_protocol_by_claimed_at_chk (claimed_at not null ⇒ marker = '2')
+ * so a stale client generation is physically unable to claim work after the
+ * contract changes.
+ *
+ * MUST stay in lockstep with matrx_scheduler/queries.py::CLAIM_PROTOCOL —
+ * bumping one without the other silently rejects every claim from the other
+ * side (which is exactly what happened here: this constant was missing
+ * entirely, so every claim through this client failed the CHECK).
+ */
+const CLAIM_PROTOCOL = 2;
+
 async function resolveOrganizationIdForUser(
   supabase: SupabaseClient,
   userId: string,
@@ -104,6 +119,7 @@ export async function claimTask(
     claimed_at: now.toISOString(),
     claim_token: claimToken,
     claim_expires_at: expires.toISOString(),
+    metadata: { claim_protocol: CLAIM_PROTOCOL } as Json,
   };
 
   const { data, error } = await schedulerDb(supabase)
