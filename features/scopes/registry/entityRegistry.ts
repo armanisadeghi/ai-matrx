@@ -347,6 +347,12 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     hrefFor: (id) => `/marketing/pages/${id}`,
   },
 
+  // ─── SEO (canonical keywords — Search Console watchlist targets) ──────────
+  seo_keyword: {
+    Icon: Tag,
+    labelPlural: "Keywords",
+  },
+
   // ─── Container display metadata ───────────────────────────────────────────
   scope: { Icon: Tag, labelPlural: "Scopes" },
   scope_type: {

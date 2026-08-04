@@ -185,6 +185,24 @@ export function resolvePeriods(
   return { current, compare };
 }
 
+/**
+ * Force a previous-period compare onto resolved periods (equal-length window
+ * immediately before the current one) — used by Dig Here when a rule needs
+ * compare metrics but the dashboard is set to "no compare". No-op when a
+ * compare is already active.
+ */
+export function withPrevCompare(periods: GscResolvedPeriods): GscResolvedPeriods {
+  if (periods.compare) return periods;
+  const days = rangeDayCount(periods.current);
+  return {
+    current: periods.current,
+    compare: {
+      start: shiftDays(periods.current.start, -days),
+      end: shiftDays(periods.current.start, -1),
+    },
+  };
+}
+
 /** The filter keys each tab's dimension group can serve (RPC profile rule). */
 const QUERY_PAGE_FILTER_KEYS: readonly (keyof GscFilters)[] = [
   "query_contains",

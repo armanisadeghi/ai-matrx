@@ -14,8 +14,17 @@
  */
 
 import { useRef, useState } from "react";
-import { Columns2, Filter, PanelTop, SearchX } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  Columns2,
+  Eye,
+  Filter,
+  PanelTop,
+  Rocket,
+  SearchX,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
+import { trackPage } from "@/features/marketing/search-console/data-launch";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
@@ -34,6 +43,8 @@ import {
   gscMetricCopyLines,
 } from "@/features/marketing/search-console/lib/columns";
 import { useGscBreakdown } from "@/features/marketing/search-console/hooks/useGscQuery";
+import { useRowWatch } from "@/features/marketing/search-console/hooks/useWatchState";
+import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
 import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
 import type {
@@ -76,6 +87,7 @@ export function GscDimensionTable({
   pageSize = 50,
   compactHeight = false,
   panelRange,
+  watch = false,
 }: {
   siteId: string;
   siteName: string | null;
@@ -101,6 +113,8 @@ export function GscDimensionTable({
     customTo: string | null;
     compare: GscCompareMode;
   };
+  /** Show the watch column + context item (query/page dimensions only). */
+  watch?: boolean;
 }) {
   const hasCompare = periods.compare !== null;
   const labels = DIMENSION_LABELS[dimension];
@@ -127,6 +141,13 @@ export function GscDimensionTable({
 
   const rows = breakdown.data?.rows ?? [];
   const total = breakdown.data?.total ?? 0;
+
+  const queryClient = useQueryClient();
+  // Watch column wiring (query/page only; hook order stays stable).
+  const watchKind = dimension === "page" ? "page" : "query";
+  const rowWatch = useRowWatch(watchKind);
+  const watchable =
+    watch && (dimension === "query" || dimension === "page");
 
   // Right-click drills: one NonEditableContextMenu serves every row via
   // resolveContextOnOpen + the table's data-row-id stamps; extraSections
@@ -180,6 +201,25 @@ export function GscDimensionTable({
   };
 
   const columns: MatrxColumnDef<GscBreakdownRow>[] = [
+    ...(watchable
+      ? [
+          {
+            id: "watch",
+            header: "",
+            sortable: false,
+            filter: false,
+            width: 36,
+            cell: (row) => (
+              <WatchButton
+                watched={rowWatch.isWatched(row)}
+                pending={rowWatch.pending}
+                onToggle={() => void rowWatch.toggleRow(row)}
+                noun={labels.noun}
+              />
+            ),
+          } satisfies MatrxColumnDef<GscBreakdownRow>,
+        ]
+      : []),
     buildGscKeyColumn<GscBreakdownRow>(dimension, labels.column),
     ...buildGscMetricColumns<GscBreakdownRow>(hasCompare, "clicks-only"),
   ];
@@ -318,6 +358,67 @@ export function GscDimensionTable({
                         return;
                       }
                       onDrill(row);
+                    },
+                  },
+                ]
+              : []),
+            ...(dimension === "page"
+              ? [
+                  {
+                    kind: "item" as const,
+                    id: "gsc-track-launch",
+                    label: "Track as new page",
+                    icon: Rocket,
+                    description:
+                      "Add to the New Pages launch tracker (first-impression watch)",
+                    onSelect: () => {
+                      const row = clickedRowRef.current;
+                      if (!row) {
+                        toast.error("Right-click a data row to track it.");
+                        return;
+                      }
+                      if (!row.page_id) {
+                        toast.error(
+                          "This page has no canonical page record yet — add it from the New Pages tab instead.",
+                        );
+                        return;
+                      }
+                      void trackPage(row.page_id, { indexingRequested: false })
+                        .then(() => {
+                          toast.success(
+                            "Tracked — it's on the New Pages tab now.",
+                          );
+                          void queryClient.invalidateQueries({
+                            queryKey: ["marketing", "gsc", "launch-pages"],
+                          });
+                        })
+                        .catch((error: unknown) => {
+                          toast.error(
+                            error instanceof Error
+                              ? error.message
+                              : "Could not track the page.",
+                          );
+                        });
+                    },
+                  },
+                ]
+              : []),
+            ...(watchable
+              ? [
+                  {
+                    kind: "item" as const,
+                    id: "gsc-watch-row",
+                    label: `Watch / unwatch this ${labels.noun}`,
+                    icon: Eye,
+                    description:
+                      "Toggle this row on your Watchlist tab (per-user, cross-site)",
+                    onSelect: () => {
+                      const row = clickedRowRef.current;
+                      if (!row) {
+                        toast.error("Right-click a data row to watch it.");
+                        return;
+                      }
+                      void rowWatch.toggleRow(row);
                     },
                   },
                 ]
