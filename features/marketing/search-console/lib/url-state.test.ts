@@ -12,7 +12,7 @@ import {
   withPrevCompare,
   type SearchConsoleUrlState,
 } from "./url-state";
-import { GSC_TABS } from "../types";
+import { GSC_DEFAULT_RANGE, GSC_RANGE_PRESETS, GSC_TABS } from "../types";
 
 const BASE: SearchConsoleUrlState = {
   siteId: "d0aff5b6-0710-4848-8304-164db3c80ab7",
@@ -74,6 +74,82 @@ describe("?rule round-trip", () => {
       new URLSearchParams("tab=queries&rule=abc-123"),
     );
     expect(parsed.ruleId).toBeNull();
+  });
+});
+
+describe("range presets", () => {
+  it("offers sub-28-day windows (daily/weekly analysis)", () => {
+    const keys = GSC_RANGE_PRESETS.map((r) => r.key);
+    expect(keys).toContain("1d");
+    expect(keys).toContain("7d");
+    expect(keys).toContain("14d");
+  });
+
+  it("every preset resolves a window of exactly its own length", () => {
+    for (const preset of GSC_RANGE_PRESETS) {
+      const { current } = resolvePeriods(
+        {
+          range: preset.key,
+          customFrom: null,
+          customTo: null,
+          compare: "none",
+        },
+        new Date("2026-08-04T12:00:00Z"),
+        "2026-07-20",
+      );
+      const days =
+        Math.round(
+          (Date.parse(`${current.end}T00:00:00Z`) -
+            Date.parse(`${current.start}T00:00:00Z`)) /
+            86_400_000,
+        ) + 1;
+      expect([preset.key, days]).toEqual([preset.key, preset.days]);
+      expect(current.end).toBe("2026-07-20");
+    }
+  });
+
+  it("an unknown range falls back to the NAMED default, not a list position", () => {
+    // Guards the `GSC_RANGE_PRESETS[1]` trap: adding a preset at the front
+    // silently retargeted the fallback.
+    const expected = GSC_RANGE_PRESETS.find(
+      (r) => r.key === GSC_DEFAULT_RANGE,
+    );
+    expect(expected).toBeDefined();
+    const { current } = resolvePeriods(
+      {
+        range: "not-a-range" as never,
+        customFrom: null,
+        customTo: null,
+        compare: "none",
+      },
+      new Date("2026-08-04T12:00:00Z"),
+      "2026-07-20",
+    );
+    const days =
+      Math.round(
+        (Date.parse(`${current.end}T00:00:00Z`) -
+          Date.parse(`${current.start}T00:00:00Z`)) /
+          86_400_000,
+      ) + 1;
+    expect(days).toBe(expected?.days);
+  });
+
+  it("the default range is omitted from the URL and restored by parse", () => {
+    const url = buildSearchConsoleUrl({ ...BASE, range: GSC_DEFAULT_RANGE });
+    expect(url).not.toContain("range=");
+    expect(
+      parseSearchConsoleUrl(new URLSearchParams(url.split("?")[1] ?? "")).range,
+    ).toBe(GSC_DEFAULT_RANGE);
+  });
+
+  it("a 1-day window compares against exactly the day before", () => {
+    const periods = resolvePeriods(
+      { range: "1d", customFrom: null, customTo: null, compare: "prev" },
+      new Date("2026-08-04T12:00:00Z"),
+      "2026-07-20",
+    );
+    expect(periods.current).toEqual({ start: "2026-07-20", end: "2026-07-20" });
+    expect(periods.compare).toEqual({ start: "2026-07-19", end: "2026-07-19" });
   });
 });
 

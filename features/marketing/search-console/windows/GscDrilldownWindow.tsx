@@ -24,6 +24,7 @@ import {
 import { gscSummaryCopy } from "@/features/marketing/search-console/lib/copy-payloads";
 import { resolvePeriods } from "@/features/marketing/search-console/lib/url-state";
 import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
+import { GSC_DEFAULT_RANGE } from "@/features/marketing/search-console/types";
 import type {
   GscCompareMode,
   GscDimension,
@@ -67,7 +68,7 @@ export default function GscDrilldownWindow({
   siteName = null,
   dimension,
   filters = {},
-  range = "90d",
+  range = GSC_DEFAULT_RANGE,
   customFrom = null,
   customTo = null,
   compare = "none",
@@ -148,6 +149,7 @@ export default function GscDrilldownWindow({
           filters={filters}
           summary={summary.data}
           isLoading={summary.isLoading}
+          isFetching={summary.isFetching}
           visibleMetrics={visibleMetrics}
           onToggleMetric={(metric) =>
             setVisibleMetrics((prev) => {

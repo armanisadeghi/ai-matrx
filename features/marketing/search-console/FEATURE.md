@@ -41,8 +41,19 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   (`lib/url-state.ts`): `?site&tab&range&compare&q&qc&qn&pg&pgc&country&device&appearance`
   (+ `from`/`to` for custom ranges) — every drill-down is a shareable link.
   View STYLE only would go to `useListViewPrefs`; query state never persists.
-  Preset windows CLAMP to the site's freshest data day (`gsc_perf_freshness`)
-  so a lagging sync never fakes a traffic collapse; `yoy` compare shifts
+  Ranges run **1d / 7d / 14d / 28d / 3m / 6m / 12m / 16m / custom**; the
+  default is the NAMED `GSC_DEFAULT_RANGE` (`types.ts`) — parse fallback,
+  URL omission, and the `resolvePeriods` fallback all read that ONE
+  constant (a positional `GSC_RANGE_PRESETS[1]` silently retargets the
+  moment a preset is added at the front, which adding the short windows
+  did). Preset windows CLAMP to the site's freshest data day
+  (`gsc_perf_freshness`) so a lagging sync never fakes a traffic collapse
+  — the header therefore always prints the RESOLVED window beside "data
+  through", because otherwise a clamped range change looks like nothing
+  happened. The KPI band takes `isFetching` (not just `isLoading`): with
+  `keepPreviousData`, `isLoading` is false forever after the first load,
+  so without it the tiles sit frozen on stale numbers during every
+  refetch; `yoy` compare shifts
   exactly 364 days (weekday-aligned, Feb-29-safe); tab switches and shared
   URLs prune filters the target tab's dimension cannot serve
   (`pruneFiltersForTab` — the RPC's combination guard is unreachable from
@@ -147,8 +158,52 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   API-type sync must produce identical entries (if it diffs, the generated
   output wins and consumers get fixed).
 
+## No read may fail silently (2026-08-04)
+
+Ingestion died for five days while the dashboard served one stale day as
+truth. Two rules came out of that, and both are load-bearing:
+
+- **An empty state must require a SUCCESSFUL empty read.** `hasAnyData` off a
+  failed query rendered "No Search Console data for this site yet" over a site
+  with 16 months of history — and, via a false `gscBound`, removed the Sync
+  button and told the user to bind a property that was already bound. Gate
+  every "there is nothing here" on `isSuccess`, never on `!isLoading`. Unknown
+  is not the same as absent, and it must never be rendered as absent.
+- **Every query that can fail renders its failure.** `InlineQueryError`
+  (`components/shared/MarketingUi.tsx`) is the one-line form for a failed read
+  that sits above still-usable chrome; `QueryError` replaces a whole panel.
+  A `—`, an empty table, or a flat chart that a fetch error can produce is a
+  lie the user cannot detect.
+
+**A signal you cannot distinguish from silence is not a signal.** GSC returns
+no row for a zero-traffic day, so "distinct dates < calendar days" can never
+tell a data gap from a quiet Sunday. `missing_days` is REPORTED (useful once a
+human is already diagnosing) but never produces a problem — the same reason
+`partial_coverage` was deleted server-side. Re-adding a cry-wolf one file over
+is worse than never deleting it, because the second one looks reviewed.
+
+`IngestionHealthBanner` + `seo.gsc_ingestion_health` are the surfacing layer.
+The RPC diagnoses from the **nightly scheduler's own run history**, not only
+`seo.collection_run` — the outage that motivated it never created a run row
+at all, so v1 reported `completed / 0 consecutive failures` beside 15-day-old
+data. Its `severity` (`info` / `warning` / `critical`) decides the banner's
+tone in ONE place: a never-synced site is not an alarm. Staleness also shows
+on the portfolio landing, because that is the first screen anyone sees.
+
 ## Change Log
 
+- 2026-08-04 — Silent-failure sweep after adversarial review: health RPC v2
+  (reads scheduler.sch_run, counts failures not non-successes, detects stuck
+  runs, adds severity; the nightly dispatcher is pinned by task ID, never by
+  title — a rename would silently kill the branch), `InlineQueryError` for the four
+  reads that had no error state, empty state now requires a successful read,
+  success toast keys on `reachedLatest` alone, invalidation moved to
+  `finally`, portfolio marks stale sites.
+- 2026-08-04 — Short ranges (1d/7d/14d) + the "it never updates" fixes:
+  named `GSC_DEFAULT_RANGE` replaces the positional preset fallback,
+  header prints the resolved window, KPI band shows a refetch state,
+  single-point charts render dots. Root cause of the stale data itself was
+  aidream-side (GSC ingestion had never run — see that repo's fix).
 - 2026-08-04 — v2: Dig Here rules engine (seo.gsc_dig_rule templates +
   stateless gsc_perf_dig), Watchlist (user_entity_state favorites +
   anchored gsc_perf_watch, watch column everywhere), New Pages manual

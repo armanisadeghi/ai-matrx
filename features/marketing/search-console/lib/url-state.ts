@@ -19,7 +19,11 @@ import type {
   GscResolvedPeriods,
   GscTab,
 } from "@/features/marketing/search-console/types";
-import { GSC_RANGE_PRESETS, GSC_TABS } from "@/features/marketing/search-console/types";
+import {
+  GSC_DEFAULT_RANGE,
+  GSC_RANGE_PRESETS,
+  GSC_TABS,
+} from "@/features/marketing/search-console/types";
 
 /**
  * GSC finalizes data ~2 days behind; the dashboard's "today" is lagged.
@@ -76,7 +80,7 @@ export function parseSearchConsoleUrl(
     ? (rangeParam as GscRangeKey)
     : hasCustom
       ? "custom"
-      : "90d";
+      : GSC_DEFAULT_RANGE;
   const compareParam = params.get("compare");
   const compare: GscCompareMode =
     compareParam === "prev" || compareParam === "yoy" ? compareParam : "none";
@@ -102,7 +106,7 @@ export function buildSearchConsoleUrl(state: SearchConsoleUrlState): string {
   const params = new URLSearchParams();
   if (state.siteId) params.set("site", state.siteId);
   if (state.tab !== "overview") params.set("tab", state.tab);
-  if (state.range !== "90d") params.set("range", state.range);
+  if (state.range !== GSC_DEFAULT_RANGE) params.set("range", state.range);
   if (state.range === "custom" && state.customFrom && state.customTo) {
     params.set("from", state.customFrom);
     params.set("to", state.customTo);
@@ -164,10 +168,13 @@ export function resolvePeriods(
   if (state.range === "custom" && state.customFrom && state.customTo) {
     current = { start: state.customFrom, end: state.customTo };
   } else {
+    // Look the fallback up BY KEY — a positional index silently retargets
+    // whenever a preset is added at the front.
     const preset =
       GSC_RANGE_PRESETS.find((r) => r.key === state.range) ??
-      GSC_RANGE_PRESETS[1];
-    current = { start: shiftDays(end, -(preset.days - 1)), end };
+      GSC_RANGE_PRESETS.find((r) => r.key === GSC_DEFAULT_RANGE);
+    const days = preset?.days ?? 28;
+    current = { start: shiftDays(end, -(days - 1)), end };
   }
   let compare: GscDateRange | null = null;
   if (state.compare === "prev") {

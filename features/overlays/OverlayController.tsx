@@ -4729,9 +4729,12 @@ export default function OverlayController() {
               (data.filters ?? {}) as import("@/features/marketing/search-console/types").GscFilters
             }
             range={
+              // Fallback for a malformed/legacy persisted payload only. Kept
+              // as a literal (no value import into the controller) but MUST
+              // equal GSC_DEFAULT_RANGE in search-console/types.ts.
               (typeof data.range === "string"
                 ? data.range
-                : "90d") as import("@/features/marketing/search-console/types").GscRangeKey
+                : "28d") as import("@/features/marketing/search-console/types").GscRangeKey
             }
             customFrom={
               typeof data.customFrom === "string" ? data.customFrom : null

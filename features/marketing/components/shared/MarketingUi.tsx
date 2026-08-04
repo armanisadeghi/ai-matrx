@@ -146,6 +146,49 @@ export function QueryError({
   );
 }
 
+/**
+ * The one-line sibling of `QueryError`, for a failed query that sits ABOVE
+ * still-usable chrome rather than replacing a whole panel.
+ *
+ * It exists because of the 2026-08-04 audit: four Search Console queries had
+ * no rendered error state at all, so a failed fetch was indistinguishable
+ * from "there is no data" — one of them rendered "No Search Console data for
+ * this site yet" over a site with 16 months of history. An empty state that
+ * a fetch error can produce is a lie, and the fix has to be small enough
+ * that nobody skips it. Pass `what` so the strip names which read failed.
+ */
+export function InlineQueryError({
+  what,
+  error,
+  onRetry,
+}: {
+  what: string;
+  error: unknown;
+  onRetry?: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-1.5">
+      <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
+      <span className="text-xs font-medium text-foreground">
+        Could not load {what}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+        {extractErrorMessage(error)}
+      </span>
+      {onRetry ? (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-6 shrink-0 text-[11px]"
+          onClick={onRetry}
+        >
+          Retry
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
 export function LoadingSurface({ label = "Loading…" }: { label?: string }) {
   return (
     <div className="flex h-full min-h-40 items-center justify-center text-muted-foreground">

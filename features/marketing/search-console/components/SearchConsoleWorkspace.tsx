@@ -17,11 +17,15 @@ import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
+import { describeBackendFailure } from "@/lib/api/errors";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
-import { formatCompactDate } from "@/features/marketing/components/shared/MarketingUi";
+import {
+  formatCompactDate,
+  InlineQueryError,
+} from "@/features/marketing/components/shared/MarketingUi";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import {
@@ -60,6 +64,7 @@ import { WatchlistTab } from "@/features/marketing/search-console/components/wat
 import { KpiBand } from "@/features/marketing/search-console/components/KpiBand";
 import { PerformanceChart } from "@/features/marketing/search-console/components/PerformanceChart";
 import { RangeCompareControl } from "@/features/marketing/search-console/components/RangeCompareControl";
+import { IngestionHealthBanner } from "@/features/marketing/search-console/components/IngestionHealthBanner";
 import { SearchConsolePortfolio } from "@/features/marketing/search-console/components/SearchConsolePortfolio";
 import {
   SiteSwitcher,
@@ -123,7 +128,18 @@ export function SearchConsoleWorkspace() {
   const site =
     siteOptions.data?.find((s) => s.id === state.siteId) ?? null;
   const siteName = site ? (site.name ?? site.domain) : null;
-  const gscBound = site ? siteHasGscBinding(site) : false;
+  // THREE states, not two. Collapsing them is what produced the original bug:
+  //   bound / not bound   — the list loaded and we can see the answer.
+  //   binding UNKNOWN     — the list failed to load. "Unknown" must never be
+  //                         rendered as "not bound"; that disabled Sync and
+  //                         told the user to bind an already-bound property.
+  //                         Let them try; the backend gives the real reason.
+  //   site NOT FOUND      — the list loaded fine and this ?site= isn't in it
+  //                         (stale or hand-edited URL). Say exactly that
+  //                         rather than laundering it into "unknown".
+  const siteMissing = site === null && siteOptions.isSuccess;
+  const bindingUnknown = site === null && siteOptions.isError;
+  const gscBound = site ? siteHasGscBinding(site) : bindingUnknown;
 
   const freshness = useGscFreshness(state.siteId);
   const dataThrough = useMemo(() => {
@@ -133,7 +149,12 @@ export function SearchConsoleWorkspace() {
       .map((r) => r.max_date);
     return dates.length > 0 ? [...dates].sort().at(-1) ?? null : null;
   }, [freshness.data]);
+  // ONLY a SUCCESSFUL empty read means "no data". While loading, or after a
+  // failed read, we know nothing — and the empty state below asserts a fact
+  // ("this site has never synced") that would then be false.
+  const freshnessKnown = freshness.isSuccess;
   const hasAnyData = (freshness.data ?? []).length > 0;
+  const knownEmpty = freshnessKnown && !hasAnyData;
 
   // GSC parity: preset windows end at the freshest data day, not the wall
   // clock — a lagging sync must not read as a traffic collapse.
@@ -177,19 +198,46 @@ export function SearchConsoleWorkspace() {
         state.siteId,
         site?.organization_id ?? null,
       );
-      toast.success(
-        result.runId
-          ? "Search Console sync completed."
-          : "Search Console sync finished.",
-      );
+      // Report what ACTUALLY landed. A blanket "completed" on a run that
+      // persisted nothing (or stopped short of today) is exactly how a
+      // five-day ingestion outage stayed invisible.
+      if (result.createdObservations === 0) {
+        toast.warning(
+          "Sync finished but stored no new rows — Google returned nothing for this window. If this repeats, the connection or property binding needs a look.",
+        );
+      } else if (!result.reachedLatest) {
+        // Keyed on reachedLatest ALONE. Keying it on daysBehind too meant a
+        // receipt that said "not current" but omitted the day count fell
+        // through to the success toast — a short-of-latest sync reporting as
+        // clean. daysBehind only shapes the wording.
+        toast.warning(
+          result.daysBehind !== null
+            ? `Synced ${result.createdObservations.toLocaleString()} rows through ${result.coveredThrough} — still ${result.daysBehind} days behind. Sync again to keep catching up.`
+            : `Synced ${result.createdObservations.toLocaleString()} rows but did not reach the latest available day. Sync again to keep catching up.`,
+        );
+      } else {
+        toast.success(
+          `Search Console sync completed — ${result.createdObservations.toLocaleString()} rows through ${result.coveredThrough ?? "latest"}.`,
+        );
+      }
+    } catch (error) {
+      // describeBackendFailure surfaces the REAL cause (expired Google
+      // credential, quota, permission) instead of the generic
+      // "failed unexpectedly" template — the same helper the other
+      // marketing surfaces already use.
+      const described = describeBackendFailure(error);
+      toast.error(described.headline, {
+        description:
+          described.cause !== described.headline ? described.cause : undefined,
+      });
+    } finally {
+      // In `finally`, not the success arm: a sync that persisted rows and
+      // THEN threw would otherwise leave every cache stale behind an error
+      // toast, with the health banner still reporting the old staleness it
+      // had just fixed.
       await queryClient.invalidateQueries({
         queryKey: ["marketing", "gsc"],
       });
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Search Console sync failed.",
-      );
-    } finally {
       setSyncing(false);
     }
   };
@@ -240,12 +288,18 @@ export function SearchConsoleWorkspace() {
         right={
           state.siteId ? (
             <div className="flex items-center gap-1.5">
+              {/* The RESOLVED window, always — preset windows clamp to the
+                  freshest data day, so without this a range change can look
+                  like nothing happened when it merely ended on the same day. */}
               <span className="hidden whitespace-nowrap text-[11px] text-muted-foreground md:inline">
+                {periods.current.start === periods.current.end
+                  ? formatCompactDate(periods.current.start)
+                  : `${formatCompactDate(periods.current.start)} – ${formatCompactDate(periods.current.end)}`}
                 {dataThrough
-                  ? `Data through ${formatCompactDate(dataThrough)}`
-                  : hasAnyData
-                    ? null
-                    : "Never synced"}
+                  ? ` · data through ${formatCompactDate(dataThrough)}`
+                  : knownEmpty
+                    ? " · never synced"
+                    : null}
               </span>
               <RangeCompareControl
                 value={{
@@ -264,9 +318,13 @@ export function SearchConsoleWorkspace() {
                 onClick={() => void runSync()}
                 disabled={syncing || !gscBound}
                 title={
-                  gscBound
-                    ? "Pull the latest Search Console data for this site"
-                    : "Bind a Search Console property on the site's Integrations tab first"
+                  siteMissing
+                    ? "This site is not in your site list — the link may be stale"
+                    : bindingUnknown
+                      ? "Could not load this site's settings — sync will still try"
+                      : gscBound
+                        ? "Pull the latest Search Console data for this site"
+                        : "Bind a Search Console property on the site's Integrations tab first"
                 }
               >
                 {syncing ? (
@@ -289,6 +347,56 @@ export function SearchConsoleWorkspace() {
           />
         ) : (
           <div className="flex h-full min-h-0 flex-col gap-2">
+            <IngestionHealthBanner
+              siteId={state.siteId}
+              onSync={() => void runSync()}
+              syncing={syncing}
+              canSync={gscBound}
+              suppressed={knownEmpty}
+            />
+            {/* Every read that can fail says so. Before 2026-08-04 these four
+                had no rendered error state at all, so a failed fetch showed
+                as an empty table, "—" tiles, a flat chart, or a disabled
+                Sync button — every one of them indistinguishable from a
+                truthful answer. */}
+            {siteMissing ? (
+              <InlineQueryError
+                what="this site"
+                error={
+                  new Error(
+                    "This site is not in your site list. The link may be stale, or access may have changed.",
+                  )
+                }
+              />
+            ) : null}
+            {siteOptions.isError ? (
+              <InlineQueryError
+                what="the site list"
+                error={siteOptions.error}
+                onRetry={() => void siteOptions.refetch()}
+              />
+            ) : null}
+            {freshness.isError ? (
+              <InlineQueryError
+                what="this site's data coverage — the window below may be wrong"
+                error={freshness.error}
+                onRetry={() => void freshness.refetch()}
+              />
+            ) : null}
+            {summary.isError ? (
+              <InlineQueryError
+                what="the metric totals — any numbers shown are from an earlier period"
+                error={summary.error}
+                onRetry={() => void summary.refetch()}
+              />
+            ) : null}
+            {timeseries.isError ? (
+              <InlineQueryError
+                what="the chart data"
+                error={timeseries.error}
+                onRetry={() => void timeseries.refetch()}
+              />
+            ) : null}
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
                 {GSC_TABS.map((tab) => (
@@ -322,7 +430,7 @@ export function SearchConsoleWorkspace() {
               ) : null}
             </div>
 
-            {!hasAnyData && !freshness.isLoading ? (
+            {knownEmpty ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-card/60 p-8 text-center">
                 <p className="text-sm font-medium text-foreground">
                   No Search Console data for this site yet
@@ -357,6 +465,7 @@ export function SearchConsoleWorkspace() {
                   filters={filters}
                   summary={summary.data}
                   isLoading={summary.isLoading}
+                  isFetching={summary.isFetching}
                   visibleMetrics={visibleMetrics}
                   onToggleMetric={(metric) =>
                     setVisibleMetrics((prev) => {
@@ -471,6 +580,7 @@ export function SearchConsoleWorkspace() {
                   filters={filters}
                   summary={summary.data}
                   isLoading={summary.isLoading}
+                  isFetching={summary.isFetching}
                   visibleMetrics={visibleMetrics}
                   onToggleMetric={(metric) =>
                     setVisibleMetrics((prev) => {

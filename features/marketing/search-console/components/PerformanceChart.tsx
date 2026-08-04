@@ -246,7 +246,7 @@ export function PerformanceChart({
                 dataKey={m.key}
                 stroke={m.color}
                 strokeWidth={2}
-                dot={false}
+                dot={points.length <= 2}
                 connectNulls={false}
                 isAnimationActive={false}
               />
@@ -264,7 +264,7 @@ export function PerformanceChart({
                     strokeWidth={1.5}
                     strokeDasharray="4 4"
                     strokeOpacity={0.55}
-                    dot={false}
+                    dot={points.length <= 2}
                     connectNulls={false}
                     isAnimationActive={false}
                   />

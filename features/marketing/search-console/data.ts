@@ -14,6 +14,7 @@ import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import type { Json } from "@/types/database.types";
 import type {
   GscBreakdownQuery,
+  GscIngestionHealthRow,
   GscBreakdownRow,
   GscFilters,
   GscFreshnessRow,
@@ -134,4 +135,26 @@ export async function getGscFreshness(
     .rpc("gsc_perf_freshness", { p_site_id: siteId })
     .abortSignal(signal ?? new AbortController().signal);
   return assertData(response.data, response.error);
+}
+
+/**
+ * Ingestion health for one site — the SURFACING read behind the dashboard's
+ * warning banner. Answers "is this site's data actually being kept current,
+ * and if not, why?" in one call (`migrations/seo_gsc_ingestion_health.sql`).
+ *
+ * This exists because a five-day total ingestion outage was fully recorded
+ * server-side and surfaced NOWHERE — the dashboard served one stale day as
+ * if it were the whole truth.
+ */
+export async function getGscIngestionHealth(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<GscIngestionHealthRow | null> {
+  const response = await (
+    await seoDb()
+  )
+    .rpc("gsc_ingestion_health", { p_site_id: siteId })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertData(response.data, response.error);
+  return rows[0] ?? null;
 }
