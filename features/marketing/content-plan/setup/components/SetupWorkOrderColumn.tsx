@@ -62,7 +62,11 @@ export function SetupWorkOrderColumn({
   lintSlot,
   aiReady = false,
   aiNamingKey = null,
+  aiBusy = false,
   onAiNames,
+  topics,
+  onAiTopics,
+  onClearTopics,
 }: {
   expanded: ExpandedArchetype;
   readiness: Readiness;
@@ -95,10 +99,24 @@ export function SetupWorkOrderColumn({
   lintSlot?: React.ReactNode;
   /** A research report is loaded — the per-family AI naming can run. */
   aiReady?: boolean;
-  /** The family key an AI naming run is in flight for, or null. */
+  /** The family key an AI naming run is in flight for, or null (drives the spinner). */
   aiNamingKey?: string | null;
+  /**
+   * ANY agent run is in flight (shape / names / topics / review). The runner
+   * allows one at a time, so every AI control disables on this — otherwise a
+   * second click just throws "already in progress" at the user.
+   */
+  aiBusy?: boolean;
   /** Run the Family Namer agent for one family (SetupView owns the run). */
   onAiNames?: (familyKey: string) => void;
+  /**
+   * Researched article titles staged for COUNT-ONLY families, by family key.
+   * They are the hub's work order — recorded on its brief at commit, never
+   * turned into pages behind the archetype's back.
+   */
+  topics?: Record<string, string[]>;
+  onAiTopics?: (familyKey: string) => void;
+  onClearTopics?: (familyKey: string) => void;
 }) {
   const [namingOpen, setNamingOpen] = useState<string | null>(null);
 
@@ -327,7 +345,7 @@ export function SetupWorkOrderColumn({
                           <button
                             type="button"
                             className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:no-underline"
-                            disabled={!aiReady || aiNamingKey !== null}
+                            disabled={!aiReady || aiBusy}
                             title={
                               aiReady
                                 ? `Name the ${family.label.toLowerCase()} pages from the research report`
@@ -357,6 +375,20 @@ export function SetupWorkOrderColumn({
                         </button>
                       </span>
                     </div>
+                  ) : null}
+
+                  {family.materialize === "count_only" ? (
+                    <CountOnlyTopics
+                      family={family}
+                      topics={topics?.[family.key] ?? null}
+                      aiReady={aiReady}
+                      busy={aiNamingKey === family.key}
+                      anyBusy={aiBusy}
+                      onRun={onAiTopics ? () => onAiTopics(family.key) : undefined}
+                      onClear={
+                        onClearTopics ? () => onClearTopics(family.key) : undefined
+                      }
+                    />
                   ) : null}
 
                   {naming ? (
@@ -598,6 +630,89 @@ function ConceptRow({
         </div>
       ) : null}
     </li>
+  );
+}
+
+/**
+ * A count-only family's researched titles. The archetype deliberately creates
+ * only the hub here, so these are shown as the WORK ORDER that lands on the
+ * hub's brief at commit — never as pages about to be created.
+ */
+function CountOnlyTopics({
+  family,
+  topics,
+  aiReady,
+  busy,
+  anyBusy,
+  onRun,
+  onClear,
+}: {
+  family: ExpandedArchetype["families"][number];
+  topics: string[] | null;
+  aiReady: boolean;
+  busy: boolean;
+  anyBusy: boolean;
+  onRun?: () => void;
+  onClear?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  if (!onRun) return null;
+  return (
+    <div className="mt-1.5">
+      <div className="flex items-center gap-2">
+        {topics && topics.length > 0 ? (
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded bg-success/15 px-1.5 py-0.5 text-[11px] font-medium leading-none text-success"
+            onClick={() => setOpen((current) => !current)}
+          >
+            {topics.length} topic{topics.length === 1 ? "" : "s"} planned
+          </button>
+        ) : (
+          <span className="text-[11px] text-muted-foreground">
+            Only the hub page is created — the titles are the work order.
+          </span>
+        )}
+        {topics && topics.length > 0 && onClear ? (
+          <button
+            type="button"
+            aria-label={`Clear the ${family.label} topics`}
+            className="text-muted-foreground hover:text-foreground"
+            onClick={onClear}
+          >
+            <X className="h-3 w-3" />
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:no-underline"
+          disabled={!aiReady || anyBusy}
+          title={
+            aiReady
+              ? `Propose the ${family.label.toLowerCase()} titles from the research report — recorded on the hub's brief when you commit.`
+              : "Pick a research topic with a finished report in the AI grounding bar first"
+          }
+          onClick={onRun}
+        >
+          {busy ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Lightbulb className="h-3 w-3" />
+          )}
+          {topics && topics.length > 0 ? "Redo topics" : "AI topics"}
+          <span className="sr-only"> for {family.label}</span>
+        </button>
+      </div>
+      {open && topics ? (
+        <ul className="mt-1 space-y-0.5 rounded-md border border-border bg-muted/30 px-2 py-1.5">
+          {topics.map((topic, index) => (
+            <li key={`${topic}-${index}`} className="text-[11px] text-foreground">
+              {topic}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }
 

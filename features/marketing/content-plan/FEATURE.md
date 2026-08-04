@@ -340,6 +340,23 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-30 — Claude (round 4): **count-only topics + semantic plan review.**
+  Count-only families (blog/guides) gained an "AI topics" control (same Family
+  Namer agent, article-title guidance); titles persist in the draft
+  (`topics_by_archetype`) and land on the family HUB node's brief at commit
+  via `applyFamilyTopics` + `composeTopicBrief` — an idempotent
+  `Planned topics (from research):` marker block, never new pages behind the
+  archetype's back (the expander is a fixture-pinned twin and was NOT
+  touched). Fourth platform agent **Content Plan Reviewer**
+  (`2a7f0dc8-5525-437a-8f2e-35f12a45cb27`) audits the live plan against the
+  research report; `PlanReviewSection` renders findings beside the structural
+  lint, and a `gap` finding whose parent route already exists creates the page
+  through `createPlanNode` in one click. `REVIEWER_OUTPUT_CONTRACT` is sent as
+  binding `guidance` on every review run — without it the agent returns a
+  summary naming six missing pages and ONE finding (measured). Roles bound:
+  `plan_architect` + `eeat_curator` (manifest + `ui.ui_surface_agent_role`);
+  `brief_writer` deliberately left null (Deepen owns that job — reason
+  recorded in the manifest). Handoff: `docs/handoffs/content-plan-ai-steps.md`.
 - 2026-07-30 — Claude (round 3): **adversarial-review fixes** (20-agent
   find+refute workflow over both repos' diffs; 14 confirmed). Setup now seeds
   from the FRESH site row (`fetchFreshSite`), never the 60s-stale siteOptions

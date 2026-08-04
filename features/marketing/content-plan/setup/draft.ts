@@ -40,6 +40,14 @@ export interface SetupDraft {
   namesByArchetype: Record<string, Record<string, string[]>>;
   /** Concept display-name picks, keyed by archetype then concept. */
   conceptNamesByArchetype: Record<string, Record<string, string>>;
+  /**
+   * Proposed article titles for COUNT-ONLY families (blog / guides / learn),
+   * keyed by archetype then family. A count-only family materializes only its
+   * hub — "the count is the commitment and the titles come from research" —
+   * so these are the work order, applied to the hub node's brief on commit,
+   * never turned into pages behind the archetype's back.
+   */
+  topicsByArchetype: Record<string, Record<string, string[]>>;
   /** The research topic grounding the AI steps (rs_topic.id). */
   researchTopicId: string | null;
   updatedAt: string | null;
@@ -51,9 +59,30 @@ export function emptySetupDraft(): SetupDraft {
     countsByArchetype: {},
     namesByArchetype: {},
     conceptNamesByArchetype: {},
+    topicsByArchetype: {},
     researchTopicId: null,
     updatedAt: null,
   };
+}
+
+/** Shared parse for the two `{archetype: {family: string[]}}` sections. */
+function readNameMap(raw: unknown): Record<string, Record<string, string[]>> {
+  const out: Record<string, Record<string, string[]>> = {};
+  if (!isRecord(raw)) return out;
+  for (const [archetype, families] of Object.entries(raw)) {
+    if (!isRecord(families)) continue;
+    const inner: Record<string, string[]> = {};
+    for (const [key, value] of Object.entries(families)) {
+      if (
+        Array.isArray(value) &&
+        value.every((name) => typeof name === "string" && name.trim())
+      ) {
+        inner[key] = value as string[];
+      }
+    }
+    if (Object.keys(inner).length > 0) out[archetype] = inner;
+  }
+  return out;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -89,21 +118,8 @@ export function readSetupDraft(settings: unknown): SetupDraft | null {
       if (Object.keys(out).length > 0) draft.countsByArchetype[archetype] = out;
     }
   }
-  if (isRecord(raw.names_by_archetype)) {
-    for (const [archetype, families] of Object.entries(raw.names_by_archetype)) {
-      if (!isRecord(families)) continue;
-      const out: Record<string, string[]> = {};
-      for (const [key, value] of Object.entries(families)) {
-        if (
-          Array.isArray(value) &&
-          value.every((name) => typeof name === "string" && name.trim())
-        ) {
-          out[key] = value as string[];
-        }
-      }
-      if (Object.keys(out).length > 0) draft.namesByArchetype[archetype] = out;
-    }
-  }
+  draft.namesByArchetype = readNameMap(raw.names_by_archetype);
+  draft.topicsByArchetype = readNameMap(raw.topics_by_archetype);
   if (isRecord(raw.concept_names_by_archetype)) {
     for (const [archetype, concepts] of Object.entries(
       raw.concept_names_by_archetype,
@@ -128,7 +144,8 @@ export function draftHasContent(draft: SetupDraft): boolean {
       draft.researchTopicId ||
       Object.keys(draft.countsByArchetype).length > 0 ||
       Object.keys(draft.namesByArchetype).length > 0 ||
-      Object.keys(draft.conceptNamesByArchetype).length > 0,
+      Object.keys(draft.conceptNamesByArchetype).length > 0 ||
+      Object.keys(draft.topicsByArchetype).length > 0,
   );
 }
 
@@ -146,6 +163,9 @@ function draftToStorage(draft: SetupDraft): Record<string, unknown> {
   }
   if (Object.keys(draft.conceptNamesByArchetype).length > 0) {
     out.concept_names_by_archetype = draft.conceptNamesByArchetype;
+  }
+  if (Object.keys(draft.topicsByArchetype).length > 0) {
+    out.topics_by_archetype = draft.topicsByArchetype;
   }
   return out;
 }
