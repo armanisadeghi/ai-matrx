@@ -75,12 +75,62 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   derives a deterministic instanceId per slice, so identical drills focus
   the existing panel while distinct slices float side by side).
 
+## The three method tabs (v2, 2026-08-04)
+
+- **Dig Here** (`components/dig/`) — the low-hanging-fruit rules engine.
+  Rules live in `seo.gsc_dig_rule` (system templates: fixed UUIDs
+  `a1d16001-…`, ownerless, world-readable, re-seeded by the migration;
+  user rules: owner-write, org-read; adoption = copy-insert). Evaluation
+  is the stateless `seo.gsc_perf_dig` RPC — the FE always sends rule
+  CONTENTS, never an id, so the editor's Preview runs unsaved drafts
+  through the identical path. The condition vocabulary
+  (`types.ts::GSC_DIG_METRICS`, 14 metrics × gt/gte/lt/lte) mirrors the
+  server whitelist in `gsc_dig_metric_value` EXACTLY — extend both
+  together. A compare-requiring rule under `compare=none` auto-runs vs
+  the previous period (`withPrevCompare`) and says so. `?rule=<id>` is
+  URL state (digs tab only).
+- **Watchlist** (`components/watch/`) — watch state is the canonical
+  per-user primitive `platform.user_entity_state.is_favorite` via
+  `favoritesService` (tokens `web_page` / `seo_keyword`), chokepointed in
+  `lib/watch.ts`; a keyword-less GSC query bridges through
+  `seo.fn_upsert_keyword` on first watch (`useRowWatch` remembers the
+  bridge so the row paints watched immediately). Rows come from
+  `seo.gsc_perf_watch`, ANCHORED on the watched id arrays — zero-data
+  items return real zero rows ("still nothing" is the signal), and query
+  matching is by keyword_id OR normalized phrase (facts predate links).
+  Every query/page table (tabs, overview, drill panels) carries the eye
+  column + right-click Watch via `GscDimensionTable`'s `watch` prop.
+- **New Pages** (`components/new-pages/`) — the MANUAL launch tracker for
+  Arman's workflow: add the page (step 1 = request indexing in GSC), wait
+  for the FIRST impression (the milestone victory), then track early
+  numbers top-N lists bury. State = `web.page.launch_tracking` jsonb
+  (team-visible, written directly under page RLS; shape + the ONE
+  lifecycle derivation in `lib/launch-tracking.ts`); the milestone =
+  `seo.gsc_perf_page_first_dates` (all-history winning-run MIN date —
+  `web.page.first_seen` is discovery-observed and must NOT be used for
+  this). Page creation reuses `createManualPage`; "Track as new page"
+  lives in the page context menu.
+
 ## Doctrine
 
 - Never bypass the `gsc_perf_*` RPCs with raw table aggregates in the FE —
   the accuracy contract (profile resolution + latest-fact dedup + weighted
-  position) lives server-side ONCE. The future "dig here" algorithm layer
-  composes the same RPC filter/period contract (`types.ts::GscFilters`).
+  position) lives server-side ONCE. Dig Here composes the same contract:
+  `seo.gsc_perf_dig` IS breakdown + a whitelist-validated conditions pass
+  (NO dynamic SQL — `gsc_dig_metric_value`/`gsc_dig_condition_passes`);
+  with `[]` conditions it must equal `gsc_perf_breakdown` for the same
+  slice (verified live; re-verify after touching either).
+- Dig evaluation is server-side only — never re-implement a condition
+  check over client rows. The FE validates for UX (`lib/dig-rules.ts`
+  mirrors the whitelist); the RPC RAISE is the enforcement.
+- Watch = `user_entity_state.is_favorite` through `favoritesService` via
+  `lib/watch.ts` — never a new watch table, never the `PinButton` sidebar
+  path. Launch tracking = `web.page.launch_tracking` — never `metadata`
+  (pipeline writers replace it wholesale), never user_entity_state (launch
+  state is team-visible).
+- The shared metric column set lives ONCE in `lib/columns.tsx` — every GSC
+  table (breakdown, dig, watch) builds from it; a per-table copy is the
+  defect it exists to kill.
 - One dimension table, one drill vocabulary, one panel — extend
   `GscDimensionTable` / `panelDrillFor` / `GscDrilldownWindow`; never fork a
   per-tab table or a second panel body.
@@ -93,6 +143,11 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
 
 ## Change Log
 
+- 2026-08-04 — v2: Dig Here rules engine (seo.gsc_dig_rule templates +
+  stateless gsc_perf_dig), Watchlist (user_entity_state favorites +
+  anchored gsc_perf_watch, watch column everywhere), New Pages manual
+  launch tracker (web.page.launch_tracking + gsc_perf_page_first_dates),
+  shared column builders extracted to lib/columns.tsx.
 - 2026-07-30 — Feature created: portfolio landing + per-site dashboard
   (overview/queries/pages/countries/devices/appearance), compare periods,
   filter chips, cross-drills, multi-instance drill-down panels, copy
