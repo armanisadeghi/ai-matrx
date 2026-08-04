@@ -40,23 +40,21 @@ import { ResultActions } from "@/features/podcasts/generator/components/ResultAc
 import { TranscriptPanel } from "@/features/podcasts/generator/components/TranscriptPanel";
 import { episodeHref } from "@/features/podcasts/generator/constants";
 import { useStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
-import { RunRecoveryBanner } from "@/features/podcasts/studio/components/RunRecoveryBanner";
+import { RunRecoveryBannerFor } from "@/features/podcasts/studio/components/RunRecoveryBanner";
 import { SourceSummaryPanel } from "@/features/podcasts/studio/components/SourceSummaryPanel";
 import { StageCanvas } from "./StageCanvas";
 import { ControlRail } from "./ControlRail";
 
 export function StudioStage({ runId }: { runId: string }) {
+  // Keep the hook result so RunRecoveryBannerFor derives its own props —
+  // five hand-wired copies is what let `audioMissing` go missing here.
+  const run = useStudioRun(runId);
   const {
     state,
     startedAt,
     loading,
     notFound,
     streaming,
-    stalled,
-    backgroundWorking,
-    canReconnect,
-    reconnect,
-    rerunFromSource,
     refresh,
     detail,
     recovery,
@@ -65,7 +63,7 @@ export function StudioStage({ runId }: { runId: string }) {
     addAsset,
     selectedCoverUrl,
     selectCover,
-  } = useStudioRun(runId);
+  } = run;
 
   if (loading) {
     return (
@@ -176,17 +174,7 @@ export function StudioStage({ runId }: { runId: string }) {
           />
 
           {/* Never a dead end — same recovery surface, same behaviors. */}
-          <RunRecoveryBanner
-            status={state.status}
-            streaming={streaming}
-            stalled={stalled}
-            backgroundWorking={backgroundWorking}
-            canReconnect={canReconnect}
-            canRerun={recovery.canRerun}
-            error={state.error}
-            onResume={reconnect}
-            onRerun={rerunFromSource}
-          />
+          <RunRecoveryBannerFor run={run} />
 
           {/* While producing but the audio is the long pole and the player hasn't
               resolved yet, the canvas already shows the live teaser; on narrow

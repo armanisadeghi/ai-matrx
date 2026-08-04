@@ -329,6 +329,21 @@ export function useStudioRun(runId: string): UseStudioRun {
     // Resume is offered only if the run is genuinely stalled (no server pulse).
     async function watchInBackground() {
       if (cancelled || completedRef.current || !backendRunIdRef.current) {
+        // The stream ended and never established a durable run id, so there is
+        // nothing to poll, nothing to resume, and the run cannot finish. That
+        // is the definition of orphaned — and it is the EXACT shape of the
+        // 2026-08 outage (the server streamed a while, then died with no
+        // agent_run row). `runStream` optimistically clears `orphaned` when a
+        // stream opens, so without re-deciding here the page would fall back to
+        // "interrupted — everything generated so far is saved", which is the
+        // opposite of the truth for the one case this state exists to name.
+        if (!cancelled && !completedRef.current && !backendRunIdRef.current) {
+          setOrphaned(true);
+          console.error(
+            `[studio-run] run ${runId} streamed but never received a durable ` +
+              `run id — nothing to resume or poll. Server-side fault.`,
+          );
+        }
         setCanReconnect(!!backendRunIdRef.current && !completedRef.current);
         return;
       }
@@ -600,11 +615,21 @@ export function useStudioRun(runId: string): UseStudioRun {
       } catch {
         d = null;
       }
-      if (cancelled || !d) return;
+      if (cancelled) return;
+      if (!d) {
+        // Refresh is the user's "I don't believe this page" button, so it must
+        // be able to restore the orphan verdict as well as clear it. Still no
+        // durable record and still not finished ⇒ still orphaned; saying
+        // nothing here left a stale optimistic clear in place forever.
+        if (!completedRef.current && !backendRunIdRef.current) setOrphaned(true);
+        return;
+      }
       setDetail(d);
       setRecovery(deriveRecoveryState(d));
       setNotFound(false);
       setStalled(false);
+      // A durable record exists — by definition not orphaned.
+      setOrphaned(false);
       backendRunIdRef.current = d.run_id;
       setRequest(
         d.request && Object.keys(d.request).length > 0

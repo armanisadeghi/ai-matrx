@@ -25,7 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
 import { LiveProgressRail } from "@/features/podcasts/generator/components/LiveProgressRail";
-import { RunRecoveryBanner } from "@/features/podcasts/studio/components/RunRecoveryBanner";
+import { RunRecoveryBannerFor } from "@/features/podcasts/studio/components/RunRecoveryBanner";
 import { SessionAudio } from "@/features/education/study/components/SessionAudio";
 import { podcastService } from "@/features/podcasts/service";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
@@ -338,17 +338,9 @@ function LiveAudioRun({
 
   return (
     <div className="space-y-4">
-      <RunRecoveryBanner
-        status={state.status}
-        streaming={run.streaming}
-        stalled={run.stalled}
-        backgroundWorking={run.backgroundWorking}
-        canReconnect={run.canReconnect}
-        canRerun={run.recovery.canRerun}
+      <RunRecoveryBannerFor
+        run={run}
         audioMissing={state.status === "done" && !audioReady}
-        error={state.error}
-        onResume={run.reconnect}
-        onRerun={run.rerunFromSource}
       />
 
       {/* As soon as a durable audio file lands (before the run fully completes),

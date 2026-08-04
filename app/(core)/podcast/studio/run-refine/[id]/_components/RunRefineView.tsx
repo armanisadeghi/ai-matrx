@@ -55,7 +55,7 @@ import { ElapsedTimer } from "@/features/podcasts/generator/components/ElapsedTi
 import { episodeHref } from "@/features/podcasts/generator/constants";
 import { useStageDisplay } from "@/features/podcasts/generator/useStageDisplay";
 import { useStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
-import { RunRecoveryBanner } from "@/features/podcasts/studio/components/RunRecoveryBanner";
+import { RunRecoveryBannerFor } from "@/features/podcasts/studio/components/RunRecoveryBanner";
 import { SourceSummaryPanel } from "@/features/podcasts/studio/components/SourceSummaryPanel";
 import type { PodcastRunState } from "@/features/podcasts/generator/types";
 import { ProductionStage } from "./ProductionStage";
@@ -272,6 +272,9 @@ function PulseStat({
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export function RunRefineView({ runId }: { runId: string }) {
+  // Keep the hook result so RunRecoveryBannerFor derives its own props —
+  // five hand-wired copies is what let `audioMissing` go missing here.
+  const run = useStudioRun(runId);
   const {
     state,
     startedAt,
@@ -280,9 +283,6 @@ export function RunRefineView({ runId }: { runId: string }) {
     streaming,
     stalled,
     backgroundWorking,
-    canReconnect,
-    reconnect,
-    rerunFromSource,
     refresh,
     detail,
     recovery,
@@ -291,7 +291,7 @@ export function RunRefineView({ runId }: { runId: string }) {
     addAsset,
     selectedCoverUrl,
     selectCover,
-  } = useStudioRun(runId);
+  } = run;
 
   if (loading) {
     return (
@@ -457,17 +457,7 @@ export function RunRefineView({ runId }: { runId: string }) {
         {/* RIGHT — the console: recovery first (loudest), the production pulse,
             the steps, then script, source, and details. */}
         <div className="order-2 space-y-4">
-          <RunRecoveryBanner
-            status={state.status}
-            streaming={streaming}
-            stalled={stalled}
-            backgroundWorking={backgroundWorking}
-            canReconnect={canReconnect}
-            canRerun={recovery.canRerun}
-            error={state.error}
-            onResume={reconnect}
-            onRerun={rerunFromSource}
-          />
+          <RunRecoveryBannerFor run={run} />
 
           {showPulse && <ProductionPulse state={state} />}
 

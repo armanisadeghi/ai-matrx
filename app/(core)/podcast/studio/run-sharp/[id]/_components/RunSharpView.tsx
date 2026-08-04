@@ -45,7 +45,7 @@ import { TranscriptPanel } from "@/features/podcasts/generator/components/Transc
 import { ElapsedTimer } from "@/features/podcasts/generator/components/ElapsedTimer";
 import { episodeHref } from "@/features/podcasts/generator/constants";
 import { useStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
-import { RunRecoveryBanner } from "@/features/podcasts/studio/components/RunRecoveryBanner";
+import { RunRecoveryBannerFor } from "@/features/podcasts/studio/components/RunRecoveryBanner";
 import { SourceSummaryPanel } from "@/features/podcasts/studio/components/SourceSummaryPanel";
 
 // ── Status hero ─────────────────────────────────────────────────────────────
@@ -176,6 +176,9 @@ function StatusHero({
 }
 
 export function RunSharpView({ runId }: { runId: string }) {
+  // Keep the hook result so RunRecoveryBannerFor derives its own props —
+  // five hand-wired copies is what let `audioMissing` go missing here.
+  const run = useStudioRun(runId);
   const {
     state,
     startedAt,
@@ -184,9 +187,6 @@ export function RunSharpView({ runId }: { runId: string }) {
     streaming,
     stalled,
     backgroundWorking,
-    canReconnect,
-    reconnect,
-    rerunFromSource,
     refresh,
     detail,
     recovery,
@@ -195,7 +195,7 @@ export function RunSharpView({ runId }: { runId: string }) {
     addAsset,
     selectedCoverUrl,
     selectCover,
-  } = useStudioRun(runId);
+  } = run;
 
   if (loading) {
     return (
@@ -363,17 +363,7 @@ export function RunSharpView({ runId }: { runId: string }) {
         {/* RIGHT — the console: recovery first (loudest), steps, then script,
             source, and details. */}
         <div className="order-2 space-y-4">
-          <RunRecoveryBanner
-            status={state.status}
-            streaming={streaming}
-            stalled={stalled}
-            backgroundWorking={backgroundWorking}
-            canReconnect={canReconnect}
-            canRerun={recovery.canRerun}
-            error={state.error}
-            onResume={reconnect}
-            onRerun={rerunFromSource}
-          />
+          <RunRecoveryBannerFor run={run} />
 
           {hasStages && <LiveProgressRail state={state} startedAt={startedAt} />}
 

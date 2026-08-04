@@ -37,7 +37,7 @@ import { ResultActions } from "@/features/podcasts/generator/components/ResultAc
 import { TranscriptPanel } from "@/features/podcasts/generator/components/TranscriptPanel";
 import { episodeHref } from "@/features/podcasts/generator/constants";
 import { useStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
-import { RunRecoveryBanner } from "@/features/podcasts/studio/components/RunRecoveryBanner";
+import { RunRecoveryBannerFor } from "@/features/podcasts/studio/components/RunRecoveryBanner";
 import { RunTruthInspector } from "@/features/podcasts/studio/components/RunTruthInspector";
 import { SourceSummaryPanel } from "@/features/podcasts/studio/components/SourceSummaryPanel";
 import { ResearchActivityFeed } from "@/features/podcasts/studio/components/ResearchActivityFeed";
@@ -66,6 +66,9 @@ function slotEntries(
 }
 
 export function StudioRunView({ runId }: { runId: string }) {
+  // Keep the hook result so RunRecoveryBannerFor derives its own props —
+  // five hand-wired copies is what let `audioMissing` go missing elsewhere.
+  const run = useStudioRun(runId);
   const {
     state,
     startedAt,
@@ -75,10 +78,6 @@ export function StudioRunView({ runId }: { runId: string }) {
     stalled,
     backgroundWorking,
     canReconnect,
-    orphaned,
-    canRerun,
-    reconnect,
-    rerunFromSource,
     refresh,
     detail,
     recovery,
@@ -89,7 +88,7 @@ export function StudioRunView({ runId }: { runId: string }) {
     selectCover,
     livePlayer,
     researchActivity,
-  } = useStudioRun(runId);
+  } = run;
 
   // When the canonical audio URL lands while the user is listening live, carry
   // the position (and playing state) over to the real player and silence the
@@ -375,19 +374,7 @@ export function StudioRunView({ runId }: { runId: string }) {
               steps — self-hides when the stream sends none. */}
           <ResearchActivityFeed entries={researchActivity} streaming={streaming} />
 
-          <RunRecoveryBanner
-            status={state.status}
-            streaming={streaming}
-            stalled={stalled}
-            backgroundWorking={backgroundWorking}
-            canReconnect={canReconnect}
-            canRerun={recovery.canRerun || canRerun}
-            orphaned={orphaned}
-            audioMissing={!state.audioUrl}
-            error={state.error}
-            onResume={reconnect}
-            onRerun={rerunFromSource}
-          />
+          <RunRecoveryBannerFor run={run} />
 
           {state.script && <TranscriptPanel script={state.script} rtl={rtl} />}
 

@@ -16,6 +16,7 @@
 import { AlertTriangle, Clock, Loader2, RefreshCw, RotateCcw, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { RunStatus } from "@/features/podcasts/generator/types";
+import type { UseStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
 import { humanizeGenerationError } from "@/features/podcasts/generator/errorMessages";
 
 interface RunRecoveryBannerProps {
@@ -37,6 +38,45 @@ interface RunRecoveryBannerProps {
   error: string | null;
   onResume: () => void;
   onRerun: () => void;
+}
+
+/**
+ * THE way to render the recovery banner from a run view. Derives every prop
+ * from the `useStudioRun` result so the five run surfaces cannot drift.
+ *
+ * They already had: all five hand-wired the same nine props, and only
+ * `StudioRunView` ever passed `audioMissing` — so the "the audio didn't make
+ * it" banner never appeared on run-dense / run-refine / run-reimagine /
+ * run-sharp at all. Adding `orphaned` to one of five would have repeated the
+ * same mistake. Add a new input here, once, and every surface gets it.
+ */
+export function RunRecoveryBannerFor({
+  run,
+  audioMissing,
+}: {
+  run: UseStudioRun;
+  /** Override only when a surface genuinely defines "no audio" differently —
+   *  education's audio study page gates on its own `audioReady`, which is a
+   *  real distinction, not drift. Everything else is derived and must stay so. */
+  audioMissing?: boolean;
+}) {
+  return (
+    <RunRecoveryBanner
+      status={run.state.status}
+      streaming={run.streaming}
+      stalled={run.stalled}
+      backgroundWorking={run.backgroundWorking}
+      canReconnect={run.canReconnect}
+      // Either source of a re-runnable request counts: the durable record, or
+      // the pc_studio_runs row (the only one an orphaned run has).
+      canRerun={run.recovery.canRerun || run.canRerun}
+      orphaned={run.orphaned}
+      audioMissing={audioMissing ?? !run.state.audioUrl}
+      error={run.state.error}
+      onResume={run.reconnect}
+      onRerun={run.rerunFromSource}
+    />
+  );
 }
 
 function Actions({
