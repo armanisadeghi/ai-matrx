@@ -43341,13 +43341,18 @@ export type Database = {
           data_first_date: string
           data_last_date: string
           days_behind: number
+          dispatcher_last_error: string
+          dispatcher_last_run_at: string
+          dispatcher_last_status: string
           expected_last_date: string
           is_healthy: boolean
           last_run_at: string
           last_run_error: string
           last_run_status: string
           last_success_at: string
+          missing_days: number
           problem: string
+          severity: string
         }[]
       }
       gsc_perf_breakdown: {

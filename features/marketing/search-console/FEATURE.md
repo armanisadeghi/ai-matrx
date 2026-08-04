@@ -158,8 +158,39 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   API-type sync must produce identical entries (if it diffs, the generated
   output wins and consumers get fixed).
 
+## No read may fail silently (2026-08-04)
+
+Ingestion died for five days while the dashboard served one stale day as
+truth. Two rules came out of that, and both are load-bearing:
+
+- **An empty state must require a SUCCESSFUL empty read.** `hasAnyData` off a
+  failed query rendered "No Search Console data for this site yet" over a site
+  with 16 months of history — and, via a false `gscBound`, removed the Sync
+  button and told the user to bind a property that was already bound. Gate
+  every "there is nothing here" on `isSuccess`, never on `!isLoading`. Unknown
+  is not the same as absent, and it must never be rendered as absent.
+- **Every query that can fail renders its failure.** `InlineQueryError`
+  (`components/shared/MarketingUi.tsx`) is the one-line form for a failed read
+  that sits above still-usable chrome; `QueryError` replaces a whole panel.
+  A `—`, an empty table, or a flat chart that a fetch error can produce is a
+  lie the user cannot detect.
+
+`IngestionHealthBanner` + `seo.gsc_ingestion_health` are the surfacing layer.
+The RPC diagnoses from the **nightly scheduler's own run history**, not only
+`seo.collection_run` — the outage that motivated it never created a run row
+at all, so v1 reported `completed / 0 consecutive failures` beside 15-day-old
+data. Its `severity` (`info` / `warning` / `critical`) decides the banner's
+tone in ONE place: a never-synced site is not an alarm. Staleness also shows
+on the portfolio landing, because that is the first screen anyone sees.
+
 ## Change Log
 
+- 2026-08-04 — Silent-failure sweep after adversarial review: health RPC v2
+  (reads scheduler.sch_run, counts failures not non-successes, detects stuck
+  runs + mid-history gaps, adds severity), `InlineQueryError` for the four
+  reads that had no error state, empty state now requires a successful read,
+  success toast keys on `reachedLatest` alone, invalidation moved to
+  `finally`, portfolio marks stale sites.
 - 2026-08-04 — Short ranges (1d/7d/14d) + the "it never updates" fixes:
   named `GSC_DEFAULT_RANGE` replaces the positional preset fallback,
   header prints the resolved window, KPI band shows a refetch state,

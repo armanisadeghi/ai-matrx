@@ -34,6 +34,24 @@ function trendPercent(cur: number | null, prev: number | null): number | null {
   return ((cur - prev) / prev) * 100;
 }
 
+// GSC finalizes ~2 days back; anything older than that plus two missed
+// nights is stale. Kept in step with `seo.gsc_ingestion_health`'s thresholds.
+const GSC_LAG_DAYS = 2;
+const GSC_STALE_AFTER_DAYS = 2;
+
+/** Days the freshest data day is behind where it should be, or null. */
+function daysBehind(latest: string | null | undefined): number | null {
+  if (!latest) return null;
+  const expected = new Date();
+  expected.setUTCDate(expected.getUTCDate() - GSC_LAG_DAYS);
+  const diff = Math.floor(
+    (Date.parse(`${expected.toISOString().slice(0, 10)}T00:00:00Z`) -
+      Date.parse(`${latest.slice(0, 10)}T00:00:00Z`)) /
+      86_400_000,
+  );
+  return Number.isFinite(diff) ? diff : null;
+}
+
 export function SearchConsolePortfolio({
   onSelectSite,
 }: {
@@ -73,6 +91,7 @@ export function SearchConsolePortfolio({
       site.gsc_prev_days >= 21
         ? trendPercent(site.gsc_clicks_28d, site.gsc_clicks_prev_28d)
         : null;
+    const behind = daysBehind(site.gsc_latest_date);
     return (
       <div
         key={site.id}
@@ -115,6 +134,7 @@ export function SearchConsolePortfolio({
                       ? formatCompactDate(site.gsc_latest_date)
                       : "never",
                   ],
+                  ["Days behind", behind ?? "unknown"],
                 ])
               }
               agent={() => ({
@@ -161,9 +181,21 @@ export function SearchConsolePortfolio({
             </p>
           </div>
         </div>
-        <p className="text-[11px] text-muted-foreground">
+        {/* This is the FIRST screen of the feature, and until now it
+            presented a 15-day-stale 28-day KPI as current with no hint. A
+            staleness marker has to live wherever a number is shown, not only
+            on the deep dashboard. */}
+        <p
+          className={
+            behind !== null && behind >= GSC_STALE_AFTER_DAYS
+              ? "text-[11px] font-medium text-destructive"
+              : "text-[11px] text-muted-foreground"
+          }
+        >
           {site.gsc_latest_date
-            ? `Data through ${formatCompactDate(site.gsc_latest_date)}`
+            ? behind !== null && behind >= GSC_STALE_AFTER_DAYS
+              ? `Stale — data only through ${formatCompactDate(site.gsc_latest_date)} (${behind} days behind)`
+              : `Data through ${formatCompactDate(site.gsc_latest_date)}`
             : "No Search Console data yet"}
           <ArrowUpRight className="ml-1 inline h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
         </p>
