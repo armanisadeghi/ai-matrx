@@ -44,10 +44,16 @@ function cleanFilters(filters: GscFilters): Json {
  * rules with no site pin, plus rules pinned to exactly this site. RLS is
  * the access ceiling; this query declares its scope (THE VIEW LAW).
  */
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function listDigRules(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<GscDigRuleRow[]> {
+  // siteId comes straight from ?site= — validate before splicing it into
+  // the PostgREST .or() filter DSL (a stray comma/paren would rewrite it).
+  if (!UUID_RE.test(siteId)) throw new Error("Invalid site id");
   const response = await (await seoDb())
     .from("gsc_dig_rule")
     .select("*")

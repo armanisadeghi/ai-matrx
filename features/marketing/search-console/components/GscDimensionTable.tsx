@@ -212,8 +212,8 @@ export function GscDimensionTable({
             cell: (row) => (
               <WatchButton
                 watched={rowWatch.isWatched(row)}
-                pending={rowWatch.pending}
-                onToggle={() => void rowWatch.toggleRow(row)}
+                pending={rowWatch.isRowPending(row)}
+                onToggle={() => rowWatch.toggleRow(row)}
                 noun={labels.noun}
               />
             ),
@@ -418,7 +418,7 @@ export function GscDimensionTable({
                         toast.error("Right-click a data row to watch it.");
                         return;
                       }
-                      void rowWatch.toggleRow(row);
+                      rowWatch.toggleRow(row);
                     },
                   },
                 ]

@@ -10,7 +10,7 @@
  * find-or-create by normalized phrase) and favorites the resulting keyword.
  */
 
-import { supabase } from "@/utils/supabase/client";
+import { ensureKeywordId } from "@/features/marketing/data/page-keywords";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 
@@ -59,27 +59,11 @@ export async function unwatchKeyword(keywordId: string): Promise<void> {
 }
 
 /**
- * Ensure a canonical `seo.keyword` exists for a raw GSC query phrase and
- * return its id — the bridge for query rows whose facts carry no
- * `keyword_id`. Idempotent (find-or-create by normalized phrase).
- */
-export async function ensureKeywordId(phrase: string): Promise<string> {
-  const trimmed = phrase.trim();
-  if (trimmed === "") throw new Error("Cannot watch an empty query");
-  const response = await supabase
-    .schema("seo")
-    .rpc("fn_upsert_keyword", { p_phrase: trimmed });
-  if (response.error) throw new Error(response.error.message);
-  const id = (response.data as Record<string, unknown> | null)?.o_id;
-  if (typeof id !== "string" || id === "") {
-    throw new Error("Keyword upsert returned no id");
-  }
-  return id;
-}
-
-/**
  * Watch a query row: use its keyword link when present, else mint one via
- * the upsert bridge. Returns the watched keyword id (callers cache it so
+ * the canonical keyword-library upsert (`ensureKeywordId` in
+ * `features/marketing/data/page-keywords.ts` — handles normalized-phrase
+ * dedupe AND restores an archived row, since a user watching the phrase IS
+ * intent to use it). Returns the watched keyword id (callers cache it so
  * the row's watch state paints immediately).
  */
 export async function watchQueryRow(row: {

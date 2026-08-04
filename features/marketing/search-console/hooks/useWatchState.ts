@@ -1,10 +1,12 @@
 /**
  * Watch-state hooks — react-query over the `lib/watch.ts` chokepoint.
  * `useWatchedIds` is the ONE cache of "what do I watch"; toggles update it
- * optimistically so stars flip instantly across every table at once.
+ * optimistically so eyes flip instantly across every table at once. The
+ * phrase→keyword bridge map ALSO lives in the query cache (not component
+ * state) — the workspace remounts tables per (site, filters, period) slice,
+ * and a bridged watch must survive that.
  */
 
-import { useState } from "react";
 import {
   useMutation,
   useQuery,
@@ -21,6 +23,8 @@ import {
 } from "@/features/marketing/search-console/lib/watch";
 
 const WATCHED_IDS_KEY = ["marketing", "gsc", "watched-ids"];
+/** rowKey (query phrase) → minted keyword id, for rows whose facts predate the link. */
+const WATCH_BRIDGE_KEY = ["marketing", "gsc", "watch-bridge"];
 
 export function useWatchedIds() {
   return useQuery({
@@ -56,8 +60,10 @@ function applyOptimistic(
 
 /**
  * Toggle watch on a page/query row. Pages and already-linked queries flip
- * optimistically; a keyword-less query bridges through `fn_upsert_keyword`
- * first (still one click for the user).
+ * optimistically; a keyword-less query bridges through the canonical
+ * keyword-library upsert first (still one click for the user). Failures
+ * are surfaced via toast INSIDE the mutation (`onError`) — callers may
+ * fire-and-forget `.mutate()` without minting unhandled rejections.
  */
 export function useToggleWatch() {
   const queryClient = useQueryClient();
@@ -91,6 +97,12 @@ export function useToggleWatch() {
       queryClient.setQueryData<WatchedIds>(WATCHED_IDS_KEY, (prev) =>
         applyOptimistic(prev, args.target, args.watched, resolvedId),
       );
+      if (args.target.kind === "query" && !args.target.entityId) {
+        queryClient.setQueryData<Record<string, string>>(
+          WATCH_BRIDGE_KEY,
+          (prev) => ({ ...(prev ?? {}), [args.target.rowKey]: resolvedId }),
+        );
+      }
       void queryClient.invalidateQueries({
         queryKey: ["marketing", "gsc", "watch-rows"],
       });
@@ -105,15 +117,22 @@ export function useToggleWatch() {
 
 /**
  * Row-level watch state for a query/page metric table — the one wiring every
- * table (dimension tabs, overview, dig results, drill panels) uses for its
- * watch column and context-menu item. Tracks phrase→keyword bridges made
- * this session so a just-watched keyword-less query paints as watched even
- * though its fact rows still carry no `keyword_id`.
+ * table (dimension tabs, overview, dig results) uses for its watch column
+ * and context-menu item. The bridge map lives in the react-query cache so a
+ * just-watched keyword-less query stays painted as watched across the
+ * workspace's slice-key table remounts.
  */
 export function useRowWatch(kind: "page" | "query") {
   const watched = useWatchedIds();
   const toggle = useToggleWatch();
-  const [bridgedByKey, setBridgedByKey] = useState<Record<string, string>>({});
+  const bridge = useQuery<Record<string, string>>({
+    queryKey: WATCH_BRIDGE_KEY,
+    // Session-local map, written only via setQueryData in onSuccess.
+    queryFn: () => ({}),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
+  const bridgedByKey = bridge.data ?? {};
 
   const resolveId = (row: {
     key: string;
@@ -136,24 +155,28 @@ export function useRowWatch(kind: "page" | "query") {
       : watched.data.keywordIds.includes(id);
   };
 
-  const toggleRow = async (row: {
+  const toggleRow = (row: {
     key: string;
     page_id: string | null;
     keyword_id: string | null;
   }) => {
-    const currently = isWatched(row);
-    const resolvedId = await toggle.mutateAsync({
+    toggle.mutate({
       target: {
         kind,
         entityId: resolveId(row),
         rowKey: row.key,
       },
-      watched: !currently,
+      watched: !isWatched(row),
     });
-    if (kind === "query" && !row.keyword_id) {
-      setBridgedByKey((prev) => ({ ...prev, [row.key]: resolvedId }));
-    }
   };
 
-  return { isWatched, toggleRow, pending: toggle.isPending };
+  /** Pending for THIS row only — one toggle must not spin every row. */
+  const isRowPending = (row: {
+    key: string;
+    page_id: string | null;
+    keyword_id: string | null;
+  }): boolean =>
+    toggle.isPending && toggle.variables?.target.rowKey === row.key;
+
+  return { isWatched, toggleRow, isRowPending };
 }

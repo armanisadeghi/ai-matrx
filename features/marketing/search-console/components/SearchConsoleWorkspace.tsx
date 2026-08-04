@@ -142,8 +142,15 @@ export function SearchConsoleWorkspace() {
     [state, dataThrough],
   );
 
-  const summary = useGscSummary(state.siteId, periods, filters);
-  const timeseries = useGscTimeseries(state.siteId, periods, filters);
+  // The KPI band + chart render only on overview and dimension tabs — the
+  // digs/watchlist/new-pages tabs must not pay for two dead RPCs.
+  const showsKpis = state.tab === "overview" || isDimensionTab(state.tab);
+  const summary = useGscSummary(state.siteId, periods, filters, {
+    enabled: showsKpis,
+  });
+  const timeseries = useGscTimeseries(state.siteId, periods, filters, {
+    enabled: state.tab === "overview",
+  });
 
   const applyState = (next: SearchConsoleUrlState) => {
     startNavigation(() => {

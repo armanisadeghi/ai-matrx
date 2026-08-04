@@ -9,7 +9,7 @@
  * period (and says so) instead of erroring.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -119,6 +119,9 @@ export function DigTab({
 
   const [draft, setDraft] = useState<DigRuleDraft | null>(null);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+  // The edited rule's site pin, preserved verbatim on save — editing must
+  // never silently widen a site-pinned rule into a global one.
+  const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
   // The content actually running: the selected rule's, or a previewed draft.
   const [previewContent, setPreviewContent] =
     useState<GscDigRuleContent | null>(null);
@@ -127,6 +130,14 @@ export function DigTab({
   const selectedRule =
     ruleRows.find((r) => r.id === ruleId) ?? ruleRows[0] ?? null;
   const selectedContent = selectedRule ? ruleRowContent(selectedRule) : null;
+
+  // A stale ?rule= (deleted rule, other site's rule after a site switch)
+  // would make the URL and the visible selection disagree forever — clear it.
+  useEffect(() => {
+    if (rules.data && ruleId && !rules.data.some((r) => r.id === ruleId)) {
+      onSelectRule(null);
+    }
+  }, [rules.data, ruleId]);
 
   const activeContent = draft && previewContent ? previewContent : selectedContent;
   const activeLabel =
@@ -153,12 +164,14 @@ export function DigTab({
       content,
     });
     setEditingRuleId(rule.id);
+    setEditingSiteId(rule.site_id);
     setPreviewContent(null);
   };
 
   const closeEditor = () => {
     setDraft(null);
     setEditingRuleId(null);
+    setEditingSiteId(null);
     setPreviewContent(null);
   };
 
@@ -168,7 +181,8 @@ export function DigTab({
       name: draft.name.trim(),
       description: draft.description.trim() || null,
       content: draft.content,
-      siteId: null,
+      // New rules are cross-site; an edited rule keeps its existing pin.
+      siteId: editingRuleId ? editingSiteId : null,
       organizationId,
     };
     try {
@@ -216,6 +230,8 @@ export function DigTab({
     try {
       await mutations.remove.mutateAsync(rule.id);
       if (ruleId === rule.id) onSelectRule(null);
+      // Never leave an editor open against a soft-deleted row.
+      if (editingRuleId === rule.id) closeEditor();
       toast.success("Rule deleted.");
     } catch (error) {
       toast.error(
@@ -265,7 +281,12 @@ export function DigTab({
         {draft ? (
           <DigRuleEditor
             draft={draft}
-            onChange={(next) => setDraft(next)}
+            onChange={(next) => {
+              // Rule-content edits invalidate a previous Preview — showing a
+              // stale run under a live draft label would lie about the rule.
+              if (next.content !== draft.content) setPreviewContent(null);
+              setDraft(next);
+            }}
             onPreview={() => setPreviewContent(draft.content)}
             onSave={() => void saveDraft()}
             onCancel={closeEditor}

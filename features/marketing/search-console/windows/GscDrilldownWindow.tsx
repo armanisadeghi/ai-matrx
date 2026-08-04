@@ -178,6 +178,7 @@ export default function GscDrilldownWindow({
             filters={filters}
             copySurface={`Search Console — drill-down panel (${DIMENSION_TITLES[dimension]})`}
             pageSize={25}
+            watch
             onDrill={(row) => {
               const drill = panelDrillFor(dimension, row);
               openDrilldown({

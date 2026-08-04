@@ -40,6 +40,7 @@ export function useGscSummary(
   siteId: string | null,
   periods: GscResolvedPeriods,
   filters: GscFilters,
+  options: { enabled?: boolean } = {},
 ) {
   return useQuery({
     queryKey: [
@@ -54,7 +55,7 @@ export function useGscSummary(
       if (!siteId) throw new Error("No site selected");
       return getGscSummary(siteId, periods, filters, signal);
     },
-    enabled: !!siteId,
+    enabled: !!siteId && (options.enabled ?? true),
     staleTime: STALE_MS,
     placeholderData: keepPreviousData,
   });
@@ -64,6 +65,7 @@ export function useGscTimeseries(
   siteId: string | null,
   periods: GscResolvedPeriods,
   filters: GscFilters,
+  options: { enabled?: boolean } = {},
 ) {
   return useQuery({
     queryKey: [
@@ -78,7 +80,7 @@ export function useGscTimeseries(
       if (!siteId) throw new Error("No site selected");
       return getGscTimeseries(siteId, periods, filters, signal);
     },
-    enabled: !!siteId,
+    enabled: !!siteId && (options.enabled ?? true),
     staleTime: STALE_MS,
     placeholderData: keepPreviousData,
   });

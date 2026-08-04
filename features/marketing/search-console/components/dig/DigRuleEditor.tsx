@@ -61,8 +61,10 @@ export function DigRuleEditor({
   const [valueDrafts, setValueDrafts] = useState<Record<number, string>>({});
 
   const { content } = draft;
-  const errors = validateDigRule(content, true).concat(
-    draft.name.trim() === "" ? ["Name is required."] : [],
+  // Preview needs only runnable content; a name is required only to SAVE.
+  const contentErrors = validateDigRule(content, true);
+  const errors = contentErrors.concat(
+    draft.name.trim() === "" ? ["Name is required (to save)."] : [],
   );
   const usesCompare =
     content.conditions.some((c) => metricRequiresCompare(c.metric)) ||
@@ -173,7 +175,8 @@ export function DigRuleEditor({
               onChange={(e) => {
                 setValueDrafts((prev) => ({ ...prev, [index]: e.target.value }));
                 const parsed = Number(e.target.value);
-                if (Number.isFinite(parsed)) {
+                // A blank field must not commit 0 mid-edit (Number("")===0).
+                if (e.target.value.trim() !== "" && Number.isFinite(parsed)) {
                   setCondition(index, { value: parsed });
                 }
               }}
@@ -193,11 +196,14 @@ export function DigRuleEditor({
               size="sm"
               className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
               aria-label={`Remove condition ${index + 1}`}
-              onClick={() =>
+              onClick={() => {
+                // Drafts are index-keyed; removal shifts indices — drop them
+                // all so no draft string paints against the wrong condition.
+                setValueDrafts({});
                 setContent({
                   conditions: content.conditions.filter((_, i) => i !== index),
-                })
-              }
+                });
+              }}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -267,7 +273,9 @@ export function DigRuleEditor({
           value={content.rowLimit}
           onChange={(e) => {
             const parsed = Number(e.target.value);
-            if (Number.isFinite(parsed)) setContent({ rowLimit: parsed });
+            if (e.target.value.trim() !== "" && Number.isFinite(parsed)) {
+              setContent({ rowLimit: parsed });
+            }
           }}
           className="h-7 text-xs tabular-nums"
           aria-label="Row limit"
@@ -339,7 +347,7 @@ export function DigRuleEditor({
           size="sm"
           className="h-7 text-xs"
           onClick={onPreview}
-          disabled={errors.length > 0}
+          disabled={contentErrors.length > 0}
         >
           Preview
         </Button>

@@ -123,6 +123,12 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
 - Dig evaluation is server-side only — never re-implement a condition
   check over client rows. The FE validates for UX (`lib/dig-rules.ts`
   mirrors the whitelist); the RPC RAISE is the enforcement.
+- Two deliberate dig semantics (adversarial-review outcomes, not bugs):
+  conditions/sorts evaluate on the ROUNDED values the table displays; a
+  from-zero riser (compare = 0, current > 0) counts as +Infinity percent
+  growth for matching/sorting — "Δ clicks % > 50" catches brand-new
+  queries taking off — while the OUTPUT pct columns stay NULL (JSON).
+  Details in the migration's helper-section comment.
 - Watch = `user_entity_state.is_favorite` through `favoritesService` via
   `lib/watch.ts` — never a new watch table, never the `PinButton` sidebar
   path. Launch tracking = `web.page.launch_tracking` — never `metadata`

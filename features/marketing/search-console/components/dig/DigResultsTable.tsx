@@ -11,7 +11,7 @@
  */
 
 import { useRef } from "react";
-import { Filter, PanelTop, Pickaxe } from "lucide-react";
+import { Eye, Filter, PanelTop, Pickaxe } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
@@ -29,6 +29,8 @@ import {
 } from "@/features/marketing/search-console/lib/columns";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
 import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
+import { useRowWatch } from "@/features/marketing/search-console/hooks/useWatchState";
+import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
 import type {
   GscBreakdownRow,
   GscCompareMode,
@@ -90,6 +92,7 @@ export function DigResultsTable({
   const hasCompare = periods.compare !== null;
   const columnLabel = dimension === "query" ? "Query" : "Page";
   const openDrilldown = useOpenGscDrilldownWindow();
+  const rowWatch = useRowWatch(dimension);
   const clickedRowRef = useRef<GscDigResultRow | null>(null);
 
   const resolveRowContext = (target: HTMLElement | null) => {
@@ -123,6 +126,21 @@ export function DigResultsTable({
   };
 
   const columns: MatrxColumnDef<GscDigResultRow>[] = [
+    {
+      id: "watch",
+      header: "",
+      sortable: false,
+      filter: false,
+      width: 36,
+      cell: (row) => (
+        <WatchButton
+          watched={rowWatch.isWatched(row)}
+          pending={rowWatch.isRowPending(row)}
+          onToggle={() => rowWatch.toggleRow(row)}
+          noun={dimension}
+        />
+      ),
+    },
     buildGscKeyColumn<GscDigResultRow>(dimension, columnLabel),
     ...buildGscMetricColumns<GscDigResultRow>(hasCompare, "all"),
     ...(hasCompare
@@ -211,6 +229,22 @@ export function DigResultsTable({
               description:
                 "Open this row's breakdown in a floating panel you can keep beside others",
               onSelect: openRowDrillPanel,
+            },
+            {
+              kind: "item" as const,
+              id: "gsc-dig-watch-row",
+              label: `Watch / unwatch this ${dimension}`,
+              icon: Eye,
+              description:
+                "Toggle this row on your Watchlist tab (per-user, cross-site)",
+              onSelect: () => {
+                const row = clickedRowRef.current;
+                if (!row) {
+                  toast.error("Right-click a data row to watch it.");
+                  return;
+                }
+                rowWatch.toggleRow(row);
+              },
             },
             ...(onDrill
               ? [

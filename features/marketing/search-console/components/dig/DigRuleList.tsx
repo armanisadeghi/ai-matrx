@@ -27,25 +27,22 @@ function RuleRow({
   actions: React.ReactNode;
 }) {
   const parsed = parseDigConditions(rule.conditions);
+  // The select affordance is a REAL button (keyboard + AT for free); the
+  // row div is plain layout — never role="button" around nested buttons.
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
       className={cn(
-        "group flex cursor-pointer items-start justify-between gap-1 rounded-md border px-2 py-1.5 transition-colors",
+        "group flex items-start justify-between gap-1 rounded-md border px-2 py-1.5 transition-colors",
         selected
           ? "border-primary/50 bg-accent"
           : "border-border bg-card hover:bg-accent/60",
       )}
     >
-      <div className="min-w-0">
+      <button
+        type="button"
+        onClick={onSelect}
+        className="min-w-0 flex-1 cursor-pointer text-left"
+      >
         <p className="truncate text-xs font-medium text-foreground">
           {rule.name}
           <span className="ml-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -55,11 +52,8 @@ function RuleRow({
         <p className="truncate text-[11px] text-muted-foreground" title={rule.description ?? undefined}>
           {parsed.ok ? digRuleSummary(parsed.conditions) : "Unreadable conditions"}
         </p>
-      </div>
-      <span
-        onClick={(e) => e.stopPropagation()}
-        className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100"
-      >
+      </button>
+      <span className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
         {actions}
       </span>
     </div>

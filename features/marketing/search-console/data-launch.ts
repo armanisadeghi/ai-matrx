@@ -97,12 +97,27 @@ async function writeTracking(
   }
 }
 
-/** Start tracking a page (step 1 of the launch workflow). */
+/**
+ * Start tracking a page (step 1 of the launch workflow). REFUSES a page
+ * that is already tracked — a fresh blob would reset `added_at`, wipe the
+ * indexing-requested stamp, and delete notes (the context-menu path has no
+ * "already tracked" affordance, so the guard lives here, once).
+ */
 export async function trackPage(
   pageId: string,
   options: { indexingRequested: boolean; notes?: string | null },
 ): Promise<void> {
   const session = await requireAuthenticatedSupabaseSession(supabase);
+  const current = await (await authenticatedWebDb(supabase))
+    .from("page")
+    .select("launch_tracking")
+    .eq("id", pageId)
+    .is("deleted_at", null)
+    .single();
+  const existing = assertData(current.data, current.error);
+  if (parseLaunchTracking(existing.launch_tracking) !== null) {
+    throw new Error("This page is already on the New Pages tracker.");
+  }
   await writeTracking(
     pageId,
     buildLaunchTracking({

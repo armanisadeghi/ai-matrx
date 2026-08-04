@@ -66,14 +66,27 @@ CREATE POLICY std_select ON seo.gsc_dig_rule FOR SELECT TO authenticated
     )
   );
 
+-- Writes must not smuggle a foreign tenant: organization_id only for orgs
+-- the caller belongs to; site_id only for sites the caller can see (the
+-- web.site subquery runs under the caller's RLS).
 DROP POLICY IF EXISTS std_insert ON seo.gsc_dig_rule;
 CREATE POLICY std_insert ON seo.gsc_dig_rule FOR INSERT TO authenticated
-  WITH CHECK (NOT is_template AND created_by = (SELECT auth.uid()));
+  WITH CHECK (
+    NOT is_template
+    AND created_by = (SELECT auth.uid())
+    AND (organization_id IS NULL OR iam.has_org_access(organization_id))
+    AND (site_id IS NULL OR site_id IN (SELECT s.id FROM web.site s))
+  );
 
 DROP POLICY IF EXISTS std_update ON seo.gsc_dig_rule;
 CREATE POLICY std_update ON seo.gsc_dig_rule FOR UPDATE TO authenticated
   USING (NOT is_template AND created_by = (SELECT auth.uid()))
-  WITH CHECK (NOT is_template AND created_by = (SELECT auth.uid()));
+  WITH CHECK (
+    NOT is_template
+    AND created_by = (SELECT auth.uid())
+    AND (organization_id IS NULL OR iam.has_org_access(organization_id))
+    AND (site_id IS NULL OR site_id IN (SELECT s.id FROM web.site s))
+  );
 
 DROP POLICY IF EXISTS svc_all ON seo.gsc_dig_rule;
 CREATE POLICY svc_all ON seo.gsc_dig_rule TO service_role
@@ -133,6 +146,16 @@ ON CONFLICT (id) DO UPDATE SET
 -- FE's GscDigMetric union mirrors it exactly. NULL for unknown metrics and
 -- for compare metrics without a compare period — and a NULL value NEVER
 -- passes a condition.
+--
+-- Two deliberate semantics (documented, not bugs):
+--   * Conditions and sorts evaluate on the ROUNDED values the table
+--     displays (position 2dp, ctr 6dp, pct 2dp) — "position ≤ 20" matches
+--     exactly the rows the user sees as ≤ 20.00 (a true 20.004 passes).
+--   * A from-zero riser (compare clicks/impressions = 0, current > 0) has
+--     +Infinity percent growth for MATCHING and SORTING — "Δ clicks % >
+--     50" must catch a brand-new query taking off, the exact rows Arman
+--     cares most about. The OUTPUT delta_*_pct columns stay NULL for these
+--     rows (JSON cannot carry Infinity; the Δ column still shows the move).
 
 CREATE OR REPLACE FUNCTION seo.gsc_dig_metric_value(
   p_metric text,
@@ -155,10 +178,14 @@ AS $$
     WHEN 'delta_impressions' THEN (c_imps - m_imps)::numeric
     WHEN 'delta_ctr' THEN c_ctr - m_ctr
     WHEN 'delta_position' THEN c_pos - m_pos
-    WHEN 'delta_clicks_pct' THEN CASE WHEN m_clicks > 0
-      THEN round((c_clicks - m_clicks)::numeric * 100 / m_clicks, 2) END
-    WHEN 'delta_impressions_pct' THEN CASE WHEN m_imps > 0
-      THEN round((c_imps - m_imps)::numeric * 100 / m_imps, 2) END
+    WHEN 'delta_clicks_pct' THEN CASE
+      WHEN m_clicks > 0 THEN round((c_clicks - m_clicks)::numeric * 100 / m_clicks, 2)
+      WHEN m_clicks = 0 AND c_clicks > 0 THEN 'Infinity'::numeric
+    END
+    WHEN 'delta_impressions_pct' THEN CASE
+      WHEN m_imps > 0 THEN round((c_imps - m_imps)::numeric * 100 / m_imps, 2)
+      WHEN m_imps = 0 AND c_imps > 0 THEN 'Infinity'::numeric
+    END
   END;
 $$;
 
@@ -234,8 +261,8 @@ DECLARE
   f_pc text := NULLIF(btrim(p_filters->>'page_contains'), '');
   f_pe text := NULLIF(btrim(p_filters->>'page_eq'), '');
 BEGIN
-  IF p_dimension NOT IN ('query', 'page') THEN
-    RAISE EXCEPTION 'gsc_dig_dimension_unsupported: % (dig rules run on query or page)', p_dimension;
+  IF p_dimension IS NULL OR p_dimension NOT IN ('query', 'page') THEN
+    RAISE EXCEPTION 'gsc_dig_dimension_unsupported: % (dig rules run on query or page)', COALESCE(p_dimension, '(null)');
   END IF;
   IF (p_compare_start IS NULL) <> (p_compare_end IS NULL) THEN
     RAISE EXCEPTION 'gsc_compare_bounds_mismatch: set both compare bounds or neither';
@@ -483,9 +510,11 @@ BEGIN
     GROUP BY l.pid
   ),
   -- Queries half (profile 'query', matched by keyword_id OR normalized phrase)
+  -- DISTINCT anchors: a duplicated id in the input array must not multiply
+  -- the metrics (N copies → N join matches per fact row, summed).
   kws AS (
     SELECT u.id, kw.phrase, kw.normalized_phrase
-    FROM unnest(p_keyword_ids) AS u(id)
+    FROM (SELECT DISTINCT t.id FROM unnest(p_keyword_ids) AS t(id)) u
     LEFT JOIN seo.keyword kw ON kw.id = u.id
   ),
   qwinner AS (
@@ -546,7 +575,7 @@ BEGIN
          CASE WHEN p_compare_start IS NOT NULL THEN COALESCE(pm.s_imps, 0)::bigint END,
          CASE WHEN COALESCE(pm.s_imps, 0) > 0 THEN round(pm.s_clicks::numeric / pm.s_imps, 6) END,
          CASE WHEN COALESCE(pm.s_pos_imps, 0) > 0 THEN round(pm.s_wpos / pm.s_pos_imps, 2) END
-  FROM unnest(p_page_ids) AS u(id)
+  FROM (SELECT DISTINCT t.id FROM unnest(p_page_ids) AS t(id)) u
   LEFT JOIN pcur pc ON pc.pid = u.id
   LEFT JOIN pcmp pm ON pm.pid = u.id
   LEFT JOIN web.page wp ON wp.id = u.id
@@ -622,7 +651,7 @@ BEGIN
          a.last_d,
          COALESCE(a.s_clicks, 0)::bigint,
          COALESCE(a.s_imps, 0)::bigint
-  FROM unnest(p_page_ids) AS u(id)
+  FROM (SELECT DISTINCT t.id FROM unnest(p_page_ids) AS t(id)) u
   LEFT JOIN agg a ON a.pid = u.id
   LEFT JOIN web.page wp ON wp.id = u.id
   ORDER BY a.first_d DESC NULLS FIRST, 2 ASC;

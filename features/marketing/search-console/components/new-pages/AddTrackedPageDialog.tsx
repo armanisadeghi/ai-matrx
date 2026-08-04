@@ -8,7 +8,7 @@
  * workflow at add time.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -46,10 +46,17 @@ export function AddTrackedPageDialog({
   const [indexingRequested, setIndexingRequested] = useState(true);
   const [busy, setBusy] = useState(false);
 
+  // Debounce the registry lookup — one ILIKE per pause, not per keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(handle);
+  }, [search]);
+
   const results = useQuery({
-    queryKey: ["marketing", "gsc", "launch-search", siteId, search],
-    queryFn: ({ signal }) => searchSitePages(siteId, search, signal),
-    enabled: open && search.trim().length >= 2,
+    queryKey: ["marketing", "gsc", "launch-search", siteId, debouncedSearch],
+    queryFn: ({ signal }) => searchSitePages(siteId, debouncedSearch, signal),
+    enabled: open && debouncedSearch.trim().length >= 2,
     staleTime: 30 * 1000,
   });
 
@@ -57,6 +64,11 @@ export function AddTrackedPageDialog({
     onAdded();
     onOpenChange(false);
     setSearch("");
+  };
+
+  const handleOpenChange = (next: boolean) => {
+    if (!next) setSearch("");
+    onOpenChange(next);
   };
 
   const trackExisting = async (pageId: string) => {
@@ -105,7 +117,7 @@ export function AddTrackedPageDialog({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Track a new page</DialogTitle>
@@ -171,7 +183,7 @@ export function AddTrackedPageDialog({
                 );
               })}
             </div>
-          ) : search.trim().length >= 2 ? (
+          ) : debouncedSearch.trim().length >= 2 ? (
             <p className="py-1 text-xs text-muted-foreground">
               No registered pages match.
             </p>

@@ -146,10 +146,10 @@ export function WatchlistTab({
       cell: (row) => (
         <WatchButton
           watched
-          pending={toggle.isPending}
+          pending={toggle.isPending && toggle.variables?.target.entityId === row.entity_id}
           noun={row.kind === "query" ? "query" : "page"}
           onToggle={() =>
-            void toggle.mutateAsync({
+            toggle.mutate({
               target: {
                 kind: row.kind === "query" ? "query" : "page",
                 entityId: row.entity_id,
@@ -166,11 +166,9 @@ export function WatchlistTab({
       accessorKey: "kind",
       header: "Type",
       width: 70,
-      filter: "select",
-      filterOptions: [
-        { value: "query", label: "Query" },
-        { value: "page", label: "Page" },
-      ],
+      // The All/Queries/Pages toggle above owns kind filtering — a second,
+      // independent column filter could contradict it.
+      filter: false,
       cell: (row) => (
         <span
           className={cn(
@@ -248,6 +246,12 @@ export function WatchlistTab({
           </button>
         ))}
       </div>
+      {pageIds.length > 200 || keywordIds.length > 200 ? (
+        <p className="text-[11px] text-warning">
+          Showing metrics for the first 200 watched pages and 200 watched
+          queries — unwatch items you no longer need to see the rest.
+        </p>
+      ) : null}
       <div className="min-h-0 flex-1">
         {empty ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-card/60 p-8 text-center">

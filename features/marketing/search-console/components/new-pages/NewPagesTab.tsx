@@ -243,7 +243,9 @@ export function NewPagesTab({
             size="sm"
             variant="outline"
             className="h-6 text-[11px]"
-            disabled={markRequested.isPending}
+            disabled={
+              markRequested.isPending && markRequested.variables?.id === row.id
+            }
             onClick={(e) => {
               e.stopPropagation();
               markRequested.mutate(row);
