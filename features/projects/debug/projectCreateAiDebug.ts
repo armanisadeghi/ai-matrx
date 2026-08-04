@@ -10,7 +10,7 @@ import type { SourceFeature } from "@/features/agents/types/instance.types";
 /** Agent that powers project creation (see ProjectCreatePanel). */
 export const PROJECT_CREATE_AGENT_ID = "917074a0-fc06-4ff4-9805-4a517e04d08b";
 
-export const PROJECT_CREATE_SOURCE_FEATURE: SourceFeature = "project-create";
+export const PROJECT_CREATE_SOURCE_FEATURE: SourceFeature = "projects";
 
 const LOG_PREFIX = "[ProjectCreate·AI]";
 

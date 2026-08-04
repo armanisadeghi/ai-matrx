@@ -145,7 +145,7 @@ export const runConceptPassThunk = createAsyncThunk<
       launchAgentExecution({
         shortcutId,
         surfaceKey: `studio:concepts:${sessionId}`,
-        sourceFeature: "transcript-studio",
+        sourceFeature: "transcription",
         runtime: { applicationScope: window.scope },
         config: { displayMode: "background", autoRun: true },
       }),

@@ -73,7 +73,7 @@ describe("kind-action-registry", () => {
     expect(launchAgent).toHaveBeenCalledWith(
       "agent-1",
       expect.objectContaining({
-        sourceFeature: "kind-action",
+        sourceFeature: "ai-results",
         runtime: { variables: { prompt: "hi" } },
       }),
     );

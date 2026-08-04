@@ -33,7 +33,7 @@ interface QuickChatSheetProps {
   className?: string;
 }
 
-const SOURCE_FEATURE = "quick-chat";
+const SOURCE_FEATURE = "chat";
 const HISTORY_SCOPE = "quick-chat";
 /** Registry key for fork/retry routing — distinct from per-conversation focus keys. */
 const QUICK_CHAT_PANEL_SURFACE = "quick-chat:panel";

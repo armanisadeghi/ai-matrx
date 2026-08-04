@@ -112,7 +112,7 @@ export function gradePracticeAnswer(args: GradePracticeAnswerArgs) {
           responseAudioFileId,
           rubric: modeRubric(args.mode, args.rubric),
           surfaceKey: "spoken-practice-grade",
-          sourceFeature: "education-assessment-grade",
+          sourceFeature: "education-assessment",
         }),
       );
 

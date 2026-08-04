@@ -75,7 +75,7 @@ interface ChatRoomClientProps {
     | ((conversationId: string) => React.ReactNode);
 }
 
-const SOURCE_FEATURE = "chat-route";
+const SOURCE_FEATURE = "chat";
 const CHAT_INITIAL_MESSAGE_LIMIT = 12;
 
 /**

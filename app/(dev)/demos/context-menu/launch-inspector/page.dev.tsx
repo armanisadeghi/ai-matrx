@@ -213,7 +213,7 @@ export default function LaunchInspectorDemoPage() {
       const scope = JSON.parse(scopeJson) as Record<string, unknown>;
       const surfaceName = surfaceNameInput.trim();
       await launchShortcut(shortcutId, scope, {
-        sourceFeature: "launch-inspector-demo",
+        sourceFeature: "code-editor",
         ...(surfaceName ? { runtime: { surfaceName } } : {}),
         ...(displayModeOverride
           ? { config: { displayMode: displayModeOverride } }

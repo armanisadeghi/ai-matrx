@@ -86,7 +86,7 @@ export default function ContextMenuScenariosPage() {
             </p>
           </header>
           <EditableContextMenu
-            sourceFeature="context-menu-demo"
+            sourceFeature="code-editor"
             getTextarea={() => contentRef.current}
             onTextReplace={(v) => setContentValue(v)}
             onTextInsertBefore={(t) => setContentValue(t + contentValue)}
@@ -119,7 +119,7 @@ export default function ContextMenuScenariosPage() {
             </p>
           </header>
           <NonEditableContextMenu
-            sourceFeature="context-menu-demo"
+            sourceFeature="code-editor"
             addedContexts={["content-editor"]}
             placementMode={{
               "content-block": "hide",
@@ -165,7 +165,7 @@ export default function ContextMenuScenariosPage() {
             </p>
           </header>
           <EditableContextMenu
-            sourceFeature="context-menu-demo"
+            sourceFeature="code-editor"
             getTextarea={() => showcaseRef.current}
             onTextReplace={(v) => setShowcaseValue(v)}
             addedContexts={["content-editor"]}

@@ -322,7 +322,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
         : [];
     engine = (
       <NonEditableContextMenu
-        sourceFeature="rich-document"
+        sourceFeature="documents"
         suppressed={isStreamActive}
         contentSource={source}
         contextData={{ content: ctx.content }}

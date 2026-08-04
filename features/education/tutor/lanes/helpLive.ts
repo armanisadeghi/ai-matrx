@@ -93,7 +93,7 @@ export function helpLive(ctx: HelpLiveContext) {
           surfaceKey: "flashcards-help-live",
           // NOT ephemeral (see docs/EPHEMERAL_AGENT_RUNS_SPEC.md); kept out of
           // normal chats via a distinct system source_feature (source-registry.ts).
-          sourceFeature: "education-flashcards-help",
+          sourceFeature: "education-flashcards",
           isEphemeral: false,
           runtime: {
             userInput:

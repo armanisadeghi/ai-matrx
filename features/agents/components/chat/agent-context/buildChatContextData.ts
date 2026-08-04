@@ -48,7 +48,7 @@ export const CHAT_CONTEXT_MENU_PLACEMENTS = [
  * `ui_surface.name` row.
  */
 export const CHAT_CONTEXT_MENU_PROPS = {
-  sourceFeature: "chat-route" as const,
+  sourceFeature: "chat" as const,
   surfaceName: "matrx-user/chat" as const,
   isEditable: true as const,
   enabledPlacements: [...CHAT_CONTEXT_MENU_PLACEMENTS],

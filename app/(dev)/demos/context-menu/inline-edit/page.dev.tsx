@@ -85,7 +85,7 @@ export default function InlineEditDemoPage() {
                 onChange below. onTextReplace covers full-content ops
                 (replace / prepend / append / patch). */}
             <EditableContextMenu
-              sourceFeature="context-menu-demo"
+              sourceFeature="code-editor"
               getTextarea={() => textareaRef.current}
               onTextReplace={(next) => {
                 setValue(next);

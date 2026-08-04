@@ -127,7 +127,7 @@ export function useEpisodeArticles(
           agentId: kind === "blog" ? BLOG_WRITER_AGENT_ID : SHOW_NOTES_AGENT_ID,
           variables,
           sourceApp: "matrx-frontend",
-          sourceFeature: "podcast-articles",
+          sourceFeature: "podcasts",
         });
         const fallbackTitle = `${episode.title} — ${kind === "blog" ? "Blog" : "Show notes"}`;
         const { title, markdown, slugSuggestion } = assembleArticle(

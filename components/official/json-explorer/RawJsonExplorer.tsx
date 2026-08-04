@@ -418,7 +418,7 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
       </div>
 
       <NonEditableContextMenu
-        sourceFeature="json-explorer"
+        sourceFeature="content-extractor"
         resolveContextOnOpen={(target) => {
           const hit = target?.closest?.("[data-json-key]");
           const key =

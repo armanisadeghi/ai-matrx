@@ -169,7 +169,7 @@ export function gradeCard(args: GradeCardArgs) {
           // 404s against the v2 conversation gate (see docs/EPHEMERAL_AGENT_RUNS_SPEC.md).
           // We persist instead, and keep these out of the user's normal chats
           // via a distinct, system-marked source_feature (source-registry.ts).
-          sourceFeature: "education-fastfire-grade",
+          sourceFeature: "education-fastfire",
           isEphemeral: false,
           runtime: {
             variables: {

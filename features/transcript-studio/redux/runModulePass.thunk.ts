@@ -156,7 +156,7 @@ export const runModulePassThunk = createAsyncThunk<
       launchAgentExecution({
         shortcutId,
         surfaceKey: `studio:module:${session.moduleId}:${sessionId}`,
-        sourceFeature: "transcript-studio",
+        sourceFeature: "transcription",
         runtime: { applicationScope: scopeResult.scope },
         config: { displayMode: "background", autoRun: true },
       }),

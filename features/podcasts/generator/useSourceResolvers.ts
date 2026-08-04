@@ -83,7 +83,7 @@ export function useSourceResolvers(): UseSourceResolvers {
         agentId: WEB_CONTENT_EXTRACTOR_AGENT_ID,
         userInput: raw,
         sourceApp: "matrx-frontend",
-        sourceFeature: "podcast-source-resolver",
+        sourceFeature: "podcasts",
         variables: {
           scraped_content: raw,
           focus_area: DEFAULT_EXTRACTOR_FOCUS,
@@ -101,7 +101,7 @@ export function useSourceResolvers(): UseSourceResolvers {
         agentId: YOUTUBE_RESEARCH_AGENT_ID,
         userInput: url,
         sourceApp: "matrx-frontend",
-        sourceFeature: "podcast-source-resolver",
+        sourceFeature: "podcasts",
         variables: {
           youtube_url: url,
           timestamp_instruction: DEFAULT_YOUTUBE_TIMESTAMP_INSTRUCTION,

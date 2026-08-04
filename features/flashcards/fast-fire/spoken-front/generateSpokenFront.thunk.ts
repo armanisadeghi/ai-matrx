@@ -121,7 +121,7 @@ export function generateSpokenFront(
           surfaceKey: `fastfire-tts-${card.id}`,
           // Persisted like the other Fast Fire runs; a distinct system
           // source_feature keeps it out of the user's normal chats.
-          sourceFeature: "education-fastfire-tts",
+          sourceFeature: "education-fastfire",
           isEphemeral: false,
           runtime: {
             variables: {

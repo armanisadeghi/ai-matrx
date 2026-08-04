@@ -429,7 +429,7 @@ export function ItemContextMenu({
 
   return (
     <NonEditableContextMenu
-      sourceFeature="item-context-menu"
+      sourceFeature="files"
       resolveContextOnOpen={() => {
         // Re-resolve on every open so lazy configs stay live (parity with the
         // old handleOpenChange). The resolved config feeds extraSections on

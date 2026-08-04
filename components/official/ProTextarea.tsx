@@ -150,6 +150,8 @@ import {
 // in-place panel has no route. Re-gating is a deliberate Arman tradeoff
 // (page weight vs build cost) — never a drive-by "optimization".
 import { ProTextareaAgentPanel } from "./ProTextareaAgentPanel";
+import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
+import type { SourceFeature } from "@/types/python-generated/source-attribution";
 import {
   ProTextFieldStatsBar,
   ProTextFieldStatsMenuItems,
@@ -228,6 +230,12 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
    * lists agents from `agent.definition_surface` (My agents / System / Shared / org).
    */
   surfaceName?: string;
+  /**
+   * Conversation provenance for embedded agent runs. Defaults from `surfaceName`
+   * via `sourceFeatureFromSurfaceName`. Prefer setting `surfaceName`; pass this
+   * only when the host product feature differs from the surface mapping.
+   */
+  sourceFeature?: SourceFeature;
   /**
    * Live scope for surface binding resolution at run time. When omitted,
    * falls back to `{ content, selection }` from the field text.
@@ -314,6 +322,7 @@ export const ProTextarea = React.forwardRef<
       customAgentId,
       customAgentContextItems,
       surfaceName,
+      sourceFeature: sourceFeatureProp,
       getApplicationScope,
       surfaceContextItems,
       enableBoundAgents = true,
@@ -353,6 +362,10 @@ export const ProTextarea = React.forwardRef<
     const agentAction = useProTextareaAgentAction();
     const openDiff = useOpenDiffViewerWindow();
     const boundAgentsEnabled = Boolean(surfaceName) && enableBoundAgents;
+    const resolvedSourceFeature: SourceFeature =
+      sourceFeatureProp ??
+      sourceFeatureFromSurfaceName(surfaceName) ??
+      "notes";
     const {
       sections: boundAgentSections,
       loading: boundAgentsLoading,
@@ -1108,6 +1121,7 @@ export const ProTextarea = React.forwardRef<
                         onApplySourceText={applyEmbeddedSourceText}
                         onBack={exitEmbeddedAgentView}
                         onCancel={() => setMenuOpen(false)}
+                        sourceFeature={resolvedSourceFeature}
                       />
                     ) : activeAgentAction || menuMode === "boundAgent" ? (
                       <AgentActionPopoverBody

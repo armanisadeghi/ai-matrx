@@ -121,7 +121,7 @@ If you ever catch yourself about to say the letters M, A, T, R, X individually a
 - Never overpromise capabilities or timelines`;
 
 /** Discriminator used in `cx_conversation.source_app` for voice rows. */
-export const PERSISTENCE_SOURCE_APP = "chat";
+export const PERSISTENCE_SOURCE_APP = "matrx-frontend";
 
 /** Discriminator used in `cx_conversation.source_feature` for voice rows. */
 export const PERSISTENCE_SOURCE_FEATURE = "voice-agent";

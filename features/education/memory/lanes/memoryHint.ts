@@ -58,7 +58,7 @@ export function memoryHint(ctx: MemoryHintContext) {
           surfaceKey: "flashcards-memory-hint",
           // A background per-card study aid on a study surface — the exact
           // meaning of the existing "coach" lane tag.
-          sourceFeature: "education-flashcards-coach",
+          sourceFeature: "education-flashcards",
           isEphemeral: false,
           runtime: {
             variables: {

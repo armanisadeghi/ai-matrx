@@ -82,7 +82,7 @@ export function reviewSession(args: ReviewSessionArgs) {
         launchAgentExecution({
           agentId,
           surfaceKey: "flashcards-review-session",
-          sourceFeature: "education-flashcards-review",
+          sourceFeature: "education-flashcards",
           isEphemeral: false,
           runtime: {
             variables: {

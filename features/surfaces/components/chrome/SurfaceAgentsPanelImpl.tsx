@@ -24,6 +24,7 @@ import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-displa
 import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/SurfaceBoundAgentsList";
 import { Badge } from "@/components/ui/badge";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
@@ -85,7 +86,8 @@ export default function SurfaceAgentsPanelImpl({
 
       await launchAgent(agentId, {
         surfaceKey: `surface-chrome:${surfaceName}:${agentId}`,
-        sourceFeature: "surface-chrome",
+        sourceFeature:
+          sourceFeatureFromSurfaceName(surfaceName) ?? "ai-results",
         config: {
           displayMode: "flexible-panel",
           allowChat: true,

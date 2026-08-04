@@ -257,8 +257,8 @@ export function useAgentLauncher(
           label: "Chat",
           baseSettings: opts?.config?.llmOverrides ?? undefined,
         },
-        surfaceKey: opts?.surfaceKey ?? "chat-interface",
-        sourceFeature: opts?.sourceFeature ?? "chat-interface",
+        surfaceKey: opts?.surfaceKey ?? "chat",
+        sourceFeature: opts?.sourceFeature ?? "chat",
         // allowChat defaults to true for chat mode; caller's config wins.
         config: { allowChat: true, ...opts?.config },
         runtime: opts?.runtime,

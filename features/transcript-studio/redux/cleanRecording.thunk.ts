@@ -143,7 +143,7 @@ export const cleanRecordingThunk = createAsyncThunk<
       launchAgentExecution({
         shortcutId,
         surfaceKey: `studio:cleanup:${sessionId}`,
-        sourceFeature: "transcript-studio",
+        sourceFeature: "transcription",
         runtime: { applicationScope: window.scope },
         config: { displayMode: "background", autoRun: true },
       }),

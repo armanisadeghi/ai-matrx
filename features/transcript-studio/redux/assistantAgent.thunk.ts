@@ -92,7 +92,7 @@ async function mintInstance(
       agentId,
       ...(conversationId ? { conversationId } : {}),
       apiEndpointMode: "agent",
-      sourceFeature: "transcript-studio",
+      sourceFeature: "transcription",
       allowChat: true,
       autoRun: false,
       displayMode: "chat-assistant",

@@ -38,7 +38,7 @@ import {
  */
 export const TASK_CREATE_AGENT_ID = "";
 /** Source feature reported by traces for the "Use AI" tab. */
-export const TASK_CREATE_SOURCE_FEATURE: SourceFeature = "task-create";
+export const TASK_CREATE_SOURCE_FEATURE: SourceFeature = "tasks";
 
 export type TaskCreateMode = CreateWithAiMode;
 

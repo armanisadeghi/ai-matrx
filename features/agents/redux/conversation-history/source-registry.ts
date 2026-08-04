@@ -75,7 +75,10 @@ export interface SourceMeta {
 // ── Apps ──────────────────────────────────────────────────────────────────
 
 export const APP_META: Record<string, SourceMeta> = {
-  "matrx-admin": { label: "Matrx Admin", icon: Webhook },
+  "matrx-frontend": { label: "Matrx", icon: MessageSquare },
+  // Legacy FE stamps (pre source_app consolidation).
+  "matrx-admin": { label: "Matrx (legacy)", icon: Webhook },
+  chat: { label: "Chat (legacy app)", icon: MessageSquare },
   "matrx-scheduler": { label: "Scheduler", icon: CalendarClock, system: true },
   // Rows the Python brain writes directly (podcast pipeline, canon bench,
   // page extraction, RAG expansion, …) — all programmatic, never user chats.
@@ -88,19 +91,15 @@ export const APP_META: Record<string, SourceMeta> = {
   },
   // Workflow-engine node/run executions — programmatic.
   workflow: { label: "Workflows", icon: Server, system: true },
-  // `chat` is what the voice-agent persistence layer stamps (see
-  // features/voice-agent/constants.ts → PERSISTENCE_SOURCE_APP).
-  chat: { label: "Chat", icon: MessageSquare },
   [EMPTY_SOURCE_KEY]: { label: "Generic", icon: Boxes, system: true },
 };
 
 // ── Features ────────────────────────────────────────────────────────────────
 
 export const FEATURE_META: Record<string, SourceMeta> = {
-  // Real, user-authored chat surfaces
-  "chat-route": { label: "Chat", icon: MessageSquare },
-  "chat-interface": { label: "Chat (legacy)", icon: MessageSquare },
-  "quick-chat": { label: "Quick Chat", icon: MessageSquare },
+  // Product features (canonical allow-list lives in source-attribution.ts)
+  chat: { label: "Chat", icon: MessageSquare },
+  "voice-agent": { label: "Voice Agent", icon: Mic },
 
   // Agents
   "agent-runner": { label: "Agent Runner", icon: Play },
@@ -112,80 +111,55 @@ export const FEATURE_META: Record<string, SourceMeta> = {
   "agent-runs-sidebar": { label: "Agent Runs (sidebar)", icon: Play },
   "agent-advanced-editor-window": { label: "Agent Editor", icon: Hammer },
   "agent-content-window": { label: "Agent Content", icon: Hammer },
+  "agent-launcher-sidebar": { label: "Agent Launcher", icon: Play },
+  "agent-creator-panel": { label: "Agent Creator", icon: Hammer },
   "agent-app": { label: "Agent App", icon: Webhook },
   "prompt-app": { label: "Prompt App", icon: Webhook },
   "agent-comparison": { label: "Agent Comparison", icon: Webhook },
   "agent-assignment-demo": { label: "Agent Assignment Demo", icon: Webhook },
 
-  // Code
   "code-editor": { label: "Code", icon: Code2 },
+  transcription: { label: "Transcription", icon: FileText },
+  podcasts: { label: "Podcasts", icon: Mic },
+  cms: { label: "CMS", icon: PanelTop },
+  projects: { label: "Projects", icon: Boxes },
+  tasks: { label: "Tasks", icon: Boxes },
+  research: { label: "Research", icon: Globe },
+  notes: { label: "Notes", icon: StickyNote },
+  files: { label: "Files", icon: FileText },
+  documents: { label: "Documents", icon: FileText },
+  "working-document": { label: "Working Document", icon: FileText },
+  scratchpad: { label: "Scratchpad", icon: StickyNote },
+  dictionary: { label: "Dictionary", icon: Tag },
+  "image-studio": { label: "Image Studio", icon: Image },
+  "pdf-extractor": { label: "PDF Extractor", icon: FileText, system: true },
+  "pdf-widgets": { label: "PDF Widgets", icon: FileText },
+  scanner: { label: "Scanner", icon: ScanLine },
+  "analysis-studio": { label: "Analysis Studio", icon: FileText },
+  scraper: { label: "Scraper", icon: Globe },
+  marketing: { label: "Marketing", icon: Globe },
+  messages: { label: "Messages", icon: MessageSquare },
+  canvas: { label: "Canvas", icon: PencilRuler },
+  "mermaid-workbench": { label: "Diagram Workbench", icon: PencilRuler },
+  "ai-results": { label: "AI Results", icon: Bot },
+  "content-extractor": { label: "Content Extractor", icon: FileText },
+  "rag-search": { label: "RAG Search", icon: Globe },
+  udt: { label: "Data Tables", icon: Boxes },
+  "tool-call-visualization": {
+    label: "Tool UI Generator",
+    icon: Hammer,
+    system: true,
+  },
+  "tool-testing": { label: "Tool Testing", icon: Hammer, system: true },
 
-  // Transcription family
-  "transcription-cleanup": {
-    label: "Transcription Cleanup",
-    icon: FileText,
-    system: true,
-  },
-  "transcript-studio": { label: "Transcript Studio", icon: FileText },
-  transcripts: { label: "Transcripts", icon: FileText },
-
-  // Fast Fire background AI runs (grading / tutor / session review). These are
-  // automation-like one-shot runs, NOT user chats — system-marked so they group
-  // as automations and stay out of the /chat sidebar (not in its allow-list).
-  "education-fastfire-grade": {
-    label: "Fast Fire Grading",
+  // Education parts (one qualifier — system-marked background lanes)
+  "education-flashcards": { label: "Flashcards", icon: GraduationCap },
+  "education-fastfire": {
+    label: "Fast Fire",
     icon: GraduationCap,
     system: true,
   },
-  "education-fastfire-help": {
-    label: "Fast Fire Tutor",
-    icon: GraduationCap,
-    system: true,
-  },
-  "education-fastfire-review": {
-    label: "Fast Fire Review",
-    icon: GraduationCap,
-    system: true,
-  },
-  "education-fastfire-tts": {
-    label: "Fast Fire Speech",
-    icon: GraduationCap,
-    system: true,
-  },
-
-  // Mode-agnostic flashcards AI tutor lanes (Phase 4 parity push) — the SAME
-  // fc_help_live / fc_review_batch agents Fast Fire uses, generalized to every
-  // study surface (classic set study, adaptive due review, weak-area drill).
-  "education-flashcards": {
-    label: "Flashcards",
-    icon: GraduationCap,
-  },
-  "education-flashcards-help": {
-    label: "Flashcards Tutor",
-    icon: GraduationCap,
-    system: true,
-  },
-  "education-flashcards-review": {
-    label: "Flashcards Review",
-    icon: GraduationCap,
-    system: true,
-  },
-  "education-flashcards-coach": {
-    label: "Flashcards Micro-Coach",
-    icon: GraduationCap,
-    system: true,
-  },
-
-  // The persistent, memory-carrying AI Tutor (`/education/tutor`). NOT
-  // system-marked — these are real user chats (grounded in the learner's own
-  // material, cross-session memory), so they surface + filter like any chat.
-  "education-tutor": {
-    label: "AI Tutor",
-    icon: GraduationCap,
-  },
-
-  // Study Intelligence (P5) one-shot generation runs — automation, NOT user
-  // chats — system-marked so they group away from real conversations.
+  "education-tutor": { label: "AI Tutor", icon: GraduationCap },
   "education-planner": {
     label: "Study Planner",
     icon: CalendarClock,
@@ -196,68 +170,39 @@ export const FEATURE_META: Record<string, SourceMeta> = {
     icon: GraduationCap,
     system: true,
   },
-
-  // Assessment Engine (P1) one-shot generation / grading runs — automation.
   "education-assessment": {
     label: "Assessments",
     icon: GraduationCap,
     system: true,
   },
-  "education-assessment-grade": {
-    label: "Assessment Grading",
-    icon: GraduationCap,
-    system: true,
-  },
-
-  // Study Media (P3) mind-map generator — one-shot automation runs.
   "education-mindmap": {
     label: "Mind Maps",
     icon: GraduationCap,
     system: true,
   },
-
-  // Onboarding ingest → converter (deck / summary / mind-map from a source) —
-  // one-shot automation runs.
   "education-ingest": {
     label: "Study Material Ingest",
     icon: GraduationCap,
     system: true,
   },
 
-  // Other interactive surfaces
-  notes: { label: "Notes", icon: StickyNote },
-  "cms-hub": { label: "CMS", icon: PanelTop },
-  "cms-site": { label: "CMS Site", icon: PanelTop },
-  "cms-page": { label: "CMS Page Editor", icon: PanelTop },
-  "cms-component": { label: "CMS Component Editor", icon: Puzzle },
-  "html-page": { label: "HTML Page Editor", icon: PanelTop },
-  research: { label: "Research", icon: Globe },
-  dictionary: { label: "Dictionary", icon: Tag },
-  "image-studio": { label: "Image Studio", icon: Image },
-  // PDF Extractor runs (studio shortcuts, the chunker) are one-shot background
-  // runs on a document, not user chats — classified as automation.
-  "pdf-extractor": { label: "PDF Extractor", icon: FileText, system: true },
-  // Media capture — file/conversation provenance for /camera + PDF scanner.
-  camera: { label: "Camera", icon: Camera },
-  "pdf-scanner": { label: "PDF Scanner", icon: ScanLine },
-  "media-capture-demo": {
-    label: "Media Capture Demo",
-    icon: Camera,
+  // Legacy slugs (pre-collapse) — labels only for old DB rows
+  "chat-route": { label: "Chat (legacy)", icon: MessageSquare },
+  "chat-interface": { label: "Chat (legacy)", icon: MessageSquare },
+  "quick-chat": { label: "Quick Chat (legacy)", icon: MessageSquare },
+  "cms-hub": { label: "CMS (legacy)", icon: PanelTop },
+  "cms-site": { label: "CMS (legacy)", icon: PanelTop },
+  "cms-page": { label: "CMS (legacy)", icon: PanelTop },
+  "cms-component": { label: "CMS (legacy)", icon: Puzzle },
+  "html-page": { label: "CMS (legacy)", icon: PanelTop },
+  transcripts: { label: "Transcription (legacy)", icon: FileText },
+  "transcript-studio": { label: "Transcription (legacy)", icon: FileText },
+  "transcription-cleanup": {
+    label: "Transcription (legacy)",
+    icon: FileText,
     system: true,
   },
-  "video-prompt-options": {
-    label: "Video Prompt Options",
-    icon: Video,
-  },
-  "pro-textarea": { label: "ProTextarea", icon: PencilRuler },
-  "surface-chrome": { label: "Surface Agents", icon: Bot },
-  "tool-call-visualization": {
-    label: "Tool UI Generator",
-    icon: Hammer,
-    system: true,
-  },
-  "voice-agent": { label: "Voice Agent", icon: Mic },
-  "mermaid-workbench": { label: "Diagram Workbench", icon: PencilRuler },
+  podcast: { label: "Podcasts (legacy)", icon: Mic },
 
   // Automations / system runs
   "server-run": { label: "Server Run", icon: Server, system: true },
@@ -289,12 +234,6 @@ export interface FeatureGroup {
 
 export const FEATURE_GROUPS: FeatureGroup[] = [
   {
-    id: "transcription",
-    label: "Transcription",
-    icon: FileText,
-    features: ["transcription-cleanup", "transcript-studio", "transcripts"],
-  },
-  {
     id: "agents",
     label: "Agents",
     icon: Webhook,
@@ -308,6 +247,8 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "agent-runs-sidebar",
       "agent-advanced-editor-window",
       "agent-content-window",
+      "agent-launcher-sidebar",
+      "agent-creator-panel",
       "agent-app",
       "prompt-app",
       "agent-comparison",
@@ -315,24 +256,18 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     ],
   },
   {
-    id: "fastfire",
-    label: "Fast Fire",
+    id: "education",
+    label: "Education",
     icon: GraduationCap,
     features: [
-      "education-fastfire-grade",
-      "education-fastfire-help",
-      "education-fastfire-review",
-      "education-fastfire-tts",
-    ],
-  },
-  {
-    id: "flashcards-tutor",
-    label: "Flashcards AI Tutor",
-    icon: GraduationCap,
-    features: [
-      "education-flashcards-help",
-      "education-flashcards-review",
-      "education-flashcards-coach",
+      "education-flashcards",
+      "education-fastfire",
+      "education-tutor",
+      "education-planner",
+      "education-analytics",
+      "education-assessment",
+      "education-mindmap",
+      "education-ingest",
     ],
   },
 ];
@@ -372,7 +307,10 @@ export const SURFACE_DEFAULTS: Record<string, SurfaceSourceDefault> = {
   // The main /chat sidebar + search: only real chats. Everything else
   // (transcription, server runs, sub-agents, generic) is reachable through
   // the filter tree but hidden by default.
-  chat: { includeFeatures: ["chat-route", "chat-interface", "quick-chat"] },
+  chat: {
+    // Include legacy chat-* rows until a backfill lands.
+    includeFeatures: ["chat", "chat-route", "chat-interface", "quick-chat"],
+  },
   // The /code workspace: code conversations + the agent runs it spawns.
   code: { includeFeatures: ["code-editor", "agent-runner"] },
   // The /education/tutor surface: only the learner's tutor conversations.
@@ -380,12 +318,11 @@ export const SURFACE_DEFAULTS: Record<string, SurfaceSourceDefault> = {
   // The cross-agent "AI Results" window is the browse-everything surface —
   // no default filter.
   "history-window": { includeFeatures: [] },
-  // The conversation picker (attach an existing chat to a war-room thread/room,
-  // a note, …). Defaults to EVERY conversation OUR app created — all of
-  // matrx-admin's surfaces (war-room chats, /chat, notes, code, …), not just
-  // the narrow chat-route feature — so a user can attach any of their own
-  // chats. The filter tree lets them widen to other apps.
-  "conversation-picker": { includeFeatures: [], includeApps: ["matrx-admin"] },
+  // Attach-an-existing-chat picker — every conversation this app created.
+  "conversation-picker": {
+    includeFeatures: [],
+    includeApps: ["matrx-frontend", "matrx-admin"],
+  },
 };
 
 // ── Resolved filter shape (what the slice/thunk consume) ─────────────────────

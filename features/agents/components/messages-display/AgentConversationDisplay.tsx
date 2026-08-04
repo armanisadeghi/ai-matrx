@@ -295,7 +295,7 @@ export function AgentConversationDisplay({
 
   return (
     <NonEditableContextMenu
-      sourceFeature="assistant-message"
+      sourceFeature="chat"
       surfaceName="matrx-user/assistant-message"
       enableFloatingIcon={false}
       // Content blocks are insert-into-an-editor items — meaningless on

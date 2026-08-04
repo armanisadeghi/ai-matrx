@@ -296,7 +296,7 @@ export function useAiPostProcess() {
         const cid = await dispatch(
           createManualInstance({
             agentId,
-            sourceFeature: "transcription-cleanup",
+            sourceFeature: "transcription",
             apiEndpointMode: "agent",
             displayMode: "direct",
             autoRun: false,

@@ -8,7 +8,7 @@ export default async function StudioRunPage({
 }) {
   const { id } = await params;
   return (
-    <div className="h-full w-full overflow-y-auto overscroll-contain bg-textured">
+    <div className="h-full w-full pt-6 overflow-y-auto overscroll-contain bg-textured">
       <StudioRunView runId={id} />
     </div>
   );

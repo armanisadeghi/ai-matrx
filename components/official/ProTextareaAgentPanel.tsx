@@ -32,6 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ProTextareaAgentActionId } from "./proTextareaAgentActions";
+import type { SourceFeature } from "@/types/python-generated/source-attribution";
 
 interface ProTextareaAgentPanelProps {
   actionId: ProTextareaAgentActionId;
@@ -43,6 +44,8 @@ interface ProTextareaAgentPanelProps {
   onApplySourceText: (text: string) => void;
   onBack: () => void;
   onCancel: () => void;
+  /** Host product feature — never chrome. Required for conversation provenance. */
+  sourceFeature: SourceFeature;
 }
 
 interface RunControls {
@@ -140,12 +143,14 @@ function ProTextareaAgentRunnerSession({
 function ProTextareaAgentRunner({
   actionId,
   agentId,
+  sourceFeature,
   sourceText,
   onApplySourceText,
   onControlsChange,
 }: {
   actionId: ProTextareaAgentActionId;
   agentId: string;
+  sourceFeature: SourceFeature;
   sourceText: string;
   onApplySourceText: (text: string) => void;
   onControlsChange: (controls: RunControls) => void;
@@ -156,7 +161,7 @@ function ProTextareaAgentRunner({
 
   const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
-    sourceFeature: "pro-textarea",
+    sourceFeature,
     apiEndpointMode: "agent",
     autoClearConversation: false,
     config: {
@@ -209,6 +214,7 @@ export function ProTextareaAgentPanel({
   onApplySourceText,
   onBack,
   onCancel,
+  sourceFeature,
 }: ProTextareaAgentPanelProps) {
   const [runControls, setRunControls] = useState<RunControls>({
     run: () => {},
@@ -263,6 +269,7 @@ export function ProTextareaAgentPanel({
             key={agentId}
             actionId={actionId}
             agentId={agentId}
+            sourceFeature={sourceFeature}
             sourceText={sourceText}
             onApplySourceText={onApplySourceText}
             onControlsChange={handleControlsChange}

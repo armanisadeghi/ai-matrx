@@ -88,7 +88,7 @@ export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
           responseAudioFileId,
           ...(args.rubric ? { rubric: args.rubric } : {}),
           surfaceKey: `${surface}-grade`,
-          sourceFeature: "education-fastfire-grade",
+          sourceFeature: "education-fastfire",
         }),
       );
 

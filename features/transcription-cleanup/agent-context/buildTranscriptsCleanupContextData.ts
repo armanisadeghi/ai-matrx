@@ -20,7 +20,7 @@ import type { CleanupCustomSlot } from "@/features/transcript-studio/types";
 
 /** Shared menu props for every region of the cleanup pad. */
 export const TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS = {
-  sourceFeature: "transcription-cleanup" as const,
+  sourceFeature: "transcription" as const,
   surfaceName: "matrx-user/transcripts-cleanup" as const,
   isEditable: true as const,
   /** Plain-text panes — content-block insertion has no place here. */

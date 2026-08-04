@@ -23,7 +23,7 @@ export const TRANSCRIPTS_CONTEXT_MENU_PLACEMENT_MODE: PlacementMode = {
 
 /** Shared menu props for `matrx-user/transcripts` (presentational + editable). */
 export const TRANSCRIPTS_CONTEXT_MENU_PROPS = {
-  sourceFeature: "transcripts" as const,
+  sourceFeature: "transcription" as const,
   surfaceName: "matrx-user/transcripts" as const,
   placementMode: TRANSCRIPTS_CONTEXT_MENU_PLACEMENT_MODE,
 };

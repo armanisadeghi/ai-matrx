@@ -161,7 +161,7 @@ export function TreeNode({
 
   return (
     <NonEditableContextMenu
-      sourceFeature="user-lists"
+      sourceFeature="files"
       contextData={{ content: node.label }}
       extraSections={extraSections}
       enableFloatingIcon={false}

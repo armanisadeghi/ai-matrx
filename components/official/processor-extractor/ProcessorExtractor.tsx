@@ -220,7 +220,7 @@ const ProcessorExtractor = ({ jsonData, configKey }: ProcessorExtractorProps) =>
             />
 
             <NonEditableContextMenu
-                sourceFeature="json-explorer"
+                sourceFeature="content-extractor"
                 resolveContextOnOpen={(target) => {
                     const hit = target?.closest?.("[data-json-key]");
                     const key = hit instanceof HTMLElement ? hit.dataset.jsonKey : undefined;

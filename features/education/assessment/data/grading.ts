@@ -194,7 +194,7 @@ export function gradeAnswerAI(args: {
         launchAgentExecution({
           agentId,
           surfaceKey: "assessment-grade-typed",
-          sourceFeature: "education-assessment-grade",
+          sourceFeature: "education-assessment",
           isEphemeral: false,
           runtime: {
             variables: {
@@ -296,7 +296,7 @@ export function gradeAnswerImage(args: {
         expected: args.expected,
         responseImageFileId: fileId,
         surfaceKey: args.surfaceKey ?? "assessment-grade-image",
-        sourceFeature: "education-assessment-grade",
+        sourceFeature: "education-assessment",
       }),
     );
     if (!verdict) return { ...fallback, responseImageFileId: fileId };

@@ -169,7 +169,7 @@ export function useInstanceBootstrap() {
           launchAgentExecution({
             surfaceKey: `cx-chat:${agentId}`,
             agentId,
-            sourceFeature: "chat-interface",
+            sourceFeature: "chat",
             config: {
               autoRun: false,
               displayMode: "direct",

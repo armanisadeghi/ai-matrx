@@ -45,7 +45,7 @@ function makeState({ binding = null, surfaceSeed = null, isEphemeral = false } =
       byConversationId: {
         "conv-1": {
           conversationId: "conv-1",
-          sourceFeature: "chat-route",
+          sourceFeature: "chat",
           isEphemeral,
           cacheOnly: false,
           sandboxBinding: binding,

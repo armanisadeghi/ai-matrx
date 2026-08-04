@@ -280,7 +280,7 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
 
   return (
     <NonEditableContextMenu
-      sourceFeature="assistant-message"
+      sourceFeature="chat"
       surfaceName={mermaidEditorManifest.surfaceName}
       getApplicationScope={getApplicationScope}
       contentSource={

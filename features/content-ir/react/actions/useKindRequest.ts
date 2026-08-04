@@ -125,7 +125,7 @@ export function useKindRequest(): UseKindRequest {
         launchAgentExecution({
           surfaceKey: `kind-request:${input.agentId}`,
           agentId: input.agentId,
-          sourceFeature: "kind-action",
+          sourceFeature: "ai-results",
           // The direct-agentId path does not inherit extraction from the agent
           // row, so enable it explicitly to capture the streamed object.
           jsonExtraction: { enabled: true },

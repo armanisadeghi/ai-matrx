@@ -61,7 +61,7 @@ async function createInstanceForSession(
       // when undefined createManualInstance mints a fresh one.
       ...(conversationId ? { conversationId } : {}),
       apiEndpointMode: "agent",
-      sourceFeature: "transcript-studio",
+      sourceFeature: "transcription",
       allowChat: true,
       autoRun: false,
       displayMode: "chat-assistant",

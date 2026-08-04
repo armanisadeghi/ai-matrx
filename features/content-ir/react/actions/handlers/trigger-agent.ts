@@ -66,7 +66,7 @@ async function triggerAgentHandler(
 
   const result = await ctx.launchAgent(parsed.agentId, {
     surfaceKey: `kind-action:trigger_agent:${parsed.agentId}`,
-    sourceFeature: "kind-action",
+    sourceFeature: "ai-results",
     config: {
       displayMode: parsed.displayMode,
       autoRun: true,

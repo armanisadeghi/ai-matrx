@@ -18,6 +18,17 @@ import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import type { VariablesPanelStyle } from "../components/inputs/variable-input-variations/variable-input-options";
 import type { ConversationVisibility } from "@/features/cx-chat/types/cx-tables";
 
+import {
+  SOURCE_APPS,
+  SOURCE_FEATURES,
+  SOURCE_FEATURE_PATTERNS,
+  isSourceApp,
+  isSourceFeature,
+  type SourceApp,
+  type SourceFeature,
+} from "@/types/python-generated/source-attribution";
+
+
 // =============================================================================
 // Completion Stats — re-exported from auto-generated stream-events.ts
 //
@@ -57,360 +68,29 @@ export type InstanceOrigin =
   | "sub-agent"; // Spawned by a parent request
 
 /**
- * Which product surface created this conversation — stamped on `cx_conversation.source_feature`.
+ * Conversation provenance — `cx_conversation.source_app` / `source_feature`.
  *
- * ## Naming rule (read before adding a value)
+ * **Single source of truth:** `types/python-generated/source-attribution.ts`,
+ * generated from aidream `source_attribution.py` via `pnpm sync-types`.
+ * Do not hand-add feature slugs here. Stamp the product feature that hosts the
+ * run (not chrome like context menus / ProTextarea). FE always stamps
+ * `SOURCE_APP` (`matrx-frontend`).
  *
- * **Module first, then narrower.** Slugs are `{module}-…` where `module` is the
- * owning feature area (`agent`, `chat`, `education`, `pdf`, `transcripts`, …)
- * and the suffix names the *specific* UI surface or action — not a vibe word.
- *
- *   ✅ `education-flashcards-help`   — module `education`, surface `flashcards`, lane `help`
- *   ✅ `agent-run-window`            — module `agent`, chrome `run-window`
- *   ✅ `task-create`                 — module `task`, panel `create`
- *   ❌ `demo`                        — WHICH demo? Name the route/component.
- *   ❌ `programmatic`                — NOT a surface. Hooks/helpers pick the real caller.
- *
- * One literal per conversation-producing mount point (UnifiedAgentContextMenu,
- * ProTextarea, ProInput, window panel, route). This is provenance metadata; it
- * does not need to equal a `ui.ui_surface.name`. Never borrow a "closest" feature
- * name — traces must identify the real caller. Add new values under the matching
- * module group below.
- *
- * Registry labels/icons/grouping: `features/agents/redux/conversation-history/source-registry.ts`
+ * UI labels/icons/filters: `features/agents/redux/conversation-history/source-registry.ts`
  */
-export type SourceFeature =
-  // ── Agents (`agent-*`) ───────────────────────────────────────────────────
-  | "agent-builder"
-  | "agent-runner"
-  | "agent-tester"
-  | "agent-launcher-sidebar"
-  | "agent-creator-panel"
-  | "agent-generator"
-  | "agent-advanced-editor-window"
-  | "agent-content-window"
-  | "agent-run-window"
-  | "agent-run-history-window"
-  | "agent-runs-sidebar"
-  /** Multi-agent side-by-side comparison page (`/agents/battle`). */
-  | "agent-comparison"
-  /** Agent-assignment workflow lab used to exercise assignment chat runs. */
-  | "agent-assignment-demo"
 
-  // ── Chat (`chat-*`, conversation chrome) ─────────────────────────────────
-  | "chat-route"
-  | "chat-interface"
-  /** Pop-over Quick Chat from the Quick Access menu (`QuickChatSheet`). */
-  | "quick-chat"
-  /** Persisted xAI Realtime voice conversations. */
-  | "voice-agent"
-  /** Right-click context menu on rendered assistant markdown (MarkdownStream). */
-  | "assistant-message"
+export {
+  SOURCE_APPS,
+  SOURCE_FEATURES,
+  SOURCE_FEATURE_PATTERNS,
+  isSourceApp,
+  isSourceFeature,
+  type SourceApp,
+  type SourceFeature,
+};
 
-  // ── Agent apps & legacy prompt apps ──────────────────────────────────────
-  | "agent-app"
-  | "prompt-app"
-
-  // ── Research ─────────────────────────────────────────────────────────────
-  | "research"
-
-  // ── Podcasts (`podcast-*`, `features/podcasts/generator/`) ───────────────
-  /** Source resolution while building an episode (URL scrape/clean, YouTube research). */
-  | "podcast-source-resolver"
-  /** Post-episode article generation (blog post / show notes) from an episode. */
-  | "podcast-articles"
-
-  // ── Code editor ──────────────────────────────────────────────────────────
-  | "code-editor"
-  /** Context-menu behavior labs under `/demos/context-menu/*`. */
-  | "context-menu-demo"
-  /** Launch-inspector lab under `/demos/context-menu/launch-inspector`. */
-  | "launch-inspector-demo"
-
-  // ── Notes ────────────────────────────────────────────────────────────────
-  | "notes"
-
-  // ── CMS (`cms-*`) — websites + standalone HTML pages, `features/cms/` ────
-  /** Hub (`/cms`): owned-sites list + entry to standalone pages. */
-  | "cms-hub"
-  /** Site workspace (`/cms/[siteId]`): page list, settings, components hub chrome. */
-  | "cms-site"
-  /** Page editor (`/cms/[siteId]/pages/[pageId]`) — HTML/CSS/JS/SEO/preview/history. */
-  | "cms-page"
-  /** Shared component editor (`/cms/[siteId]/components`). */
-  | "cms-component"
-  /** Standalone quick-publish HTML page editor (`html_pages`, `features/html-pages/`). */
-  | "html-page"
-
-  // ── Transcripts (`transcript*`, `transcription-*`) ───────────────────────
-  | "transcripts"
-  | "transcript-studio"
-  | "transcription-cleanup"
-
-  // ── Dictionary ───────────────────────────────────────────────────────────
-  | "dictionary"
-
-  // ── Tasks & projects ─────────────────────────────────────────────────────
-  | "tasks"
-  /** "Use AI" tab of the create-task panel (`TaskCreatePanel`). */
-  | "task-create"
-  | "projects"
-  /** "Use AI" tab of the create-project panel (`ProjectCreatePanel`). */
-  | "project-create"
-
-  // ── Scraper ──────────────────────────────────────────────────────────────
-  | "scraper"
-
-  // ── Marketing (client-website workspaces, `features/marketing/`) ─────────
-  /** Marketing brand/site/page workspaces (`/marketing/brands/...`). */
-  | "marketing"
-
-  // ── Files ────────────────────────────────────────────────────────────────
-  | "files"
-  /** Generic ItemRow/ItemMenu right-click host (schema-driven row menus). */
-  | "item-context-menu"
-  /** RichDocument content right-click (markdown/stream documents). */
-  | "rich-document"
-
-  // ── User lists ───────────────────────────────────────────────────────────
-  /** User Lists tree + rows (`features/user-lists`, `/lists`). */
-  | "user-lists"
-
-  // ── Documents & conversation scratch surfaces ────────────────────────────
-  | "documents"
-  /** The per-conversation collaborative working document (agent reads + writes). */
-  | "working-document"
-  /** The user's private scratchpad (a local/menu agent edits it; the cloud agent only reads). */
-  | "scratchpad"
-
-  // ── UDT (user-defined tables) ────────────────────────────────────────────
-  | "udt-data-tables"
-  | "udt-picklists"
-
-  // ── Messages ─────────────────────────────────────────────────────────────
-  | "messages"
-
-  // ── Canvas & diagrams ────────────────────────────────────────────────────
-  | "canvas"
-  /** "Edit with AI" inside the Mermaid Workbench (canvas diagram editor). */
-  | "mermaid-workbench"
-
-  // ── AI results ───────────────────────────────────────────────────────────
-  | "ai-results"
-
-  // ── Content extraction ───────────────────────────────────────────────────
-  | "content-extractor"
-  | "extractor-chunker"
-  /** Official JSON navigation tools — RawJsonExplorer + ProcessorExtractor
-   *  (`components/official/json-explorer`, `components/official/processor-extractor`). */
-  | "json-explorer"
-
-  // ── PDF (`pdf-*`) ────────────────────────────────────────────────────────
-  | "pdf-widgets"
-  | "analysis-studio"
-  | "scanner"
-  /** PDF Extractor studio + floating workspace (`/tools/pdf-extractor`, pdfExtractorWindow). */
-  | "pdf-extractor"
-
-  // ── Image studio ─────────────────────────────────────────────────────────
-  /** AI Describe runs from the Image Studio (`/image-studio/convert`). */
-  | "image-studio"
-
-  // ── Media capture (`features/media-capture/`) ─────────────────────────────
-  /** Camera / mic capture surface (`/camera`, CaptureStudio default). */
-  | "camera"
-  /** PDF-scanner capture path (document photos → upload pipeline). */
-  | "pdf-scanner"
-  /** Dev demo mount (`/demos/media-capture`). */
-  | "media-capture-demo"
-
-  // ── Markdown blocks ──────────────────────────────────────────────────────
-  /** Video-prompt-options custom markdown block (agent-driven option picker). */
-  | "video-prompt-options"
-
-  // ── RAG ──────────────────────────────────────────────────────────────────
-  /** "Agent Chat" tab of the RAG Search Lab (`/rag/search`, `RagSearchExperience`). */
-  | "rag-search"
-
-  // ── Official components (reusable AI chrome) ─────────────────────────────
-  /** Agent panel mounted inside `<ProTextarea>` (`ProTextareaAgentPanel`). */
-  | "pro-textarea"
-  /**
-   * Universal shell-header Agents chrome (`SurfaceAgentsHeaderButton`).
-   * One literal for every page that launches via the shared surface agents
-   * popover — not a product surface; the real `runtime.surfaceName` carries
-   * the page identity.
-   */
-  | "surface-chrome"
-
-  // ── Tool call visualization (admin) ──────────────────────────────────────
-  /** Admin tool UI component generator (`useToolComponentAgent`). */
-  | "tool-call-visualization"
-  /** Ephemeral conversations created by the tool-testing harness
-   *  (`/demos/api-tests/tool-testing`, `app/api/tool-testing/conversation`). */
-  | "tool-testing"
-  /** Rendered kind content firing its declared agent action through the
-   *  platform primitive (features/content-ir/react/actions/
-   *  KindAgentActionButton) — e.g. video_prompt_options' Generate button. */
-  | "kind-action"
-
-  // ── Education (`education-*`) ────────────────────────────────────────────
-  /** Flashcards + FastFire study tools (`/education/flashcards`, `/education/fastfire`). */
-  | "education-flashcards"
-  /** Fast Fire background AI runs — kept out of normal chats via the source
-   *  registry. Persistent stopgap until ephemeral runs are rebuilt
-   *  (docs/EPHEMERAL_AGENT_RUNS_SPEC.md). */
-  | "education-fastfire-grade"
-  | "education-fastfire-help"
-  | "education-fastfire-review"
-  | "education-fastfire-tts"
-  /** Mode-agnostic flashcards AI tutor lanes (Phase 4 parity push) — the SAME
-   *  fc_help_live / fc_review_batch agents Fast Fire uses, generalized to
-   *  every study surface (classic set study, adaptive due review, weak-area
-   *  drill). See features/education/tutor/lanes/. */
-  | "education-flashcards-help"
-  | "education-flashcards-review"
-  | "education-flashcards-coach"
-  /** Generated Study Media (P3) — the Mind Maps generator (a diagram_spec agent)
-   *  under `/education/mind-maps`. Audio Study reuses the podcast pipeline's own
-   *  source features, so it has no entry here. See features/education/media/. */
-  | "education-mindmap"
-  /** The persistent, memory-carrying AI Tutor conversation surface
-   *  (`/education/tutor`). Unlike the fastfire/flashcards background lanes
-   *  above, these are REAL user chats (NOT system-marked) — grounded in the
-   *  learner's own material via RAG, with cross-session memory. See
-   *  features/education/tutor/. */
-  | "education-tutor"
-  /** Study Intelligence (P5) AI planner — generates/re-plans the day-by-day
-   *  study schedule (`/education/planner`). See features/education/study/planner/. */
-  | "education-planner"
-  /** Study Intelligence (P5) analytics narrator — the narrative layer over the
-   *  progress dashboard numbers (`/education/progress`). */
-  | "education-analytics"
-  /** Assessment Engine (P1) — quiz + practice-test generation, per-item deepen,
-   *  and grade-on-meaning of typed/written answers (`/education/quizzes`,
-   *  `/education/practice-tests`). See features/education/assessment/. */
-  | "education-assessment"
-  | "education-assessment-grade"
-  /** Onboarding ingest → converter one-shot generation runs (deck / summary /
-   *  mind-map from an ingested source) driven by `runAgentExtraction`. See
-   *  features/education/convert/ + features/education/onboard/. */
-  | "education-ingest";
-
-/** Runtime mirror of SourceFeature for release validation and stored-row guards. */
-export const SOURCE_FEATURES = [
-  "agent-builder",
-  "agent-runner",
-  "agent-tester",
-  "agent-launcher-sidebar",
-  "agent-creator-panel",
-  "agent-generator",
-  "agent-advanced-editor-window",
-  "agent-content-window",
-  "agent-run-window",
-  "agent-run-history-window",
-  "agent-runs-sidebar",
-  "agent-comparison",
-  "chat-route",
-  "chat-interface",
-  "quick-chat",
-  "voice-agent",
-  "assistant-message",
-  "agent-app",
-  "prompt-app",
-  "research",
-  "podcast-source-resolver",
-  "podcast-articles",
-  "code-editor",
-  "context-menu-demo",
-  "launch-inspector-demo",
-  "agent-assignment-demo",
-  "notes",
-  "cms-hub",
-  "cms-site",
-  "cms-page",
-  "cms-component",
-  "html-page",
-  "transcripts",
-  "transcript-studio",
-  "transcription-cleanup",
-  "item-context-menu",
-  "rich-document",
-  "user-lists",
-  "dictionary",
-  "tasks",
-  "task-create",
-  "projects",
-  "project-create",
-  "scraper",
-  "marketing",
-  "files",
-  "documents",
-  "working-document",
-  "scratchpad",
-  "udt-data-tables",
-  "udt-picklists",
-  "messages",
-  "canvas",
-  "mermaid-workbench",
-  "ai-results",
-  "content-extractor",
-  "extractor-chunker",
-  "json-explorer",
-  "pdf-widgets",
-  "analysis-studio",
-  "scanner",
-  "pdf-extractor",
-  "image-studio",
-  "camera",
-  "pdf-scanner",
-  "media-capture-demo",
-  "video-prompt-options",
-  "rag-search",
-  "pro-textarea",
-  "surface-chrome",
-  "tool-call-visualization",
-  "tool-testing",
-  "kind-action",
-  "education-flashcards",
-  "education-fastfire-grade",
-  "education-fastfire-help",
-  "education-fastfire-review",
-  "education-fastfire-tts",
-  "education-flashcards-help",
-  "education-flashcards-review",
-  "education-flashcards-coach",
-  "education-mindmap",
-  "education-tutor",
-  "education-planner",
-  "education-analytics",
-  "education-assessment",
-  "education-assessment-grade",
-  "education-ingest",
-] as const satisfies readonly SourceFeature[];
-
-type RegisteredSourceFeature = (typeof SOURCE_FEATURES)[number];
-type SourceFeatureMissingFromRegistry = Exclude<
-  SourceFeature,
-  RegisteredSourceFeature
->;
-type RegistryValueMissingFromSourceFeature = Exclude<
-  RegisteredSourceFeature,
-  SourceFeature
->;
-const SOURCE_FEATURE_REGISTRY_IS_EXHAUSTIVE: [
-  SourceFeatureMissingFromRegistry,
-  RegistryValueMissingFromSourceFeature,
-] extends [never, never]
-  ? true
-  : never = true;
-void SOURCE_FEATURE_REGISTRY_IS_EXHAUSTIVE;
-
-const SOURCE_FEATURE_SET: ReadonlySet<string> = new Set(SOURCE_FEATURES);
-
-export function isSourceFeature(value: string): value is SourceFeature {
-  return SOURCE_FEATURE_SET.has(value);
-}
+/** Every matrx-frontend producer stamps this — never invent another app slug. */
+export const SOURCE_APP = "matrx-frontend" as const;
 
 declare const UNREGISTERED_SOURCE_FEATURE: unique symbol;
 export type UnregisteredSourceFeature = string & {
@@ -425,20 +105,6 @@ export function sourceFeatureFromStorage(value: string): SourceFeatureValue {
     `[source-attribution] Loaded unregistered source_feature ${JSON.stringify(value)} from storage.`,
   );
   return value as UnregisteredSourceFeature;
-}
-
-// Anti-patterns — never add these. Name the actual surface instead.
-// | "demo"         — WHICH demo? Be SPECIFIC (route, panel, window).
-// | "programmatic" — NOT a feature surface. Pick the real caller's slug.
-
-export const SOURCE_APPS = ["matrx-admin", "matrx-frontend", "chat"] as const;
-export type SourceApp = (typeof SOURCE_APPS)[number];
-export const SOURCE_APP = "matrx-admin" satisfies SourceApp;
-
-const SOURCE_APP_SET: ReadonlySet<string> = new Set(SOURCE_APPS);
-
-export function isSourceApp(value: string): value is SourceApp {
-  return SOURCE_APP_SET.has(value);
 }
 
 declare const UNREGISTERED_SOURCE_APP: unique symbol;

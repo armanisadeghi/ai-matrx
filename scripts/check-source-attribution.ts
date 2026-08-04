@@ -6,7 +6,9 @@ import ts from "typescript";
 import {
   SOURCE_APPS,
   SOURCE_FEATURES,
-} from "../features/agents/types/instance.types";
+  isSourceApp,
+  isSourceFeature,
+} from "../types/python-generated/source-attribution";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "..");
 const ROOTS = [
@@ -21,8 +23,8 @@ const ROOTS = [
 ];
 const EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const EXCLUDED_DIRS = new Set([".next", "node_modules", "dist", "build"]);
-const FEATURE_NAMES = new Set(SOURCE_FEATURES);
-const APP_NAMES = new Set(SOURCE_APPS);
+/** File-capture metadata also uses `source_feature` — not CX attribution. */
+const EXCLUDED_PATH_PARTS = new Set(["media-capture"]);
 
 interface Finding {
   field: "source_app" | "source_feature";
@@ -35,6 +37,7 @@ function walk(dir: string, files: string[]): void {
   if (!fs.existsSync(dir)) return;
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (entry.isDirectory() && EXCLUDED_DIRS.has(entry.name)) continue;
+    if (entry.isDirectory() && EXCLUDED_PATH_PARTS.has(entry.name)) continue;
     const target = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(target, files);
     else if (EXTENSIONS.has(path.extname(entry.name))) files.push(target);
@@ -77,6 +80,8 @@ function addFinding(
 ): void {
   const field = fieldForName(name);
   if (!field || !value) return;
+  // Empty strings are placeholders (e.g. stream hydration stubs), not stamps.
+  if (!value.trim()) return;
   const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
   findings.push({
     field,
@@ -138,8 +143,8 @@ for (const root of ROOTS) walk(path.join(REPO_ROOT, root), files);
 const findings = files.flatMap(scanFile);
 const invalid = findings.filter((finding) =>
   finding.field === "source_app"
-    ? !APP_NAMES.has(finding.value as (typeof SOURCE_APPS)[number])
-    : !FEATURE_NAMES.has(finding.value as (typeof SOURCE_FEATURES)[number]),
+    ? !isSourceApp(finding.value)
+    : !isSourceFeature(finding.value),
 );
 const duplicateApps = duplicates(SOURCE_APPS);
 const duplicateFeatures = duplicates(SOURCE_FEATURES);

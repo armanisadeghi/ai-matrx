@@ -291,7 +291,7 @@ const TranscriptSegmentItem = React.memo(
     // Detailed/Compact view
     return (
       <NonEditableContextMenu
-        sourceFeature="transcripts"
+        sourceFeature="transcription"
         contextData={{ content: segment.text }}
         extraSections={extraSections}
         enableFloatingIcon={false}
