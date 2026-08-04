@@ -45,7 +45,7 @@ import {
 } from "@/features/audio/streamingPcmPlayer";
 import { studioRunsService } from "./service";
 import { rowToRunState, detailToRunState, mergeRowPrompts } from "./mapping";
-import { takePendingStart } from "./pendingStart";
+import { hasPendingStart, takePendingStart } from "./pendingStart";
 import { reportMediaDurabilityViolation } from "@/lib/media/durability";
 import {
   regenerateAsset as regenerateAssetApi,
@@ -195,6 +195,12 @@ export function useStudioRun(runId: string): UseStudioRun {
     backendRunIdRef.current = null;
     resumeAttemptsRef.current = 0;
     completedRef.current = false;
+    // Per-RUN, not per-hook-instance. Navigating between two run pages reuses
+    // the component, so a stale `true` here made boot() return early for the
+    // second run — skipping its pending auto-start, its resume/orphan decision,
+    // and leaving it on a blank page. Every other ref above is reset for the
+    // same reason; this one was missed.
+    startedRef.current = false;
     setOrphaned(false);
     setCanRerun(false);
 
@@ -266,6 +272,8 @@ export function useStudioRun(runId: string): UseStudioRun {
         if (r.run_id && backendRunIdRef.current !== r.run_id) {
           backendRunIdRef.current = r.run_id;
           persist({ backend_run_id: r.run_id });
+          // A durable run id existing is the exact negation of "orphaned".
+          setOrphaned(false);
         }
         return;
       }
@@ -400,6 +408,11 @@ export function useStudioRun(runId: string): UseStudioRun {
       setStreaming(true);
       setStalled(false);
       setCanReconnect(false);
+      // A run that is streaming again is no longer orphaned. Without this,
+      // "Re-run from source" left the "never saved on our servers" banner up
+      // for the whole new generation — it ranks above every other state, so it
+      // would have covered the live progress with a flat contradiction.
+      setOrphaned(false);
       lastHeartbeatRef.current = Date.now();
       // Fresh stream ⇒ fresh audio chunk sequence (a resume that re-runs the
       // audio stage restarts at seq 0).
@@ -680,6 +693,27 @@ export function useStudioRun(runId: string): UseStudioRun {
             : null,
         );
       }
+
+      // Decide orphan-ness BEFORE the page stops loading. It is a property of
+      // what we just hydrated, not of the start/resume decision further down —
+      // and settling it later let the "interrupted, everything so far is saved"
+      // branch render first, which is the exact opposite of the truth. A queued
+      // live start means the run is about to stream, so it is not orphaned;
+      // `hasPendingStart` peeks without consuming the single take below.
+      const isOrphaned =
+        !runDetail &&
+        row?.status === "running" &&
+        !backendRunIdRef.current &&
+        !hasPendingStart(runId);
+      setOrphaned(isOrphaned);
+      if (isOrphaned) {
+        console.error(
+          `[studio-run] run ${runId} has no durable server record ` +
+            `(backend_run_id is null and no agent_run exists). The generation ` +
+            `could not be saved or resumed — this is a server-side fault.`,
+        );
+      }
+
       setLoading(false);
 
       // A completed run carries DURABLE (public/CDN) audio + cover on its
@@ -730,26 +764,9 @@ export function useStudioRun(runId: string): UseStudioRun {
         // "Completed" but resumable = a mis-stamped failure (e.g. audio failed
         // while the rest rendered) — surface the Resume affordance.
         setCanReconnect(true);
-      } else if (
-        !backendRunIdRef.current &&
-        !runDetail &&
-        row?.status === "running"
-      ) {
-        // ORPHANED: the row still claims to be running, but the server never
-        // minted a durable run id — so there is no checkpoint to resume and
-        // nothing to attach to, and it will never finish. Previously this fell
-        // through every branch above and the page just sat there looking busy
-        // forever. Name it, and offer the one action that does work (re-run
-        // from the saved source). A row that already recorded a terminal error
-        // is NOT orphaned-first: its stored message is more specific, and the
-        // error banner already offers Re-run.
-        setOrphaned(true);
-        console.error(
-          `[studio-run] run ${runId} has no durable server record ` +
-            `(backend_run_id is null and no agent_run exists). The generation ` +
-            `could not be saved or resumed — this is a server-side fault.`,
-        );
       }
+      // No trailing orphan branch here — it is decided above, before the page
+      // stops loading, so no other banner can render in front of it.
     }
 
     void boot();

@@ -53,19 +53,29 @@ BEGIN
   IF to_regclass('history.row_versions_default') IS NOT NULL THEN
     EXECUTE 'SELECT count(*) FROM ONLY history.row_versions_default' INTO default_rows;
     IF default_rows > 0 THEN
-      INSERT INTO public.system_error (kind, error_type, error_text, context)
-      VALUES (
-        'row_versions_default_partition_used',
-        'PartitionProvisioningGap',
-        format(
-          'history.row_versions_default holds %s row(s): the monthly partition '
-          'provisioner did not run in time. User writes were saved, but version '
-          'history landed in the catch-all. Run history.ensure_row_version_partitions().',
-          default_rows
-        ),
-        jsonb_build_object('default_rows', default_rows, 'checked_at', now())
-      );
       RAISE WARNING 'history.row_versions_default holds % row(s) — provisioning gap', default_rows;
+      -- ONE OPEN ALARM, not one per day. This function is on a daily cron, so an
+      -- unconditional insert would stack an identical row every morning for as
+      -- long as the gap lasts and bury the sink. Re-alarming after a human sets
+      -- resolved_at is the correct signal: it means the problem came back.
+      IF NOT EXISTS (
+        SELECT 1 FROM public.system_error
+        WHERE kind = 'row_versions_default_partition_used'
+          AND resolved_at IS NULL
+      ) THEN
+        INSERT INTO public.system_error (kind, error_type, error_text, context)
+        VALUES (
+          'row_versions_default_partition_used',
+          'PartitionProvisioningGap',
+          format(
+            'history.row_versions_default holds %s row(s): the monthly partition '
+            'provisioner did not run in time. User writes were saved, but version '
+            'history landed in the catch-all. Run history.ensure_row_version_partitions().',
+            default_rows
+          ),
+          jsonb_build_object('default_rows', default_rows, 'first_seen_at', now())
+        );
+      END IF;
     END IF;
   END IF;
 

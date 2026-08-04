@@ -26,3 +26,10 @@ export function takePendingStart(runId: string): PodcastGenerateRequest | null {
   pending.delete(runId);
   return req;
 }
+
+/** Non-consuming check — is a live start queued for this run? Lets a caller
+ *  decide how to present a run BEFORE the single `takePendingStart` consumer
+ *  runs, without racing it for the payload. */
+export function hasPendingStart(runId: string): boolean {
+  return pending.has(runId);
+}
