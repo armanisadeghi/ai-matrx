@@ -40,6 +40,7 @@ import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
 import { planKeys, usePlanNodes } from "../../data/hooks";
+import { createPlanNode } from "../../data/service";
 import { usePlanWorkspaceParams } from "../../hooks/usePlanWorkspaceParams";
 import { useContentPlanSites } from "../../components/ContentPlanHeader";
 import type { PlanNodeRow } from "../../types";
@@ -54,8 +55,12 @@ import {
 import type { Concept } from "../concepts";
 import {
   buildArchetypeOptionsJson,
+  buildCurrentPlanLines,
   buildCurrentPlanSummary,
+  REVIEWER_OUTPUT_CONTRACT,
   useSetupAgents,
+  type PlanReviewFinding,
+  type PlanReviewResult,
 } from "../ai";
 import {
   clearSetupDraft,
@@ -70,6 +75,7 @@ import { useArchetypeLibrary, useCmsFacts } from "../hooks";
 import { buildPreview } from "../preview";
 import { buildReadiness } from "../readiness";
 import {
+  applyFamilyTopics,
   commitArchetype,
   missingPageTypes,
   readCommittedArchetype,
@@ -77,6 +83,11 @@ import {
   type CommitResult,
 } from "../service";
 import { PlanLintSection } from "./PlanLintSection";
+import {
+  PlanReviewSection,
+  parentRouteOf,
+  slugOf,
+} from "./PlanReviewSection";
 import { SetupAiBar, type SetupAiRunSummary } from "./SetupAiBar";
 import { SetupBridgeSection } from "./SetupBridgeSection";
 import { SetupPreviewColumn } from "./SetupPreviewColumn";
@@ -193,6 +204,10 @@ export function SetupView() {
   const [conceptNamesByArchetype, setConceptNamesByArchetype] = useState<
     Record<string, Record<string, string>>
   >({});
+  // Researched titles for COUNT-ONLY families — the hub's work order.
+  const [topicsByArchetype, setTopicsByArchetype] = useState<
+    Record<string, Record<string, string[]>>
+  >({});
   const [committing, setCommitting] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(
     null,
@@ -203,6 +218,10 @@ export function SetupView() {
   const [researchTopicId, setResearchTopicId] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [lastAiRun, setLastAiRun] = useState<SetupAiRunSummary | null>(null);
+  const [review, setReview] = useState<PlanReviewResult | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [addingRoute, setAddingRoute] = useState<string | null>(null);
+  const [addedRoutes, setAddedRoutes] = useState<Set<string>>(new Set());
   // Newest SUCCESSFUL report — matches aidream's `_load_research_report`, so
   // a failed re-assembly never hides a perfectly good older report.
   const researchDoc = useLatestSuccessfulResearchDocument(researchTopicId ?? "");
@@ -211,6 +230,12 @@ export function SetupView() {
     researchDoc.data?.status === "success" && researchDoc.data.content?.trim()
       ? researchDoc.data.content
       : null;
+  // The runner permits ONE run at a time — every AI control reads this.
+  const anyAgentBusy =
+    agents.shapeBusy ||
+    agents.namingFamilyKey !== null ||
+    agents.entitiesBusy ||
+    agents.reviewBusy;
 
   // ── draft persistence — every step saves, nothing is lost on navigation ─
   // Seed ONCE per site from the FRESH row (never the siteOptions query cache
@@ -251,6 +276,9 @@ export function SetupView() {
           if (Object.keys(draft.conceptNamesByArchetype).length > 0) {
             setConceptNamesByArchetype(draft.conceptNamesByArchetype);
           }
+          if (Object.keys(draft.topicsByArchetype).length > 0) {
+            setTopicsByArchetype(draft.topicsByArchetype);
+          }
           if (draft.researchTopicId) setResearchTopicId(draft.researchTopicId);
         }
         // No in-progress draft topic → the site's recorded research link
@@ -290,6 +318,7 @@ export function SetupView() {
       countsByArchetype,
       namesByArchetype,
       conceptNamesByArchetype,
+      topicsByArchetype,
       researchTopicId,
       updatedAt: null,
     };
@@ -334,6 +363,7 @@ export function SetupView() {
     countsByArchetype,
     namesByArchetype,
     conceptNamesByArchetype,
+    topicsByArchetype,
     researchTopicId,
   ]);
 
@@ -511,6 +541,11 @@ export function SetupView() {
       delete next[selected.key];
       return next;
     });
+    setTopicsByArchetype((current) => {
+      const next = { ...current };
+      delete next[selected.key];
+      return next;
+    });
   };
 
   // ── the AI steps — read the research report, stage into THIS state ──────
@@ -600,6 +635,125 @@ export function SetupView() {
       });
     } catch (error) {
       setAiError(extractErrorMessage(error));
+    }
+  };
+
+  // Count-only families (blog / guides): the researched TITLES. Same agent as
+  // the page namer — a count-only family gets a work order, not pages.
+  const topics: Record<string, string[]> =
+    (selected ? topicsByArchetype[selected.key] : undefined) ?? {};
+
+  const setTopics = (familyKey: string, next: string[] | null) => {
+    if (!selected) return;
+    setTopicsByArchetype((current) => {
+      const forArchetype = { ...(current[selected.key] ?? {}) };
+      if (next === null) delete forArchetype[familyKey];
+      else forArchetype[familyKey] = next;
+      return { ...current, [selected.key]: forArchetype };
+    });
+  };
+
+  const handleTopicsForFamily = async (familyKey: string) => {
+    if (!researchReport || !site || !expanded) return;
+    const family = expanded.families.find((item) => item.key === familyKey);
+    if (!family) return;
+    setAiError(null);
+    try {
+      const outcome = await agents.nameFamily(familyKey, {
+        research_report: researchReport,
+        site_domain: site.domain ?? site.name ?? "",
+        family_key: family.key,
+        family_label: family.label,
+        family_route: family.route,
+        target_count: String(counts[family.key] ?? family.count),
+        existing_names: (topics[family.key] ?? []).join("\n"),
+        guidance:
+          `These are ARTICLE TITLES for the ${family.label} section at ${family.route} — ` +
+          "each one is a publishable piece, not a navigation page. Titles should reflect " +
+          "real search demand and the audiences the report identifies.",
+      });
+      setTopics(
+        familyKey,
+        outcome.names.map((item) => item.label),
+      );
+      setLastAiRun({
+        kind: "names",
+        headline: `Planned ${outcome.names.length} ${family.label.toLowerCase()} topic(s) — recorded on the hub when you commit.`,
+        detail:
+          outcome.notes || outcome.names.map((item) => item.label).join(", "),
+      });
+    } catch (error) {
+      setAiError(extractErrorMessage(error));
+    }
+  };
+
+  // ── plan review (semantic audit against the research report) ────────────
+  const handleReviewPlan = async () => {
+    if (!researchReport || !site) return;
+    setAiError(null);
+    setReviewError(null);
+    try {
+      const outcome = await agents.reviewPlan({
+        research_report: researchReport,
+        site_domain: site.domain ?? site.name ?? "",
+        current_plan: buildCurrentPlanLines(nodeRows),
+        // The contract is BINDING and always sent — without it the agent
+        // writes a summary naming six missing pages and returns one finding.
+        guidance: REVIEWER_OUTPUT_CONTRACT,
+      });
+      setReview(outcome);
+      setAddedRoutes(new Set());
+      setLastAiRun({
+        kind: "review",
+        headline: `Reviewed ${nodeRows.length} planned page(s) — ${outcome.findings.length} finding(s).`,
+        detail: outcome.summary,
+      });
+    } catch (error) {
+      setReviewError(extractErrorMessage(error));
+    }
+  };
+
+  /**
+   * Turn ONE `gap` finding into a real planned page through the canonical
+   * write path. The parent is resolved by ROUTE (trigger-owned, unique per
+   * site) and must already exist — the UI never offers Add otherwise, so this
+   * can never graft an orphan.
+   */
+  const handleAddSuggestedPage = async (finding: PlanReviewFinding) => {
+    const route = finding.suggestedRoute;
+    const label = finding.suggestedLabel;
+    if (!route || !label || !site || !siteId || !statusId) return;
+    const parent = nodeRows.find((node) => node.route === parentRouteOf(route));
+    if (!parent) {
+      setReviewError(
+        `Cannot add ${route}: its parent ${parentRouteOf(route)} is not planned yet.`,
+      );
+      return;
+    }
+    setReviewError(null);
+    setAddingRoute(route);
+    try {
+      await createPlanNode({
+        site_id: siteId,
+        organization_id: site.organization_id,
+        parent_id: parent.id,
+        node_type: "article",
+        slug: slugOf(route),
+        label,
+        brief: [finding.detail],
+        status_id: statusId,
+        attributes: {
+          plan_review: { severity: finding.severity, title: finding.title },
+        },
+      });
+      setAddedRoutes((current) => new Set(current).add(route));
+      await queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
+      toast.success(`Added ${route}.`);
+    } catch (error) {
+      // The DB's own message IS the contract (slug shape, duplicate route…).
+      setReviewError(`Could not add ${route}: ${extractErrorMessage(error)}`);
+    } finally {
+      setAddingRoute(null);
     }
   };
 
@@ -697,6 +851,44 @@ export function SetupView() {
           // Loud: the pages landed, the promise did not get recorded.
           toast.error(
             `Pages created, but the site shape was not recorded: ${extractErrorMessage(error)}`,
+          );
+        }
+      }
+
+      // Count-only families: record the researched titles on each hub's brief
+      // — the work order the generator and the writers read downstream.
+      // Idempotent (a marker block), so re-committing never duplicates lines.
+      const topicOrders = expanded.families
+        .filter(
+          (family) =>
+            family.materialize === "count_only" &&
+            (topics[family.key]?.length ?? 0) > 0,
+        )
+        .map((family) => ({
+          familyKey: family.key,
+          hubRoute: family.route,
+          label: family.label,
+          topics: topics[family.key],
+        }));
+      if (topicOrders.length > 0) {
+        try {
+          const topicResult = await applyFamilyTopics({ siteId, orders: topicOrders });
+          if (topicResult.failures.length > 0) {
+            toast.error(
+              `Topics recorded on ${topicResult.applied} hub(s); ${topicResult.failures.length} failed — ${topicResult.failures[0]}`,
+            );
+          } else if (topicResult.missing.length > 0) {
+            toast.error(
+              `Topics could not be recorded for ${topicResult.missing.join(", ")} — the hub page is not in the plan yet.`,
+            );
+          } else if (topicResult.applied > 0) {
+            toast.success(
+              `Recorded planned topics on ${topicResult.applied} hub page(s).`,
+            );
+          }
+        } catch (error) {
+          toast.error(
+            `Pages created, but the planned topics were not recorded: ${extractErrorMessage(error)}`,
           );
         }
       }
@@ -935,7 +1127,7 @@ export function SetupView() {
         documentLoading={Boolean(researchTopicId) && researchDoc.isLoading}
         onRecommendShape={() => void handleRecommendShape()}
         shapeBusy={agents.shapeBusy}
-        anyAgentBusy={agents.shapeBusy || agents.namingFamilyKey !== null}
+        anyAgentBusy={anyAgentBusy}
         lastRun={lastAiRun}
         error={aiError}
         onDismissError={() => setAiError(null)}
@@ -993,12 +1185,32 @@ export function SetupView() {
               onReset={resetOverrides}
               aiReady={Boolean(researchReport)}
               aiNamingKey={agents.namingFamilyKey}
+              aiBusy={anyAgentBusy}
               onAiNames={(familyKey) => void handleNameFamily(familyKey)}
+              topics={topics}
+              onAiTopics={(familyKey) => void handleTopicsForFamily(familyKey)}
+              onClearTopics={(familyKey) => setTopics(familyKey, null)}
               newCount={preview.counts.new}
               pageTypeName={(slug) =>
                 slug ? (pageTypeNameBySlug.get(slug) ?? slug) : "No page type"
               }
-              lintSlot={<PlanLintSection nodes={nodes.data ?? []} />}
+              lintSlot={
+                <>
+                  <PlanLintSection nodes={nodes.data ?? []} />
+                  <PlanReviewSection
+                    nodes={nodeRows}
+                    review={review}
+                    busy={agents.reviewBusy}
+                    anyBusy={anyAgentBusy}
+                    aiReady={Boolean(researchReport)}
+                    error={reviewError}
+                    onRun={() => void handleReviewPlan()}
+                    onAddPage={(finding) => void handleAddSuggestedPage(finding)}
+                    addingRoute={addingRoute}
+                    addedRoutes={addedRoutes}
+                  />
+                </>
+              }
               bridgeSlot={
                 site ? (
                   <SetupBridgeSection site={site} cms={cms.data ?? null} />

@@ -301,7 +301,11 @@ Empty values mean the workspace is still loading, no site is selected, or the da
       description:
         "Designs and extends the site's URL tree — proposing pillars, clusters, and articles that fit the existing structure and keyword strategy.",
       kind: "single",
-      defaultAgentId: null,
+      // Platform agent "Content Plan Reviewer" (agx_agent, created via the AI
+      // Dream MCP 2026-07-30) — the same agent Setup's "Review plan" section
+      // runs (setup/ai.ts). It audits the live plan against the site's linked
+      // research report and proposes the pages that are missing.
+      defaultAgentId: "2a7f0dc8-5525-437a-8f2e-35f12a45cb27",
       sortOrder: 100,
     },
     {
@@ -310,7 +314,10 @@ Empty values mean the workspace is still loading, no site is selected, or the da
       description:
         "Reviews author/reviewer/source coverage across the plan, flagging nodes that need a reviewer or better sourcing and matching them to registered entities.",
       kind: "single",
-      defaultAgentId: null,
+      // Platform agent "Content Plan Entity Curator" — the same agent the
+      // Entities view's "Suggest from research" button runs. It proposes the
+      // people/orgs/sources the roster is missing from the research report.
+      defaultAgentId: "c43e4497-3093-4b18-a906-b088127d8b9c",
       sortOrder: 120,
     },
   ],

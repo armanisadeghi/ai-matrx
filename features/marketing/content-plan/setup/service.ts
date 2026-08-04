@@ -23,7 +23,12 @@
  * holds here too. Reads go direct to Supabase under RLS — the Python brain is
  * for AI work, not for relaying rows.
  */
-import { createPlanNode, listAllPlanProfiles } from "@/features/marketing/content-plan/data/service";
+import {
+  createPlanNode,
+  listAllPlanProfiles,
+  listPlanNodes,
+  updatePlanNode,
+} from "@/features/marketing/content-plan/data/service";
 import type {
   PlanNodeInsert,
   PlanNodeRow,
@@ -408,6 +413,84 @@ export async function commitArchetype(args: {
 
   for (const root of args.roots) await apply(root, null);
   return { created, existing, failed, rows, routeMismatches };
+}
+
+/** One family's recorded topic work order: the hub route + its titles. */
+export interface FamilyTopicOrder {
+  familyKey: string;
+  /** The hub node's route as the expansion computed it (e.g. `/blog`). */
+  hubRoute: string;
+  label: string;
+  topics: string[];
+}
+
+export interface TopicApplyResult {
+  applied: number;
+  /** Families whose hub node was not found (never committed yet). */
+  missing: string[];
+  failures: string[];
+}
+
+/**
+ * Record COUNT-ONLY families' article titles on their hub node's brief.
+ *
+ * A count-only family (blog / guides / learn) materializes only its hub —
+ * "the count is the commitment and the titles come from research". This is
+ * where the researched titles become that recorded work order, so the
+ * generator and the writers downstream know exactly what to write.
+ *
+ * The hub node is found by ROUTE (trigger-owned and unique per site), and the
+ * brief is REPLACED with a stable marker block so re-applying is idempotent
+ * and never duplicates lines. Any non-topic brief lines the user wrote are
+ * preserved above the block.
+ */
+export const TOPIC_BRIEF_MARKER = "Planned topics (from research):";
+
+export function composeTopicBrief(
+  existingBrief: string[] | null,
+  topics: string[],
+): string[] {
+  const kept: string[] = [];
+  for (const line of existingBrief ?? []) {
+    if (line.trim() === TOPIC_BRIEF_MARKER) break;
+    kept.push(line);
+  }
+  if (topics.length === 0) return kept;
+  return [...kept, TOPIC_BRIEF_MARKER, ...topics.map((topic) => `- ${topic}`)];
+}
+
+export async function applyFamilyTopics(args: {
+  siteId: string;
+  orders: FamilyTopicOrder[];
+}): Promise<TopicApplyResult> {
+  const orders = args.orders.filter((order) => order.topics.length > 0);
+  if (orders.length === 0) return { applied: 0, missing: [], failures: [] };
+
+  const liveNodes = await listPlanNodes(args.siteId);
+  const byRoute = new Map<string, PlanNodeRow>();
+  for (const node of liveNodes) {
+    if (node.route) byRoute.set(node.route, node);
+  }
+
+  let applied = 0;
+  const missing: string[] = [];
+  const failures: string[] = [];
+  for (const order of orders) {
+    const hub = byRoute.get(order.hubRoute);
+    if (!hub) {
+      missing.push(order.label);
+      continue;
+    }
+    try {
+      await updatePlanNode(hub.id, {
+        brief: composeTopicBrief(hub.brief, order.topics),
+      });
+      applied += 1;
+    } catch (error) {
+      failures.push(`${order.label}: ${extractErrorMessage(error)}`);
+    }
+  }
+  return { applied, missing, failures };
 }
 
 /** Every `plan_page_type` slug the work order needs — checked BEFORE any write. */

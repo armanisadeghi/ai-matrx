@@ -60,6 +60,32 @@ export const FAMILY_NAMER_AGENT_ID = "7a16db8c-48eb-4997-a8d0-dc4a8892d7c5";
  */
 export const ENTITY_CURATOR_AGENT_ID = "c43e4497-3093-4b18-a906-b088127d8b9c";
 
+/**
+ * Platform agent "Content Plan Reviewer" — permanent latest-version pointer
+ * (created 2026-07-30 via the AI Dream MCP). Variables: research_report,
+ * site_domain, current_plan, guidance. Structured output:
+ * {summary, findings: [{severity, title, detail, suggested_route,
+ * suggested_label}]}.
+ */
+export const PLAN_REVIEWER_AGENT_ID = "2a7f0dc8-5525-437a-8f2e-35f12a45cb27";
+
+/**
+ * BINDING contract sent as the reviewer's `guidance` on every run.
+ *
+ * Measured, not guessed: without it the agent writes a summary naming six
+ * missing services and returns ONE finding (or an empty array) — the summary
+ * and the findings disagree, and the useful half is the one that goes
+ * missing. With it the same input returns 11 evidence-cited findings, one
+ * per missing page. Any operator guidance is appended AFTER this block.
+ */
+export const REVIEWER_OUTPUT_CONTRACT =
+  "BINDING OUTPUT CONTRACT: summary and findings must agree. Every problem you " +
+  "name in the summary MUST appear as its own entry in findings — a summary " +
+  "naming missing pages while findings is empty or shorter than the problems " +
+  "named is a failed response. Emit ONE finding per missing page (never lump " +
+  "several missing services or locations into one finding). Only return an " +
+  "empty findings array if the plan genuinely has no problems at all.";
+
 const EXTRACTION_TIMEOUT_MS = 180_000;
 const POLL_INTERVAL_MS = 300;
 
@@ -73,6 +99,28 @@ export interface ShapePlanResult {
 export interface FamilyNamesResult {
   names: Array<{ label: string; reason: string }>;
   notes: string;
+}
+
+export const REVIEW_SEVERITIES = [
+  "gap",
+  "mismatch",
+  "structure",
+  "priority",
+] as const;
+export type ReviewSeverity = (typeof REVIEW_SEVERITIES)[number];
+
+export interface PlanReviewFinding {
+  severity: ReviewSeverity;
+  title: string;
+  detail: string;
+  /** Proposed route for a missing page; null when the finding adds no page. */
+  suggestedRoute: string | null;
+  suggestedLabel: string | null;
+}
+
+export interface PlanReviewResult {
+  summary: string;
+  findings: PlanReviewFinding[];
 }
 
 export const ENTITY_TYPES = ["person", "source", "media", "org"] as const;
@@ -181,6 +229,61 @@ export function coerceEntityCuration(value: unknown): EntityCurationResult {
   };
 }
 
+export function coercePlanReview(value: unknown): PlanReviewResult {
+  const root = asRecord(value, "Plan Reviewer output");
+  if (!Array.isArray(root.findings)) {
+    throw new Error("Plan Reviewer output has no findings array");
+  }
+  const findings: PlanReviewFinding[] = [];
+  for (const item of root.findings) {
+    const row = asRecord(item, "findings item");
+    const severity = REVIEW_SEVERITIES.find((s) => s === row.severity);
+    if (!severity) {
+      throw new Error(
+        `Plan Reviewer returned unknown severity ${JSON.stringify(row.severity)}`,
+      );
+    }
+    if (typeof row.title !== "string" || !row.title.trim()) {
+      throw new Error("Plan Reviewer returned a finding with no title");
+    }
+    const route =
+      typeof row.suggested_route === "string" && row.suggested_route.trim()
+        ? row.suggested_route.trim()
+        : null;
+    const label =
+      typeof row.suggested_label === "string" && row.suggested_label.trim()
+        ? row.suggested_label.trim()
+        : null;
+    findings.push({
+      severity,
+      title: row.title.trim(),
+      detail: typeof row.detail === "string" ? row.detail : "",
+      // A route with no label (or the reverse) cannot create a page — treat
+      // the pair as all-or-nothing so the UI never offers a broken Add.
+      suggestedRoute: route && label ? route : null,
+      suggestedLabel: route && label ? label : null,
+    });
+  }
+  return {
+    summary: typeof root.summary === "string" ? root.summary : "",
+    findings,
+  };
+}
+
+/** The plan as the reviewer's `current_plan` variable expects it. */
+export function buildCurrentPlanLines(nodes: PlanNodeRow[]): string {
+  if (nodes.length === 0) return "empty plan";
+  return nodes
+    .slice()
+    .sort((a, b) => (a.route ?? "").localeCompare(b.route ?? ""))
+    .map((node) =>
+      [node.route ?? "(no route)", node.label, node.node_type, "planned"].join(
+        " | ",
+      ),
+    )
+    .join("\n");
+}
+
 /** The archetype menu, serialized exactly as the Shape Planner's variable expects. */
 export function buildArchetypeOptionsJson(
   archetypes: Archetype[],
@@ -265,6 +368,7 @@ export function useSetupAgents(siteId: string | null) {
   /** The family key currently being named, or null. */
   const [namingFamilyKey, setNamingFamilyKey] = useState<string | null>(null);
   const [entitiesBusy, setEntitiesBusy] = useState(false);
+  const [reviewBusy, setReviewBusy] = useState(false);
   const inFlight = useRef(false);
 
   async function run<T>(
@@ -315,6 +419,20 @@ export function useSetupAgents(siteId: string | null) {
     }
   }
 
+  async function reviewPlan(
+    variables: Record<string, string>,
+  ): Promise<PlanReviewResult> {
+    if (inFlight.current) throw new Error("An agent run is already in progress");
+    inFlight.current = true;
+    setReviewBusy(true);
+    try {
+      return await run(PLAN_REVIEWER_AGENT_ID, variables, coercePlanReview);
+    } finally {
+      inFlight.current = false;
+      setReviewBusy(false);
+    }
+  }
+
   async function curateEntities(
     variables: Record<string, string>,
   ): Promise<EntityCurationResult> {
@@ -333,8 +451,10 @@ export function useSetupAgents(siteId: string | null) {
     recommendShape,
     nameFamily,
     curateEntities,
+    reviewPlan,
     shapeBusy,
     namingFamilyKey,
     entitiesBusy,
+    reviewBusy,
   };
 }
