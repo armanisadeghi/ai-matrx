@@ -21,6 +21,7 @@ import {
   focusWindow,
   restoreWindow,
 } from "@/lib/redux/slices/windowManagerSlice";
+import { GSC_DEFAULT_RANGE } from "@/features/marketing/search-console/types";
 import type {
   GscCompareMode,
   GscDimension,
@@ -56,7 +57,7 @@ function instanceIdFor(opts: OpenGscDrilldownWindowOptions): string {
     opts.siteId,
     opts.dimension,
     filters,
-    opts.range ?? "90d",
+    opts.range ?? GSC_DEFAULT_RANGE,
     opts.customFrom ?? "",
     opts.customTo ?? "",
     opts.compare ?? "none",
@@ -90,7 +91,7 @@ export function useOpenGscDrilldownWindow() {
             siteName: opts.siteName ?? null,
             dimension: opts.dimension,
             filters: opts.filters ?? {},
-            range: opts.range ?? "90d",
+            range: opts.range ?? GSC_DEFAULT_RANGE,
             customFrom: opts.customFrom ?? null,
             customTo: opts.customTo ?? null,
             compare: opts.compare ?? "none",

@@ -75,6 +75,7 @@ export function KpiBand({
   filters,
   summary,
   isLoading,
+  isFetching = false,
   visibleMetrics,
   onToggleMetric,
   compact = false,
@@ -85,6 +86,13 @@ export function KpiBand({
   filters: GscFilters;
   summary: GscSummaryRow | null | undefined;
   isLoading: boolean;
+  /**
+   * A refetch is in flight while PREVIOUS numbers are still on screen
+   * (react-query keepPreviousData keeps `isLoading` false forever after the
+   * first load). Without this the band looks frozen on every period change —
+   * the #1 "it didn't update" report.
+   */
+  isFetching?: boolean;
   visibleMetrics: readonly GscMetric[];
   onToggleMetric: (metric: GscMetric) => void;
   compact?: boolean;
@@ -148,8 +156,9 @@ export function KpiBand({
               </span>
               <span
                 className={cn(
-                  "block font-semibold tabular-nums",
+                  "block font-semibold tabular-nums transition-opacity",
                   compact ? "text-base" : "text-lg",
+                  isFetching && "animate-pulse opacity-60",
                 )}
               >
                 {isLoading && cur === null ? "…" : formatMetric(metric.key, cur)}

@@ -41,8 +41,19 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   (`lib/url-state.ts`): `?site&tab&range&compare&q&qc&qn&pg&pgc&country&device&appearance`
   (+ `from`/`to` for custom ranges) — every drill-down is a shareable link.
   View STYLE only would go to `useListViewPrefs`; query state never persists.
-  Preset windows CLAMP to the site's freshest data day (`gsc_perf_freshness`)
-  so a lagging sync never fakes a traffic collapse; `yoy` compare shifts
+  Ranges run **1d / 7d / 14d / 28d / 3m / 6m / 12m / 16m / custom**; the
+  default is the NAMED `GSC_DEFAULT_RANGE` (`types.ts`) — parse fallback,
+  URL omission, and the `resolvePeriods` fallback all read that ONE
+  constant (a positional `GSC_RANGE_PRESETS[1]` silently retargets the
+  moment a preset is added at the front, which adding the short windows
+  did). Preset windows CLAMP to the site's freshest data day
+  (`gsc_perf_freshness`) so a lagging sync never fakes a traffic collapse
+  — the header therefore always prints the RESOLVED window beside "data
+  through", because otherwise a clamped range change looks like nothing
+  happened. The KPI band takes `isFetching` (not just `isLoading`): with
+  `keepPreviousData`, `isLoading` is false forever after the first load,
+  so without it the tiles sit frozen on stale numbers during every
+  refetch; `yoy` compare shifts
   exactly 364 days (weekday-aligned, Feb-29-safe); tab switches and shared
   URLs prune filters the target tab's dimension cannot serve
   (`pruneFiltersForTab` — the RPC's combination guard is unreachable from
@@ -149,6 +160,11 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
 
 ## Change Log
 
+- 2026-08-04 — Short ranges (1d/7d/14d) + the "it never updates" fixes:
+  named `GSC_DEFAULT_RANGE` replaces the positional preset fallback,
+  header prints the resolved window, KPI band shows a refetch state,
+  single-point charts render dots. Root cause of the stale data itself was
+  aidream-side (GSC ingestion had never run — see that repo's fix).
 - 2026-08-04 — v2: Dig Here rules engine (seo.gsc_dig_rule templates +
   stateless gsc_perf_dig), Watchlist (user_entity_state favorites +
   anchored gsc_perf_watch, watch column everywhere), New Pages manual

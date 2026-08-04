@@ -71,19 +71,39 @@ export const GSC_FILTER_KEYS: readonly GscFilterKey[] = [
   "search_appearance",
 ];
 
-export type GscRangeKey = "28d" | "90d" | "6m" | "12m" | "16m" | "custom";
+export type GscRangeKey =
+  | "1d"
+  | "7d"
+  | "14d"
+  | "28d"
+  | "90d"
+  | "6m"
+  | "12m"
+  | "16m"
+  | "custom";
 
 export const GSC_RANGE_PRESETS: readonly {
   key: Exclude<GscRangeKey, "custom">;
   label: string;
   days: number;
 }[] = [
+  { key: "1d", label: "1 day", days: 1 },
+  { key: "7d", label: "7 days", days: 7 },
+  { key: "14d", label: "14 days", days: 14 },
   { key: "28d", label: "28 days", days: 28 },
   { key: "90d", label: "3 months", days: 90 },
   { key: "6m", label: "6 months", days: 182 },
   { key: "12m", label: "12 months", days: 365 },
   { key: "16m", label: "16 months", days: 488 },
 ];
+
+/**
+ * THE default range — named, never positional. `resolvePeriods` used to fall
+ * back to `GSC_RANGE_PRESETS[1]`, which silently retargets the moment a
+ * preset is added at the front (exactly what adding 1d/7d/14d did). Parse
+ * fallback, URL-omission, and resolve fallback all read this one constant.
+ */
+export const GSC_DEFAULT_RANGE: Exclude<GscRangeKey, "custom"> = "28d";
 
 export type GscCompareMode = "none" | "prev" | "yoy";
 

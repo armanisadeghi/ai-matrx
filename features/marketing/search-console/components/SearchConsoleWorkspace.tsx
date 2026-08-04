@@ -240,12 +240,18 @@ export function SearchConsoleWorkspace() {
         right={
           state.siteId ? (
             <div className="flex items-center gap-1.5">
+              {/* The RESOLVED window, always — preset windows clamp to the
+                  freshest data day, so without this a range change can look
+                  like nothing happened when it merely ended on the same day. */}
               <span className="hidden whitespace-nowrap text-[11px] text-muted-foreground md:inline">
+                {periods.current.start === periods.current.end
+                  ? formatCompactDate(periods.current.start)
+                  : `${formatCompactDate(periods.current.start)} – ${formatCompactDate(periods.current.end)}`}
                 {dataThrough
-                  ? `Data through ${formatCompactDate(dataThrough)}`
+                  ? ` · data through ${formatCompactDate(dataThrough)}`
                   : hasAnyData
                     ? null
-                    : "Never synced"}
+                    : " · never synced"}
               </span>
               <RangeCompareControl
                 value={{
@@ -357,6 +363,7 @@ export function SearchConsoleWorkspace() {
                   filters={filters}
                   summary={summary.data}
                   isLoading={summary.isLoading}
+                  isFetching={summary.isFetching}
                   visibleMetrics={visibleMetrics}
                   onToggleMetric={(metric) =>
                     setVisibleMetrics((prev) => {
@@ -471,6 +478,7 @@ export function SearchConsoleWorkspace() {
                   filters={filters}
                   summary={summary.data}
                   isLoading={summary.isLoading}
+                  isFetching={summary.isFetching}
                   visibleMetrics={visibleMetrics}
                   onToggleMetric={(metric) =>
                     setVisibleMetrics((prev) => {
