@@ -14,8 +14,17 @@
  */
 
 import { useRef, useState } from "react";
-import { Columns2, Filter, PanelTop, SearchX } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  Columns2,
+  Eye,
+  Filter,
+  PanelTop,
+  Rocket,
+  SearchX,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
+import { trackPage } from "@/features/marketing/search-console/data-launch";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
@@ -27,7 +36,15 @@ import {
   humanLines,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+import {
+  buildGscKeyColumn,
+  buildGscMetricColumns,
+  gscKeyCell,
+  gscMetricCopyLines,
+} from "@/features/marketing/search-console/lib/columns";
 import { useGscBreakdown } from "@/features/marketing/search-console/hooks/useGscQuery";
+import { useRowWatch } from "@/features/marketing/search-console/hooks/useWatchState";
+import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
 import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
 import type {
@@ -38,13 +55,6 @@ import type {
   GscRangeKey,
   GscResolvedPeriods,
   GscSortKey,
-} from "@/features/marketing/search-console/types";
-import {
-  countryLabel,
-  deviceLabel,
-  formatCount,
-  formatCtr,
-  formatPosition,
 } from "@/features/marketing/search-console/types";
 
 const DIMENSION_LABELS: Record<GscDimension, { column: string; noun: string }> =
@@ -65,49 +75,6 @@ const SORTABLE: ReadonlySet<string> = new Set([
   "delta_clicks",
 ]);
 
-function keyCell(dimension: GscDimension, row: GscBreakdownRow): string {
-  if (dimension === "country") return countryLabel(row.key);
-  if (dimension === "device") return deviceLabel(row.key);
-  return row.key;
-}
-
-function deltaCell(
-  cur: number | null | undefined,
-  prev: number | null | undefined,
-  format: (v: number) => string,
-  lowerIsBetter = false,
-): { text: string; tone: "up" | "down" | "flat" } | null {
-  if (cur === null || cur === undefined || prev === null || prev === undefined)
-    return null;
-  const delta = cur - prev;
-  const improved = lowerIsBetter ? delta < 0 : delta > 0;
-  return {
-    text: `${delta > 0 ? "+" : ""}${format(delta)}`,
-    tone: delta === 0 ? "flat" : improved ? "up" : "down",
-  };
-}
-
-function DeltaSpan({
-  value,
-}: {
-  value: { text: string; tone: "up" | "down" | "flat" } | null;
-}) {
-  if (!value) return <span className="text-xs text-muted-foreground">—</span>;
-  return (
-    <span
-      className={
-        value.tone === "flat"
-          ? "text-xs tabular-nums text-muted-foreground"
-          : value.tone === "up"
-            ? "text-xs font-medium tabular-nums text-success"
-            : "text-xs font-medium tabular-nums text-destructive"
-      }
-    >
-      {value.text}
-    </span>
-  );
-}
-
 export function GscDimensionTable({
   siteId,
   siteName,
@@ -120,6 +87,7 @@ export function GscDimensionTable({
   pageSize = 50,
   compactHeight = false,
   panelRange,
+  watch = false,
 }: {
   siteId: string;
   siteName: string | null;
@@ -145,6 +113,8 @@ export function GscDimensionTable({
     customTo: string | null;
     compare: GscCompareMode;
   };
+  /** Show the watch column + context item (query/page dimensions only). */
+  watch?: boolean;
 }) {
   const hasCompare = periods.compare !== null;
   const labels = DIMENSION_LABELS[dimension];
@@ -172,6 +142,13 @@ export function GscDimensionTable({
   const rows = breakdown.data?.rows ?? [];
   const total = breakdown.data?.total ?? 0;
 
+  const queryClient = useQueryClient();
+  // Watch column wiring (query/page only; hook order stays stable).
+  const watchKind = dimension === "page" ? "page" : "query";
+  const rowWatch = useRowWatch(watchKind);
+  const watchable =
+    watch && (dimension === "query" || dimension === "page");
+
   // Right-click drills: one NonEditableContextMenu serves every row via
   // resolveContextOnOpen + the table's data-row-id stamps; extraSections
   // items read the row captured at open time.
@@ -185,13 +162,7 @@ export function GscDimensionTable({
     clickedRowRef.current = row;
     if (!row) return null;
     return {
-      content: humanLines([
-        [labels.column, keyCell(dimension, row)],
-        ["Clicks", formatCount(row.clicks)],
-        ["Impressions", formatCount(row.impressions)],
-        ["CTR", formatCtr(row.ctr)],
-        ["Position", formatPosition(row.avg_position)],
-      ]),
+      content: humanLines(gscMetricCopyLines(labels.column, dimension, row)),
     };
   };
   const openViewPanel = () => {
@@ -230,152 +201,27 @@ export function GscDimensionTable({
   };
 
   const columns: MatrxColumnDef<GscBreakdownRow>[] = [
-    {
-      id: "key",
-      accessorKey: "key",
-      header: labels.column,
-      filter: false,
-      cell: (row) => (
-        <span
-          className="block max-w-[28rem] truncate text-xs font-medium text-foreground sm:max-w-[36rem]"
-          title={row.key}
-        >
-          {keyCell(dimension, row)}
-        </span>
-      ),
-    },
-    {
-      id: "clicks",
-      accessorKey: "clicks",
-      header: "Clicks",
-      align: "right",
-      filter: false,
-      cell: (row) => (
-        <span className="text-xs font-semibold tabular-nums">
-          {formatCount(row.clicks)}
-        </span>
-      ),
-    },
-    ...(hasCompare
+    ...(watchable
       ? [
           {
-            id: "delta_clicks",
-            header: "Δ Clicks",
-            align: "right",
-            filter: false,
-            accessorFn: (row) => row.clicks - (row.cmp_clicks ?? 0),
-            cell: (row) => (
-              <DeltaSpan
-                value={deltaCell(row.clicks, row.cmp_clicks, (v) =>
-                  Math.round(v).toLocaleString(),
-                )}
-              />
-            ),
-          } satisfies MatrxColumnDef<GscBreakdownRow>,
-        ]
-      : []),
-    {
-      id: "impressions",
-      accessorKey: "impressions",
-      header: "Impressions",
-      align: "right",
-      filter: false,
-      cell: (row) => (
-        <span className="text-xs tabular-nums">
-          {formatCount(row.impressions)}
-        </span>
-      ),
-    },
-    ...(hasCompare
-      ? [
-          {
-            id: "delta_impressions",
-            header: "Δ Impr.",
-            align: "right",
+            id: "watch",
+            header: "",
             sortable: false,
             filter: false,
-            accessorFn: (row) => row.impressions - (row.cmp_impressions ?? 0),
+            width: 36,
             cell: (row) => (
-              <DeltaSpan
-                value={deltaCell(row.impressions, row.cmp_impressions, (v) =>
-                  Math.round(v).toLocaleString(),
-                )}
+              <WatchButton
+                watched={rowWatch.isWatched(row)}
+                pending={rowWatch.isRowPending(row)}
+                onToggle={() => rowWatch.toggleRow(row)}
+                noun={labels.noun}
               />
             ),
           } satisfies MatrxColumnDef<GscBreakdownRow>,
         ]
       : []),
-    {
-      id: "ctr",
-      accessorKey: "ctr",
-      header: "CTR",
-      align: "right",
-      filter: false,
-      cell: (row) => (
-        <span className="text-xs tabular-nums">{formatCtr(row.ctr)}</span>
-      ),
-    },
-    ...(hasCompare
-      ? [
-          {
-            id: "delta_ctr",
-            header: "Δ CTR",
-            align: "right",
-            sortable: false,
-            filter: false,
-            accessorFn: (row) =>
-              row.ctr !== null && row.cmp_ctr !== null
-                ? row.ctr - row.cmp_ctr
-                : null,
-            cell: (row) => (
-              <DeltaSpan
-                value={deltaCell(
-                  row.ctr,
-                  row.cmp_ctr,
-                  (v) => `${(v * 100).toFixed(2)}pp`,
-                )}
-              />
-            ),
-          } satisfies MatrxColumnDef<GscBreakdownRow>,
-        ]
-      : []),
-    {
-      id: "position",
-      accessorKey: "avg_position",
-      header: "Position",
-      align: "right",
-      filter: false,
-      cell: (row) => (
-        <span className="text-xs tabular-nums">
-          {formatPosition(row.avg_position)}
-        </span>
-      ),
-    },
-    ...(hasCompare
-      ? [
-          {
-            id: "delta_position",
-            header: "Δ Pos.",
-            align: "right",
-            sortable: false,
-            filter: false,
-            accessorFn: (row) =>
-              row.avg_position !== null && row.cmp_avg_position !== null
-                ? row.avg_position - row.cmp_avg_position
-                : null,
-            cell: (row) => (
-              <DeltaSpan
-                value={deltaCell(
-                  row.avg_position,
-                  row.cmp_avg_position,
-                  (v) => v.toFixed(1),
-                  true,
-                )}
-              />
-            ),
-          } satisfies MatrxColumnDef<GscBreakdownRow>,
-        ]
-      : []),
+    buildGscKeyColumn<GscBreakdownRow>(dimension, labels.column),
+    ...buildGscMetricColumns<GscBreakdownRow>(hasCompare, "clicks-only"),
   ];
 
   const PANEL_DRILL_LABELS: Record<GscDimension, string> = {
@@ -434,23 +280,7 @@ export function GscDimensionTable({
             rowDescription: `One ${labels.noun}'s search performance for the selected site, period, and filters.`,
             listDescription: `The currently visible Search Console ${labels.noun} rows (respecting search, sort, filters, and pagination).`,
             humanRow: (row) =>
-              humanLines([
-                [labels.column, keyCell(dimension, row)],
-                ["Clicks", formatCount(row.clicks)],
-                ["Impressions", formatCount(row.impressions)],
-                ["CTR", formatCtr(row.ctr)],
-                ["Position", formatPosition(row.avg_position)],
-                [
-                  "Prev clicks",
-                  row.cmp_clicks != null ? formatCount(row.cmp_clicks) : null,
-                ],
-                [
-                  "Prev position",
-                  row.cmp_avg_position != null
-                    ? formatPosition(row.cmp_avg_position)
-                    : null,
-                ],
-              ]),
+              humanLines(gscMetricCopyLines(labels.column, dimension, row)),
             rowAttributes: (row) => ({
               ...gscScopeAttributes(siteId, siteName, periods, filters),
               dimension,
@@ -528,6 +358,67 @@ export function GscDimensionTable({
                         return;
                       }
                       onDrill(row);
+                    },
+                  },
+                ]
+              : []),
+            ...(dimension === "page"
+              ? [
+                  {
+                    kind: "item" as const,
+                    id: "gsc-track-launch",
+                    label: "Track as new page",
+                    icon: Rocket,
+                    description:
+                      "Add to the New Pages launch tracker (first-impression watch)",
+                    onSelect: () => {
+                      const row = clickedRowRef.current;
+                      if (!row) {
+                        toast.error("Right-click a data row to track it.");
+                        return;
+                      }
+                      if (!row.page_id) {
+                        toast.error(
+                          "This page has no canonical page record yet — add it from the New Pages tab instead.",
+                        );
+                        return;
+                      }
+                      void trackPage(row.page_id, { indexingRequested: false })
+                        .then(() => {
+                          toast.success(
+                            "Tracked — it's on the New Pages tab now.",
+                          );
+                          void queryClient.invalidateQueries({
+                            queryKey: ["marketing", "gsc", "launch-pages"],
+                          });
+                        })
+                        .catch((error: unknown) => {
+                          toast.error(
+                            error instanceof Error
+                              ? error.message
+                              : "Could not track the page.",
+                          );
+                        });
+                    },
+                  },
+                ]
+              : []),
+            ...(watchable
+              ? [
+                  {
+                    kind: "item" as const,
+                    id: "gsc-watch-row",
+                    label: `Watch / unwatch this ${labels.noun}`,
+                    icon: Eye,
+                    description:
+                      "Toggle this row on your Watchlist tab (per-user, cross-site)",
+                    onSelect: () => {
+                      const row = clickedRowRef.current;
+                      if (!row) {
+                        toast.error("Right-click a data row to watch it.");
+                        return;
+                      }
+                      rowWatch.toggleRow(row);
                     },
                   },
                 ]

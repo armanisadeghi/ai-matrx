@@ -94,7 +94,7 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       url: "/marketing/search-console",
       label: "Search Console",
       description:
-        "The GSC data dashboard — cross-site portfolio + per-site deep view (?site=): KPI band, performance chart with compare, query/page/country/device/appearance tables over the seo.gsc_perf_* RPCs, GSC-parity drill-downs.",
+        "The GSC data dashboard — cross-site portfolio + per-site deep view (?site=): KPI band, performance chart with compare, query/page/country/device/appearance tables over the seo.gsc_perf_* RPCs, GSC-parity drill-downs. v2 tabs: Dig Here (?tab=digs&rule=, seo.gsc_dig_rule templates + gsc_perf_dig), Watchlist (?tab=watchlist, user_entity_state favorites + gsc_perf_watch), New Pages (?tab=new-pages, web.page.launch_tracking + gsc_perf_page_first_dates).",
       filePath: "app/(core)/marketing/search-console/page.tsx",
     },
     {

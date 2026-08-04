@@ -37,6 +37,8 @@ export interface SearchConsoleUrlState {
   customTo: string | null;
   compare: GscCompareMode;
   filters: GscFilters;
+  /** Selected dig rule (digs tab only; template or user rule uuid). */
+  ruleId: string | null;
 }
 
 const FILTER_PARAMS: Array<[keyof GscFilters, string]> = [
@@ -83,6 +85,7 @@ export function parseSearchConsoleUrl(
     const value = params.get(param);
     if (value && value.trim() !== "") filters[key] = value;
   }
+  const rule = params.get("rule");
   return {
     siteId: params.get("site"),
     tab,
@@ -91,6 +94,7 @@ export function parseSearchConsoleUrl(
     customTo: hasCustom ? customTo : null,
     compare,
     filters,
+    ruleId: tab === "digs" && rule && rule.trim() !== "" ? rule : null,
   };
 }
 
@@ -104,6 +108,7 @@ export function buildSearchConsoleUrl(state: SearchConsoleUrlState): string {
     params.set("to", state.customTo);
   }
   if (state.compare !== "none") params.set("compare", state.compare);
+  if (state.tab === "digs" && state.ruleId) params.set("rule", state.ruleId);
   for (const [key, param] of FILTER_PARAMS) {
     const value = state.filters[key];
     if (value && value.trim() !== "") params.set(param, value);
@@ -180,6 +185,24 @@ export function resolvePeriods(
   return { current, compare };
 }
 
+/**
+ * Force a previous-period compare onto resolved periods (equal-length window
+ * immediately before the current one) — used by Dig Here when a rule needs
+ * compare metrics but the dashboard is set to "no compare". No-op when a
+ * compare is already active.
+ */
+export function withPrevCompare(periods: GscResolvedPeriods): GscResolvedPeriods {
+  if (periods.compare) return periods;
+  const days = rangeDayCount(periods.current);
+  return {
+    current: periods.current,
+    compare: {
+      start: shiftDays(periods.current.start, -days),
+      end: shiftDays(periods.current.start, -1),
+    },
+  };
+}
+
 /** The filter keys each tab's dimension group can serve (RPC profile rule). */
 const QUERY_PAGE_FILTER_KEYS: readonly (keyof GscFilters)[] = [
   "query_contains",
@@ -211,6 +234,13 @@ export function allowedFilterKeysForTab(
       return COUNTRY_DEVICE_FILTER_KEYS;
     case "appearance":
       return ["search_appearance"];
+    case "digs":
+    case "watchlist":
+    case "new-pages":
+      // These tabs don't consume the shared FilterBar — dig rules carry
+      // their own base filters; watch/new-pages read fixed entity sets.
+      // Returning [] (never undefined) keeps pruneFiltersForTab total.
+      return [];
   }
 }
 

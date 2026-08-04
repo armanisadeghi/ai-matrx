@@ -41651,6 +41651,66 @@ export type Database = {
         }
         Relationships: []
       }
+      gsc_dig_rule: {
+        Row: {
+          base_filters: Json
+          conditions: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          dimension: string
+          id: string
+          is_template: boolean
+          name: string
+          organization_id: string | null
+          row_limit: number
+          site_id: string | null
+          sort_dir: string
+          sort_metric: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          base_filters?: Json
+          conditions?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          dimension?: string
+          id?: string
+          is_template?: boolean
+          name: string
+          organization_id?: string | null
+          row_limit?: number
+          site_id?: string | null
+          sort_dir?: string
+          sort_metric?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          base_filters?: Json
+          conditions?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          dimension?: string
+          id?: string
+          is_template?: boolean
+          name?: string
+          organization_id?: string | null
+          row_limit?: number
+          site_id?: string | null
+          sort_dir?: string
+          sort_metric?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       keyword: {
         Row: {
           audience_type: string | null
@@ -43255,6 +43315,24 @@ export type Database = {
           o_id: string
         }[]
       }
+      gsc_dig_condition_passes: {
+        Args: { p_op: string; p_threshold: number; p_value: number }
+        Returns: boolean
+      }
+      gsc_dig_metric_value: {
+        Args: {
+          c_clicks: number
+          c_ctr: number
+          c_imps: number
+          c_pos: number
+          m_clicks: number
+          m_ctr: number
+          m_imps: number
+          m_pos: number
+          p_metric: string
+        }
+        Returns: number
+      }
       gsc_perf_breakdown: {
         Args: {
           p_compare_end?: string
@@ -43285,6 +43363,41 @@ export type Database = {
           total_count: number
         }[]
       }
+      gsc_perf_dig: {
+        Args: {
+          p_compare_end?: string
+          p_compare_start?: string
+          p_conditions?: Json
+          p_dimension: string
+          p_end: string
+          p_filters?: Json
+          p_limit?: number
+          p_site_id: string
+          p_sort?: string
+          p_sort_dir?: string
+          p_start: string
+        }
+        Returns: {
+          avg_position: number
+          clicks: number
+          cmp_avg_position: number
+          cmp_clicks: number
+          cmp_ctr: number
+          cmp_impressions: number
+          ctr: number
+          delta_clicks: number
+          delta_clicks_pct: number
+          delta_ctr: number
+          delta_impressions: number
+          delta_impressions_pct: number
+          delta_position: number
+          impressions: number
+          key: string
+          keyword_id: string
+          page_id: string
+          total_count: number
+        }[]
+      }
       gsc_perf_freshness: {
         Args: { p_site_id: string }
         Returns: {
@@ -43295,6 +43408,17 @@ export type Database = {
         }[]
       }
       gsc_perf_like_escape: { Args: { p_value: string }; Returns: string }
+      gsc_perf_page_first_dates: {
+        Args: { p_page_ids: string[]; p_site_id: string }
+        Returns: {
+          first_impression_date: string
+          last_impression_date: string
+          lifetime_clicks: number
+          lifetime_impressions: number
+          page_id: string
+          url: string
+        }[]
+      }
       gsc_perf_resolve_profile: {
         Args: { p_dimension: string; p_filters: Json }
         Returns: string
@@ -43335,6 +43459,30 @@ export type Database = {
           day: string
           impressions: number
           period: string
+        }[]
+      }
+      gsc_perf_watch: {
+        Args: {
+          p_compare_end?: string
+          p_compare_start?: string
+          p_end: string
+          p_keyword_ids?: string[]
+          p_page_ids?: string[]
+          p_site_id: string
+          p_start: string
+        }
+        Returns: {
+          avg_position: number
+          clicks: number
+          cmp_avg_position: number
+          cmp_clicks: number
+          cmp_ctr: number
+          cmp_impressions: number
+          ctr: number
+          entity_id: string
+          impressions: number
+          key: string
+          kind: string
         }[]
       }
     }
@@ -48753,6 +48901,7 @@ export type Database = {
           id: string
           last_seen: string
           latest_snapshot_id: string | null
+          launch_tracking: Json | null
           meta_description_desired: string | null
           meta_title_desired: string | null
           metadata: Json
@@ -48781,6 +48930,7 @@ export type Database = {
           id?: string
           last_seen?: string
           latest_snapshot_id?: string | null
+          launch_tracking?: Json | null
           meta_description_desired?: string | null
           meta_title_desired?: string | null
           metadata?: Json
@@ -48809,6 +48959,7 @@ export type Database = {
           id?: string
           last_seen?: string
           latest_snapshot_id?: string | null
+          launch_tracking?: Json | null
           meta_description_desired?: string | null
           meta_title_desired?: string | null
           metadata?: Json

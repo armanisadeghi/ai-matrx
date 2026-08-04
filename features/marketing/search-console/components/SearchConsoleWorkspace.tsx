@@ -40,17 +40,23 @@ import {
 import { syncGscSearchPerformance } from "@/features/marketing/search-console/sync";
 import type {
   GscBreakdownRow,
+  GscDigResultRow,
   GscDimension,
   GscFilters,
   GscMetric,
   GscTab,
+  GscWatchRow,
 } from "@/features/marketing/search-console/types";
 import {
   GSC_TABS,
   TAB_DIMENSION,
+  isDimensionTab,
 } from "@/features/marketing/search-console/types";
+import { DigTab } from "@/features/marketing/search-console/components/dig/DigTab";
 import { FilterBar } from "@/features/marketing/search-console/components/FilterBar";
 import { GscDimensionTable } from "@/features/marketing/search-console/components/GscDimensionTable";
+import { NewPagesTab } from "@/features/marketing/search-console/components/new-pages/NewPagesTab";
+import { WatchlistTab } from "@/features/marketing/search-console/components/watch/WatchlistTab";
 import { KpiBand } from "@/features/marketing/search-console/components/KpiBand";
 import { PerformanceChart } from "@/features/marketing/search-console/components/PerformanceChart";
 import { RangeCompareControl } from "@/features/marketing/search-console/components/RangeCompareControl";
@@ -136,8 +142,15 @@ export function SearchConsoleWorkspace() {
     [state, dataThrough],
   );
 
-  const summary = useGscSummary(state.siteId, periods, filters);
-  const timeseries = useGscTimeseries(state.siteId, periods, filters);
+  // The KPI band + chart render only on overview and dimension tabs — the
+  // digs/watchlist/new-pages tabs must not pay for two dead RPCs.
+  const showsKpis = state.tab === "overview" || isDimensionTab(state.tab);
+  const summary = useGscSummary(state.siteId, periods, filters, {
+    enabled: showsKpis,
+  });
+  const timeseries = useGscTimeseries(state.siteId, periods, filters, {
+    enabled: state.tab === "overview",
+  });
 
   const applyState = (next: SearchConsoleUrlState) => {
     startNavigation(() => {
@@ -181,8 +194,9 @@ export function SearchConsoleWorkspace() {
     }
   };
 
-  const tabDimension =
-    state.tab === "overview" ? null : TAB_DIMENSION[state.tab];
+  const tabDimension = isDimensionTab(state.tab)
+    ? TAB_DIMENSION[state.tab]
+    : null;
 
   const panelRange = {
     range: state.range,
@@ -299,11 +313,13 @@ export function SearchConsoleWorkspace() {
                   </button>
                 ))}
               </div>
-              <FilterBar
-                filters={filters}
-                allowedKeys={allowedFilterKeysForTab(state.tab)}
-                onChange={(next) => applyState({ ...state, filters: next })}
-              />
+              {allowedFilterKeysForTab(state.tab).length > 0 ? (
+                <FilterBar
+                  filters={filters}
+                  allowedKeys={allowedFilterKeysForTab(state.tab)}
+                  onChange={(next) => applyState({ ...state, filters: next })}
+                />
+              ) : null}
             </div>
 
             {!hasAnyData && !freshness.isLoading ? (
@@ -372,6 +388,7 @@ export function SearchConsoleWorkspace() {
                       copySurface="Search Console — Overview top queries"
                       onDrill={onDrill("query")}
                       panelRange={panelRange}
+                      watch
                       pageSize={10}
                       compactHeight
                     />
@@ -387,11 +404,63 @@ export function SearchConsoleWorkspace() {
                       copySurface="Search Console — Overview top pages"
                       onDrill={onDrill("page")}
                       panelRange={panelRange}
+                      watch
                       pageSize={10}
                       compactHeight
                     />
                   </div>
                 </div>
+              </div>
+            ) : state.tab === "digs" ? (
+              <div className="min-h-0 flex-1">
+                <DigTab
+                  siteId={state.siteId}
+                  siteName={siteName}
+                  organizationId={site?.organization_id ?? null}
+                  periods={periods}
+                  panelRange={panelRange}
+                  ruleId={state.ruleId}
+                  onSelectRule={(ruleId) => applyState({ ...state, ruleId })}
+                  onDrill={(dimension: "query" | "page", row: GscDigResultRow) =>
+                    applyState({
+                      ...state,
+                      tab: dimension === "query" ? "pages" : "queries",
+                      filters:
+                        dimension === "query"
+                          ? { query_eq: row.key }
+                          : { page_eq: row.key },
+                    })
+                  }
+                />
+              </div>
+            ) : state.tab === "watchlist" ? (
+              <div className="min-h-0 flex-1">
+                <WatchlistTab
+                  siteId={state.siteId}
+                  siteName={siteName}
+                  periods={periods}
+                  panelRange={panelRange}
+                  onDrill={(row: GscWatchRow) =>
+                    applyState({
+                      ...state,
+                      tab: row.kind === "query" ? "pages" : "queries",
+                      filters:
+                        row.kind === "query"
+                          ? { query_eq: row.key }
+                          : { page_eq: row.entity_id },
+                    })
+                  }
+                />
+              </div>
+            ) : state.tab === "new-pages" ? (
+              <div className="min-h-0 flex-1">
+                <NewPagesTab
+                  siteId={state.siteId}
+                  siteName={siteName}
+                  organizationId={site?.organization_id ?? null}
+                  periods={periods}
+                  panelRange={panelRange}
+                />
               </div>
             ) : (
               <div className="flex min-h-0 flex-1 flex-col gap-2">
@@ -430,6 +499,7 @@ export function SearchConsoleWorkspace() {
                       onDrill={onDrill(tabDimension)}
                       drillHint={DRILL_HINTS[tabDimension]}
                       panelRange={panelRange}
+                      watch
                     />
                   ) : null}
                 </div>
