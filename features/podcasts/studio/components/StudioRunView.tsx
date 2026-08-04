@@ -75,6 +75,8 @@ export function StudioRunView({ runId }: { runId: string }) {
     stalled,
     backgroundWorking,
     canReconnect,
+    orphaned,
+    canRerun,
     reconnect,
     rerunFromSource,
     refresh,
@@ -379,7 +381,8 @@ export function StudioRunView({ runId }: { runId: string }) {
             stalled={stalled}
             backgroundWorking={backgroundWorking}
             canReconnect={canReconnect}
-            canRerun={recovery.canRerun}
+            canRerun={recovery.canRerun || canRerun}
+            orphaned={orphaned}
             audioMissing={!state.audioUrl}
             error={state.error}
             onResume={reconnect}

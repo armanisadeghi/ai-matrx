@@ -13,6 +13,15 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D122 — `history.row_versions` partition exhaustion froze 121 tables platform-wide for 4 days (2026-08-04) — FIXED, residual gaps open
+
+`history.row_versions` is RANGE-partitioned on `occurred_at` with **hand-created** monthly partitions. The last ended `2026-08-01T00:00Z` and nothing created the next, so `platform._version_capture()` — a trigger on **121 versioned tables** — failed every INSERT/UPDATE/DELETE with `23514 no partition of relation "row_versions" found for row`. `files.files` last accepted a row at 2026-07-31 22:09; no file, note, task, transcript, flashcard set, membership, or `chat.agent_run` was written for four days. **Fixed** 2026-08-04: `migrations/history_row_versions_partition_autoprovision.sql` (provisioner fn + 18-month runway + `row_versions_default` catch-all + pg_cron `ensure-row-version-partitions` + a `system_error` alarm if the default is ever used).
+
+**Residual, open:**
+1. **No guard compares partition runway to `now()`.** `pnpm check:schema` / aidream's `db/schema_analysis` compare code-vs-DB *shape* and would not have caught this — the schema was correct, the *data range* was exhausted. A "time-bounded DDL about to expire" check belongs in the release gates. **Decides: anyone.**
+2. **`public.agent_run` / `public.agent_run_stage` are stale empty duplicates** of the live `chat.*` tables (moved by `agent_run_canon_02_move_to_chat.sql`, 2026-06-28) and are still generated into `db/models/public.py` in aidream. Graveyard them (`db-graveyard-table` skill). **Decides: anyone.**
+3. **Nothing alarms on "a whole table stopped receiving writes."** Four days of total write failure produced `request_crash` rows and user-visible toasts but no alert. A write-rate watchdog over the busiest tables is the second layer. **Decides: Arman** (ops scope).
+
 ### D121 — website-factory audit: 12 content-plan/CMS defects on a dispatch board (2026-07-30)
 
 The 2026-07-30 content-plan/CMS readiness audit found 12 defects — renderer ignoring `theme_config` (my-matrx), plan statuses blind to CMS publishes (1 node "published" vs 42 live pages), FE CMS writes bypassing `matrx-content-guard`, nondeterministic duplicate header/footer render, agent-only capabilities with no human UI (starter kit, header/footer toggles, theme/nav/footer editing), the never-exercised `plan.cms_fill_job` queue with no chaos test, and doc drift. Each is a self-contained assignment with status tracking in [docs/handoffs/website-factory-bug-dispatch.md](docs/handoffs/website-factory-bug-dispatch.md) (WF-1…WF-12); vision-level gaps live in [docs/handoffs/website-factory-vision.md](docs/handoffs/website-factory-vision.md). Close this entry when the board is empty. **Decides: Arman assigns; WF-1/WF-2/WF-3 are HIGH.**

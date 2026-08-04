@@ -86,6 +86,17 @@ export interface UseStudioRun {
   backgroundWorking: boolean;
   /** True when the run is interrupted and resumable from a checkpoint. */
   canReconnect: boolean;
+  /** The run never got a durable server record (no backend_run_id, no
+   *  agent_run), so there is nothing to attach to or resume — only re-run.
+   *  This is a SERVER fault, never the user's; name it instead of leaving the
+   *  page sitting on a run that looks alive forever. Root cause of the
+   *  2026-08-01→04 outage: the DB refused writes, so no run row was created.
+   *  Re-run from source still works — the request payload is on the row. */
+  orphaned: boolean;
+  /** A saved request payload is loaded, so `rerunFromSource` will actually do
+   *  something. Sourced from the durable record OR the pc_studio_runs row, so
+   *  it stays true for a run the server never recorded. */
+  canRerun: boolean;
   reconnect: () => void;
   /** Start a fresh run from the saved source (when resume can't proceed). */
   rerunFromSource: () => void;
@@ -129,6 +140,8 @@ export function useStudioRun(runId: string): UseStudioRun {
   const [stalled, setStalled] = useState(false);
   const [backgroundWorking, setBackgroundWorking] = useState(false);
   const [canReconnect, setCanReconnect] = useState(false);
+  const [orphaned, setOrphaned] = useState(false);
+  const [canRerun, setCanRerun] = useState(false);
   const [selectedCoverUrl, setSelectedCoverUrl] = useState<string | null>(null);
   const [detail, setDetail] = useState<RunDetail | null>(null);
   const [recovery, setRecovery] = useState<RecoveryState>(() =>
@@ -182,6 +195,15 @@ export function useStudioRun(runId: string): UseStudioRun {
     backendRunIdRef.current = null;
     resumeAttemptsRef.current = 0;
     completedRef.current = false;
+    setOrphaned(false);
+    setCanRerun(false);
+
+    // requestRef is a ref (read inside stream callbacks) but the banner needs a
+    // reactive flag — set both through one seam so they can never disagree.
+    function setRequest(req: PodcastGenerateRequest | null) {
+      requestRef.current = req;
+      setCanRerun(req !== null);
+    }
     imgUrlsRef.current = [];
     vidUrlsRef.current = [];
     setResearchActivity([]);
@@ -571,10 +593,11 @@ export function useStudioRun(runId: string): UseStudioRun {
       setNotFound(false);
       setStalled(false);
       backendRunIdRef.current = d.run_id;
-      requestRef.current =
+      setRequest(
         d.request && Object.keys(d.request).length > 0
           ? (d.request as unknown as PodcastGenerateRequest)
-          : null;
+          : null,
+      );
       if (streamingRef.current) return; // a live stream owns the state — don't stomp it
       setState(detailToRunState(d));
       imgUrlsRef.current = d.assets
@@ -630,10 +653,11 @@ export function useStudioRun(runId: string): UseStudioRun {
           : detailToRunState(runDetail);
         setState(fromDetail);
         backendRunIdRef.current = runDetail.run_id;
-        requestRef.current =
+        setRequest(
           runDetail.request && Object.keys(runDetail.request).length > 0
             ? (runDetail.request as unknown as PodcastGenerateRequest)
-            : null;
+            : null,
+        );
         imgUrlsRef.current = runDetail.assets
           .filter((a) => a.asset_kind === "image" && a.url)
           .map((a) => a.url as string);
@@ -647,6 +671,14 @@ export function useStudioRun(runId: string): UseStudioRun {
         backendRunIdRef.current = row.backend_run_id ?? null;
         imgUrlsRef.current = [...(row.image_urls ?? [])];
         vidUrlsRef.current = [...(row.video_urls ?? [])];
+        // The row carries the originating request, so Re-run works even with no
+        // durable server record — which is precisely the run that needs it.
+        // Without this the orphan banner would offer no action at all.
+        setRequest(
+          row.request && Object.keys(row.request).length > 0
+            ? (row.request as unknown as PodcastGenerateRequest)
+            : null,
+        );
       }
       setLoading(false);
 
@@ -698,6 +730,25 @@ export function useStudioRun(runId: string): UseStudioRun {
         // "Completed" but resumable = a mis-stamped failure (e.g. audio failed
         // while the rest rendered) — surface the Resume affordance.
         setCanReconnect(true);
+      } else if (
+        !backendRunIdRef.current &&
+        !runDetail &&
+        row?.status === "running"
+      ) {
+        // ORPHANED: the row still claims to be running, but the server never
+        // minted a durable run id — so there is no checkpoint to resume and
+        // nothing to attach to, and it will never finish. Previously this fell
+        // through every branch above and the page just sat there looking busy
+        // forever. Name it, and offer the one action that does work (re-run
+        // from the saved source). A row that already recorded a terminal error
+        // is NOT orphaned-first: its stored message is more specific, and the
+        // error banner already offers Re-run.
+        setOrphaned(true);
+        console.error(
+          `[studio-run] run ${runId} has no durable server record ` +
+            `(backend_run_id is null and no agent_run exists). The generation ` +
+            `could not be saved or resumed — this is a server-side fault.`,
+        );
       }
     }
 
@@ -886,6 +937,8 @@ export function useStudioRun(runId: string): UseStudioRun {
     researchActivity,
     backgroundWorking,
     canReconnect,
+    orphaned,
+    canRerun,
     reconnect,
     rerunFromSource,
     refresh,

@@ -26,6 +26,11 @@ interface RunRecoveryBannerProps {
   backgroundWorking: boolean;
   canReconnect: boolean;
   canRerun: boolean;
+  /** The server never created a durable record for this run, so there is no
+   *  checkpoint to resume and nothing to attach to — only re-run. Ranks above
+   *  every other state: without it the page shows "interrupted, everything so
+   *  far is saved", which is the opposite of the truth. */
+  orphaned?: boolean;
   /** Run reports done but produced no audio — a mis-stamped failure
    *  (audio is the critical path); resume re-runs only the audio tail. */
   audioMissing?: boolean;
@@ -74,11 +79,41 @@ export function RunRecoveryBanner({
   backgroundWorking,
   canReconnect,
   canRerun,
+  orphaned = false,
   audioMissing = false,
   error,
   onResume,
   onRerun,
 }: RunRecoveryBannerProps) {
+  // FIRST — a run with no durable server record can never resume or complete,
+  // whatever else the row says. Say so plainly and own it as our fault; the
+  // alternative (falling through to "interrupted, work is saved") leaves the
+  // user watching a page that will never finish.
+  if (orphaned) {
+    return (
+      <div className="flex flex-col gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+        <span className="flex min-w-0 items-start gap-2.5">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+          <span className="min-w-0 break-words">
+            <span className="font-medium">
+              This run was never saved on our servers.
+            </span>{" "}
+            A server-side fault stopped it from being recorded, so it can&apos;t
+            be resumed or finished — this is on us, not on anything you did.
+            Your settings and source are still here: re-run to start it again.
+          </span>
+        </span>
+        <Actions
+          canReconnect={false}
+          canRerun={canRerun}
+          onResume={onResume}
+          onRerun={onRerun}
+          tone="border-destructive/40"
+        />
+      </div>
+    );
+  }
+
   // Connection dropped, but the backend keeps generating server-side — we're
   // polling the durable record. This is the calm, common case (audio is long).
   if (backgroundWorking) {

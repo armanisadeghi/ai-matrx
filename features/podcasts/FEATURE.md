@@ -97,6 +97,28 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-04 — **Podcast "failures" root-caused to a platform-wide DB write
+  outage; runs can no longer be lost.** `history.row_versions` ran out of
+  monthly partitions at 2026-08-01T00:00Z, so every write to a versioned table
+  failed — including `chat.agent_run`. Consequences, in order: no durable run
+  row → the pipeline emitted `run_id=""` → the client stored no
+  `backend_run_id` → the runs list (which reads `agent_run`) was empty and the
+  run page had nothing to resume; and separately every media persist failed, so
+  the images AND the audio stage reported "An unexpected `<provider>` error
+  occurred" for five different providers at once. **Images were never the
+  cause** — they are soft-fail by design (`_run_asset_with_fallback`); only
+  `create_audio` is fatal, and it failed for the same DB reason. DB fixed +
+  auto-provisioned (root `FOUND_DEFECTS.md` D122). Frontend: `useStudioRun` now
+  exposes **`orphaned`** (a row still claiming "running" with no durable record
+  anywhere) and **`canRerun`**, and hydrates the re-run payload from the
+  `pc_studio_runs.request` column — so `RunRecoveryBanner`'s new
+  orphan state names the server fault and still offers Re-run from source
+  instead of the page sitting on a run that will never finish. Server-side, a
+  podcast run now REFUSES to start when its durable record can't be created
+  (`RunCheckpointer.start(require_durable=True)` → `DurableRunUnavailable`), and
+  a DB/ORM exception can no longer be laundered into a retryable provider
+  `unknown_error` (`matrx_infrastructure_error`). 16 permanently-stuck
+  `pc_studio_runs` rows were settled to `failed` with real explanations.
 - 2026-07-28 — D99 fixed: useEpisodeArticles render-phase ref write removed; loading derived from fetch lifecycle.
 
 - **2026-07-24 — Podcast generation supports durable source-entity identity.**
