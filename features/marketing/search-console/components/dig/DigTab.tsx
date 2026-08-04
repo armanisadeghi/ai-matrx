@@ -257,6 +257,7 @@ export function DigTab({
           onClick={() => {
             setDraft(NEW_DRAFT);
             setEditingRuleId(null);
+            setEditingSiteId(null);
             setPreviewContent(null);
           }}
         >

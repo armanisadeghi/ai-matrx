@@ -23,8 +23,14 @@ import {
 } from "@/features/marketing/search-console/lib/watch";
 
 const WATCHED_IDS_KEY = ["marketing", "gsc", "watched-ids"];
-/** rowKey (query phrase) → minted keyword id, for rows whose facts predate the link. */
-const WATCH_BRIDGE_KEY = ["marketing", "gsc", "watch-bridge"];
+/**
+ * rowKey (query phrase) → minted keyword id, for rows whose facts predate
+ * the link. Deliberately OUTSIDE the ["marketing","gsc"] prefix: the
+ * workspace's post-sync invalidateQueries(["marketing","gsc"]) refetches
+ * active queries regardless of staleTime, and a refetch of this
+ * never-fetched map would wipe it.
+ */
+const WATCH_BRIDGE_KEY = ["marketing", "gsc-watch-bridge"];
 
 export function useWatchedIds() {
   return useQuery({
@@ -125,10 +131,13 @@ export function useToggleWatch() {
 export function useRowWatch(kind: "page" | "query") {
   const watched = useWatchedIds();
   const toggle = useToggleWatch();
+  const queryClient = useQueryClient();
   const bridge = useQuery<Record<string, string>>({
     queryKey: WATCH_BRIDGE_KEY,
-    // Session-local map, written only via setQueryData in onSuccess.
-    queryFn: () => ({}),
+    // Session-local map, written only via setQueryData in onSuccess. If a
+    // refetch ever fires anyway, preserve the current map — never reset it.
+    queryFn: () =>
+      queryClient.getQueryData<Record<string, string>>(WATCH_BRIDGE_KEY) ?? {},
     staleTime: Infinity,
     gcTime: Infinity,
   });
