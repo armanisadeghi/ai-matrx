@@ -175,6 +175,13 @@ truth. Two rules came out of that, and both are load-bearing:
   A `—`, an empty table, or a flat chart that a fetch error can produce is a
   lie the user cannot detect.
 
+**A signal you cannot distinguish from silence is not a signal.** GSC returns
+no row for a zero-traffic day, so "distinct dates < calendar days" can never
+tell a data gap from a quiet Sunday. `missing_days` is REPORTED (useful once a
+human is already diagnosing) but never produces a problem — the same reason
+`partial_coverage` was deleted server-side. Re-adding a cry-wolf one file over
+is worse than never deleting it, because the second one looks reviewed.
+
 `IngestionHealthBanner` + `seo.gsc_ingestion_health` are the surfacing layer.
 The RPC diagnoses from the **nightly scheduler's own run history**, not only
 `seo.collection_run` — the outage that motivated it never created a run row
@@ -187,7 +194,8 @@ on the portfolio landing, because that is the first screen anyone sees.
 
 - 2026-08-04 — Silent-failure sweep after adversarial review: health RPC v2
   (reads scheduler.sch_run, counts failures not non-successes, detects stuck
-  runs + mid-history gaps, adds severity), `InlineQueryError` for the four
+  runs, adds severity; the nightly dispatcher is pinned by task ID, never by
+  title — a rename would silently kill the branch), `InlineQueryError` for the four
   reads that had no error state, empty state now requires a successful read,
   success toast keys on `reachedLatest` alone, invalidation moved to
   `finally`, portfolio marks stale sites.

@@ -128,14 +128,18 @@ export function SearchConsoleWorkspace() {
   const site =
     siteOptions.data?.find((s) => s.id === state.siteId) ?? null;
   const siteName = site ? (site.name ?? site.domain) : null;
-  // If we could not LOAD the site list, we do not know whether this site is
-  // bound — and "unknown" must never be rendered as "not bound". The old code
-  // collapsed both to false, which disabled the Sync button and told the user
-  // to go bind a property that was already bound: an unrendered fetch error
-  // silently removed the one action they needed. Unknown → let them try; the
-  // backend gives a real, specific reason if it truly is not bound.
-  const siteUnknown = site === null && !siteOptions.isLoading;
-  const gscBound = site ? siteHasGscBinding(site) : siteUnknown;
+  // THREE states, not two. Collapsing them is what produced the original bug:
+  //   bound / not bound   — the list loaded and we can see the answer.
+  //   binding UNKNOWN     — the list failed to load. "Unknown" must never be
+  //                         rendered as "not bound"; that disabled Sync and
+  //                         told the user to bind an already-bound property.
+  //                         Let them try; the backend gives the real reason.
+  //   site NOT FOUND      — the list loaded fine and this ?site= isn't in it
+  //                         (stale or hand-edited URL). Say exactly that
+  //                         rather than laundering it into "unknown".
+  const siteMissing = site === null && siteOptions.isSuccess;
+  const bindingUnknown = site === null && siteOptions.isError;
+  const gscBound = site ? siteHasGscBinding(site) : bindingUnknown;
 
   const freshness = useGscFreshness(state.siteId);
   const dataThrough = useMemo(() => {
@@ -314,11 +318,13 @@ export function SearchConsoleWorkspace() {
                 onClick={() => void runSync()}
                 disabled={syncing || !gscBound}
                 title={
-                  siteUnknown
-                    ? "Could not load this site's settings — sync will still try"
-                    : gscBound
-                      ? "Pull the latest Search Console data for this site"
-                      : "Bind a Search Console property on the site's Integrations tab first"
+                  siteMissing
+                    ? "This site is not in your site list — the link may be stale"
+                    : bindingUnknown
+                      ? "Could not load this site's settings — sync will still try"
+                      : gscBound
+                        ? "Pull the latest Search Console data for this site"
+                        : "Bind a Search Console property on the site's Integrations tab first"
                 }
               >
                 {syncing ? (
@@ -353,6 +359,16 @@ export function SearchConsoleWorkspace() {
                 as an empty table, "—" tiles, a flat chart, or a disabled
                 Sync button — every one of them indistinguishable from a
                 truthful answer. */}
+            {siteMissing ? (
+              <InlineQueryError
+                what="this site"
+                error={
+                  new Error(
+                    "This site is not in your site list. The link may be stale, or access may have changed.",
+                  )
+                }
+              />
+            ) : null}
             {siteOptions.isError ? (
               <InlineQueryError
                 what="the site list"
