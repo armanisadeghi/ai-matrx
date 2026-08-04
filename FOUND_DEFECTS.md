@@ -22,7 +22,7 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 - `agent_user_kv` → `public.agent_user_kv` — the table exists in **no** schema at all.
 - (`profile` → `user.profiles` is stale but `is_active=false` and superseded by the `user_profile` token → `users.profiles`. Harmless; delete when convenient.)
 
-**Also pending:** `types/generated/entity-types.generated.ts` is now stale relative to the DB — run `pnpm gen:entity-types` (I couldn't: `pnpm install` fails in this environment on a registry auth error for `@jsr:registry`). `pnpm check:entity-types` will flag it until then.
+**Generated types:** `types/generated/entity-types.generated.ts` refreshed for the 13 renames (`reg`→`rag`, `user`→`users`).
 
 **Decides: Arman** (the graveyard 4).
 
