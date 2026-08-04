@@ -18,7 +18,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
 import { describeBackendFailure } from "@/lib/api/errors";
-import { Loader2, RefreshCw } from "lucide-react";
+import { History, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
@@ -189,7 +189,7 @@ export function SearchConsoleWorkspace() {
     });
   };
 
-  const runSync = async () => {
+  const runSync = async (mode: "incremental" | "backfill" = "incremental") => {
     if (!state.siteId || syncing) return;
     setSyncing(true);
     try {
@@ -197,13 +197,56 @@ export function SearchConsoleWorkspace() {
         dispatch,
         state.siteId,
         site?.organization_id ?? null,
+        { mode },
       );
+      if (result.mode === "backfill") {
+        // History has its own vocabulary: "covered through" is the OLDEST
+        // day reached, and "behind" counts days still missing before it.
+        if (result.createdObservations === 0) {
+          toast.info(
+            "No older data came back for that window — Google may have nothing before " +
+              (result.coveredThrough ?? "this point") +
+              ".",
+          );
+        } else if (result.reachedLatest) {
+          toast.success(
+            `Loaded ${result.createdObservations.toLocaleString()} older rows back to ${result.coveredThrough}. That is Google's full 16-month history.`,
+          );
+        } else {
+          toast.success(
+            `Loaded ${result.createdObservations.toLocaleString()} older rows back to ${result.coveredThrough}${
+              result.daysBehind !== null
+                ? ` — ${result.daysBehind} more days of history available`
+                : ""
+            }. Run it again to keep going.`,
+          );
+        }
+        return;
+      }
       // Report what ACTUALLY landed. A blanket "completed" on a run that
       // persisted nothing (or stopped short of today) is exactly how a
       // five-day ingestion outage stayed invisible.
-      if (result.createdObservations === 0) {
+      if (
+        result.createdObservations === 0 &&
+        result.existingObservations === 0
+      ) {
+        // BOTH zero — Google genuinely returned nothing.
         toast.warning(
           "Sync finished but stored no new rows — Google returned nothing for this window. If this repeats, the connection or property binding needs a look.",
+        );
+      } else if (result.createdObservations === 0) {
+        // Rows came back; we already had every one. This is the NORMAL
+        // result of syncing an up-to-date site, and calling it "Google
+        // returned nothing / check your connection" is a false alarm that
+        // sends the user hunting a bug that isn't there. It also hides the
+        // real limitation, so say that instead: forward sync cannot reach
+        // older data — that is what "Load older history" is for.
+        toast.info(
+          result.reachedLatest
+            ? "Already up to date through " +
+              (result.coveredThrough ?? "the latest available day") +
+              ". To go further back, use Load older history."
+            : "No new rows for this window — everything Google returned was already stored.",
         );
       } else if (!result.reachedLatest) {
         // Keyed on reachedLatest ALONE. Keying it on daysBehind too meant a
@@ -333,6 +376,21 @@ export function SearchConsoleWorkspace() {
                   <RefreshCw className="h-3 w-3" />
                 )}
                 Sync
+              </Button>
+              {/* The OTHER direction. Sync walks forward to today and can
+                  never reach older data, so without this a site with two
+                  weeks of history has no way to get sixteen months except
+                  waiting ~8 nights for the backfill scheduler. */}
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 gap-1 px-2 text-xs"
+                onClick={() => void runSync("backfill")}
+                disabled={syncing || !gscBound}
+                title="Fetch OLDER data — walks backward through Google's 16-month history"
+              >
+                <History className="h-3 w-3" />
+                History
               </Button>
             </div>
           ) : undefined
