@@ -9,6 +9,7 @@ import "./types-freshness";
 import "./api-types-freshness";
 import "./schema-exposure";
 import "./dead-relations-registry";
+import "./entity-registry-drift";
 import "./dead-relations";
 import "./direct-from-schema";
 import "./typed-refs";
