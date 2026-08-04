@@ -436,7 +436,7 @@ export default function CreatorRunTabContent({
       return (
         <AgentWidgetInvokerTester
           conversationId={conversationId}
-          sourceFeature="agent-creator-panel"
+          sourceFeature="agent-builder"
           surfaceKey={`creator-widget-tester:${conversationId}`}
         />
       );

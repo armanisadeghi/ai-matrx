@@ -101,22 +101,14 @@ export const FEATURE_META: Record<string, SourceMeta> = {
   chat: { label: "Chat", icon: MessageSquare },
   "voice-agent": { label: "Voice Agent", icon: Mic },
 
-  // Agents
+  // Agents (high-traffic kept; sparse chrome → agents-other)
   "agent-runner": { label: "Agent Runner", icon: Play },
   "agent-builder": { label: "Agent Builder", icon: Hammer },
   "agent-generator": { label: "Agent Generator", icon: PencilRuler },
-  "agent-tester": { label: "Agent Tester", icon: Hammer },
-  "agent-run-window": { label: "Chat (window)", icon: Play },
-  "agent-run-history-window": { label: "Agent History (window)", icon: Play },
-  "agent-runs-sidebar": { label: "Agent Runs (sidebar)", icon: Play },
-  "agent-advanced-editor-window": { label: "Agent Editor", icon: Hammer },
-  "agent-content-window": { label: "Agent Content", icon: Hammer },
-  "agent-launcher-sidebar": { label: "Agent Launcher", icon: Play },
-  "agent-creator-panel": { label: "Agent Creator", icon: Hammer },
   "agent-app": { label: "Agent App", icon: Webhook },
-  "prompt-app": { label: "Prompt App", icon: Webhook },
   "agent-comparison": { label: "Agent Comparison", icon: Webhook },
-  "agent-assignment-demo": { label: "Agent Assignment Demo", icon: Webhook },
+  "agents-other": { label: "Agents (other)", icon: Webhook },
+  system: { label: "System / tests", icon: Server, system: true },
 
   "code-editor": { label: "Code", icon: Code2 },
   transcription: { label: "Transcription", icon: FileText },
@@ -241,18 +233,9 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "agent-runner",
       "agent-builder",
       "agent-generator",
-      "agent-tester",
-      "agent-run-window",
-      "agent-run-history-window",
-      "agent-runs-sidebar",
-      "agent-advanced-editor-window",
-      "agent-content-window",
-      "agent-launcher-sidebar",
-      "agent-creator-panel",
       "agent-app",
-      "prompt-app",
       "agent-comparison",
-      "agent-assignment-demo",
+      "agents-other",
     ],
   },
   {
@@ -307,10 +290,7 @@ export const SURFACE_DEFAULTS: Record<string, SurfaceSourceDefault> = {
   // The main /chat sidebar + search: only real chats. Everything else
   // (transcription, server runs, sub-agents, generic) is reachable through
   // the filter tree but hidden by default.
-  chat: {
-    // Include legacy chat-* rows until a backfill lands.
-    includeFeatures: ["chat", "chat-route", "chat-interface", "quick-chat"],
-  },
+  chat: { includeFeatures: ["chat"] },
   // The /code workspace: code conversations + the agent runs it spawns.
   code: { includeFeatures: ["code-editor", "agent-runner"] },
   // The /education/tutor surface: only the learner's tutor conversations.

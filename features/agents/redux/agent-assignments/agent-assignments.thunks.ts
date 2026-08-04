@@ -110,7 +110,7 @@ function buildBatchRequest(
       agent_id: state.agentId,
       user_input: state.userInput,
       source_app: "matrx-frontend",
-      source_feature: "agent-assignment-demo",
+      source_feature: "agents-other",
     },
     plan,
     session_key: sessionKey,
@@ -149,7 +149,7 @@ export function runAssignmentDemo(): AppThunk<Promise<void>> {
             [variableName]: { type: "auto_assign", strategy: "random" },
           },
           source_app: "matrx-frontend",
-          source_feature: "agent-assignment-demo",
+          source_feature: "agents-other",
         },
         onStreamEvent: (event) => {
           if (event.event === "chunk") {

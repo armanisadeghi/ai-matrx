@@ -39,7 +39,7 @@ export function AgentLauncherSidebarTester({
   const [isOpen, setIsOpen] = useState(false);
   const tester = useAgentLauncherTester(
     conversationId,
-    "agent-launcher-sidebar",
+    "agents-other",
     surfaceKey,
   );
 

@@ -566,7 +566,7 @@ export function TabContent({
           <div className="h-full w-full max-w-[800px]">
             <AgentRunWrapper
               agentId={agentId}
-              sourceFeature="agent-advanced-editor-window"
+              sourceFeature="agent-builder"
             />
           </div>
         </div>

@@ -56,7 +56,7 @@ import { setUserInputText } from "@/features/agents/redux/execution-system/insta
 import { selectUserInputEntryExists } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 
-const SOURCE_FEATURE: SourceFeature = "agent-run-window";
+const SOURCE_FEATURE: SourceFeature = "agent-runner";
 
 const AGENT_RUN_SIDEBAR_DEFAULT_SIZE = Math.round(220 * 0.85);
 

@@ -91,7 +91,7 @@ export function AgentRunsSidebar({
   const conversationSectionLoading = convStatus === "loading";
   const conversationSectionFailed = convStatus === "failed";
 
-  const sourceFeature = "agent-runs-sidebar";
+  const sourceFeature = "agent-runner";
 
   const launcherSurfaceKey = `${sourceFeature}-launcher:${agentId}`;
 

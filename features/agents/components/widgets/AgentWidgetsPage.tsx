@@ -284,7 +284,7 @@ export function AgentWidgetsPage({
 
     const options: ManagedAgentOptions = {
       surfaceKey: uniqueSurfaceKey,
-      sourceFeature: "agent-tester",
+      sourceFeature: "agents-other",
       apiEndpointMode,
       autoClearConversation,
       showAutoClearToggle,
