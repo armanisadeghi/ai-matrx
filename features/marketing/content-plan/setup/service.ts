@@ -432,31 +432,84 @@ export interface TopicApplyResult {
 }
 
 /**
- * Record COUNT-ONLY families' article titles on their hub node's brief.
+ * Record COUNT-ONLY families' article titles on their hub node.
  *
  * A count-only family (blog / guides / learn) materializes only its hub —
  * "the count is the commitment and the titles come from research". This is
- * where the researched titles become that recorded work order, so the
- * generator and the writers downstream know exactly what to write.
+ * where the researched titles become that recorded work order.
  *
- * The hub node is found by ROUTE (trigger-owned and unique per site), and the
- * brief is REPLACED with a stable marker block so re-applying is idempotent
- * and never duplicates lines. Any non-topic brief lines the user wrote are
- * preserved above the block.
+ * TWO homes, deliberately:
+ *  - `attributes.planned_topics` is the AUTHORITATIVE record. `brief` is not
+ *    safe to rely on: aidream's Deepen does `update_brief(..., mode="replace")`
+ *    on whatever node it is run against, so one Deepen on the hub would erase
+ *    a brief-only record with no warning. `attributes` survives it.
+ *  - the `brief` marker block is the HUMAN-visible mirror, so the titles show
+ *    up where a person reads the page's direction. Losing it costs nothing —
+ *    re-applying restores it from the authoritative copy.
+ *
+ * The hub is found by ROUTE (trigger-owned, unique per site). Re-applying is
+ * idempotent: the previous marker block is replaced, and brief lines the user
+ * wrote — ABOVE or BELOW the block — are preserved.
  */
 export const TOPIC_BRIEF_MARKER = "Planned topics (from research):";
+export const PLANNED_TOPICS_ATTR_KEY = "planned_topics";
+
+/** A line belonging to the generated block (`- Some Title`). */
+function isTopicLine(line: string): boolean {
+  return /^\s*-\s+/.test(line);
+}
 
 export function composeTopicBrief(
   existingBrief: string[] | null,
   topics: string[],
 ): string[] {
-  const kept: string[] = [];
-  for (const line of existingBrief ?? []) {
-    if (line.trim() === TOPIC_BRIEF_MARKER) break;
-    kept.push(line);
+  const before: string[] = [];
+  const after: string[] = [];
+  const lines = existingBrief ?? [];
+  const markerAt = lines.findIndex((line) => line.trim() === TOPIC_BRIEF_MARKER);
+  if (markerAt === -1) {
+    before.push(...lines);
+  } else {
+    before.push(...lines.slice(0, markerAt));
+    // Everything after the marker that is NOT one of the block's own bullet
+    // lines is the user's — a note appended under the list is the natural
+    // thing to do, and silently eating it is data loss.
+    let index = markerAt + 1;
+    while (index < lines.length && isTopicLine(lines[index])) index += 1;
+    after.push(...lines.slice(index));
   }
-  if (topics.length === 0) return kept;
-  return [...kept, TOPIC_BRIEF_MARKER, ...topics.map((topic) => `- ${topic}`)];
+  if (topics.length === 0) return [...before, ...after];
+  return [
+    ...before,
+    TOPIC_BRIEF_MARKER,
+    ...topics.map((topic) => `- ${topic}`),
+    ...after,
+  ];
+}
+
+/** Merge the authoritative topic record into a hub node's attributes. */
+export function composeTopicAttributes(
+  existing: PlanNodeRow["attributes"],
+  topics: string[],
+): PlanNodeInsert["attributes"] {
+  const base =
+    existing && typeof existing === "object" && !Array.isArray(existing)
+      ? { ...(existing as Record<string, unknown>) }
+      : {};
+  if (topics.length === 0) delete base[PLANNED_TOPICS_ATTR_KEY];
+  else base[PLANNED_TOPICS_ATTR_KEY] = topics;
+  return base as PlanNodeInsert["attributes"];
+}
+
+/** The topics already recorded on a hub node (authoritative copy). */
+export function readPlannedTopics(node: PlanNodeRow): string[] {
+  const attributes = node.attributes;
+  if (!attributes || typeof attributes !== "object" || Array.isArray(attributes)) {
+    return [];
+  }
+  const raw = (attributes as Record<string, unknown>)[PLANNED_TOPICS_ATTR_KEY];
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((item): item is string => typeof item === "string" && Boolean(item.trim()));
 }
 
 export async function applyFamilyTopics(args: {
@@ -483,6 +536,8 @@ export async function applyFamilyTopics(args: {
     }
     try {
       await updatePlanNode(hub.id, {
+        // Authoritative record first, human mirror second — one write.
+        attributes: composeTopicAttributes(hub.attributes, order.topics),
         brief: composeTopicBrief(hub.brief, order.topics),
       });
       applied += 1;
