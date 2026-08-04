@@ -102,21 +102,25 @@ the 'Document'"*
    Fix is a platform decision: either promote these to `agent.card`, or teach the panel to resolve
    roles via `useSurfaceAgentRoles` (which DOES see them — all roles are bound in
    `ui.ui_surface_agent_role`).
-4. **Count-only topics never become pages.** `applyFamilyTopics` records researched titles on the
-   hub node's brief (a `Planned topics (from research):` marker block) — the archetype
-   deliberately materializes only the hub. If Arman wants those titles to become real planned
-   pages, that is a new deliberate action ("promote topics to pages"), not a change to the
-   expander: `setup/archetypes.ts` is a fixture-pinned twin of aidream's `archetypes.py`
-   (`pnpm check:archetype-expansion`) and must not diverge.
-5. **Deepen has no research picker of its own** — it reads the site's recorded link only. Fine
+4. **Nothing downstream READS the planned topics yet.** They are stored authoritatively at
+   `plan.node.attributes.planned_topics` (a `string[]` on the family hub; the brief marker block
+   is a human mirror only). No aidream generator, writer, or tool parses that key today — the
+   work order exists but nobody consumes it. Wiring it into the cms-fill / writer stage is the
+   payoff step.
+5. **Count-only topics never become pages.** The archetype deliberately materializes only the
+   hub. Turning titles into real planned pages is a new deliberate action ("promote topics to
+   pages"), NOT a change to the expander: `setup/archetypes.ts` is a fixture-pinned twin of
+   aidream's `archetypes.py` (`pnpm check:archetype-expansion`, 62 cases) and must not diverge.
+   See the first Decision below.
+6. **Deepen has no research picker of its own** — it reads the site's recorded link only. Fine
    today; if per-node grounding is ever wanted, add `research_topic_id` to the deepen body the
    same way generate has it.
-6. **Reviewer needs its output contract sent by every caller.** `REVIEWER_OUTPUT_CONTRACT`
+7. **Reviewer needs its output contract sent by every caller.** `REVIEWER_OUTPUT_CONTRACT`
    (setup/ai.ts) is passed as `guidance` on every run because without it the agent writes a
    summary naming six missing pages and returns ONE finding (measured, not guessed). If the
    agent's stored prompt is ever fixed at the source, delete the constant — do not silently keep
    both. Note `agent_author update` with `goals` did NOT change the stored prompt.
-7. **Other AI steps not yet built** (each is one agent + one button, same recipe as `setup/ai.ts`):
+8. **Other AI steps not yet built** (each is one agent + one button, same recipe as `setup/ai.ts`):
    keyword binding for planned pages (`primary_keyword_id` is manual via `KeywordPicker`);
    per-node topic/entity attachment suggestions; a "what changed in the research since we planned"
    re-review.
@@ -129,11 +133,14 @@ the 'Document'"*
 - Save-at-every-step draft persistence with unmount/commit flush — `setup/draft.ts`.
 - ONE site↔research link (`settings.content_plan.research_topic_id`) read by both repos;
   generator + deepen grounded in the final Document — `aidream/services/content_plan/generator.py`.
-- Entities "Suggest from research"; plan review with one-click page creation.
+- Entities "Suggest from research"; plan review with one-click page creation from `gap` findings.
 - Agent roles bound in manifests + `ui.ui_surface_agent_role` (all but `brief_writer`).
-- Two adversarial review rounds (20 + 12 agents); confirmed findings fixed, including a
-  cross-org research-report exfiltration hole and a `send_warning` crash — see the FEATURE.md
-  change log.
+- Blog/guide topic planning: researched titles recorded on the family hub
+  (`attributes.planned_topics` authoritative + a human-readable brief mirror), retryable via
+  "Record on hub" without a commit.
+- Three adversarial review rounds (20 + 12 + 21 agents); every confirmed finding fixed —
+  including a cross-org research-report exfiltration hole, a `send_warning` crash on the exact
+  degrade path, and a draft-clear that destroyed staged topics. See the FEATURE.md change log.
 
 ## Decisions needed
 

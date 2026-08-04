@@ -340,6 +340,26 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-30 — Claude (round 5): **adversarial-review fixes on the round-4
+  work** (21-agent find+refute; 11 confirmed, 7 refuted). Topics are now
+  stored authoritatively in `attributes.planned_topics` — `brief` alone was
+  unsafe because aidream's Deepen does `update_brief(mode="replace")` on any
+  node it runs against; the brief marker block is now a human-visible MIRROR
+  that costs nothing to lose. `composeTopicBrief` preserves user lines BELOW
+  the block (it used to truncate them). A commit no longer clears the draft
+  when a topic write failed — topics have no re-derivation path
+  (`namesFromPlan` is pages-only), so the draft was the last copy; a new
+  "Record on hub" action retries without a commit (the commit button
+  disables once every page exists). Review fixes: agent routes are
+  `normalizeRoute`d (the slug CHECK rejects `/services/Hard_Drive_Shredding`
+  verbatim, and un-normalized strings broke the already-planned/added
+  comparisons); a top-level suggestion is always addable (`parent_id NULL` is
+  canonical — 18 such nodes live — so "/" means "no section needed", not
+  "blocked"); a missing `planned` status now fails loudly instead of a silent
+  no-op; a failed Add renders as a dismissible banner ABOVE the findings
+  instead of replacing the whole paid review; and `buildCurrentPlanLines`
+  sends each node's REAL status instead of hardcoding "planned" (the auditor
+  was told published pages were unbuilt).
 - 2026-07-30 — Claude (round 4): **count-only topics + semantic plan review.**
   Count-only families (blog/guides) gained an "AI topics" control (same Family
   Namer agent, article-title guidance); titles persist in the draft

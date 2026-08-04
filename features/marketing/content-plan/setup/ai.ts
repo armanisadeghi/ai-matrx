@@ -270,17 +270,30 @@ export function coercePlanReview(value: unknown): PlanReviewResult {
   };
 }
 
-/** The plan as the reviewer's `current_plan` variable expects it. */
-export function buildCurrentPlanLines(nodes: PlanNodeRow[]): string {
+/**
+ * The plan as the reviewer's `current_plan` variable expects it:
+ * `route | label | node_type | status`, one page per line.
+ *
+ * `statusSlugById` maps `plan.node.status_id` to its category slug. Passing a
+ * hardcoded "planned" would tell the auditor every page is still unbuilt —
+ * fabricated input on the one variable the whole audit reasons over, which
+ * makes it recommend work that is already published.
+ */
+export function buildCurrentPlanLines(
+  nodes: PlanNodeRow[],
+  statusSlugById?: Map<string, string>,
+): string {
   if (nodes.length === 0) return "empty plan";
   return nodes
     .slice()
     .sort((a, b) => (a.route ?? "").localeCompare(b.route ?? ""))
-    .map((node) =>
-      [node.route ?? "(no route)", node.label, node.node_type, "planned"].join(
+    .map((node) => {
+      const status =
+        (node.status_id ? statusSlugById?.get(node.status_id) : null) ?? "unknown";
+      return [node.route ?? "(no route)", node.label, node.node_type, status].join(
         " | ",
-      ),
-    )
+      );
+    })
     .join("\n");
 }
 
