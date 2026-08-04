@@ -340,6 +340,26 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-30 — Claude (round 6): **every step now has an agent; keyword
+  strategy is TOP-DOWN.** Three more platform agents (six total):
+  **Keyword Strategist** (`e063ded1-…`) — Arman's ruling that keywords are
+  never per-page: it takes the WHOLE plan + keyword library + research report
+  and returns per-page role (money / supporting / navigational), a distinct
+  primary per money page, the secondary cluster, the money routes each
+  supporting page FEEDS, and the internal links (anchored on the TARGET's
+  keyword) that pass authority there, plus cannibalization warnings.
+  `setup/keyword-strategy.ts` applies it through the CANONICAL
+  `ensureKeywordId` upsert + the feature's own `addNodeSecondaryKeyword`
+  edge wrapper, with the cross-page relationships on
+  `attributes.keyword_strategy`. **Entity Attacher** (`a1a7784c-…`) —
+  whole-plan E-E-A-T assignment constrained to the site's existing roster;
+  gaps come back as `missing_entities`, never invented
+  (`setup/entity-attach.ts`). **Brief Writer** (`711d29b5-…`) — NodePanel
+  "Draft brief": neighbour-aware (parent/siblings/children + the keyword
+  assignment) so a brief cannot duplicate a sibling; STAGES into the panel
+  draft, unlike Deepen which saves. All 11 `ui.ui_surface_agent_role` rows
+  are now bound (`brief_writer` included). Merged latest `main` first.
+
 - 2026-07-30 — Claude (round 5): **adversarial-review fixes on the round-4
   work** (21-agent find+refute; 11 confirmed, 7 refuted). Topics are now
   stored authoritatively in `attributes.planned_topics` — `brief` alone was

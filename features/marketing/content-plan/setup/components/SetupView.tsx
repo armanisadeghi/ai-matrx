@@ -39,10 +39,11 @@ import {
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
-import { planKeys, usePlanNodes } from "../../data/hooks";
+import { planKeys, usePlanEntities, usePlanNodes } from "../../data/hooks";
 import {
   createPlanNode,
   listKeywordLabels,
+  listPlanEntities,
   listSiteKeywordValues,
 } from "../../data/service";
 import { usePlanWorkspaceParams } from "../../hooks/usePlanWorkspaceParams";
@@ -65,11 +66,13 @@ import {
   buildKeywordPlanLines,
   REVIEWER_OUTPUT_CONTRACT,
   useSetupAgents,
+  type EntityAttachPlan,
   type KeywordStrategyResult,
   type PlanReviewFinding,
   type PlanReviewResult,
 } from "../ai";
-import { applyKeywordStrategy } from "../keyword-strategy";
+import { applyEntityAttachments } from "../entity-attach";
+import { applyKeywordStrategy, readNodeKeywordStrategy } from "../keyword-strategy";
 import {
   clearSetupDraft,
   fetchFreshSite,
@@ -90,6 +93,7 @@ import {
   recordSiteArchetype,
   type CommitResult,
 } from "../service";
+import { EntityAttachSection } from "./EntityAttachSection";
 import { KeywordStrategySection } from "./KeywordStrategySection";
 import { PlanLintSection } from "./PlanLintSection";
 import {
@@ -238,6 +242,11 @@ export function SetupView() {
   const [keywordError, setKeywordError] = useState<string | null>(null);
   const [applyingKeywords, setApplyingKeywords] = useState(false);
   const [keywordsAppliedAt, setKeywordsAppliedAt] = useState<string | null>(null);
+  const [entityPlan, setEntityPlan] = useState<EntityAttachPlan | null>(null);
+  const [attachError, setAttachError] = useState<string | null>(null);
+  const [applyingEntities, setApplyingEntities] = useState(false);
+  const [entitiesAppliedAt, setEntitiesAppliedAt] = useState<string | null>(null);
+  const planEntities = usePlanEntities(siteId);
   // Newest SUCCESSFUL report — matches aidream's `_load_research_report`, so
   // a failed re-assembly never hides a perfectly good older report.
   const researchDoc = useLatestSuccessfulResearchDocument(researchTopicId ?? "");
@@ -252,7 +261,9 @@ export function SetupView() {
     agents.namingFamilyKey !== null ||
     agents.entitiesBusy ||
     agents.reviewBusy ||
-    agents.keywordsBusy;
+    agents.keywordsBusy ||
+    agents.attachBusy ||
+    agents.briefBusy;
 
   // ── draft persistence — every step saves, nothing is lost on navigation ─
   // Seed ONCE per site from the FRESH row (never the siteOptions query cache
@@ -758,6 +769,87 @@ export function SetupView() {
       });
     } catch (error) {
       setAiError(extractErrorMessage(error));
+    }
+  };
+
+  // ── E-E-A-T attachments (whole-plan, roster-constrained) ────────────────
+  const handleAttachEntities = async () => {
+    if (!researchReport || !siteId || nodeRows.length === 0) return;
+    setAttachError(null);
+    try {
+      const roster = await listPlanEntities(siteId);
+      if (roster.length === 0) {
+        setAttachError(
+          "This site has no entities yet — add them in the Entities view first.",
+        );
+        return;
+      }
+      const roleByRoute = new Map<string, string>();
+      for (const node of nodeRows) {
+        const strategy = readNodeKeywordStrategy(node);
+        if (node.route && strategy) roleByRoute.set(node.route, strategy.page_role);
+      }
+      const outcome = await agents.attachEntities({
+        current_plan: nodeRows
+          .slice()
+          .sort((a, b) => (a.route ?? "").localeCompare(b.route ?? ""))
+          .map((node) =>
+            [
+              node.route ?? "(no route)",
+              node.label,
+              node.node_type,
+              roleByRoute.get(node.route ?? "") ?? "unassigned",
+            ].join(" | "),
+          )
+          .join("\n"),
+        entity_roster: roster
+          .map((entity) => `${entity.label} | ${entity.entity_type} | `)
+          .join("\n"),
+        research_report: researchReport,
+        guidance: "",
+      });
+      setEntityPlan(outcome);
+      setEntitiesAppliedAt(null);
+      setLastAiRun({
+        kind: "entities",
+        headline: `Proposed ${outcome.attachments.length} entity attachment(s).`,
+        detail: outcome.notes,
+      });
+    } catch (error) {
+      setAttachError(extractErrorMessage(error));
+    }
+  };
+
+  const handleApplyEntityAttachments = async () => {
+    if (!siteId || !entityPlan) return;
+    setAttachError(null);
+    setApplyingEntities(true);
+    try {
+      const result = await applyEntityAttachments({
+        siteId,
+        attachments: entityPlan.attachments,
+      });
+      await queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
+      const problems = [
+        ...result.failures,
+        ...(result.unknownEntities.length > 0
+          ? [`not in the roster: ${result.unknownEntities.join(", ")}`]
+          : []),
+        ...(result.unknownRoutes.length > 0
+          ? [`not in the plan: ${result.unknownRoutes.join(", ")}`]
+          : []),
+      ];
+      if (problems.length > 0) {
+        setAttachError(`Attached ${result.attached}. Skipped — ${problems[0]}`);
+      }
+      if (result.attached > 0) {
+        setEntitiesAppliedAt(new Date().toISOString());
+        toast.success(`Attached ${result.attached} entity edge(s).`);
+      }
+    } catch (error) {
+      setAttachError(extractErrorMessage(error));
+    } finally {
+      setApplyingEntities(false);
     }
   };
 
@@ -1402,6 +1494,20 @@ export function SetupView() {
                     onApply={() => void handleApplyKeywords()}
                     applying={applyingKeywords}
                     appliedAt={keywordsAppliedAt}
+                  />
+                  <EntityAttachSection
+                    plan={entityPlan}
+                    busy={agents.attachBusy}
+                    anyBusy={anyAgentBusy}
+                    aiReady={Boolean(researchReport)}
+                    rosterEmpty={(planEntities.data ?? []).length === 0}
+                    planEmpty={nodeRows.length === 0}
+                    error={attachError}
+                    onDismissError={() => setAttachError(null)}
+                    onRun={() => void handleAttachEntities()}
+                    onApply={() => void handleApplyEntityAttachments()}
+                    applying={applyingEntities}
+                    appliedAt={entitiesAppliedAt}
                   />
                   <PlanReviewSection
                     nodes={nodeRows}

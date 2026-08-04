@@ -8,7 +8,7 @@
  * site…) — shown verbatim inside a friendly toast, never masked.
  */
 import { useMemo, useState } from "react";
-import { Loader2, Sparkles, Trash2 } from "lucide-react";
+import { Loader2, PenLine, Sparkles, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -52,6 +52,7 @@ import {
   type TechnicalDepth,
 } from "../types";
 import { CategorySelect } from "@/features/scopes/components/CategorySelect";
+import { useBriefWriter } from "../hooks/useBriefWriter";
 import { KeywordPicker } from "./KeywordPicker";
 import { NodeAssociations } from "./NodeAssociations";
 import { AttributesEditor } from "./AttributesEditor";
@@ -63,9 +64,12 @@ export function NodePanel({
   profiles,
   onDeleted,
   deepen,
+  allNodes,
 }: {
   node: PlanNodeRow;
   siteId: string;
+  /** The whole plan — the brief writer reads this node's neighbours from it. */
+  allNodes: PlanNodeRow[];
   entities: PlanEntityRow[];
   profiles: PlanProfileRow[];
   onDeleted: () => void;
@@ -174,6 +178,17 @@ export function NodePanel({
 
   const stage = (patch: PlanNodeUpdate) =>
     setDraft((d) => ({ ...d, ...patch }));
+
+  // Neighbour-aware brief draft — stages into the SAME draft the user saves.
+  const briefWriter = useBriefWriter({
+    node,
+    siteId,
+    allNodes,
+    onStaged: (brief) => {
+      stage({ brief });
+      setBriefText(brief.join("\n"));
+    },
+  });
   const getWriteHandlers = (): SurfaceWriteHandlers => ({
     node_label: (value) => stage({ label: expectString(value, "node_label") }),
     node_slug: (value) =>
@@ -275,13 +290,31 @@ export function NodePanel({
           variant="outline"
           size="sm"
           className="h-7 gap-1.5 px-2 text-xs"
+          disabled={briefWriter.busy || deepening}
+          title={
+            briefWriter.disabledReason ??
+            "AI: draft this page's brief against its SIBLINGS — staged for you to review, not saved"
+          }
+          onClick={() => void briefWriter.run()}
+        >
+          {briefWriter.busy ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <PenLine className="h-3.5 w-3.5" />
+          )}
+          Draft brief
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 gap-1.5 px-2 text-xs"
           disabled={deepening}
           title={
             deepeningThisNode
               ? (deepen.run.stage ?? "Deepening…")
               : deepening
                 ? "Another node is being deepened — one run at a time"
-                : "AI: research this page and write its brief + sources"
+                : "AI: research this page and write its brief + sources (saves immediately)"
           }
           onClick={() => void deepen.start(node.id)}
         >

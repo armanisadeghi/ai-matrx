@@ -139,6 +139,47 @@ export interface KeywordStrategyResult {
   warnings: string[];
 }
 
+/**
+ * Platform agent "Content Plan Entity Attacher" — permanent latest-version
+ * pointer (created 2026-07-30 via the AI Dream MCP). Variables:
+ * current_plan, entity_roster, research_report, guidance. Chooses ONLY from
+ * the roster by label; gaps come back as `missing_entities`, never invented.
+ */
+export const ENTITY_ATTACHER_AGENT_ID = "a1a7784c-538b-44e5-b09d-40d215b79aa6";
+
+/**
+ * Platform agent "Content Plan Brief Writer" — permanent latest-version
+ * pointer (created 2026-07-30 via the AI Dream MCP). Variables: page,
+ * keyword_assignment, neighbours, research_report, guidance. Neighbour-aware
+ * by design: a brief written without the siblings duplicates them.
+ */
+export const BRIEF_WRITER_AGENT_ID = "711d29b5-0afc-494c-a665-6011e529efce";
+
+export interface EntityAttachment {
+  route: string;
+  entityLabel: string;
+  role: string;
+  reason: string;
+}
+
+export interface EntityAttachPlan {
+  attachments: EntityAttachment[];
+  missingEntities: Array<{
+    suggestedLabel: string;
+    entityType: string;
+    whyNeeded: string;
+  }>;
+  notes: string;
+}
+
+export interface PageBriefResult {
+  angle: string;
+  brief: string[];
+  mustNotCover: string[];
+  suggestedWordCount: number | null;
+  concerns: string[];
+}
+
 export const REVIEW_SEVERITIES = [
   "gap",
   "mismatch",
@@ -264,6 +305,78 @@ export function coerceEntityCuration(value: unknown): EntityCurationResult {
   return {
     entities,
     notes: typeof root.notes === "string" ? root.notes : "",
+  };
+}
+
+export function coerceEntityAttachPlan(value: unknown): EntityAttachPlan {
+  const root = asRecord(value, "Entity Attacher output");
+  if (!Array.isArray(root.attachments)) {
+    throw new Error("Entity Attacher output has no attachments array");
+  }
+  const attachments: EntityAttachment[] = [];
+  for (const item of root.attachments) {
+    const row = asRecord(item, "attachments item");
+    if (
+      typeof row.route !== "string" ||
+      !row.route.trim() ||
+      typeof row.entity_label !== "string" ||
+      !row.entity_label.trim() ||
+      typeof row.role !== "string"
+    ) {
+      throw new Error("Entity Attacher returned a malformed attachment");
+    }
+    attachments.push({
+      route: row.route.trim(),
+      entityLabel: row.entity_label.trim(),
+      role: row.role.trim(),
+      reason: typeof row.reason === "string" ? row.reason : "",
+    });
+  }
+  const missing: EntityAttachPlan["missingEntities"] = [];
+  if (Array.isArray(root.missing_entities)) {
+    for (const item of root.missing_entities) {
+      if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+      const row = item as Record<string, unknown>;
+      if (typeof row.suggested_label !== "string" || !row.suggested_label.trim()) {
+        continue;
+      }
+      missing.push({
+        suggestedLabel: row.suggested_label.trim(),
+        entityType: typeof row.entity_type === "string" ? row.entity_type : "source",
+        whyNeeded: typeof row.why_needed === "string" ? row.why_needed : "",
+      });
+    }
+  }
+  return {
+    attachments,
+    missingEntities: missing,
+    notes: typeof root.notes === "string" ? root.notes : "",
+  };
+}
+
+export function coercePageBrief(value: unknown): PageBriefResult {
+  const root = asRecord(value, "Brief Writer output");
+  const lines = Array.isArray(root.brief)
+    ? root.brief.filter(
+        (line): line is string => typeof line === "string" && Boolean(line.trim()),
+      )
+    : [];
+  if (lines.length === 0) {
+    throw new Error("Brief Writer returned no brief lines");
+  }
+  return {
+    angle: typeof root.angle === "string" ? root.angle : "",
+    brief: lines.map((line) => line.trim()),
+    mustNotCover: Array.isArray(root.must_not_cover)
+      ? root.must_not_cover.filter((v): v is string => typeof v === "string")
+      : [],
+    suggestedWordCount:
+      typeof root.suggested_word_count === "number"
+        ? Math.max(0, Math.floor(root.suggested_word_count))
+        : null,
+    concerns: Array.isArray(root.concerns)
+      ? root.concerns.filter((v): v is string => typeof v === "string")
+      : [],
   };
 }
 
@@ -539,6 +652,8 @@ export function useSetupAgents(siteId: string | null) {
   const [entitiesBusy, setEntitiesBusy] = useState(false);
   const [reviewBusy, setReviewBusy] = useState(false);
   const [keywordsBusy, setKeywordsBusy] = useState(false);
+  const [attachBusy, setAttachBusy] = useState(false);
+  const [briefBusy, setBriefBusy] = useState(false);
   const inFlight = useRef(false);
 
   async function run<T>(
@@ -609,6 +724,40 @@ export function useSetupAgents(siteId: string | null) {
     }
   }
 
+  async function attachEntities(
+    variables: Record<string, string>,
+  ): Promise<EntityAttachPlan> {
+    if (inFlight.current) throw new Error("An agent run is already in progress");
+    inFlight.current = true;
+    setAttachBusy(true);
+    try {
+      return await run(
+        ENTITY_ATTACHER_AGENT_ID,
+        variables,
+        coerceEntityAttachPlan,
+        STRATEGY_TIMEOUT_MS,
+      );
+    } finally {
+      inFlight.current = false;
+      setAttachBusy(false);
+    }
+  }
+
+  /** ONE page's brief, written against its neighbours. Staged, never saved. */
+  async function writeBrief(
+    variables: Record<string, string>,
+  ): Promise<PageBriefResult> {
+    if (inFlight.current) throw new Error("An agent run is already in progress");
+    inFlight.current = true;
+    setBriefBusy(true);
+    try {
+      return await run(BRIEF_WRITER_AGENT_ID, variables, coercePageBrief);
+    } finally {
+      inFlight.current = false;
+      setBriefBusy(false);
+    }
+  }
+
   async function reviewPlan(
     variables: Record<string, string>,
   ): Promise<PlanReviewResult> {
@@ -643,10 +792,14 @@ export function useSetupAgents(siteId: string | null) {
     curateEntities,
     reviewPlan,
     planKeywords,
+    attachEntities,
+    writeBrief,
     shapeBusy,
     namingFamilyKey,
     entitiesBusy,
     reviewBusy,
     keywordsBusy,
+    attachBusy,
+    briefBusy,
   };
 }
