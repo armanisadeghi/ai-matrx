@@ -17,6 +17,7 @@ import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
+import { describeBackendFailure } from "@/lib/api/errors";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -60,6 +61,7 @@ import { WatchlistTab } from "@/features/marketing/search-console/components/wat
 import { KpiBand } from "@/features/marketing/search-console/components/KpiBand";
 import { PerformanceChart } from "@/features/marketing/search-console/components/PerformanceChart";
 import { RangeCompareControl } from "@/features/marketing/search-console/components/RangeCompareControl";
+import { IngestionHealthBanner } from "@/features/marketing/search-console/components/IngestionHealthBanner";
 import { SearchConsolePortfolio } from "@/features/marketing/search-console/components/SearchConsolePortfolio";
 import {
   SiteSwitcher,
@@ -177,18 +179,35 @@ export function SearchConsoleWorkspace() {
         state.siteId,
         site?.organization_id ?? null,
       );
-      toast.success(
-        result.runId
-          ? "Search Console sync completed."
-          : "Search Console sync finished.",
-      );
+      // Report what ACTUALLY landed. A blanket "completed" on a run that
+      // persisted nothing (or stopped short of today) is exactly how a
+      // five-day ingestion outage stayed invisible.
+      if (result.createdObservations === 0) {
+        toast.warning(
+          "Sync finished but stored no new rows — Google returned nothing for this window. If this repeats, the connection or property binding needs a look.",
+        );
+      } else if (!result.reachedLatest && result.daysBehind !== null) {
+        toast.warning(
+          `Synced ${result.createdObservations.toLocaleString()} rows through ${result.coveredThrough} — still ${result.daysBehind} days behind. Sync again to keep catching up.`,
+        );
+      } else {
+        toast.success(
+          `Search Console sync completed — ${result.createdObservations.toLocaleString()} rows through ${result.coveredThrough ?? "latest"}.`,
+        );
+      }
       await queryClient.invalidateQueries({
         queryKey: ["marketing", "gsc"],
       });
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Search Console sync failed.",
-      );
+      // describeBackendFailure surfaces the REAL cause (expired Google
+      // credential, quota, permission) instead of the generic
+      // "failed unexpectedly" template — the same helper the other
+      // marketing surfaces already use.
+      const described = describeBackendFailure(error);
+      toast.error(described.headline, {
+        description:
+          described.cause !== described.headline ? described.cause : undefined,
+      });
     } finally {
       setSyncing(false);
     }
@@ -295,6 +314,12 @@ export function SearchConsoleWorkspace() {
           />
         ) : (
           <div className="flex h-full min-h-0 flex-col gap-2">
+            <IngestionHealthBanner
+              siteId={state.siteId}
+              onSync={() => void runSync()}
+              syncing={syncing}
+              canSync={gscBound}
+            />
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
                 {GSC_TABS.map((tab) => (

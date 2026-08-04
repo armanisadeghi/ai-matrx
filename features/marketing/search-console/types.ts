@@ -21,6 +21,8 @@ export type GscDigResultRow = SeoFunctions["gsc_perf_dig"]["Returns"][number];
 export type GscWatchRow = SeoFunctions["gsc_perf_watch"]["Returns"][number];
 export type GscPageFirstDatesRow =
   SeoFunctions["gsc_perf_page_first_dates"]["Returns"][number];
+export type GscIngestionHealthRow =
+  SeoFunctions["gsc_ingestion_health"]["Returns"][number];
 export type GscDigRuleRow =
   Database["seo"]["Tables"]["gsc_dig_rule"]["Row"];
 

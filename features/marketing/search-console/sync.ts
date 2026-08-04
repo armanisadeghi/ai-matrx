@@ -21,6 +21,13 @@ export interface GscSyncCallbacks {
 
 export interface GscSyncResult {
   runId: string | null;
+  /** Days actually persisted by this call (0 = a run that landed NOTHING). */
+  createdObservations: number;
+  /** The last day this sync covered, and whether that reached current data. */
+  coveredThrough: string | null;
+  daysBehind: number | null;
+  reachedLatest: boolean;
+  windowsRun: number;
 }
 
 export async function syncGscSearchPerformance(
@@ -32,6 +39,14 @@ export async function syncGscSearchPerformance(
 ): Promise<GscSyncResult> {
   let runId: string | null = null;
   let streamError: Error | null = null;
+  // The receipt carries the TRUTH about what landed. A sync that reports
+  // "completed" while persisting nothing — or while stopping short of
+  // today — is how five days of dead ingestion stayed invisible.
+  let createdObservations = 0;
+  let coveredThrough: string | null = null;
+  let daysBehind: number | null = null;
+  let reachedLatest = false;
+  let windowsRun = 0;
   const response = await dispatch(
     callApi({
       path: "/seo/sites/{site_id}/gsc/search-performance/sync",
@@ -48,8 +63,25 @@ export async function syncGscSearchPerformance(
         callbacks.onEvent?.(event);
         if (event.event === "data") {
           const data = event.data as { kind?: unknown; run_id?: unknown };
-          if (data.kind === "seo.receipt" && typeof data.run_id === "string") {
-            runId = data.run_id;
+          if (data.kind === "seo.receipt") {
+            if (typeof data.run_id === "string") runId = data.run_id;
+            const receipt = (data as { receipt?: Record<string, unknown> })
+              .receipt;
+            if (receipt && typeof receipt === "object") {
+              if (typeof receipt.created_observations === "number") {
+                createdObservations = receipt.created_observations;
+              }
+              if (typeof receipt.covered_through === "string") {
+                coveredThrough = receipt.covered_through;
+              }
+              if (typeof receipt.days_behind === "number") {
+                daysBehind = receipt.days_behind;
+              }
+              reachedLatest = receipt.reached_latest === true;
+              if (typeof receipt.windows_run === "number") {
+                windowsRun = receipt.windows_run;
+              }
+            }
           }
         }
         if (event.event === "error") {
@@ -64,5 +96,12 @@ export async function syncGscSearchPerformance(
   if (streamError) {
     throw streamError;
   }
-  return { runId };
+  return {
+    runId,
+    createdObservations,
+    coveredThrough,
+    daysBehind,
+    reachedLatest,
+    windowsRun,
+  };
 }
