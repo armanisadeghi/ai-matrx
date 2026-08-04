@@ -13,6 +13,39 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D124 — 18 `platform.entity_types` rows point at tables that no longer exist → SILENT access denial (2026-08-04)
+
+`iam.has_access_for_base` resolves an entity token to a table via `platform.entity_types`, then reads it through `platform.entity_row_access_attrs`, which swallows every exception (`WHEN others THEN NULL`) and returns `found=false`. A stale registry row therefore does not error — it **denies access invisibly**. Nothing in the logs, nothing in the type gate. Live audit of project `txzxabzwovsujtloxrus` (2026-08-04):
+
+- **10 rows `reg.*` → should be `rag.*`**: `kg_alerts`, `kg_sweep_queue`, `kg_sweep_run`, `kg_sweep_state`, `kg_value_matches`, `ner_canonicalizer_shadow`, `context_item_suggestions`, `scope_suggestions`, `scope_association_suggestions`, `scope_item_value_suggestions`
+- **3 rows `user.*` → should be `users.*`**: `invitation_codes`, `invitation_requests`, `profiles`
+- **3 rows point into `graveyard`**: `public.component_groups`, `public.field_components`, `public.prompts` — probably de-register rather than repoint
+- **1 row targets nothing anywhere**: `public.agent_user_kv`
+
+Fix: repoint the 13 renames, decide the graveyard 4, regenerate `types/generated/entity-types.generated.ts`. Then add the drift query as a standing guard (`pnpm check:schema` family) — nothing currently catches a registry row rotting, which is exactly the truth-vs-code guard class CLAUDE.md calls for:
+
+```sql
+select et.token, et.schema_name, et.table_name from platform.entity_types et
+left join information_schema.tables t
+  on t.table_schema=et.schema_name and t.table_name=et.table_name
+where t.table_name is null;
+```
+
+**Decides: anyone for the 13 renames; Arman for the graveyard 4.**
+
+### D123 — `lib/scheduler-client/claim.ts` never stamps `claim_protocol` → every claim through it is rejected (2026-08-04)
+
+`scheduler.sch_run` enforces `CHECK (claimed_at IS NULL OR metadata->>'claim_protocol' = '2')`. `claimTask` (`lib/scheduler-client/claim.ts:95-109`) builds its insert row with `claimed_at` set and **no `metadata` key at all** — `claim_protocol` appears nowhere under `lib/scheduler-client/` or `features/scheduling/`. Every claim through this client fails on `sch_run_claim_protocol_by_claimed_at_chk`; live Postgres logs show bursts of 1-3 rejections every 1-3 minutes, continuously. aidream's scheduler is correct (`matrx_scheduler/queries.py:252`) and healthy (6,223 successes in 3 days), so the failing host is an **external consumer** of this client — `claimTask` has no in-repo caller. That host is running zero scheduled tasks right now. Fix: add `metadata: { claim_protocol: 2 }` to the insert row, and keep it in lockstep with aidream's `CLAIM_PROTOCOL` constant (bumping one without the other is what produced this). **Decides: anyone — one field, but confirm which host consumes the client.**
+
+### D122 — legacy entity-system fetch RPCs: anon-executable, arbitrary table name, and the source of a 16s error storm (2026-08-04)
+
+Six legacy RPCs interpolate a caller-supplied `p_table_name` into `EXECUTE format('... FROM %I ...')` **unqualified**: `public.fetch_all_fk_ifk`, `fetch_all_fk_ifk_direct`, `fetch_filtered_with_fk_ifk` (×2 overloads), `fetch_paginated_with_ids_names`, `fetch_paginated_with_all_ids`. Two problems:
+
+1. **They are the source of `relation "ai_model" does not exist` firing every ~16s in production** (~5,400 failed round-trips/day). Reproduced byte-for-byte over PostgREST with only the publishable key. No DB object references `ai_model`; a plain `.from('ai_model')` read is ruled out (PostgREST answers `PGRST205` from cache and never reaches Postgres). The caller passes the retired table *name* as a string. `lib/redux/api.ts` (the old caller) is already deleted here — suspect matrx-extend or a stale deployed bundle.
+2. **`fetch_all_fk_ifk` / `fetch_all_fk_ifk_direct` are `SECURITY DEFINER`, owned by `postgres`, `EXECUTE` granted to `PUBLIC`/`anon`** — definer rights bypass RLS, so an anonymous caller appears able to read any `public` table, including RLS-enabled tables with zero policies (`api_request_log`). Reaching the `EXECUTE` as anon is confirmed; the read-a-real-row test was **not** run. Confirm, then `REVOKE EXECUTE ... FROM anon, PUBLIC` on all six and drop them once the caller is found.
+
+The 2026-07-01 type-debt brief already DECIDED to rip out this legacy dynamic-entity system ([docs/upgrades/type-debt/2026-07-01-fleet-briefs.md](docs/upgrades/type-debt/2026-07-01-fleet-briefs.md) Brief 8) and `.claude/skills/canonical-associations/WORK-QUEUE.md` row 11 tracks the audit — this is the concrete forcing function. **Decides: Arman** (security posture).
+
 ### D121 — website-factory audit: 12 content-plan/CMS defects on a dispatch board (2026-07-30)
 
 The 2026-07-30 content-plan/CMS readiness audit found 12 defects — renderer ignoring `theme_config` (my-matrx), plan statuses blind to CMS publishes (1 node "published" vs 42 live pages), FE CMS writes bypassing `matrx-content-guard`, nondeterministic duplicate header/footer render, agent-only capabilities with no human UI (starter kit, header/footer toggles, theme/nav/footer editing), the never-exercised `plan.cms_fill_job` queue with no chaos test, and doc drift. Each is a self-contained assignment with status tracking in [docs/handoffs/website-factory-bug-dispatch.md](docs/handoffs/website-factory-bug-dispatch.md) (WF-1…WF-12); vision-level gaps live in [docs/handoffs/website-factory-vision.md](docs/handoffs/website-factory-vision.md). Close this entry when the board is empty. **Decides: Arman assigns; WF-1/WF-2/WF-3 are HIGH.**
