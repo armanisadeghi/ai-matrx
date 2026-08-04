@@ -40,7 +40,11 @@ import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
 import { planKeys, usePlanNodes } from "../../data/hooks";
-import { createPlanNode } from "../../data/service";
+import {
+  createPlanNode,
+  listKeywordLabels,
+  listSiteKeywordValues,
+} from "../../data/service";
 import { usePlanWorkspaceParams } from "../../hooks/usePlanWorkspaceParams";
 import { useContentPlanSites } from "../../components/ContentPlanHeader";
 import type { PlanNodeRow } from "../../types";
@@ -55,13 +59,17 @@ import {
 import type { Concept } from "../concepts";
 import {
   buildArchetypeOptionsJson,
+  buildAvailableKeywordLines,
   buildCurrentPlanLines,
   buildCurrentPlanSummary,
+  buildKeywordPlanLines,
   REVIEWER_OUTPUT_CONTRACT,
   useSetupAgents,
+  type KeywordStrategyResult,
   type PlanReviewFinding,
   type PlanReviewResult,
 } from "../ai";
+import { applyKeywordStrategy } from "../keyword-strategy";
 import {
   clearSetupDraft,
   fetchFreshSite,
@@ -82,6 +90,7 @@ import {
   recordSiteArchetype,
   type CommitResult,
 } from "../service";
+import { KeywordStrategySection } from "./KeywordStrategySection";
 import { PlanLintSection } from "./PlanLintSection";
 import {
   PlanReviewSection,
@@ -224,6 +233,11 @@ export function SetupView() {
   const [addingRoute, setAddingRoute] = useState<string | null>(null);
   const [addedRoutes, setAddedRoutes] = useState<Set<string>>(new Set());
   const [applyingTopicsKey, setApplyingTopicsKey] = useState<string | null>(null);
+  const [keywordStrategy, setKeywordStrategy] =
+    useState<KeywordStrategyResult | null>(null);
+  const [keywordError, setKeywordError] = useState<string | null>(null);
+  const [applyingKeywords, setApplyingKeywords] = useState(false);
+  const [keywordsAppliedAt, setKeywordsAppliedAt] = useState<string | null>(null);
   // Newest SUCCESSFUL report — matches aidream's `_load_research_report`, so
   // a failed re-assembly never hides a perfectly good older report.
   const researchDoc = useLatestSuccessfulResearchDocument(researchTopicId ?? "");
@@ -237,7 +251,8 @@ export function SetupView() {
     agents.shapeBusy ||
     agents.namingFamilyKey !== null ||
     agents.entitiesBusy ||
-    agents.reviewBusy;
+    agents.reviewBusy ||
+    agents.keywordsBusy;
 
   // ── draft persistence — every step saves, nothing is lost on navigation ─
   // Seed ONCE per site from the FRESH row (never the siteOptions query cache
@@ -743,6 +758,94 @@ export function SetupView() {
       });
     } catch (error) {
       setAiError(extractErrorMessage(error));
+    }
+  };
+
+  // ── keyword strategy (WHOLE-PLAN, top-down) ─────────────────────────────
+  const handlePlanKeywords = async () => {
+    if (!researchReport || !site || nodeRows.length === 0) return;
+    setKeywordError(null);
+    try {
+      // The library the strategist should prefer (real data behind it) plus
+      // the phrases already bound, so it can see what it is changing.
+      const boundIds = nodeRows
+        .map((node) => node.primary_keyword_id)
+        .filter((id): id is string => Boolean(id));
+      const [siteValues, boundLabels] = await Promise.all([
+        listSiteKeywordValues(siteId as string),
+        listKeywordLabels(Array.from(new Set(boundIds))),
+      ]);
+      const valueByKeywordId = new Map(
+        siteValues.map((row) => [row.keyword_id, row]),
+      );
+      const libraryLabels = await listKeywordLabels(
+        Array.from(valueByKeywordId.keys()),
+      );
+      const phraseById = new Map<string, string>();
+      for (const row of [...libraryLabels, ...boundLabels]) {
+        phraseById.set(row.id, row.phrase);
+      }
+      const available = libraryLabels.map((row) => {
+        const value = valueByKeywordId.get(row.id);
+        return {
+          phrase: row.phrase,
+          intent: null,
+          contentRole: value?.content_role ?? null,
+          priority: value?.priority_score ?? null,
+        };
+      });
+
+      const outcome = await agents.planKeywords({
+        research_report: researchReport,
+        site_domain: site.domain ?? site.name ?? "",
+        current_plan: buildKeywordPlanLines(nodeRows, statusSlugById, phraseById),
+        available_keywords: buildAvailableKeywordLines(available),
+        guidance: "",
+      });
+      setKeywordStrategy(outcome);
+      setKeywordsAppliedAt(null);
+      setLastAiRun({
+        kind: "keywords",
+        headline: `Planned keywords for ${outcome.assignments.length} page(s) — review, then apply.`,
+        detail: outcome.strategySummary,
+      });
+    } catch (error) {
+      setKeywordError(extractErrorMessage(error));
+    }
+  };
+
+  const handleApplyKeywords = async () => {
+    if (!siteId || !keywordStrategy) return;
+    setKeywordError(null);
+    setApplyingKeywords(true);
+    try {
+      const result = await applyKeywordStrategy({
+        siteId,
+        assignments: keywordStrategy.assignments,
+      });
+      await queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
+      if (result.failures.length > 0) {
+        setKeywordError(
+          `Bound ${result.bound} page(s); ${result.failures.length} problem(s) — ${result.failures[0]}`,
+        );
+      } else if (result.unknownRoutes.length > 0) {
+        setKeywordError(
+          `Bound ${result.bound} page(s). These routes are not in the plan and were skipped: ${result.unknownRoutes.join(", ")}`,
+        );
+      }
+      if (result.bound > 0 || result.secondaryEdges > 0) {
+        setKeywordsAppliedAt(new Date().toISOString());
+        toast.success(
+          `Keywords applied: ${result.bound} primary, ${result.secondaryEdges} secondary` +
+            (result.createdKeywords > 0
+              ? `, ${result.createdKeywords} new phrase(s) added to the library.`
+              : "."),
+        );
+      }
+    } catch (error) {
+      setKeywordError(extractErrorMessage(error));
+    } finally {
+      setApplyingKeywords(false);
     }
   };
 
@@ -1287,6 +1390,19 @@ export function SetupView() {
               lintSlot={
                 <>
                   <PlanLintSection nodes={nodes.data ?? []} />
+                  <KeywordStrategySection
+                    strategy={keywordStrategy}
+                    busy={agents.keywordsBusy}
+                    anyBusy={anyAgentBusy}
+                    aiReady={Boolean(researchReport)}
+                    planEmpty={nodeRows.length === 0}
+                    error={keywordError}
+                    onDismissError={() => setKeywordError(null)}
+                    onRun={() => void handlePlanKeywords()}
+                    onApply={() => void handleApplyKeywords()}
+                    applying={applyingKeywords}
+                    appliedAt={keywordsAppliedAt}
+                  />
                   <PlanReviewSection
                     nodes={nodeRows}
                     review={review}
