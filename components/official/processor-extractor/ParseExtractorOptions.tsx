@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useMemo } from "react";
 import ProcessorExtractor from "./ProcessorExtractor";
-import { useDebounce } from "@uidotdev/usehooks";
+import { useDebounce } from "@/hooks/usehooks";
 
 // Type for a processing function that takes content and returns JSON
 type ProcessingFunction = {

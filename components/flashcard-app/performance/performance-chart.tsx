@@ -12,7 +12,7 @@ import {
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { selectPerformanceCounts } from "@/lib/redux/selectors/flashcardSelectors";
-import { useWindowSize } from "@uidotdev/usehooks";
+import { useWindowSize } from "@/hooks/usehooks";
 
 const chartConfig = {
   correct: {

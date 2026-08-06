@@ -29,7 +29,7 @@ import {
 import { introOutroText } from "@/components/flashcard-app/app-data";
 import { showAudioModal } from "@/utils/audio/audioModal";
 import { useSwipeable } from "react-swipeable";
-import { useLongPress } from "@uidotdev/usehooks";
+import { useLongPress } from "@/hooks/usehooks";
 
 export const useFlashcard = (initialFlashcards: FlashcardData[]) => {
   const dispatch = useDispatch<AppDispatch>();

@@ -133,6 +133,18 @@ This is written because it was violated: CMS per-site collections was fully buil
 
 **Do not invent new top-level features.** A feature is a big, distinct piece of app functionality, usually with multiple routes. Introducing one is the user's call, not yours. Default to extending an existing feature; if a new feature seems genuinely warranted, ask first.
 
+### Every dependency comes from the npm registry — never raw GitHub
+
+A `github:` / `git:` / tarball spec in `package.json` forces `pnpm install` to reach
+`codeload.github.com`. Any environment that allows the registry but blocks raw GitHub — sandboxed
+CI, locked-down corp networks, cloud agent sessions — then cannot install this repo at all, and
+`--frozen-lockfile` dies with `ERR_PNPM_FETCH_403`. A spec with no ref is also a supply-chain
+hazard: it floats to whatever a third party's default branch happens to be.
+
+`pnpm check:registry-deps:strict` enforces this. If a package must be patched, vendor it (see
+`hooks/usehooks/`, copied from `@uidotdev/usehooks` 2.4.1 after that exact trap) or publish it —
+do not point a dependency at a git host.
+
 ### Route groups (2026-05-26 reorg)
 
 The `app/` tree splits into purpose-named route groups. **Working on core product? Default to ignoring `(transitional)` and `(dev)` unless the task names them.** When in doubt, work in `(core)` and ask before touching others.

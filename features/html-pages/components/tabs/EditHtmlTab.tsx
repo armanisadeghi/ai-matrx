@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useMeasure } from "@uidotdev/usehooks";
+import { useMeasure } from "@/hooks/usehooks";
 import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
 import type { HtmlPreviewTabProps } from "../types";
 

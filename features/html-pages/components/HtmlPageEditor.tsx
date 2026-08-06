@@ -42,7 +42,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
-import { useMeasure } from "@uidotdev/usehooks";
+import { useMeasure } from "@/hooks/usehooks";
 import {
   countSeoCharacters,
   DESCRIPTION_LIMITS,

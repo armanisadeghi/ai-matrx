@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useWindowSize } from "@uidotdev/usehooks";
+import { useWindowSize } from "@/hooks/usehooks";
 import FlashcardComponentDesktop from "./FlashcardComponentDesktop";
 import FlashcardComponentMobile from "./FlashcardComponentMobile";
 

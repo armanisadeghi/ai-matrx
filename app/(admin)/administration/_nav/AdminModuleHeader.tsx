@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useWindowSize } from "@uidotdev/usehooks";
+import { useWindowSize } from "@/hooks/usehooks";
 import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
 import ModuleHeaderMobileContent from "@/components/matrx/navigation/ModuleHeaderMobileContent";
 import type { ModulePage } from "@/components/matrx/navigation/types";

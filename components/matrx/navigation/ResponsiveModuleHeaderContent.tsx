@@ -1,6 +1,6 @@
 'use client';
 
-import { useWindowSize } from "@uidotdev/usehooks";
+import { useWindowSize } from "@/hooks/usehooks";
 import ModuleHeaderDesktopContent from "./ModuleHeaderDesktopContent";
 import ModuleHeaderMobileContent from "./ModuleHeaderMobileContent";
 import { ModuleHeaderProps } from "./types";

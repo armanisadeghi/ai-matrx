@@ -3,7 +3,7 @@ import React from "react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useMonaco } from "@monaco-editor/react";
 import Editor from "@monaco-editor/react";
-import { useMeasure } from "@uidotdev/usehooks";
+import { useMeasure } from "@/hooks/usehooks";
 import { Button } from "@/components/ui/button";
 import {
   Zap,

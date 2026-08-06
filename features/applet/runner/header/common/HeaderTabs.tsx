@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTriggerCore } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
 import { ChevronDown, MoreHorizontal } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useMeasure } from "@uidotdev/usehooks";
+import { useMeasure } from "@/hooks/usehooks";
 import { AppletListItemConfig } from "@/types/customAppTypes";
 
 

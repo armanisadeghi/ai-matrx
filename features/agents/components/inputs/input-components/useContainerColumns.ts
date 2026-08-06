@@ -1,4 +1,4 @@
-import { useMeasure } from "@uidotdev/usehooks";
+import { useMeasure } from "@/hooks/usehooks";
 
 /**
  * Attach to a stable parent container to get its live width.

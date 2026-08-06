@@ -13,7 +13,7 @@
 import { useRef } from "react";
 import { GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useMeasure } from "@uidotdev/usehooks";
+import { useMeasure } from "@/hooks/usehooks";
 
 import { useCodeEditorBasics } from "./useCodeEdiorBasics";
 import { MultiFileCodeEditorBody } from "./MultiFileCodeEditorBody";
