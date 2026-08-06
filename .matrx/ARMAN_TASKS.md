@@ -30,8 +30,8 @@ Wave 1 shipped 2026-07-15 (see `common-docs/systems/content-ir-system/OWNER_BRIE
 - **(e) Approve the small `media_block` crosswalk row** (W1-C follow-up — the one token missing a row; an agent adds it to the generator inputs and regenerates).
 - **(f) Post-soak cleanup**: say when soak is done to drop `content_ir._backup_kind_example_20260715` + `_backup_kind_surface_20260715` and remove their two lines from aidream `db/matrx_orm.yaml` (~504-505).
 
-### 5. Authorize the Supabase MCP for Claude Code (one-time, ~30s)
-The Supabase MCP now requires OAuth and non-interactive sessions can't complete it — DB verification steps silently degrade without it. In an interactive Claude Code session in this repo, run `/mcp` and complete the Supabase auth flow.
+### 5. Authorize the Supabase MCP for Claude Code (one-time, ~30s) — LIKELY DONE, confirm & prune
+The Supabase MCP now requires OAuth and non-interactive sessions can't complete it — DB verification steps silently degrade without it. In an interactive Claude Code session in this repo, run `/mcp` and complete the Supabase auth flow. *(2026-08-06 note: a cloud agent session ran live Supabase MCP queries successfully, so this appears already authorized — confirm and delete this item.)*
 
 ### 6. COPPA verifiable parental consent — legal + Stripe webhook + vendor pick
 The **code is built and live-verified** (card auth-and-void via Stripe test). To turn it on for real families, complete the runbook: `docs/proposals/education-projects/COPPA_VERIFIABLE_CONSENT_RUNBOOK.md`. Quick wins: (1) set `STRIPE_WEBHOOK_SECRET` in prod + register the `/api/stripe/webhook` endpoint (the card method needs it); (2) legal: which method(s) to require + auth-and-void vs charge+refund; (3) pick the gov-ID/KBA vendor (Stripe Identity / PRIVO / Persona). Then agents wire the vendor + signed-form upload.
