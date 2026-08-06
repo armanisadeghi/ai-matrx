@@ -190,8 +190,28 @@ data. Its `severity` (`info` / `warning` / `critical`) decides the banner's
 tone in ONE place: a never-synced site is not an alarm. Staleness also shows
 on the portfolio landing, because that is the first screen anyone sees.
 
+## Sync goes FORWARD. History goes BACKWARD. (2026-08-04)
+
+Two buttons because they are two directions, and neither can do the other's
+job. **Sync** walks the incremental watermark forward toward today. **History**
+(`mode: "backfill"`) walks backward from the oldest covered window toward
+Google's ~16-month horizon, one 30-day window at a time, and reports the
+OLDEST day reached as `coveredThrough` with `daysBehind` counting history
+still missing.
+
+Pressing Sync on an up-to-date site correctly returns nothing new — and until
+this shipped, that was the ONLY answer available to someone holding two weeks
+of data and wanting sixteen months, because backfill was nightly-only (60
+days/night) and had never once succeeded. **Never let "no new rows" imply a
+broken connection**: `created === 0` with `existing > 0` means we already had
+every row Google returned, and the toast says so and points at History. Only
+`created === 0 && existing === 0` is a real "Google returned nothing".
+
 ## Change Log
 
+- 2026-08-04 — On-demand history: `mode: "backfill"` + a History button;
+  the "stored no new rows" toast no longer cries connection-failure when the
+  site is simply already up to date.
 - 2026-08-04 — Silent-failure sweep after adversarial review: health RPC v2
   (reads scheduler.sch_run, counts failures not non-successes, detects stuck
   runs, adds severity; the nightly dispatcher is pinned by task ID, never by
