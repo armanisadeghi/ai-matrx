@@ -69,6 +69,8 @@ the 'Document'"*
   | Content Plan Family Namer | `7a16db8c-48eb-4997-a8d0-dc4a8892d7c5` | "AI names" (pages families) + "AI topics" (count-only) |
   | Content Plan Entity Curator | `c43e4497-3093-4b18-a906-b088127d8b9c` | Entities "Suggest from research"; `entity_curator` + `eeat_curator` roles |
   | Content Plan Reviewer | `2a7f0dc8-5525-437a-8f2e-35f12a45cb27` | Setup "Plan review"; `plan_architect` role |
+  | Content Plan Keyword Binder | `8ffb091c-dccf-4550-a14f-95807fd96b95` | Setup "Suggest keywords" |
+  | Content Plan Brief Writer | `f9789816-91b9-4e64-a38d-aa4d2a8127be` | NodePanel "Draft brief"; `brief_writer` role |
 - **Skills:** `matrx-agents` (authoring/running agx agents), `agent-execution-redux`
   (launch + structured output), `surface-authoring` (roles/writeTargets), `handoffs`.
 - **Test route:** `/marketing/content-plan` → pick a site → `?view=setup`. Needs a site with a
@@ -91,71 +93,64 @@ the 'Document'"*
    `GeneratePlanBody` is `extra="forbid"` — **ship aidream first (or together), never the FE
    alone**, or every Generate run 422s. aidream: `./scripts/release.sh` (Coolify, verify
    `/health/version` vs `origin/main`). FE: `./scripts/release.sh`.
-2. **`brief_writer` role is deliberately unbound** (`content-plan-node.manifest.ts`). NodePanel's
-   Deepen already writes a node's brief + sources server-side and is research-grounded. Bind an
-   agent ONLY to add the one thing Deepen lacks: a STAGED brief the user reviews before saving
-   (the node surface already declares the `node_brief` draft write target).
+2. **Nothing downstream READS the planned topics.** Count-only families record researched titles
+   at `plan.node.attributes.planned_topics` (`string[]` on the family hub; the brief marker block
+   is a human mirror). No aidream generator, writer, or tool parses that key — the work order
+   exists but nobody consumes it. Wiring it into the cms-fill / writer stage is the payoff step.
+   (The "Create as pages" action is the other half: promoted titles become normal plan nodes the
+   whole pipeline already understands.)
 3. **The shell-header Agents panel can't see these agents.** `SurfaceBoundAgentsList` reads
-   `agent.menu_surface`, a view over `platform.associations` JOINed to **`agent.card`**; all four
-   agents live in `agent.definition` only (`agent.card` has 138 rows, `agent.definition` 723), so
-   a binding edge cannot be created for them. Today the on-page buttons are the only entry point.
-   Fix is a platform decision: either promote these to `agent.card`, or teach the panel to resolve
-   roles via `useSurfaceAgentRoles` (which DOES see them — all roles are bound in
-   `ui.ui_surface_agent_role`).
-4. **Nothing downstream READS the planned topics yet.** They are stored authoritatively at
-   `plan.node.attributes.planned_topics` (a `string[]` on the family hub; the brief marker block
-   is a human mirror only). No aidream generator, writer, or tool parses that key today — the
-   work order exists but nobody consumes it. Wiring it into the cms-fill / writer stage is the
-   payoff step.
-5. **Count-only topics never become pages.** The archetype deliberately materializes only the
-   hub. Turning titles into real planned pages is a new deliberate action ("promote topics to
-   pages"), NOT a change to the expander: `setup/archetypes.ts` is a fixture-pinned twin of
-   aidream's `archetypes.py` (`pnpm check:archetype-expansion`, 62 cases) and must not diverge.
-   See the first Decision below.
-6. **Deepen has no research picker of its own** — it reads the site's recorded link only. Fine
-   today; if per-node grounding is ever wanted, add `research_topic_id` to the deepen body the
-   same way generate has it.
-7. **Reviewer needs its output contract sent by every caller.** `REVIEWER_OUTPUT_CONTRACT`
-   (setup/ai.ts) is passed as `guidance` on every run because without it the agent writes a
-   summary naming six missing pages and returns ONE finding (measured, not guessed). If the
-   agent's stored prompt is ever fixed at the source, delete the constant — do not silently keep
-   both. Note `agent_author update` with `goals` did NOT change the stored prompt.
-8. **Other AI steps not yet built** (each is one agent + one button, same recipe as `setup/ai.ts`):
-   keyword binding for planned pages (`primary_keyword_id` is manual via `KeywordPicker`);
-   per-node topic/entity attachment suggestions; a "what changed in the research since we planned"
-   re-review.
+   `agent.menu_surface`, a view over `platform.associations` JOINed to **`agent.card`**; all six
+   agents live in `agent.definition` only (`agent.card` 138 rows, `agent.definition` 723), so no
+   binding edge can exist for them. The on-page buttons are the only entry point. Fix is a
+   platform decision — promote them into `agent.card`, or teach the panel to resolve roles via
+   `useSurfaceAgentRoles`, which DOES see them (all 11 content-plan role rows are bound).
+4. **Entity ATTACHMENT is still manual.** The Entity Curator builds the roster; assigning
+   author / reviewer / cited-source entities to individual pages is per-page hand work in
+   `NodeAssociations`. One agent + one bulk action is the same recipe as the keyword binder
+   (which is the worked example: propose → resolve against real rows → stage → user applies).
+5. **Bulk deepen.** Deepen is one node at a time. A fan-out over the existing server pipeline
+   (progress + per-page results, no new agent) would make a 200-page plan practical.
+6. **Reviewer needs its output contract sent by every caller.** `REVIEWER_OUTPUT_CONTRACT`
+   (setup/ai.ts) rides on every run as `guidance` because without it the agent writes a summary
+   naming six missing pages and returns ONE finding (measured, not guessed). If the stored prompt
+   is ever fixed at the source, delete the constant — never keep both. Note: `agent_author
+   update` with `goals` did NOT change the stored prompt.
+7. **Deepen has no research picker of its own** — it reads the site's recorded link only. Fine
+   today; for per-node grounding, add `research_topic_id` to the deepen body as generate has it.
 
 ## Done
 
-- Four platform agents created + model-pinned + smoke-tested — ids in Resources above.
-- Setup steps have real AI (shape+counts, family names, count-only topics, plan review) staging
-  into the view's own state — see `features/marketing/content-plan/setup/`.
+- **Six platform agents**, model-pinned + smoke-tested — ids in Resources above. **All 11
+  `ui.ui_surface_agent_role` rows across the content-plan surfaces are bound.**
+- Every Setup step has AI staging into the view's own state: shape + counts, family page names,
+  count-only topics, keyword binding, plan review — `features/marketing/content-plan/setup/`.
+- Keyword binder resolves phrases against the site's real pool and drops anything unmatched, so
+  an invented phrase cannot reach the DB — `setup/components/KeywordBindSection.tsx`.
+- Staged brief writer on the node panel (review-then-save, distinct from Deepen's immediate
+  server write) — `components/NodePanel.tsx`.
 - Save-at-every-step draft persistence with unmount/commit flush — `setup/draft.ts`.
 - ONE site↔research link (`settings.content_plan.research_topic_id`) read by both repos;
   generator + deepen grounded in the final Document — `aidream/services/content_plan/generator.py`.
 - Entities "Suggest from research"; plan review with one-click page creation from `gap` findings.
-- Agent roles bound in manifests + `ui.ui_surface_agent_role` (all but `brief_writer`).
-- Blog/guide topic planning: researched titles recorded on the family hub
-  (`attributes.planned_topics` authoritative + a human-readable brief mirror), retryable via
-  "Record on hub" without a commit.
-- Three adversarial review rounds (20 + 12 + 21 agents); every confirmed finding fixed —
+- Blog/guide topics: recorded on the hub (`attributes.planned_topics`) AND promotable into real
+  pages — `setup/service.ts#promoteTopicsToPages`.
+- Four adversarial review rounds (20 + 12 + 21 + 12 agents); every confirmed finding fixed —
   including a cross-org research-report exfiltration hole, a `send_warning` crash on the exact
   degrade path, and a draft-clear that destroyed staged topics. See the FEATURE.md change log.
 
 ## Decisions needed
 
-**Should researched blog/guide titles become real planned pages?**
-Situation: when a site shape includes a Blog or Guides section, the shape deliberately creates
-only the section's hub page and records "12 articles" as the target — the individual titles were
-always meant to come later from research. The AI now produces those titles from the company's
-research report, and they are saved onto the hub page as its work order, but no page rows are
-created for them.
-Decide: leave them as a recorded work order for the writers (today's behavior), or add a button
-that turns the titles into real planned pages so they show up in the tree, the table, and the
-CMS pipeline like every other page.
+**Should promoting blog titles into pages become the default instead of a button?**
+Situation: a site shape with a Blog or Guides section deliberately plans only the section's hub
+page and records "12 articles" as the target. The AI now writes those 12 titles from the research
+report, saves them on the hub, and a "Create as pages" button turns them into real planned pages
+on request. Nothing happens automatically.
+Decide: keep it a deliberate click (today), or have a commit create those pages automatically
+whenever titles exist — which would change what the site shapes mean for every site.
 
-**Should these four agents appear in the header Agents popover?**
-Situation: the popover lists agents bound to a surface through `agent.card`; these four exist only
+**Should these agents appear in the header Agents popover?**
+Situation: the popover lists agents bound to a surface through `agent.card`; all six exist only
 as `agent.definition` rows, so they cannot be listed there — they are reachable only from the
 buttons on the Setup and Entities pages. Every other surface with agents has the same split.
 Decide: promote agents like these into `agent.card` when they are bound to a surface, or change

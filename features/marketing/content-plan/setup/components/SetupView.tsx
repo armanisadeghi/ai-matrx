@@ -78,6 +78,7 @@ import { buildReadiness } from "../readiness";
 import {
   applyFamilyTopics,
   commitArchetype,
+  promoteTopicsToPages,
   missingPageTypes,
   readCommittedArchetype,
   recordSiteArchetype,
@@ -721,6 +722,58 @@ export function SetupView() {
       toast.error(
         `Could not record the ${family.label} topics: ${extractErrorMessage(error)}`,
       );
+    } finally {
+      setApplyingTopicsKey(null);
+    }
+  };
+
+  /**
+   * Promote a count-only family's researched titles into REAL planned pages.
+   * Explicit and destructive-ish (it adds rows), so it asks first and names
+   * exactly how many — the archetype's own default is hub-only.
+   */
+  const handlePromoteTopics = async (familyKey: string) => {
+    if (!siteId || !site || !expanded) return;
+    const family = expanded.families.find((item) => item.key === familyKey);
+    const staged = topics[familyKey] ?? [];
+    if (!family || staged.length === 0) return;
+    const ok = await confirm({
+      title: `Create ${staged.length} ${family.label.toLowerCase()} page${staged.length === 1 ? "" : "s"}?`,
+      description:
+        `They become real planned pages under ${family.route}, so they appear in the tree, the table, and the CMS pipeline. ` +
+        "This shape normally plans only the section hub — pages that already exist are left untouched.",
+      confirmLabel: "Create pages",
+    });
+    if (!ok) return;
+    setApplyingTopicsKey(familyKey);
+    try {
+      const result = await promoteTopicsToPages({
+        siteId,
+        organizationId: site.organization_id,
+        hubRoute: family.route,
+        topics: staged,
+        // The expansion's FamilyPlan does not carry childNodeType (and
+        // archetypes.ts is the pinned twin — not ours to widen). Every
+        // count-only family is a content section, whose children are
+        // articles; the child PAGE type still comes from the shape.
+        childNodeType: "article",
+        childPageTypeId: family.childPageType
+          ? (pageTypeIdBySlug.get(family.childPageType) ?? null)
+          : null,
+        statusId,
+      });
+      await queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
+      if (result.failed > 0) {
+        toast.error(
+          `Created ${result.created}; ${result.failed} failed — ${result.failures[0]}`,
+        );
+      } else {
+        toast.success(
+          `Created ${result.created} page(s). ${result.existing} already existed.`,
+        );
+      }
+    } catch (error) {
+      toast.error(`Could not create the pages: ${extractErrorMessage(error)}`);
     } finally {
       setApplyingTopicsKey(null);
     }
@@ -1400,6 +1453,7 @@ export function SetupView() {
               onAiTopics={(familyKey) => void handleTopicsForFamily(familyKey)}
               onClearTopics={(familyKey) => setTopics(familyKey, null)}
               onApplyTopics={(familyKey) => void handleApplyTopics(familyKey)}
+              onPromoteTopics={(familyKey) => void handlePromoteTopics(familyKey)}
               applyingTopicsKey={applyingTopicsKey}
               plannedRoutes={plannedRoutes}
               newCount={preview.counts.new}
