@@ -36,15 +36,18 @@ jest.mock("next/dynamic", () => ({
 // — irrelevant to routing assertions. Stub every member with a component.
 jest.mock("../BlockComponentRegistry", () => {
   const react = jest.requireActual("react") as typeof React;
-  const stub = () =>
+  const stub = (name: string) => {
     function StubBlockComponent() {
       return react.createElement("div", { "data-testid": "stub-block" });
-    };
+    }
+    StubBlockComponent.displayName = name;
+    return StubBlockComponent;
+  };
   const proxy = new Proxy(
     {},
     {
       get: (_target, prop) =>
-        typeof prop === "string" ? stub() : undefined,
+        typeof prop === "string" ? stub(prop) : undefined,
     },
   );
   return { __esModule: true, BlockComponents: proxy, LoadingComponents: proxy };
@@ -222,5 +225,34 @@ describe("block-dispatch registry", () => {
     } finally {
       consoleError.mockRestore();
     }
+  });
+
+  it("routes the splitter's XML code contract to XmlBlock", () => {
+    const dispatch = resolveBlockDispatch("code");
+    expect(dispatch).not.toBeNull();
+
+    const rendered = dispatch?.({
+      block: {
+        type: "code",
+        content: "<custom_response>ok</custom_response>",
+        language: "xml",
+      },
+      index: 0,
+      hideReasoning: false,
+      hideToolResults: false,
+      replaceBlockContent: jest.fn(),
+      renderBasicMarkdown: (content) =>
+        React.createElement("div", null, content),
+    });
+
+    expect(React.isValidElement(rendered)).toBe(true);
+    expect(
+      (rendered?.type as React.ComponentType & { displayName?: string })
+        .displayName,
+    ).toBe("XmlBlock");
+    expect(rendered?.props).toMatchObject({
+      content: "<custom_response>ok</custom_response>",
+      language: "xml",
+    });
   });
 });

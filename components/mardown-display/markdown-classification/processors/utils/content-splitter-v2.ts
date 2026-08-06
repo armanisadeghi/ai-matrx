@@ -45,6 +45,7 @@ import {
   envelopeForCompletedXmlRegion,
 } from "@/features/content-ir/surfaces/xml-finalize";
 import { IR_ENVELOPE_KEY } from "@/features/content-ir/core/ir-types";
+import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 
 /**
  * All block type strings this splitter can emit — the union of:
@@ -437,6 +438,16 @@ const ATTRIBUTE_XML_BLOCKS = [
 ] as const;
 type AttributeXmlBlockType = (typeof ATTRIBUTE_XML_BLOCKS)[number];
 
+const KNOWN_XML_TAG_NAMES: ReadonlySet<string> = new Set([
+  ...Object.values(XML_TAG_BLOCKS).flatMap((tags) =>
+    tags.map((tag) => tag.slice(1, -1)),
+  ),
+  ...ATTRIBUTE_XML_BLOCKS,
+]);
+
+const STRICT_XML_TAG_PATTERN =
+  /<(\/?)([A-Za-z][\w.-]*)(?:\s+(?:[\w.-]+\s*=\s*(?:"[^"]*"|'[^']*')\s*)*)?(\/?)>/g;
+
 /** Extracts key="value" pairs from an XML opening tag string. */
 export function parseXmlAttributes(openingTag: string): Record<string, string> {
   const attrs: Record<string, string> = {};
@@ -700,6 +711,87 @@ function detectXmlBlockType(
     );
     if (matchedTag) {
       return { type: type as keyof typeof XML_TAG_BLOCKS, matchedTag };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Extracts a complete, unrecognized XML element so it can reuse the same
+ * enhanced XML renderer as a fenced ```xml block.
+ *
+ * This deliberately runs after every recognized XML detector. It also requires
+ * a line-leading, balanced root element (or a self-closing element), which keeps
+ * inline angle-bracket prose and incomplete streaming text on the markdown path.
+ * Curated raw HTML remains on its existing sanitized HTML path.
+ */
+function extractUnrecognizedXmlBlock(
+  startIndex: number,
+  lines: string[],
+): ExtractionResult | null {
+  const firstLine = removeMatrxPattern(lines[startIndex]);
+  const firstTrimmed = firstLine.trimStart();
+  const openingMatch = firstTrimmed.match(
+    /^<([A-Za-z][\w.-]*)(?:\s+(?:[\w.-]+\s*=\s*(?:"[^"]*"|'[^']*')\s*)*)?(\/?)>/,
+  );
+  if (!openingMatch) return null;
+
+  const rootTag = openingMatch[1];
+  if (
+    KNOWN_XML_TAG_NAMES.has(rootTag) ||
+    ALLOWED_RAW_HTML_TAGS.has(rootTag.toLowerCase())
+  ) {
+    return null;
+  }
+
+  const rootStart = firstLine.length - firstTrimmed.length;
+  let depth = 0;
+  let sawRoot = false;
+
+  for (let lineIndex = startIndex; lineIndex < lines.length; lineIndex++) {
+    const currentLine = removeMatrxPattern(lines[lineIndex]);
+    STRICT_XML_TAG_PATTERN.lastIndex =
+      lineIndex === startIndex ? rootStart : 0;
+
+    let tagMatch: RegExpExecArray | null;
+    while (
+      (tagMatch = STRICT_XML_TAG_PATTERN.exec(currentLine)) !== null
+    ) {
+      if (tagMatch[2] !== rootTag) continue;
+
+      const isClosing = tagMatch[1] === "/";
+      const isSelfClosing = tagMatch[3] === "/";
+      if (isClosing) {
+        depth--;
+      } else {
+        sawRoot = true;
+        if (!isSelfClosing) depth++;
+      }
+
+      if (!sawRoot || depth !== 0) continue;
+
+      const rootEnd = tagMatch.index + tagMatch[0].length;
+      const contentLines =
+        lineIndex === startIndex
+          ? [currentLine.slice(rootStart, rootEnd)]
+          : [
+              firstLine.slice(rootStart),
+              ...lines
+                .slice(startIndex + 1, lineIndex)
+                .map(removeMatrxPattern),
+              currentLine.slice(0, rootEnd),
+            ];
+      const remainder = currentLine.slice(rootEnd).trim();
+      if (remainder) {
+        lines.splice(lineIndex + 1, 0, remainder);
+      }
+
+      return {
+        content: contentLines.join("\n").trim(),
+        nextIndex: lineIndex + 1,
+        metadata: { isComplete: true },
+      };
     }
   }
 
@@ -1964,7 +2056,27 @@ export const splitContentIntoBlocksV2 = (
       continue;
     }
 
-    // 3c. Orphan closing tag (thinking family) — the continuation half of a
+    // 3c. Complete, unrecognized XML falls back to the existing enhanced XML
+    // code renderer. Known/special XML detectors above retain first refusal.
+    const unrecognizedXml = extractUnrecognizedXmlBlock(i, lines);
+    if (unrecognizedXml) {
+      if (currentText.trim()) {
+        blocks.push({ type: "text", content: currentText.trimEnd() });
+        currentText = "";
+      }
+
+      blocks.push({
+        type: "code",
+        content: unrecognizedXml.content,
+        language: "xml",
+        metadata: unrecognizedXml.metadata,
+      });
+
+      i = unrecognizedXml.nextIndex;
+      continue;
+    }
+
+    // 3d. Orphan closing tag (thinking family) — the continuation half of a
     // region split across parts by a mid-region tool call. Text accumulated
     // so far (plus anything before the closer on this line) is region body;
     // the literal tag must never leak to the user as text.

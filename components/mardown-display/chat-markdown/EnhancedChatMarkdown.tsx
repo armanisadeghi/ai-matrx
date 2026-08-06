@@ -564,6 +564,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
           alt: (sb.data as Record<string, unknown>)?.alt as string | undefined,
         }),
       );
+      const expandedSupplementaryBlocks =
+        expandTextBlocksInList(supplementaryBlocks);
 
       // If there's also text content, parse it normally and append supplementary blocks
       if (currentContent.trim()) {
@@ -571,21 +573,24 @@ export const EnhancedChatMarkdownInternal: React.FC<
           const textBlocks = splitContentIntoBlocksV2(currentContent);
           const parsed = Array.isArray(textBlocks) ? textBlocks : [];
           return {
-            blocks: [...expandTextBlocksInList(parsed), ...supplementaryBlocks],
+            blocks: [
+              ...expandTextBlocksInList(parsed),
+              ...expandedSupplementaryBlocks,
+            ],
             blockError: false,
           };
         } catch {
           return {
             blocks: [
               { type: "text" as const, content: currentContent },
-              ...supplementaryBlocks,
+              ...expandedSupplementaryBlocks,
             ],
             blockError: false,
           };
         }
       }
 
-      return { blocks: supplementaryBlocks, blockError: false };
+      return { blocks: expandedSupplementaryBlocks, blockError: false };
     }
 
     // Legacy: client-side parsing
@@ -1027,7 +1032,9 @@ export const EnhancedChatMarkdownInternal: React.FC<
         serverData: segment.data ?? undefined,
         metadata: segment.metadata,
       };
-      return renderBlock(block, segIdx * 1000);
+      return expandTextBlocksInList([block]).map((expandedBlock, blockIdx) =>
+        renderBlock(expandedBlock, segIdx * 1000 + blockIdx),
+      );
     }
     if (segment.type === "thinking") {
       const thinkBlocks = (() => {
