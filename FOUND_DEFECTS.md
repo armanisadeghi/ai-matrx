@@ -140,7 +140,7 @@ The edge is access-conveying (`container_side='target'`, `conveys_max='editor'`)
 
 `platform.shareable_resource_registry.content_ir_kind_instance` has `is_public_column='visibility'` — but that column holds the canonical `platform.visibility` ENUM, not a boolean. A non-null `is_public_column` routes ShareModal's public toggle through `make_resource_public` (boolean write) instead of the canonical `setVisibilityColumn` enum path, and `getResourceVisibility` will read the enum string as a boolean. Fix: set `is_public_column=null` in the live registry + TS mirror + snapshot together (the canonical-visibility shape), then verify ShareModal's Public tab against a kind instance. Found while regenerating the snapshot (which had drifted 6 rows behind the live DB); mirrored verbatim for parity in the meantime. **Decides: anyone — small, but touch all three surfaces in one commit.**
 
-### D118 — invisible inbox injections (`is_visible_to_user=false`) may seed a phantom user bubble in-session (2026-07-29)
+### D118b — invisible inbox injections (`is_visible_to_user=false`) may seed a phantom user bubble in-session (2026-07-29; renumbered from a duplicate D118 2026-08-06)
 
 The Turn-Boundary Inbox client (Flow 6 in `features/agents/components/chat/FEATURE.md`) correctly skips the optimistic bubble for invisible steering messages, but the server still announces the persisted row via `record_reserved cx_message` (role=user), and `process-stream`'s fallback branch (`reserveMessage`) seeds it into `messages.byId` with no visibility flag — a possible empty/phantom bubble until reload (reload filters by `is_visible_to_user`). Fix: carry visibility on the reservation metadata (server) or track announced invisible injection positions in `process-stream` and skip the reservation. Low frequency — invisible injections are only produced by `kind:"system_message"` + `is_visible_to_user:false`, which no product UI sends yet.
 
@@ -175,12 +175,11 @@ Items 1-3 (save/load drift) fixed 2026-07-28. Remaining: replace the token-budge
 
 ### D106b — five more surfaces still claim "Only you" from data that can't support it (2026-07-26)
 
-Same class as the files fix (`22e8d79ea`): a surface reads one signal and renders a privacy guarantee, blind to container conveyance via `platform.reachability`. Fix per surface: call `public.entity_access_summary(type,id)` or reword to what the surface actually knows. Don't bulk-rewrite blind — check each feature's conveyance first.
+Same class as the files fix (`22e8d79ea`): a surface reads one signal and renders a privacy guarantee, blind to container conveyance via `platform.reachability`. (2026-08-06: `ShapeOwnerEditor.tsx` resolved — the "Only you" text is gone and the file documents its no-personal-visibility rationale; 4 surfaces remain.) Fix per surface: call `public.entity_access_summary(type,id)` or reword to what the surface actually knows. Don't bulk-rewrite blind — check each feature's conveyance first.
 
 - `features/secrets/components/VaultItemDetail.tsx:1406` (highest stakes — credentials)
 - `features/canvas/social/CanvasShareSheet.tsx:373`
 - `features/structured-lists/StructuredListManagerV2.tsx:139`
-- `features/content-ir/studio/components/ShapeOwnerEditor.tsx:40`
 - `features/education/data/features.ts:236` (marketing promise — resolve with D105)
 
 ### D105b — file surfaces must separate MY files from ORG files (Arman ruling 2026-07-28)
@@ -241,7 +240,7 @@ Frontend cutover DONE (project-optional `createTopic`, association-backed filter
 
 ### D78 — CRITICAL: legacy `platform._mirror_fk_to_assoc` triggers remain live (2026-07-21)
 
-Research's `_mirror_proj` trigger dropped (ratchet baseline 32 remain platform-wide). FE alarm layer shipped (`lib/diagnostics/errorTierRules.ts` pins any firing as permanent critical). Remaining: the aidream release guard (strict tier + 32-ratchet) and live verification of the induced-failure inspector flow.
+Research's `_mirror_proj` trigger dropped. Live trigger count re-verified 2026-08-06: **26** remain platform-wide (down from the 32 baseline at filing — ratchet moving the right way). FE alarm layer shipped (`lib/diagnostics/errorTierRules.ts` pins any firing as permanent critical). Remaining: the aidream release guard (strict tier + 32-ratchet) and live verification of the induced-failure inspector flow.
 
 ### D74 — `web.link_edge.http_status` is NEVER populated: no broken-link detection exists (2026-07-20)
 

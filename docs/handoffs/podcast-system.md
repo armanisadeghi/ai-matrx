@@ -41,9 +41,9 @@ adjacent podcast work: live run page + research feed →
    shows a "Chapter markers" Coming-Soon card — `StudioRunView.tsx` ~line 360 (`isDone &&
    <ComingSoonCard title="Chapter markers">`).
 2. **Post-prep agents unbuilt.** Post-prep defaults to NONE; the 4 full post-prep agents
-   (translation / summarization / fact-checking / expansion) don't exist. FE honestly gates the
-   formats via ComingSoon — only `educational` + `news` have `enabled: true` in
-   `features/podcasts/generator/constants.ts` (`FORMAT_OPTIONS`, ~line 285).
+   (translation / summarization / fact-checking / expansion) don't exist. (Stale claim corrected 2026-08-06: ALL 7 formats now have
+   `enabled: true` in `features/podcasts/generator/constants.ts` `FORMAT_OPTIONS` —
+   the FE no longer gates them, so the missing post-prep agents are the only gap.)
 3. **Large casts (7–20 hosts) unverified.** `scripts/podcast_e2e_matrix.py` tops out at
    `host_count=6`. GATE 2 is strict (N means N), so an agent producing 13 of 14 speakers fails the
    run. Test 10/14/20 before advertising reliability.

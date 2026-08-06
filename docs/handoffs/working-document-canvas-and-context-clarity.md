@@ -30,7 +30,7 @@ A playwright harness lives at `/tmp/pw-matrx/` (isolated install) — reuse `nav
   disabled the mode dropdown. Now `WorkingDocumentViewControls` takes `showDiff`;
   `WorkingDocumentPanel` passes `showDiff={kind === "working"}`.
 - **`751dd13bb` — "What the agent sees" panel** (the #1 UX ask: "I never know what
-  goes to the model"). New `features/agents/components/context-slots-display/AgentSeesSheet.tsx`
+  goes to the model"). New context-slots-display sheet (originally `AgentSeesSheet.tsx`; since reworked — the directory now ships `ContextSlotDetailSheet.tsx`/`ContextSlotTile.tsx` etc., no file by the old name remains as of 2026-08-06)
   reads the real payload sources (`selectInstanceContextEntries` + `useActiveContextLayerItems`)
   and renders it plainly: always-sent baseline, active scopes, everything attached this
   turn (with value preview + char size). The composer rail's "CONTEXT" label is now an

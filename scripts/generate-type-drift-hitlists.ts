@@ -3,7 +3,7 @@
  * ⛔ RETIRED (2026-07-26, doc-consolidation Wave 5) — DO NOT RUN.
  * The type-drift campaign is complete and its output directory
  * (docs/type-drift/generated/) was ARCHIVED in Wave 2 (see
- * docs/handoffs/doc-consolidation-campaign.md). Re-running this script would
+ * docs/archive/2026/handoff__doc-consolidation-campaign.md). Re-running this script would
  * recreate the archived directory and regrow the doc jungle. The script is
  * kept for reference only; it exits with a loud error below. If a new
  * type-drift campaign ever starts, retarget OUT_DIR to a live location and
@@ -42,7 +42,7 @@ console.error("  (docs/type-drift/generated/) was ARCHIVED in the doc-consolidat
 console.error("  campaign, Wave 2. Running this script would recreate the archived");
 console.error("  directory and regrow the doc jungle.");
 console.error("");
-console.error("  See: docs/handoffs/doc-consolidation-campaign.md (Regenerator hazard)");
+console.error("  See: docs/archive/2026/handoff__doc-consolidation-campaign.md (Regenerator hazard)");
 console.error("  If you truly need a new campaign, retarget OUT_DIR to a live");
 console.error("  location and remove this guard in the same PR.");
 console.error("");

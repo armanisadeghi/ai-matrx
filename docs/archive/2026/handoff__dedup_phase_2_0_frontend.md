@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-06 — all FE work items verified done in code (schedulerClient.ts uses /scheduler/*; force_new_copy handled in files types + UploadGuardHostImpl). Kept for the dedup contract reference cited by docs/DEDUP_INTENT_FLIP_PLAN.md.
+
 > 🚫 HISTORICAL — `storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06). Any instruction below referencing them is obsolete; see features/files/FEATURE.md.
 
 # Phase 1 + Phase 2.0 — Frontend handoff

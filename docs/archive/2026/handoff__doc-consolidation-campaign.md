@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-06 — campaign self-declared CLOSED 2026-07-26; actionable remainder lives in docs/handoffs/doc-campaign-remaining-work.md.
+
 # Handoff — Documentation Consolidation Campaign
 
 **Owner:** the common-docs structure session (took over 2026-07-22; integrating with the docs-architecture redesign). Originated by the access-campaign session. **Created 2026-07-22** from a four-agent full inventory: ai-matrx (794 docs), aidream (774 docs), matrx-common-docs (~30 docs, healthy), skills (68 ai-matrx + 24 aidream + 29 legacy Cursor-era). Raw tables: ai-matrx sortable artifact at https://claude.ai/code/artifact/68e68a6b-882f-4c1e-a621-cbfff074f8b6 ; aidream per-file table (774 rows: path | mtime | title) at [`doc-inventory-aidream-full-table.txt`](doc-inventory-aidream-full-table.txt) beside this doc. NOT covered by the inventory: matrx-extend, matrx-local, my-matrx, matrx-ship, matrx-sandbox, matrx-package-template.
