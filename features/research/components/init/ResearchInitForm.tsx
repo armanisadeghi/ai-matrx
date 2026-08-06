@@ -365,6 +365,7 @@ function EditableText({
         autoGrow
         minHeight={100}
         maxHeight={240}
+        enableTextStats={false}
         className={cn(
           "text-base sm:text-lg leading-relaxed text-foreground",
           className,
@@ -1280,6 +1281,9 @@ export default function ResearchInitForm() {
     setError(null);
 
     const autonomyLevel: AutonomyLevel = "semi";
+    const keywords = selectedTemplate
+      ? selectedKeywords.map((keyword) => keyword.replaceAll("${name}", name))
+      : selectedKeywords;
 
     startTransition(async () => {
       try {
@@ -1301,8 +1305,8 @@ export default function ResearchInitForm() {
         }
         dispatch(clearWizardDraft(WIZARD_ID));
 
-        if (selectedKeywords.length > 0) {
-          await addKeywords(topic.id, { keywords: selectedKeywords });
+        if (keywords.length > 0) {
+          await addKeywords(topic.id, { keywords });
         }
 
         // Seed the template's default tags. Each insert is isolated so a
@@ -2223,6 +2227,7 @@ export default function ResearchInitForm() {
                       autoGrow
                       minHeight={160}
                       maxHeight={320}
+                      enableTextStats={false}
                       autoFocus
                       className="text-base text-foreground"
                       wrapperClassName="w-full"
@@ -2277,6 +2282,7 @@ export default function ResearchInitForm() {
                         autoGrow
                         minHeight={80}
                         maxHeight={200}
+                        enableTextStats={false}
                         className="text-base text-foreground"
                         wrapperClassName="w-full"
                       />
