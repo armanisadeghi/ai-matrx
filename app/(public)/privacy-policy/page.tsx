@@ -16,7 +16,7 @@ const PrivacyPolicyPage = () => {
       <div className="container mx-auto max-w-3xl p-6 prose prose-neutral dark:prose-invert">
       <h1>Privacy Policy</h1>
       <p>
-        <strong>Last updated:</strong> July 20, 2026
+        <strong>Last updated:</strong> August 6, 2026
       </p>
       <p>
         AI Matrx (&quot;we&quot;, &quot;us&quot;) provides an AI-agent platform that
@@ -264,6 +264,32 @@ const PrivacyPolicyPage = () => {
         and data rates may apply. You can reply <strong>STOP</strong> to opt out
         or <strong>HELP</strong> for help.
       </p>
+
+      <h3>2.9 Google Workspace data (optional)</h3>
+      <p>
+        If you choose to connect Google Workspace, AI Matrx requests access in
+        context for the feature you are using. Connecting Docs and Sheets uses
+        Google&rsquo;s <code>drive.file</code> permission. This lets you select
+        individual Google Docs or Sheets through Google Picker; it does not let
+        AI Matrx browse your entire Google Drive. For a selected file, we may
+        process its file id, name, type, link, and the content needed to perform
+        the read or update action you request.
+      </p>
+      <p>
+        Reviewed Gmail sending is a separate, incremental feature. It uses only
+        <code>gmail.send</code> to send the recipients, subject, and message body
+        visible to you after you affirmatively confirm the send. AI Matrx does
+        not request permission to read, search, delete, or organize your Gmail.
+      </p>
+      <p>
+        Google Workspace content is used only to provide or improve the
+        user-facing feature you request. It is not sold, used for advertising,
+        used to determine creditworthiness, or used to train or fine-tune a
+        generalized AI model. If you explicitly ask an AI Matrx agent to reason
+        over selected Workspace content, the content needed for that request may
+        be sent to the model provider configured for that agent solely to return
+        your requested result, as described in Section 3.1.
+      </p>
       <p>
         Mobile information and text-message opt-in data and consent are not
         sold, rented, or shared with third parties or affiliates for marketing
@@ -391,6 +417,18 @@ const PrivacyPolicyPage = () => {
         cannot use them to call the Extension.
       </p>
 
+      <h3>3.5 Google Workspace credentials and content</h3>
+      <p>
+        The Google refresh token is encrypted in AI Matrx&rsquo;s server-side
+        user secrets vault. A short-lived access token restricted to basic
+        account identity plus <code>drive.file</code> may be held in browser
+        memory while Google Picker is open; it is not written to browser
+        storage. We store safe connection metadata and
+        references for the individual files you selected. The Google Workspace
+        operation endpoints do not persist document contents, spreadsheet cell
+        values, or Gmail message bodies.
+      </p>
+
       <h2>4. How we use the information</h2>
       <ul>
         <li>To authenticate you and keep your session active.</li>
@@ -444,6 +482,14 @@ const PrivacyPolicyPage = () => {
           or carrier requirements.
         </li>
         <li>
+          <strong>Google Workspace connection:</strong> encrypted credentials
+          and selected-file references are kept until you disconnect Google or
+          delete your account. Document contents, spreadsheet values, and Gmail
+          message bodies handled by the Workspace operation endpoints are
+          processed for the requested action and are not stored by those
+          endpoints.
+        </li>
+        <li>
           <strong>Local extension data:</strong> stays on your device until you
           clear it, uninstall the Extension, or wipe Chrome&rsquo;s extension
           storage.
@@ -469,6 +515,12 @@ const PrivacyPolicyPage = () => {
           time.
         </li>
         <li>
+          <strong>Disconnect Google Workspace.</strong> Use the Google Workspace
+          connection control in AI Matrx to revoke Google authorization and
+          remove the saved server-side credential and selected-file references.
+          You can also revoke AI Matrx from your Google Account permissions.
+        </li>
+        <li>
           <strong>Uninstall.</strong> Uninstalling the Extension removes the
           Extension and its locally stored data from that device. Your
           server-side account record is unaffected; delete it separately if you
@@ -488,9 +540,9 @@ const PrivacyPolicyPage = () => {
       <p>
         We use HTTPS for all client-server traffic, store credentials with our
         authentication provider (Supabase) rather than rolling our own,
-        encrypt refresh tokens at rest in extension storage, and gate
-        privileged tool actions behind explicit user confirmation in the
-        Extension. No method of transmission over the Internet or method of
+        encrypt refresh tokens at rest in extension storage and in the
+        server-side user secrets vault, and gate privileged tool actions and
+        Gmail sends behind explicit user confirmation. No method of transmission over the Internet or method of
         electronic storage is 100% secure; we cannot guarantee absolute
         security but we work to keep practices in line with the sensitivity of
         the data.

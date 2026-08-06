@@ -36,6 +36,7 @@ import {
   Truck,
   ShieldAlert,
   Briefcase,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Chrome } from "@/components/icons/brand-icons";
 import Placeholder from "./tabs/PlaceholderTab";
@@ -70,6 +71,7 @@ import ProfileWorkTab from "./tabs/ProfileWorkTab";
 import ProfileEmergencyTab from "./tabs/ProfileEmergencyTab";
 import OrganizationsTab from "./tabs/OrganizationsTab";
 import IntegrationsTab from "./tabs/IntegrationsTab";
+import GoogleWorkspaceTab from "./tabs/GoogleWorkspaceTab";
 import SandboxStorageTab from "./tabs/SandboxStorageTab";
 import FeedbackTab from "./tabs/FeedbackTab";
 import ExtensionTab from "./tabs/ExtensionTab";
@@ -90,7 +92,6 @@ import type { SettingsTreeNode } from "@/components/official/settings/tree/types
  * required props" but structurally any tab that uses `useSetting` internally
  * is assignable.
  */
-
 
 // ── Placeholder (used only for category-only nodes) ──────────────────────────
 
@@ -611,6 +612,16 @@ export const settingsRegistry: SettingsTabDef[] = [
       "linear",
     ],
     component: IntegrationsTab,
+    persistence: "synced",
+  },
+  {
+    id: "integrations.googleWorkspace",
+    label: "Google Workspace",
+    icon: FileSpreadsheet,
+    parentId: "integrations",
+    description: "Selected Google Docs, Sheets, and reviewed Gmail sending.",
+    searchKeywords: ["google", "docs", "sheets", "gmail", "oauth", "drive"],
+    component: GoogleWorkspaceTab,
     persistence: "synced",
   },
 

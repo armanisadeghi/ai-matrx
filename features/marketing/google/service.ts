@@ -57,7 +57,9 @@ function connectionSummary(row: ConnectionRow): GoogleConnectionSummary {
     row.status === "needs_attention" || row.status === "revoked"
       ? row.status
       : "connected";
-  const credentialPresent = Boolean(row.credential_item_id || row.vault_secret_key);
+  const credentialPresent = Boolean(
+    row.credential_item_id || row.vault_secret_key,
+  );
   return {
     ...row,
     owner_type: row.owner_type === "organization" ? "organization" : "user",
@@ -83,7 +85,9 @@ export function connectionResource(
   if (
     row.resource_type !== "search_console_property" &&
     row.resource_type !== "analytics_property" &&
-    row.resource_type !== "youtube_channel"
+    row.resource_type !== "youtube_channel" &&
+    row.resource_type !== "google_document" &&
+    row.resource_type !== "google_spreadsheet"
   ) {
     throw new Error(
       `Unknown Google connection resource type: ${row.resource_type}`,
@@ -142,7 +146,7 @@ function backendBase(): string {
   );
 }
 
-async function aidreamPost(
+export async function postGoogleBackend(
   path: string,
   body: Record<string, unknown>,
   fallback: string,
@@ -179,7 +183,7 @@ export async function connectGoogle(
   if (!clientId) {
     throw new Error("Google OAuth is not configured on this deployment.");
   }
-  const response = await aidreamPost(
+  const response = await postGoogleBackend(
     "/api/google-integrations/exchange",
     {
       code,
@@ -199,7 +203,7 @@ export async function connectGoogle(
 }
 
 export async function disconnectGoogle(connectionId: string): Promise<void> {
-  await aidreamPost(
+  await postGoogleBackend(
     "/api/google-integrations/disconnect",
     { connection_id: connectionId },
     "Unable to disconnect Google.",

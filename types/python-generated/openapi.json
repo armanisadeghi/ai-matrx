@@ -9666,6 +9666,252 @@
         }
       }
     },
+    "/google-workspace/files/register": {
+      "post": {
+        "tags": [
+          "Google Workspace"
+        ],
+        "summary": "Register File",
+        "operationId": "register_file_google_workspace_files_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterSelectedFileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelectedFileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-workspace/documents/read": {
+      "post": {
+        "tags": [
+          "Google Workspace"
+        ],
+        "summary": "Read Document",
+        "operationId": "read_document_google_workspace_documents_read_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleFileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentContentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-workspace/documents/append": {
+      "post": {
+        "tags": [
+          "Google Workspace"
+        ],
+        "summary": "Append Document",
+        "operationId": "append_document_google_workspace_documents_append_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppendDocumentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentContentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-workspace/sheets/read": {
+      "post": {
+        "tags": [
+          "Google Workspace"
+        ],
+        "summary": "Read Sheet",
+        "operationId": "read_sheet_google_workspace_sheets_read_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SheetReadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SheetValuesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-workspace/sheets/write": {
+      "post": {
+        "tags": [
+          "Google Workspace"
+        ],
+        "summary": "Write Sheet",
+        "operationId": "write_sheet_google_workspace_sheets_write_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SheetWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SheetValuesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-workspace/gmail/send-reviewed": {
+      "post": {
+        "tags": [
+          "Google Workspace"
+        ],
+        "summary": "Send Gmail",
+        "operationId": "send_gmail_google_workspace_gmail_send_reviewed_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewedGmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewedGmailResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/bing-integrations/authorize-url": {
       "get": {
         "tags": [
@@ -50434,6 +50680,33 @@
         "title": "AppLogStatsResponse",
         "description": "Facet counts for the dashboard filter bar, within the active window."
       },
+      "AppendDocumentRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "file_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "File Id"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "file_id",
+          "text"
+        ],
+        "title": "AppendDocumentRequest"
+      },
       "ApplyPinUpgradesRequest": {
         "properties": {
           "selected_keys": {
@@ -66880,6 +67153,34 @@
         "title": "DocBlock",
         "description": "One block of a generated Word document."
       },
+      "DocumentContentResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "title",
+          "text",
+          "truncated"
+        ],
+        "title": "DocumentContentResponse"
+      },
       "DocumentDetail": {
         "properties": {
           "id": {
@@ -73786,6 +74087,26 @@
         ],
         "title": "GoogleExchangeResponse"
       },
+      "GoogleFileRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "file_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "File Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "file_id"
+        ],
+        "title": "GoogleFileRequest"
+      },
       "GrantPermissionRequest": {
         "properties": {
           "grantee_id": {
@@ -74091,6 +74412,15 @@
               }
             ],
             "title": "Request Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "incremental",
+              "backfill"
+            ],
+            "title": "Mode",
+            "default": "incremental"
           }
         },
         "additionalProperties": false,
@@ -91418,6 +91748,26 @@
         ],
         "title": "RegionExtractResponse"
       },
+      "RegisterSelectedFileRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "file_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "File Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "file_id"
+        ],
+        "title": "RegisterSelectedFileRequest"
+      },
       "RegisteredToolSpec": {
         "properties": {
           "kind": {
@@ -93716,6 +94066,68 @@
           "queue_item_id"
         ],
         "title": "RetrySubmitRequest"
+      },
+      "ReviewedGmailRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "to": {
+            "type": "string",
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "To"
+          },
+          "cc": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Cc"
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 998,
+            "minLength": 1,
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 100000,
+            "minLength": 1,
+            "title": "Body"
+          },
+          "user_confirmed": {
+            "type": "boolean",
+            "const": true,
+            "title": "User Confirmed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "to",
+          "subject",
+          "body",
+          "user_confirmed"
+        ],
+        "title": "ReviewedGmailRequest"
+      },
+      "ReviewedGmailResponse": {
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "title": "Message Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message_id"
+        ],
+        "title": "ReviewedGmailResponse"
       },
       "RichDataStoreMember": {
         "properties": {
@@ -96669,6 +97081,60 @@
         ],
         "title": "SearchSourceRef"
       },
+      "SelectedFileResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          },
+          "resource_type": {
+            "type": "string",
+            "enum": [
+              "google_document",
+              "google_spreadsheet"
+            ],
+            "title": "Resource Type"
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type"
+          },
+          "web_view_link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Web View Link"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "connection_id",
+          "resource_type",
+          "file_id",
+          "name",
+          "mime_type",
+          "web_view_link"
+        ],
+        "title": "SelectedFileResponse"
+      },
       "SeoCapability": {
         "type": "string",
         "enum": [
@@ -97423,6 +97889,33 @@
         "title": "ShareLinkRecord",
         "description": "A single share-link row (canonical ``platform.share_links``)."
       },
+      "SheetReadRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "file_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "File Id"
+          },
+          "range_a1": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Range A1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "file_id",
+          "range_a1"
+        ],
+        "title": "SheetReadRequest"
+      },
       "SheetSpec": {
         "properties": {
           "name": {
@@ -97472,6 +97965,80 @@
         "type": "object",
         "title": "SheetSpec",
         "description": "One sheet of a generated workbook."
+      },
+      "SheetValuesResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "range": {
+            "type": "string",
+            "title": "Range"
+          },
+          "values": {
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Values"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "range",
+          "values",
+          "truncated"
+        ],
+        "title": "SheetValuesResponse"
+      },
+      "SheetWriteRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "file_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "File Id"
+          },
+          "range_a1": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Range A1"
+          },
+          "values": {
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Values"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "file_id",
+          "range_a1",
+          "values"
+        ],
+        "title": "SheetWriteRequest"
       },
       "SignedUrlResponse": {
         "properties": {

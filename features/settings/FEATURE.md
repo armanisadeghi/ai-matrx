@@ -198,6 +198,8 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 
 ## Change log
 
+- `2026-08-06` — Added the Google Workspace child tab under Integrations. It thinly renders the same focused OAuth reviewer workspace used by `/google-workspace-review`; no parallel connection flow was introduced.
+
 - `2026-07-21` — **New root tab `devices` ("Camera, microphone & speakers")** (`tabs/MediaDevicesTab.tsx`, synced): unified mic/speaker/camera device pickers on the `userPreferences.mediaDevices` module via the shared `useAudioDevices` controller, facing-mode preference via `useSetting`, permission grant rows, and a link to the Media control window for live testing. Added the official `SettingsDeviceSelect` primitive (live enumerateDevices options; emits the persisted id+label pair). `VideoConferenceTab` lost its placeholder camera select (now a cross-tab link to `devices` via `useSettingsTabNavigate`); legacy deep-link aliases `audioDevices`/`mediaDevices` → `devices` added to both alias maps.
 
 - `2026-07-20` — Added verified SMS enrollment and opt-out to the production Messaging tab using the shared SMS workflow and official settings primitives.

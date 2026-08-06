@@ -1,29 +1,7 @@
-export const GOOGLE_IDENTITY_SCOPES = ["openid", "email", "profile"] as const;
+import { GOOGLE_SEARCH_CONSOLE_SCOPES } from "@/lib/googleScopes";
 
-export const GOOGLE_SEARCH_CONSOLE_SCOPES = [
-  ...GOOGLE_IDENTITY_SCOPES,
-  "https://www.googleapis.com/auth/webmasters.readonly",
-] as const;
-
-export const GOOGLE_ANALYTICS_SCOPES = [
-  ...GOOGLE_IDENTITY_SCOPES,
-  "https://www.googleapis.com/auth/analytics.readonly",
-] as const;
-
-export const MARKETING_GOOGLE_SCOPES = [
-  ...GOOGLE_SEARCH_CONSOLE_SCOPES,
-  "https://www.googleapis.com/auth/analytics.readonly",
-] as const;
-
-export const GOOGLE_YOUTUBE_SCOPES = [
-  ...GOOGLE_IDENTITY_SCOPES,
-  "https://www.googleapis.com/auth/youtube.readonly",
-] as const;
-
-export const GOOGLE_CONNECTION_SCOPES = [
-  ...MARKETING_GOOGLE_SCOPES,
-  "https://www.googleapis.com/auth/youtube.readonly",
-] as const;
+/** @deprecated Import the capability bundle from `@/lib/googleScopes`. */
+export const GOOGLE_CONNECTION_SCOPES = GOOGLE_SEARCH_CONSOLE_SCOPES;
 
 export type GoogleConnectionOwner =
   { type: "user" } | { type: "organization"; organizationId: string };
@@ -71,7 +49,9 @@ export interface GoogleConnectionResource {
   resource_type:
     | "search_console_property"
     | "analytics_property"
-    | "youtube_channel";
+    | "youtube_channel"
+    | "google_document"
+    | "google_spreadsheet";
   resource_ref: string;
   display_name: string;
   permission_level: string | null;

@@ -3770,6 +3770,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/google-workspace/files/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register File */
+        post: operations["register_file_google_workspace_files_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-workspace/documents/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read Document */
+        post: operations["read_document_google_workspace_documents_read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-workspace/documents/append": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Append Document */
+        post: operations["append_document_google_workspace_documents_append_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-workspace/sheets/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read Sheet */
+        post: operations["read_sheet_google_workspace_sheets_read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-workspace/sheets/write": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Write Sheet */
+        post: operations["write_sheet_google_workspace_sheets_write_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-workspace/gmail/send-reviewed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Gmail */
+        post: operations["send_gmail_google_workspace_gmail_send_reviewed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bing-integrations/authorize-url": {
         parameters: {
             query?: never;
@@ -18358,6 +18460,15 @@ export interface components {
             /** Filter Summary */
             filter_summary: string;
         };
+        /** AppendDocumentRequest */
+        AppendDocumentRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** File Id */
+            file_id: string;
+            /** Text */
+            text: string;
+        };
         /** ApplyPinUpgradesRequest */
         ApplyPinUpgradesRequest: {
             /** Selected Keys */
@@ -24185,6 +24296,17 @@ export interface components {
              */
             header?: boolean;
         };
+        /** DocumentContentResponse */
+        DocumentContentResponse: {
+            /** File Id */
+            file_id: string;
+            /** Title */
+            title: string;
+            /** Text */
+            text: string;
+            /** Truncated */
+            truncated: boolean;
+        };
         /** DocumentDetail */
         DocumentDetail: {
             /** Id */
@@ -26767,6 +26889,13 @@ export interface components {
             /** Connection Id */
             connection_id: string;
         };
+        /** GoogleFileRequest */
+        GoogleFileRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** File Id */
+            file_id: string;
+        };
         /** GrantPermissionRequest */
         GrantPermissionRequest: {
             /** Grantee Id */
@@ -26878,6 +27007,12 @@ export interface components {
             force_refresh?: boolean;
             /** Request Id */
             request_id?: string | null;
+            /**
+             * Mode
+             * @default incremental
+             * @enum {string}
+             */
+            mode?: "incremental" | "backfill";
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -33185,6 +33320,13 @@ export interface components {
              */
             notes?: string[];
         };
+        /** RegisterSelectedFileRequest */
+        RegisterSelectedFileRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** File Id */
+            file_id: string;
+        };
         /** RegisteredToolSpec */
         RegisteredToolSpec: {
             /**
@@ -34025,6 +34167,29 @@ export interface components {
         RetrySubmitRequest: {
             /** Queue Item Id */
             queue_item_id: string;
+        };
+        /** ReviewedGmailRequest */
+        ReviewedGmailRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** To */
+            to: string;
+            /** Cc */
+            cc?: string[];
+            /** Subject */
+            subject: string;
+            /** Body */
+            body: string;
+            /**
+             * User Confirmed
+             * @constant
+             */
+            user_confirmed: true;
+        };
+        /** ReviewedGmailResponse */
+        ReviewedGmailResponse: {
+            /** Message Id */
+            message_id: string;
         };
         /** RichDataStoreMember */
         RichDataStoreMember: {
@@ -35248,6 +35413,26 @@ export interface components {
             /** Source Id */
             source_id: string;
         };
+        /** SelectedFileResponse */
+        SelectedFileResponse: {
+            /** Id */
+            id: string;
+            /** Connection Id */
+            connection_id: string;
+            /**
+             * Resource Type
+             * @enum {string}
+             */
+            resource_type: "google_document" | "google_spreadsheet";
+            /** File Id */
+            file_id: string;
+            /** Name */
+            name: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Web View Link */
+            web_view_link: string | null;
+        };
         /**
          * SeoCapability
          * @enum {string}
@@ -35447,6 +35632,15 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** SheetReadRequest */
+        SheetReadRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** File Id */
+            file_id: string;
+            /** Range A1 */
+            range_a1: string;
+        };
         /**
          * SheetSpec
          * @description One sheet of a generated workbook.
@@ -35466,6 +35660,28 @@ export interface components {
              * @default true
              */
             freeze_header?: boolean;
+        };
+        /** SheetValuesResponse */
+        SheetValuesResponse: {
+            /** File Id */
+            file_id: string;
+            /** Range */
+            range: string;
+            /** Values */
+            values: string[][];
+            /** Truncated */
+            truncated: boolean;
+        };
+        /** SheetWriteRequest */
+        SheetWriteRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** File Id */
+            file_id: string;
+            /** Range A1 */
+            range_a1: string;
+            /** Values */
+            values: string[][];
         };
         /** SignedUrlResponse */
         SignedUrlResponse: {
@@ -47564,6 +47780,204 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GoogleConnectionCredentialResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_file_google_workspace_files_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterSelectedFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelectedFileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_document_google_workspace_documents_read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentContentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    append_document_google_workspace_documents_append_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppendDocumentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentContentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_sheet_google_workspace_sheets_read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SheetReadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetValuesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_sheet_google_workspace_sheets_write_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SheetWriteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetValuesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_gmail_google_workspace_gmail_send_reviewed_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewedGmailRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewedGmailResponse"];
                 };
             };
             /** @description Validation Error */

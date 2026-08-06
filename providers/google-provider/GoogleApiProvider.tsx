@@ -8,7 +8,11 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import { REGISTERED_GOOGLE_SCOPE_URLS } from "@/lib/googleScopes";
+import { GOOGLE_IDENTITY_SCOPES } from "@/lib/googleScopes";
+import type {
+  GooglePickerNamespace,
+  GooglePlatformApi,
+} from "@/lib/googlePicker";
 
 // ===== PERFORMANCE TIMING LOGS =====
 const GOOGLE_PROVIDER_MODULE_LOAD =
@@ -30,7 +34,9 @@ declare global {
           revoke: (token: string, callback: () => void) => void;
         };
       };
+      picker?: GooglePickerNamespace;
     };
+    gapi?: GooglePlatformApi;
     googleOneTapPrompt?: boolean;
   }
 }
@@ -41,6 +47,9 @@ interface TokenClientConfig {
   scope: string;
   callback: (response: TokenResponse) => void;
   error_callback?: (error: ErrorResponse) => void;
+  include_granted_scopes?: boolean;
+  prompt?: "" | "consent" | "select_account";
+  login_hint?: string;
 }
 
 interface CodeClientConfig {
@@ -50,6 +59,9 @@ interface CodeClientConfig {
   select_account: boolean;
   callback: (response: CodeResponse) => void;
   error_callback?: (error: ErrorResponse) => void;
+  include_granted_scopes?: boolean;
+  enable_granular_consent?: boolean;
+  login_hint?: string;
 }
 
 interface CodeClient {
@@ -87,8 +99,14 @@ interface GoogleAPIContextType {
   isInitializing: boolean;
   error: string | null;
   token: string | null;
-  signIn: (scopesToRequest: string[]) => Promise<boolean>;
-  requestAuthorizationCode: (scopesToRequest: string[]) => Promise<string>;
+  signIn: (
+    scopesToRequest: string[],
+    loginHint?: string,
+  ) => Promise<string | null>;
+  requestAuthorizationCode: (
+    scopesToRequest: string[],
+    loginHint?: string,
+  ) => Promise<string>;
   signOut: () => Promise<void>;
   getGrantedScopes: () => string[];
   requestScopes: (scopes: string[]) => Promise<boolean>;
@@ -123,88 +141,47 @@ interface GoogleAPIProviderProps {
   scopes?: string[];
 }
 
-const TOKEN_STORAGE_KEY = "google_auth_token";
-const SCOPES_STORAGE_KEY = "google_auth_scopes";
-
 export default function GoogleAPIProvider({
   children,
   scopes,
 }: GoogleAPIProviderProps) {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
-  const [token, setToken] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem(TOKEN_STORAGE_KEY);
-  });
-  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(token));
+  // Picker tokens are short-lived browser credentials. Keep them in memory
+  // only; the durable refresh token belongs exclusively to aidream's vault.
+  const [token, setToken] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isInitializing, setIsInitializing] = useState(Boolean(clientId));
   const [error, setError] = useState<string | null>(
     clientId ? null : "Missing Google API Client ID.",
   );
-  const [grantedScopes, setGrantedScopes] = useState<string[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const savedScopes = localStorage.getItem(SCOPES_STORAGE_KEY);
-      const parsed: unknown = savedScopes ? JSON.parse(savedScopes) : [];
-      return Array.isArray(parsed) &&
-        parsed.every((scope) => typeof scope === "string")
-        ? parsed
-        : [];
-    } catch {
-      return [];
-    }
-  });
+  const [grantedScopes, setGrantedScopes] = useState<string[]>([]);
   const [authInProgress, setAuthInProgress] = useState(false);
 
   const tokenClientRef = useRef<TokenClient | null>(null);
 
   const resetError = useCallback(() => setError(null), []);
 
-  const allScopes = scopes ?? [...REGISTERED_GOOGLE_SCOPE_URLS];
+  const allScopes = scopes ?? [...GOOGLE_IDENTITY_SCOPES];
 
-  const saveAuthToStorage = useCallback(
-    (newToken: string, newScopes: string[]) => {
-      try {
-        localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
-        localStorage.setItem(SCOPES_STORAGE_KEY, JSON.stringify(newScopes));
-      } catch (e) {
-        console.error("Error saving to localStorage:", e);
+  const handleCredentialResponse = useCallback((response: TokenResponse) => {
+    if (response.access_token) {
+      setToken(response.access_token);
+      setIsAuthenticated(true);
+      const newScopes = response.scope ? response.scope.split(" ") : [];
+      setGrantedScopes((prevScopes) => {
+        const updatedScopes = [...new Set([...prevScopes, ...newScopes])];
+        return updatedScopes;
+      });
+      return response.access_token;
+    } else {
+      console.log("No token in response.");
+      if (response.error) {
+        setError(
+          `Google Auth Error: ${response.error_description || response.error}`,
+        );
       }
-    },
-    [],
-  );
-
-  const handleCredentialResponse = useCallback(
-    (response: TokenResponse) => {
-      if (response.access_token) {
-        setToken(response.access_token);
-        setIsAuthenticated(true);
-        const newScopes = response.scope ? response.scope.split(" ") : [];
-        setGrantedScopes((prevScopes) => {
-          const updatedScopes = [...new Set([...prevScopes, ...newScopes])];
-          saveAuthToStorage(response.access_token, updatedScopes);
-          return updatedScopes;
-        });
-        return true;
-      } else {
-        console.log("No token in response.");
-        if (response.error) {
-          setError(
-            `Google Auth Error: ${response.error_description || response.error}`,
-          );
-        }
-        return false;
-      }
-    },
-    [saveAuthToStorage],
-  );
-
-  const clearAuthFromStorage = useCallback(() => {
-    try {
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-      localStorage.removeItem(SCOPES_STORAGE_KEY);
-    } catch (e) {
-      console.error("Error clearing localStorage:", e);
+      return null;
     }
   }, []);
 
@@ -252,59 +229,38 @@ export default function GoogleAPIProvider({
     loadGoogleIdentityServices();
   }, [clientId]);
 
-  const initTokenClient = useCallback(
-    (scopesToRequest: string[]) => {
-      if (!window.google?.accounts?.oauth2 || !clientId) return null;
-
-      return window.google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: scopesToRequest.join(" "),
-        callback: (response: TokenResponse) => {
-          handleCredentialResponse(response);
-          setAuthInProgress(false);
-        },
-        error_callback: (err: ErrorResponse) => {
-          console.log("Token client error:", err);
-          setAuthInProgress(false);
-          if (
-            err.type !== "popup_closed" &&
-            err.type !== "popup_closed_by_user"
-          ) {
-            setError(`Auth failed: ${err.type}`);
-          }
-        },
-      });
-    },
-    [clientId, handleCredentialResponse],
-  );
-
-  const signIn = async (scopesToRequest: string[]) => {
+  const signIn = async (scopesToRequest: string[], loginHint?: string) => {
     if (!isGoogleLoaded || !window.google?.accounts) {
       setError("Google auth not initialized.");
-      return false;
+      return null;
     }
     if (!clientId) {
       setError("Google client ID is not configured.");
-      return false;
+      return null;
     }
     if (authInProgress) {
       console.log("Auth in progress, skipping...");
-      return false;
+      return null;
     }
 
     resetError();
     setAuthInProgress(true);
 
-    return new Promise<boolean>((resolve) => {
+    return new Promise<string | null>((resolve) => {
       const finalScopes =
         scopesToRequest.length > 0 ? scopesToRequest : allScopes;
 
       tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: finalScopes.join(" "),
+        // Picker receives a drive.file-only browser token even if this Google
+        // account later grants gmail.send to the same Cloud project.
+        include_granted_scopes: false,
+        prompt: "",
+        ...(loginHint ? { login_hint: loginHint } : {}),
         callback: (response: TokenResponse) => {
-          const success = handleCredentialResponse(response);
-          resolve(success);
+          const accessToken = handleCredentialResponse(response);
+          resolve(accessToken);
           setAuthInProgress(false);
         },
         error_callback: (err: ErrorResponse) => {
@@ -316,7 +272,7 @@ export default function GoogleAPIProvider({
           ) {
             setError(`Auth failed: ${err.type}`);
           }
-          resolve(false);
+          resolve(null);
         },
       });
       tokenClientRef.current.requestAccessToken();
@@ -325,6 +281,7 @@ export default function GoogleAPIProvider({
 
   const requestAuthorizationCode = async (
     scopesToRequest: string[],
+    loginHint?: string,
   ): Promise<string> => {
     if (!isGoogleLoaded || !window.google?.accounts?.oauth2) {
       throw new Error("Google authorization is still loading.");
@@ -344,6 +301,9 @@ export default function GoogleAPIProvider({
         scope: (scopesToRequest.length ? scopesToRequest : allScopes).join(" "),
         ux_mode: "popup",
         select_account: true,
+        include_granted_scopes: true,
+        enable_granular_consent: true,
+        ...(loginHint ? { login_hint: loginHint } : {}),
         callback: (response: CodeResponse) => {
           setAuthInProgress(false);
           if (response.code) {
@@ -383,13 +343,11 @@ export default function GoogleAPIProvider({
           setToken(null);
           setIsAuthenticated(false);
           setGrantedScopes([]);
-          clearAuthFromStorage();
           resetError();
         });
       } else {
         setIsAuthenticated(false);
         setGrantedScopes([]);
-        clearAuthFromStorage();
         resetError();
       }
     } catch (err: unknown) {
@@ -424,31 +382,31 @@ export default function GoogleAPIProvider({
     setAuthInProgress(true);
 
     return new Promise<boolean>((resolve) => {
-      const client = initTokenClient(scopes);
+      const client = window.google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: scopes.join(" "),
+        include_granted_scopes: true,
+        prompt: "consent",
+        callback: (response: TokenResponse) => {
+          const accessToken = handleCredentialResponse(response);
+          resolve(Boolean(accessToken));
+          setAuthInProgress(false);
+        },
+        error_callback: (err: ErrorResponse) => {
+          console.log("Scope request error:", err);
+          setAuthInProgress(false);
+          if (
+            err.type !== "popup_closed" &&
+            err.type !== "popup_closed_by_user"
+          ) {
+            setError(`Scope request failed: ${err.type}`);
+          }
+          resolve(false);
+        },
+      });
+      tokenClientRef.current = client;
       if (client) {
         client.requestAccessToken();
-        tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
-          client_id: clientId,
-          scope: scopes.join(" "),
-          callback: (response: TokenResponse) => {
-            const success = handleCredentialResponse(response);
-            resolve(success);
-            setAuthInProgress(false);
-          },
-          error_callback: (err: ErrorResponse) => {
-            console.log("Scope request error:", err);
-            setAuthInProgress(false);
-            if (
-              err.type !== "popup_closed" &&
-              err.type !== "popup_closed_by_user"
-            ) {
-              setError(`Scope request failed: ${err.type}`);
-            }
-            resolve(false);
-          },
-        });
-        console.log("Requesting scopes:", scopes);
-        tokenClientRef.current.requestAccessToken();
       } else {
         setError("Failed to initialize Google token client for scope request.");
         setAuthInProgress(false);

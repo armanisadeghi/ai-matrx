@@ -1,5 +1,6 @@
 import { connectionResource } from "@/features/marketing/google/service";
 import { GOOGLE_CONNECTION_SCOPES } from "@/features/marketing/google/types";
+import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 
 const baseResource = {
   id: "resource-1",
@@ -26,6 +27,22 @@ describe("Google OAuth connection resources", () => {
     });
   });
 
+  it.each(["google_document", "google_spreadsheet"] as const)(
+    "accepts Picker-selected %s resources",
+    (resourceType) => {
+      expect(
+        connectionResource({
+          ...baseResource,
+          resource_type: resourceType,
+          resource_ref: "selected-file-1",
+        }),
+      ).toMatchObject({
+        resource_type: resourceType,
+        resource_ref: "selected-file-1",
+      });
+    },
+  );
+
   it("fails loudly for an unknown resource type", () => {
     expect(() =>
       connectionResource({
@@ -35,15 +52,13 @@ describe("Google OAuth connection resources", () => {
     ).toThrow("Unknown Google connection resource type");
   });
 
-  it("requests one combined read-only connection scope set", () => {
-    expect(GOOGLE_CONNECTION_SCOPES).toContain(
-      "https://www.googleapis.com/auth/webmasters.readonly",
+  it("keeps marketing authorization limited to Search Console", () => {
+    expect(GOOGLE_CONNECTION_SCOPES).toContain(GOOGLE_SCOPE.webmastersReadonly);
+    expect(GOOGLE_CONNECTION_SCOPES).not.toContain(
+      GOOGLE_SCOPE.analyticsReadonly,
     );
-    expect(GOOGLE_CONNECTION_SCOPES).toContain(
-      "https://www.googleapis.com/auth/analytics.readonly",
-    );
-    expect(GOOGLE_CONNECTION_SCOPES).toContain(
-      "https://www.googleapis.com/auth/youtube.readonly",
+    expect(GOOGLE_CONNECTION_SCOPES).not.toContain(
+      GOOGLE_SCOPE.youtubeReadonly,
     );
     expect(new Set(GOOGLE_CONNECTION_SCOPES).size).toBe(
       GOOGLE_CONNECTION_SCOPES.length,

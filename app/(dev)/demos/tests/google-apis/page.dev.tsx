@@ -1,10 +1,6 @@
 "use client";
 
-import GoogleAccessCard from "@/components/GoogleAccessCard";
-import {
-  googleServices,
-  REGISTERED_GOOGLE_SCOPE_URLS,
-} from "@/lib/googleScopes";
+import { GOOGLE_SEARCH_CONSOLE_SCOPES } from "@/lib/googleScopes";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
 import { useEffect } from "react";
 
@@ -56,12 +52,12 @@ export default function GoogleAccessPage() {
               />
             </svg>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-              Google OAuth — Registered Scopes
+              Google OAuth capability registry
             </h1>
           </div>
           <p className="text-muted-foreground max-w-2xl text-center text-sm">
-            Only the four scopes registered on the AI Matrx GCP consent screen.
-            Authorize each one individually to verify consent-screen alignment.
+            Development-only inspection of the canonical capability bundles.
+            Production users authorize each capability in context.
           </p>
         </div>
 
@@ -76,9 +72,11 @@ export default function GoogleAccessPage() {
         )}
 
         <div className="w-full max-w-2xl mb-6 bg-card rounded-xl shadow-md p-4 border border-border">
-          <h2 className="text-sm font-medium mb-2">Registered scope URLs</h2>
+          <h2 className="text-sm font-medium mb-2">
+            Search Console request bundle
+          </h2>
           <ul className="space-y-1">
-            {REGISTERED_GOOGLE_SCOPE_URLS.map((scopeUrl) => (
+            {GOOGLE_SEARCH_CONSOLE_SCOPES.map((scopeUrl) => (
               <li
                 key={scopeUrl}
                 className="font-mono text-xs break-all text-muted-foreground"
@@ -116,7 +114,7 @@ export default function GoogleAccessPage() {
                   onClick={() =>
                     isAuthenticated
                       ? signOut()
-                      : signIn([...REGISTERED_GOOGLE_SCOPE_URLS])
+                      : signIn([...GOOGLE_SEARCH_CONSOLE_SCOPES])
                   }
                   disabled={!isGoogleLoaded || !hasClientId}
                   className={`px-4 py-2 rounded-lg text-white font-medium ${
@@ -127,20 +125,11 @@ export default function GoogleAccessPage() {
                         : "bg-blue-600 hover:bg-blue-700"
                   }`}
                 >
-                  {isAuthenticated ? "Sign out" : "Sign in (all 4 scopes)"}
+                  {isAuthenticated ? "Sign out" : "Authorize Search Console"}
                 </button>
               )}
             </div>
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full">
-          {Object.keys(googleServices).map((service) => (
-            <GoogleAccessCard
-              key={service}
-              service={service as keyof typeof googleServices}
-            />
-          ))}
         </div>
       </div>
     </div>
