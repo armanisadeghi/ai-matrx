@@ -40,7 +40,11 @@ import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
 import { planKeys, usePlanNodes } from "../../data/hooks";
-import { createPlanNode, updatePlanNode } from "../../data/service";
+import {
+  createPlanNode,
+  listKeywordLabels,
+  updatePlanNode,
+} from "../../data/service";
 import { usePlanWorkspaceParams } from "../../hooks/usePlanWorkspaceParams";
 import { useContentPlanSites } from "../../components/ContentPlanHeader";
 import type { PlanNodeRow } from "../../types";
@@ -737,6 +741,14 @@ export function SetupView() {
     const family = expanded.families.find((item) => item.key === familyKey);
     const staged = topics[familyKey] ?? [];
     if (!family || staged.length === 0) return;
+    if (!statusId) {
+      // The same condition `handleCommit` refuses on — a page with no status
+      // is invisible to every status-driven view and pipeline stage.
+      toast.error(
+        `No "${DEFAULT_STATUS_SLUG}" plan status exists in the category registry yet — the pages would have no status.`,
+      );
+      return;
+    }
     const ok = await confirm({
       title: `Create ${staged.length} ${family.label.toLowerCase()} page${staged.length === 1 ? "" : "s"}?`,
       description:
@@ -816,14 +828,48 @@ export function SetupView() {
   // ── keyword binding ─────────────────────────────────────────────────────
   const handleBindKeywords = async () => {
     if (!site || !siteId) return;
+    // Distinguish "still loading" and "the read failed" from "there are none"
+    // — stating a fact the data does not support is how a transient RLS or
+    // network failure gets read as a missing keyword strategy.
+    if (keywordPool.isLoading) {
+      setKeywordError("Still loading this site's keywords — try again in a moment.");
+      return;
+    }
+    if (keywordPool.isError) {
+      setKeywordError(
+        `Could not load this site's keywords: ${extractErrorMessage(keywordPool.error)}`,
+      );
+      return;
+    }
     const pool = keywordPool.data ?? [];
     if (pool.length === 0) {
-      setKeywordError("This site has no keywords in its pool yet.");
+      setKeywordError(
+        "This site has no keywords in its pool yet — add them in Search & Keywords first.",
+      );
       return;
     }
     setKeywordError(null);
     try {
-      const phraseById = new Map(pool.map((row) => [row.keywordId, row.phrase]));
+      // Phrases for the pool AND for whatever the pages ALREADY target.
+      // `plan.node.primary_keyword_id` FKs to `seo.keyword` globally while the
+      // pool is this site's `site_keyword_value` subset — and the hand picker
+      // (KeywordPicker) searches the global plane, so a deliberately-chosen
+      // keyword is routinely out of pool. Resolving from the pool alone would
+      // render every such page to the agent as "-" (unbound) and hide the
+      // "(replaces …)" warning, so the user would approve overwriting a real
+      // choice believing they were filling a gap.
+      const currentIds = Array.from(
+        new Set(
+          nodeRows
+            .map((node) => node.primary_keyword_id)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      );
+      const currentLabels = await listKeywordLabels(currentIds);
+      const phraseById = new Map<string, string>([
+        ...pool.map((row) => [row.keywordId, row.phrase] as const),
+        ...currentLabels.map((row) => [row.id, row.phrase] as const),
+      ]);
       const outcome = await agents.bindKeywords({
         pages: buildKeywordPageLines(nodeRows, phraseById),
         keyword_pool: pool
@@ -854,7 +900,12 @@ export function SetupView() {
       );
       const staged: StagedKeywordAssignment[] = [];
       const unmatched: string[] = [];
-      const usedKeywordIds = new Set<string>();
+      // One keyword per page AND per plan — two pages on one query is the
+      // cannibalization this step exists to prevent. SEEDED with every
+      // keyword the plan already uses: a phrase held by a page the agent did
+      // not mention is just as taken as one it did.
+      const usedKeywordIds = new Set<string>(currentIds);
+      const stagedNodeIds = new Set<string>();
       for (const item of outcome.assignments) {
         const node = nodeByRoute.get(item.route);
         const keywordId = idByPhrase.get(item.keywordPhrase.trim().toLowerCase());
@@ -862,11 +913,15 @@ export function SetupView() {
           unmatched.push(item.keywordPhrase);
           continue;
         }
-        // One keyword per page AND per plan — a duplicate would make two pages
-        // compete for the same query, which is what this step exists to avoid.
-        if (usedKeywordIds.has(keywordId)) continue;
+        // Already on this page — nothing to stage, and the id stays reserved
+        // (it is seeded above, so no later item can claim it).
         if (node.primary_keyword_id === keywordId) continue;
+        if (usedKeywordIds.has(keywordId)) continue;
+        // One row per node: two assignments for one route would render with a
+        // duplicate React key and fire two writes at the same page.
+        if (stagedNodeIds.has(node.id)) continue;
         usedKeywordIds.add(keywordId);
+        stagedNodeIds.add(node.id);
         staged.push({
           route: item.route,
           nodeId: node.id,
@@ -1466,6 +1521,12 @@ export function SetupView() {
                   <KeywordBindSection
                     nodes={nodeRows}
                     poolSize={(keywordPool.data ?? []).length}
+                    poolLoading={keywordPool.isLoading}
+                    poolError={
+                      keywordPool.isError
+                        ? extractErrorMessage(keywordPool.error)
+                        : null
+                    }
                     assignments={keywordPlan?.assignments ?? null}
                     notes={keywordPlan?.notes ?? ""}
                     busy={agents.keywordsBusy}

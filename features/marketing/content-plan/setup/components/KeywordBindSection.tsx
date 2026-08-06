@@ -35,6 +35,8 @@ export interface StagedKeywordAssignment {
 export function KeywordBindSection({
   nodes,
   poolSize,
+  poolLoading = false,
+  poolError = null,
   assignments,
   notes,
   busy,
@@ -50,6 +52,10 @@ export function KeywordBindSection({
   nodes: PlanNodeRow[];
   /** How many keywords the site actually has to choose from. */
   poolSize: number;
+  /** The pool read is still in flight — NOT the same as "there are none". */
+  poolLoading?: boolean;
+  /** The pool read failed — NOT the same as "there are none". */
+  poolError?: string | null;
   assignments: StagedKeywordAssignment[] | null;
   notes: string;
   busy: boolean;
@@ -64,6 +70,8 @@ export function KeywordBindSection({
 }) {
   const missing = nodes.filter((node) => !node.primary_keyword_id).length;
   const disabledReason = (() => {
+    if (poolLoading) return "Loading this site's keywords…";
+    if (poolError) return `Could not load this site's keywords: ${poolError}`;
     if (poolSize === 0) {
       return "This site has no keywords yet — add them in Search & Keywords first.";
     }

@@ -340,6 +340,29 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-30 — Claude (round 7): **adversarial-review fixes on the keyword
+  binder / brief writer / promotion** (17-agent find+refute; 10 confirmed).
+  **The load-bearing one:** `primary_keyword_id` FKs to `seo.keyword`
+  GLOBALLY while the pool is this site's `site_keyword_value` subset, and the
+  hand picker searches the global plane — so resolving current keywords from
+  the pool alone rendered a deliberately-bound page to the agent as `-`
+  (unbound) and dropped the "(replaces …)" warning. Verified live: **100% of
+  bound `plan.node` rows hold a keyword outside their own site's pool**, so
+  every hand-picked keyword was in line to be silently overwritten. Current
+  phrases now resolve via `listKeywordLabels` (global) as well as the pool.
+  Also: `usedKeywordIds` is SEEDED from every keyword the plan already uses
+  and reserved before the no-op skip (two pages could otherwise land on one
+  query — the exact cannibalization the step prevents); one staged row per
+  node; pool loading/error states no longer render as "this site has no
+  keywords". Brief writer: an unmount guard (the panel is keyed by node id,
+  so switching nodes discarded the draft while still toasting success), the
+  busy flag now covers the two pre-agent fetches, `existing_brief` sends the
+  LIVE draft instead of the saved row, and Deepen is disabled while a draft
+  is in flight. Promotion: refuses loudly without a `planned` status (as the
+  commit path does), and slug-collapsed titles are reported as skipped
+  instead of counted as "already existed" (`slugify` never returns empty, so
+  that branch was dead).
+
 - 2026-07-30 — Claude (round 6): **an agent at every remaining step.** Two more
   platform agents: **Content Plan Keyword Binder**
   (`8ffb091c-dccf-4550-a14f-95807fd96b95`) assigns every page a primary

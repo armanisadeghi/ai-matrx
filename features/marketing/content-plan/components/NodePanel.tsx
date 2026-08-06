@@ -7,7 +7,7 @@
  * Save errors are the DB contract (slug shape, duplicate route, brandless
  * site…) — shown verbatim inside a friendly toast, never masked.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, PenLine, Sparkles, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -94,6 +94,23 @@ export function NodePanel({
   // blank lines works (transforming the controlled value ate them).
   const [briefText, setBriefText] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [draftingBrief, setDraftingBrief] = useState(false);
+  /** True from the FIRST click (pre-agent fetches included), not just the run. */
+  const briefDrafting = draftingBrief || agents.briefBusy;
+  /**
+   * Is this panel still on screen? Both call sites render
+   * `<NodePanel key={node.id}>`, so selecting another node (or leaving the
+   * view) UNMOUNTS this instance while a draft run is still in flight — the
+   * setState calls would be silent no-ops but the success toast would still
+   * fire, claiming a brief was drafted into a panel that no longer exists.
+   */
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   /**
    * Draft this page's brief into the panel (never saved for the user).
@@ -101,6 +118,14 @@ export function NodePanel({
    * without one there is nothing to ground the brief in, so it says so.
    */
   const handleDraftBrief = async () => {
+    // The panel is keyed by node.id, so switching nodes UNMOUNTS this
+    // instance while the run is still in flight. Capture the node this run
+    // belongs to and check it before touching state or toasting — otherwise
+    // the draft lands nowhere and a success toast still claims it worked.
+    const stillCurrent = () => mountedRef.current;
+    // Covers the two Supabase round-trips BEFORE the agent starts, during
+    // which `agents.briefBusy` is still false and the button looked idle.
+    setDraftingBrief(true);
     try {
       const fresh = await fetchFreshSite(siteId);
       const topicId = readSiteResearchTopicId(fresh.settings);
@@ -147,9 +172,13 @@ export function NodePanel({
         ]
           .filter(Boolean)
           .join("; "),
-        existing_brief: (node.brief ?? []).join("\n"),
+        // The LIVE brief (draft over row), not the saved row — the agent is
+        // told to improve what is on screen, and the user's unsaved edits are
+        // extended rather than contradicted.
+        existing_brief: (draft.brief ?? node.brief ?? []).join("\n"),
         guidance: "",
       });
+      if (!stillCurrent()) return;
       // STAGED into the draft — the user reads it and presses Save.
       setDraft((currentDraft) => ({ ...currentDraft, brief: outcome.brief }));
       setBriefText(outcome.brief.join("\n"));
@@ -157,7 +186,10 @@ export function NodePanel({
         `Drafted ${outcome.brief.length} brief line(s) — review, then Save.${outcome.notes ? ` ${outcome.notes}` : ""}`,
       );
     } catch (error) {
+      if (!stillCurrent()) return;
       toast.error(`Could not draft the brief: ${extractErrorMessage(error)}`);
+    } finally {
+      setDraftingBrief(false);
     }
   };
 
@@ -351,11 +383,11 @@ export function NodePanel({
           variant="outline"
           size="sm"
           className="h-7 gap-1.5 px-2 text-xs"
-          disabled={agents.briefBusy || deepening}
+          disabled={briefDrafting || deepening}
           title="AI: draft this page's brief from the research report into the editor below — you review and Save. (Deepen writes immediately and also attaches sources.)"
           onClick={() => void handleDraftBrief()}
         >
-          {agents.briefBusy ? (
+          {briefDrafting ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
             <PenLine className="h-3.5 w-3.5" />
@@ -366,7 +398,10 @@ export function NodePanel({
           variant="outline"
           size="sm"
           className="h-7 gap-1.5 px-2 text-xs"
-          disabled={deepening}
+          // Also blocked while a brief draft is in flight: Deepen rewrites the
+          // row server-side, and the older staged draft landing on top would
+          // silently mask it.
+          disabled={deepening || briefDrafting}
           title={
             deepeningThisNode
               ? (deepen.run.stage ?? "Deepening…")

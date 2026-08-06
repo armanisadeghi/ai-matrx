@@ -593,14 +593,16 @@ export async function promoteTopicsToPages(args: {
   let existing = 0;
   const failures: string[] = [];
   const usedSlugs = new Set(existingSlugs);
+  // `slugify` never returns empty (it falls back to "page"), so a title made
+  // only of punctuation — or two titles differing only in case — collapse onto
+  // ONE slug. That is a skipped title, not an existing page: conflating the
+  // two would report "already existed" for a page that was never written.
+  const collapsed: string[] = [];
   for (const title of args.topics) {
     const slug = slugify(title);
-    if (!slug) {
-      failures.push(`"${title}": produces no valid slug.`);
-      continue;
-    }
     if (usedSlugs.has(slug)) {
-      existing += 1;
+      if (existingSlugs.has(slug)) existing += 1;
+      else collapsed.push(title);
       continue;
     }
     usedSlugs.add(slug);
@@ -625,6 +627,11 @@ export async function promoteTopicsToPages(args: {
     } catch (error) {
       failures.push(`"${title}": ${extractErrorMessage(error)}`);
     }
+  }
+  for (const title of collapsed) {
+    failures.push(
+      `"${title}": its slug collides with another title in this batch — rename it.`,
+    );
   }
   return { created, existing, failed: failures.length, failures };
 }
