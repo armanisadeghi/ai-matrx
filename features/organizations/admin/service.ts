@@ -49,6 +49,7 @@ function mapMember(row: Record<string, unknown>): OrgAdminMember {
     cost24hMcents: num(row.cost_24h_mcents),
     requests24h: num(row.requests_24h),
     requests6h: num(row.requests_6h),
+    notes: (row.notes as string) ?? null,
   };
 }
 
@@ -124,11 +125,11 @@ export async function setMemberControls(
   const { error } = await supabase.rpc("org_admin_set_member_controls", {
     p_org_id: orgId,
     p_user_id: userId,
-    p_member_level: controls.memberLevel,
-    p_tier_override: controls.tierOverride,
-    p_storage_cap_bytes: controls.storageCapBytes,
-    p_monthly_budget_mcents: controls.monthlyBudgetMcents,
-    p_notes: controls.notes,
+    p_member_level: controls.memberLevel ?? undefined,
+    p_tier_override: controls.tierOverride ?? undefined,
+    p_storage_cap_bytes: controls.storageCapBytes ?? undefined,
+    p_monthly_budget_mcents: controls.monthlyBudgetMcents ?? undefined,
+    p_notes: controls.notes ?? undefined,
   });
   if (error) throw pgErrorToError(error);
 }

@@ -34,6 +34,8 @@ export interface OrgAdminMember {
   cost24hMcents: number;
   requests24h: number;
   requests6h: number;
+  /** Admin-only governance notes (iam.org_member_controls.notes). */
+  notes: string | null;
 }
 
 export type OrgMemberStatus = "active" | "suspended";
