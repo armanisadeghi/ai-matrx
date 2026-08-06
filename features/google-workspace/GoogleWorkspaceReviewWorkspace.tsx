@@ -304,7 +304,7 @@ export function GoogleWorkspaceReviewWorkspace() {
     <div className="mx-auto w-full max-w-5xl space-y-5 p-4 sm:p-6 lg:p-8">
       <header className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline">Google verification workspace</Badge>
+          <Badge variant="outline">Google Workspace connection</Badge>
           <Badge variant="secondary">Selected files only</Badge>
           <Badge variant="secondary">No Gmail reading</Badge>
         </div>
@@ -313,8 +313,8 @@ export function GoogleWorkspaceReviewWorkspace() {
             Google Workspace in AI Matrx
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base">
-            Work with source-of-truth Google Docs and Sheets inside your AI
-            workflow, then send a final email only after reviewing it. These
+            Work with source-of-truth Google Docs and Sheets inside AI Matrx,
+            then send a final email only after reviewing it. These
             actions require Google authorization because AI Matrx cannot access
             your private files or send from your Gmail account without it.
           </p>
