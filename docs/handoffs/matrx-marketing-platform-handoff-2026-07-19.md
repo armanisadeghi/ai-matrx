@@ -7,7 +7,7 @@ Primary schema: `web`
 
 ## Objective
 
-Continue the Marketing Site Platform as a dense, desktop-first agency workspace for managing many client websites. The stable hierarchy is site → canonical pages, while crawl sessions and immutable snapshots remain separate evidence. Integrations, analysis, findings, screenshots, costs, tasks, and CMS operations attach to the stable site/page identities.
+Continue the Marketing Site Platform as a dense, desktop-first agency workspace for managing many client websites. The stable hierarchy is site → stable page identities, while crawl sessions and immutable snapshots remain separate evidence. Integrations, analysis, findings, screenshots, costs, tasks, and CMS operations attach to the stable site/page identities.
 
 ## Non-negotiable architecture
 
