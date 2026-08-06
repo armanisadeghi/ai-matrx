@@ -67,6 +67,9 @@ export function SetupWorkOrderColumn({
   topics,
   onAiTopics,
   onClearTopics,
+  onApplyTopics,
+  applyingTopicsKey = null,
+  plannedRoutes,
 }: {
   expanded: ExpandedArchetype;
   readiness: Readiness;
@@ -117,6 +120,11 @@ export function SetupWorkOrderColumn({
   topics?: Record<string, string[]>;
   onAiTopics?: (familyKey: string) => void;
   onClearTopics?: (familyKey: string) => void;
+  /** Record this family's topics on its LIVE hub now, without a commit. */
+  onApplyTopics?: (familyKey: string) => void;
+  applyingTopicsKey?: string | null;
+  /** Routes already in the plan — tells us whether the hub exists yet. */
+  plannedRoutes?: Set<string>;
 }) {
   const [namingOpen, setNamingOpen] = useState<string | null>(null);
 
@@ -388,6 +396,12 @@ export function SetupWorkOrderColumn({
                       onClear={
                         onClearTopics ? () => onClearTopics(family.key) : undefined
                       }
+                      onApply={
+                        onApplyTopics && plannedRoutes?.has(family.route)
+                          ? () => onApplyTopics(family.key)
+                          : undefined
+                      }
+                      applying={applyingTopicsKey === family.key}
                     />
                   ) : null}
 
@@ -646,6 +660,8 @@ function CountOnlyTopics({
   anyBusy,
   onRun,
   onClear,
+  onApply,
+  applying,
 }: {
   family: ExpandedArchetype["families"][number];
   topics: string[] | null;
@@ -654,6 +670,9 @@ function CountOnlyTopics({
   anyBusy: boolean;
   onRun?: () => void;
   onClear?: () => void;
+  /** Present only when the hub page already exists in the plan. */
+  onApply?: () => void;
+  applying: boolean;
 }) {
   const [open, setOpen] = useState(false);
   if (!onRun) return null;
@@ -681,6 +700,18 @@ function CountOnlyTopics({
             onClick={onClear}
           >
             <X className="h-3 w-3" />
+          </button>
+        ) : null}
+        {topics && topics.length > 0 && onApply ? (
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={applying}
+            title={`Record these titles on ${family.route} now — no commit needed.`}
+            onClick={onApply}
+          >
+            {applying ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+            Record on hub
           </button>
         ) : null}
         <button

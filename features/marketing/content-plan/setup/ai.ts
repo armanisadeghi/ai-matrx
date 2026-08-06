@@ -101,6 +101,85 @@ export interface FamilyNamesResult {
   notes: string;
 }
 
+/**
+ * Platform agent "Content Plan Keyword Strategist" — permanent latest-version
+ * pointer (created 2026-07-30 via the AI Dream MCP). Variables:
+ * research_report, site_domain, current_plan, available_keywords, guidance.
+ *
+ * WHOLE-PLAN by design: it sees every page at once so money pages get
+ * distinct commercial primaries and educational pages are assigned easier
+ * terms that support a NAMED money page, with the internal links to carry
+ * authority there. A per-page keyword agent cannot do that — which is
+ * exactly why this one takes the whole tree.
+ */
+export const KEYWORD_STRATEGIST_AGENT_ID = "e063ded1-38b2-4721-a526-aad01d26e2ef";
+
+/** Whole-plan reasoning over a long report — well past the default poll. */
+const STRATEGY_TIMEOUT_MS = 420_000;
+
+export const PAGE_ROLES = ["money", "supporting", "navigational"] as const;
+export type PageRole = (typeof PAGE_ROLES)[number];
+
+export interface KeywordAssignment {
+  route: string;
+  pageRole: PageRole;
+  primaryKeyword: string | null;
+  /** The phrase is not in the existing library — flag it for review. */
+  primaryIsNew: boolean;
+  secondaryKeywords: string[];
+  /** For a supporting page: the money routes it exists to feed. */
+  supportsRoutes: string[];
+  internalLinks: Array<{ toRoute: string; anchorText: string }>;
+  reason: string;
+}
+
+export interface KeywordStrategyResult {
+  strategySummary: string;
+  assignments: KeywordAssignment[];
+  warnings: string[];
+}
+
+/**
+ * Platform agent "Content Plan Entity Attacher" — permanent latest-version
+ * pointer (created 2026-07-30 via the AI Dream MCP). Variables:
+ * current_plan, entity_roster, research_report, guidance. Chooses ONLY from
+ * the roster by label; gaps come back as `missing_entities`, never invented.
+ */
+export const ENTITY_ATTACHER_AGENT_ID = "a1a7784c-538b-44e5-b09d-40d215b79aa6";
+
+/**
+ * Platform agent "Content Plan Brief Writer" — permanent latest-version
+ * pointer (created 2026-07-30 via the AI Dream MCP). Variables: page,
+ * keyword_assignment, neighbours, research_report, guidance. Neighbour-aware
+ * by design: a brief written without the siblings duplicates them.
+ */
+export const BRIEF_WRITER_AGENT_ID = "711d29b5-0afc-494c-a665-6011e529efce";
+
+export interface EntityAttachment {
+  route: string;
+  entityLabel: string;
+  role: string;
+  reason: string;
+}
+
+export interface EntityAttachPlan {
+  attachments: EntityAttachment[];
+  missingEntities: Array<{
+    suggestedLabel: string;
+    entityType: string;
+    whyNeeded: string;
+  }>;
+  notes: string;
+}
+
+export interface PageBriefResult {
+  angle: string;
+  brief: string[];
+  mustNotCover: string[];
+  suggestedWordCount: number | null;
+  concerns: string[];
+}
+
 export const REVIEW_SEVERITIES = [
   "gap",
   "mismatch",
@@ -229,6 +308,195 @@ export function coerceEntityCuration(value: unknown): EntityCurationResult {
   };
 }
 
+export function coerceEntityAttachPlan(value: unknown): EntityAttachPlan {
+  const root = asRecord(value, "Entity Attacher output");
+  if (!Array.isArray(root.attachments)) {
+    throw new Error("Entity Attacher output has no attachments array");
+  }
+  const attachments: EntityAttachment[] = [];
+  for (const item of root.attachments) {
+    const row = asRecord(item, "attachments item");
+    if (
+      typeof row.route !== "string" ||
+      !row.route.trim() ||
+      typeof row.entity_label !== "string" ||
+      !row.entity_label.trim() ||
+      typeof row.role !== "string"
+    ) {
+      throw new Error("Entity Attacher returned a malformed attachment");
+    }
+    attachments.push({
+      route: row.route.trim(),
+      entityLabel: row.entity_label.trim(),
+      role: row.role.trim(),
+      reason: typeof row.reason === "string" ? row.reason : "",
+    });
+  }
+  const missing: EntityAttachPlan["missingEntities"] = [];
+  if (Array.isArray(root.missing_entities)) {
+    for (const item of root.missing_entities) {
+      if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+      const row = item as Record<string, unknown>;
+      if (typeof row.suggested_label !== "string" || !row.suggested_label.trim()) {
+        continue;
+      }
+      missing.push({
+        suggestedLabel: row.suggested_label.trim(),
+        entityType: typeof row.entity_type === "string" ? row.entity_type : "source",
+        whyNeeded: typeof row.why_needed === "string" ? row.why_needed : "",
+      });
+    }
+  }
+  return {
+    attachments,
+    missingEntities: missing,
+    notes: typeof root.notes === "string" ? root.notes : "",
+  };
+}
+
+export function coercePageBrief(value: unknown): PageBriefResult {
+  const root = asRecord(value, "Brief Writer output");
+  const lines = Array.isArray(root.brief)
+    ? root.brief.filter(
+        (line): line is string => typeof line === "string" && Boolean(line.trim()),
+      )
+    : [];
+  if (lines.length === 0) {
+    throw new Error("Brief Writer returned no brief lines");
+  }
+  return {
+    angle: typeof root.angle === "string" ? root.angle : "",
+    brief: lines.map((line) => line.trim()),
+    mustNotCover: Array.isArray(root.must_not_cover)
+      ? root.must_not_cover.filter((v): v is string => typeof v === "string")
+      : [],
+    suggestedWordCount:
+      typeof root.suggested_word_count === "number"
+        ? Math.max(0, Math.floor(root.suggested_word_count))
+        : null,
+    concerns: Array.isArray(root.concerns)
+      ? root.concerns.filter((v): v is string => typeof v === "string")
+      : [],
+  };
+}
+
+export function coerceKeywordStrategy(value: unknown): KeywordStrategyResult {
+  const root = asRecord(value, "Keyword Strategist output");
+  if (!Array.isArray(root.assignments)) {
+    throw new Error("Keyword Strategist output has no assignments array");
+  }
+  const assignments: KeywordAssignment[] = [];
+  for (const item of root.assignments) {
+    const row = asRecord(item, "assignments item");
+    if (typeof row.route !== "string" || !row.route.trim()) {
+      throw new Error("Keyword Strategist returned an assignment with no route");
+    }
+    const pageRole = PAGE_ROLES.find((role) => role === row.page_role);
+    if (!pageRole) {
+      throw new Error(
+        `Keyword Strategist returned unknown page_role ${JSON.stringify(row.page_role)}`,
+      );
+    }
+    const strings = (raw: unknown): string[] =>
+      Array.isArray(raw)
+        ? raw.filter((v): v is string => typeof v === "string" && Boolean(v.trim()))
+        : [];
+    const links: KeywordAssignment["internalLinks"] = [];
+    if (Array.isArray(row.internal_links)) {
+      for (const link of row.internal_links) {
+        if (!link || typeof link !== "object" || Array.isArray(link)) continue;
+        const entry = link as Record<string, unknown>;
+        if (
+          typeof entry.to_route === "string" &&
+          entry.to_route.trim() &&
+          typeof entry.anchor_text === "string" &&
+          entry.anchor_text.trim()
+        ) {
+          links.push({
+            toRoute: entry.to_route.trim(),
+            anchorText: entry.anchor_text.trim(),
+          });
+        }
+      }
+    }
+    assignments.push({
+      route: row.route.trim(),
+      pageRole,
+      primaryKeyword:
+        typeof row.primary_keyword === "string" && row.primary_keyword.trim()
+          ? row.primary_keyword.trim()
+          : null,
+      primaryIsNew: row.primary_is_new === true,
+      secondaryKeywords: strings(row.secondary_keywords),
+      supportsRoutes: strings(row.supports_routes),
+      internalLinks: links,
+      reason: typeof row.reason === "string" ? row.reason : "",
+    });
+  }
+  return {
+    strategySummary:
+      typeof root.strategy_summary === "string" ? root.strategy_summary : "",
+    assignments,
+    warnings: Array.isArray(root.warnings)
+      ? root.warnings.filter((w): w is string => typeof w === "string")
+      : [],
+  };
+}
+
+/**
+ * The plan as the strategist's `current_plan` variable expects it — one line
+ * per page WITH its current keyword, so the agent can see what is already
+ * assigned and keep or replace it deliberately.
+ */
+export function buildKeywordPlanLines(
+  nodes: PlanNodeRow[],
+  statusSlugById: Map<string, string> | undefined,
+  keywordPhraseById: Map<string, string>,
+): string {
+  if (nodes.length === 0) return "empty plan";
+  return nodes
+    .slice()
+    .sort((a, b) => (a.route ?? "").localeCompare(b.route ?? ""))
+    .map((node) => {
+      const status =
+        (node.status_id ? statusSlugById?.get(node.status_id) : null) ?? "unknown";
+      const keyword =
+        (node.primary_keyword_id
+          ? keywordPhraseById.get(node.primary_keyword_id)
+          : null) ?? "(none)";
+      return [
+        node.route ?? "(no route)",
+        node.label,
+        node.node_type,
+        status,
+        keyword,
+      ].join(" | ");
+    })
+    .join("\n");
+}
+
+/** The keyword library as the strategist's `available_keywords` expects it. */
+export function buildAvailableKeywordLines(
+  rows: Array<{
+    phrase: string;
+    intent: string | null;
+    contentRole: string | null;
+    priority: number | null;
+  }>,
+): string {
+  if (rows.length === 0) return "";
+  return rows
+    .map((row) =>
+      [
+        row.phrase,
+        row.intent ?? "unknown",
+        row.contentRole ?? "unassigned",
+        row.priority ?? "",
+      ].join(" | "),
+    )
+    .join("\n");
+}
+
 export function coercePlanReview(value: unknown): PlanReviewResult {
   const root = asRecord(value, "Plan Reviewer output");
   if (!Array.isArray(root.findings)) {
@@ -270,17 +538,30 @@ export function coercePlanReview(value: unknown): PlanReviewResult {
   };
 }
 
-/** The plan as the reviewer's `current_plan` variable expects it. */
-export function buildCurrentPlanLines(nodes: PlanNodeRow[]): string {
+/**
+ * The plan as the reviewer's `current_plan` variable expects it:
+ * `route | label | node_type | status`, one page per line.
+ *
+ * `statusSlugById` maps `plan.node.status_id` to its category slug. Passing a
+ * hardcoded "planned" would tell the auditor every page is still unbuilt —
+ * fabricated input on the one variable the whole audit reasons over, which
+ * makes it recommend work that is already published.
+ */
+export function buildCurrentPlanLines(
+  nodes: PlanNodeRow[],
+  statusSlugById?: Map<string, string>,
+): string {
   if (nodes.length === 0) return "empty plan";
   return nodes
     .slice()
     .sort((a, b) => (a.route ?? "").localeCompare(b.route ?? ""))
-    .map((node) =>
-      [node.route ?? "(no route)", node.label, node.node_type, "planned"].join(
+    .map((node) => {
+      const status =
+        (node.status_id ? statusSlugById?.get(node.status_id) : null) ?? "unknown";
+      return [node.route ?? "(no route)", node.label, node.node_type, status].join(
         " | ",
-      ),
-    )
+      );
+    })
     .join("\n");
 }
 
@@ -332,9 +613,10 @@ async function waitForExtraction<T>(
   getState: () => RootState,
   requestId: string,
   coerce: (value: unknown) => T,
+  timeoutMs: number = EXTRACTION_TIMEOUT_MS,
 ): Promise<T> {
   const start = Date.now();
-  while (Date.now() - start < EXTRACTION_TIMEOUT_MS) {
+  while (Date.now() - start < timeoutMs) {
     const state = getState();
     if (selectJsonExtractionComplete(requestId)(state)) {
       const snapshot = selectFirstExtractedObject(requestId)(state);
@@ -369,12 +651,16 @@ export function useSetupAgents(siteId: string | null) {
   const [namingFamilyKey, setNamingFamilyKey] = useState<string | null>(null);
   const [entitiesBusy, setEntitiesBusy] = useState(false);
   const [reviewBusy, setReviewBusy] = useState(false);
+  const [keywordsBusy, setKeywordsBusy] = useState(false);
+  const [attachBusy, setAttachBusy] = useState(false);
+  const [briefBusy, setBriefBusy] = useState(false);
   const inFlight = useRef(false);
 
   async function run<T>(
     agentId: string,
     variables: Record<string, string>,
     coerce: (value: unknown) => T,
+    timeoutMs?: number,
   ): Promise<T> {
     const { requestId } = await dispatch(
       launchAgentExecution({
@@ -387,7 +673,7 @@ export function useSetupAgents(siteId: string | null) {
       }),
     ).unwrap();
     if (!requestId) throw new Error("Agent launch did not return a request id");
-    return waitForExtraction(store.getState, requestId, coerce);
+    return waitForExtraction(store.getState, requestId, coerce, timeoutMs);
   }
 
   async function recommendShape(
@@ -416,6 +702,59 @@ export function useSetupAgents(siteId: string | null) {
     } finally {
       inFlight.current = false;
       setNamingFamilyKey(null);
+    }
+  }
+
+  async function planKeywords(
+    variables: Record<string, string>,
+  ): Promise<KeywordStrategyResult> {
+    if (inFlight.current) throw new Error("An agent run is already in progress");
+    inFlight.current = true;
+    setKeywordsBusy(true);
+    try {
+      return await run(
+        KEYWORD_STRATEGIST_AGENT_ID,
+        variables,
+        coerceKeywordStrategy,
+        STRATEGY_TIMEOUT_MS,
+      );
+    } finally {
+      inFlight.current = false;
+      setKeywordsBusy(false);
+    }
+  }
+
+  async function attachEntities(
+    variables: Record<string, string>,
+  ): Promise<EntityAttachPlan> {
+    if (inFlight.current) throw new Error("An agent run is already in progress");
+    inFlight.current = true;
+    setAttachBusy(true);
+    try {
+      return await run(
+        ENTITY_ATTACHER_AGENT_ID,
+        variables,
+        coerceEntityAttachPlan,
+        STRATEGY_TIMEOUT_MS,
+      );
+    } finally {
+      inFlight.current = false;
+      setAttachBusy(false);
+    }
+  }
+
+  /** ONE page's brief, written against its neighbours. Staged, never saved. */
+  async function writeBrief(
+    variables: Record<string, string>,
+  ): Promise<PageBriefResult> {
+    if (inFlight.current) throw new Error("An agent run is already in progress");
+    inFlight.current = true;
+    setBriefBusy(true);
+    try {
+      return await run(BRIEF_WRITER_AGENT_ID, variables, coercePageBrief);
+    } finally {
+      inFlight.current = false;
+      setBriefBusy(false);
     }
   }
 
@@ -452,9 +791,15 @@ export function useSetupAgents(siteId: string | null) {
     nameFamily,
     curateEntities,
     reviewPlan,
+    planKeywords,
+    attachEntities,
+    writeBrief,
     shapeBusy,
     namingFamilyKey,
     entitiesBusy,
     reviewBusy,
+    keywordsBusy,
+    attachBusy,
+    briefBusy,
   };
 }

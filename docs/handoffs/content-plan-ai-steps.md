@@ -69,6 +69,9 @@ the 'Document'"*
   | Content Plan Family Namer | `7a16db8c-48eb-4997-a8d0-dc4a8892d7c5` | "AI names" (pages families) + "AI topics" (count-only) |
   | Content Plan Entity Curator | `c43e4497-3093-4b18-a906-b088127d8b9c` | Entities "Suggest from research"; `entity_curator` + `eeat_curator` roles |
   | Content Plan Reviewer | `2a7f0dc8-5525-437a-8f2e-35f12a45cb27` | Setup "Plan review"; `plan_architect` role |
+  | Content Plan Keyword Strategist | `e063ded1-38b2-4721-a526-aad01d26e2ef` | Setup "Plan keywords" (WHOLE-plan, top-down) |
+  | Content Plan Entity Attacher | `a1a7784c-538b-44e5-b09d-40d215b79aa6` | Setup "Assign entities" |
+  | Content Plan Brief Writer | `711d29b5-0afc-494c-a665-6011e529efce` | NodePanel "Draft brief"; `brief_writer` role |
 - **Skills:** `matrx-agents` (authoring/running agx agents), `agent-execution-redux`
   (launch + structured output), `surface-authoring` (roles/writeTargets), `handoffs`.
 - **Test route:** `/marketing/content-plan` → pick a site → `?view=setup`. Needs a site with a
@@ -86,28 +89,30 @@ the 'Document'"*
 
 ## Remaining work
 
-1. **DEPLOY — nothing here is live.** Both repos sit on `claude/practical-euler-x4kjjc`.
-   The FE sends `research_topic_id` on `/content-plan/sites/{id}/generate`, and aidream's
-   `GeneratePlanBody` is `extra="forbid"` — **ship aidream first (or together), never the FE
-   alone**, or every Generate run 422s. aidream: `./scripts/release.sh` (Coolify, verify
-   `/health/version` vs `origin/main`). FE: `./scripts/release.sh`.
-2. **`brief_writer` role is deliberately unbound** (`content-plan-node.manifest.ts`). NodePanel's
-   Deepen already writes a node's brief + sources server-side and is research-grounded. Bind an
-   agent ONLY to add the one thing Deepen lacks: a STAGED brief the user reviews before saving
-   (the node surface already declares the `node_brief` draft write target).
-3. **The shell-header Agents panel can't see these agents.** `SurfaceBoundAgentsList` reads
+1. **DEPLOY the frontend.** aidream is **LIVE** (v0.1.706, `/health/version` = `6694767`,
+   which contains the research-grounding commit) — so the server already accepts
+   `research_topic_id` and the old deploy-order trap is gone. The FE half still sits on
+   `claude/practical-euler-x4kjjc`: merge to `main` and run `./scripts/release.sh` (a plain
+   push builds NOTHING).
+2. **The shell-header Agents panel can't see these agents.** `SurfaceBoundAgentsList` reads
    `agent.menu_surface`, a view over `platform.associations` JOINed to **`agent.card`**; all four
    agents live in `agent.definition` only (`agent.card` has 138 rows, `agent.definition` 723), so
    a binding edge cannot be created for them. Today the on-page buttons are the only entry point.
    Fix is a platform decision: either promote these to `agent.card`, or teach the panel to resolve
    roles via `useSurfaceAgentRoles` (which DOES see them — all roles are bound in
    `ui.ui_surface_agent_role`).
-4. **Count-only topics never become pages.** `applyFamilyTopics` records researched titles on the
-   hub node's brief (a `Planned topics (from research):` marker block) — the archetype
-   deliberately materializes only the hub. If Arman wants those titles to become real planned
-   pages, that is a new deliberate action ("promote topics to pages"), not a change to the
-   expander: `setup/archetypes.ts` is a fixture-pinned twin of aidream's `archetypes.py`
-   (`pnpm check:archetype-expansion`) and must not diverge.
+3. **Nothing downstream READS the planned topics yet.** Same gap now applies to
+   `attributes.keyword_strategy` (page role / supports / internal links) — the writers should
+   read both. They are stored authoritatively at
+   `plan.node.attributes.planned_topics` (a `string[]` on the family hub; the brief marker block
+   is a human mirror only). No aidream generator, writer, or tool parses that key today — the
+   work order exists but nobody consumes it. Wiring it into the cms-fill / writer stage is the
+   payoff step.
+4. **Count-only topics never become pages.** The archetype deliberately materializes only the
+   hub. Turning titles into real planned pages is a new deliberate action ("promote topics to
+   pages"), NOT a change to the expander: `setup/archetypes.ts` is a fixture-pinned twin of
+   aidream's `archetypes.py` (`pnpm check:archetype-expansion`, 62 cases) and must not diverge.
+   See the first Decision below.
 5. **Deepen has no research picker of its own** — it reads the site's recorded link only. Fine
    today; if per-node grounding is ever wanted, add `research_topic_id` to the deepen body the
    same way generate has it.
@@ -116,10 +121,9 @@ the 'Document'"*
    summary naming six missing pages and returns ONE finding (measured, not guessed). If the
    agent's stored prompt is ever fixed at the source, delete the constant — do not silently keep
    both. Note `agent_author update` with `goals` did NOT change the stored prompt.
-7. **Other AI steps not yet built** (each is one agent + one button, same recipe as `setup/ai.ts`):
-   keyword binding for planned pages (`primary_keyword_id` is manual via `KeywordPicker`);
-   per-node topic/entity attachment suggestions; a "what changed in the research since we planned"
-   re-review.
+7. **Bulk deepen** — the one approved item not built: fan out the existing research-grounded
+   deepen over many pages with progress + per-page results (not a new agent).
+8. **Re-review after research changes** — "what changed in the research since we planned?"
 
 ## Done
 
@@ -129,11 +133,17 @@ the 'Document'"*
 - Save-at-every-step draft persistence with unmount/commit flush — `setup/draft.ts`.
 - ONE site↔research link (`settings.content_plan.research_topic_id`) read by both repos;
   generator + deepen grounded in the final Document — `aidream/services/content_plan/generator.py`.
-- Entities "Suggest from research"; plan review with one-click page creation.
-- Agent roles bound in manifests + `ui.ui_surface_agent_role` (all but `brief_writer`).
-- Two adversarial review rounds (20 + 12 agents); confirmed findings fixed, including a
-  cross-org research-report exfiltration hole and a `send_warning` crash — see the FEATURE.md
-  change log.
+- Entities "Suggest from research"; plan review with one-click page creation from `gap` findings.
+- ALL 11 content-plan agent roles bound in manifests + `ui.ui_surface_agent_role` (0 unbound).
+- Top-down keyword strategy (money/supporting/internal links) — `setup/keyword-strategy.ts`.
+- Whole-plan E-E-A-T attachment — `setup/entity-attach.ts`.
+- Neighbour-aware staged brief writer — `hooks/useBriefWriter.ts`.
+- Blog/guide topic planning: researched titles recorded on the family hub
+  (`attributes.planned_topics` authoritative + a human-readable brief mirror), retryable via
+  "Record on hub" without a commit.
+- Three adversarial review rounds (20 + 12 + 21 agents); every confirmed finding fixed —
+  including a cross-org research-report exfiltration hole, a `send_warning` crash on the exact
+  degrade path, and a draft-clear that destroyed staged topics. See the FEATURE.md change log.
 
 ## Decisions needed
 

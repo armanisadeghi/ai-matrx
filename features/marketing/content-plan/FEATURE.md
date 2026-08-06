@@ -340,6 +340,46 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-30 — Claude (round 6): **every step now has an agent; keyword
+  strategy is TOP-DOWN.** Three more platform agents (six total):
+  **Keyword Strategist** (`e063ded1-…`) — Arman's ruling that keywords are
+  never per-page: it takes the WHOLE plan + keyword library + research report
+  and returns per-page role (money / supporting / navigational), a distinct
+  primary per money page, the secondary cluster, the money routes each
+  supporting page FEEDS, and the internal links (anchored on the TARGET's
+  keyword) that pass authority there, plus cannibalization warnings.
+  `setup/keyword-strategy.ts` applies it through the CANONICAL
+  `ensureKeywordId` upsert + the feature's own `addNodeSecondaryKeyword`
+  edge wrapper, with the cross-page relationships on
+  `attributes.keyword_strategy`. **Entity Attacher** (`a1a7784c-…`) —
+  whole-plan E-E-A-T assignment constrained to the site's existing roster;
+  gaps come back as `missing_entities`, never invented
+  (`setup/entity-attach.ts`). **Brief Writer** (`711d29b5-…`) — NodePanel
+  "Draft brief": neighbour-aware (parent/siblings/children + the keyword
+  assignment) so a brief cannot duplicate a sibling; STAGES into the panel
+  draft, unlike Deepen which saves. All 11 `ui.ui_surface_agent_role` rows
+  are now bound (`brief_writer` included). Merged latest `main` first.
+
+- 2026-07-30 — Claude (round 5): **adversarial-review fixes on the round-4
+  work** (21-agent find+refute; 11 confirmed, 7 refuted). Topics are now
+  stored authoritatively in `attributes.planned_topics` — `brief` alone was
+  unsafe because aidream's Deepen does `update_brief(mode="replace")` on any
+  node it runs against; the brief marker block is now a human-visible MIRROR
+  that costs nothing to lose. `composeTopicBrief` preserves user lines BELOW
+  the block (it used to truncate them). A commit no longer clears the draft
+  when a topic write failed — topics have no re-derivation path
+  (`namesFromPlan` is pages-only), so the draft was the last copy; a new
+  "Record on hub" action retries without a commit (the commit button
+  disables once every page exists). Review fixes: agent routes are
+  `normalizeRoute`d (the slug CHECK rejects `/services/Hard_Drive_Shredding`
+  verbatim, and un-normalized strings broke the already-planned/added
+  comparisons); a top-level suggestion is always addable (`parent_id NULL` is
+  canonical — 18 such nodes live — so "/" means "no section needed", not
+  "blocked"); a missing `planned` status now fails loudly instead of a silent
+  no-op; a failed Add renders as a dismissible banner ABOVE the findings
+  instead of replacing the whole paid review; and `buildCurrentPlanLines`
+  sends each node's REAL status instead of hardcoding "planned" (the auditor
+  was told published pages were unbuilt).
 - 2026-07-30 — Claude (round 4): **count-only topics + semantic plan review.**
   Count-only families (blog/guides) gained an "AI topics" control (same Family
   Namer agent, article-title guidance); titles persist in the draft

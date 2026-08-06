@@ -16,7 +16,7 @@ import { ResearchTopicSelect } from "@/features/marketing/content-plan/component
 import type { ResearchDocument } from "@/features/research/types";
 
 export interface SetupAiRunSummary {
-  kind: "shape" | "names" | "review";
+  kind: "shape" | "names" | "review" | "keywords" | "entities";
   headline: string;
   detail?: string;
 }

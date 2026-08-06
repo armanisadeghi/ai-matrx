@@ -14,12 +14,13 @@
  * silently creating an orphan.
  */
 import { useState } from "react";
-import { ClipboardCheck, Loader2, Plus } from "lucide-react";
+import { ClipboardCheck, Loader2, Plus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import type { PlanNodeRow } from "../../types";
+import { slugify } from "../archetypes";
 import type { PlanReviewFinding, PlanReviewResult, ReviewSeverity } from "../ai";
 import { SetupSection } from "./SetupSection";
 
@@ -37,17 +38,48 @@ const SEVERITY_CLASS: Record<ReviewSeverity, string> = {
   priority: "bg-muted text-muted-foreground",
 };
 
-/** `/a/b/c` → `/a/b`; a top-level route's parent is the home node (`/`). */
+/**
+ * Normalize an agent-suggested route to the shape the DB actually stores.
+ *
+ * The slug CHECK is `^[a-z0-9]+(-[a-z0-9]+)*$`, so a perfectly sensible
+ * suggestion (`/services/Hard_Drive_Shredding`) is rejected outright unless
+ * every segment is slugified — which is what every OTHER write path in this
+ * feature already does (`expandArchetype` slugifies family child labels).
+ * Normalizing here also makes the "already planned" / "parent planned"
+ * comparisons meaningful: they compare against DB-computed routes.
+ */
+export function normalizeRoute(route: string): string {
+  const segments = route
+    .split("/")
+    .map((segment) => slugify(segment.trim()))
+    .filter(Boolean);
+  return `/${segments.join("/")}`;
+}
+
+/** `/a/b/c` → `/a/b`; a top-level route's parent route is `/` (the home page). */
 export function parentRouteOf(route: string): string {
-  const trimmed = route.replace(/\/+$/, "");
+  const trimmed = normalizeRoute(route);
   const cut = trimmed.lastIndexOf("/");
   if (cut <= 0) return "/";
   return trimmed.slice(0, cut);
 }
 
 export function slugOf(route: string): string {
-  const trimmed = route.replace(/\/+$/, "");
+  const trimmed = normalizeRoute(route);
   return trimmed.slice(trimmed.lastIndexOf("/") + 1);
+}
+
+/**
+ * Can this suggestion be created right now?
+ *
+ * A TOP-LEVEL page is always addable: `plan.node` allows `parent_id NULL`
+ * (18 such nodes live), and a plan with a home node parents top-level pages
+ * under it — both shapes exist, so "/" simply means "no section needed".
+ * A nested page needs its section to exist first.
+ */
+export function canAddRoute(route: string, plannedRoutes: Set<string>): boolean {
+  const parent = parentRouteOf(route);
+  return parent === "/" || plannedRoutes.has(parent);
 }
 
 export function PlanReviewSection({
@@ -57,6 +89,7 @@ export function PlanReviewSection({
   anyBusy,
   aiReady,
   error,
+  onDismissError,
   onRun,
   onAddPage,
   addingRoute,
@@ -70,6 +103,7 @@ export function PlanReviewSection({
   /** A research report is loaded — without one there is nothing to audit against. */
   aiReady: boolean;
   error: string | null;
+  onDismissError?: () => void;
   onRun: () => void;
   /** Create one suggested page (SetupView owns the write). */
   onAddPage: (finding: PlanReviewFinding) => void;
@@ -107,9 +141,27 @@ export function PlanReviewSection({
         </Button>
       }
     >
+      {/* The error sits ABOVE the findings, never INSTEAD of them: one failed
+        "Add page" must not throw away a review the user paid an agent run
+        for — the remaining findings stay actionable. */}
       {error ? (
-        <p className="text-xs text-destructive">{error}</p>
-      ) : busy ? (
+        <div className="mb-2 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5">
+          <p className="min-w-0 flex-1 text-[11px] leading-relaxed text-destructive">
+            {error}
+          </p>
+          {onDismissError ? (
+            <button
+              type="button"
+              aria-label="Dismiss the review error"
+              className="shrink-0 text-destructive/70 hover:text-destructive"
+              onClick={onDismissError}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      {busy ? (
         <p className="text-xs text-muted-foreground">
           Reading the research report against {nodes.length} planned page
           {nodes.length === 1 ? "" : "s"}…
@@ -144,20 +196,23 @@ export function PlanReviewSection({
                       finding={finding}
                       parentPlanned={
                         finding.suggestedRoute
-                          ? routes.has(parentRouteOf(finding.suggestedRoute))
+                          ? canAddRoute(finding.suggestedRoute, routes)
                           : false
                       }
                       alreadyPlanned={
                         finding.suggestedRoute
-                          ? routes.has(finding.suggestedRoute)
+                          ? routes.has(normalizeRoute(finding.suggestedRoute))
                           : false
                       }
                       added={
                         finding.suggestedRoute
-                          ? addedRoutes.has(finding.suggestedRoute)
+                          ? addedRoutes.has(normalizeRoute(finding.suggestedRoute))
                           : false
                       }
-                      adding={addingRoute === finding.suggestedRoute}
+                      adding={
+                        finding.suggestedRoute !== null &&
+                        addingRoute === normalizeRoute(finding.suggestedRoute)
+                      }
                       anyAdding={addingRoute !== null}
                       onAdd={() => onAddPage(finding)}
                     />
@@ -210,7 +265,7 @@ function FindingRow({
           {finding.suggestedRoute ? (
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <span className="font-mono text-[11px] text-muted-foreground">
-                {finding.suggestedRoute}
+                {normalizeRoute(finding.suggestedRoute)}
               </span>
               {added || alreadyPlanned ? (
                 <span className="text-[11px] font-medium text-success">

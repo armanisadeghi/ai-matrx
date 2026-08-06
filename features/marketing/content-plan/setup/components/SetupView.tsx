@@ -39,8 +39,13 @@ import {
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
-import { planKeys, usePlanNodes } from "../../data/hooks";
-import { createPlanNode } from "../../data/service";
+import { planKeys, usePlanEntities, usePlanNodes } from "../../data/hooks";
+import {
+  createPlanNode,
+  listKeywordLabels,
+  listPlanEntities,
+  listSiteKeywordValues,
+} from "../../data/service";
 import { usePlanWorkspaceParams } from "../../hooks/usePlanWorkspaceParams";
 import { useContentPlanSites } from "../../components/ContentPlanHeader";
 import type { PlanNodeRow } from "../../types";
@@ -55,13 +60,19 @@ import {
 import type { Concept } from "../concepts";
 import {
   buildArchetypeOptionsJson,
+  buildAvailableKeywordLines,
   buildCurrentPlanLines,
   buildCurrentPlanSummary,
+  buildKeywordPlanLines,
   REVIEWER_OUTPUT_CONTRACT,
   useSetupAgents,
+  type EntityAttachPlan,
+  type KeywordStrategyResult,
   type PlanReviewFinding,
   type PlanReviewResult,
 } from "../ai";
+import { applyEntityAttachments } from "../entity-attach";
+import { applyKeywordStrategy, readNodeKeywordStrategy } from "../keyword-strategy";
 import {
   clearSetupDraft,
   fetchFreshSite,
@@ -82,9 +93,12 @@ import {
   recordSiteArchetype,
   type CommitResult,
 } from "../service";
+import { EntityAttachSection } from "./EntityAttachSection";
+import { KeywordStrategySection } from "./KeywordStrategySection";
 import { PlanLintSection } from "./PlanLintSection";
 import {
   PlanReviewSection,
+  normalizeRoute,
   parentRouteOf,
   slugOf,
 } from "./PlanReviewSection";
@@ -222,6 +236,17 @@ export function SetupView() {
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [addingRoute, setAddingRoute] = useState<string | null>(null);
   const [addedRoutes, setAddedRoutes] = useState<Set<string>>(new Set());
+  const [applyingTopicsKey, setApplyingTopicsKey] = useState<string | null>(null);
+  const [keywordStrategy, setKeywordStrategy] =
+    useState<KeywordStrategyResult | null>(null);
+  const [keywordError, setKeywordError] = useState<string | null>(null);
+  const [applyingKeywords, setApplyingKeywords] = useState(false);
+  const [keywordsAppliedAt, setKeywordsAppliedAt] = useState<string | null>(null);
+  const [entityPlan, setEntityPlan] = useState<EntityAttachPlan | null>(null);
+  const [attachError, setAttachError] = useState<string | null>(null);
+  const [applyingEntities, setApplyingEntities] = useState(false);
+  const [entitiesAppliedAt, setEntitiesAppliedAt] = useState<string | null>(null);
+  const planEntities = usePlanEntities(siteId);
   // Newest SUCCESSFUL report — matches aidream's `_load_research_report`, so
   // a failed re-assembly never hides a perfectly good older report.
   const researchDoc = useLatestSuccessfulResearchDocument(researchTopicId ?? "");
@@ -235,7 +260,10 @@ export function SetupView() {
     agents.shapeBusy ||
     agents.namingFamilyKey !== null ||
     agents.entitiesBusy ||
-    agents.reviewBusy;
+    agents.reviewBusy ||
+    agents.keywordsBusy ||
+    agents.attachBusy ||
+    agents.briefBusy;
 
   // ── draft persistence — every step saves, nothing is lost on navigation ─
   // Seed ONCE per site from the FRESH row (never the siteOptions query cache
@@ -468,6 +496,12 @@ export function SetupView() {
   const statusId =
     statuses.categories.find((category) => category.slug === DEFAULT_STATUS_SLUG)
       ?.id ?? null;
+  // Real per-node status for the reviewer's `current_plan` — a page that is
+  // already published must not be audited as still-to-build.
+  const statusSlugById = new Map<string, string>();
+  for (const category of statuses.categories) {
+    if (category.slug) statusSlugById.set(category.id, category.slug);
+  }
 
   const dirtyKeys = new Set<string>();
   if (selected && expanded) {
@@ -638,6 +672,13 @@ export function SetupView() {
     }
   };
 
+  /** Routes already in the plan — "does this family's hub exist yet?" */
+  const plannedRoutes = new Set(
+    nodeRows
+      .map((node) => node.route)
+      .filter((route): route is string => Boolean(route)),
+  );
+
   // Count-only families (blog / guides): the researched TITLES. Same agent as
   // the page namer — a count-only family gets a work order, not pages.
   const topics: Record<string, string[]> =
@@ -651,6 +692,50 @@ export function SetupView() {
       else forArchetype[familyKey] = next;
       return { ...current, [selected.key]: forArchetype };
     });
+  };
+
+  /**
+   * Record ONE family's staged topics on its live hub, independent of the
+   * commit. Two reasons this exists: a commit whose topic write failed cannot
+   * be retried through the commit button (it disables once every page exists),
+   * and adding topics to an already-built site should not require pretending
+   * to re-scaffold it.
+   */
+  const handleApplyTopics = async (familyKey: string) => {
+    if (!siteId || !expanded) return;
+    const family = expanded.families.find((item) => item.key === familyKey);
+    const staged = topics[familyKey] ?? [];
+    if (!family || staged.length === 0) return;
+    setApplyingTopicsKey(familyKey);
+    try {
+      const result = await applyFamilyTopics({
+        siteId,
+        orders: [
+          {
+            familyKey,
+            hubRoute: family.route,
+            label: family.label,
+            topics: staged,
+          },
+        ],
+      });
+      if (result.missing.length > 0) {
+        toast.error(
+          `${family.label}: the hub page ${family.route} is not in the plan yet — create the pages first.`,
+        );
+      } else if (result.failures.length > 0) {
+        toast.error(`${family.label}: ${result.failures[0]}`);
+      } else {
+        toast.success(`Recorded ${staged.length} topic(s) on ${family.route}.`);
+        await queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
+      }
+    } catch (error) {
+      toast.error(
+        `Could not record the ${family.label} topics: ${extractErrorMessage(error)}`,
+      );
+    } finally {
+      setApplyingTopicsKey(null);
+    }
   };
 
   const handleTopicsForFamily = async (familyKey: string) => {
@@ -687,6 +772,175 @@ export function SetupView() {
     }
   };
 
+  // ── E-E-A-T attachments (whole-plan, roster-constrained) ────────────────
+  const handleAttachEntities = async () => {
+    if (!researchReport || !siteId || nodeRows.length === 0) return;
+    setAttachError(null);
+    try {
+      const roster = await listPlanEntities(siteId);
+      if (roster.length === 0) {
+        setAttachError(
+          "This site has no entities yet — add them in the Entities view first.",
+        );
+        return;
+      }
+      const roleByRoute = new Map<string, string>();
+      for (const node of nodeRows) {
+        const strategy = readNodeKeywordStrategy(node);
+        if (node.route && strategy) roleByRoute.set(node.route, strategy.page_role);
+      }
+      const outcome = await agents.attachEntities({
+        current_plan: nodeRows
+          .slice()
+          .sort((a, b) => (a.route ?? "").localeCompare(b.route ?? ""))
+          .map((node) =>
+            [
+              node.route ?? "(no route)",
+              node.label,
+              node.node_type,
+              roleByRoute.get(node.route ?? "") ?? "unassigned",
+            ].join(" | "),
+          )
+          .join("\n"),
+        entity_roster: roster
+          .map((entity) => `${entity.label} | ${entity.entity_type} | `)
+          .join("\n"),
+        research_report: researchReport,
+        guidance: "",
+      });
+      setEntityPlan(outcome);
+      setEntitiesAppliedAt(null);
+      setLastAiRun({
+        kind: "entities",
+        headline: `Proposed ${outcome.attachments.length} entity attachment(s).`,
+        detail: outcome.notes,
+      });
+    } catch (error) {
+      setAttachError(extractErrorMessage(error));
+    }
+  };
+
+  const handleApplyEntityAttachments = async () => {
+    if (!siteId || !entityPlan) return;
+    setAttachError(null);
+    setApplyingEntities(true);
+    try {
+      const result = await applyEntityAttachments({
+        siteId,
+        attachments: entityPlan.attachments,
+      });
+      await queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
+      const problems = [
+        ...result.failures,
+        ...(result.unknownEntities.length > 0
+          ? [`not in the roster: ${result.unknownEntities.join(", ")}`]
+          : []),
+        ...(result.unknownRoutes.length > 0
+          ? [`not in the plan: ${result.unknownRoutes.join(", ")}`]
+          : []),
+      ];
+      if (problems.length > 0) {
+        setAttachError(`Attached ${result.attached}. Skipped — ${problems[0]}`);
+      }
+      if (result.attached > 0) {
+        setEntitiesAppliedAt(new Date().toISOString());
+        toast.success(`Attached ${result.attached} entity edge(s).`);
+      }
+    } catch (error) {
+      setAttachError(extractErrorMessage(error));
+    } finally {
+      setApplyingEntities(false);
+    }
+  };
+
+  // ── keyword strategy (WHOLE-PLAN, top-down) ─────────────────────────────
+  const handlePlanKeywords = async () => {
+    if (!researchReport || !site || nodeRows.length === 0) return;
+    setKeywordError(null);
+    try {
+      // The library the strategist should prefer (real data behind it) plus
+      // the phrases already bound, so it can see what it is changing.
+      const boundIds = nodeRows
+        .map((node) => node.primary_keyword_id)
+        .filter((id): id is string => Boolean(id));
+      const [siteValues, boundLabels] = await Promise.all([
+        listSiteKeywordValues(siteId as string),
+        listKeywordLabels(Array.from(new Set(boundIds))),
+      ]);
+      const valueByKeywordId = new Map(
+        siteValues.map((row) => [row.keyword_id, row]),
+      );
+      const libraryLabels = await listKeywordLabels(
+        Array.from(valueByKeywordId.keys()),
+      );
+      const phraseById = new Map<string, string>();
+      for (const row of [...libraryLabels, ...boundLabels]) {
+        phraseById.set(row.id, row.phrase);
+      }
+      const available = libraryLabels.map((row) => {
+        const value = valueByKeywordId.get(row.id);
+        return {
+          phrase: row.phrase,
+          intent: null,
+          contentRole: value?.content_role ?? null,
+          priority: value?.priority_score ?? null,
+        };
+      });
+
+      const outcome = await agents.planKeywords({
+        research_report: researchReport,
+        site_domain: site.domain ?? site.name ?? "",
+        current_plan: buildKeywordPlanLines(nodeRows, statusSlugById, phraseById),
+        available_keywords: buildAvailableKeywordLines(available),
+        guidance: "",
+      });
+      setKeywordStrategy(outcome);
+      setKeywordsAppliedAt(null);
+      setLastAiRun({
+        kind: "keywords",
+        headline: `Planned keywords for ${outcome.assignments.length} page(s) — review, then apply.`,
+        detail: outcome.strategySummary,
+      });
+    } catch (error) {
+      setKeywordError(extractErrorMessage(error));
+    }
+  };
+
+  const handleApplyKeywords = async () => {
+    if (!siteId || !keywordStrategy) return;
+    setKeywordError(null);
+    setApplyingKeywords(true);
+    try {
+      const result = await applyKeywordStrategy({
+        siteId,
+        assignments: keywordStrategy.assignments,
+      });
+      await queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
+      if (result.failures.length > 0) {
+        setKeywordError(
+          `Bound ${result.bound} page(s); ${result.failures.length} problem(s) — ${result.failures[0]}`,
+        );
+      } else if (result.unknownRoutes.length > 0) {
+        setKeywordError(
+          `Bound ${result.bound} page(s). These routes are not in the plan and were skipped: ${result.unknownRoutes.join(", ")}`,
+        );
+      }
+      if (result.bound > 0 || result.secondaryEdges > 0) {
+        setKeywordsAppliedAt(new Date().toISOString());
+        toast.success(
+          `Keywords applied: ${result.bound} primary, ${result.secondaryEdges} secondary` +
+            (result.createdKeywords > 0
+              ? `, ${result.createdKeywords} new phrase(s) added to the library.`
+              : "."),
+        );
+      }
+    } catch (error) {
+      setKeywordError(extractErrorMessage(error));
+    } finally {
+      setApplyingKeywords(false);
+    }
+  };
+
   // ── plan review (semantic audit against the research report) ────────────
   const handleReviewPlan = async () => {
     if (!researchReport || !site) return;
@@ -696,7 +950,7 @@ export function SetupView() {
       const outcome = await agents.reviewPlan({
         research_report: researchReport,
         site_domain: site.domain ?? site.name ?? "",
-        current_plan: buildCurrentPlanLines(nodeRows),
+        current_plan: buildCurrentPlanLines(nodeRows, statusSlugById),
         // The contract is BINDING and always sent — without it the agent
         // writes a summary naming six missing pages and returns one finding.
         guidance: REVIEWER_OUTPUT_CONTRACT,
@@ -720,13 +974,27 @@ export function SetupView() {
    * can never graft an orphan.
    */
   const handleAddSuggestedPage = async (finding: PlanReviewFinding) => {
-    const route = finding.suggestedRoute;
     const label = finding.suggestedLabel;
-    if (!route || !label || !site || !siteId || !statusId) return;
-    const parent = nodeRows.find((node) => node.route === parentRouteOf(route));
-    if (!parent) {
+    if (!finding.suggestedRoute || !label || !site || !siteId) return;
+    // Normalized to the shape the DB stores — an agent may suggest
+    // `/services/Hard_Drive_Shredding`, which the slug CHECK rejects verbatim.
+    const route = normalizeRoute(finding.suggestedRoute);
+    if (!statusId) {
+      // Loud, never a silent no-op: this is exactly the condition the commit
+      // path refuses on, and the button cannot know about the registry.
       setReviewError(
-        `Cannot add ${route}: its parent ${parentRouteOf(route)} is not planned yet.`,
+        `Cannot add ${route}: no "${DEFAULT_STATUS_SLUG}" plan status exists in the category registry yet (still loading, or not seeded).`,
+      );
+      return;
+    }
+    const parentRoute = parentRouteOf(route);
+    // A top-level page needs no section: `plan.node` allows parent_id NULL,
+    // and a plan WITH a home node parents top-level pages under it. Both
+    // shapes are live, so resolve to the home node when there is one.
+    const parent = nodeRows.find((node) => node.route === parentRoute) ?? null;
+    if (!parent && parentRoute !== "/") {
+      setReviewError(
+        `Cannot add ${route}: its section ${parentRoute} is not planned yet.`,
       );
       return;
     }
@@ -736,7 +1004,7 @@ export function SetupView() {
       await createPlanNode({
         site_id: siteId,
         organization_id: site.organization_id,
-        parent_id: parent.id,
+        parent_id: parent?.id ?? null,
         node_type: "article",
         slug: slugOf(route),
         label,
@@ -870,16 +1138,25 @@ export function SetupView() {
           label: family.label,
           topics: topics[family.key],
         }));
+      // Did EVERY staged topic order land? The draft is the only other copy —
+      // topics cannot be re-derived from the plan the way family names can
+      // (`namesFromPlan` covers `materialize: "pages"` only), so clearing the
+      // draft while a hub write failed would destroy them permanently.
+      let topicsFullyApplied = true;
       if (topicOrders.length > 0) {
         try {
           const topicResult = await applyFamilyTopics({ siteId, orders: topicOrders });
+          topicsFullyApplied =
+            topicResult.failures.length === 0 &&
+            topicResult.missing.length === 0 &&
+            topicResult.applied === topicOrders.length;
           if (topicResult.failures.length > 0) {
             toast.error(
-              `Topics recorded on ${topicResult.applied} hub(s); ${topicResult.failures.length} failed — ${topicResult.failures[0]}`,
+              `Topics recorded on ${topicResult.applied} hub(s); ${topicResult.failures.length} failed — ${topicResult.failures[0]}. Your topics are still saved; commit again to retry.`,
             );
           } else if (topicResult.missing.length > 0) {
             toast.error(
-              `Topics could not be recorded for ${topicResult.missing.join(", ")} — the hub page is not in the plan yet.`,
+              `Topics could not be recorded for ${topicResult.missing.join(", ")} — the hub page is not in the plan yet. Your topics are still saved.`,
             );
           } else if (topicResult.applied > 0) {
             toast.success(
@@ -887,8 +1164,9 @@ export function SetupView() {
             );
           }
         } catch (error) {
+          topicsFullyApplied = false;
           toast.error(
-            `Pages created, but the planned topics were not recorded: ${extractErrorMessage(error)}`,
+            `Pages created, but the planned topics were not recorded: ${extractErrorMessage(error)}. Your topics are still saved.`,
           );
         }
       }
@@ -909,14 +1187,18 @@ export function SetupView() {
           `Created ${outcome.created} page(s). ${outcome.existing} already existed.`,
         );
         // Fully committed — the plan itself is the truth now (Setup re-derives
-        // names from live nodes), so the in-progress draft is done.
-        try {
-          await clearSetupDraft(siteId);
-          invalidateSiteOptions();
-        } catch (error) {
-          toast.error(
-            `Pages created, but the setup draft was not cleared: ${extractErrorMessage(error)}`,
-          );
+        // names from live nodes), so the in-progress draft is done. UNLESS a
+        // topic order did not land: the draft is then the only surviving copy
+        // of those researched titles, so it stays for the retry.
+        if (topicsFullyApplied) {
+          try {
+            await clearSetupDraft(siteId);
+            invalidateSiteOptions();
+          } catch (error) {
+            toast.error(
+              `Pages created, but the setup draft was not cleared: ${extractErrorMessage(error)}`,
+            );
+          }
         }
       }
     } catch (error) {
@@ -1190,6 +1472,9 @@ export function SetupView() {
               topics={topics}
               onAiTopics={(familyKey) => void handleTopicsForFamily(familyKey)}
               onClearTopics={(familyKey) => setTopics(familyKey, null)}
+              onApplyTopics={(familyKey) => void handleApplyTopics(familyKey)}
+              applyingTopicsKey={applyingTopicsKey}
+              plannedRoutes={plannedRoutes}
               newCount={preview.counts.new}
               pageTypeName={(slug) =>
                 slug ? (pageTypeNameBySlug.get(slug) ?? slug) : "No page type"
@@ -1197,6 +1482,33 @@ export function SetupView() {
               lintSlot={
                 <>
                   <PlanLintSection nodes={nodes.data ?? []} />
+                  <KeywordStrategySection
+                    strategy={keywordStrategy}
+                    busy={agents.keywordsBusy}
+                    anyBusy={anyAgentBusy}
+                    aiReady={Boolean(researchReport)}
+                    planEmpty={nodeRows.length === 0}
+                    error={keywordError}
+                    onDismissError={() => setKeywordError(null)}
+                    onRun={() => void handlePlanKeywords()}
+                    onApply={() => void handleApplyKeywords()}
+                    applying={applyingKeywords}
+                    appliedAt={keywordsAppliedAt}
+                  />
+                  <EntityAttachSection
+                    plan={entityPlan}
+                    busy={agents.attachBusy}
+                    anyBusy={anyAgentBusy}
+                    aiReady={Boolean(researchReport)}
+                    rosterEmpty={(planEntities.data ?? []).length === 0}
+                    planEmpty={nodeRows.length === 0}
+                    error={attachError}
+                    onDismissError={() => setAttachError(null)}
+                    onRun={() => void handleAttachEntities()}
+                    onApply={() => void handleApplyEntityAttachments()}
+                    applying={applyingEntities}
+                    appliedAt={entitiesAppliedAt}
+                  />
                   <PlanReviewSection
                     nodes={nodeRows}
                     review={review}
@@ -1204,6 +1516,7 @@ export function SetupView() {
                     anyBusy={anyAgentBusy}
                     aiReady={Boolean(researchReport)}
                     error={reviewError}
+                    onDismissError={() => setReviewError(null)}
                     onRun={() => void handleReviewPlan()}
                     onAddPage={(finding) => void handleAddSuggestedPage(finding)}
                     addingRoute={addingRoute}
