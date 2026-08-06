@@ -25,7 +25,7 @@ export default async function DataLayout({
   const { isAuthenticated } = await getServerAuth();
   if (!isAuthenticated) return <TablesLanding />;
   return (
-    <div className="w-full h-full overflow-hidden bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-200 scrollbar-none">
+    <div className="w-full h-full overflow-hidden bg-muted/40 text-foreground scrollbar-none">
       {children}
     </div>
   );
