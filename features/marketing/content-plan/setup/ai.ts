@@ -78,6 +78,30 @@ export const PLAN_REVIEWER_AGENT_ID = "2a7f0dc8-5525-437a-8f2e-35f12a45cb27";
  * missing. With it the same input returns 11 evidence-cited findings, one
  * per missing page. Any operator guidance is appended AFTER this block.
  */
+/**
+ * Platform agent "Content Plan Keyword Binder" — permanent latest-version
+ * pointer (created 2026-07-30 via the AI Dream MCP). Variables: pages,
+ * keyword_pool, research_report, site_domain, guidance. Structured output:
+ * {assignments: [{route, keyword_phrase, reason}], notes}. Every phrase comes
+ * VERBATIM from the pool — the client resolves phrase → keyword_id and drops
+ * anything that does not match, so an invented phrase can never be written.
+ */
+export const KEYWORD_BINDER_AGENT_ID = "8ffb091c-dccf-4550-a14f-95807fd96b95";
+
+/**
+ * Platform agent "Content Plan Brief Writer" — permanent latest-version
+ * pointer (created 2026-07-30 via the AI Dream MCP). Variables:
+ * research_report, site_domain, page, page_context, existing_brief, guidance.
+ * Structured output: {brief: string[], notes}.
+ *
+ * Distinct from Deepen, which is NOT a duplicate: Deepen is aidream's server
+ * pipeline that writes the brief AND attaches cited sources immediately. This
+ * one STAGES a brief into the node panel's draft for the user to review and
+ * save — the behaviour the `brief_writer` surface role's `node_brief` draft
+ * write target was declared for.
+ */
+export const BRIEF_WRITER_AGENT_ID = "f9789816-91b9-4e64-a38d-aa4d2a8127be";
+
 export const REVIEWER_OUTPUT_CONTRACT =
   "BINDING OUTPUT CONTRACT: summary and findings must agree. Every problem you " +
   "name in the summary MUST appear as its own entry in findings — a summary " +
@@ -98,6 +122,22 @@ export interface ShapePlanResult {
 
 export interface FamilyNamesResult {
   names: Array<{ label: string; reason: string }>;
+  notes: string;
+}
+
+export interface KeywordAssignment {
+  route: string;
+  keywordPhrase: string;
+  reason: string;
+}
+
+export interface KeywordBindResult {
+  assignments: KeywordAssignment[];
+  notes: string;
+}
+
+export interface BriefDraftResult {
+  brief: string[];
   notes: string;
 }
 
@@ -270,6 +310,64 @@ export function coercePlanReview(value: unknown): PlanReviewResult {
   };
 }
 
+export function coerceKeywordBind(value: unknown): KeywordBindResult {
+  const root = asRecord(value, "Keyword Binder output");
+  if (!Array.isArray(root.assignments)) {
+    throw new Error("Keyword Binder output has no assignments array");
+  }
+  const assignments: KeywordAssignment[] = [];
+  for (const item of root.assignments) {
+    const row = asRecord(item, "assignments item");
+    if (typeof row.route !== "string" || !row.route.trim()) {
+      throw new Error("Keyword Binder returned an assignment with no route");
+    }
+    if (typeof row.keyword_phrase !== "string" || !row.keyword_phrase.trim()) {
+      throw new Error("Keyword Binder returned an assignment with no keyword");
+    }
+    assignments.push({
+      route: row.route.trim(),
+      keywordPhrase: row.keyword_phrase.trim(),
+      reason: typeof row.reason === "string" ? row.reason : "",
+    });
+  }
+  return {
+    assignments,
+    notes: typeof root.notes === "string" ? root.notes : "",
+  };
+}
+
+export function coerceBriefDraft(value: unknown): BriefDraftResult {
+  const root = asRecord(value, "Brief Writer output");
+  if (!Array.isArray(root.brief)) {
+    throw new Error("Brief Writer output has no brief array");
+  }
+  const brief = root.brief
+    .filter((line): line is string => typeof line === "string")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (brief.length === 0) throw new Error("Brief Writer returned an empty brief");
+  return { brief, notes: typeof root.notes === "string" ? root.notes : "" };
+}
+
+/** Pages as the Keyword Binder's `pages` variable expects them. */
+export function buildKeywordPageLines(
+  nodes: PlanNodeRow[],
+  keywordPhraseById: Map<string, string>,
+): string {
+  return nodes
+    .slice()
+    .sort((a, b) => (a.route ?? "").localeCompare(b.route ?? ""))
+    .map((node) => {
+      const current = node.primary_keyword_id
+        ? (keywordPhraseById.get(node.primary_keyword_id) ?? "-")
+        : "-";
+      return [node.route ?? "(no route)", node.label, node.node_type, current].join(
+        " | ",
+      );
+    })
+    .join("\n");
+}
+
 /**
  * The plan as the reviewer's `current_plan` variable expects it:
  * `route | label | node_type | status`, one page per line.
@@ -382,6 +480,8 @@ export function useSetupAgents(siteId: string | null) {
   const [namingFamilyKey, setNamingFamilyKey] = useState<string | null>(null);
   const [entitiesBusy, setEntitiesBusy] = useState(false);
   const [reviewBusy, setReviewBusy] = useState(false);
+  const [keywordsBusy, setKeywordsBusy] = useState(false);
+  const [briefBusy, setBriefBusy] = useState(false);
   const inFlight = useRef(false);
 
   async function run<T>(
@@ -432,6 +532,34 @@ export function useSetupAgents(siteId: string | null) {
     }
   }
 
+  async function bindKeywords(
+    variables: Record<string, string>,
+  ): Promise<KeywordBindResult> {
+    if (inFlight.current) throw new Error("An agent run is already in progress");
+    inFlight.current = true;
+    setKeywordsBusy(true);
+    try {
+      return await run(KEYWORD_BINDER_AGENT_ID, variables, coerceKeywordBind);
+    } finally {
+      inFlight.current = false;
+      setKeywordsBusy(false);
+    }
+  }
+
+  async function writeBrief(
+    variables: Record<string, string>,
+  ): Promise<BriefDraftResult> {
+    if (inFlight.current) throw new Error("An agent run is already in progress");
+    inFlight.current = true;
+    setBriefBusy(true);
+    try {
+      return await run(BRIEF_WRITER_AGENT_ID, variables, coerceBriefDraft);
+    } finally {
+      inFlight.current = false;
+      setBriefBusy(false);
+    }
+  }
+
   async function reviewPlan(
     variables: Record<string, string>,
   ): Promise<PlanReviewResult> {
@@ -465,9 +593,13 @@ export function useSetupAgents(siteId: string | null) {
     nameFamily,
     curateEntities,
     reviewPlan,
+    bindKeywords,
+    writeBrief,
     shapeBusy,
     namingFamilyKey,
     entitiesBusy,
     reviewBusy,
+    keywordsBusy,
+    briefBusy,
   };
 }

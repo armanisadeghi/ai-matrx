@@ -40,7 +40,7 @@ import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
 import { planKeys, usePlanNodes } from "../../data/hooks";
-import { createPlanNode } from "../../data/service";
+import { createPlanNode, updatePlanNode } from "../../data/service";
 import { usePlanWorkspaceParams } from "../../hooks/usePlanWorkspaceParams";
 import { useContentPlanSites } from "../../components/ContentPlanHeader";
 import type { PlanNodeRow } from "../../types";
@@ -57,6 +57,7 @@ import {
   buildArchetypeOptionsJson,
   buildCurrentPlanLines,
   buildCurrentPlanSummary,
+  buildKeywordPageLines,
   REVIEWER_OUTPUT_CONTRACT,
   useSetupAgents,
   type PlanReviewFinding,
@@ -71,7 +72,7 @@ import {
   saveSetupDraft,
   type SetupDraft,
 } from "../draft";
-import { useArchetypeLibrary, useCmsFacts } from "../hooks";
+import { useArchetypeLibrary, useCmsFacts, useSiteKeywordPool } from "../hooks";
 import { buildPreview } from "../preview";
 import { buildReadiness } from "../readiness";
 import {
@@ -82,6 +83,10 @@ import {
   recordSiteArchetype,
   type CommitResult,
 } from "../service";
+import {
+  KeywordBindSection,
+  type StagedKeywordAssignment,
+} from "./KeywordBindSection";
 import { PlanLintSection } from "./PlanLintSection";
 import {
   PlanReviewSection,
@@ -224,6 +229,13 @@ export function SetupView() {
   const [addingRoute, setAddingRoute] = useState<string | null>(null);
   const [addedRoutes, setAddedRoutes] = useState<Set<string>>(new Set());
   const [applyingTopicsKey, setApplyingTopicsKey] = useState<string | null>(null);
+  const [keywordPlan, setKeywordPlan] = useState<{
+    assignments: StagedKeywordAssignment[];
+    notes: string;
+  } | null>(null);
+  const [keywordError, setKeywordError] = useState<string | null>(null);
+  const [applyingKeywords, setApplyingKeywords] = useState(false);
+  const keywordPool = useSiteKeywordPool(siteId);
   // Newest SUCCESSFUL report — matches aidream's `_load_research_report`, so
   // a failed re-assembly never hides a perfectly good older report.
   const researchDoc = useLatestSuccessfulResearchDocument(researchTopicId ?? "");
@@ -237,7 +249,9 @@ export function SetupView() {
     agents.shapeBusy ||
     agents.namingFamilyKey !== null ||
     agents.entitiesBusy ||
-    agents.reviewBusy;
+    agents.reviewBusy ||
+    agents.keywordsBusy ||
+    agents.briefBusy;
 
   // ── draft persistence — every step saves, nothing is lost on navigation ─
   // Seed ONCE per site from the FRESH row (never the siteOptions query cache
@@ -743,6 +757,114 @@ export function SetupView() {
       });
     } catch (error) {
       setAiError(extractErrorMessage(error));
+    }
+  };
+
+  // ── keyword binding ─────────────────────────────────────────────────────
+  const handleBindKeywords = async () => {
+    if (!site || !siteId) return;
+    const pool = keywordPool.data ?? [];
+    if (pool.length === 0) {
+      setKeywordError("This site has no keywords in its pool yet.");
+      return;
+    }
+    setKeywordError(null);
+    try {
+      const phraseById = new Map(pool.map((row) => [row.keywordId, row.phrase]));
+      const outcome = await agents.bindKeywords({
+        pages: buildKeywordPageLines(nodeRows, phraseById),
+        keyword_pool: pool
+          .map((row) =>
+            [
+              row.phrase,
+              row.workflowStatus ?? "-",
+              row.contentRole ?? "-",
+              String(row.priorityScore ?? 0),
+            ].join(" | "),
+          )
+          .join("\n"),
+        research_report: researchReport ?? "",
+        site_domain: site.domain ?? site.name ?? "",
+        guidance: "",
+      });
+
+      // Resolve phrase → keyword_id against the POOL. Anything the agent
+      // invented or reworded simply has no id and is dropped, loudly in the
+      // notes — an invented phrase can never reach the database.
+      const idByPhrase = new Map(
+        pool.map((row) => [row.phrase.trim().toLowerCase(), row.keywordId]),
+      );
+      const nodeByRoute = new Map(
+        nodeRows
+          .filter((node) => node.route)
+          .map((node) => [node.route as string, node]),
+      );
+      const staged: StagedKeywordAssignment[] = [];
+      const unmatched: string[] = [];
+      const usedKeywordIds = new Set<string>();
+      for (const item of outcome.assignments) {
+        const node = nodeByRoute.get(item.route);
+        const keywordId = idByPhrase.get(item.keywordPhrase.trim().toLowerCase());
+        if (!node || !keywordId) {
+          unmatched.push(item.keywordPhrase);
+          continue;
+        }
+        // One keyword per page AND per plan — a duplicate would make two pages
+        // compete for the same query, which is what this step exists to avoid.
+        if (usedKeywordIds.has(keywordId)) continue;
+        if (node.primary_keyword_id === keywordId) continue;
+        usedKeywordIds.add(keywordId);
+        staged.push({
+          route: item.route,
+          nodeId: node.id,
+          label: node.label,
+          keywordId,
+          keywordPhrase: item.keywordPhrase,
+          reason: item.reason,
+          previousPhrase: node.primary_keyword_id
+            ? (phraseById.get(node.primary_keyword_id) ?? null)
+            : null,
+        });
+      }
+      const notes = [
+        outcome.notes,
+        unmatched.length > 0
+          ? `${unmatched.length} suggestion(s) were dropped — not in this site's keyword pool: ${unmatched.slice(0, 3).join(", ")}.`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      setKeywordPlan({ assignments: staged, notes });
+      setLastAiRun({
+        kind: "keywords",
+        headline: `Proposed ${staged.length} keyword assignment(s) — review and apply.`,
+        detail: notes,
+      });
+    } catch (error) {
+      setKeywordError(extractErrorMessage(error));
+    }
+  };
+
+  const handleApplyKeywords = async () => {
+    if (!keywordPlan || !siteId) return;
+    setApplyingKeywords(true);
+    const failures: string[] = [];
+    let applied = 0;
+    for (const item of keywordPlan.assignments) {
+      try {
+        await updatePlanNode(item.nodeId, { primary_keyword_id: item.keywordId });
+        applied += 1;
+      } catch (error) {
+        failures.push(`${item.route}: ${extractErrorMessage(error)}`);
+      }
+    }
+    await queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
+    setApplyingKeywords(false);
+    if (failures.length > 0) {
+      setKeywordError(`Applied ${applied}; ${failures.length} failed — ${failures[0]}`);
+    } else {
+      setKeywordPlan(null);
+      toast.success(`Applied ${applied} keyword assignment(s).`);
     }
   };
 
@@ -1287,6 +1409,21 @@ export function SetupView() {
               lintSlot={
                 <>
                   <PlanLintSection nodes={nodes.data ?? []} />
+                  <KeywordBindSection
+                    nodes={nodeRows}
+                    poolSize={(keywordPool.data ?? []).length}
+                    assignments={keywordPlan?.assignments ?? null}
+                    notes={keywordPlan?.notes ?? ""}
+                    busy={agents.keywordsBusy}
+                    anyBusy={anyAgentBusy}
+                    aiReady={Boolean(researchReport)}
+                    applying={applyingKeywords}
+                    error={keywordError}
+                    onRun={() => void handleBindKeywords()}
+                    onApply={() => void handleApplyKeywords()}
+                    onDismiss={() => setKeywordPlan(null)}
+                    onDismissError={() => setKeywordError(null)}
+                  />
                   <PlanReviewSection
                     nodes={nodeRows}
                     review={review}

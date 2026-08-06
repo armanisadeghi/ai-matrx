@@ -8,7 +8,7 @@
  * site…) — shown verbatim inside a friendly toast, never masked.
  */
 import { useMemo, useState } from "react";
-import { Loader2, Sparkles, Trash2 } from "lucide-react";
+import { Loader2, PenLine, Sparkles, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -32,7 +32,11 @@ import {
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
+import { getLatestSuccessfulDocument } from "@/features/research/service";
+
 import { NODE_TYPE_LABELS } from "../constants";
+import { useSetupAgents } from "../setup/ai";
+import { fetchFreshSite, readSiteResearchTopicId } from "../setup/draft";
 import {
   useDeletePlanNode,
   usePlanNodes,
@@ -77,6 +81,12 @@ export function NodePanel({
   const remove = useDeletePlanNode(siteId);
   const deepening = deepen.run.status === "running";
   const deepeningThisNode = deepening && deepen.nodeId === node.id;
+  // The STAGED brief writer (surface role `brief_writer`). Deliberately NOT a
+  // second Deepen: Deepen is aidream's pipeline that writes the brief AND
+  // attaches cited sources immediately; this drafts into the panel so the
+  // user reads it before saving. Grounded in the site's linked research topic.
+  const agents = useSetupAgents(siteId);
+  const allNodes = usePlanNodes(siteId);
 
   const [draft, setDraft] = useState<PlanNodeUpdate>({});
   // Raw textarea text for brief — split into the string[] draft only on
@@ -84,6 +94,72 @@ export function NodePanel({
   // blank lines works (transforming the controlled value ate them).
   const [briefText, setBriefText] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  /**
+   * Draft this page's brief into the panel (never saved for the user).
+   * Reads the site's linked research topic → its newest successful Document;
+   * without one there is nothing to ground the brief in, so it says so.
+   */
+  const handleDraftBrief = async () => {
+    try {
+      const fresh = await fetchFreshSite(siteId);
+      const topicId = readSiteResearchTopicId(fresh.settings);
+      if (!topicId) {
+        toast.error(
+          "No research topic is linked to this site — pick one in Setup's AI grounding bar first.",
+        );
+        return;
+      }
+      const document = await getLatestSuccessfulDocument(topicId);
+      const report = (document?.content ?? "").trim();
+      if (!report) {
+        toast.error(
+          "The linked research topic has no successful final report — run Document assembly in Research first.",
+        );
+        return;
+      }
+      const rows = allNodes.data ?? [];
+      const parent = node.parent_id
+        ? (rows.find((row) => row.id === node.parent_id) ?? null)
+        : null;
+      const siblings = rows
+        .filter((row) => row.parent_id === node.parent_id && row.id !== node.id)
+        .map((row) => row.route)
+        .filter(Boolean)
+        .slice(0, 20)
+        .join(", ");
+      const outcome = await agents.writeBrief({
+        research_report: report,
+        site_domain: fresh.domain ?? fresh.name ?? "",
+        page: [
+          node.route ?? "(no route)",
+          node.label,
+          node.node_type,
+          node.technical_depth ? `depth: ${node.technical_depth}` : "-",
+        ].join(" | "),
+        page_context: [
+          parent
+            ? `parent: ${parent.route} (${parent.label})`
+            : "parent: none (top level)",
+          siblings ? `siblings: ${siblings}` : "siblings: none",
+          node.pillar_label ? `pillar: ${node.pillar_label}` : "",
+          node.cluster_label ? `cluster: ${node.cluster_label}` : "",
+        ]
+          .filter(Boolean)
+          .join("; "),
+        existing_brief: (node.brief ?? []).join("\n"),
+        guidance: "",
+      });
+      // STAGED into the draft — the user reads it and presses Save.
+      setDraft((currentDraft) => ({ ...currentDraft, brief: outcome.brief }));
+      setBriefText(outcome.brief.join("\n"));
+      toast.success(
+        `Drafted ${outcome.brief.length} brief line(s) — review, then Save.${outcome.notes ? ` ${outcome.notes}` : ""}`,
+      );
+    } catch (error) {
+      toast.error(`Could not draft the brief: ${extractErrorMessage(error)}`);
+    }
+  };
 
   // Reset the draft only when a DIFFERENT node is shown (the panel is also
   // keyed by node.id at its call sites). Background refetches of the same
@@ -271,6 +347,21 @@ export function NodePanel({
             </p>
           ) : null}
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 gap-1.5 px-2 text-xs"
+          disabled={agents.briefBusy || deepening}
+          title="AI: draft this page's brief from the research report into the editor below — you review and Save. (Deepen writes immediately and also attaches sources.)"
+          onClick={() => void handleDraftBrief()}
+        >
+          {agents.briefBusy ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <PenLine className="h-3.5 w-3.5" />
+          )}
+          Draft brief
+        </Button>
         <Button
           variant="outline"
           size="sm"

@@ -340,6 +340,23 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-30 — Claude (round 6): **an agent at every remaining step.** Two more
+  platform agents: **Content Plan Keyword Binder**
+  (`8ffb091c-dccf-4550-a14f-95807fd96b95`) assigns every page a primary
+  keyword from the SITE'S OWN pool — new `listSiteKeywordPool` +
+  `useSiteKeywordPool` read `seo.site_keyword_value` joined to phrases, the
+  agent may only return pool phrases, and the client resolves phrase →
+  `keyword_id` and DROPS anything unmatched (an invented phrase can never
+  reach the DB) plus dedupes so two pages never target one query; staged in
+  `KeywordBindSection` for review, applied on the user's click. **Content Plan
+  Brief Writer** (`f9789816-91b9-4e64-a38d-aa4d2a8127be`) is the NodePanel
+  "Draft brief" button — it STAGES a research-grounded brief into the panel
+  draft for review, which is exactly what Deepen does not do (Deepen writes
+  brief + sources immediately, server-side); that distinction is why this is
+  not a duplicate, and it finally binds the `brief_writer` role. **All 11
+  `ui.ui_surface_agent_role` rows across the content-plan surfaces are now
+  bound.**
+
 - 2026-07-30 — Claude (round 5): **adversarial-review fixes on the round-4
   work** (21-agent find+refute; 11 confirmed, 7 refuted). Topics are now
   stored authoritatively in `attributes.planned_topics` — `brief` alone was

@@ -386,6 +386,43 @@ export async function listKeywordLabels(
   return assertData(response.data, response.error);
 }
 
+export interface SiteKeywordPoolEntry {
+  keywordId: string;
+  phrase: string;
+  contentRole: string | null;
+  workflowStatus: string | null;
+  priorityScore: number | null;
+}
+
+/**
+ * The site's OWN keyword pool — `seo.site_keyword_value` joined to the
+ * phrases. This is what the plan is allowed to target: the plan READS the
+ * site's keyword valuation, it never re-decides it (FEATURE.md invariant),
+ * and the AI keyword binder may only choose from these rows.
+ */
+export async function listSiteKeywordPool(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<SiteKeywordPoolEntry[]> {
+  const values = await listSiteKeywordValues(siteId, undefined, signal);
+  if (values.length === 0) return [];
+  const labels = await listKeywordLabels(
+    values.map((row) => row.keyword_id),
+    signal,
+  );
+  const phraseById = new Map(labels.map((row) => [row.id, row.phrase]));
+  return values
+    .map((row) => ({
+      keywordId: row.keyword_id,
+      phrase: phraseById.get(row.keyword_id) ?? "",
+      contentRole: row.content_role,
+      workflowStatus: row.workflow_status,
+      priorityScore: row.priority_score,
+    }))
+    .filter((entry) => Boolean(entry.phrase))
+    .sort((a, b) => (b.priorityScore ?? 0) - (a.priorityScore ?? 0));
+}
+
 export interface SeoTopicOption {
   id: string;
   name: string;

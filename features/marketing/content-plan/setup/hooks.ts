@@ -15,6 +15,8 @@ import {
   CmsSiteService,
 } from "@/features/cms/services/cmsService";
 
+import { listSiteKeywordPool } from "../data/service";
+
 import { resolveCmsLink, type CmsFacts } from "./readiness";
 import { loadArchetypeLibrary } from "./service";
 
@@ -22,7 +24,19 @@ export const setupKeys = {
   all: ["content-plan", "setup"] as const,
   library: (orgId: string) => ["content-plan", "setup", "library", orgId] as const,
   cms: (siteId: string) => ["content-plan", "setup", "cms", siteId] as const,
+  keywordPool: (siteId: string) =>
+    ["content-plan", "setup", "keyword-pool", siteId] as const,
 };
+
+/** The site's own keyword pool — the ONLY phrases the binder may assign. */
+export function useSiteKeywordPool(siteId: string | null) {
+  return useQuery({
+    queryKey: setupKeys.keywordPool(siteId ?? "none"),
+    enabled: Boolean(siteId),
+    staleTime: 60 * 1000,
+    queryFn: ({ signal }) => listSiteKeywordPool(siteId as string, signal),
+  });
+}
 
 export function useArchetypeLibrary(organizationId: string | null) {
   return useQuery({
