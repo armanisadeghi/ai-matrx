@@ -41,7 +41,10 @@ const ALLOWLIST_PATH = join(
 // skills and Arman's own notes are governed separately from the doc jungle.
 const SCAN_EXCLUDE = /^(docs\/archive\/|node_modules\/|\.venv\/|\.claude\/|\.agents\/|\.arman\/|\.cursor\/|\.matrx\/)/;
 
-const CONFIDENT = /source of truth|canonical|official truth|SSOT|official rules/i;
+// `canonical(?!i[sz])` skips "canonicalizer"/"canonicalization" — the NER
+// entity-canonicalizer component name, never a doc-authority claim (kept in
+// lockstep with aidream scripts/check_docs_guards.py).
+const CONFIDENT = /source of truth|canonical(?!i[sz])|official truth|SSOT|official rules/i;
 
 const SANCTIONED_ROOT_MD = new Set([
   "CLAUDE.md",
