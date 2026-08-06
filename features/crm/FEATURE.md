@@ -1,6 +1,8 @@
 # FEATURE.md — `crm`
 
-**Status:** `db-core live · route + WindowPanels live` · **Tier:** `1` · **Last updated:** `2026-07-28`
+**Status:** `db-core live · route + WindowPanels live` · **Tier:** `1` · **Last updated:** `2026-08-06`
+
+Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/FEATURE.md` — read it before touching this feature in ANY repo.
 
 ---
 
@@ -178,6 +180,10 @@ attachments = `features/files` · tags/stages = `platform.categories` · the 360
 
 ## Change log
 
+- 2026-08-06 — Full assessment pass: cross-repo SoR created
+  (`common-docs/systems/crm/FEATURE.md` — platform-wide integration-gap map, agent-surface
+  gaps, competitive benchmark); handoff rewritten with a waved work order + three Arman
+  decisions. No code changes; DB re-verified healthy (all 9 tables certify).
 - 2026-07-28 — Classification pickers live (stage/rating FK selects + role
   edge tag picker on the record page; `CategorySelect` promoted to
   `features/scopes/components/`, generic `CategoryTagPicker` extracted from the
