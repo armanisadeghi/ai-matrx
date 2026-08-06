@@ -385,6 +385,7 @@
         "jsdom": "latest",
         "lint-staged": "^15.2.10",
         "madge": "^8.0.0",
+        "openapi-typescript": "^7.13.0",
         "os-browserify": "latest",
         "postcss": "latest",
         "process": "latest",
