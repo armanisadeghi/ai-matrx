@@ -20,7 +20,7 @@ the designated pointer is the ONLY resolution rule — never "newest per source_
 - Data healed: 1 mis-pointed attach edge → canonical, 2 dangling file-edges removed,
   2 null-canonical files backfilled, 15 file-orphaned derivations reconciled.
 
-## TODO — Wave A: never destroy expensive derivations (HIGHEST — the real catastrophe)
+## ~~TODO — Wave A~~ — SHIPPED (see `wave-a-softdelete-spec.md`: soft-delete + trash + guards live in DB; that doc holds the small remaining edge-work). Original brief kept for context:
 
 The AMAGuides loss (~2,400 LLM calls) was a `processed_document` **hard-delete**
 (`delete_library_document`, `aidream/services/rag/library_queries.py:900,1245`) —

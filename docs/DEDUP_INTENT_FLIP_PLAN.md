@@ -2,7 +2,7 @@
 
 **Status:** Frontend plumbing landed (`phase 1.y`). Backend `/files/upload` has NOT yet flipped to require an `intent` field. This doc captures what the FE will do on flip day.
 
-**Backend contract reference:** [docs/handoffs/dedup_phase_2_0_frontend_handoff.md](./handoffs/dedup_phase_2_0_frontend_handoff.md) §"File-upload dedup contract".
+**Backend contract reference:** [docs/archive/2026/handoff__dedup_phase_2_0_frontend.md](./archive/2026/handoff__dedup_phase_2_0_frontend.md) §"File-upload dedup contract".
 
 ---
 

@@ -22,7 +22,7 @@
  *
  * ADVISORY: prints a loud report and exits 1 when violations exist, but it is
  * wired only into the advisory release-gates pass — it never blocks ship/push.
- * Campaign doc: docs/handoffs/doc-consolidation-campaign.md (Wave 5).
+ * Campaign doc: docs/archive/2026/handoff__doc-consolidation-campaign.md (Wave 5).
  *
  * Usage: pnpm check:docs-guards
  */
@@ -201,5 +201,5 @@ if (pointerViolations.length) {
 }
 
 console.log("");
-console.log(`${total} error(s). Advisory — fix or allowlist via PR; see docs/handoffs/doc-consolidation-campaign.md (Wave 5).`);
+console.log(`${total} error(s). Advisory — fix or allowlist via PR; see docs/archive/2026/handoff__doc-consolidation-campaign.md (Wave 5).`);
 process.exit(1);
