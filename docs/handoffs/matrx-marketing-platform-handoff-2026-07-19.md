@@ -3,11 +3,11 @@
 Date: 2026-07-19  
 Repository: `/Users/armanisadeghi/code/matrx-frontend`  
 Production Supabase project: `txzxabzwovsujtloxrus`  
-Canonical schema: `web`
+Primary schema: `web`
 
 ## Objective
 
-Continue the Marketing Site Platform as a dense, desktop-first agency workspace for managing many client websites. The stable hierarchy is site → canonical pages, while crawl sessions and immutable snapshots remain separate evidence. Integrations, analysis, findings, screenshots, costs, tasks, and CMS operations attach to the stable site/page identities.
+Continue the Marketing Site Platform as a dense, desktop-first agency workspace for managing many client websites. The stable hierarchy is site → stable page identities, while crawl sessions and immutable snapshots remain separate evidence. Integrations, analysis, findings, screenshots, costs, tasks, and CMS operations attach to the stable site/page identities.
 
 ## Non-negotiable architecture
 
@@ -33,7 +33,7 @@ Authoritative decision and architecture references:
 
 - `/marketing` product namespace, main-menu Marketing Hub entry, portfolio, add-site flow, site shell, overview, pages, snapshots, crawls, analysis, findings, links, screenshots, access, settings, integrations, batches, and cost routes.
 - Friendly site input normalization (`example.com` → HTTPS URL), asynchronous homepage bootstrap, screenshot retry/progress, durable screenshot rendering, and overview presentation.
-- Canonical controlled `MatrxDataTable` usage with direct Supabase range/filter/sort/count queries.
+- Standard controlled `MatrxDataTable` usage with direct Supabase range/filter/sort/count queries.
 - Direct authenticated scraper commands and transient NDJSON progress; durable crawl URL and event history comes from Supabase.
 - Site/page/crawl/snapshot separation, crawl URL ledger, page evidence, crawl schedule authority, analysis/findings inspection, links/screenshots inspection, site sharing, settings, batch monitoring, and cost projections.
 - Reusable user/org Google connection model, encrypted refresh credentials, discovered Search Console and GA4 resources, PageSpeed app configuration, and site property selectors.

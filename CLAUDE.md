@@ -468,9 +468,15 @@ How a row becomes visible platform-wide — ownership, `iam.permissions`, `iam.m
 
 ---
 
+## Cross-Repo — protocol + registry system-of-record pointers
+
+- **Matrx Envelope pact** (this repo mirrors aidream's `docs/protocol/MATRX_ENVELOPE.md`/`MATRX_REFERENCES.md` byte-identically; aidream is canonical, `check-protocol-sync.ts --fix` maintains it): `/Users/armanisadeghi/code/common-docs/systems/matrx-envelope/FEATURE.md`.
+- **Conversation-start contract** (`conversation_id` client-minted + `is_new` + `store` on every agent start; `callApi` is this repo's client half): `/Users/armanisadeghi/code/common-docs/systems/conversation-start-contract/FEATURE.md`.
+- **Tool registry schema** (`tool.definition`/`tool.binding`/… — aidream owns; tool-call visualization consumes): `/Users/armanisadeghi/code/common-docs/systems/tool-registry/FEATURE.md`.
+
 ## Cross-Repo — matrx-extend
 
-Chrome extension bridge for cross-surface workflows. The Phase 2 bridge has shipped (`chrome.runtime.sendMessage` + Supabase Broadcast substrates — see the header of `features/surfaces/data/surface-candidates.ts`).
+Chrome extension bridge for cross-surface workflows. Cross-repo channel map (system-of-record): `/Users/armanisadeghi/code/common-docs/systems/matrx-extend-integration/FEATURE.md`. The Phase 2 bridge has shipped (`chrome.runtime.sendMessage` + Supabase Broadcast substrates — see the header of `features/surfaces/data/surface-candidates.ts`).
 
 - Connection map: [docs/MATRX_EXTEND_CONNECTION.md](./docs/MATRX_EXTEND_CONNECTION.md)
 - Skill: `connect-matrx-extend`

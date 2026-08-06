@@ -15,7 +15,7 @@ vision: [/Users/armanisadeghi/code/common-docs/projects/google-oauth-verificatio
 > aidream and that's it."
 
 Governing plan:
-[`common-docs/projects/google-oauth-verification/PLAN.md`](https://github.com/AI-Matrix-Engine/matrx-common-docs/blob/main/projects/google-oauth-verification/PLAN.md)
+`/Users/armanisadeghi/code/common-docs/projects/google-oauth-verification/PLAN.md`
 — execution step 4 ("Consolidate scope configuration and eliminate the parallel Google
 settings/token path") and its "Current scope truth" section. **The registry's expected list
 must match Google Cloud's declared Data Access list exactly** — that table (12 scopes as of

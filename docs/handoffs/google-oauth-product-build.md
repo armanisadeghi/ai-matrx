@@ -19,7 +19,7 @@ this done the right way").
 > mind we want to do this in a way that ALL users will be able to use it, not just me."
 
 Ground truth for scope strategy, reviewer wording, and gating:
-[`common-docs/projects/google-oauth-verification/PLAN.md`](https://github.com/AI-Matrix-Engine/matrx-common-docs/blob/main/projects/google-oauth-verification/PLAN.md).
+`/Users/armanisadeghi/code/common-docs/projects/google-oauth-verification/PLAN.md`.
 Strategy summary (do not re-litigate): `drive.file` + Google Picker for user-selected
 Docs/Sheets (non-sensitive, no security assessment); `gmail.send` with explicit user review
 of recipient/subject/body (sensitive, ordinary verification); NO restricted scopes
