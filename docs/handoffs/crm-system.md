@@ -1,16 +1,17 @@
 ---
 status: active
-updated: 2026-07-28
+updated: 2026-08-06
 repos: [matrx-frontend, aidream]
-owner_repo: matrx-frontend
 ---
 
 # CRM + Entity system — full handoff
 
 **You need nothing outside this document to continue.** It carries the vision in Arman's own
-words, an honest gap analysis, a map of the code, and a prioritized next-step list.
+words, the verified current state, and a prioritized work order.
 
-Supporting docs, in the order you'll want them:
+Read in order: this doc → **the cross-repo system-of-record**
+`/Users/armanisadeghi/code/common-docs/systems/crm/FEATURE.md` (verified 2026-08-06: the
+platform-wide integration-gap map, agent-surface gaps, competitive benchmark) →
 [`features/crm/FEATURE.md`](../../features/crm/FEATURE.md) (the DB contract and its gotchas) →
 `migrations/crm_01_schema.sql` + `migrations/crm_02_core.sql` (the DDL).
 
@@ -202,297 +203,138 @@ A newcomer will otherwise be tempted to undo these. Don't.
 
 ---
 
-# 2. Current state
+# 2. Current state — verified 2026-08-06
 
-Everything below was verified against the live database and in a browser on 2026-07-27, not
-assumed.
+## Done
 
-## 2.1 Done and verified
+- DB core live and healthy — 9 tables (all pass `iam.canonical_certify_ok` today), 19 live
+  association pairs (17 seeded + 2 added since), 7 public category dimensions, 4 RPCs, PostgREST
+  exposure, constraint/merge round-trip tested. Contract: `features/crm/FEATURE.md`.
+- `/crm` list + `/crm/[partyId]` record page + Trash + classification pickers + create windows +
+  manager window + `/crm/admin` map + main-nav entries + three UI surfaces — all browser-verified.
+- Registry wiring: `party` + `crm_campaign` in `ENTITY_OVERLAY` / `ASSOCIATION_TARGET_TYPES`;
+  `party` passes `curatedTokens()` and appears in the universal picker; envelope catalog noun.
+- Types both repos: `database.types.ts` (`--schema crm`), entity-types, aidream `db/models/crm.py`
+  + `db/managers/crm/`.
 
-**Database — 9 tables in schema `crm`, all nine passing `iam.canonical_certify_ok` with zero FAIL
-and zero WARN.**
+## Where it actually stands
 
-| Table | Kind | Versioned | Holds |
-|---|---|---|---|
-| `crm.party` | entity | yes | person or company; identity, curation, per-org stance |
-| `crm.contact_medium` | entity | no | one row per value per org; deliverability + suppression |
-| `crm.party_contact_point` | component of party | no | who uses a medium, purpose, validity |
-| `crm.address` | component of party | no | structured postal + geo |
-| `crm.affiliation` | component of party | yes | person ↔ company employment, with dates |
-| `crm.interaction` | component of party | no | calls/emails/meetings, planned AND completed |
-| `crm.campaign` | entity | yes | a named audience or cold campaign |
-| `crm.campaign_member` | component of campaign | no | per-member state, attempts, dialer claim |
-| `crm.party_merge` | component of party | no | the exact unmerge record |
-
-Also live: 17 association pairs in `platform.association_types`; 63 vocabulary rows across 7
-category dimensions (`party_role`, `crm_lifecycle_stage`, `contact_point_purpose`,
-`social_platform`, `interaction_channel`, `interaction_outcome`, `crm_rating`) — **all seeded
-`visibility='public'`**; edge payload kinds `party_observation` and `party_affiliation`;
-`platform.shareable_resource_registry` rows for `party` and `crm_campaign`; per-token association
-GC triggers.
-
-**RPCs** (all in `public`, `auth.uid()`-gated, audited to `platform.activity_log`):
-`crm_set_primary_contact_point` · `crm_merge_parties` · `crm_unmerge_parties` · `crm_party_purge`.
-
-**Tested live**, then purged: 20 constraint/trigger assertions (facet checks, E.164 and
-lowercase-email enforcement, duplicate media, one-primary-per-channel, a second stint at the same
-employer, overlapping-primary rejection, org inheritance, the campaign claim lock) and a full
-merge → verify → unmerge → verify round trip.
-
-**API reachability.** `crm` is exposed to PostgREST (`pgrst.db_schemas` on the `authenticator`
-role). Verified over HTTP: `crm.party` returns 200; other schemas unaffected.
-
-**Types, both repos.** `types/database.types.ts` (`--schema crm` added to the `db-types` script in
-`package.json`), `types/generated/entity-types.generated.ts` (315 tokens), and aidream
-`db/models/crm.py` + `db/managers/crm/` (`crm` registered in `aidream/db/matrx_orm.yaml`).
-
-**UI — two screens, browser-verified with real rows.**
-`/crm` (list: People/Companies, scope tabs, search, server-side sort/filter/paging, row kebab,
-full-row click) and `/crm/[partyId]` (identity + DNC, medium-joined contact points with primary
-star, addresses, employment both directions, activity composer + timeline, notes, Files/Tasks
-association grid). Mobile stacks to one column; no console errors; `pnpm type-check` green.
-
-**Registry wiring.** `party` and `crm_campaign` added to `ENTITY_OVERLAY`
-(`features/scopes/registry/entityRegistry.ts`) and `ASSOCIATION_TARGET_TYPES`
-(`features/scopes/types.ts`); `"party"` added to the comments `EntityType`.
-
-**Cleanups done along the way.** Retired the stale `platform.entity_types` row `token='profile'`
-(pointed at a schema `user` that does not exist). Corrected `features/industries/FEATURE.md` from
-`public.industries` to `iam.industries`. Corrected the false claim in
-`.claude/skills/db-change/TOOLKIT.md` that PostgREST exposure is not agent-reachable.
-
-## 2.2 Partial
-
-- **List scopes.** `features/crm/types.ts:135` ships `CRM_LIST_SCOPES = ["mine","orgs","public"]`.
-  **"Shared" is deliberately absent** — it needs a CRM grant-reader RPC and no generic one exists.
-  The scope tabs render only what is wired, so nothing is broken; the tab is simply missing.
-- **Experts.** `crm.party` carries `expert_status`, `claimed_by`, `claimed_at` and the CHECK for
-  `registered|approved|vetted`. Nothing writes them; there is no registration flow and no public
-  directory.
-- **Curated expert sets.** The conveying pair `party → data_store` (container=target, conveys
-  viewer) is registered and works, but nothing creates a `rag.data_stores` row with
-  `kind='contact_set'` and no UI exists.
-- **Merge.** The RPCs exist and are round-trip tested, but there is **no review UI** and nothing
-  generates `merge_candidate` edges. Merging is currently a SQL-only operation.
-
-## 2.3 Not started
-
-- Campaign builder and the **call queue** (tables and the `claimed_by`/`claimed_until` dialer lock
-  exist; no UI at all).
-- **CSV import.** Must be written against `ON CONFLICT (organization_id, channel, value_key)` from
-  the first line, or it will create the duplicates the merge step then has to clean.
-- **Research → experts.** No code writes parties from research, and there is no `topic.experts`
-  entry in `features/research/resources/catalog.ts`.
-- **Dedup automation.** No auto-merge on strong-key collision, no weak-signal candidate generation.
-- **The folds** (Arman explicitly asked that nothing be left duplicating this):
-  `plan.entity` person/org rows (6 rows) → party, with `plan_node → party` replacing
-  `plan_node → plan_entity`; `users.invitation_requests` (8) + `public.contact_submissions` (4) +
-  `iam.invitations`; and the larger **`web.brand` fold** (22 brands, 42 social properties,
-  `web.business_fact`, `web.discovered_item`).
-- Deals/opportunities, sequences, lead scoring.
-- **Email and calendar.** There is **no email-sending infrastructure in this database at all** —
-  `communication.emails` is a 7-column toy with no `organization_id`. A cold email campaign needs
-  the send path, webhook ingestion (delivered/open/bounce/complaint), and the send-time suppression
-  check, all net-new.
-
-## 2.4 Known issues, risks and debt
-
-1. **PostgREST self-join embeds.** `party!<fk-name>(...)` resolves **reverse** (an array) at
-   runtime. The employer embed must target the FK **column**
-   (`employer:primary_employer_party_id(...)`), and postgrest-js cannot infer the column form, so
-   `features/crm/service.ts` pins it with `.returns<>()`. Pinned in `features/crm/FEATURE.md`.
-2. **Nothing is deployed.** All work is pushed to `main`, but Vercel only builds release-prefixed
-   commits by design. Cutting a release ships every parallel session's commits too — that call was
-   deliberately left to Arman. `./scripts/release.sh` when ready.
-3. **Parallel sessions sweep the working tree.** During this work another session's `release-admin`
-   commit picked up `migrations/crm_01_schema.sql` and reverted a `package.json` edit. **Re-verify
-   your own edits are still present before committing**, especially `package.json`.
-4. **No seed data.** `crm.party` is empty (test rows were purged). The first person to open `/crm`
-   creates the first rows.
-5. **Bulk writes into `party → data_store` are O(n) reachability refreshes.** Insert with the
-   reachability trigger deferred, then call `platform.refresh_reachability` once. Adding 10,000
-   experts row-by-row will crawl.
-6. **`crm.interaction` is one row per attendee.** A three-person meeting is three rows. A component
-   defers access to exactly one parent, so a participants table would have to be its own entity.
-   Deliberate, not an oversight.
-7. **Notes must pass `p_org_id`.** `cmt_add`'s org resolution is hardcoded for `task` only;
-   everything else silently lands the comment in the author's *personal* org. The CRM passes it
-   explicitly — keep doing that.
-8. **`platform._mirror_fk_to_assoc` is forbidden platform-wide.** `crm._affiliation_edge()` is
-   modelled on `plan._site_edge` instead. Do not "simplify" it onto the mirror function.
+- **Zero changes since the feature landed** (`features/crm` has exactly one commit ever —
+  `ed868172`, 2026-07-29, the full feature riding in a messages-titled commit) and near-zero usage:
+  4 parties, 1 interaction, 0 campaigns. Nothing server-side consumes the CRM ORM — no router,
+  no service, no agent tool, in either repo.
+- **The fold debt is compounding:** `plan.entity` 6 → 49 rows, `public.contact_submissions`
+  4 → 21, `web.brand` 22 → 25 since this doc was written.
+- **The duplicates persist as parallel CRUD surfaces** — content-plan's `EntityManager.tsx` is
+  full person/org CRUD beside `/crm`. (Universal-picker hygiene is already correct: only `party`
+  and `crm_campaign` are curated tokens; the duplicate tables have `contentRole: null`.)
+- **`party.expert_status` has no producer and no reader anywhere.** The research pipeline extracts
+  the exact promotion signals (`NotableQuote.speaker`, `has_author_credentials`, `expert_opinion`
+  findings, per-page `EntitiesMentioned.people/organizations`) and buries them in
+  `rs_source.page_analysis` JSONB.
+- **Email is a hole, not a gap:** no send path in any repo (a boot-validated `MAILGUN_API_KEY`
+  with zero consumers is the only evidence of intent), no bounce/complaint webhook, no
+  Gmail/Calendar sync. `crm.interaction` + `party_contact_point.opt_out_*` were designed for all
+  of it and sit unused.
+- **SMS is real but disconnected:** `communication.sms_*` (Twilio numbers, conversations, consent,
+  webhook logs, org-scoped) keys on raw phone strings — no party link, and `sms_consent`
+  duplicates the DNC/suppression that `crm.contact_medium` owns. One suppression check must win
+  before CRM SMS campaigns ship.
+- **The raw `database` agent tool can already write `crm.party` ungoverned** (`crm` is not in its
+  schema denylist) — a duplicate factory until the resolver + proper `agent_data` registration
+  exist.
+- The full platform-wide gap map (every fold/link/leave with efforts) lives in the cross-repo SoR
+  — do not re-derive it.
 
 ---
 
-# 3. Architecture and orientation
-
-## 3.1 How data flows
-
-```
-Browser (React)  ──direct, supabase-js──▶  Supabase Postgres (schema `crm`)
-                 ──associationsService──▶  platform.associations   (relationships)
-                 ──supabase.rpc()──────▶  public.crm_* RPCs        (primary, merge, purge)
-aidream (Python) ──generated ORM───────▶  db/models/crm.py, db/managers/crm/
-```
-
-**There is no Next.js middle tier and no Python hop for CRM data.** Reads and writes go straight
-to Postgres under RLS. Python is for work the browser cannot do (AI, heavy processing, file bytes)
-— it has ORM models for `crm` so agents can write parties later, but nothing uses them yet.
-
-## 3.2 Where things live
+# 3. Resources
 
 | What | Where |
 |---|---|
-| DB contract + every gotcha | `features/crm/FEATURE.md` ← **read first** |
-| DDL (applied + ledgered) | `migrations/crm_01_schema.sql`, `migrations/crm_02_core.sql` |
-| Row/embed types, vocabularies, scopes | `features/crm/types.ts` |
-| All reads/writes | `features/crm/service.ts` |
-| List + detail data hooks | `features/crm/hooks/usePartyList.ts`, `hooks/usePartyDetail.ts` |
-| List page | `app/(core)/crm/page.tsx` → `features/crm/components/CrmListPage.tsx`, `components/columns.tsx` |
-| Record page | `app/(core)/crm/[partyId]/page.tsx` → `features/crm/components/record/PartyRecordPage.tsx` |
-| Record sections | `features/crm/components/record/{PartyIdentityCard,ContactPointsCard,AddressesCard,EmploymentCard,InteractionTimeline,PartyNotes,SectionCard}.tsx` |
-| Entity registry entries | `features/scopes/registry/entityRegistry.ts` (`ENTITY_OVERLAY`), `features/scopes/types.ts` (`ASSOCIATION_TARGET_TYPES`) |
-| Relationship writes | `features/scopes/service/associationsService.ts` — **the only sanctioned path** |
-| Server ORM | aidream `db/models/crm.py`, `db/managers/crm/`, registered in `db/matrx_orm.yaml` |
+| Cross-repo SoR: gap map, agent-surface gaps, competitive benchmark, build order | `/Users/armanisadeghi/code/common-docs/systems/crm/FEATURE.md` |
+| DB contract + every gotcha (read before touching the DB or UI) | `features/crm/FEATURE.md` |
+| DDL (applied + ledgered) | `migrations/crm_01_schema.sql`, `crm_02_core.sql` |
+| All FE reads/writes · types · hooks · pages | `features/crm/{service.ts,types.ts,hooks/,components/}` |
+| Server ORM (generated, unconsumed) | aidream `db/models/crm.py`, `db/managers/crm/` |
+| Agent-resource on-ramp (registers `party` for agents) | aidream `aidream/services/agent_data/registry.py` (`sync_from_entity_types`, `_derive_spec`) |
+| Research expert signals | aidream `research/page_analysis.py` (`EntitiesMentioned`, `NotableQuote`, `EvidenceSignals`) |
+| YouTube channel data (stable natural key) | aidream `research/youtube_library.py`, `db/models/research.py::YoutubeVideo` |
+| Testing | `/login` `admin@admin.com` / `Password1234#`; no seed data. Smoke test: create person + company, employ with title/date, 2 emails + 2 phones with primary flips, log a call, confirm Employer column renders (proves the mirror trigger) |
 
-## 3.3 What the CRM inherits instead of building
-
-This is the "fully interconnected" principle in practice. None of these were re-implemented:
-
-- **Notes** → `platform.comments` via `commentsService` (entity type `"party"`, explicit org id).
-- **Audit trail** → `platform.activity_log` (the RPCs write `crm.party.merge` / `.unmerge` / `.purge`).
-- **Favorites / pins / recents** → `platform.user_entity_state`.
-- **Follow-ups** → real `workspace.tasks` attached by an association edge, so they appear in the
-  user's actual task list rather than a private CRM field.
-- **Attachments** → `features/files` via the association grid.
-- **Tags, stages, roles, outcomes** → `platform.categories`.
-- **The "everything related to this" grid** → `AssociationCardGrid` + `PrimaryEntityProvider`.
-- **List chrome** → `MatrxDataTable` (controlled mode), `BrowseScopeTabs`, `useListViewPrefs`,
-  `ItemMenu` — the same primitives `/agents/all` uses.
-
-## 3.4 Reading the data model in one paragraph
-
-A `party` is a person or a company. Its emails, phones, social handles and external ids are
-`party_contact_point` rows, each pointing at a shared `contact_medium` that holds the actual value
-and everything known about that value's health. Postal addresses are separate (`crm.address`)
-because they have eight structured fields, geocoding, and their own lifecycle. A person's jobs are
-`crm.affiliation` rows pointing from the person to a company party, with titles and dates; a
-trigger mirrors the current one to a `works_at` relationship edge and denormalizes
-`primary_employer_party_id` + `job_title` onto the person so grids and exports are one column read.
-Calls, emails and meetings are `crm.interaction` rows. Audiences and cold campaigns are
-`crm.campaign` + `crm.campaign_member`, where `claimed_by`/`claimed_until` is the lock that stops
-two reps dialing the same prospect. Merges never destroy anything: `crm.party_merge` records every
-moved child id so unmerge replays exactly.
+**DB traps paid for during the build** (beyond `features/crm/FEATURE.md`'s invariants):
+`platform.create_entity_table(..., 'component')` **always fails** (its internal `iam.apply_rls`
+needs a composition row whose `child_type` FKs to a not-yet-existing token) — hand-build component
+tables from the working recipe in `migrations/crm_02_core.sql` §2–4. The function also has **two
+overloads** (`p_visibility` text vs boolean; only one takes `p_gin_jsonb`) — always pass all 13
+named parameters. Parallel agent sessions sweep the working tree — re-verify your own edits
+(especially `package.json`) before committing.
 
 ---
 
-# 4. Next steps, in order
+# 4. Remaining work, in order
 
-Each is independently shippable.
+Waves are independently shippable; full rationale + per-item efforts in the SoR.
 
-**Done (2026-07-28):** category pickers (stage/rating FK selects + role edge tag picker on
-`PartyIdentityCard`, via the shared `CategorySelect` / `CategoryTagPicker` in
-`features/scopes/components/`), D112 title-cell links (`MatrxColumnDef.href`, fixed app-wide in
-`MatrxDataTable`), and the `/crm` Trash view (restore + `crm_party_purge` behind a destructive
-confirm). All browser + DB verified.
+**Wave 0 — defect closure (~1 day).**
+Guard the raw `database` tool against ungoverned `crm` writes (aidream) · rename the
+`matrx_legal...docket.Party` class collision before CRM server code lands · decide
+`expert_status` (wire, don't drop — its producers arrive in Wave 3).
 
-1. **CSV import** (~2 days). The single highest-value thing for real users — teams arrive with a
-   spreadsheet. Write it against `ON CONFLICT (organization_id, channel, value_key)` from the
-   start, and reuse `normalizeMediumValue` from `features/crm/service.ts` so imported values match
-   the DB CHECKs (lowercase email, E.164 phone).
-2. **Campaign builder + call queue** (~1 week). The tables are done. Build: create a campaign, add
-   members from a filtered list, then a queue screen that claims the next member
-   (`next_attempt_at`, `claimed_by`, `claimed_until`), shows their phone and history, and logs an
-   interaction with an outcome. This is what makes it a cold-calling tool rather than a rolodex.
-3. **Dedup: auto-merge + candidate review** (~1 week). Auto-merge on `is_identity_key` collisions;
-   generate `party → party` `merge_candidate` edges from weak signals; a review screen calling the
-   existing `crm_merge_parties`. Reuse `rag.ner_canonicalizer_shadow`'s deterministic-vs-agent
-   verdicts rather than starting a second experiment. Add `CHECK (source_id < target_id)` for
-   symmetric roles or every candidate appears twice.
-4. **Research → experts** (~1 week). Write parties from research runs with `party_observation`
-   payloads on `party → research_source` edges, and add ONE `topic.experts` entry to
-   `features/research/resources/catalog.ts` (that catalog is built so one entry lights up the
-   picker, budget meter and every saved bundle).
-5. **The folds** (~1 week). `plan.entity` person/org first (6 rows, cheap now, expensive later),
-   then the three "person known only by email" tables. Each needs a `scripts/dead-relations.json`
-   entry and a `platform.deprecated_relations` row **before** repointing.
-6. **`web.brand` fold** (~2 weeks, cross-repo, lockstep). Brand → party(organization);
-   `web.property` + `web.business_fact` → medium/contact point; `web.discovered_item` → shared
-   enrichment inbox. Marketing, SEO, GSC and content-plan all read `web.brand` today. Ratified by
-   Arman as a planned phase — do it after the core is proven in production.
-7. **Experts** (~1–2 weeks). Registration on the shipped creator-claim flow
-    (`creator_claim_handle` → `/c/[handle]`, Stripe Connect payouts already live), the
-    `registered → approved → vetted` transitions, and the public directory — **always free to
-    browse**. What an expert sells rides the existing creator payment path; "book a meeting" is the
-    one genuinely new product type.
-8. **Later:** deals/opportunities, sequences, email + calendar sync and webhook ingestion, scoring.
+**Wave 1 — the keystone + the agent premise (~1 week).**
+Build the **party resolver** in aidream (find-or-create: `name_key` canonicalization, natural keys
+= lowercase email / E.164 phone / domain / external ids, `source` stamping, merge-lineage aware) —
+everything downstream consumes it · register `party` in `agent_data` (flip `agent_writable`, seed a
+`ResourceSpec` with readonly `canonical_id`/`source_party_id`/`locked_fields`/`claimed_*`/
+`do_not_contact`; security-review gated) · FE agent tools (`party_search`/`party_create`/
+`party_link`) · context-menu "Save selection as contact" · `features/crm/agent-context/` builder.
+
+**Wave 2 — adoption + cheap folds (~2 weeks).**
+CSV import (upsert media against the real unique index
+`(organization_id, channel, coalesce(platform_slug,''), value_key) WHERE deleted_at IS NULL`
+from line one — a bare 3-column `ON CONFLICT` errors; reuse
+`normalizeMediumValue`; dry-run preview; this also first-exercises the O(n) reachability-refresh
+warning) · `plan.entity` fold (cheapest now, most expensive later) · `invitation_requests` +
+`contact_submissions` + `user_form_profile` folds (each needs `scripts/dead-relations.json` +
+`platform.deprecated_relations` BEFORE repointing) · YouTube channel → party (the original forcing
+function; `channel_id` is a stable key, no fuzzy matching).
+
+**Wave 3 — a working outreach tool (~2–3 weeks).**
+Smart views (saved dynamic filters + bulk actions — the list IS the work queue) · campaign builder
++ call-queue UI (= power-dial a smart view; the claim lock exists) · dedup automation (auto-merge
+on `is_identity_key` collisions; suggestion-gated weak-signal candidates with
+`CHECK (source_id < target_id)`; merge review UI over the existing RPCs) · research → experts
+(writes `expert_status` at last; one `topic.experts` entry in
+`features/research/resources/catalog.ts` lights up the whole picker/budget/bundle machinery).
+
+**Wave 4 — the competitive tier (decision-gated, see §5).**
+Deals + pipelines · email send + deliverability webhooks + 2-way sync · sequences
+(suppression-aware from day one — our differentiator) · SMS ↔ party unification · reporting ·
+calendar sync · next-activity enforcement.
+
+**Wave 5 — later, already ratified.**
+`web.brand` fold (cross-repo lockstep; brand keeps only web/SEO concerns) · CMS `form_submissions`
+→ party/interaction (cross-project) · transcript speaker maps · conservative NER promotion from
+`rag.kg_entities` (suggestion-gated, never auto-write) · expert registration on the creator-claim
+flow + public directory (define the `party ↔ profile` link rule first) · podcast author/guest
+edges · `legal.wc_claim.evaluator_name` fold · "shared" list scope (needs a grant-reader RPC) ·
+graveyard `communication.emails`.
 
 ---
 
-# 5. Gotchas and context
+# 5. Decisions needed (Arman)
 
-**Before you touch the database**
-
-- Read `features/crm/FEATURE.md` and `.claude/skills/db-change/TOOLKIT.md`. Apply DDL through the
-  Supabase MCP (project `txzxabzwovsujtloxrus`), then record it in `public._schema_migrations`
-  (`source='matrx-frontend'`, checksum = SHA-256 of the file bytes) and run `pnpm db-types`.
-- **`platform.create_entity_table(..., 'component')` always fails.** Its internal `iam.apply_rls`
-  call needs a `platform.entity_relationships` composition row whose `child_type` FKs to a token
-  that does not exist yet. Hand-build component tables — `migrations/web_brand_layer.sql` is the
-  working recipe, and `migrations/crm_02_core.sql` §2–4 is ours.
-- **It has two overloads.** `p_visibility` is *text* in one and *boolean* in the other; only one
-  takes `p_gin_jsonb`. Always pass all 13 named parameters.
-- **Seed system-org category dimensions `visibility='public'`.** At `internal` they are invisible
-  to every customer org (empty pickers) *and* every `party → category` edge write fails 42501,
-  because `assoc_add` requires `has_access(target,'viewer')`. This bug already happened once, to
-  the `plan_*` dimensions.
-- **Never `char(n)`** — it is blank-padded and the matrx-orm generator has no mapping for `bpchar`.
-  `text` + a CHECK.
-- **Exposing a new schema is agent-reachable** (it is `pgrst.db_schemas` on the `authenticator`
-  role) but **append, never retype the list** — a wrong value is a total API outage. Then
-  `notify pgrst, 'reload config'` **and** `'reload schema'`; config alone leaves the cache stale
-  (PGRST205). Verify over HTTP, not in SQL.
-
-**Before you touch the UI**
-
-- `/crm` is a `(core)` AppShell route: chrome goes in `<PageHeader>`, body wrapper is
-  `h-full overflow-hidden`. Never `h-page` or `calc(100dvh - header)`.
-- Lucide icons only, **no emojis anywhere a user can see**. Semantic tokens (`bg-card`,
-  `text-muted-foreground`, `border-border`), never raw hex.
-- Every column sorts **and** filters, or the control does not render at all. The Employer column
-  renders no filter on purpose — the server cannot serve it.
-- The list must declare its scope. A bare RLS-filtered read is a defect here.
-- `pnpm type-check` is the **only** type gate — `next.config.js` sets
-  `typescript.ignoreBuildErrors: true`, so a red type error still deploys.
-
-**Behaviours that will surprise you**
-
-- Setting a primary email/phone **must** go through `crm_set_primary_contact_point`. Partial unique
-  indexes cannot be `DEFERRABLE`, so the natural "set new, clear old" flow throws 23505.
-- Creating a contact point is **two steps**: find-or-create the `contact_medium` first, then link
-  it. The value lives on the medium, not the contact point.
-- `party_contact_point.channel` is denormalized from the medium by a trigger. Never write it.
-- Components inherit `organization_id` from their parent via `crm._inherit_parent_org()` (trigger
-  `_a_org_from_parent`, named to sort before `_stamp_*`). Without it the platform default would
-  derive org from the *creator's personal org*.
-- `last_touch_at` is deliberately **not** stored on `party` — it is versioned, and a cold-call floor
-  would snapshot the whole row into `history.row_versions` on every dial. Derive it from
-  `crm.interaction` (indexed `(party_id, occurred_at desc)`).
-- `crm_party_purge` is the erasure path and also clears `history.row_versions`,
-  `platform.comments` and `platform.user_entity_state`. A purge that only deletes the live row is
-  not a purge.
-
-**Settled — do not reopen**
-
-- Experts are always free to browse; money is on what they sell.
-- The five companies stay separate; no cross-org contact linkage.
-- Employment is a table, not an edge.
-- Deliverability and suppression live on the medium, not the party.
-- Deals are not in v1.
-
-**Testing**
-
-Log in at `/login` with `admin@admin.com` / `Password1234#`. There is no seed data — create rows.
-A useful smoke test, because it exercises everything that was hard: create a person and a company,
-employ one at the other with a title and start date, add two emails and two phones with one primary
-each, log a call with an outcome, then confirm the employer appears in the list's Employer column
-(that proves the mirror trigger fired).
+1. **Deals/opportunities scheduling.** Situation: v1 deliberately excluded deals. A 2026-08-06
+   benchmark of Salesforce/HubSpot/Attio/Pipedrive/Close/Folk ranks deals + kanban pipelines as
+   the single biggest competitiveness gap — it is the unit of money and the prerequisite for
+   reporting, forecasting, and most automation. Decide: schedule deals into Wave 4 as its lead
+   item, or hold until the outreach core (Waves 1–3) is proven with real users.
+2. **One suppression authority for SMS.** Situation: `communication.sms_consent` tracks phone
+   opt-outs independently of `crm.contact_medium` (which owns DNC/suppression for the CRM). Two
+   authorities means an SMS STOP might not stop a CRM cold-call campaign dialing the same number.
+   Decide: `contact_medium` becomes the single suppression authority (SMS consent writes through
+   to it), or SMS stays tenant-user-only and CRM campaigns must check both.
+3. **Email provider.** Situation: cold email campaigns (a named day-one requirement) need a send
+   path + bounce/complaint webhooks; nothing exists. `MAILGUN_API_KEY` is already declared in
+   aidream's env registry but unused. Decide: confirm Mailgun (or name the provider) so Wave 4
+   email work can start without a second round-trip.
