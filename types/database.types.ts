@@ -33313,6 +33313,7 @@ export type Database = {
           last_request_at: string
           member_level: string
           monthly_budget_mcents: number
+          notes: string
           org_bytes_used: number
           org_files_count: number
           requests_24h: number

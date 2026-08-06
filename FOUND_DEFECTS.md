@@ -13,6 +13,32 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D128 — MCP user connections dead since the vault cutover; connect flow unverified E2E (2026-08-06)
+
+All 4 `tool.mcp_user_conn` rows are `status='expired'` with `credential_item_id IS NULL`
+(stripe/asana/cloudflare/supabase, from 2026-04), and `tool.definition` has **zero**
+`source_kind='mcp_discovered'` rows — no MCP server has ever synced tools in production.
+The OAuth start/callback machinery (`app/api/mcp/oauth/*`, DCR + CIMD) is well built but has
+not completed a successful connection since the Phase-4 vault cutover; the legacy encryption
+GUC was never configured, so MCP connections have likely NEVER worked in prod. Also: the same
+OAuth-popup logic is hand-copied in three places (`IntegrationsSettingsPage.tsx`,
+`AgentToolsManager.tsx` ×2) — consolidate when touched. **Fix:** re-test one full connect →
+discover → invoke loop against a real remote MCP server (aidream `/api/mcp-connections/*`),
+then fix what breaks. Companion aidream-side entry exists in aidream/FOUND_DEFECTS.md.
+
+### D127 — Google/MCP docs actively lie: phantom feature dir + mislabeled route group (2026-08-06)
+
+- `features/api-integrations/FEATURE.md` is the ONLY file in its directory yet describes
+  `components/`, `types.ts`, `index.ts`, and a deleted client-side MCP execution path
+  (`mcp-client/` is a 16-line type stub). It's also listed as a Tier 2 feature in CLAUDE.md.
+- CLAUDE.md's route-group table calls `(popup)` "OAuth popup chrome"; it is an unused
+  BroadcastChannel demo — neither OAuth flow uses it (MCP returns via `/api/mcp/oauth/complete`
+  raw HTML; Google uses the GIS popup).
+**Fix:** rewrite the FEATURE.md as an honest index card pointing at `features/agents/` +
+`features/settings/`, correct the CLAUDE.md table row (context-docs skill), decide whether
+`(popup)` becomes the branded OAuth-return page (see docs/handoffs/google-oauth-product-build.md)
+or gets deleted.
+
 ### D126 — 22 hand-rolled copies of the headless "launch agent → poll → extract JSON" loop (2026-08-04)
 
 The canonical primitive EXISTS and is almost unused: `executeBuiltinWithJsonExtraction` /
