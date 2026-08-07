@@ -11,12 +11,15 @@
 --
 -- 1) gsc_perf_ctr_gap — "you rank, but nobody clicks".
 --    Builds the site's OWN expected-CTR-by-position curve from the period's
---    data (position bucket = round(weighted avg position), capped 1..20;
---    a bucket needs >= 5 keys to be trusted), then reports keys whose actual
---    CTR sits below the curve, with missed_clicks = (expected - actual) *
---    impressions. Site-relative on purpose: a global CTR table lies for
---    branded profiles; the site's other keys at the same position are the
---    honest benchmark.
+--    data (position bucket = round(weighted avg position), capped 1..20),
+--    then reports keys whose actual CTR sits below the curve, with
+--    missed_clicks = (expected - actual) * impressions. Site-relative on
+--    purpose: a global CTR table lies for branded profiles; the site's
+--    other keys at the same position are the honest benchmark. The
+--    benchmark is LEAVE-ONE-OUT — the scored key's own clicks/impressions
+--    are excluded from its expected CTR (a bucket-dominating branded key
+--    would otherwise drag the benchmark toward itself and hide its own
+--    gap), and a bucket needs >= 5 OTHER keys to be trusted.
 --
 -- 2) gsc_perf_cannibalization — queries where >= 2 pages split the traffic.
 --    query_page profile. A page "competes" when it holds >= p_min_share of
@@ -25,7 +28,9 @@
 --    pages carries the top 5 competing pages as jsonb for drill-down.
 --
 -- 3) gsc_perf_trend — sustained decay/growth per key. Splits the period into
---    two equal halves (primary signal: half2 vs half1 clicks) and fits a
+--    two EQUAL-LENGTH halves (primary signal: half2 vs half1 clicks; an odd
+--    day count excludes the middle day from BOTH halves — giving the extra
+--    day to half1 made perfectly flat traffic read as a decliner) and fits a
 --    linear slope over FULL zero-filled ISO weeks (secondary signal; partial
 --    edge weeks are excluded, and weeks with no rows count as ZERO clicks —
 --    GSC emits no row for a quiet day, and skipping empty weeks would hide
@@ -115,20 +120,24 @@ BEGIN
   ),
   curve AS (
     SELECT b.bkt,
-           SUM(b.s_clicks)::numeric / SUM(b.s_imps) AS exp_ctr,
+           SUM(b.s_clicks)::numeric AS bkt_clicks,
+           SUM(b.s_imps)::numeric AS bkt_imps,
            COUNT(*)::bigint AS n_keys
     FROM bucketed b
     GROUP BY b.bkt
-    HAVING COUNT(*) >= 5
   ),
+  -- Leave-one-out: the key's own traffic is excluded from its benchmark,
+  -- and the bucket must still hold >= 5 OTHER keys with impressions left.
   scored AS (
     SELECT b.k, b.pid, b.kid, b.s_clicks, b.s_imps, b.w_pos, b.bkt,
-           c.exp_ctr, c.n_keys,
+           (c.bkt_clicks - b.s_clicks) / (c.bkt_imps - b.s_imps) AS exp_ctr,
+           c.n_keys - 1 AS other_keys,
            b.s_clicks::numeric / b.s_imps AS act_ctr
     FROM bucketed b
     JOIN curve c ON c.bkt = b.bkt
     WHERE b.s_imps >= p_min_impressions
-      AND (b.s_clicks::numeric / b.s_imps) < c.exp_ctr
+      AND c.n_keys - 1 >= 5
+      AND c.bkt_imps - b.s_imps > 0
   )
   SELECT s.k,
          s.pid,
@@ -141,9 +150,10 @@ BEGIN
          round(s.exp_ctr, 6),
          round(s.exp_ctr - s.act_ctr, 6),
          round((s.exp_ctr - s.act_ctr) * s.s_imps)::bigint,
-         s.n_keys,
+         s.other_keys,
          COUNT(*) OVER ()::bigint
   FROM scored s
+  WHERE s.act_ctr < s.exp_ctr
   ORDER BY (s.exp_ctr - s.act_ctr) * s.s_imps DESC, s.k ASC
   LIMIT p_limit OFFSET p_offset;
 END;
@@ -204,11 +214,17 @@ BEGIN
       AND spd.query IS NOT NULL
   ),
   per_page AS (
+    -- pos_wsum/pos_imps carried separately so the query-level position stays
+    -- a SINGLE-PASS weighted average over rows WITH a position — re-weighting
+    -- each page's w_pos by its TOTAL impressions (position-less rows
+    -- included) skews toward pages with sparse position data.
     SELECT l.q, l.purl,
            (array_agg(l.kid ORDER BY l.kid) FILTER (WHERE l.kid IS NOT NULL))[1] AS kid,
            (array_agg(l.pid ORDER BY l.pid) FILTER (WHERE l.pid IS NOT NULL))[1] AS pid,
            SUM(l.c)::bigint AS s_clicks,
            SUM(l.i)::bigint AS s_imps,
+           SUM(l.pos * l.i) FILTER (WHERE l.pos IS NOT NULL) AS pos_wsum,
+           COALESCE(SUM(l.i) FILTER (WHERE l.pos IS NOT NULL), 0) AS pos_imps,
            CASE WHEN COALESCE(SUM(l.i) FILTER (WHERE l.pos IS NOT NULL), 0) > 0
                 THEN (SUM(l.pos * l.i) FILTER (WHERE l.pos IS NOT NULL))
                      / (SUM(l.i) FILTER (WHERE l.pos IS NOT NULL)) END AS w_pos
@@ -220,9 +236,8 @@ BEGIN
     SELECT pp.q,
            SUM(pp.s_clicks)::bigint AS q_clicks,
            SUM(pp.s_imps)::bigint AS q_imps,
-           CASE WHEN COALESCE(SUM(pp.s_imps) FILTER (WHERE pp.w_pos IS NOT NULL), 0) > 0
-                THEN (SUM(pp.w_pos * pp.s_imps) FILTER (WHERE pp.w_pos IS NOT NULL))
-                     / (SUM(pp.s_imps) FILTER (WHERE pp.w_pos IS NOT NULL)) END AS q_pos
+           CASE WHEN SUM(pp.pos_imps) > 0
+                THEN SUM(pp.pos_wsum) / SUM(pp.pos_imps) END AS q_pos
     FROM per_page pp
     GROUP BY pp.q
   ),
@@ -238,7 +253,7 @@ BEGIN
   ),
   flagged AS (
     SELECT s.q,
-           (array_agg(s.kid) FILTER (WHERE s.kid IS NOT NULL))[1] AS kid,
+           (array_agg(s.kid ORDER BY s.kid) FILTER (WHERE s.kid IS NOT NULL))[1] AS kid,
            MAX(s.q_clicks) AS q_clicks,
            MAX(s.q_imps) AS q_imps,
            MAX(s.q_pos) AS q_pos,
@@ -304,7 +319,12 @@ SET search_path = seo, pg_temp
 AS $$
 DECLARE
   v_profile text;
-  v_mid date := p_start + ((p_end - p_start) / 2);
+  -- EQUAL halves: each spans v_half days; an odd day count leaves the middle
+  -- day in NEITHER half (h1 taking the extra day made flat traffic read as
+  -- a ~-7% decliner on a 29-day custom range).
+  v_half int := (p_end - p_start + 1) / 2;
+  v_h1_end date := p_start + (v_half - 1);
+  v_h2_start date := p_end - (v_half - 1);
 BEGIN
   IF p_dimension NOT IN ('query', 'page') THEN
     RAISE EXCEPTION 'gsc_dimension_unknown: %', p_dimension;
@@ -355,8 +375,8 @@ BEGIN
            CASE WHEN COALESCE(SUM(l.i) FILTER (WHERE l.pos IS NOT NULL), 0) > 0
                 THEN (SUM(l.pos * l.i) FILTER (WHERE l.pos IS NOT NULL))
                      / (SUM(l.i) FILTER (WHERE l.pos IS NOT NULL)) END AS w_pos,
-           SUM(l.c) FILTER (WHERE l.d <= v_mid)::bigint AS h1_clicks,
-           SUM(l.c) FILTER (WHERE l.d > v_mid)::bigint AS h2_clicks
+           SUM(l.c) FILTER (WHERE l.d <= v_h1_end)::bigint AS h1_clicks,
+           SUM(l.c) FILTER (WHERE l.d >= v_h2_start)::bigint AS h2_clicks
     FROM latest l
     WHERE l.k IS NOT NULL
     GROUP BY l.k

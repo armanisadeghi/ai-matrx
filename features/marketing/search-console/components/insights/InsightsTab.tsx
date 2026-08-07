@@ -165,7 +165,8 @@ export function InsightsTab({
             className="h-6 w-20 text-xs"
             value={usesClicksThreshold ? minClicks : minImpressions}
             onChange={(e) => {
-              const value = Math.max(1, Number(e.target.value) || 1);
+              // The RPC arg is a SQL int — "150.5" would fail PostgREST's cast.
+              const value = Math.max(1, Math.trunc(Number(e.target.value) || 1));
               if (usesClicksThreshold) setMinClicks(value);
               else setMinImpressions(value);
             }}
@@ -238,6 +239,7 @@ function CtrGapTable({
 }) {
   const query = useGscCtrGap(siteId, periods, dimension, minImpressions);
   const rows = query.data?.rows ?? [];
+  const total = query.data?.total ?? rows.length;
   const columnLabel = dimension === "query" ? "Query" : "Page";
   const rowWatch = useRowWatch(dimension);
 
@@ -329,6 +331,13 @@ function CtrGapTable({
   if (query.isError) return <ErrorPanel error={query.error} />;
 
   return (
+    <div className="flex h-full min-h-0 flex-col gap-1">
+      {total > rows.length ? (
+        <p className="shrink-0 text-xs text-muted-foreground">
+          Showing the top {rows.length} of {formatCount(total)} matches —
+          tighten the threshold to narrow the set.
+        </p>
+      ) : null}
     <MatrxDataTable<GscCtrGapRow>
       data={rows}
       columns={columns}
@@ -368,7 +377,8 @@ function CtrGapTable({
           insight: "ctr-gap",
           dimension,
           visible_rows: visible.length,
-          total_rows: rows.length,
+          fetched_rows: rows.length,
+          total_rows: total,
         }),
       }}
       detail={{ enabled: false }}
@@ -381,8 +391,9 @@ function CtrGapTable({
         description:
           "Nothing with enough impressions sits below this site's expected CTR curve for the period. Lower the impressions threshold or widen the range.",
       }}
-      className="h-full"
+      className="min-h-0 flex-1"
     />
+    </div>
   );
 }
 
@@ -400,6 +411,7 @@ function CannibalizationTable({
   onDrill: (dimension: InsightDimension, key: string) => void;
 }) {
   const query = useGscCannibalization(siteId, periods, minImpressions);
+  const total = query.data?.total ?? 0;
   const rowWatch = useRowWatch("query");
   const rows = useMemo(
     () =>
@@ -488,6 +500,13 @@ function CannibalizationTable({
   if (query.isError) return <ErrorPanel error={query.error} />;
 
   return (
+    <div className="flex h-full min-h-0 flex-col gap-1">
+      {total > rows.length ? (
+        <p className="shrink-0 text-xs text-muted-foreground">
+          Showing the top {rows.length} of {formatCount(total)} matches —
+          tighten the threshold to narrow the set.
+        </p>
+      ) : null}
     <MatrxDataTable<Row>
       data={rows}
       columns={columns}
@@ -532,7 +551,8 @@ function CannibalizationTable({
           ...gscScopeAttributes(siteId, siteName, periods, {}),
           insight: "cannibalization",
           visible_rows: visible.length,
-          total_rows: rows.length,
+          fetched_rows: rows.length,
+          total_rows: total,
         }),
       }}
       detail={{
@@ -577,8 +597,9 @@ function CannibalizationTable({
         description:
           "No query has two or more pages each holding a meaningful share of its impressions in this period.",
       }}
-      className="h-full"
+      className="min-h-0 flex-1"
     />
+    </div>
   );
 }
 
@@ -601,6 +622,7 @@ function TrendTable({
 }) {
   const query = useGscTrend(siteId, periods, dimension, direction, minClicks);
   const rows = query.data?.rows ?? [];
+  const total = query.data?.total ?? rows.length;
   const columnLabel = dimension === "query" ? "Query" : "Page";
   const rowWatch = useRowWatch(dimension);
 
@@ -734,6 +756,13 @@ function TrendTable({
   if (query.isError) return <ErrorPanel error={query.error} />;
 
   return (
+    <div className="flex h-full min-h-0 flex-col gap-1">
+      {total > rows.length ? (
+        <p className="shrink-0 text-xs text-muted-foreground">
+          Showing the top {rows.length} of {formatCount(total)} matches —
+          tighten the threshold to narrow the set.
+        </p>
+      ) : null}
     <MatrxDataTable<GscTrendRow>
       data={rows}
       columns={columns}
@@ -784,7 +813,8 @@ function TrendTable({
           insight: direction,
           dimension,
           visible_rows: visible.length,
-          total_rows: rows.length,
+          fetched_rows: rows.length,
+          total_rows: total,
         }),
       }}
       detail={{ enabled: false }}
@@ -800,7 +830,8 @@ function TrendTable({
         description:
           "No row with enough clicks moved meaningfully between the two halves of this period. Lower the clicks threshold or widen the range.",
       }}
-      className="h-full"
+      className="min-h-0 flex-1"
     />
+    </div>
   );
 }
