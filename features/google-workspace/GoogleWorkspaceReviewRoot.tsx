@@ -4,10 +4,18 @@ import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPI
 import { GOOGLE_WORKSPACE_FILE_SCOPES } from "@/lib/googleScopes";
 import { GoogleWorkspaceReviewWorkspace } from "@/features/google-workspace/GoogleWorkspaceReviewWorkspace";
 
-export function GoogleWorkspaceReviewRoot() {
+interface GoogleWorkspaceReviewRootProps {
+  pickerInitialQuery?: string;
+}
+
+export function GoogleWorkspaceReviewRoot({
+  pickerInitialQuery,
+}: GoogleWorkspaceReviewRootProps) {
   return (
     <LazyGoogleAPIProvider scopes={[...GOOGLE_WORKSPACE_FILE_SCOPES]}>
-      <GoogleWorkspaceReviewWorkspace />
+      <GoogleWorkspaceReviewWorkspace
+        pickerInitialQuery={pickerInitialQuery}
+      />
     </LazyGoogleAPIProvider>
   );
 }

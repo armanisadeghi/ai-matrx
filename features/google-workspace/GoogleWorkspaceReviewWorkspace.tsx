@@ -87,7 +87,13 @@ function metadataLink(resource: GoogleConnectionResource): string | null {
   return typeof value === "string" && value ? value : null;
 }
 
-export function GoogleWorkspaceReviewWorkspace() {
+interface GoogleWorkspaceReviewWorkspaceProps {
+  pickerInitialQuery?: string;
+}
+
+export function GoogleWorkspaceReviewWorkspace({
+  pickerInitialQuery,
+}: GoogleWorkspaceReviewWorkspaceProps) {
   const google = useGoogleAPI();
   const inventory = useGoogleConnectionInventory();
   const connectGoogle = useConnectGoogle();
@@ -205,7 +211,9 @@ export function GoogleWorkspaceReviewWorkspace() {
       if (!accessToken) {
         throw new Error("Google did not provide access for file selection.");
       }
-      const picked = await pickGoogleWorkspaceFile(accessToken);
+      const picked = await pickGoogleWorkspaceFile(accessToken, {
+        initialQuery: pickerInitialQuery,
+      });
       if (!picked) return;
       const registered = await registerSelectedGoogleFile(
         activeConnection.id,

@@ -3,6 +3,8 @@ import { GoogleWorkspaceReviewRoot } from "@/features/google-workspace/GoogleWor
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
+const REVIEW_PICKER_QUERY = "AI Matrx OAuth Review";
+
 export const metadata = createRouteMetadata("/google-workspace-review", {
   title: "Google Workspace — AI Matrx",
   description:
@@ -27,7 +29,7 @@ export default async function GoogleWorkspaceReviewPage() {
           </span>
         </div>
       </div>
-      <GoogleWorkspaceReviewRoot />
+      <GoogleWorkspaceReviewRoot pickerInitialQuery={REVIEW_PICKER_QUERY} />
     </main>
   );
 }

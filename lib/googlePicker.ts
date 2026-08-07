@@ -8,6 +8,7 @@ interface GooglePickerView {
   setIncludeFolders(value: boolean): GooglePickerView;
   setMimeTypes(value: string): GooglePickerView;
   setMode(value: string): GooglePickerView;
+  setQuery(value: string): GooglePickerView;
   setSelectFolderEnabled(value: boolean): GooglePickerView;
 }
 
@@ -50,6 +51,10 @@ export interface PickedGoogleFile {
   name: string;
   mimeType: typeof DOCUMENT_MIME_TYPE | typeof SPREADSHEET_MIME_TYPE;
   url: string | null;
+}
+
+export interface GooglePickerOptions {
+  initialQuery?: string;
 }
 
 function loadScript(): Promise<void> {
@@ -132,6 +137,7 @@ function projectNumber(clientId: string): string {
 
 export async function pickGoogleWorkspaceFile(
   accessToken: string,
+  options: GooglePickerOptions = {},
 ): Promise<PickedGoogleFile | null> {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -144,6 +150,8 @@ export async function pickGoogleWorkspaceFile(
     .setSelectFolderEnabled(false)
     .setMode(picker.DocsViewMode.LIST)
     .setMimeTypes(`${DOCUMENT_MIME_TYPE},${SPREADSHEET_MIME_TYPE}`);
+  const initialQuery = options.initialQuery?.trim();
+  if (initialQuery) view.setQuery(initialQuery);
 
   return new Promise<PickedGoogleFile | null>((resolve, reject) => {
     const instance = new picker.PickerBuilder()

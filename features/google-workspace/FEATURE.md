@@ -34,8 +34,10 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
 - No file content or email body is stored by the Workspace service.
 - Re-consent for Gmail must preserve existing Picker-selected resource rows.
 - Marketing scopes are not bundled into the reviewer workflow.
+- The dedicated reviewer route prepopulates Picker with the review-fixture query so unrelated Drive file names do not appear in the verification video. The normal Settings surface remains unfiltered.
 - The frontend and backend canonical scope registries must remain aligned with `common-docs/projects/google-oauth-verification/PLAN.md`.
 
 ## Change log
 
+- 2026-08-07: Prepopulated Google Picker only on the dedicated reviewer route so verification recordings show the named review fixtures without exposing unrelated Drive file names.
 - 2026-08-06: Added the focused reviewer route, in-product disclosures, selected Doc/Sheet Picker flow, bounded read/update actions, incremental reviewed Gmail send, and explicit disconnect control.
