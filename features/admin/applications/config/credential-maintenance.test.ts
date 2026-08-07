@@ -1,4 +1,6 @@
 import {
+  credentialMaintenanceIndexPath,
+  credentialMaintenancePath,
   credentialMaintenanceMapSchema,
   getCredentialExpiryStatus,
   recordCredentialRotation,
@@ -18,6 +20,15 @@ const appleEntry: CredentialMaintenanceEntry = {
 };
 
 describe("credential maintenance", () => {
+  it("links reminders to the dedicated production admin host", () => {
+    expect(credentialMaintenanceIndexPath()).toBe(
+      "https://manage.aimatrx.com/administration/applications/configuration",
+    );
+    expect(credentialMaintenancePath("apple-sign-in")).toBe(
+      "https://manage.aimatrx.com/administration/applications/configuration?app=ai-matrx&credential=apple-sign-in",
+    );
+  });
+
   it("distinguishes healthy, warning, and expired dates", () => {
     expect(
       getCredentialExpiryStatus(

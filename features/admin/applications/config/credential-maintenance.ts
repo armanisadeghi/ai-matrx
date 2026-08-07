@@ -52,13 +52,18 @@ export interface CredentialExpiryStatus {
 
 export const WEB_APP_CONFIG_SLUG = "ai-matrx";
 export const APPLE_SIGN_IN_CREDENTIAL_ID = "apple-sign-in";
+export const ADMIN_APP_ORIGIN = "https://manage.aimatrx.com";
+
+export function credentialMaintenanceIndexPath(): string {
+  return `${ADMIN_APP_ORIGIN}/administration/applications/configuration`;
+}
 
 export function credentialMaintenancePath(
   credentialId: string,
   app = WEB_APP_CONFIG_SLUG,
 ): string {
   const params = new URLSearchParams({ app, credential: credentialId });
-  return `/administration/applications/configuration?${params.toString()}`;
+  return `${credentialMaintenanceIndexPath()}?${params.toString()}`;
 }
 
 export function getCredentialExpiryStatus(

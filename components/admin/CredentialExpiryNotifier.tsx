@@ -6,6 +6,7 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
 import {
+  credentialMaintenanceIndexPath,
   credentialMaintenancePath,
   getCredentialExpiryMessage,
   getCredentialExpiryStatus,
@@ -27,7 +28,7 @@ export default function CredentialExpiryNotifier() {
       window.location.assign(
         credentialId
           ? credentialMaintenancePath(credentialId)
-          : "/administration/applications/configuration",
+          : credentialMaintenanceIndexPath(),
       );
     };
 
