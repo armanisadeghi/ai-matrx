@@ -14,6 +14,7 @@ export async function GET() {
     { loc: `${baseUrl}/sign-up`, changefreq: 'monthly', priority: '0.9' },
     { loc: `${baseUrl}/contact`, changefreq: 'monthly', priority: '0.8' },
     { loc: `${baseUrl}/privacy-policy`, changefreq: 'yearly', priority: '0.5' },
+    { loc: `${baseUrl}/terms-of-service`, changefreq: 'yearly', priority: '0.5' },
     { loc: `${baseUrl}/terms-and-conditions`, changefreq: 'yearly', priority: '0.5' },
     { loc: `${baseUrl}/sms`, changefreq: 'yearly', priority: '0.5' },
     { loc: `${baseUrl}/appointment-reminder`, changefreq: 'monthly', priority: '0.7' },

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const FOOTER_LINKS = [
   { href: "/privacy-policy", label: "Privacy Policy" },
-  { href: "/terms-and-conditions", label: "Terms & Conditions" },
+  { href: "/terms-of-service", label: "Terms of Service" },
   { href: "/contact", label: "Contact" },
 ] as const;
 

@@ -5,6 +5,8 @@ export function GET() {
 Allow: /
 Allow: /contact
 Allow: /privacy-policy
+Allow: /terms-of-service
+Allow: /terms-and-conditions
 Allow: /appointment-reminder
 Allow: /education
 Allow: /canvas
