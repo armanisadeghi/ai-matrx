@@ -57,6 +57,7 @@ import {
   isDimensionTab,
 } from "@/features/marketing/search-console/types";
 import { DigTab } from "@/features/marketing/search-console/components/dig/DigTab";
+import { InsightsTab } from "@/features/marketing/search-console/components/insights/InsightsTab";
 import { FilterBar } from "@/features/marketing/search-console/components/FilterBar";
 import { GscDimensionTable } from "@/features/marketing/search-console/components/GscDimensionTable";
 import { NewPagesTab } from "@/features/marketing/search-console/components/new-pages/NewPagesTab";
@@ -596,6 +597,28 @@ export function SearchConsoleWorkspace() {
                         dimension === "query"
                           ? { query_eq: row.key }
                           : { page_eq: row.key },
+                    })
+                  }
+                />
+              </div>
+            ) : state.tab === "insights" ? (
+              <div className="min-h-0 flex-1">
+                <InsightsTab
+                  siteId={state.siteId}
+                  siteName={siteName}
+                  periods={periods}
+                  insight={state.insight}
+                  onSelectInsight={(insight) =>
+                    applyState({ ...state, insight })
+                  }
+                  onDrill={(dimension, key) =>
+                    applyState({
+                      ...state,
+                      tab: dimension === "query" ? "pages" : "queries",
+                      filters:
+                        dimension === "query"
+                          ? { query_eq: key }
+                          : { page_eq: key },
                     })
                   }
                 />

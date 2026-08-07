@@ -23,6 +23,10 @@ export type GscPageFirstDatesRow =
   SeoFunctions["gsc_perf_page_first_dates"]["Returns"][number];
 export type GscIngestionHealthRow =
   SeoFunctions["gsc_ingestion_health"]["Returns"][number];
+export type GscCtrGapRow = SeoFunctions["gsc_perf_ctr_gap"]["Returns"][number];
+export type GscCannibalizationRow =
+  SeoFunctions["gsc_perf_cannibalization"]["Returns"][number];
+export type GscTrendRow = SeoFunctions["gsc_perf_trend"]["Returns"][number];
 export type GscDigRuleRow =
   Database["seo"]["Tables"]["gsc_dig_rule"]["Row"];
 
@@ -146,6 +150,7 @@ export type GscTab =
   | "overview"
   | GscDimensionTab
   | "digs"
+  | "insights"
   | "watchlist"
   | "new-pages";
 
@@ -157,8 +162,47 @@ export const GSC_TABS: readonly { key: GscTab; label: string }[] = [
   { key: "devices", label: "Devices" },
   { key: "appearance", label: "Appearance" },
   { key: "digs", label: "Dig Here" },
+  { key: "insights", label: "Insights" },
   { key: "watchlist", label: "Watchlist" },
   { key: "new-pages", label: "New Pages" },
+];
+
+/**
+ * Insight algorithm views (insights tab) — each backed by its own
+ * `seo.gsc_perf_*` algorithm RPC. `decay`/`growth` share `gsc_perf_trend`
+ * with opposite `p_direction`.
+ */
+export type GscInsightKind = "ctr-gap" | "cannibalization" | "decay" | "growth";
+
+export const GSC_INSIGHTS: readonly {
+  key: GscInsightKind;
+  label: string;
+  description: string;
+}[] = [
+  {
+    key: "ctr-gap",
+    label: "CTR gaps",
+    description:
+      "Rankings whose CTR sits below this site's own curve for that position — estimated missed clicks from titles/snippets that underperform.",
+  },
+  {
+    key: "cannibalization",
+    label: "Cannibalization",
+    description:
+      "Queries where two or more pages split the impressions — competing with yourself dilutes rankings and clicks.",
+  },
+  {
+    key: "decay",
+    label: "Declining",
+    description:
+      "Sustained decliners: second half of the period vs the first, with a weekly trend slope. Catch decay before it flatlines.",
+  },
+  {
+    key: "growth",
+    label: "Rising",
+    description:
+      "Sustained risers: what is genuinely taking off across the period, beyond one lucky day.",
+  },
 ];
 
 export const TAB_DIMENSION: Record<GscDimensionTab, GscDimension> = {

@@ -15,12 +15,14 @@ import type {
   GscCompareMode,
   GscDateRange,
   GscFilters,
+  GscInsightKind,
   GscRangeKey,
   GscResolvedPeriods,
   GscTab,
 } from "@/features/marketing/search-console/types";
 import {
   GSC_DEFAULT_RANGE,
+  GSC_INSIGHTS,
   GSC_RANGE_PRESETS,
   GSC_TABS,
 } from "@/features/marketing/search-console/types";
@@ -43,6 +45,8 @@ export interface SearchConsoleUrlState {
   filters: GscFilters;
   /** Selected dig rule (digs tab only; template or user rule uuid). */
   ruleId: string | null;
+  /** Selected insight algorithm (insights tab only). */
+  insight: GscInsightKind | null;
 }
 
 const FILTER_PARAMS: Array<[keyof GscFilters, string]> = [
@@ -90,6 +94,11 @@ export function parseSearchConsoleUrl(
     if (value && value.trim() !== "") filters[key] = value;
   }
   const rule = params.get("rule");
+  const insightParam = params.get("insight");
+  const insight: GscInsightKind | null =
+    tab === "insights" && GSC_INSIGHTS.some((i) => i.key === insightParam)
+      ? (insightParam as GscInsightKind)
+      : null;
   return {
     siteId: params.get("site"),
     tab,
@@ -99,6 +108,7 @@ export function parseSearchConsoleUrl(
     compare,
     filters,
     ruleId: tab === "digs" && rule && rule.trim() !== "" ? rule : null,
+    insight,
   };
 }
 
@@ -113,6 +123,8 @@ export function buildSearchConsoleUrl(state: SearchConsoleUrlState): string {
   }
   if (state.compare !== "none") params.set("compare", state.compare);
   if (state.tab === "digs" && state.ruleId) params.set("rule", state.ruleId);
+  if (state.tab === "insights" && state.insight)
+    params.set("insight", state.insight);
   for (const [key, param] of FILTER_PARAMS) {
     const value = state.filters[key];
     if (value && value.trim() !== "") params.set(param, value);
@@ -242,11 +254,13 @@ export function allowedFilterKeysForTab(
     case "appearance":
       return ["search_appearance"];
     case "digs":
+    case "insights":
     case "watchlist":
     case "new-pages":
       // These tabs don't consume the shared FilterBar — dig rules carry
-      // their own base filters; watch/new-pages read fixed entity sets.
-      // Returning [] (never undefined) keeps pruneFiltersForTab total.
+      // their own base filters; insights/watch/new-pages read fixed or
+      // whole-site sets. Returning [] (never undefined) keeps
+      // pruneFiltersForTab total.
       return [];
   }
 }

@@ -73,7 +73,7 @@ export function GscDeltaSpan({
   );
 }
 
-export function buildGscKeyColumn<T extends GscMetricRowShape>(
+export function buildGscKeyColumn<T extends { key: string }>(
   dimension: GscDimension,
   header: string,
 ): MatrxColumnDef<T> {

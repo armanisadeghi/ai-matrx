@@ -23,6 +23,7 @@ const BASE: SearchConsoleUrlState = {
   compare: "none",
   filters: {},
   ruleId: null,
+  insight: null,
 };
 
 describe("allowedFilterKeysForTab", () => {

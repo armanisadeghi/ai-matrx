@@ -86,7 +86,7 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   derives a deterministic instanceId per slice, so identical drills focus
   the existing panel while distinct slices float side by side).
 
-## The three method tabs (v2, 2026-08-04)
+## The four method tabs (v2, 2026-08-04; Insights 2026-08-07)
 
 - **Dig Here** (`components/dig/`) — the low-hanging-fruit rules engine.
   Rules live in `seo.gsc_dig_rule` (system templates: fixed UUIDs
@@ -100,6 +100,23 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   together. A compare-requiring rule under `compare=none` auto-runs vs
   the previous period (`withPrevCompare`) and says so. `?rule=<id>` is
   URL state (digs tab only).
+- **Insights** (`components/insights/InsightsTab.tsx`) — the ALGORITHM layer
+  beyond threshold dig rules: four views over three server-side RPCs in
+  [`migrations/seo_gsc_insight_rpcs.sql`](../../../migrations/seo_gsc_insight_rpcs.sql).
+  **CTR gaps** = `seo.gsc_perf_ctr_gap` (the site's OWN CTR-by-position
+  curve — buckets need ≥5 keys — vs each query/page's actual CTR;
+  `missed_clicks` = gap × impressions; site-relative on purpose, a global
+  CTR table lies for branded profiles). **Cannibalization** =
+  `seo.gsc_perf_cannibalization` (query_page profile; a page competes at
+  ≥20% impression share; `pages` jsonb carries the top 5 for the detail
+  panel; row click drills to Pages filtered to the query — which IS the
+  competing-pages view). **Declining/Rising** = `seo.gsc_perf_trend`
+  (equal-halves Δclicks primary + zero-filled full-ISO-week regression
+  slope secondary; raises under 28 days — the tab gates client-side with a
+  notice instead). All three compose the accuracy contract server-side —
+  **never re-implement a score over client rows**. Tables are local-mode
+  over the RPC's bounded top-200, rows carry the watch column, `?insight=`
+  is URL state (insights tab only).
 - **Watchlist** (`components/watch/`) — watch state is the canonical
   per-user primitive `platform.user_entity_state.is_favorite` via
   `favoritesService` (tokens `web_page` / `seo_keyword`), chokepointed in
@@ -209,6 +226,12 @@ every row Google returned, and the toast says so and points at History. Only
 
 ## Change Log
 
+- 2026-08-07 — Insights tab: ctr_gap / cannibalization / trend algorithm
+  RPCs (seo_gsc_insight_rpcs.sql, applied + ledgered) + InsightsTab with
+  four views, watch columns, drills, copy. Throughput: nightly backfill
+  raised 2→12 windows/site (aidream sch_agent_task args, migration 0305)
+  and manual History raised 12→17 windows/click (full 488-day horizon in
+  one click); full 16-month history landed for the bound sites.
 - 2026-08-04 — On-demand history: `mode: "backfill"` + a History button;
   the "stored no new rows" toast no longer cries connection-failure when the
   site is simply already up to date.

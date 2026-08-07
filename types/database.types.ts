@@ -43523,6 +43523,54 @@ export type Database = {
           total_count: number
         }[]
       }
+      gsc_perf_cannibalization: {
+        Args: {
+          p_end: string
+          p_limit?: number
+          p_min_impressions?: number
+          p_min_share?: number
+          p_offset?: number
+          p_site_id: string
+          p_start: string
+        }
+        Returns: {
+          avg_position: number
+          clicks: number
+          competing_pages: number
+          impressions: number
+          keyword_id: string
+          pages: Json
+          query: string
+          top_share: number
+          total_count: number
+        }[]
+      }
+      gsc_perf_ctr_gap: {
+        Args: {
+          p_dimension?: string
+          p_end: string
+          p_limit?: number
+          p_min_impressions?: number
+          p_offset?: number
+          p_site_id: string
+          p_start: string
+        }
+        Returns: {
+          avg_position: number
+          bucket_keys: number
+          clicks: number
+          ctr: number
+          ctr_gap: number
+          expected_ctr: number
+          impressions: number
+          key: string
+          keyword_id: string
+          missed_clicks: number
+          page_id: string
+          position_bucket: number
+          total_count: number
+        }[]
+      }
       gsc_perf_dig: {
         Args: {
           p_compare_end?: string
@@ -43619,6 +43667,34 @@ export type Database = {
           day: string
           impressions: number
           period: string
+        }[]
+      }
+      gsc_perf_trend: {
+        Args: {
+          p_dimension?: string
+          p_direction?: string
+          p_end: string
+          p_limit?: number
+          p_min_clicks?: number
+          p_offset?: number
+          p_site_id: string
+          p_start: string
+        }
+        Returns: {
+          avg_position: number
+          change_clicks: number
+          change_pct: number
+          clicks: number
+          ctr: number
+          first_half_clicks: number
+          impressions: number
+          key: string
+          keyword_id: string
+          page_id: string
+          second_half_clicks: number
+          slope_per_week: number
+          total_count: number
+          weeks: number
         }[]
       }
       gsc_perf_watch: {

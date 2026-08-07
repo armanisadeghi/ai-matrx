@@ -11,6 +11,11 @@ import {
   getGscSummary,
   getGscTimeseries,
 } from "@/features/marketing/search-console/data";
+import {
+  getGscCannibalization,
+  getGscCtrGap,
+  getGscTrend,
+} from "@/features/marketing/search-console/data-insights";
 import type {
   GscBreakdownQuery,
   GscFilters,
@@ -111,6 +116,94 @@ export function useGscBreakdown(
     queryFn: ({ signal }) => {
       if (!siteId) throw new Error("No site selected");
       return getGscBreakdown(siteId, periods, filters, query, signal);
+    },
+    enabled: !!siteId && (options.enabled ?? true),
+    staleTime: STALE_MS,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useGscCtrGap(
+  siteId: string | null,
+  periods: GscResolvedPeriods,
+  dimension: "query" | "page",
+  minImpressions: number,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: [
+      "marketing",
+      "gsc",
+      "insight-ctr-gap",
+      siteId,
+      periodsKey(periods),
+      dimension,
+      minImpressions,
+    ],
+    queryFn: ({ signal }) => {
+      if (!siteId) throw new Error("No site selected");
+      return getGscCtrGap(siteId, periods, dimension, minImpressions, signal);
+    },
+    enabled: !!siteId && (options.enabled ?? true),
+    staleTime: STALE_MS,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useGscCannibalization(
+  siteId: string | null,
+  periods: GscResolvedPeriods,
+  minImpressions: number,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: [
+      "marketing",
+      "gsc",
+      "insight-cannibalization",
+      siteId,
+      periodsKey(periods),
+      minImpressions,
+    ],
+    queryFn: ({ signal }) => {
+      if (!siteId) throw new Error("No site selected");
+      return getGscCannibalization(siteId, periods, minImpressions, signal);
+    },
+    enabled: !!siteId && (options.enabled ?? true),
+    staleTime: STALE_MS,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useGscTrend(
+  siteId: string | null,
+  periods: GscResolvedPeriods,
+  dimension: "query" | "page",
+  direction: "decay" | "growth",
+  minClicks: number,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: [
+      "marketing",
+      "gsc",
+      "insight-trend",
+      siteId,
+      periodsKey(periods),
+      dimension,
+      direction,
+      minClicks,
+    ],
+    queryFn: ({ signal }) => {
+      if (!siteId) throw new Error("No site selected");
+      return getGscTrend(
+        siteId,
+        periods,
+        dimension,
+        direction,
+        minClicks,
+        signal,
+      );
     },
     enabled: !!siteId && (options.enabled ?? true),
     staleTime: STALE_MS,
