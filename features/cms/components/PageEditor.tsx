@@ -137,6 +137,8 @@ export default function PageEditor({
   const [showInNav, setShowInNav] = useState(false);
   const [sortOrder, setSortOrder] = useState(0);
   const [tags, setTags] = useState("");
+  const [useClientHeader, setUseClientHeader] = useState(true);
+  const [useClientFooter, setUseClientFooter] = useState(true);
 
   // ── Sync from page prop ──────────────────────────────────────────────
   useEffect(() => {
@@ -160,6 +162,8 @@ export default function PageEditor({
       setShowInNav(page.show_in_nav);
       setSortOrder(page.sort_order);
       setTags((page.tags ?? []).join(", "));
+      setUseClientHeader(page.use_client_header);
+      setUseClientFooter(page.use_client_footer);
       // Fetch version history
       versions.fetchVersions(page.id);
     } else {
@@ -180,6 +184,8 @@ export default function PageEditor({
       setShowInNav(false);
       setSortOrder(0);
       setTags("");
+      setUseClientHeader(true);
+      setUseClientFooter(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page?.id]);
@@ -216,6 +222,8 @@ export default function PageEditor({
       excerpt: excerpt || undefined,
       showInNav,
       sortOrder,
+      useClientHeader,
+      useClientFooter,
       tags: tags
         ? tags
             .split(",")
@@ -257,6 +265,8 @@ export default function PageEditor({
       excerpt,
       showInNav,
       sortOrder,
+      useClientHeader,
+      useClientFooter,
       tags: tags
         ? tags
             .split(",")
@@ -805,6 +815,34 @@ export default function PageEditor({
                       />
                       Show in navigation
                     </label>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-foreground">
+                      Site shell
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Render the site&apos;s shared header/footer components on
+                      this page. Turn off for landing pages that bring their
+                      own chrome.
+                    </p>
+                    <div className="flex items-center gap-6">
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          checked={useClientHeader}
+                          onCheckedChange={(v) => setUseClientHeader(v === true)}
+                          className="shrink-0"
+                        />
+                        Use site header
+                      </label>
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          checked={useClientFooter}
+                          onCheckedChange={(v) => setUseClientFooter(v === true)}
+                          className="shrink-0"
+                        />
+                        Use site footer
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -17,6 +17,7 @@ import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog
 import { Save, Loader2, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { normalizeDomainInput } from "@/features/cms/utils/pageUrls";
+import { SiteAdvancedSettings } from "@/features/cms/components/settings/SiteAdvancedSettings";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
@@ -229,35 +230,6 @@ export default function SiteSettingsPage() {
           </div>
 
           <div className="space-y-6">
-            {/* Advanced */}
-            <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-              <h3 className="text-sm font-semibold text-foreground">
-                Advanced
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Theme configuration, navigation structure, and footer will be
-                editable here in a future update.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="rounded-md border border-border/50 bg-muted/20 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">
-                    Theme Config
-                  </p>
-                  <pre className="text-[10px] text-muted-foreground mt-1 overflow-hidden">
-                    {JSON.stringify(site.theme_config, null, 2).slice(0, 100)}
-                  </pre>
-                </div>
-                <div className="rounded-md border border-border/50 bg-muted/20 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">
-                    Contact Info
-                  </p>
-                  <pre className="text-[10px] text-muted-foreground mt-1 overflow-hidden">
-                    {JSON.stringify(site.contact_info, null, 2).slice(0, 100)}
-                  </pre>
-                </div>
-              </div>
-            </div>
-
             {/* Danger zone */}
             <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 space-y-3">
               <h3 className="text-sm font-semibold text-destructive">
@@ -280,6 +252,10 @@ export default function SiteSettingsPage() {
             </div>
           </div>
         </div>
+
+        {/* Theme / navigation / footer / contact / social — each saves its own
+            field through the ONE /api/cms/sites update path. */}
+        <SiteAdvancedSettings site={site} onSaved={refreshSite} />
       </div>
 
       <TextInputDialog

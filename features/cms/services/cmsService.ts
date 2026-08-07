@@ -203,6 +203,9 @@ export const CmsPageService = {
         tags?: string[];
         excerpt?: string;
         author?: string;
+        /** Render the site's shared header/footer on this page (default true). */
+        useClientHeader?: boolean;
+        useClientFooter?: boolean;
         /** Caller provenance, stamped into the activity log (`changes.metadata`). */
         provenance?: Record<string, unknown>;
     }): Promise<ClientPage> {
