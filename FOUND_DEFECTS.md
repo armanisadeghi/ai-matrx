@@ -13,6 +13,14 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D129 — Apple Sign-In credential expired; production UI reports Apple login broken (2026-08-07)
+
+The live public Terms page emits the global notification: `Apple Sign-In secret key EXPIRED on
+August 6, 2026. Apple sign-in is broken for all users!` This is unrelated to the Google OAuth
+campaign but is a production authentication outage. **Fix:** regenerate the Apple client secret
+in Apple Developer, update the Supabase Apple provider secret, then verify a new production Apple
+sign-in. Do not dismiss or hide the notification without restoring the credential.
+
 ### D128 — MCP user connections dead since the vault cutover; connect flow unverified E2E (2026-08-06)
 
 All 4 `tool.mcp_user_conn` rows are `status='expired'` with `credential_item_id IS NULL`
