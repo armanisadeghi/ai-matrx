@@ -26,6 +26,7 @@ import JsonFieldEditor from "@/features/ai-models/components/JsonFieldEditor";
 import { AppConfigHistoryPanel } from "@/features/admin/applications/config/components/AppConfigHistoryPanel";
 import { FlagsEditor } from "@/features/admin/applications/config/components/FlagsEditor";
 import { NoticeEditor } from "@/features/admin/applications/config/components/NoticeEditor";
+import { CredentialMaintenanceEditor } from "@/features/admin/applications/config/components/CredentialMaintenanceEditor";
 import {
   isConflictError,
   rpcErrorMessage,
@@ -54,6 +55,8 @@ interface AppConfigEditorProps {
   onBack: () => void;
   /** Called with the row returned by the RPC after every successful write. */
   onSaved: (row: AppConfigRow) => void;
+  /** Deep-link target from an expiry notification. */
+  focusCredentialId?: string;
 }
 
 interface PendingSave {
@@ -63,7 +66,12 @@ interface PendingSave {
   config: Record<string, unknown>;
 }
 
-export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) {
+export function AppConfigEditor({
+  row,
+  onBack,
+  onSaved,
+  focusCredentialId,
+}: AppConfigEditorProps) {
   const { toast } = useToast();
   const isNew = row === null;
 
@@ -115,7 +123,11 @@ export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) 
     // client-side (an inline warning says so) — v1 is the only contract
     // this editor knows.
     if (parsedSchemaVersion === 1) {
-      const validatableConfig = draftToConfig({ ...draft, malformedFlags: {} });
+      const validatableConfig = draftToConfig({
+        ...draft,
+        malformedFlags: {},
+        malformedCredentialMaintenance: {},
+      });
       const parsed = appConfigV1Schema.safeParse(validatableConfig);
       if (!parsed.success) {
         Object.assign(errors, zodIssuesToFieldErrors(parsed.error));
@@ -219,7 +231,9 @@ export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) 
 
   /** Returns true on success — never throws (a rejected promise here would
    *  escape the history panel's try/finally as an unhandled rejection). */
-  const restoreSnapshot = async (entry: AppConfigHistoryRow): Promise<boolean> => {
+  const restoreSnapshot = async (
+    entry: AppConfigHistoryRow,
+  ): Promise<boolean> => {
     setSaving(true);
     const supabase = createClient();
     const { data, error } = await supabase.rpc("admin_update_app_config", {
@@ -401,6 +415,36 @@ export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) 
       </section>
 
       <section className="space-y-2">
+        <div>
+          <h3 className="text-sm font-semibold">Credential maintenance</h3>
+          <p className="text-xs text-muted-foreground">
+            Non-secret lifecycle dates that drive super-admin reminders.
+          </p>
+        </div>
+        <CredentialMaintenanceEditor
+          entries={draft.credentialMaintenance}
+          malformedEntries={draft.malformedCredentialMaintenance}
+          errors={fieldErrors}
+          focusCredentialId={focusCredentialId}
+          onChange={(credentialMaintenance) =>
+            setDraft((current) => ({
+              ...current,
+              credentialMaintenance,
+            }))
+          }
+          onRemoveMalformed={(id) =>
+            setDraft((current) => {
+              const malformedCredentialMaintenance = {
+                ...current.malformedCredentialMaintenance,
+              };
+              delete malformedCredentialMaintenance[id];
+              return { ...current, malformedCredentialMaintenance };
+            })
+          }
+        />
+      </section>
+
+      <section className="space-y-2">
         <h3 className="text-sm font-semibold">Forward-compat keys</h3>
         <JsonFieldEditor
           title="Unknown / additional config keys"
@@ -482,7 +526,11 @@ export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) 
         onOpenChange={(open) => {
           if (!open && !saving) setPendingSave(null);
         }}
-        title={isNew ? `Create config for "${appSlug.trim()}"?` : `Update "${appSlug}"?`}
+        title={
+          isNew
+            ? `Create config for "${appSlug.trim()}"?`
+            : `Update "${appSlug}"?`
+        }
         description="This row changes every installed client in the field — each one picks up the new values on its next config refresh, with no app update. Review the diff before committing."
         contentClassName="sm:max-w-4xl"
         content={

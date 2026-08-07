@@ -25,15 +25,25 @@ import type { AppConfigRow } from "@/features/admin/applications/config/types";
 
 interface AppConfigClientProps {
   initialRows: AppConfigRow[];
+  initialApp?: string;
+  initialCredentialId?: string;
 }
 
 type View = { mode: "list" } | { mode: "edit"; app: string } | { mode: "new" };
 
-export function AppConfigClient({ initialRows }: AppConfigClientProps) {
+export function AppConfigClient({
+  initialRows,
+  initialApp,
+  initialCredentialId,
+}: AppConfigClientProps) {
   const { toast } = useToast();
   const adminEmails = useAdminEmails();
   const [rows, setRows] = useState<AppConfigRow[]>(initialRows);
-  const [view, setView] = useState<View>({ mode: "list" });
+  const [view, setView] = useState<View>(() =>
+    initialApp && initialRows.some((row) => row.app === initialApp)
+      ? { mode: "edit", app: initialApp }
+      : { mode: "list" },
+  );
 
   const refreshRows = async () => {
     const supabase = createClient();
@@ -143,6 +153,11 @@ export function AppConfigClient({ initialRows }: AppConfigClientProps) {
           row={row}
           onBack={() => setView({ mode: "list" })}
           onSaved={handleSaved}
+          focusCredentialId={
+            view.mode === "edit" && view.app === initialApp
+              ? initialCredentialId
+              : undefined
+          }
         />
       </div>
     );

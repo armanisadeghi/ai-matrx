@@ -2,11 +2,11 @@
 
 import dynamic from "next/dynamic";
 
-const AppleKeyExpiryNotifier = dynamic(
-  () => import("@/components/admin/AppleKeyExpiryNotifier"),
+const CredentialExpiryNotifier = dynamic(
+  () => import("@/components/admin/CredentialExpiryNotifier"),
   { ssr: false },
 );
 
 export function DynamicAppleKeyExpiryBanner() {
-  return <AppleKeyExpiryNotifier />;
+  return <CredentialExpiryNotifier />;
 }

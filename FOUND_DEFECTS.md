@@ -13,14 +13,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D129 — Apple Sign-In credential expired; production UI reports Apple login broken (2026-08-07)
-
-The live public Terms page emits the global notification: `Apple Sign-In secret key EXPIRED on
-August 6, 2026. Apple sign-in is broken for all users!` This is unrelated to the Google OAuth
-campaign but is a production authentication outage. **Fix:** regenerate the Apple client secret
-in Apple Developer, update the Supabase Apple provider secret, then verify a new production Apple
-sign-in. Do not dismiss or hide the notification without restoring the credential.
-
 ### D128 — MCP user connections dead since the vault cutover; connect flow unverified E2E (2026-08-06)
 
 All 4 `tool.mcp_user_conn` rows are `status='expired'` with `credential_item_id IS NULL`
@@ -354,6 +346,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 One line per fix — title, date, pointer. History lives in git.
 
+- **D129** — Apple OAuth secret rotated and verified; hard-coded expiry replaced by live `app_config` credential metadata plus an audited admin editor and actionable Manage toast. 2026-08-07.
 - **D113** — no Cartesia key in the browser: ONE token primitive (`lib/cartesia/accessToken.ts` — lazy, cached, dedupe, refresh-retry-once) + ONE ws connector (`connection.ts`); all 8 hooks/adapters ported; voices list/clone/create moved to authed server routes (`/api/cartesia/voices*`); raw-key `client.ts`/`tts-service.ts`/`AudioPlayground` deleted; `NEXT_PUBLIC_OPENAI_API_KEY`/`NEXT_PUBLIC_GOOGLE_API_KEY` bundle refs also removed. Rotation = D114. 2026-07-28.
 - **D107** — closed by Arman's attribution: the OOM fix was eliminating bad edge lazy imports (v0.4.137 revert), NOT the memory ceiling; `turbopackMemoryLimit` restored to 40GiB. 2026-07-28.
 - **D104** — shared `PublicFooter` (Privacy/Terms/Contact) mounted in `(public)/layout.tsx` + `app/page.tsx` (`components/matrx/PublicFooter.tsx`). 2026-07-28.

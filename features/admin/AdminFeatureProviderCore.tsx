@@ -9,7 +9,7 @@
 
 import { lazy, Suspense } from "react";
 import AdminIndicatorWrapper from "@/components/admin/controls/AdminIndicatorWrapper";
-import AppleKeyExpiryNotifier from "@/components/admin/AppleKeyExpiryNotifier";
+import CredentialExpiryNotifier from "@/components/admin/CredentialExpiryNotifier";
 import { DebugIndicatorManager } from "@/components/debug/DebugIndicatorManager";
 
 const DevPerfOverlay =
@@ -25,7 +25,7 @@ export default function AdminFeatureProviderCore({
   return (
     <>
       <AdminIndicatorWrapper />
-      <AppleKeyExpiryNotifier />
+      <CredentialExpiryNotifier />
       <DebugIndicatorManager />
       {isDebugMode && DevPerfOverlay && (
         <Suspense fallback={null}>

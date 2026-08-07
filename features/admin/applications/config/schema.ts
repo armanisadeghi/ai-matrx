@@ -7,6 +7,11 @@
 // must therefore never drop a key it doesn't know about.
 
 import { z } from "zod";
+import {
+  credentialMaintenanceEntrySchema,
+  credentialMaintenanceMapSchema,
+  type CredentialMaintenanceEntry,
+} from "@/features/admin/applications/config/credential-maintenance";
 
 /** App slugs: lowercase kebab, 2-63 chars, starts alphanumeric. */
 export const APP_SLUG_REGEX = /^[a-z0-9][a-z0-9-]{1,62}$/;
@@ -44,6 +49,7 @@ export const appConfigV1Schema = z
     scraper_server_url: httpsUrlSchema,
     flags: z.record(z.string(), z.boolean()),
     notice: noticeSchema.nullable(),
+    credential_maintenance: credentialMaintenanceMapSchema.optional(),
   })
   .catchall(z.unknown());
 
@@ -62,7 +68,12 @@ export const URL_KEY_LABELS: Record<UrlKey, string> = {
   scraper_server_url: "Scraper server URL",
 };
 
-const KNOWN_CONFIG_KEYS = new Set<string>([...URL_KEYS, "flags", "notice"]);
+const KNOWN_CONFIG_KEYS = new Set<string>([
+  ...URL_KEYS,
+  "flags",
+  "notice",
+  "credential_maintenance",
+]);
 
 const KNOWN_NOTICE_KEYS = new Set<string>(["level", "title", "body", "url"]);
 
@@ -97,6 +108,8 @@ export interface ConfigDraft {
    */
   malformedFlags: Record<string, unknown>;
   notice: NoticeDraft;
+  credentialMaintenance: Record<string, CredentialMaintenanceEntry>;
+  malformedCredentialMaintenance: Record<string, unknown>;
   /** Every top-level key the editor does not know — round-trips unchanged. */
   extras: Record<string, unknown>;
 }
@@ -144,12 +157,30 @@ export function configToDraft(config: unknown): ConfigDraft {
     notice.extras = noticeExtras;
   }
 
+  const credentialMaintenance: Record<string, CredentialMaintenanceEntry> = {};
+  const malformedCredentialMaintenance: Record<string, unknown> = {};
+  if (isPlainObject(source.credential_maintenance)) {
+    for (const [id, value] of Object.entries(source.credential_maintenance)) {
+      const parsed = credentialMaintenanceEntrySchema.safeParse(value);
+      if (parsed.success) credentialMaintenance[id] = parsed.data;
+      else malformedCredentialMaintenance[id] = value;
+    }
+  }
+
   const extras: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(source)) {
     if (!KNOWN_CONFIG_KEYS.has(key)) extras[key] = value;
   }
 
-  return { urls, flags, malformedFlags, notice, extras };
+  return {
+    urls,
+    flags,
+    malformedFlags,
+    notice,
+    credentialMaintenance,
+    malformedCredentialMaintenance,
+    extras,
+  };
 }
 
 /**
@@ -169,6 +200,11 @@ export function draftToConfig(draft: ConfigDraft): Record<string, unknown> {
       }
     : null;
 
+  const credentialMaintenance = {
+    ...draft.malformedCredentialMaintenance,
+    ...draft.credentialMaintenance,
+  };
+
   return {
     ...draft.extras,
     aidream_server_url: draft.urls.aidream_server_url.trim(),
@@ -176,6 +212,9 @@ export function draftToConfig(draft: ConfigDraft): Record<string, unknown> {
     scraper_server_url: draft.urls.scraper_server_url.trim(),
     flags: { ...draft.malformedFlags, ...draft.flags },
     notice,
+    ...(Object.keys(credentialMaintenance).length > 0
+      ? { credential_maintenance: credentialMaintenance }
+      : {}),
   };
 }
 
@@ -199,6 +238,14 @@ function normalizeConfigForDiff(config: unknown): unknown {
       : flags;
   }
   if ("notice" in config) normalized.notice = config.notice;
+  if ("credential_maintenance" in config) {
+    const credentials = config.credential_maintenance;
+    normalized.credential_maintenance = isPlainObject(credentials)
+      ? Object.fromEntries(
+          Object.entries(credentials).sort(([a], [b]) => a.localeCompare(b)),
+        )
+      : credentials;
+  }
   const extraKeys = Object.keys(config)
     .filter((key) => !KNOWN_CONFIG_KEYS.has(key))
     .sort((a, b) => a.localeCompare(b));

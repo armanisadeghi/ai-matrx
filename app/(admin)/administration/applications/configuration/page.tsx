@@ -11,8 +11,21 @@
 import { createClient } from "@/utils/supabase/server";
 import { AppConfigClient } from "@/features/admin/applications/config/components/AppConfigClient";
 
-export default async function ApplicationsConfigurationPage() {
+interface ApplicationsConfigurationPageProps {
+  searchParams: Promise<{
+    app?: string | string[];
+    credential?: string | string[];
+  }>;
+}
+
+export default async function ApplicationsConfigurationPage({
+  searchParams,
+}: ApplicationsConfigurationPageProps) {
   const supabase = await createClient();
+  const query = await searchParams;
+  const initialApp = typeof query.app === "string" ? query.app : undefined;
+  const initialCredentialId =
+    typeof query.credential === "string" ? query.credential : undefined;
 
   const { data, error } = await supabase
     .from("app_config")
@@ -23,5 +36,11 @@ export default async function ApplicationsConfigurationPage() {
     throw new Error(`App config failed to load: ${error.message}`);
   }
 
-  return <AppConfigClient initialRows={data ?? []} />;
+  return (
+    <AppConfigClient
+      initialRows={data ?? []}
+      initialApp={initialApp}
+      initialCredentialId={initialCredentialId}
+    />
+  );
 }

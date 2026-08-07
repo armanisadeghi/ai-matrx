@@ -151,10 +151,18 @@ navigation placement and exact route ownership have moved to
 redirect to the canonical nested route tree through
 `utils/next-config/adminRouteRedirects.js`.
 
+The Applications → Configuration destination also owns non-secret recurring
+credential-maintenance metadata. Super-admin expiry notifications deep-link to
+that existing editor; private keys and client secrets remain outside
+`app_config`.
+
 ---
 
 ## Change log
 
+- `2026-08-07` — Codex: extended the existing Applications Configuration
+  editor with generic credential-lifecycle metadata and wired global
+  super-admin expiry reminders to its deep-linked Manage flow.
 - `2026-07-27` — Codex: tightened the Administration sidebar's left inset and
   removed bold/medium font weights from headers, destinations, and active rows.
 - `2026-07-27` — Codex: flattened the Administration route sidebar to all-caps
