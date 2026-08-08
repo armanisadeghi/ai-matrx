@@ -27,6 +27,32 @@ export interface RefreshResult {
   expiresAt: number;
 }
 
+/**
+ * The published contract carries `expires_in` (seconds), but the live
+ * matrx-files service omits it (contract drift, 2026-08-08). Without this
+ * guard the cache stored `expiresAt: NaN`, so every consumer re-minted on
+ * every call. Order: explicit `expires_in` → the AWS `Expires=` epoch on
+ * the signed URL itself → the seconds we requested.
+ */
+function resolveExpiresAt(
+  data: { url: string; expires_in?: number | null },
+  requestedSec: number,
+): number {
+  if (typeof data.expires_in === "number" && Number.isFinite(data.expires_in)) {
+    return Date.now() + data.expires_in * 1000;
+  }
+  try {
+    const expiresParam = new URL(data.url).searchParams.get("Expires");
+    if (expiresParam) {
+      const epochSec = Number(expiresParam);
+      if (Number.isFinite(epochSec)) return epochSec * 1000;
+    }
+  } catch {
+    /* not a parseable URL — fall through */
+  }
+  return Date.now() + requestedSec * 1000;
+}
+
 export async function mintSignedUrl(
   fileId: string,
   expiresInSec = 3600,
@@ -35,7 +61,7 @@ export async function mintSignedUrl(
     const { data } = await Files.getSignedUrl(fileId, { expiresIn: expiresInSec });
     return {
       url: data.url,
-      expiresAt: Date.now() + data.expires_in * 1000,
+      expiresAt: resolveExpiresAt(data, expiresInSec),
     };
   } catch (err) {
     const status = (err as { status?: number })?.status;

@@ -151,9 +151,27 @@ export function apiFileRecordToCloudFile(row: FileRecordApi): CloudFile {
     parent_file_id?: string | null;
     derivation_kind?: string | null;
     derivation_metadata?: Record<string, unknown> | null;
+    file_id?: string | null;
+    folder_id?: string | null;
+    version?: number | null;
   };
+  // CONTRACT DRIFT (2026-08-08): the live matrx-files service returns
+  // `file_id` / `folder_id` where the published FileRecord contract says
+  // `id` / `parent_folder_id`. Without this fallback every cold metadata
+  // hydration lost its fileId, no signed URL was ever minted, and every
+  // InlineMediaRef rendered a broken icon (found via the marketing site
+  // hero). Scream so the service-side fix is not forgotten; delete the
+  // fallback when matrx-files conforms to its own OpenAPI schema.
+  const id = row.id ?? extras.file_id ?? "";
+  if (!row.id && extras.file_id) {
+    console.error(
+      "[files] matrx-files FileRecord CONTRACT VIOLATION: response has " +
+        "`file_id` instead of `id`. FE is compensating — fix the service.",
+      { fileId: extras.file_id },
+    );
+  }
   return {
-    id: row.id,
+    id,
     ownerId: row.owner_id,
     filePath: row.file_path,
     fileName: row.file_name,
@@ -164,8 +182,8 @@ export function apiFileRecordToCloudFile(row: FileRecordApi): CloudFile {
     fileSize: row.size_bytes ?? null,
     checksum: row.checksum ?? null,
     visibility: toVisibility(row.visibility),
-    currentVersion: row.current_version ?? 1,
-    parentFolderId: row.parent_folder_id ?? null,
+    currentVersion: row.current_version ?? extras.version ?? 1,
+    parentFolderId: row.parent_folder_id ?? extras.folder_id ?? null,
     metadata: toMetadataObject(row.metadata),
     createdAt: row.created_at ?? new Date().toISOString(),
     updatedAt: row.updated_at ?? new Date().toISOString(),

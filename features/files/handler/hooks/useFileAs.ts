@@ -52,7 +52,14 @@ export function useFileAs<T extends FileTarget>(
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err : new Error(String(err)));
+        const error = err instanceof Error ? err : new Error(String(err));
+        // Loud recovery: a swallowed resolution failure renders as a silent
+        // fallback icon and hides real defects (missing grants, dead mints).
+        console.error(
+          `[file-handler] resolve failed for ${stableSourceKey(source)} → ${targetKey}`,
+          error,
+        );
+        setError(error);
         setStatus("error");
       });
     return () => {
