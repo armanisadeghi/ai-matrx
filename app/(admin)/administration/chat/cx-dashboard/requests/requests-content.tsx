@@ -1,17 +1,23 @@
+// CX dashboard › User requests — canonical MatrxDataTable over cx_user_request rows.
+// Timeframe/status stay server-side via CxFiltersBar (URL params → server refetch);
+// every fetched column still sorts + filters locally in the table.
+
 "use client";
 
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AlertTriangle, Wrench } from "lucide-react";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { CxFiltersBar } from "@/features/cx-dashboard/components/CxFiltersBar";
-import { CxEmptyState } from "@/features/cx-dashboard/components/CxEmptyState";
 import {
   formatDate,
   formatCost,
   formatTokens,
   formatDuration,
   statusBadgeVariant,
-  truncateId,
   computeDuration,
 } from "@/features/cx-dashboard/utils/format";
 import {
@@ -22,164 +28,261 @@ import type {
   CxUserRequest,
   CxPaginatedResponse,
 } from "@/features/cx-dashboard/types/cxDashboardTypes";
-import { ChevronRight, AlertTriangle, Wrench } from "lucide-react";
 
 type Props = {
   result: CxPaginatedResponse<CxUserRequest>;
 };
 
+const detailHref = (id: string) =>
+  `/administration/chat/cx-dashboard/requests/${id}`;
+
+const requestDuration = (r: CxUserRequest) =>
+  computeDuration(r.created_at, r.completed_at, r.total_duration_ms);
+
 export function RequestsContent({ result }: Props) {
   const router = useRouter();
 
-  const exportData = result.data.map((r) => ({
-    id: r.id,
-    conversation_id: r.conversation_id,
-    conversation_title: r.conversation_title,
-    status: r.status,
-    finish_reason: r.finish_reason,
-    iterations: r.iterations,
-    total_tool_calls: r.total_tool_calls,
-    total_input_tokens: r.total_input_tokens,
-    total_output_tokens: r.total_output_tokens,
-    total_cached_tokens: r.total_cached_tokens,
-    total_tokens: r.total_tokens,
-    total_cost: r.total_cost,
-    total_duration_ms: r.computed_duration_ms,
-    error: r.error,
-    model: r.model_name,
-    provider: r.provider,
-    created_at: r.created_at,
-    completed_at: r.completed_at,
-  }));
+  const exportData = useMemo(
+    () =>
+      result.data.map((r) => ({
+        id: r.id,
+        conversation_id: r.conversation_id,
+        conversation_title: r.conversation_title,
+        status: r.status,
+        finish_reason: r.finish_reason,
+        iterations: r.iterations,
+        total_tool_calls: r.total_tool_calls,
+        total_input_tokens: r.total_input_tokens,
+        total_output_tokens: r.total_output_tokens,
+        total_cached_tokens: r.total_cached_tokens,
+        total_tokens: r.total_tokens,
+        total_cost: r.total_cost,
+        total_duration_ms: r.computed_duration_ms,
+        error: r.error,
+        model: r.model_name,
+        provider: r.provider,
+        created_at: r.created_at,
+        completed_at: r.completed_at,
+      })),
+    [result.data],
+  );
+
+  const columns = useMemo((): MatrxColumnDef<CxUserRequest>[] => {
+    return [
+      {
+        id: "request",
+        header: "Request",
+        accessorFn: (r) => r.conversation_title ?? "",
+        href: (r) => detailHref(r.id),
+        width: 260,
+        cell: (r) => (
+          <div className="min-w-0">
+            <p className="max-w-[250px] truncate">
+              {r.conversation_title || (
+                <span className="italic text-muted-foreground">Untitled</span>
+              )}
+            </p>
+            {r.model_name && (
+              <p className="text-[10px] text-muted-foreground">{r.model_name}</p>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: "status",
+        accessorKey: "status",
+        header: "Status",
+        filter: "select",
+        align: "center",
+        width: 110,
+        cell: (r) => (
+          <span className="inline-flex items-center gap-1">
+            <Badge
+              variant={statusBadgeVariant(r.status)}
+              className="text-[10px]"
+            >
+              {r.status}
+            </Badge>
+            {r.error && <AlertTriangle className="h-3 w-3 text-red-500" />}
+          </span>
+        ),
+      },
+      {
+        id: "finish_reason",
+        header: "Finish",
+        accessorFn: (r) => r.finish_reason ?? "",
+        filter: "select",
+        align: "center",
+        width: 100,
+        cell: (r) =>
+          r.finish_reason ? (
+            <span
+              className={
+                r.finish_reason === "stop"
+                  ? "text-xs text-muted-foreground"
+                  : "text-xs text-amber-500"
+              }
+            >
+              {r.finish_reason}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+      {
+        id: "iterations",
+        accessorKey: "iterations",
+        header: "Iter",
+        align: "center",
+        width: 70,
+      },
+      {
+        id: "total_tool_calls",
+        accessorKey: "total_tool_calls",
+        header: "Tools",
+        align: "center",
+        width: 80,
+        cell: (r) =>
+          r.total_tool_calls > 0 ? (
+            <span className="inline-flex items-center gap-1">
+              <Wrench className="h-3 w-3 text-muted-foreground" />
+              {r.total_tool_calls}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">0</span>
+          ),
+      },
+      {
+        id: "total_tokens",
+        accessorKey: "total_tokens",
+        header: "Tokens",
+        align: "right",
+        width: 120,
+        cell: (r) => (
+          <div className="text-right font-mono">
+            <div>{formatTokens(r.total_tokens)}</div>
+            <div className="text-[10px] text-muted-foreground">
+              {formatTokens(r.total_input_tokens)} in /{" "}
+              {formatTokens(r.total_output_tokens)} out
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "total_cost",
+        header: "Cost",
+        accessorFn: (r) => Number(r.total_cost ?? 0),
+        align: "right",
+        width: 90,
+        cell: (r) => (
+          <span className="font-mono">{formatCost(Number(r.total_cost))}</span>
+        ),
+      },
+      {
+        id: "duration",
+        header: "Duration",
+        accessorFn: requestDuration,
+        align: "right",
+        width: 100,
+        cell: (r) => (
+          <span className="text-muted-foreground">
+            {formatDuration(requestDuration(r))}
+          </span>
+        ),
+      },
+      {
+        id: "created_at",
+        accessorKey: "created_at",
+        header: "Created",
+        width: 140,
+        cell: (r) => (
+          <span className="whitespace-nowrap text-xs text-muted-foreground">
+            {formatDate(r.created_at)}
+          </span>
+        ),
+      },
+      {
+        id: "conversation_id",
+        accessorKey: "conversation_id",
+        header: "Conversation",
+        cellKind: "fk",
+        width: 110,
+        fk: {
+          href: (id) =>
+            `/administration/chat/cx-dashboard/conversations/${id}`,
+        },
+      },
+      { id: "id", accessorKey: "id", header: "ID", cellKind: "uuid", width: 110 },
+    ];
+  }, []);
 
   return (
-    <div className="p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">
-          User Requests
-          <span className="text-muted-foreground ml-2 font-normal">
-            {result.total} total
-          </span>
-        </h2>
+    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+      <h2 className="text-sm font-semibold">
+        User Requests
+        <span className="ml-2 font-normal text-muted-foreground">
+          {result.total} total
+        </span>
+      </h2>
+
+      <div className="min-h-0 flex-1">
+        <MatrxDataTable
+          data={result.data}
+          columns={columns}
+          getRowId={(r) => r.id}
+          pageSize={0}
+          emptyState={{ title: "No requests match" }}
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Filter fetched page…",
+            facets: [
+              {
+                type: "custom",
+                id: "server-filters",
+                render: () => (
+                  <CxFiltersBar
+                    showSearch={false}
+                    showStatusFilter
+                    statusOptions={["completed", "pending", "error"]}
+                    onRefresh={() => router.refresh()}
+                    onExportCSV={() => exportToCSV(exportData, "user-requests")}
+                    onExportJSON={() =>
+                      exportToJSON(exportData, "user-requests")
+                    }
+                  />
+                ),
+              },
+            ],
+          }}
+          copy={{
+            label: "CX user request",
+            listLabel: "CX user requests (this view)",
+            location: "/administration/chat/cx-dashboard/requests",
+            rowKind: "cx-user-request",
+            listKind: "cx-user-requests",
+            humanRow: (r) =>
+              [
+                `Request: ${r.id}`,
+                `Conversation: ${r.conversation_title ?? "Untitled"} (${r.conversation_id ?? "—"})`,
+                `Status: ${r.status}${r.finish_reason ? ` (${r.finish_reason})` : ""}`,
+                `Iterations: ${r.iterations} · Tool calls: ${r.total_tool_calls}`,
+                `Tokens: ${formatTokens(r.total_tokens)} (${formatTokens(r.total_input_tokens)} in / ${formatTokens(r.total_output_tokens)} out)`,
+                `Cost: ${formatCost(Number(r.total_cost))}`,
+                `Duration: ${formatDuration(requestDuration(r))}`,
+                `Created: ${r.created_at}`,
+                ...(r.error ? [`Error: ${r.error}`] : []),
+              ].join("\n"),
+            rowAttributes: (r) => ({ id: r.id, status: r.status }),
+          }}
+          detail={{
+            title: (r) => r.conversation_title ?? "Untitled request",
+          }}
+        />
       </div>
 
-      <CxFiltersBar
-        showSearch={false}
-        showStatusFilter
-        statusOptions={["completed", "pending", "error"]}
-        onRefresh={() => router.refresh()}
-        onExportCSV={() => exportToCSV(exportData, "user-requests")}
-        onExportJSON={() => exportToJSON(exportData, "user-requests")}
-      />
-
-      {result.data.length === 0 ? (
-        <CxEmptyState />
-      ) : (
-        <div className="border border-border rounded-md overflow-hidden">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-muted/30 border-b border-border text-muted-foreground">
-                <th className="text-left py-2 px-3 font-medium">Request</th>
-                <th className="text-center py-2 px-3 font-medium">Status</th>
-                <th className="text-center py-2 px-3 font-medium">Iter</th>
-                <th className="text-center py-2 px-3 font-medium">Tools</th>
-                <th className="text-right py-2 px-3 font-medium">Tokens</th>
-                <th className="text-right py-2 px-3 font-medium">Cost</th>
-                <th className="text-right py-2 px-3 font-medium">Duration</th>
-                <th className="text-right py-2 px-3 font-medium">Created</th>
-                <th className="w-6"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.data.map((req) => {
-                const dur = computeDuration(
-                  req.created_at,
-                  req.completed_at,
-                  req.total_duration_ms,
-                );
-                return (
-                  <tr
-                    key={req.id}
-                    className="border-b border-border/50 hover:bg-muted/20 cursor-pointer transition-colors"
-                    onClick={() =>
-                      router.push(
-                        `/administration/chat/cx-dashboard/requests/${req.id}`,
-                      )
-                    }
-                  >
-                    <td className="py-2 px-3">
-                      <div className="min-w-0">
-                        <p className="truncate max-w-[250px]">
-                          {req.conversation_title || (
-                            <span className="text-muted-foreground italic">
-                              Untitled
-                            </span>
-                          )}
-                        </p>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <span className="font-mono">
-                            {truncateId(req.id)}
-                          </span>
-                          {req.model_name && <span>· {req.model_name}</span>}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="text-center py-2 px-3">
-                      <Badge
-                        variant={statusBadgeVariant(req.status)}
-                        className="text-[10px]"
-                      >
-                        {req.status}
-                      </Badge>
-                      {req.finish_reason && req.finish_reason !== "stop" && (
-                        <div className="text-[10px] text-amber-500 mt-0.5">
-                          {req.finish_reason}
-                        </div>
-                      )}
-                    </td>
-                    <td className="text-center py-2 px-3">{req.iterations}</td>
-                    <td className="text-center py-2 px-3">
-                      {req.total_tool_calls > 0 ? (
-                        <span className="flex items-center justify-center gap-1">
-                          <Wrench className="w-3 h-3 text-muted-foreground" />
-                          {req.total_tool_calls}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">0</span>
-                      )}
-                    </td>
-                    <td className="text-right py-2 px-3 font-mono">
-                      <div>{formatTokens(req.total_tokens)}</div>
-                      <div className="text-muted-foreground text-[10px]">
-                        {formatTokens(req.total_input_tokens)} in /{" "}
-                        {formatTokens(req.total_output_tokens)} out
-                      </div>
-                    </td>
-                    <td className="text-right py-2 px-3 font-mono">
-                      {formatCost(Number(req.total_cost))}
-                    </td>
-                    <td className="text-right py-2 px-3 text-muted-foreground">
-                      {formatDuration(dur)}
-                    </td>
-                    <td className="text-right py-2 px-3 text-muted-foreground whitespace-nowrap">
-                      {formatDate(req.created_at)}
-                    </td>
-                    <td className="px-1">
-                      {req.error && (
-                        <AlertTriangle className="w-3 h-3 text-red-500" />
-                      )}
-                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
+      {/* Server-side pagination over the full result set (table shows one fetched page) */}
       {result.total_pages > 1 && (
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex shrink-0 items-center justify-between text-xs text-muted-foreground">
           <span>
             Page {result.page} of {result.total_pages}
           </span>

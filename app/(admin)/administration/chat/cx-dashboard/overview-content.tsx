@@ -34,6 +34,8 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { CxKpiCard } from "@/features/cx-dashboard/components/CxKpiCard";
 import { CxEmptyState } from "@/features/cx-dashboard/components/CxEmptyState";
 import { CxJsonViewer } from "@/features/cx-dashboard/components/CxJsonViewer";
@@ -56,6 +58,54 @@ const COLORS = [
   "hsl(35, 80%, 50%)",
   "hsl(0, 65%, 55%)",
   "hsl(190, 70%, 45%)",
+];
+
+type ToolUsageRow = CxOverviewKpis["tool_usage"][number];
+
+const toolUsageColumns: MatrxColumnDef<ToolUsageRow>[] = [
+  {
+    id: "tool_name",
+    accessorKey: "tool_name",
+    header: "Tool",
+    width: 240,
+    cell: (r) => <span className="font-mono text-xs">{r.tool_name}</span>,
+  },
+  {
+    id: "count",
+    accessorKey: "count",
+    header: "Calls",
+    align: "right",
+    width: 80,
+  },
+  {
+    id: "error_count",
+    accessorKey: "error_count",
+    header: "Errors",
+    align: "right",
+    width: 80,
+    cell: (r) =>
+      r.error_count > 0 ? (
+        <span className="text-red-500">{r.error_count}</span>
+      ) : (
+        <span className="text-muted-foreground">0</span>
+      ),
+  },
+  {
+    id: "avg_duration_ms",
+    accessorKey: "avg_duration_ms",
+    header: "Avg Duration",
+    align: "right",
+    width: 110,
+    cell: (r) => <span>{formatDuration(Math.round(r.avg_duration_ms))}</span>,
+  },
+  {
+    id: "total_cost",
+    accessorKey: "total_cost",
+    header: "Cost",
+    align: "right",
+    width: 90,
+    cell: (r) => <span className="font-mono">{formatCost(r.total_cost)}</span>,
+  },
 ];
 
 export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
@@ -300,49 +350,34 @@ export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
 
       {/* Tool Usage */}
       {kpis.tool_usage.length > 0 && (
-        <div className="border border-border rounded-md p-3 bg-card">
-          <h3 className="text-xs font-medium text-muted-foreground mb-3">
+        <div className="border border-border rounded-md p-3 bg-card space-y-2">
+          <h3 className="text-xs font-medium text-muted-foreground">
             Tool Usage
           </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border text-muted-foreground">
-                  <th className="text-left py-1.5 pr-4 font-medium">Tool</th>
-                  <th className="text-right py-1.5 px-3 font-medium">Calls</th>
-                  <th className="text-right py-1.5 px-3 font-medium">Errors</th>
-                  <th className="text-right py-1.5 px-3 font-medium">
-                    Avg Duration
-                  </th>
-                  <th className="text-right py-1.5 pl-3 font-medium">Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {kpis.tool_usage.map((t) => (
-                  <tr
-                    key={t.tool_name}
-                    className="border-b border-border/50 hover:bg-muted/30"
-                  >
-                    <td className="py-1.5 pr-4 font-mono">{t.tool_name}</td>
-                    <td className="text-right py-1.5 px-3">{t.count}</td>
-                    <td className="text-right py-1.5 px-3">
-                      {t.error_count > 0 ? (
-                        <span className="text-red-500">{t.error_count}</span>
-                      ) : (
-                        <span className="text-muted-foreground">0</span>
-                      )}
-                    </td>
-                    <td className="text-right py-1.5 px-3">
-                      {formatDuration(t.avg_duration_ms)}
-                    </td>
-                    <td className="text-right py-1.5 pl-3 font-mono">
-                      {formatCost(t.total_cost)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <MatrxDataTable
+            data={kpis.tool_usage}
+            columns={toolUsageColumns}
+            getRowId={(r) => r.tool_name}
+            pageSize={25}
+            emptyState={{ title: "No tool usage" }}
+            toolbar={{ search: true, searchPlaceholder: "Search tools…" }}
+            copy={{
+              label: "Tool usage",
+              listLabel: "Tool usage (this view)",
+              location: "/administration/chat/cx-dashboard",
+              rowKind: "cx-tool-usage",
+              listKind: "cx-tool-usage-list",
+              humanRow: (r) =>
+                [
+                  `Tool: ${r.tool_name}`,
+                  `Calls: ${r.count} · Errors: ${r.error_count}`,
+                  `Avg duration: ${formatDuration(r.avg_duration_ms)}`,
+                  `Cost: ${formatCost(r.total_cost)}`,
+                ].join("\n"),
+              rowAttributes: (r) => ({ tool: r.tool_name, calls: r.count }),
+            }}
+            detail={{ title: (r) => r.tool_name }}
+          />
         </div>
       )}
 

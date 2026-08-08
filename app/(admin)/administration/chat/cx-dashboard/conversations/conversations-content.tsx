@@ -1,15 +1,20 @@
+// CX dashboard › Conversations — canonical MatrxDataTable over cx_conversation rows.
+// Timeframe/status/search stay server-side via CxFiltersBar (URL params → server
+// refetch); every fetched column still sorts + filters locally in the table.
+
 "use client";
 
-import Link from "next/link";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { GitBranch, MessageSquare } from "lucide-react";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { CxFiltersBar } from "@/features/cx-dashboard/components/CxFiltersBar";
-import { CxEmptyState } from "@/features/cx-dashboard/components/CxEmptyState";
 import {
-  formatDate,
   formatRelativeTime,
   statusBadgeVariant,
-  truncateId,
 } from "@/features/cx-dashboard/utils/format";
 import {
   exportToCSV,
@@ -19,143 +24,183 @@ import type {
   CxConversation,
   CxPaginatedResponse,
 } from "@/features/cx-dashboard/types/cxDashboardTypes";
-import { ChevronRight, GitBranch, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 type Props = {
   result: CxPaginatedResponse<CxConversation>;
 };
 
+const detailHref = (id: string) =>
+  `/administration/chat/cx-dashboard/conversations/${id}`;
+
 export function ConversationsContent({ result }: Props) {
   const router = useRouter();
 
-  const exportData = result.data.map((c) => ({
-    id: c.id,
-    title: c.title,
-    status: c.status,
-    message_count: c.message_count,
-    model: c.model_name,
-    provider: c.provider,
-    parent_id: c.parent_conversation_id,
-    created_at: c.created_at,
-    updated_at: c.updated_at,
-  }));
+  const exportData = useMemo(
+    () =>
+      result.data.map((c) => ({
+        id: c.id,
+        title: c.title,
+        status: c.status,
+        message_count: c.message_count,
+        model: c.model_name,
+        provider: c.provider,
+        parent_id: c.parent_conversation_id,
+        created_at: c.created_at,
+        updated_at: c.updated_at,
+      })),
+    [result.data],
+  );
+
+  const columns = useMemo((): MatrxColumnDef<CxConversation>[] => {
+    return [
+      {
+        id: "title",
+        header: "Conversation",
+        accessorFn: (r) => r.title ?? "",
+        href: (r) => detailHref(r.id),
+        width: 300,
+        cell: (r) => (
+          <span className="flex items-center gap-2">
+            {r.parent_conversation_id && (
+              <GitBranch className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+            )}
+            <span className="truncate font-medium">
+              {r.title || (
+                <span className="italic text-muted-foreground">Untitled</span>
+              )}
+            </span>
+          </span>
+        ),
+      },
+      {
+        id: "model",
+        header: "Model",
+        accessorFn: (r) => r.model_name ?? "",
+        width: 160,
+        cell: (r) =>
+          r.model_name ? (
+            <div className="min-w-0">
+              <p className="max-w-[140px] truncate text-xs">{r.model_name}</p>
+              <p className="text-[10px] text-muted-foreground">{r.provider}</p>
+            </div>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+      {
+        id: "message_count",
+        accessorKey: "message_count",
+        header: "Msgs",
+        align: "center",
+        width: 80,
+        cell: (r) => (
+          <span className="inline-flex items-center gap-1 text-xs">
+            <MessageSquare className="h-3 w-3 text-muted-foreground" />
+            {r.message_count}
+          </span>
+        ),
+      },
+      {
+        id: "status",
+        accessorKey: "status",
+        header: "Status",
+        filter: "select",
+        align: "center",
+        width: 100,
+        cell: (r) => (
+          <Badge variant={statusBadgeVariant(r.status)} className="text-[10px]">
+            {r.status}
+          </Badge>
+        ),
+      },
+      {
+        id: "parent_conversation_id",
+        accessorKey: "parent_conversation_id",
+        header: "Parent",
+        cellKind: "fk",
+        width: 110,
+        fk: { href: (id) => detailHref(id) },
+      },
+      {
+        id: "created_at",
+        accessorKey: "created_at",
+        header: "Created",
+        width: 120,
+        cell: (r) => (
+          <span className="whitespace-nowrap text-xs text-muted-foreground">
+            {formatRelativeTime(r.created_at)}
+          </span>
+        ),
+      },
+      { id: "id", accessorKey: "id", header: "ID", cellKind: "uuid", width: 110 },
+    ];
+  }, []);
 
   return (
-    <div className="p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">
-          Conversations
-          <span className="text-muted-foreground ml-2 font-normal">
-            {result.total} total
-          </span>
-        </h2>
+    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+      <h2 className="text-sm font-semibold">
+        Conversations
+        <span className="ml-2 font-normal text-muted-foreground">
+          {result.total} total
+        </span>
+      </h2>
+
+      <div className="min-h-0 flex-1">
+        <MatrxDataTable
+          data={result.data}
+          columns={columns}
+          getRowId={(r) => r.id}
+          pageSize={0}
+          emptyState={{ title: "No conversations match" }}
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Filter fetched page…",
+            facets: [
+              {
+                type: "custom",
+                id: "server-filters",
+                render: () => (
+                  <CxFiltersBar
+                    showSearch
+                    showStatusFilter
+                    statusOptions={["active", "archived"]}
+                    onRefresh={() => router.refresh()}
+                    onExportCSV={() => exportToCSV(exportData, "conversations")}
+                    onExportJSON={() =>
+                      exportToJSON(exportData, "conversations")
+                    }
+                  />
+                ),
+              },
+            ],
+          }}
+          copy={{
+            label: "CX conversation",
+            listLabel: "CX conversations (this view)",
+            location: "/administration/chat/cx-dashboard/conversations",
+            rowKind: "cx-conversation",
+            listKind: "cx-conversations",
+            humanRow: (r) =>
+              [
+                `Title: ${r.title ?? "Untitled"}`,
+                `Status: ${r.status}`,
+                `Messages: ${r.message_count}`,
+                `Model: ${r.model_name ?? "—"} (${r.provider ?? "—"})`,
+                `Parent: ${r.parent_conversation_id ?? "—"}`,
+                `Created: ${r.created_at}`,
+              ].join("\n"),
+            rowAttributes: (r) => ({ id: r.id, status: r.status }),
+          }}
+          detail={{
+            title: (r) => r.title ?? "Untitled conversation",
+            description: (r) => r.description ?? undefined,
+          }}
+        />
       </div>
 
-      <CxFiltersBar
-        showSearch
-        showStatusFilter
-        statusOptions={["active", "archived"]}
-        onRefresh={() => router.refresh()}
-        onExportCSV={() => exportToCSV(exportData, "conversations")}
-        onExportJSON={() => exportToJSON(exportData, "conversations")}
-      />
-
-      {result.data.length === 0 ? (
-        <CxEmptyState />
-      ) : (
-        <div className="border border-border rounded-md overflow-hidden">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-muted/30 border-b border-border text-muted-foreground">
-                <th className="text-left py-2 px-3 font-medium">
-                  Conversation
-                </th>
-                <th className="text-left py-2 px-3 font-medium">Model</th>
-                <th className="text-center py-2 px-3 font-medium">Msgs</th>
-                <th className="text-center py-2 px-3 font-medium">Status</th>
-                <th className="text-left py-2 px-3 font-medium">Parent</th>
-                <th className="text-right py-2 px-3 font-medium">Created</th>
-                <th className="text-right py-2 px-3 font-medium w-8"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.data.map((conv) => (
-                <tr
-                  key={conv.id}
-                  className="border-b border-border/50 hover:bg-muted/20 cursor-pointer transition-colors"
-                  onClick={() =>
-                    router.push(
-                      `/administration/chat/cx-dashboard/conversations/${conv.id}`,
-                    )
-                  }
-                >
-                  <td className="py-2 px-3">
-                    <div className="flex items-center gap-2">
-                      {conv.parent_conversation_id && (
-                        <GitBranch className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-medium truncate max-w-[300px]">
-                          {conv.title || (
-                            <span className="text-muted-foreground italic">
-                              Untitled
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-muted-foreground font-mono">
-                          {truncateId(conv.id)}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-2 px-3">
-                    {conv.model_name ? (
-                      <div>
-                        <p className="truncate max-w-[140px]">
-                          {conv.model_name}
-                        </p>
-                        <p className="text-muted-foreground">{conv.provider}</p>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </td>
-                  <td className="text-center py-2 px-3">
-                    <div className="flex items-center justify-center gap-1">
-                      <MessageSquare className="w-3 h-3 text-muted-foreground" />
-                      {conv.message_count}
-                    </div>
-                  </td>
-                  <td className="text-center py-2 px-3">
-                    <Badge
-                      variant={statusBadgeVariant(conv.status)}
-                      className="text-[10px]"
-                    >
-                      {conv.status}
-                    </Badge>
-                  </td>
-                  <td className="py-2 px-3 font-mono text-muted-foreground">
-                    {conv.parent_conversation_id
-                      ? truncateId(conv.parent_conversation_id)
-                      : "-"}
-                  </td>
-                  <td className="text-right py-2 px-3 text-muted-foreground whitespace-nowrap">
-                    {formatRelativeTime(conv.created_at)}
-                  </td>
-                  <td className="text-right py-2 px-1">
-                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Pagination */}
+      {/* Server-side pagination over the full result set (table shows one fetched page) */}
       {result.total_pages > 1 && (
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex shrink-0 items-center justify-between text-xs text-muted-foreground">
           <span>
             Page {result.page} of {result.total_pages}
           </span>

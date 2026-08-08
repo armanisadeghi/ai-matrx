@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { CxJsonViewer } from "@/features/cx-dashboard/components/CxJsonViewer";
 import { CxEmptyState } from "@/features/cx-dashboard/components/CxEmptyState";
 import { CxCostVerificationModal } from "@/features/cx-dashboard/components/CxCostVerificationModal";
@@ -43,6 +45,91 @@ type Detail = {
   tool_calls: CxToolCall[];
   cost_verification: CxCostVerification;
 };
+
+const apiRequestColumns: MatrxColumnDef<CxRequest>[] = [
+  {
+    id: "iteration",
+    accessorKey: "iteration",
+    header: "Iter",
+    width: 60,
+    cell: (r) => <span className="font-mono text-xs">{r.iteration}</span>,
+  },
+  {
+    id: "model",
+    header: "Model",
+    accessorFn: (r) => r.model_name ?? "",
+    width: 160,
+    cell: (r) => (
+      <span className="block max-w-[150px] truncate text-xs">
+        {r.model_name || "—"}
+      </span>
+    ),
+  },
+  {
+    id: "input_tokens",
+    accessorKey: "input_tokens",
+    header: "Input",
+    align: "right",
+    width: 90,
+    cell: (r) => <span className="font-mono">{formatTokens(r.input_tokens)}</span>,
+  },
+  {
+    id: "output_tokens",
+    accessorKey: "output_tokens",
+    header: "Output",
+    align: "right",
+    width: 90,
+    cell: (r) => <span className="font-mono">{formatTokens(r.output_tokens)}</span>,
+  },
+  {
+    id: "cached_tokens",
+    accessorKey: "cached_tokens",
+    header: "Cached",
+    align: "right",
+    width: 90,
+    cell: (r) => <span className="font-mono">{formatTokens(r.cached_tokens)}</span>,
+  },
+  {
+    id: "cost",
+    header: "Cost",
+    accessorFn: (r) => Number(r.cost ?? 0),
+    align: "right",
+    width: 90,
+    cell: (r) => <span className="font-mono">{formatCost(Number(r.cost))}</span>,
+  },
+  {
+    id: "api_duration_ms",
+    accessorKey: "api_duration_ms",
+    header: "Duration",
+    align: "right",
+    width: 90,
+    cell: (r) => (
+      <span className="text-muted-foreground">
+        {formatDuration(r.api_duration_ms)}
+      </span>
+    ),
+  },
+  {
+    id: "finish_reason",
+    header: "Finish",
+    accessorFn: (r) => r.finish_reason ?? "",
+    filter: "select",
+    width: 110,
+    cell: (r) =>
+      r.finish_reason ? (
+        <Badge
+          variant={r.finish_reason === "stop" ? "outline" : "secondary"}
+          className="text-[10px]"
+        >
+          {r.finish_reason}
+        </Badge>
+      ) : (
+        <span className="text-[10px] italic text-muted-foreground">
+          intermediate
+        </span>
+      ),
+  },
+];
 
 export function RequestDetailContent({ detail }: { detail: Detail }) {
   const router = useRouter();
@@ -212,71 +299,33 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
         {requests.length === 0 ? (
           <CxEmptyState title="No API requests found" />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border text-muted-foreground">
-                  <th className="text-left py-1.5 px-3 font-medium">Iter</th>
-                  <th className="text-left py-1.5 px-3 font-medium">Model</th>
-                  <th className="text-right py-1.5 px-3 font-medium">Input</th>
-                  <th className="text-right py-1.5 px-3 font-medium">Output</th>
-                  <th className="text-right py-1.5 px-3 font-medium">Cached</th>
-                  <th className="text-right py-1.5 px-3 font-medium">Cost</th>
-                  <th className="text-right py-1.5 px-3 font-medium">
-                    Duration
-                  </th>
-                  <th className="text-left py-1.5 px-3 font-medium">Finish</th>
-                </tr>
-              </thead>
-              <tbody>
-                {requests.map((req) => (
-                  <tr
-                    key={req.id}
-                    className="border-b border-border/50 hover:bg-muted/20"
-                  >
-                    <td className="py-1.5 px-3 font-mono">{req.iteration}</td>
-                    <td className="py-1.5 px-3">
-                      <span className="truncate max-w-[120px] block">
-                        {req.model_name || "-"}
-                      </span>
-                    </td>
-                    <td className="text-right py-1.5 px-3 font-mono">
-                      {formatTokens(req.input_tokens)}
-                    </td>
-                    <td className="text-right py-1.5 px-3 font-mono">
-                      {formatTokens(req.output_tokens)}
-                    </td>
-                    <td className="text-right py-1.5 px-3 font-mono">
-                      {formatTokens(req.cached_tokens)}
-                    </td>
-                    <td className="text-right py-1.5 px-3 font-mono">
-                      {formatCost(Number(req.cost))}
-                    </td>
-                    <td className="text-right py-1.5 px-3 text-muted-foreground">
-                      {formatDuration(req.api_duration_ms)}
-                    </td>
-                    <td className="py-1.5 px-3">
-                      {req.finish_reason ? (
-                        <Badge
-                          variant={
-                            req.finish_reason === "stop"
-                              ? "outline"
-                              : "secondary"
-                          }
-                          className="text-[10px]"
-                        >
-                          {req.finish_reason}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground italic text-[10px]">
-                          intermediate
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="p-2">
+            <MatrxDataTable
+              data={requests}
+              columns={apiRequestColumns}
+              getRowId={(r) => r.id}
+              pageSize={25}
+              emptyState={{ title: "No API requests found" }}
+              toolbar={{ search: true, searchPlaceholder: "Search iterations…" }}
+              copy={{
+                label: "API request",
+                listLabel: "API requests (this view)",
+                location: "/administration/chat/cx-dashboard/requests",
+                rowKind: "cx-api-request",
+                listKind: "cx-api-requests",
+                humanRow: (r) =>
+                  [
+                    `Iteration: ${r.iteration}`,
+                    `Model: ${r.model_name ?? "—"}`,
+                    `Tokens: ${formatTokens(r.input_tokens)} in / ${formatTokens(r.output_tokens)} out / ${formatTokens(r.cached_tokens)} cached`,
+                    `Cost: ${formatCost(Number(r.cost))}`,
+                    `Duration: ${formatDuration(r.api_duration_ms)}`,
+                    `Finish: ${r.finish_reason ?? "intermediate"}`,
+                  ].join("\n"),
+                rowAttributes: (r) => ({ id: r.id, iteration: r.iteration }),
+              }}
+              detail={{ title: (r) => `Iteration ${r.iteration}` }}
+            />
           </div>
         )}
       </div>
