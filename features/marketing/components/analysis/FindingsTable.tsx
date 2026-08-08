@@ -44,6 +44,7 @@ import type {
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import {
   humanLines,
+  keyFieldsAiVariant,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
 
@@ -371,23 +372,20 @@ export function FindingsTable() {
             total_matching: findings.data?.total ?? 0,
           }),
           aiVariants: (visible) => [
-            {
-              id: "key-fields",
-              label: "Key fields",
+            keyFieldsAiVariant({
+              kind: "web-findings-list",
+              location: pageLocation,
+              description:
+                "The currently loaded finding rows projected to key fields.",
               hint: "Visible rows projected to core lifecycle fields",
-              build: () => ({
-                kind: "web-findings-list",
-                location: pageLocation,
-                description:
-                  "The currently loaded finding rows projected to key fields.",
-                data: { query: table.state, rows: visible.map(projectFindingRow) },
-                attributes: {
-                  site_id: site.id,
-                  total_matching: findings.data?.total ?? 0,
-                  detail: "key-fields",
-                },
-              }),
-            },
+              visible,
+              project: projectFindingRow,
+              query: table.state,
+              attributes: {
+                site_id: site.id,
+                total_matching: findings.data?.total ?? 0,
+              },
+            }),
           ],
         }}
         detail={{ enabled: false }}

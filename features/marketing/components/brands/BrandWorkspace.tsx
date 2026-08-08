@@ -318,10 +318,7 @@ function BusinessFactRow({
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {fact.label ||
-            (isBusinessFactKind(fact.kind)
-              ? BUSINESS_FACT_KIND_LABELS[fact.kind]
-              : fact.kind.replace(/_/g, " "))}
+          {factLabel}
         </p>
         <p className="truncate text-sm text-foreground" title={value}>
           {value}

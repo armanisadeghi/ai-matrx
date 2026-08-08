@@ -154,6 +154,13 @@ areas. Declare sections once and derive the quick payload from
 **Done:**
 - Primitive + README + roadmap (`components/agent-copy/`), `xs` size, groomer
   window (`AgentCopyGroomerWindow` + launcher + `groomer-types.ts`).
+- Graded Copy-for-AI variants: `AiCopyMenu`, `CopyButtons.aiVariants`,
+  `MatrxDataTable copy.aiVariants`, plus `buildGroomerPresetPayload` /
+  `groomerPresetVariants` (groomer-types) and `keyFieldsAiVariant`
+  (marketing `copy-payloads.ts`). Wired on the medium/massive marketing site
+  tabs (keywords, ranks, findings, analysis, audit, links, crawls, discovery,
+  cost + backlinks reference); small bounded tabs deliberately keep the plain
+  pair — the sized-to-data call is part of the job.
 - Built-in integrations: `MatrxDataTable` `copy` config → row/view/window/field
   pairs; `DataRowInspector` per-field hover copy; `JsonInspector` `agentCopy`.
 - Shared formatters: `lib/sandbox/format.ts`, `features/ai-models/format.ts`,
