@@ -34,7 +34,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import "./set-builder-canvas.css";
 import dagre from "dagre";
-import { Network, Webhook, GitFork, CircleDot, LayoutGrid, PanelRight, type LucideIcon } from "lucide-react";
+import { Network, Webhook, GitFork, CircleDot, LayoutGrid, Loader2, PanelRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
@@ -46,6 +46,7 @@ import {
 } from "@/features/agents/redux/agent-sets/thunks";
 import { AgentRoleCard } from "./AgentRoleCard";
 import { AgentPeekButton } from "./AgentPeekButton";
+import { useMemberRunState } from "../run/SetRunStatusContext";
 import { accentClasses } from "./accents";
 import { AGENT_DND_MIME } from "./AgentLibraryRail";
 import type { SetBuilderCanvasProps } from "./SetBuilderCanvas";
@@ -135,6 +136,9 @@ function MemberNode({ data }: NodeProps) {
   const d = data as unknown as MemberData;
   const dispatch = useAppDispatch();
   const a = accentClasses(d.accent);
+  // Live run state comes from context, NEVER through node `data` — pushing
+  // volatile status through data would churn the sig-keyed reconcile.
+  const runState = useMemberRunState(d.agentId);
   return (
     <div className="relative">
       <Handle type="target" position={Position.Top} className="!h-2 !w-2 !border-0 !bg-transparent" />
@@ -150,7 +154,22 @@ function MemberNode({ data }: NodeProps) {
           dispatch(removeAgentFromSet({ orchestratorId: d.orchestratorId, agentId: d.agentId }))
         }
       />
-      <span className={cn("pointer-events-none absolute -inset-px rounded-xl ring-1", a.ring)} />
+      {/* idle = the set's accent ring; running = animated accent pulse; done /
+          failed = success / destructive rings until the next turn resets. */}
+      <span
+        className={cn(
+          "pointer-events-none absolute -inset-px rounded-xl",
+          runState === "running" && cn("animate-pulse ring-2 shadow-lg", a.ring),
+          runState === "done" && "ring-2 ring-emerald-500/80 dark:ring-emerald-400/80",
+          runState === "failed" && "ring-2 ring-destructive/80",
+          runState === null && cn("ring-1", a.ring),
+        )}
+      />
+      {runState === "running" && (
+        <span className="absolute -right-1.5 -top-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card shadow-sm">
+          <Loader2 className={cn("h-3 w-3 animate-spin", a.text)} />
+        </span>
+      )}
     </div>
   );
 }

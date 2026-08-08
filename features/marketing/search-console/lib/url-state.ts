@@ -222,6 +222,27 @@ export function withPrevCompare(periods: GscResolvedPeriods): GscResolvedPeriods
   };
 }
 
+/**
+ * The freshest stored day across a site's `gsc_perf_freshness` rows — the value
+ * `resolvePeriods` takes as `dataEnd` so a window never promises days GSC has
+ * not delivered.
+ *
+ * `search_appearance` is excluded deliberately: its history is intentionally
+ * shallow, so including it would drag the site's apparent freshness backwards.
+ *
+ * Extracted because three callers (the workspace, the drilldown window, and the
+ * ambassador rollup) each need the identical reduction — a fourth hand-rolled
+ * copy is how the exclusion rule silently drifts on one surface only.
+ */
+export function resolveGscDataThrough(
+  rows: readonly { dimension_profile: string; max_date: string }[] | undefined,
+): string | null {
+  const dates = (rows ?? [])
+    .filter((r) => r.dimension_profile !== "search_appearance")
+    .map((r) => r.max_date);
+  return dates.length > 0 ? ([...dates].sort().at(-1) ?? null) : null;
+}
+
 /** The filter keys each tab's dimension group can serve (RPC profile rule). */
 const QUERY_PAGE_FILTER_KEYS: readonly (keyof GscFilters)[] = [
   "query_contains",

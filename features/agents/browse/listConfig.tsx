@@ -7,7 +7,6 @@
 // page lives HERE: the service functions, the column registry, the row-actions
 // hook + its modals, and the card / compact-row renderers.
 
-import { useMemo } from "react";
 import dynamic from "next/dynamic";
 import type {
   EntityListConfig,
@@ -71,14 +70,12 @@ function useAgentListRowActions(
     refresh: list.refresh,
   });
 
-  const actions = useMemo(
-    () => ({
-      menuFor: host.menuFor,
-      onOpenRow: host.openActionModal,
-      onToggleFavorite: host.toggleFavorite,
-    }),
-    [host],
-  );
+  // No manual memoization — the React Compiler owns it (CLAUDE.md).
+  const actions = {
+    menuFor: host.menuFor,
+    onOpenRow: host.openActionModal,
+    onToggleFavorite: host.toggleFavorite,
+  };
 
   const modals = (
     <>
@@ -167,12 +164,24 @@ export const agentListConfig: EntityListConfig<AgentBrowseRow> = {
     disabledTitle: "Shared agents can't be favorited",
   },
   edit: {
-    save: (rowId, edit) => saveAgentRowEdits(rowId, edit as AgentRowEdit),
+    save: (row, edit) => saveAgentRowEdits(row.id, edit as AgentRowEdit),
   },
   deepSearch: { label: "Also search inside prompts" },
   facetSections: [
-    { facet: "category", filterId: "category", label: "Categories", noneLabel: "Uncategorized" },
-    { facet: "tag", filterId: "tags", label: "Tags", noneLabel: "Untagged" },
+    {
+      facet: "category",
+      filterId: "category",
+      label: "Categories",
+      noneLabel: "Uncategorized",
+      searchPlaceholder: "Find category…",
+    },
+    {
+      facet: "tag",
+      filterId: "tags",
+      label: "Tags",
+      noneLabel: "Untagged",
+      searchPlaceholder: "Find tag…",
+    },
     {
       facet: "visibility",
       filterId: "visibility",
@@ -180,6 +189,7 @@ export const agentListConfig: EntityListConfig<AgentBrowseRow> = {
       noneLabel: "None",
       minOptions: 2,
       countInLabel: false,
+      searchPlaceholder: "Find…",
     },
   ],
   noneLabels: {

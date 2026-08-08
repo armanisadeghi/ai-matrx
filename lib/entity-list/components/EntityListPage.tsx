@@ -76,7 +76,9 @@ export function EntityListPage<TRow>({
     const entries = Object.entries(edits);
     await Promise.all(
       entries.map(async ([rowId, edit]) => {
-        await save(rowId, edit);
+        const row = list.rows.find((r) => config.getRowId(r) === rowId);
+        if (!row) throw new Error("Edited row is no longer in the list");
+        await save(row, edit);
         list.patchRow(rowId, edit);
       }),
     );
@@ -143,6 +145,7 @@ export function EntityListPage<TRow>({
           defaultHidden={defaultHidden}
           facetSections={config.facetSections}
           hasFavorites={Boolean(config.favorite)}
+          hasArchived={config.supportsArchived !== false}
           searchPlaceholder={`Search ${config.entityLabel.plural}…`}
           deepSearchLabel={config.deepSearch?.label}
           hasCards={Boolean(cardsView)}

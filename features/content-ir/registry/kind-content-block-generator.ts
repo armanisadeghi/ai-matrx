@@ -6,7 +6,7 @@
  * a human previously hand-authored inside a per-kind SQL migration is now
  * DERIVED from data the platform already holds.
  *
- * Two tiers, mirroring the house formats already in `public.content_blocks`
+ * Two tiers, mirroring the house formats already in `skill.render_definition`
  * (e.g. the "Flashcard Simple" row):
  *   - "basic"    → one-line intro + a single `__kind`-leading JSON sample.
  *   - "detailed" → field-by-field annotations (required markers, enums,

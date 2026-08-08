@@ -26,6 +26,16 @@ type SklRenderDefinitionInsertPayload = Omit<
   "organization_id"
 > & { organization_id?: string };
 
+const RENDER_BLOCK_TYPES = new Set(["render_kind", "xml", "markdown"]);
+
+function normalizeBlockType(
+  raw: string,
+): SklRenderDefinition["blockType"] {
+  return RENDER_BLOCK_TYPES.has(raw)
+    ? (raw as SklRenderDefinition["blockType"])
+    : "markdown";
+}
+
 export function rowToSklRenderDefinition(
   row: RenderDefRow,
 ): SklRenderDefinition {
@@ -38,6 +48,8 @@ export function rowToSklRenderDefinition(
     template: row.template,
     categoryId: row.category_id,
     skillId: row.skill_id,
+    blockType: normalizeBlockType(row.block_type),
+    visibility: row.visibility,
     isActive: row.is_active,
     isPublic: row.visibility === "public",
     sortOrder: row.sort_order,
@@ -61,8 +73,11 @@ export function sklRenderDefinitionToUpdate(
   if (patch.template !== undefined) u.template = patch.template;
   if (patch.categoryId !== undefined) u.category_id = patch.categoryId;
   if (patch.skillId !== undefined) u.skill_id = patch.skillId;
+  if (patch.blockType !== undefined) u.block_type = patch.blockType;
   if (patch.isActive !== undefined) u.is_active = patch.isActive;
-  if (patch.isPublic !== undefined)
+  // Explicit visibility wins; isPublic is the legacy boolean sugar.
+  if (patch.visibility !== undefined) u.visibility = patch.visibility;
+  else if (patch.isPublic !== undefined)
     u.visibility = patch.isPublic ? "public" : "personal";
   if (patch.sortOrder !== undefined) u.sort_order = patch.sortOrder;
   return u;
@@ -80,8 +95,10 @@ export function sklRenderDefinitionToInsert(
     description: def.description ?? null,
     category_id: def.categoryId ?? null,
     skill_id: def.skillId ?? null,
+    ...(def.blockType !== undefined ? { block_type: def.blockType } : {}),
     is_active: def.isActive ?? true,
-    visibility: def.isPublic ? "public" : "personal",
+    visibility:
+      def.visibility ?? (def.isPublic ? "public" : "personal"),
     sort_order: def.sortOrder ?? 0,
     created_by: def.userId ?? null,
     ...(def.organizationId != null

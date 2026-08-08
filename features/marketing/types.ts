@@ -187,8 +187,10 @@ export interface UpdateBrandInput {
 export interface SiteListRow extends MarketingSite {
   health_score: number | null;
   scored_pages: number;
-  /** Canonical live pages (`web.page`, non-deleted). */
+  /** Canonical live PAGES — excludes crawled non-HTML resources. */
   page_count: number;
+  /** Live non-HTML registry rows (image/json/xml/pdf/…), excluded from `page_count`. */
+  resource_count: number;
   /** Distinct pages Google Search Console has ever reported for the site. */
   pages_in_gsc: number;
   /** 28-day GSC click sum; null when Google has no data in the window. */

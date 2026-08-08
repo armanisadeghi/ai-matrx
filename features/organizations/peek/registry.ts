@@ -17,7 +17,7 @@ import NotePeek from "./kinds/NotePeek";
 import AgentAppPeek from "./kinds/AgentAppPeek";
 import SkillPeek from "./kinds/SkillPeek";
 import WorkflowPeek from "./kinds/WorkflowPeek";
-import ContentTemplatePeek from "./kinds/ContentTemplatePeek";
+import MessageTemplatePeek from "./kinds/MessageTemplatePeek";
 import ConversationPeek from "./kinds/ConversationPeek";
 import FlashcardPeek from "./kinds/FlashcardPeek";
 import CanvasPeek from "./kinds/CanvasPeek";
@@ -42,7 +42,7 @@ export const PEEK_REGISTRY: Record<
   agent_app: AgentAppPeek,
   skill: SkillPeek,
   workflow: WorkflowPeek,
-  content_template: ContentTemplatePeek,
+  message_template: MessageTemplatePeek,
   conversation: ConversationPeek,
   flashcard: FlashcardPeek,
   canvas: CanvasPeek,

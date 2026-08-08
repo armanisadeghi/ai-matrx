@@ -167,6 +167,44 @@ export async function confirmGscKeywordClass(
   return assertData(response.data, response.error);
 }
 
+// ── Brand identity (the brand_match rung, narrated) ────────────────────────
+
+export type GscBrandIdentityRow =
+  import("@/types/database.types").Database["seo"]["Functions"]["gsc_brand_identity"]["Returns"][number];
+
+/**
+ * Every brand alias the resolver derives for the site — origin (domain /
+ * site_name / brand_name / custom), corpus match counts, and the genericity
+ * demotion state. Server-computed by `seo.gsc_brand_identity`; NEVER
+ * re-derive aliases or matching client-side (TS↔SQL parity trap).
+ */
+export async function getGscBrandIdentity(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<GscBrandIdentityRow[]> {
+  const response = await (await seoDb())
+    .rpc("gsc_brand_identity", { p_site_id: siteId })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
+/**
+ * Replace the site's CUSTOM alias list (`web.brand.profile.brand_aliases`)
+ * — people, legal names, DBAs, misspellings. Server normalizes (trim /
+ * lowercase / dedup) and returns the stored array; screams if the site has
+ * no linked brand row.
+ */
+export async function setGscBrandAliases(
+  siteId: string,
+  aliases: string[],
+): Promise<string[]> {
+  const response = await (await seoDb()).rpc("gsc_set_brand_aliases", {
+    p_site_id: siteId,
+    p_aliases: aliases,
+  });
+  return assertData(response.data, response.error);
+}
+
 // ── Import (CSV / workbook round-trip) ─────────────────────────────────────
 
 export interface GscClassImportRow {

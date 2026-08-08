@@ -113,6 +113,7 @@ import {
 import { buildSiteVideoAssets } from "@/features/marketing/lib/snapshot-video";
 import type {
   PageCoverageFilter,
+  PageResourceScope,
   SitemapPagesFilter,
 } from "@/features/marketing/data/service";
 import type {
@@ -286,10 +287,16 @@ export function usePages(
   siteId: string,
   state: MatrxDataTableQueryState,
   coverage: PageCoverageFilter | null = null,
+  resourceScope: PageResourceScope = "pages",
 ) {
   return useQuery({
-    queryKey: [...marketingKeys.pages(siteId, state), coverage] as const,
-    queryFn: ({ signal }) => listPages(siteId, state, coverage, signal),
+    queryKey: [
+      ...marketingKeys.pages(siteId, state),
+      coverage,
+      resourceScope,
+    ] as const,
+    queryFn: ({ signal }) =>
+      listPages(siteId, state, coverage, resourceScope, signal),
     enabled: Boolean(siteId),
     placeholderData: keepPreviousData,
   });

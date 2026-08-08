@@ -71,6 +71,8 @@ interface Props<TRow> {
   facetSections: EntityFacetSection[];
   /** Offer the Favorites section + pin toggle. */
   hasFavorites: boolean;
+  /** Offer the Archived section. */
+  hasArchived: boolean;
   sort: string;
   direction: ListViewPrefs["direction"];
   favoritesFirst: boolean;
@@ -97,6 +99,7 @@ export function EntityFilterPanel<TRow>({
   columns,
   facetSections,
   hasFavorites,
+  hasArchived,
   sort,
   direction,
   favoritesFirst,
@@ -270,20 +273,22 @@ export function EntityFilterPanel<TRow>({
             </FilterSection>
           )}
 
-          <FilterSection label="Archived" active={query.archived !== "active"}>
-            <RadioSelect<ArchivedFilter>
-              value={query.archived}
-              onChange={(v) => onPatchQuery({ archived: v })}
-              options={ARCH_OPTIONS.map((o) =>
-                o.value === "archived"
-                  ? {
-                      ...o,
-                      hint: String(facetCount(facets, "archived", "archived")),
-                    }
-                  : o,
-              )}
-            />
-          </FilterSection>
+          {hasArchived && (
+            <FilterSection label="Archived" active={query.archived !== "active"}>
+              <RadioSelect<ArchivedFilter>
+                value={query.archived}
+                onChange={(v) => onPatchQuery({ archived: v })}
+                options={ARCH_OPTIONS.map((o) =>
+                  o.value === "archived"
+                    ? {
+                        ...o,
+                        hint: String(facetCount(facets, "archived", "archived")),
+                      }
+                    : o,
+                )}
+              />
+            </FilterSection>
+          )}
 
           {facetSections.map((section) => {
             const values = facetValues(facets, section.facet);
@@ -302,7 +307,10 @@ export function EntityFilterPanel<TRow>({
                   options={toOptions(values, section.noneLabel)}
                   selected={selectedOf(section.filterId)}
                   onChange={(v) => setSelect(section.filterId, v)}
-                  searchPlaceholder={`Find ${section.label.toLowerCase()}…`}
+                  searchPlaceholder={
+                    section.searchPlaceholder ??
+                    `Find ${section.label.toLowerCase()}…`
+                  }
                 />
               </FilterSection>
             );

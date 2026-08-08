@@ -20,6 +20,12 @@ export interface UseAccessSummaryArgs {
   entityId: string | null;
   /** Load only while true. Defaults to true. */
   enabled?: boolean;
+  /**
+   * Change this value to force a refetch — for surfaces that mutate grants
+   * beside the panel (a Share tab), pass a signature of the grant state so
+   * the summary can never contradict the freshly-refreshed list next to it.
+   */
+  refreshToken?: unknown;
 }
 
 export interface UseAccessSummaryResult {
@@ -33,6 +39,7 @@ export function useAccessSummary({
   entityType,
   entityId,
   enabled = true,
+  refreshToken,
 }: UseAccessSummaryArgs): UseAccessSummaryResult {
   const [summary, setSummary] = useState<AccessSummary | null>(null);
   const [loading, setLoading] = useState(false);
@@ -51,7 +58,7 @@ export function useAccessSummary({
       return;
     }
 
-    const key = `${entityType}:${entityId}:${nonce}`;
+    const key = `${entityType}:${entityId}:${nonce}:${String(refreshToken)}`;
     requestKey.current = key;
     setLoading(true);
     setError(null);
@@ -71,7 +78,7 @@ export function useAccessSummary({
         if (requestKey.current === key) setLoading(false);
       }
     })();
-  }, [entityType, entityId, enabled, nonce]);
+  }, [entityType, entityId, enabled, nonce, refreshToken]);
 
   const reload = useCallback(() => setNonce((n) => n + 1), []);
 

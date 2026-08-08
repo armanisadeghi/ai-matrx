@@ -13,6 +13,60 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D135 — soft-deleting a row HARD-deletes its association edges; "Dismiss" is therefore not reversible (2026-08-08)
+
+`platform._gc_entity_associations` runs on both DELETE and UPDATE and, when a row
+transitions to `deleted_at IS NOT NULL`, issues an unconditional
+`delete from platform.associations where source/target = this row`. It is wired as
+`_gc_assoc_softdelete` on many entity tables, `web.page` among them.
+
+So every user-facing SOFT delete silently destroys relationship edges permanently. On
+`web.page` this directly contradicts a documented contract: Marketing's verb is **Dismiss**
+(`deleted_at`) with **Restore** offered from `?scope=dismissed`, and the scraper revives
+dismissed pages on re-observation — but the page's supporting-keyword, task, note, and file
+edges are gone by then, and nothing rebuilds them. Same shape wherever soft-delete +
+restore coexist with associations.
+
+Found while fixing the page-registry duplicates: it is the reason the site-delete cascade
+was NOT extended to pages (`v_page_list` joins live sites instead — see
+`features/marketing/FEATURE.md` page-registry invariants).
+
+**Fix:** GC on hard DELETE only, and let soft-deleted rows keep their edges (readers
+already filter by the entity's own `deleted_at`); or tombstone the edges reversibly. Not
+done here — it is a platform-wide trigger on many tables and changing conveyance semantics
+is **Arman's call**, not one an agent takes on its own authority.
+
+### D133 — Arman's real accounts have viewer access to ZERO marketing sites; masqueraded as "site was deleted" (2026-08-08)
+
+Both agent-review items for the backlinks copy work came back "site was deleted or is no
+longer accessible" — but `web.site` row `7853b973` (aimatrx.com) is live and active. The
+message is `assertFound`'s wording for a `maybeSingle()` → null, and the null was RLS:
+`std_select` is `created_by = auth.uid() OR iam.has_access('web_site', id, 'viewer')`, the
+site is `visibility=internal` in the AI Matrx org, and `arman@allgreenrecycling.com` (the
+reviewing login) is a member of none of the orgs holding the brands —
+`iam.has_access_for` returns false for it on ALL FOUR sites with backlink data
+(aimatrx.com, allgreenrecycling.com, titaniumsuccess.com, datadestruction.com).
+`arman@armansadeghi.com` sees only the three client sites it created. Per the security
+philosophy this is the over-tightening defect class: the owner blocked from his own data.
+**Decision needed (Arman):** which of your accounts should be members of which orgs —
+memberships are one INSERT each once ruled. Also: the "deleted or no longer accessible"
+message conflates deleted with RLS-invisible; consider splitting the wording so an access
+gap stops masquerading as data loss (this one cost two review round-trips). Review items
+2ecba5c0/b60b6c75 were repointed at datadestruction.com (visible to admin@admin.com) and
+resubmitted.
+
+### D134 — agx_list_scoped org-grant branch: nondeterministic access_level (2026-08-08)
+
+The shared-scope org-grant branch in `public.agx_list_scoped` uses
+`SELECT DISTINCT ON (a.id) …` with **no ORDER BY**, so when an agent carries
+grants to two of the caller's orgs at different levels, which
+`permission_level` the row reports is planner-dependent (can flip between
+loads). Cosmetic today (the level is display-only in the list), but any future
+consumer branching on `access_level` inherits a heisenbug. Fix: wrap the
+branch in a subquery with `ORDER BY a.id, permission_level` — the transcripts
+twin already does this (`migrations/trx_list_scoped.sql`, org_shared
+subquery); port the same shape into `agx_list_scoped` and re-apply live.
+
 ### D131 — Component tables still outside the COMPONENT-ACCESS membrane + two stale entity_types rows (2026-08-08)
 
 The precedent sweep regenerated 96 component tables onto `iam.apply_rls`'s membrane, but these `is_component` tables carry BESPOKE policy families whose extra lanes (public_read, curator, grant_read, read-only runtime) the component variant would drop, so they were deliberately not clobbered — each needs its own canonicalization pass onto the membrane (db-canonicalize-table): `files.analysis/entities/overrides/page_annotations/pages`, `docproc.processed_document_pages`, `transcripts.studio_documents/studio_recording_segments/studio_session_settings`, `workbench.udt_dataset_fields/udt_dataset_rows/udt_structured_list_items`, `pdf.redaction_mapping`, `workflow.node_data_slot`, `legal.wc_impairment_definition`, `runtime.global_execution*/work_item` (their std_select still calls `iam.has_access` per row). Also found: `platform.entity_types` rows `component_group` (`public.component_groups`) and `field_component` (`public.field_components`) point at tables that no longer exist (delete or repoint the registry rows), and `agent.card` is a VIEW flagged `is_component` (no RLS possible — fine, but the flag is misleading).

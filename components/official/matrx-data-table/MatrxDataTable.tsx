@@ -726,7 +726,11 @@ export function MatrxDataTable<T>({
                         ? String(col.accessorKey)
                         : columnId(col);
                       const display = renderCell(displayRow, col, index);
-                      const editable = Boolean(editEnabled && col.editable);
+                      const editable = Boolean(
+                        editEnabled &&
+                          col.editable &&
+                          (col.editableIf?.(row) ?? true),
+                      );
                       const dirty = Boolean(rowEdits && field in rowEdits);
                       const cellHref = col.href?.(row) ?? undefined;
                       return (

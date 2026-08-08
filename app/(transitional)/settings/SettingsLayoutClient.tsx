@@ -124,7 +124,7 @@ const settingsNavItems: SettingsNavItem[] = [
   },
   {
     title: "Templates",
-    href: "/settings/content-templates",
+    href: "/settings/message-templates",
     icon: <FileText className="h-3.5 w-3.5" />,
     IconComp: FileText,
   },

@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-08-06`
+**Last updated:** `2026-08-08`
 
 ---
 
@@ -46,6 +46,8 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 ## Data model
 
 **Tables** (Supabase, `research` schema, `rs_` prefix): `rs_topic`, `rs_keyword`, `rs_source`, `rs_content`, `rs_analysis`, `rs_synthesis`, `rs_tag`, `rs_document`, `rs_media`, `rs_template`, plus the `rs_source_keywords` **view**. Normal feature tables (RLS-gated, client writes allowed) — none are protected-resources.
+
+**Research intent (2026-08-08).** `research.research_intent` is a fixed reference catalog (17 rows, `is_active`/`position` ordered) of what a topic is trying to produce — `key`, `label`, `primary_objective`, `keyword_guidance`, quota-package defaults (`default_keyword_count`, `min_keyword_count`, `max_keyword_count`), `retrieval_mode`, `authority_weight`, `include_youtube_default`. A topic optionally points at one via `rs_topic.intent_key` (nullable FK; NULL = legacy, treated as `topic_deep_dive`); `rs_topic.intent_brief` is the composed statement injected into every research agent's prompt for that topic. **`intent_key`/`intent_brief` are NEVER written directly to Supabase from the client.** The one writer is aidream `POST /research/topics/{id}/intent` (`{intent_key, apply_quotas?, user_ask?}` → `{intent_key, quota_updates}`), which composes the brief AND applies the intent's quota package — a direct column write would leave the brief stale and quotas untouched. Client surface: `service.ts#getResearchIntents` / `service/server.ts#getResearchIntentsServer` (read-only reference reads), `useResearchApi().setTopicIntent` (the writer), `components/settings/IntentSection.tsx` (the picker, above the quota ladder in `TopicSettingsForm`, confirm-gated since it resets quotas), `components/shared/IntentBadge.tsx` (quiet chip next to the topic title in the topic layout header, renders nothing when unset).
 
 **The junction tables are GONE.** `rs_keyword_source` and `rs_source_tag` no longer exist — source⇄keyword and source⇄tag are canonical `platform.associations` edges (`research_source → research_keyword` / `research_source → research_tag`), with the per-keyword search rank carried on the edge's `position`. `research.rs_source_keywords` is a **view** over that join and is the only place the old shape survives. Anything reading these relationships joins `platform.associations` (see `migrations/research_overview_readiness_ledger.sql` for the canonical predicate) — never a junction table.
 
@@ -286,6 +288,45 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-08 — **Research intent surfaced.** New `research.research_intent`
+  catalog + `rs_topic.intent_key`/`intent_brief` (server-composed, written
+  only through `POST /research/topics/{id}/intent`). Added
+  `service.ts#getResearchIntents` / `service/server.ts#getResearchIntentsServer`,
+  `useResearchApi().setTopicIntent`, `components/settings/IntentSection.tsx`
+  (picker above the quota ladder in `TopicSettingsForm`, confirm-gated
+  because applying an intent resets quotas to its package) and
+  `components/shared/IntentBadge.tsx` (muted chip next to the topic title in
+  `app/(core)/research/topics/[topicId]/layout.tsx`). Also surfaced the
+  already-live but invisible `rs_topic.videos_per_keyword` quota column in
+  `QuotaSettingsSection`/`TopicQuotaFields`.
+- 2026-08-08 — **Per-keyword goals (the focused lens) shipped end-to-end.**
+  `rs_keyword.goal` + `rs_analysis.keyword_id` live (migration
+  `research_keyword_goal_and_analysis_lens.sql`). Server: the goal rides
+  inside the existing `topic` context variable via `get_keyword_context`
+  (aidream `research/service.py`) — effective immediately with no
+  prompt-version churn; a keyword WITH a goal gets its own per-lens analyses
+  (dedup key is now `(source_id, keyword_id)`; lens runs never overwrite the
+  source's topic-level `page_analysis`/verdict), goal-less keywords keep the
+  8-for-1 shared topic-level analysis; keyword synthesis prefers its own
+  lens rows and never sees another keyword's; the keyword-update path
+  finally tells the Updater what topic/keyword/goal it is updating. FE:
+  `ResearchKeyword.goal`, `addKeywords(..., goalsByKeyword)`,
+  `updateKeywordGoal` (direct write), KeywordManager captures a goal on add
+  and shows/edits it inline on every row. Open: goal capture in the creation
+  wizard (`ResearchInitForm`) and a Suggest-agent prompt version emitting
+  `keyword_goals` (plumbing tolerates both).
+- 2026-08-08 — **Video sources are legible on the GENERIC surfaces.** New
+  `getYouTubeVideoIdentities` (direct Supabase read of the compact
+  `research.youtube_video` identity slice, keyed by video id parsed from
+  `rs_source.url` via the canonical `lib/media/youtube.ts` parser) +
+  `useYouTubeVideoIndex` (one batched read per list) +
+  `components/shared/VideoSourceMeta.tsx` (channel · duration · views ·
+  subscriber reach + honest processing chip — live status vocabulary is
+  `unprocessed | processing | partial | completed | failed`). Wired into
+  `SourceList` (desktop row + mobile card + library-thumbnail fallback),
+  `SourceResultsTable` (keyword home + `/content`), and `SourceDetail`
+  (inline `youtube-nocookie` player replaces the static thumbnail, plus
+  Channel/Video/Processing meta rows linking to the topic YouTube library).
 - 2026-08-06 — Final decoupling acceptance repair: every creation-wizard
   `ProTextarea` disables text statistics, and template `${name}` keyword tokens
   resolve before the keywords are persisted.

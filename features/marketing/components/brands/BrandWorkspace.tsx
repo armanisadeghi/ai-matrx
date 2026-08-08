@@ -40,6 +40,7 @@ import { BrandAssetEditorDialog } from "@/features/marketing/components/brands/B
 import { BusinessFactEditorDialog } from "@/features/marketing/components/brands/BusinessFactEditorDialog";
 import { PropertyEditorDialog } from "@/features/marketing/components/brands/PropertyEditorDialog";
 import { SiteEditorDialog } from "@/features/marketing/components/sites/SiteEditorDialog";
+import { GscPortfolioClassBar } from "@/features/marketing/search-console/components/ambassador/GscPortfolioClassBar";
 import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
@@ -719,6 +720,18 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
               </Button>
             </div>
           </section>
+
+          {/* The brand is the anchor entity, but it carried no search data at
+              all — every number lived one or two routes down on an individual
+              site. This is the brand-level answer to "is our money traffic up
+              or down", rolled across every site the brand owns. */}
+          {websiteSites.length > 0 ? (
+            <GscPortfolioClassBar
+              siteIds={websiteSites.map((site) => site.id)}
+              totalSites={websiteSites.length}
+              title={`Search performance across ${current.name}`}
+            />
+          ) : null}
 
           <SectionCard
             title="Websites"

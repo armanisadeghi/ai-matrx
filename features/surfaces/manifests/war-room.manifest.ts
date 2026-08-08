@@ -6,8 +6,13 @@
  * whole room. Like the thread surface it is a real chat (parents to
  * `matrx-user/chat` via the `ui_surface` row) with dictionary support.
  *
- * The room agent ID is hardcoded here (matching the `transcripts-cleanup`
- * pattern) — it mirrors `WAR_ROOM_ROOM_AGENT_ID` in `features/war-room/constants`.
+ * AGENT ID vs AGENT SLOT: the room agent's runtime default is the
+ * `war_room.room` AGENT SLOT (`WAR_ROOM_ROOM_AGENT_SLOT` in
+ * `features/war-room/constants`) — that is what the War Room actually runs.
+ * A manifest is STATIC module-scope data seeded into `ui_surface_agent_role`,
+ * so it cannot resolve a slot; the id below is a SEED MIRROR of the slot's
+ * system default, not a second authority. Repinning the slot does not require
+ * touching it, and nothing in War Room reads it at run time.
  *
  * Runtime scope assembly lives in `features/war-room/lib/war-room-scope.ts`
  * (`buildWarRoomRoomScope`); the emitter is the `<SurfaceRuntimeProvider>` in
@@ -22,7 +27,7 @@ import type {
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
-// = WAR_ROOM_ROOM_AGENT_ID (features/war-room/constants.ts)
+// Seed mirror of the `war_room.room` slot's system default (see the header).
 const WAR_ROOM_ROOM_AGENT_ID = "7239e128-2a07-4d68-8292-0f530be6f754";
 
 const groups: SurfaceValueGroup[] = [

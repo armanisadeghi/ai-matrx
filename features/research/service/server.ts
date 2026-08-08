@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
-import type { ResearchTopic, ResearchProgress } from '../types';
+import type { ResearchTopic, ResearchProgress, ResearchIntent } from '../types';
 import { rowToResearchTopic, researchProgressFromJson } from '../types';
 
 export async function getTopicServer(topicId: string): Promise<ResearchTopic | null> {
@@ -24,4 +24,17 @@ export async function getTopicOverviewServer(topicId: string): Promise<ResearchP
     if (error) throw error;
     // Boundary parse — accepts legacy `project_syntheses` keys (PHASE-4 COMPAT).
     return researchProgressFromJson(data);
+}
+
+/** The fixed research-intent catalog, active only — SSR twin of `service.ts::getResearchIntents`. */
+export async function getResearchIntentsServer(): Promise<ResearchIntent[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .schema('research')
+        .from('research_intent')
+        .select('*')
+        .eq('is_active', true)
+        .order('position', { ascending: true });
+    if (error) throw error;
+    return data ?? [];
 }

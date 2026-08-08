@@ -6,8 +6,8 @@ import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 /**
  * Resolves `scope` + `scopeId` from a JSON request body into the four row-level
  * scope foreign keys (`user_id`, `organization_id`, `project_id`, `task_id`)
- * used across the agent-shortcuts / shortcut-categories / content-blocks
- * tables.
+ * used across the agent-shortcuts / shortcut-categories tables. (Content
+ * blocks moved to skill.render_definition, written directly via supabase-js.)
  *
  * The authenticated `userId` is used for `scope === "user"` so the client never
  * needs to send it (and can't spoof it). For scoped inserts (organization /

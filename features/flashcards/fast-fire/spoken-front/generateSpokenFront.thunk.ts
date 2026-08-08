@@ -20,10 +20,11 @@ import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-syst
 import { selectRenderBlocksByType } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { selectLatestRequestId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { fcService } from "@/features/flashcards/data/fcService";
+import { resolveAgentSlot } from "@/features/agents/slots/service";
 import { pickSpokenFrontVariables } from "./variations";
 
 /** Permanent id of the "Generate custom speech" agent (Google Gemini TTS). */
-export const SPOKEN_FRONT_TTS_AGENT_ID = "04f69dff-a258-4791-a44e-b7b87f346b9d";
+export const SPOKEN_FRONT_TTS_SLOT = "flashcards.spoken_front_tts";
 
 /**
  * Read-only: how many of a set's cards already have a CACHED spoken front (a
@@ -113,11 +114,13 @@ export function generateSpokenFront(
     getState: () => RootState,
   ): Promise<string | null> => {
     const vars = pickSpokenFrontVariables(card.id, card.front, index, total);
+    // The TTS agent is a slot — resolution is loud, never a hardcoded id.
+    const { agentId } = await resolveAgentSlot(SPOKEN_FRONT_TTS_SLOT);
     let conversationId: string | null = null;
     try {
       const launch = await dispatch(
         launchAgentExecution({
-          agentId: SPOKEN_FRONT_TTS_AGENT_ID,
+          agentId,
           surfaceKey: `fastfire-tts-${card.id}`,
           // Persisted like the other Fast Fire runs; a distinct system
           // source_feature keeps it out of the user's normal chats.

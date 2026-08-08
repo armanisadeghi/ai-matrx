@@ -110,7 +110,6 @@ export type EntityTypeToken =
   | "content_ir_kind_example"
   | "content_ir_kind_instance"
   | "content_ir_kind_surface"
-  | "content_template"
   | "context_item"
   | "context_item_suggestion"
   | "conversation"
@@ -190,6 +189,7 @@ export type EntityTypeToken =
   | "learn_doc"
   | "membership"
   | "message"
+  | "message_template"
   | "microservice_project"
   | "ner_shadow"
   | "note"
@@ -394,7 +394,6 @@ export type ReferencePickableEntityToken =
   | "content_block"
   | "content_ir_kind"
   | "content_ir_kind_instance"
-  | "content_template"
   | "context_item"
   | "conversation"
   | "crm_campaign"
@@ -415,6 +414,7 @@ export type ReferencePickableEntityToken =
   | "heatmap_save"
   | "league_membership"
   | "learn_doc"
+  | "message_template"
   | "note"
   | "note_folder"
   | "organization"
@@ -657,7 +657,6 @@ export type ScopeableEntityToken =
   | "content_ir_kind_example"
   | "content_ir_kind_instance"
   | "content_ir_kind_surface"
-  | "content_template"
   | "context_item"
   | "context_item_suggestion"
   | "conversation"
@@ -720,6 +719,7 @@ export type ScopeableEntityToken =
   | "learn_doc"
   | "membership"
   | "message"
+  | "message_template"
   | "microservice_project"
   | "ner_shadow"
   | "note"
@@ -996,7 +996,6 @@ export const ENTITY_TYPE_METADATA = {
   "content_ir_kind_example": { token: "content_ir_kind_example", schema: "content_ir", table: "kind_example", label: "Kind Example", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "content_ir_kind_instance": { token: "content_ir_kind_instance", schema: "content_ir", table: "kind_instance", label: "Kind Instance", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "content_ir_kind_surface": { token: "content_ir_kind_surface", schema: "content_ir", table: "kind_surface", label: "Kind Surface", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "content_template": { token: "content_template", schema: "public", table: "content_template", label: "Content Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: "utility", referenceCategory: null },
   "context_item": { token: "context_item", schema: "context", table: "context_items", label: "Context Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "display_name", contentRole: null, referenceCategory: null },
   "context_item_suggestion": { token: "context_item_suggestion", schema: "rag", table: "context_item_suggestions", label: "Context Item Suggestion", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "conversation": { token: "conversation", schema: "chat", table: "conversation", label: "Conversation", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Outputs", referencePickable: true, titleColumn: "title", contentRole: "destination", referenceCategory: null },
@@ -1076,6 +1075,7 @@ export const ENTITY_TYPE_METADATA = {
   "learn_doc": { token: "learn_doc", schema: "education", table: "learn_doc", label: "Study Guide", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "membership": { token: "membership", schema: "iam", table: "memberships", label: "Membership", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "message": { token: "message", schema: "chat", table: "message", label: "Message", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "message_template": { token: "message_template", schema: "public", table: "message_template", label: "Message Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: "utility", referenceCategory: null },
   "microservice_project": { token: "microservice_project", schema: "public", table: "microservice_project", label: "Microservice Project", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "ner_shadow": { token: "ner_shadow", schema: "rag", table: "ner_canonicalizer_shadow", label: "NER Shadow", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "note": { token: "note", schema: "workbench", table: "notes", label: "Note", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Sources & Outputs", referencePickable: true, titleColumn: "label", contentRole: "hybrid", referenceCategory: null },
@@ -1321,7 +1321,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "content_ir_kind_example",
   "content_ir_kind_instance",
   "content_ir_kind_surface",
-  "content_template",
   "context_item",
   "context_item_suggestion",
   "conversation",
@@ -1401,6 +1400,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "learn_doc",
   "membership",
   "message",
+  "message_template",
   "microservice_project",
   "ner_shadow",
   "note",

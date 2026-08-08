@@ -10,6 +10,14 @@
 // The component resolver is `content_ir.kind_component` (SHAPE_SYSTEM R1);
 // `skill.render_definition` below is the markdown-atom palette only.
 
+import type { Database } from "@/types/database.types";
+
+export type RenderDefinitionVisibility =
+  Database["platform"]["Enums"]["visibility"];
+
+/** `skill.render_definition.block_type` — how the template renders. */
+export type RenderDefinitionBlockType = "render_kind" | "xml" | "markdown";
+
 export interface SklRenderDefinition {
   id: string;
   blockId: string;
@@ -19,6 +27,8 @@ export interface SklRenderDefinition {
   template: string;
   categoryId: string | null;
   skillId: string | null;
+  blockType: RenderDefinitionBlockType;
+  visibility: RenderDefinitionVisibility;
   isActive: boolean;
   isPublic: boolean;
   sortOrder: number;

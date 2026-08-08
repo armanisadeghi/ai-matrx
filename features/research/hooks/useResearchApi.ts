@@ -20,6 +20,8 @@ import type {
   AddLinksToScope,
   ExtensionContentSubmit,
   VerdictRequest,
+  IntentApplyRequest,
+  IntentApplyResponse,
 } from "../types";
 
 /**
@@ -102,6 +104,23 @@ export function useResearchApi() {
         body?: AutoConsolidatePassRequest,
         signal?: AbortSignal,
       ) => api.post(endpoints(topicId).autoConsolidate, body ?? {}, signal),
+
+      // --- Research intent ---
+
+      /**
+       * THE writer for `rs_topic.intent_key`/`intent_brief` — composes the
+       * intent brief injected into every research agent's prompt and (by
+       * default) applies the intent's quota package. Never write
+       * `intent_key` directly to Supabase; that leaves the brief stale and
+       * quotas untouched.
+       */
+      setTopicIntent: async (
+        topicId: string,
+        body: IntentApplyRequest,
+      ): Promise<IntentApplyResponse> => {
+        const res = await api.post(endpoints(topicId).intent, body);
+        return (await res.json()) as IntentApplyResponse;
+      },
 
       // --- Cross-cutting tags ---
 

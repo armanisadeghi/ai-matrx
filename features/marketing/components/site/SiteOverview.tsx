@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
+import { GscClassBar } from "@/features/marketing/search-console/components/ambassador/GscClassBar";
 import {
   Activity,
   ArrowRight,
@@ -239,6 +240,11 @@ export function SiteOverview() {
 
   const metrics = overview.data;
   const statuses = siteConnectionStatuses(site);
+  // One source for "is GSC usable here" — the KPI cell and the traffic-class
+  // strip must never disagree about whether this site has Search Console.
+  const gscConnected = statuses.some(
+    (status) => status.key === "search_console" && status.state === "connected",
+  );
   const init = parseInitialization(site);
   const initBusy = initPhase === "connecting" || initPhase === "running";
 
@@ -541,12 +547,18 @@ export function SiteOverview() {
               metrics={metrics}
               pendingDiscovered={pendingDiscovered.data ?? 0}
               sitePath={sitePath}
-              gscConnected={statuses.some(
-                (status) =>
-                  status.key === "search_console" &&
-                  status.state === "connected",
-              )}
+              gscConnected={gscConnected}
             />
+
+            {/* Canvas doctrine rung 2/6: the KPI grid above counts PAGES in
+                Google. What the site actually EARNS decomposes by traffic
+                class — a "+25%" hiding money −3% is the failure the class
+                system exists to catch, so it belongs on the overview, not
+                one route away. Renders only when GSC is bound; the strip
+                self-labels its window and states its own empty case. */}
+            {gscConnected ? (
+              <GscClassBar siteId={site.id} siteName={site.name} />
+            ) : null}
 
             <div className="grid gap-3.5 sm:gap-4 lg:grid-cols-2">
               <AttentionCard

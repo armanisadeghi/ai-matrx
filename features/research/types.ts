@@ -39,6 +39,11 @@ export type TopicUpdate = {
   max_documents?: number | null;
   max_tag_consolidations?: number | null;
   max_auto_tag_calls?: number | null;
+  /**
+   * Videos to capture (transcribe) per keyword — separate budget from page
+   * scrapes (`rs_topic.videos_per_keyword`, int 0-25, default 2).
+   */
+  videos_per_keyword?: number | null;
   // Per-topic agent overrides — JSONB map of role_key → user agent UUID.
   // See features/research/admin/types.ts:AGENT_CONFIG_KEYS for valid keys.
   agent_config?: Record<string, string> | null;
@@ -285,6 +290,8 @@ export interface TopicQuotaFields {
   max_documents: number;
   max_tag_consolidations: number;
   max_auto_tag_calls: number;
+  /** Videos to capture (transcribe) per keyword — a budget separate from page scrapes. */
+  videos_per_keyword: number;
 }
 
 /** Per-phase cost line item — mirrors backend `CostBreakdownItem`. */
@@ -508,6 +515,13 @@ export interface ResearchKeyword {
   id: string;
   topic_id: string;
   keyword: string;
+  /**
+   * The FOCUSED LENS: one user sentence saying what THIS search is for
+   * ("information about the partner, not the firm"). Threaded by the server
+   * into every agent prompt that touches the keyword; keywords with a goal
+   * get their own per-lens rs_analysis rows. null = topic-level lens.
+   */
+  goal: string | null;
   /**
    * 1-indexed priority order within a topic. Position 1 = highest priority.
    * The server MUST search/scrape keywords in ascending position order, and
@@ -1069,6 +1083,33 @@ export interface ResearchDocument {
   version: number | null;
   created_at: string | null;
   is_current: boolean;
+}
+
+/**
+ * Reference row from `research.research_intent` — the fixed catalog (17 rows)
+ * of research intents a topic can be pointed at. Read-only from the client;
+ * a topic's `intent_key`/`intent_brief` are written ONLY through
+ * `POST /research/topics/{id}/intent` (see `useResearchApi().setTopicIntent`),
+ * never a direct Supabase write — that endpoint is what composes
+ * `intent_brief` and applies the intent's quota package.
+ */
+export type ResearchIntent =
+  Database["research"]["Tables"]["research_intent"]["Row"];
+
+/** Body for `POST /research/topics/{id}/intent`. */
+export interface IntentApplyRequest {
+  intent_key: string;
+  /** Apply the intent's quota package (keyword/scrape/video/synthesis caps) on top of the write. Defaults true server-side. */
+  apply_quotas?: boolean;
+  /** Optional free-text context folded into the composed `intent_brief`. */
+  user_ask?: string | null;
+}
+
+/** Response from `POST /research/topics/{id}/intent`. */
+export interface IntentApplyResponse {
+  intent_key: string;
+  /** The quota fields the server changed to match the intent's package, or null when `apply_quotas` was false. */
+  quota_updates: Partial<TopicQuotaFields> | null;
 }
 
 export interface ResearchTemplate {

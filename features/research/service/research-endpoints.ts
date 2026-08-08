@@ -27,6 +27,7 @@ export const RESEARCH_ENDPOINTS = {
     rankAuthority: `${BASE}/topics/${topicId}/sources/rank-authority`,
     autoTag: `${BASE}/topics/${topicId}/auto-tag`,
     autoConsolidate: `${BASE}/topics/${topicId}/auto-consolidate`,
+    intent: `${BASE}/topics/${topicId}/intent`,
     generateTagSuggestions: `${BASE}/topics/${topicId}/generate-tag-suggestions`,
     applyTagSuggestions: `${BASE}/topics/${topicId}/apply-tag-suggestions`,
     tagInputExport: `${BASE}/topics/${topicId}/tag-input-export`,

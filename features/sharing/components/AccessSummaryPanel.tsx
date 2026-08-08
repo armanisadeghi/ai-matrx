@@ -26,6 +26,12 @@ export interface AccessSummaryPanelProps {
   entityId: string | null;
   /** Load only when the surface is actually visible. */
   enabled?: boolean;
+  /**
+   * Change this value to force a refetch. Required on surfaces that mutate
+   * grants beside the panel (a Share tab) — pass a signature of the grant
+   * state so the summary can never contradict the list next to it.
+   */
+  refreshToken?: unknown;
   className?: string;
 }
 
@@ -33,12 +39,14 @@ export function AccessSummaryPanel({
   entityType,
   entityId,
   enabled = true,
+  refreshToken,
   className,
 }: AccessSummaryPanelProps) {
   const { summary, loading, error, reload } = useAccessSummary({
     entityType,
     entityId,
     enabled,
+    refreshToken,
   });
 
   if (loading && !summary) {

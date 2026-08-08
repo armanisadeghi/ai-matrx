@@ -22,18 +22,11 @@ import {
   duplicateCategory,
   type DuplicateCategoryInput,
 } from "@/features/agents/redux/agent-shortcut-categories/thunks";
-import {
-  createContentBlock,
-  updateContentBlock,
-  deleteContentBlock,
-} from "@/features/agents/redux/agent-content-blocks/thunks";
 import type { AgentScope } from "../constants";
 import type {
-  AgentContentBlock,
   AgentShortcut,
   AgentShortcutCategory,
   CategoryFormData,
-  ContentBlockFormData,
   ShortcutFormData,
 } from "../types";
 
@@ -65,12 +58,8 @@ export interface UseAgentShortcutCrudResult {
   duplicateCategory: (
     args: DuplicateCategoryInput,
   ) => Promise<AgentShortcutCategory>;
-  createContentBlock: (data: ContentBlockFormData) => Promise<string>;
-  updateContentBlock: (
-    id: string,
-    data: Partial<AgentContentBlock>,
-  ) => Promise<void>;
-  deleteContentBlock: (id: string) => Promise<void>;
+  // Content-block CRUD moved to the canonical skl thunks
+  // (features/agent-connections/redux/skl/thunks.ts).
 }
 
 function applyScopeWrapper<T extends object>(
@@ -206,29 +195,6 @@ export function useAgentShortcutCrud({
     [dispatch],
   );
 
-  const doCreateContentBlock = useCallback(
-    async (data: ContentBlockFormData) => {
-      const scoped = applyScopeWrapper(scope, scopeId, data);
-      const result = await dispatch(createContentBlock(scoped)).unwrap();
-      return (result as { id: string }).id;
-    },
-    [dispatch, scope, scopeId],
-  );
-
-  const doUpdateContentBlock = useCallback(
-    async (id: string, data: Partial<AgentContentBlock>) => {
-      await dispatch(updateContentBlock({ id, ...data })).unwrap();
-    },
-    [dispatch],
-  );
-
-  const doDeleteContentBlock = useCallback(
-    async (id: string) => {
-      await dispatch(deleteContentBlock(id)).unwrap();
-    },
-    [dispatch],
-  );
-
   return {
     createShortcut: doCreateShortcut,
     updateShortcut: doUpdateShortcut,
@@ -241,8 +207,5 @@ export function useAgentShortcutCrud({
     updateCategory: doUpdateCategory,
     deleteCategory: doDeleteCategory,
     duplicateCategory: doDuplicateCategory,
-    createContentBlock: doCreateContentBlock,
-    updateContentBlock: doUpdateContentBlock,
-    deleteContentBlock: doDeleteContentBlock,
   };
 }

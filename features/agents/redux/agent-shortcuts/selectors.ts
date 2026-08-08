@@ -493,25 +493,13 @@ export {
   selectOrgCategories,
 } from "../agent-shortcut-categories/selectors";
 
+// Content blocks are canonical `skill.render_definition` rows served by the
+// skl slice; these names read through the compatibility layer.
 export {
-  selectAllContentBlocksMap,
   selectAllContentBlocksArray,
-  selectContentBlockById,
-  selectContentBlockDefinition,
-  selectContentBlockIsDirty,
-  selectContentBlockIsLoading,
-  selectContentBlockError,
   selectContentBlocksByScope,
   selectContentBlocksByScopeRef,
-  selectContentBlocksByCategoryId,
-  selectContentBlockIdsByScopeMap,
-  selectContentBlocksStatus,
-  selectContentBlocksError,
-  selectContentBlockScopeLoadedMap,
-  selectIsContentBlockScopeLoaded,
-  selectActiveContentBlockId,
   selectActiveContentBlocks,
-  selectContentBlocksGroupedByCategory,
-} from "../agent-content-blocks/selectors";
+} from "@/features/agent-connections/redux/skl/content-block-compat";
 
 export type { CategoryTree } from "../agent-shortcut-categories/selectors";
