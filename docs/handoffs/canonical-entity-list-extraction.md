@@ -1,10 +1,10 @@
 # Handoff — the shared entity-list system
 
-**Live:** `/agents/all` in production (v0.4.157). It is the proving ground for
-a reusable list shell that every feature will adopt.
-**Read first:** [`features/agents/browse/FEATURE.md`](../../features/agents/browse/FEATURE.md)
-· [`lib/list-scope/FEATURE.md`](../../lib/list-scope/FEATURE.md)
-· [`lib/list-views/FEATURE.md`](../../lib/list-views/FEATURE.md)
+**Live:** `/agents/all` (production) and `/transcripts` (this branch) both run
+on the extracted shell at **`lib/entity-list/`** — read its `FEATURE.md` first,
+then [`lib/list-scope/FEATURE.md`](../../lib/list-scope/FEATURE.md) (scope
+vocabulary + RPC template) and
+[`lib/list-views/FEATURE.md`](../../lib/list-views/FEATURE.md) (style prefs).
 
 ---
 
@@ -12,161 +12,98 @@ a reusable list shell that every feature will adopt.
 
 When this list moved to server-side paging, its search was rewritten as a flat
 SQL `ILIKE OR` with **no ranking**, ordered by `updated_at`. A passing mention
-in a description scored the same as a name match, so searching "image" returned
-ten unrelated agents before any image-generation agent. Arman hit it first and
-hardest, and it was a platform-wide complaint.
+in a description scored the same as a name match. The scorer already existed
+(`features/agents/search/score.ts` — *"One implementation, every surface"*),
+had been found and cited — and then not ported.
 
-The scorer already existed: `features/agents/search/score.ts`, whose header
-says *"One implementation, every surface. Never fork this function."* It had
-been found during research, cited in the notes — and then not ported.
-
-**The lesson, which applies to every remaining step:** when moving something to
-a new layer, PORT the proven implementation first and improve it second. Do not
-re-derive it. Others' work is already encoded in those weights and tiers.
-Search, filtering, ordering, permissions, and file handling all have existing
-canonical implementations in this repo. Find them before writing SQL.
-
-Fixed in `migrations/agx_search_score.sql`; parity now guarded (§4).
-
----
+**The lesson:** when moving something to a new layer, PORT the proven
+implementation first and improve it second. Fixed in
+`migrations/agx_search_score.sql`; transcripts got `trx_search_score` (same
+tiers) built in from day one; parity guarded (§3).
 
 ## 1. Ratified decisions — do not re-litigate
 
 | Decision | Ruling |
 |---|---|
-| Extraction shape | **Config-driven shell + escape hatches.** One `<EntityListPage config={...} />`; a feature supplies RPC names, a column registry, and an action-registry builder. Render props for genuinely bespoke parts. |
-| Second consumer | **`/transcripts`** — chosen as the hard test, not the easy win. |
-| Scope vocabulary | **Fixed five**: mine · my orgs · shared · industry · public. A surface declares which subset applies; it may not invent a sixth. |
-| Industry semantics | Opt-in both ends: curators publish in (`iam.industry_curators`); an org must *attach* the industry (`iam.org_industries`) to read out. Records attach by **grant row**, per `rag.data_store_grants.industry_id`. Never an `industry_id` column, never a `platform.associations` edge. |
-| Per-feature RPCs | **Hand-written from a documented template**, not generated. Template + six invariants in `lib/list-scope/FEATURE.md`. |
-| Column policy | **Every column sorts AND filters, server-side. No exceptions.** Finite value sets get real options with counts; dates get relative buckets. Sorting is on the DB column, never the rendered cell. |
-| Default columns | Name, Description, Category, Tags, Favorite, Version, Updated. Others available in the picker. |
-| Default sort | Favorites first, then most recently updated. Relevance overrides both while searching. |
-| Page size | 25. |
-| "Coming soon" | A tracked promise, not a placeholder — `lib/coming-soon/registry.ts`. Growing the list is encouraged; leaving one untracked is not. |
+| Extraction shape | Config-driven shell + escape hatches: `<EntityListPage config={...} />`; render props for bespoke parts |
+| Scope vocabulary | Fixed five: mine · my orgs · shared · industry · public. A surface declares its subset, never a sixth |
+| Industry semantics | Opt-in both ends (`iam.industry_curators` publish / `iam.org_industries` attach); records attach by grant row, never a column or association edge |
+| Per-feature RPCs | Hand-written from the template in `lib/list-scope/FEATURE.md`, not generated |
+| Column policy | Every column sorts AND filters, server-side, no exceptions; finite sets get options with counts; dates + numerics get buckets |
+| Heterogeneous rows | ONE row type with a `kind` column (proven on transcripts); never special-cased inside the shell |
+| Default sort / page size | Favorites first, most recent; relevance overrides while searching. 25/page |
 
-## 2. What is DONE and live
+## 2. DONE (compressed)
 
-- **`/agents/all`** — the new list. Old gallery at `/agents/classic` behind a
-  dismissible notice; `/agents/browse` redirects.
-- **Scopes** Mine / My Orgs (+ per-org dropdown) / Shared / Public, with true
-  server counts. My Orgs surfaced agents that were previously invisible
-  platform-wide (org-internal agents made by teammates).
-- **Table** — every column sorts + filters server-side; column picker; inline
-  edit of Name / Description / Category / Tags with a Save pill; full-row click;
-  vertical kebab carrying every record action.
-- **Cards** and a rebuilt **compact list**.
-- **Relevance search** with TS↔SQL parity (§4).
-- **Step 1 of the extraction** — types lifted to `lib/entity-list/types.ts` and
-  scopes to `lib/list-scope/types.ts`.
+- **Steps 1–5:** shell extracted to `lib/entity-list/` (config contract, query
+  hook, all components); `/agents/all` re-pointed and behaviourally identical;
+  old browse components + `useAgentBrowse` deleted; CRM consumes
+  `EntityScopeTabs`. Latent Rename-does-nothing bug fixed (TextInputDialog).
+- **Step 6 — `/transcripts`:** `trx_list_scoped` / `trx_list_scope_counts` /
+  `trx_list_facets` (applied live + ledgered, `migrations/trx_list_scoped.sql`)
+  UNION the five hub shapes into one `kind`-typed row list, scoped
+  mine/orgs/shared/public with relevance-first search. New
+  `features/transcripts/browse/` consumer; the sectioned hub stack is deleted
+  (`TranscriptsHubTable` 817 lines, cards/sections, grouping/sort/filter
+  utils, `transcriptsHubService`, hub types, one of the four legacy
+  `localStorage` view blocks).
 
-## 3. What exists and must NOT be rebuilt
+## 3. Parity contracts (break these and users notice, not CI)
 
-| Path | What it is |
-|---|---|
-| `migrations/agx_list_scoped_v3_all_columns.sql` | The worked RPC set: `agx_list_scoped`, `agx_list_scope_counts`, `agx_list_facets`, `agx_since_bucket` |
-| `migrations/agx_search_score.sql` | Relevance scorer + the ORDER BY wiring |
-| `lib/entity-list/types.ts` | Generic query/filter/facet/count types |
-| `lib/list-scope/` | The five-scope vocabulary + helpers |
-| `lib/list-views/` | `useListViewPrefs` + shape `version` backfill |
-| `lib/coming-soon/` | Tracked-promise registry |
-| `components/official/scroll-fade/` | The "there is more below" cue |
-| `components/official/filter-panel/parts.tsx` | `FilterSection`, `RadioSelect`, `FacetChips` |
-| `components/official/item/` | `ItemMenuConfig` + trailing `badge` |
-| `components/official/matrx-data-table/` | Canonical table; now carries the `"tags"` cell-edit type |
-
-## 4. Parity contracts (break these and users notice, not CI)
-
-**Search scorer.** `features/agents/search/score.ts` ↔ `public.agx_search_score`.
-Server paging forces two implementations because ranking must happen before
-`LIMIT`. **Change one, change the other in the same commit.**
-- One fixture: `features/agents/search/__fixtures__/search-score-parity.json`
+**Search scorer.** `features/agents/search/score.ts` ↔ `public.agx_search_score`
+↔ `public.trx_search_score` (same tiers). Change one, change the others in the
+same commit.
+- Fixture: `features/agents/search/__fixtures__/search-score-parity.json`
 - TS: `npx jest features/agents/search/score.parity.test.ts --no-coverage`
-- SQL: run `scripts/search-parity/check-search-score-parity.sql` — every row
-  must read `MATCH`.
+- SQL: `scripts/search-parity/check-search-score-parity.sql` — every row `MATCH`
 
-**Prefs shape.** Bump `SURFACE_DEFAULTS.version` in the same change that adds or
-removes a column, or existing users keep their old `hiddenColumns` forever and
-every new column arrives switched ON for them.
+**Prefs shape.** Bump the config's `prefsVersion` in the same change that adds
+or removes a column.
 
-## 5. The extraction — remaining steps
+## 4. Open items
 
-**Step 1 is DONE.** Steps 2–6 remain.
-
-2. **Lift the hooks.** `useAgentBrowse` → `useEntityList(config)`; the only
-   agent-specific parts are the three RPC names. `useAgentRowActions` stays
-   per-feature (it IS the feature's behaviour) but becomes the config's
-   `actions` slot.
-3. **Lift the components** with behaviour unchanged: `BrowseScopeTabs`,
-   `BrowseToolbar`, `BrowseFilterPanel`, `ColumnPicker`, table, cards, rows.
-4. **Define the config type** — the real design work. Sketch:
-   `{ surfaceKey, rpc: { list, counts, facets }, scopes, columns, actions,
-   card?, emptyState, newHref }`.
-5. **Re-point `/agents/all` at the shell.** It must come out behaviourally
-   identical — that is the proof the config is sufficient.
-6. **Then `/transcripts`.**
-
-## 6. What `/transcripts` will break (expect these)
-
-- **Heterogeneous rows.** `transcript | session | cleanup | recording |
-  unsorted` are five shapes in one list; agents is one. Either the config gains
-  a discriminated row kind, or transcripts collapses to one row type with a
-  `kind` column. **Do not** special-case it inside the shell.
-- **Tree / nested rows.** `MatrxDataTable` has no hierarchy concept and the
-  bespoke transcripts table does. This is the one place where extending the
-  canonical table is likely correct rather than bending transcripts.
-- **Five source tables, not one RPC.** `transcriptsHubService.ts` runs four
-  queries plus two enrichment calls. A `transcripts_list_scoped` RPC that UNIONs
-  them is the honest move, and it is most of the work.
-- **Relevance.** Transcripts needs its own scorer tier list. Look for an
-  existing one before writing it (§0).
-
-Deleting `TranscriptsHubTable.tsx` (780 lines) is part of the job, not a bonus.
-
-## 7. Open items
-
-- **`components/official/ListScopeSwitcher.tsx`** — still the old chip-per-org
-  shape, knows nothing about Industry/Public, **and reads org names from
-  `selectAllOrgs`, so it carries the same latent empty-dropdown bug** that was
-  just fixed in `BrowseScopeTabs` (org names now come from the counts RPC). It
-  should absorb `BrowseScopeTabs` rather than diverge further.
-- **Industry scope is documented but unwired** — no feature has an industry
-  grant table yet. The first one that needs it builds it per
-  `lib/list-scope/FEATURE.md`.
-- **Pre-hydration view flash** — prefs hydrate after first paint, so a
-  cards-preferring user sees the table for a beat. Needs an SSR-readable
-  preference, not a `localStorage` shortcut.
-- **Four hand-rolled `localStorage` view-state blocks** remain unmigrated onto
-  `useListViewPrefs`: `ProjectsHub`, `TranscriptsListPage`, `TaskListPane`,
+- **`pnpm db-types` was not runnable in the build session** (no
+  `SUPABASE_ACCESS_TOKEN`); the `trx_*` signatures in
+  `types/database.types.ts` were hand-added in generator format. Next
+  `pnpm db-types` run converges — run it once from a credentialed machine.
+- **Nested/tree rows** (session → recordings) were dropped with the hub's
+  bespoke table. If wanted back, extend `MatrxDataTable` with a hierarchy
+  concept — the one place extending the canonical table is likely correct.
+- **Transcripts row actions are read-only** (open/copy). Delete / move-to-
+  session / detach actions belong in the `useTranscriptRowActions` menu.
+- **`components/official/ListScopeSwitcher.tsx`** — old chip-per-org shape;
+  remaining consumer: `TranscriptsSidebar`. Should absorb `EntityScopeTabs`.
+- **Industry scope documented but unwired** — first feature that needs it
+  builds the grant table per `lib/list-scope/FEATURE.md`.
+- **Pre-hydration view flash** — prefs hydrate after first paint; needs an
+  SSR-readable preference.
+- **Three hand-rolled `localStorage` view blocks** left to migrate onto
+  `useListViewPrefs`: `ProjectsHub`, `TaskListPane`,
   `app/(core)/documents/page.tsx`.
-- Multi-select + bulk actions; column ORDER and width are not user-controlled.
+- Multi-select + bulk actions; user-controlled column order/width.
 - **`/agents/classic` + `ClassicViewNotice` + the
-  `display.agentsClassicNoticeDismissed` preference are scheduled for deletion
-  ~mid-Aug 2026.** Delete all three together.
+  `display.agentsClassicNoticeDismissed` preference — delete all three
+  together ~mid-Aug 2026.**
+- **Next consumers:** CRM list page (already half-way — uses `EntityScopeTabs`
+  + its own hook) and every `(core)` feature entry list.
 
-## 8. Verification recipes
+## 5. Verification recipes
 
 ```bash
-pnpm type-check                                              # must be 0 errors
+pnpm type-check                                              # 0 errors
 npx jest features/agents/search/score.parity.test.ts --no-coverage
-pnpm check:migrations                                        # ledger vs files
+pnpm check:migrations
 ```
-Browser: `http://localhost:3001/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/agents/all`
-
-Live DB checks (Supabase MCP, project `txzxabzwovsujtloxrus`) — set the JWT
-claim first, then:
+Live DB (Supabase MCP, project `txzxabzwovsujtloxrus`), after setting the JWT
+claim to a real user:
 ```sql
-select name from public.agx_list_scoped('mine',null,'image',false,'updated','desc',
-  true,'active','{}'::jsonb,10,0);   -- name matches must come first
-select * from public.agx_list_scope_counts();  -- tab totals + org labels
+select kind, count(*) from public.trx_list_scoped('mine',null,null,false,'updated','desc','{}'::jsonb,200,0) group by kind;
+select * from public.trx_list_scope_counts();   -- tab totals + org labels
 ```
 
-## 9. Working notes
+## 6. Working notes
 
-- **Concurrent sessions edit this repo constantly.** Stage explicit paths, never
-  `git add -A` — one round of this work was swept into another session's commit.
-- The dev server dies often; `preview_start {name:"next-dev"}` on port 3001.
-- `TEMP_SKIP_RELEASE_CHECKS=true` is set in the environment, so `release.sh`
-  skips gates. Run `pnpm type-check` and `pnpm check:migrations` yourself.
-- Migrations: apply via Supabase MCP, then record in `public._schema_migrations`
-  (`duration_ms` is NOT NULL), then `pnpm db-types`.
+- Concurrent sessions edit this repo constantly — stage explicit paths, never
+  `git add -A`.
+- Migrations: apply via Supabase MCP, then record in
+  `public._schema_migrations` (`duration_ms` NOT NULL), then `pnpm db-types`.
