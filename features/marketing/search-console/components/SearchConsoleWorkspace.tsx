@@ -18,7 +18,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
 import { describeBackendFailure } from "@/lib/api/errors";
-import { History, Loader2, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { Compass, History, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
@@ -27,6 +28,7 @@ import {
   formatGscDate,
   formatGscWindow,
 } from "@/features/marketing/search-console/lib/format";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import {
@@ -744,19 +746,36 @@ export function SearchConsoleWorkspace() {
                     : "Bind this site to a Search Console property (site → Integrations) after connecting Google in Data Connections, then sync."}
                 </p>
                 {gscBound ? (
-                  <Button
-                    size="sm"
-                    className="h-7 gap-1 text-xs"
-                    onClick={() => void runSync()}
-                    disabled={syncing}
-                  >
-                    {syncing ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-3 w-3" />
-                    )}
-                    Sync now
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      className="h-7 gap-1 text-xs"
+                      onClick={() => void runSync()}
+                      disabled={syncing}
+                    >
+                      {syncing ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3 w-3" />
+                      )}
+                      Sync now
+                    </Button>
+                    {site ? (
+                      <Button
+                        asChild
+                        size="sm"
+                        variant="outline"
+                        className="h-7 gap-1 text-xs"
+                      >
+                        <Link
+                          href={`${marketingRoutes.site(site.brand_id, site.id)}/intake`}
+                        >
+                          <Compass className="h-3 w-3" />
+                          Start intake interview
+                        </Link>
+                      </Button>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             ) : state.tab === "overview" ? (

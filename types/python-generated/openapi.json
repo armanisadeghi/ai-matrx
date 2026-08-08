@@ -11117,6 +11117,108 @@
         }
       }
     },
+    "/seo/sites/{site_id}/intake/run": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Site Intake Run",
+        "description": "Run the Site Intake interview for one GSC-bound site as a DURABLE\nstreamed command: builds the four-period bundle from the gsc_perf RPCs,\nruns the ``seo.site_intake`` slot agent, persists the proposal (run row +\n``gsc_site_intake_proposal`` kind_instance), and surfaces the agent cost.\nRejoin via ``POST /seo/collections/{run_id}/rejoin``.",
+        "operationId": "site_intake_run_seo_sites__site_id__intake_run_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteIntakeRunBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/intake/apply": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Site Intake Apply",
+        "description": "Persist the user's confirmed intake rulings through the EXISTING\nwriters: keyword rulings → ``seo.site_keyword_value`` (the same rows the\nclassification-review UI edits), brand aliases →\n``web.brand.profile.brand_aliases`` (the deterministic brand rung), and\nthe solidified narrative → the Site Strategy Interviewer →\n``seo.site_topic_value`` (P8 inheritance). Streams stage events and ends\nwith ``seo.intake_apply_completed``.",
+        "operationId": "site_intake_apply_seo_sites__site_id__intake_apply_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteIntakeApplyBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/pages/analyze": {
       "post": {
         "tags": [
@@ -17986,6 +18088,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -28335,6 +28497,58 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EdgesTop"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-slots/{slot_key}/test": {
+      "post": {
+        "tags": [
+          "Agent Slots Admin"
+        ],
+        "summary": "Test Slot",
+        "operationId": "test_slot_agent_slots__slot_key__test_post",
+        "parameters": [
+          {
+            "name": "slot_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slot Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SlotTestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotTestResult"
                 }
               }
             }
@@ -66381,6 +66595,61 @@
         "type": "object",
         "title": "DetectorRunInfo"
       },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
+      },
       "DiagSpawnDetachedResponse": {
         "properties": {
           "ok": {
@@ -76355,6 +76624,61 @@
         },
         "type": "object",
         "title": "InsertPagesRequest"
+      },
+      "IntakeAnswer": {
+        "properties": {
+          "question_id": {
+            "type": "string",
+            "title": "Question Id"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question",
+            "default": ""
+          },
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question_id",
+          "answer"
+        ],
+        "title": "IntakeAnswer"
+      },
+      "IntakeKeywordRuling": {
+        "properties": {
+          "phrase": {
+            "type": "string",
+            "title": "Phrase"
+          },
+          "ruling": {
+            "type": "string",
+            "enum": [
+              "money",
+              "educational",
+              "brand",
+              "mismatch"
+            ],
+            "title": "Ruling"
+          },
+          "reasoning": {
+            "type": "string",
+            "title": "Reasoning",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "phrase",
+          "ruling"
+        ],
+        "title": "IntakeKeywordRuling",
+        "description": "One keyword-specific ruling (the degausser moment). Persists as the\nexplicit human-override rung the class resolver reads VERBATIM at top\nprecedence — ``seo.site_keyword_value.traffic_class`` — with the worded\ncase in ``notes``. The SAME columns the manual classification-review UI\nedits; never a parallel store."
       },
       "IntersectingImageOut": {
         "properties": {
@@ -98621,6 +98945,133 @@
         ],
         "title": "SiteCredentialRequest"
       },
+      "SiteIntakeApplyBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "confirmed_summary": {
+            "type": "string",
+            "title": "Confirmed Summary",
+            "default": ""
+          },
+          "answers": {
+            "items": {
+              "$ref": "#/components/schemas/IntakeAnswer"
+            },
+            "type": "array",
+            "title": "Answers"
+          },
+          "keyword_rulings": {
+            "items": {
+              "$ref": "#/components/schemas/IntakeKeywordRuling"
+            },
+            "type": "array",
+            "title": "Keyword Rulings"
+          },
+          "brand_aliases_add": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Brand Aliases Add"
+          },
+          "run_topic_valuation": {
+            "type": "boolean",
+            "title": "Run Topic Valuation",
+            "default": true
+          },
+          "intake_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intake Run Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SiteIntakeApplyBody"
+      },
+      "SiteIntakeRunBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SiteIntakeRunBody"
+      },
       "SitePatchRequest": {
         "properties": {
           "display_name": {
@@ -99607,6 +100058,174 @@
         "type": "object",
         "title": "SlideSpec",
         "description": "One slide of a generated presentation."
+      },
+      "SlotCandidate": {
+        "properties": {
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "agent_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Version Id"
+          },
+          "config_overrides": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Overrides"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SlotCandidate",
+        "description": "What to test. All fields optional — an empty candidate re-runs the\nslot's CURRENT resolved default (a baseline refresh)."
+      },
+      "SlotTestRequest": {
+        "properties": {
+          "exemplar_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exemplar Id"
+          },
+          "variables": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variables"
+          },
+          "user_input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Input"
+          },
+          "candidate": {
+            "$ref": "#/components/schemas/SlotCandidate",
+            "default": {}
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SlotTestRequest"
+      },
+      "SlotTestResult": {
+        "properties": {
+          "slot_key": {
+            "type": "string",
+            "title": "Slot Key"
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "is_version": {
+            "type": "boolean",
+            "title": "Is Version"
+          },
+          "provenance": {
+            "type": "string",
+            "title": "Provenance"
+          },
+          "output": {
+            "type": "string",
+            "title": "Output",
+            "default": ""
+          },
+          "artifact": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact"
+          },
+          "structural": {
+            "$ref": "#/components/schemas/StructuralVerdict"
+          },
+          "usage": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Usage"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "title": "Duration Ms",
+            "default": 0
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slot_key",
+          "agent_id",
+          "is_version",
+          "provenance",
+          "structural"
+        ],
+        "title": "SlotTestResult"
       },
       "SnapBboxBody": {
         "properties": {
@@ -101075,6 +101694,66 @@
         },
         "type": "object",
         "title": "StripRepeatedRegionsRequest"
+      },
+      "StructuralVerdict": {
+        "properties": {
+          "checked": {
+            "type": "boolean",
+            "title": "Checked"
+          },
+          "ok": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ok"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
+          },
+          "missing_required_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Required Keys"
+          },
+          "degraded_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Degraded Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "checked"
+        ],
+        "title": "StructuralVerdict"
       },
       "StructuredDataBlockReport": {
         "properties": {

@@ -4381,6 +4381,56 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sites/{site_id}/intake/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Site Intake Run
+         * @description Run the Site Intake interview for one GSC-bound site as a DURABLE
+         *     streamed command: builds the four-period bundle from the gsc_perf RPCs,
+         *     runs the ``seo.site_intake`` slot agent, persists the proposal (run row +
+         *     ``gsc_site_intake_proposal`` kind_instance), and surfaces the agent cost.
+         *     Rejoin via ``POST /seo/collections/{run_id}/rejoin``.
+         */
+        post: operations["site_intake_run_seo_sites__site_id__intake_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/intake/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Site Intake Apply
+         * @description Persist the user's confirmed intake rulings through the EXISTING
+         *     writers: keyword rulings → ``seo.site_keyword_value`` (the same rows the
+         *     classification-review UI edits), brand aliases →
+         *     ``web.brand.profile.brand_aliases`` (the deterministic brand rung), and
+         *     the solidified narrative → the Site Strategy Interviewer →
+         *     ``seo.site_topic_value`` (P8 inheritance). Streams stage events and ends
+         *     with ``seo.intake_apply_completed``.
+         */
+        post: operations["site_intake_apply_seo_sites__site_id__intake_apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/pages/analyze": {
         parameters: {
             query?: never;
@@ -6825,6 +6875,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10411,6 +10485,23 @@ export interface paths {
         get: operations["top_edges_kg_inspector_edges_top_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-slots/{slot_key}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Slot */
+        post: operations["test_slot_agent_slots__slot_key__test_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -23965,6 +24056,33 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
+        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -27692,6 +27810,40 @@ export interface components {
              * @default false
              */
             join_duplicates?: boolean;
+        };
+        /** IntakeAnswer */
+        IntakeAnswer: {
+            /** Question Id */
+            question_id: string;
+            /**
+             * Question
+             * @default
+             */
+            question?: string;
+            /** Answer */
+            answer: string;
+        };
+        /**
+         * IntakeKeywordRuling
+         * @description One keyword-specific ruling (the degausser moment). Persists as the
+         *     explicit human-override rung the class resolver reads VERBATIM at top
+         *     precedence — ``seo.site_keyword_value.traffic_class`` — with the worded
+         *     case in ``notes``. The SAME columns the manual classification-review UI
+         *     edits; never a parallel store.
+         */
+        IntakeKeywordRuling: {
+            /** Phrase */
+            phrase: string;
+            /**
+             * Ruling
+             * @enum {string}
+             */
+            ruling: "money" | "educational" | "brand" | "mismatch";
+            /**
+             * Reasoning
+             * @default
+             */
+            reasoning?: string;
         };
         /** IntersectingImageOut */
         IntersectingImageOut: {
@@ -35858,6 +36010,47 @@ export interface components {
             /** Gsc Site Url */
             gsc_site_url?: string | null;
         };
+        /** SiteIntakeApplyBody */
+        SiteIntakeApplyBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * Confirmed Summary
+             * @default
+             */
+            confirmed_summary?: string;
+            /** Answers */
+            answers?: components["schemas"]["IntakeAnswer"][];
+            /** Keyword Rulings */
+            keyword_rulings?: components["schemas"]["IntakeKeywordRuling"][];
+            /** Brand Aliases Add */
+            brand_aliases_add?: string[];
+            /**
+             * Run Topic Valuation
+             * @default true
+             */
+            run_topic_valuation?: boolean;
+            /** Intake Run Id */
+            intake_run_id?: string | null;
+        };
+        /** SiteIntakeRunBody */
+        SiteIntakeRunBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+        };
         /** SitePatchRequest */
         SitePatchRequest: {
             /** Display Name */
@@ -36186,6 +36379,68 @@ export interface components {
              * @enum {string}
              */
             layout?: "title" | "title_content" | "section" | "blank";
+        };
+        /**
+         * SlotCandidate
+         * @description What to test. All fields optional — an empty candidate re-runs the
+         *     slot's CURRENT resolved default (a baseline refresh).
+         */
+        SlotCandidate: {
+            /** Agent Id */
+            agent_id?: string | null;
+            /** Agent Version Id */
+            agent_version_id?: string | null;
+            /** Config Overrides */
+            config_overrides?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** SlotTestRequest */
+        SlotTestRequest: {
+            /** Exemplar Id */
+            exemplar_id?: string | null;
+            /** Variables */
+            variables?: {
+                [key: string]: unknown;
+            } | null;
+            /** User Input */
+            user_input?: string | null;
+            /** @default {} */
+            candidate?: components["schemas"]["SlotCandidate"];
+        };
+        /** SlotTestResult */
+        SlotTestResult: {
+            /** Slot Key */
+            slot_key: string;
+            /** Agent Id */
+            agent_id: string;
+            /** Is Version */
+            is_version: boolean;
+            /** Provenance */
+            provenance: string;
+            /**
+             * Output
+             * @default
+             */
+            output?: string;
+            /** Artifact */
+            artifact?: {
+                [key: string]: unknown;
+            } | null;
+            structural: components["schemas"]["StructuralVerdict"];
+            /** Usage */
+            usage?: {
+                [key: string]: unknown;
+            };
+            /** Model Id */
+            model_id?: string | null;
+            /**
+             * Duration Ms
+             * @default 0
+             */
+            duration_ms?: number;
+            /** Error */
+            error?: string | null;
         };
         /** SnapBboxBody */
         SnapBboxBody: {
@@ -36722,6 +36977,21 @@ export interface components {
              * @default 0.5
              */
             min_confidence?: number;
+        };
+        /** StructuralVerdict */
+        StructuralVerdict: {
+            /** Checked */
+            checked: boolean;
+            /** Ok */
+            ok?: boolean | null;
+            /** Errors */
+            errors?: string[];
+            /** Output Kind */
+            output_kind?: string | null;
+            /** Missing Required Keys */
+            missing_required_keys?: string[];
+            /** Degraded Reason */
+            degraded_reason?: string | null;
         };
         /** StructuredDataBlockReport */
         StructuredDataBlockReport: {
@@ -48945,6 +49215,76 @@ export interface operations {
             };
         };
     };
+    site_intake_run_seo_sites__site_id__intake_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SiteIntakeRunBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    site_intake_apply_seo_sites__site_id__intake_apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SiteIntakeApplyBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     analyze_page_route_seo_pages_analyze_post: {
         parameters: {
             query?: never;
@@ -53343,6 +53683,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -60202,6 +60577,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EdgesTop"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_slot_agent_slots__slot_key__test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slot_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SlotTestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlotTestResult"];
                 };
             };
             /** @description Validation Error */

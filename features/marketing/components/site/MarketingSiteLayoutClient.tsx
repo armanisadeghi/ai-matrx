@@ -8,6 +8,7 @@ import {
   BadgeCheck,
   CircleDollarSign,
   ClipboardCheck,
+  Compass,
   ExternalLink,
   FileText,
   Gauge,
@@ -250,6 +251,11 @@ export function MarketingSiteLayoutClient({
             name: "Keywords",
             href: `${base}/keywords`,
             icon: KeyRound,
+          },
+          {
+            name: "Intake",
+            href: `${base}/intake`,
+            icon: Compass,
           },
           {
             name: "Ranks",

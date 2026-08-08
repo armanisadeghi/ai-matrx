@@ -55,6 +55,8 @@ import {
 } from "@/features/marketing/data/integrations-service";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { syncGsc } from "@/features/marketing/crawler/direct-client";
+import { syncGscSearchPerformance } from "@/features/marketing/search-console/sync";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   BackendFailureDetails,
   formatCompactDate,
@@ -135,6 +137,7 @@ export function SiteIntegrationsWorkspace() {
 function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
+  const dispatch = useAppDispatch();
   const googleInventory = useGoogleConnectionInventory();
   const connectGoogle = useConnectGoogle();
   const google = useGoogleAPI();
@@ -212,6 +215,35 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
     setDraft(parseSiteIntegrations(updatedSite.integrations));
     void queryClient.invalidateQueries({ queryKey: marketingKeys.root });
     toast.success(successTitle, { description: successDescription });
+    if (provider === "googleSearchConsole") kickGscFirstImport(next);
+  };
+
+  /**
+   * ON-BIND AUTO-IMPORT: the moment a Search Console binding is first
+   * created, kick the FULL history import (backfill walks to Google's
+   * ~16-month horizon) plus a forward sync — Google deletes history past 16
+   * months, so every day not fetched at bind time is eventually lost
+   * forever. Fire-and-forget: the server detaches on disconnect and the
+   * dashboard/wizard narrate progress from server state.
+   */
+  const kickGscFirstImport = (next: ProviderIntegrationDraft) => {
+    const configured = Boolean(
+      next.enabled && next.credentialRef && next.resourceRef,
+    );
+    if (!configured || site.gsc_synced_at) return;
+    void syncGscSearchPerformance(dispatch, site.id, site.organization_id, {
+      mode: "backfill",
+    }).catch(() => undefined);
+    void syncGscSearchPerformance(
+      dispatch,
+      site.id,
+      site.organization_id,
+      {},
+    ).catch(() => undefined);
+    toast.success("Search Console history import started", {
+      description:
+        "The full ~16-month import is running server-side. Open the Intake tab to run the site interview while it fills in.",
+    });
   };
 
   const startGoogleConnection = async (
@@ -297,7 +329,17 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
           expectedVersion: site.version,
           integrations: buildSiteIntegrations(site.integrations, draft),
         },
-        { onSuccess: () => toast.success("Site integrations saved.") },
+        {
+          onSuccess: () => {
+            toast.success("Site integrations saved.");
+            const before = providerReferenceStatus(
+              initial.googleSearchConsole,
+              true,
+            );
+            if (before !== "reference_configured")
+              kickGscFirstImport(draft.googleSearchConsole);
+          },
+        },
       );
     } catch (error) {
       toast.error(
