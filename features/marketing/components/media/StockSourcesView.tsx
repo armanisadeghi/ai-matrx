@@ -17,7 +17,7 @@
  *     `photos.trackDownload` guideline event.
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Basic as UnsplashBasicPhoto } from "unsplash-js/dist/methods/photos/types";
 import {
   ExternalLink,
@@ -256,6 +256,12 @@ export function StockSourcesView({
 
   const [query, setQuery] = useState("");
   const [orientation, setOrientation] = useState<StockOrientation>("any");
+  /** The committed search the current grid belongs to — Load more pages THIS,
+   * not the live input, so editing the query can never mix result sets. */
+  const [active, setActive] = useState<{
+    q: string;
+    orientation: StockOrientation;
+  } | null>(null);
   const [photos, setPhotos] = useState<UnsplashBasicPhoto[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -263,9 +269,16 @@ export function StockSourcesView({
   const [searched, setSearched] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  /** photo.id → uploaded cld_files id. A retry after a failed asset insert
+   * reuses the already-ingested file instead of uploading a duplicate. */
+  const uploadedFileIds = useRef(new Map<string, string>());
 
   const runSearch = async (nextPage: number) => {
-    const q = query.trim();
+    const isNewSearch = nextPage === 1;
+    const q = isNewSearch ? query.trim() : (active?.q ?? "");
+    const effectiveOrientation = isNewSearch
+      ? orientation
+      : (active?.orientation ?? "any");
     if (!q || searching) return;
     setSearching(true);
     try {
@@ -273,20 +286,27 @@ export function StockSourcesView({
         query: q,
         page: nextPage,
         perPage: STOCK_PAGE_SIZE,
-        ...(orientation !== "any" ? { orientation } : {}),
+        ...(effectiveOrientation !== "any"
+          ? { orientation: effectiveOrientation }
+          : {}),
       });
       if (result.type !== "success") {
+        // The grid keeps showing the last COMMITTED search (still labeled by
+        // `active`) — the toast is the failure signal.
         toast.error("Stock search failed", {
           description: result.errors.join("; "),
         });
         return;
       }
       setPhotos((prev) =>
-        nextPage === 1 ? result.response.results : [...prev, ...result.response.results],
+        isNewSearch
+          ? result.response.results
+          : [...prev, ...result.response.results],
       );
       setPage(nextPage);
       setTotalPages(result.response.total_pages);
       setSearched(true);
+      if (isNewSearch) setActive({ q, orientation: effectiveOrientation });
     } finally {
       setSearching(false);
     }
@@ -312,23 +332,26 @@ export function StockSourcesView({
           }
         });
 
-      let fileId: string | null = null;
+      let fileId: string | null = uploadedFileIds.current.get(photo.id) ?? null;
       try {
-        const uploaded = await upload(
-          { kind: "external_url", url: photo.urls.full },
-          {
-            folderPath: "Images/Brand Library/Stock",
-            fileName: `unsplash-${photo.id}.jpg`,
-            metadata: {
-              stockSource: "unsplash",
-              stockSourceId: photo.id,
-              stockPageUrl: photo.links.html,
-              photographerName: photo.user?.name ?? null,
-              photographerUrl: photo.user?.links?.html ?? null,
+        if (!fileId) {
+          const uploaded = await upload(
+            { kind: "external_url", url: photo.urls.full },
+            {
+              folderPath: "Images/Brand Library/Stock",
+              fileName: `unsplash-${photo.id}.jpg`,
+              metadata: {
+                stockSource: "unsplash",
+                stockSourceId: photo.id,
+                stockPageUrl: photo.links.html,
+                photographerName: photo.user?.name ?? null,
+                photographerUrl: photo.user?.links?.html ?? null,
+              },
             },
-          },
-        );
-        fileId = uploaded.fileId;
+          );
+          fileId = uploaded.fileId;
+          if (fileId) uploadedFileIds.current.set(photo.id, fileId);
+        }
       } catch (uploadError) {
         // Byte ingest failed (network/CORS) — fall back to the permanent
         // Unsplash CDN URL. Public, non-expiring, still a legitimate ref.
