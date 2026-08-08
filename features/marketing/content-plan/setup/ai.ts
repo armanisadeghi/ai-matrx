@@ -31,6 +31,8 @@ import {
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 
+import type { MarketingSite } from "@/features/marketing/types";
+
 import type { PlanNodeRow } from "../types";
 import type { Archetype, ExpandedArchetype } from "./archetypes";
 import type { CommittedArchetype } from "./service";
@@ -588,6 +590,22 @@ export function buildArchetypeOptionsJson(
       };
     }),
   );
+}
+
+/**
+ * The Shape Planner's `site_context` variable — what we actually KNOW about
+ * the site, from its own row. This used to be passed as an empty string,
+ * which silently threw away the name/description a user had already written.
+ */
+export function buildSiteContext(site: MarketingSite): string {
+  const parts = [
+    `Site: ${site.name} (${site.domain})`,
+    site.root_url && site.root_url !== site.domain
+      ? `Root URL: ${site.root_url}`
+      : null,
+    site.description?.trim() ? `Description: ${site.description.trim()}` : null,
+  ];
+  return parts.filter((part): part is string => Boolean(part)).join("\n");
 }
 
 export function buildCurrentPlanSummary(
