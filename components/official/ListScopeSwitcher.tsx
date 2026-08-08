@@ -10,8 +10,7 @@
 // IS "Mine" — surfacing it again as an org chip would duplicate the tab.
 
 import { User, Users2, Building2 } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAllOrgs } from "@/features/agent-context/redux/organizationsSlice";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { scopeKey, type ListScope } from "@/lib/list-scope/types";
 import { cn } from "@/lib/utils";
 
@@ -29,14 +28,15 @@ export function ListScopeSwitcher({
   onShared,
   className,
 }: ListScopeSwitcherProps) {
-  const orgs = useAppSelector(selectAllOrgs);
-  const nonPersonalOrgs = orgs.filter((o) => !o.is_personal);
+  const { organizations } = useUserOrganizations();
+  const nonPersonalOrgs = organizations.filter((org) => !org.isPersonal);
   const activeKey = scopeKey(value);
 
   const baseChip =
-    "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors whitespace-nowrap";
+    "inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 text-xs font-medium transition-colors whitespace-nowrap lg:min-h-8 lg:px-2.5";
   const activeChip = "bg-primary text-primary-foreground";
-  const inactiveChip = "text-muted-foreground hover:bg-muted hover:text-foreground";
+  const inactiveChip =
+    "text-muted-foreground hover:bg-muted hover:text-foreground";
 
   return (
     <div
@@ -51,7 +51,10 @@ export function ListScopeSwitcher({
         type="button"
         role="tab"
         aria-selected={activeKey === "mine"}
-        className={cn(baseChip, activeKey === "mine" ? activeChip : inactiveChip)}
+        className={cn(
+          baseChip,
+          activeKey === "mine" ? activeChip : inactiveChip,
+        )}
         onClick={() => onChange({ kind: "mine" })}
       >
         <User className="h-3.5 w-3.5" />
@@ -63,7 +66,10 @@ export function ListScopeSwitcher({
           type="button"
           role="tab"
           aria-selected={activeKey === "shared"}
-          className={cn(baseChip, activeKey === "shared" ? activeChip : inactiveChip)}
+          className={cn(
+            baseChip,
+            activeKey === "shared" ? activeChip : inactiveChip,
+          )}
           onClick={() => {
             onChange({ kind: "shared" });
             onShared();
@@ -82,7 +88,10 @@ export function ListScopeSwitcher({
             type="button"
             role="tab"
             aria-selected={activeKey === key}
-            className={cn(baseChip, activeKey === key ? activeChip : inactiveChip)}
+            className={cn(
+              baseChip,
+              activeKey === key ? activeChip : inactiveChip,
+            )}
             onClick={() => onChange({ kind: "orgs", organizationId: org.id })}
             title={org.name}
           >

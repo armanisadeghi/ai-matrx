@@ -11,6 +11,8 @@ import type {
 } from "@/features/transcripts/types/hub";
 import type { SessionRow } from "@/features/transcript-studio/service/studioService";
 import { rowToSession } from "@/features/transcript-studio/service/studioService";
+import { applyListScope } from "@/lib/list-scope/applyListScope";
+import type { ListScope } from "@/lib/list-scope/types";
 
 const transcriptsDb = () => supabase.schema("transcripts");
 
@@ -65,7 +67,6 @@ async function enrichSessionMetrics<T extends SessionHubItem | CleanupHubItem>(
     p_session_ids: ids,
   });
   if (error) {
-    // eslint-disable-next-line no-console
     console.error(`[transcripts-hub] session metrics failed: ${error.message}`);
     return items;
   }
@@ -99,21 +100,28 @@ function recordingDurationMs(
 
 export async function fetchProcessorHubPage(
   page: number,
+  scope: ListScope,
   pageSize = HUB_PAGE_SIZE,
 ): Promise<HubPageResult<ProcessorHubItem>> {
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
   const userId = requireUserId();
-  const { data, error, count } = await transcriptsDb().from("transcripts")
+  let query = transcriptsDb()
+    .from("transcripts")
     .select(
       "id, title, description, source_type, folder_name, tags, metadata, created_at, updated_at, is_draft",
       { count: "exact" },
     )
     .eq("is_deleted", false)
-    .eq("user_id", userId) // VIEW LAW: mine-scoped — processor hub is the caller's own transcripts
     .order("updated_at", { ascending: false })
     .range(from, to);
+  query = applyListScope(query, scope, {
+    userId,
+    ownerColumn: "user_id",
+    orgColumn: "organization_id",
+  });
+  const { data, error, count } = await query;
 
   if (error) {
     throw new Error(
@@ -187,7 +195,6 @@ export async function fetchRecordingHubItemsForSessions(
     .order("segment_index", { ascending: true });
 
   if (error) {
-    // eslint-disable-next-line no-console
     console.error(
       `[transcripts-hub] session recordings failed: ${error.message}`,
     );
@@ -220,21 +227,26 @@ function parentKindFromSessionSource(
  * Used when hub grouping is on so children appear even if their parent
  * session is not on the current hub page.
  */
-export async function fetchActiveRecordingHubItems(): Promise<
-  RecordingHubItem[]
-> {
-  // VIEW LAW: container-scoped via RLS — recording segments are already caller-scoped, see docblock above
-  const { data, error } = await transcriptsDb()
+export async function fetchActiveRecordingHubItems(
+  scope: ListScope,
+): Promise<RecordingHubItem[]> {
+  const userId = requireUserId();
+  let query = transcriptsDb()
     .from("studio_recording_segments")
     .select(
-      "id, session_id, segment_index, started_at, ended_at, updated_at, studio_sessions!inner(source)",
+      "id, session_id, segment_index, started_at, ended_at, updated_at, studio_sessions!inner(source, organization_id)",
     )
     .is("detached_at", null)
     .order("session_id", { ascending: true })
     .order("segment_index", { ascending: true });
+  query = applyListScope(query, scope, {
+    userId,
+    ownerColumn: "user_id",
+    orgColumn: "studio_sessions.organization_id",
+  });
+  const { data, error } = await query;
 
   if (error) {
-    // eslint-disable-next-line no-console
     console.error(
       `[transcripts-hub] active recordings failed: ${error.message}`,
     );
@@ -266,17 +278,24 @@ export async function fetchActiveRecordingHubItems(): Promise<
  */
 export async function fetchHubSessionItemsByIds(
   ids: string[],
+  scope: ListScope,
 ): Promise<Array<SessionHubItem | CleanupHubItem>> {
   if (ids.length === 0) return [];
 
-  const { data, error } = await transcriptsDb()
+  const userId = requireUserId();
+  let query = transcriptsDb()
     .from("studio_sessions")
     .select("*")
     .in("id", ids)
     .eq("is_deleted", false);
+  query = applyListScope(query, scope, {
+    userId,
+    ownerColumn: "user_id",
+    orgColumn: "organization_id",
+  });
+  const { data, error } = await query;
 
   if (error) {
-    // eslint-disable-next-line no-console
     console.error(
       `[transcripts-hub] parent session hydrate failed: ${error.message}`,
     );
@@ -293,20 +312,26 @@ export async function fetchHubSessionItemsByIds(
 
 export async function fetchSessionHubPage(
   page: number,
+  scope: ListScope,
   pageSize = HUB_PAGE_SIZE,
 ): Promise<HubPageResult<SessionHubItem>> {
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
   const userId = requireUserId();
-  const { data, error, count } = await transcriptsDb()
+  let query = transcriptsDb()
     .from("studio_sessions")
     .select("*", { count: "exact" })
     .eq("is_deleted", false)
-    .eq("user_id", userId) // VIEW LAW: mine-scoped
     .neq("source", "cleanup")
     .order("updated_at", { ascending: false })
     .range(from, to);
+  query = applyListScope(query, scope, {
+    userId,
+    ownerColumn: "user_id",
+    orgColumn: "organization_id",
+  });
+  const { data, error, count } = await query;
 
   if (error) {
     throw new Error(`[transcripts-hub] session page failed: ${error.message}`);
@@ -323,20 +348,26 @@ export async function fetchSessionHubPage(
 
 export async function fetchCleanupHubPage(
   page: number,
+  scope: ListScope,
   pageSize = HUB_PAGE_SIZE,
 ): Promise<HubPageResult<CleanupHubItem>> {
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
   const userId = requireUserId();
-  const { data, error, count } = await transcriptsDb()
+  let query = transcriptsDb()
     .from("studio_sessions")
     .select("*", { count: "exact" })
     .eq("is_deleted", false)
     .eq("source", "cleanup")
-    .eq("user_id", userId) // VIEW LAW: mine-scoped
     .order("updated_at", { ascending: false })
     .range(from, to);
+  query = applyListScope(query, scope, {
+    userId,
+    ownerColumn: "user_id",
+    orgColumn: "organization_id",
+  });
+  const { data, error, count } = await query;
 
   if (error) {
     throw new Error(`[transcripts-hub] cleanup page failed: ${error.message}`);
@@ -354,18 +385,26 @@ export async function fetchCleanupHubPage(
 export async function fetchUnsortedHubPage(
   userId: string,
   page: number,
+  scope: ListScope,
   pageSize = HUB_PAGE_SIZE,
 ): Promise<HubPageResult<UnsortedHubItem>> {
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
-  const { data, error, count } = await transcriptsDb()
+  let query = transcriptsDb()
     .from("studio_recording_segments")
-    .select("*, studio_sessions!inner(source)", { count: "exact" })
-    .eq("user_id", userId)
+    .select("*, studio_sessions!inner(source, organization_id)", {
+      count: "exact",
+    })
     .not("detached_at", "is", null)
     .order("detached_at", { ascending: false })
     .range(from, to);
+  query = applyListScope(query, scope, {
+    userId,
+    ownerColumn: "user_id",
+    orgColumn: "studio_sessions.organization_id",
+  });
+  const { data, error, count } = await query;
 
   if (error) {
     throw new Error(`[transcripts-hub] unsorted page failed: ${error.message}`);

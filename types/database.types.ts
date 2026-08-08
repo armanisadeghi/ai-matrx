@@ -51130,6 +51130,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      assert_crawl_artifact_file_reused: {
+        Args: {
+          p_file_id: string
+          p_mime_prefix: string
+          p_organization_id: string
+          p_site_id: string
+        }
+        Returns: undefined
+      }
       conform: {
         Args: {
           p_label: string

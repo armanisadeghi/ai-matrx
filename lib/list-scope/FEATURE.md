@@ -14,13 +14,13 @@ and supplies the predicate. **It may not invent a sixth.** The flexibility is
 in which subset applies, not in the vocabulary — a scope the user learns on one
 page must mean the same thing on every other page.
 
-| Scope | The question it answers | Reach |
-|---|---|---|
-| **Mine** | What did I make? | `created_by = auth.uid()` (some tables use `user_id` — check) |
-| **My Orgs** | What does my team have? | created by someone else, in a **non-personal** org I belong to, at a visibility that admits org-mates |
-| **Shared with me** | What did someone hand me? | an explicit `iam.permissions` grant (to me, or to one of my orgs) |
-| **Industry** | What does my field publish? | see below |
-| **Public** | What has the platform published? | `visibility = 'public'`, not mine |
+| Scope              | The question it answers          | Reach                                                                                                 |
+| ------------------ | -------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Mine**           | What did I make?                 | `created_by = auth.uid()` (some tables use `user_id` — check)                                         |
+| **My Orgs**        | What does my team have?          | created by someone else, in a **non-personal** org I belong to, at a visibility that admits org-mates |
+| **Shared with me** | What did someone hand me?        | an explicit `iam.permissions` grant (to me, or to one of my orgs)                                     |
+| **Industry**       | What does my field publish?      | see below                                                                                             |
+| **Public**         | What has the platform published? | `visibility = 'public'`, not mine                                                                     |
 
 `My Orgs` and `Shared with me` may overlap on the same row. That is correct —
 they answer different questions, and hiding an org row because it also carries
@@ -33,12 +33,12 @@ ends**:
 
 - **Publishing in** is restricted: the platform, or an approved curator
   (`iam.industry_curators` / `is_industry_curator(user, industry)`).
-- **Reading out** requires an org to have *attached* the industry —
+- **Reading out** requires an org to have _attached_ the industry —
   `iam.org_industries`, written by `industry_assign_org`. Once attached, the
   corpus is instantly available to every member of that org.
 
-So the predicate is: *the record is granted to industry I, AND one of my orgs
-has attached I.* It is `My Orgs` with one more hop, not a new kind of thing.
+So the predicate is: _the record is granted to industry I, AND one of my orgs
+has attached I._ It is `My Orgs` with one more hop, not a new kind of thing.
 
 **Records attach to an industry by GRANT ROW**, following the precedent already
 in the DB (`rag.data_store_grants.industry_id`): a record can be granted to N
@@ -69,10 +69,10 @@ On `/agents/all` that slice was empty, so the My Orgs dropdown silently never
 rendered for anyone. A tab bar must be self-sufficient from its own query.
 
 > `components/official/ListScopeSwitcher.tsx` still implements the older
-> chip-per-org shape, knows nothing about Industry or Public, **and still reads
-> org names from `selectAllOrgs` — so it carries the same latent
-> empty-dropdown bug on any route that has not hydrated that slice.** The
-> worked implementation of this model is
+> chip-per-org shape and knows nothing about Industry or Public. It loads its
+> organizations through `useUserOrganizations`, so it is self-sufficient on
+> routes that have not hydrated an organization Redux slice. The worked
+> implementation of the full five-scope model is
 > `features/agents/browse/components/BrowseScopeTabs.tsx` (live at
 > `/agents/all`). ListScopeSwitcher should absorb that shape rather than the
 > two diverging further.
@@ -90,9 +90,9 @@ rendered for anyone. A tab bar must be self-sufficient from its own query.
   and throws a descriptive error for "shared" (use the feature's own
   shared-with-me fetcher instead).
 - `components/official/ListScopeSwitcher.tsx` — controlled segmented
-  control (Mine / Shared* / org chips). Reads orgs from
-  `features/agent-context/redux/organizationsSlice` and excludes the
-  personal org from chips (personal-org content already lives under Mine).
+  control (Mine / Shared* / org chips). Loads orgs through
+  `useUserOrganizations` and excludes the personal org from chips
+  (personal-org content already lives under Mine).
 
 ## Consumer rules
 
@@ -103,7 +103,7 @@ rendered for anyone. A tab bar must be self-sufficient from its own query.
    `// VIEW LAW: mine-scoped` comment.
 2. Resolve `userId` the way the surrounding service already does
    (`requireUserId()`, a passed-in param, session/store read). Never derive
-   scope from the *active org* — access must never depend on which org is
+   scope from the _active org_ — access must never depend on which org is
    currently selected (see `docs/official/db-rules.md` §6).
 3. A deliberate org-browse surface (reads across an org set by design, not
    a bug) still declares its intent — either an explicit org-scope filter,
@@ -136,6 +136,9 @@ Invariants the template carries, all of them learned the hard way:
 
 ## Change log
 
+- 2026-08-08 — `ListScopeSwitcher` now self-loads organizations through the
+  canonical organization hook instead of depending on an unrelated Redux
+  hydration path; its compact chips retain 44px touch targets below desktop.
 - 2026-07-27 — `ListScope` migrated to the five-scope union (`org` → `orgs`
   with a nullable id; adds `industry`, `public`), plus `scopeKey` / `makeScope`
   / `scopeOrgId` / `scopeIndustryId` helpers. `applyListScope` now throws with

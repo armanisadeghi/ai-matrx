@@ -21,7 +21,7 @@ export function HubToolbarToggle({
       title={title}
       aria-pressed={active}
       className={cn(
-        "h-7 w-7 rounded-md flex items-center justify-center ring-1 transition-colors",
+        "flex h-11 w-11 items-center justify-center rounded-md ring-1 transition-colors lg:h-8 lg:w-8",
         active
           ? "bg-primary text-primary-foreground ring-primary/30"
           : "text-muted-foreground ring-transparent hover:bg-muted/70 hover:text-foreground",

@@ -503,7 +503,7 @@ export function ExposureAuditClient() {
             setQuery((current) => ({ ...current, page: 1 }));
           }}
         >
-          <SelectTrigger className="h-8 w-36">
+          <SelectTrigger className="h-11 w-36 sm:h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -517,7 +517,7 @@ export function ExposureAuditClient() {
           value={exposureFilter}
           onValueChange={(value: ExposureFilter) => selectExposure(value)}
         >
-          <SelectTrigger className="h-8 w-52">
+          <SelectTrigger className="h-11 w-52 sm:h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -529,7 +529,7 @@ export function ExposureAuditClient() {
           </SelectContent>
         </Select>
 
-        <label className="ml-auto flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+        <label className="ml-auto flex min-h-11 cursor-pointer items-center gap-2 text-xs text-muted-foreground sm:min-h-8">
           <Checkbox
             checked={includeDeleted}
             onCheckedChange={(checked) => {

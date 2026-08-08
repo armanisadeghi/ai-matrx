@@ -23,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { TranscriptsHubCard } from "@/features/transcripts/components/TranscriptsHubCard";
 import {
   Popover,
   PopoverContent,
@@ -54,15 +55,63 @@ export type TranscriptsHubTableRow = TranscriptHubItem;
 type SortKey = "type" | "title" | "duration" | "words" | "updated";
 
 type UpdatedFilter =
-  | "any"
-  | "hour"
-  | "today"
-  | "week"
-  | "month"
-  | "quarter"
-  | "year";
+  "any" | "hour" | "today" | "week" | "month" | "quarter" | "year";
 
 type TypeFilter = "any" | TranscriptHubItem["kind"];
+
+type SortableColumnHeadProps = {
+  sortColumn: SortKey;
+  activeSortColumn: SortKey;
+  sortDirection: "asc" | "desc";
+  onSort: (key: SortKey) => void;
+  children: React.ReactNode;
+  className?: string;
+  align?: "left" | "right";
+  filter: React.ReactNode | null;
+};
+
+function SortableColumnHead({
+  sortColumn,
+  activeSortColumn,
+  sortDirection,
+  onSort,
+  children,
+  className,
+  align = "left",
+  filter,
+}: SortableColumnHeadProps) {
+  return (
+    <TableHead className={className}>
+      <div
+        className={cn(
+          "inline-flex items-center gap-0.5",
+          align === "right" && "w-full justify-end",
+        )}
+      >
+        <button
+          type="button"
+          onClick={() => onSort(sortColumn)}
+          className={cn(
+            "inline-flex items-center gap-1 text-xs transition-colors hover:text-foreground",
+            align === "right" && "justify-end",
+          )}
+        >
+          {children}
+          {activeSortColumn === sortColumn ? (
+            sortDirection === "asc" ? (
+              <ChevronUp className="h-3 w-3" />
+            ) : (
+              <ChevronDown className="h-3 w-3" />
+            )
+          ) : (
+            <ChevronsUpDown className="h-3 w-3 opacity-40" />
+          )}
+        </button>
+        {filter}
+      </div>
+    </TableHead>
+  );
+}
 
 type ColumnFilters = {
   type: TypeFilter;
@@ -388,27 +437,27 @@ export function TranscriptsHubTable({
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("desc");
   const [columnFilters, setColumnFilters] =
     React.useState<ColumnFilters>(EMPTY_COLUMN_FILTERS);
-  const [collapsed, setCollapsed] = React.useState<Set<string>>(new Set());
+  const [collapseState, setCollapseState] = React.useState<{
+    treeSignature: string;
+    collapsed: Set<string>;
+  }>({ treeSignature: "", collapsed: new Set() });
 
   const treeSignature = React.useMemo(() => {
     if (!tree) return "";
     return tree.map((n) => hubItemKey(n.item)).join("|");
   }, [tree]);
 
-  React.useEffect(() => {
-    if (!tree) {
-      setCollapsed(new Set());
-      return;
-    }
-    setCollapsed(collectParentKeys(tree));
-  }, [treeSignature, tree]);
+  const collapsed =
+    collapseState.treeSignature === treeSignature
+      ? collapseState.collapsed
+      : collectParentKeys(tree ?? []);
 
   const toggleCollapse = (key: string) => {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
+    setCollapseState(() => {
+      const next = new Set(collapsed);
       if (next.has(key)) next.delete(key);
       else next.add(key);
-      return next;
+      return { treeSignature, collapsed: next };
     });
   };
 
@@ -492,289 +541,277 @@ export function TranscriptsHubTable({
   };
 
   const filtersActive = hasActiveColumnFilters(columnFilters);
-
-  const ColumnHead = ({
-    k,
-    children,
-    className,
-    align = "left",
-    filter,
-  }: {
-    k: SortKey;
-    children: React.ReactNode;
-    className?: string;
-    align?: "left" | "right";
-    filter: React.ReactNode | null;
-  }) => (
-    <TableHead className={className}>
-      <div
-        className={cn(
-          "inline-flex items-center gap-0.5",
-          align === "right" && "justify-end w-full",
-        )}
-      >
-        <button
-          type="button"
-          onClick={() => toggleSort(k)}
-          className={cn(
-            "inline-flex items-center gap-1 hover:text-foreground transition-colors text-xs",
-            align === "right" && "justify-end",
-          )}
-        >
-          {children}
-          {sortKey === k ? (
-            sortDir === "asc" ? (
-              <ChevronUp className="h-3 w-3" />
-            ) : (
-              <ChevronDown className="h-3 w-3" />
-            )
-          ) : (
-            <ChevronsUpDown className="h-3 w-3 opacity-40" />
-          )}
-        </button>
-        {filter}
-      </div>
-    </TableHead>
-  );
+  const responsiveRows = tree
+    ? flattenVisibleTree(sortedTree ?? [], new Set())
+    : displayRows;
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      {filtersActive && (
-        <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/20 px-3 py-1.5">
-          <span className="text-xs text-muted-foreground">
-            Column filters active (parents only)
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs"
-            onClick={() => setColumnFilters(EMPTY_COLUMN_FILTERS)}
-          >
-            Clear all
-          </Button>
-        </div>
-      )}
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            {showTreeColumn ? (
-              <TableHead
-                className="p-0"
-                style={{ width: treeColumnWidth, minWidth: treeColumnWidth }}
-              />
-            ) : null}
-            <ColumnHead
-              k="title"
-              filter={
-                <ColumnFilterButton
-                  active={columnFilters.title.trim().length > 0}
-                  label="name"
-                >
-                  <TextColumnFilter
-                    label="Name"
-                    value={columnFilters.title}
-                    placeholder="Contains…"
-                    onChange={(title) => patchFilters({ title })}
-                  />
-                </ColumnFilterButton>
-              }
-            >
-              Name
-            </ColumnHead>
-            <ColumnHead
-              k="type"
-              className="w-28"
-              filter={
-                <ColumnFilterButton
-                  active={columnFilters.type !== "any"}
-                  label="type"
-                >
-                  <OptionColumnFilter
-                    label="Type"
-                    value={columnFilters.type}
-                    options={TYPE_FILTER_OPTIONS}
-                    onChange={(type) => patchFilters({ type })}
-                  />
-                </ColumnFilterButton>
-              }
-            >
-              Type
-            </ColumnHead>
-            <TableHead className="min-w-[160px] text-xs">Details</TableHead>
-            <ColumnHead
-              k="duration"
-              className="w-24 text-right"
-              align="right"
-              filter={null}
-            >
-              Duration
-            </ColumnHead>
-            <ColumnHead
-              k="words"
-              className="w-20 text-right"
-              align="right"
-              filter={null}
-            >
-              Words
-            </ColumnHead>
-            <ColumnHead
-              k="updated"
-              className="w-32"
-              filter={
-                <ColumnFilterButton
-                  active={columnFilters.updated !== "any"}
-                  label="updated"
-                >
-                  <OptionColumnFilter
-                    label="Updated"
-                    value={columnFilters.updated}
-                    options={UPDATED_FILTER_OPTIONS}
-                    onChange={(updated) => patchFilters({ updated })}
-                  />
-                </ColumnFilterButton>
-              }
-            >
-              Updated
-            </ColumnHead>
-            <TableHead className="w-20 text-right text-xs">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {displayRows.length === 0 ? (
-            <TableRow className="hover:bg-transparent">
-              <TableCell
-                colSpan={columnCount}
-                className="py-10 text-center text-sm text-muted-foreground"
-              >
-                No items match these filters.
-              </TableCell>
-            </TableRow>
-          ) : (
-            displayRows.map((row) => {
-              const {
-                item,
-                depth,
-                hasChildren,
-                isChild,
-                isLastChild,
-                itemKey,
-              } = row;
-              const href = primaryHubHref(item);
-              const meta = KIND_META[item.kind];
-              const details = hubItemDetails(item);
-              const isCollapsed = collapsed.has(itemKey);
-              const isExpandedParent = hasChildren && !isCollapsed;
+    <>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:hidden">
+        {responsiveRows.length === 0 ? (
+          <p className="col-span-full py-10 text-center text-sm text-muted-foreground">
+            No items match these filters.
+          </p>
+        ) : (
+          responsiveRows.map(({ item, itemKey }) => (
+            <TranscriptsHubCard key={itemKey} item={item} />
+          ))
+        )}
+      </div>
 
-              return (
-                <TableRow
-                  key={itemKey}
-                  className={cn(
-                    "cursor-pointer",
-                    isChild
-                      ? cn(
-                          "bg-muted/25 hover:bg-muted/40",
-                          isLastChild && "border-b border-border",
-                        )
-                      : "hover:bg-muted/30",
-                    isExpandedParent && "border-b-0 bg-card",
-                  )}
-                  onClick={() => {
-                    if (hasChildren) {
-                      toggleCollapse(itemKey);
-                      return;
-                    }
-                    router.push(href);
-                  }}
+      <div className="hidden overflow-hidden rounded-lg border border-border lg:block">
+        {filtersActive && (
+          <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/20 px-3 py-1.5">
+            <span className="text-xs text-muted-foreground">
+              Column filters active (parents only)
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={() => setColumnFilters(EMPTY_COLUMN_FILTERS)}
+            >
+              Clear all
+            </Button>
+          </div>
+        )}
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              {showTreeColumn ? (
+                <TableHead
+                  className="p-0"
+                  style={{ width: treeColumnWidth, minWidth: treeColumnWidth }}
+                />
+              ) : null}
+              <SortableColumnHead
+                sortColumn="title"
+                activeSortColumn={sortKey}
+                sortDirection={sortDir}
+                onSort={toggleSort}
+                filter={
+                  <ColumnFilterButton
+                    active={columnFilters.title.trim().length > 0}
+                    label="name"
+                  >
+                    <TextColumnFilter
+                      label="Name"
+                      value={columnFilters.title}
+                      placeholder="Contains…"
+                      onChange={(title) => patchFilters({ title })}
+                    />
+                  </ColumnFilterButton>
+                }
+              >
+                Name
+              </SortableColumnHead>
+              <SortableColumnHead
+                sortColumn="type"
+                activeSortColumn={sortKey}
+                sortDirection={sortDir}
+                onSort={toggleSort}
+                className="w-28"
+                filter={
+                  <ColumnFilterButton
+                    active={columnFilters.type !== "any"}
+                    label="type"
+                  >
+                    <OptionColumnFilter
+                      label="Type"
+                      value={columnFilters.type}
+                      options={TYPE_FILTER_OPTIONS}
+                      onChange={(type) => patchFilters({ type })}
+                    />
+                  </ColumnFilterButton>
+                }
+              >
+                Type
+              </SortableColumnHead>
+              <TableHead className="min-w-[160px] text-xs">Details</TableHead>
+              <SortableColumnHead
+                sortColumn="duration"
+                activeSortColumn={sortKey}
+                sortDirection={sortDir}
+                onSort={toggleSort}
+                className="w-24 text-right"
+                align="right"
+                filter={null}
+              >
+                Duration
+              </SortableColumnHead>
+              <SortableColumnHead
+                sortColumn="words"
+                activeSortColumn={sortKey}
+                sortDirection={sortDir}
+                onSort={toggleSort}
+                className="w-20 text-right"
+                align="right"
+                filter={null}
+              >
+                Words
+              </SortableColumnHead>
+              <SortableColumnHead
+                sortColumn="updated"
+                activeSortColumn={sortKey}
+                sortDirection={sortDir}
+                onSort={toggleSort}
+                className="w-32"
+                filter={
+                  <ColumnFilterButton
+                    active={columnFilters.updated !== "any"}
+                    label="updated"
+                  >
+                    <OptionColumnFilter
+                      label="Updated"
+                      value={columnFilters.updated}
+                      options={UPDATED_FILTER_OPTIONS}
+                      onChange={(updated) => patchFilters({ updated })}
+                    />
+                  </ColumnFilterButton>
+                }
+              >
+                Updated
+              </SortableColumnHead>
+              <TableHead className="w-20 text-right text-xs">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {displayRows.length === 0 ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell
+                  colSpan={columnCount}
+                  className="py-10 text-center text-sm text-muted-foreground"
                 >
-                  {showTreeColumn ? (
-                    <TableCell
-                      className="py-2 px-0 align-middle"
-                      style={{
-                        width: treeColumnWidth,
-                        minWidth: treeColumnWidth,
-                      }}
-                    >
-                      <HubTableTreeGutter
-                        depth={depth}
-                        hasChildren={hasChildren}
-                        isCollapsed={isCollapsed}
-                        isChild={isChild}
-                      />
+                  No items match these filters.
+                </TableCell>
+              </TableRow>
+            ) : (
+              displayRows.map((row) => {
+                const {
+                  item,
+                  depth,
+                  hasChildren,
+                  isChild,
+                  isLastChild,
+                  itemKey,
+                } = row;
+                const href = primaryHubHref(item);
+                const meta = KIND_META[item.kind];
+                const details = hubItemDetails(item);
+                const isCollapsed = collapsed.has(itemKey);
+                const isExpandedParent = hasChildren && !isCollapsed;
+
+                return (
+                  <TableRow
+                    key={itemKey}
+                    className={cn(
+                      "cursor-pointer",
+                      isChild
+                        ? cn(
+                            "bg-muted/25 hover:bg-muted/40",
+                            isLastChild && "border-b border-border",
+                          )
+                        : "hover:bg-muted/30",
+                      isExpandedParent && "border-b-0 bg-card",
+                    )}
+                    onClick={() => {
+                      if (hasChildren) {
+                        toggleCollapse(itemKey);
+                        return;
+                      }
+                      router.push(href);
+                    }}
+                  >
+                    {showTreeColumn ? (
+                      <TableCell
+                        className="py-2 px-0 align-middle"
+                        style={{
+                          width: treeColumnWidth,
+                          minWidth: treeColumnWidth,
+                        }}
+                      >
+                        <HubTableTreeGutter
+                          depth={depth}
+                          hasChildren={hasChildren}
+                          isCollapsed={isCollapsed}
+                          isChild={isChild}
+                        />
+                      </TableCell>
+                    ) : null}
+                    <TableCell className="py-2 max-w-[280px]">
+                      <div className="min-w-0">
+                        <span
+                          className={cn(
+                            "block text-sm truncate",
+                            hasChildren && !isChild && "font-semibold",
+                            !hasChildren && !isChild && "font-medium",
+                            isChild && "font-normal text-muted-foreground",
+                          )}
+                        >
+                          {item.title}
+                        </span>
+                        {hasChildren && isCollapsed ? (
+                          <span className="block text-[10px] text-muted-foreground/70 mt-0.5">
+                            {item.kind === "processor"
+                              ? "Contains nested sessions"
+                              : "Contains recordings"}
+                          </span>
+                        ) : null}
+                        {item.kind === "processor" && item.description ? (
+                          <span className="block text-xs text-muted-foreground truncate mt-0.5">
+                            {item.description}
+                          </span>
+                        ) : null}
+                      </div>
                     </TableCell>
-                  ) : null}
-                  <TableCell className="py-2 max-w-[280px]">
-                    <div className="min-w-0">
-                      <span
+                    <TableCell className="py-2">
+                      <Badge
+                        variant="outline"
                         className={cn(
-                          "block text-sm truncate",
-                          hasChildren && !isChild && "font-semibold",
-                          !hasChildren && !isChild && "font-medium",
-                          isChild && "font-normal text-muted-foreground",
+                          "text-[10px] font-medium uppercase tracking-wide",
+                          meta.accent,
+                          isChild && "opacity-80",
                         )}
                       >
-                        {item.title}
+                        {meta.label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="py-2 text-xs text-muted-foreground">
+                      <span className="line-clamp-2">{details || "—"}</span>
+                    </TableCell>
+                    <TableCell className="py-2 text-right text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+                      {formatHubDuration(hubItemDurationSeconds(item))}
+                    </TableCell>
+                    <TableCell className="py-2 text-right text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+                      {item.kind === "processor" && item.wordCount != null
+                        ? item.wordCount.toLocaleString()
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="py-2 text-xs text-muted-foreground whitespace-nowrap">
+                      <span title={formatAbsoluteDate(item.updatedAt)}>
+                        {formatRelativeTime(item.updatedAt, { style: "long" })}
                       </span>
-                      {hasChildren && isCollapsed ? (
-                        <span className="block text-[10px] text-muted-foreground/70 mt-0.5">
-                          {item.kind === "processor"
-                            ? "Contains nested sessions"
-                            : "Contains recordings"}
-                        </span>
-                      ) : null}
-                      {item.kind === "processor" && item.description ? (
-                        <span className="block text-xs text-muted-foreground truncate mt-0.5">
-                          {item.description}
-                        </span>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-2">
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-[10px] font-medium uppercase tracking-wide",
-                        meta.accent,
-                        isChild && "opacity-80",
-                      )}
-                    >
-                      {meta.label}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="py-2 text-xs text-muted-foreground">
-                    <span className="line-clamp-2">{details || "—"}</span>
-                  </TableCell>
-                  <TableCell className="py-2 text-right text-xs tabular-nums text-muted-foreground whitespace-nowrap">
-                    {formatHubDuration(hubItemDurationSeconds(item))}
-                  </TableCell>
-                  <TableCell className="py-2 text-right text-xs tabular-nums text-muted-foreground whitespace-nowrap">
-                    {item.kind === "processor" && item.wordCount != null
-                      ? item.wordCount.toLocaleString()
-                      : "—"}
-                  </TableCell>
-                  <TableCell className="py-2 text-xs text-muted-foreground whitespace-nowrap">
-                    <span title={formatAbsoluteDate(item.updatedAt)}>
-                      {formatRelativeTime(item.updatedAt, { style: "long" })}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-2">
-                    <div
-                      className="flex justify-end"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Button asChild size="sm" variant="ghost">
-                        <Link href={href}>
-                          <Eye className="h-3.5 w-3.5 mr-1" />
-                          Open
-                        </Link>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })
-          )}
-        </TableBody>
-      </Table>
-    </div>
+                    </TableCell>
+                    <TableCell className="py-2">
+                      <div
+                        className="flex justify-end"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Button asChild size="sm" variant="ghost">
+                          <Link href={href}>
+                            <Eye className="h-3.5 w-3.5 mr-1" />
+                            Open
+                          </Link>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 }

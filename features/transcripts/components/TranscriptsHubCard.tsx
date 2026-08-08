@@ -35,7 +35,7 @@ function CardAction({
       title={label}
       aria-label={label}
       className={cn(
-        "inline-flex h-7 flex-1 items-center justify-center gap-1 rounded text-[11px] font-medium",
+        "inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded text-[11px] font-medium lg:min-h-8",
         "text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
       )}
     >

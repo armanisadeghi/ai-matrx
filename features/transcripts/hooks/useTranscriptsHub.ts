@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type {
@@ -13,6 +13,7 @@ import {
   fetchSessionHubPage,
   fetchUnsortedHubPage,
 } from "@/features/transcripts/service/transcriptsHubService";
+import { scopeKey, type ListScope } from "@/lib/list-scope/types";
 
 type SectionState = {
   items: TranscriptHubItem[];
@@ -41,17 +42,20 @@ function initialSections(): Record<HubSectionId, SectionState> {
   };
 }
 
-export function useTranscriptsHub() {
+export function useTranscriptsHub(scope: ListScope) {
   const userId = useAppSelector(selectUserId);
+  const requestedScopeKey = scopeKey(scope);
+  const activeScopeKeyRef = useRef(requestedScopeKey);
   const [sections, setSections] =
     useState<Record<HubSectionId, SectionState>>(initialSections);
 
   const loadPage = useCallback(
     async (sectionId: HubSectionId, page: number, append: boolean) => {
+      const loadScopeKey = requestedScopeKey;
       setSections((prev) => ({
         ...prev,
         [sectionId]: {
-          ...prev[sectionId],
+          ...(append ? prev[sectionId] : EMPTY_SECTION),
           loading: true,
           error: null,
         },
@@ -61,24 +65,25 @@ export function useTranscriptsHub() {
         let result;
         switch (sectionId) {
           case "processor":
-            result = await fetchProcessorHubPage(page);
+            result = await fetchProcessorHubPage(page, scope);
             break;
           case "session":
-            result = await fetchSessionHubPage(page);
+            result = await fetchSessionHubPage(page, scope);
             break;
           case "cleanup":
-            result = await fetchCleanupHubPage(page);
+            result = await fetchCleanupHubPage(page, scope);
             break;
           case "unsorted":
             if (!userId) {
               result = { items: [], hasMore: false };
               break;
             }
-            result = await fetchUnsortedHubPage(userId, page);
+            result = await fetchUnsortedHubPage(userId, page, scope);
             break;
         }
 
         setSections((prev) => {
+          if (activeScopeKeyRef.current !== loadScopeKey) return prev;
           const prior = prev[sectionId];
           const merged = append
             ? [...prior.items, ...result.items]
@@ -98,19 +103,22 @@ export function useTranscriptsHub() {
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Failed to load items";
-        setSections((prev) => ({
-          ...prev,
-          [sectionId]: {
-            ...prev[sectionId],
-            loading: false,
-            error: message,
-            hasMore: false,
-            initialized: true,
-          },
-        }));
+        setSections((prev) => {
+          if (activeScopeKeyRef.current !== loadScopeKey) return prev;
+          return {
+            ...prev,
+            [sectionId]: {
+              ...prev[sectionId],
+              loading: false,
+              error: message,
+              hasMore: false,
+              initialized: true,
+            },
+          };
+        });
       }
     },
-    [userId],
+    [requestedScopeKey, scope, userId],
   );
 
   const loadMore = useCallback(
@@ -130,12 +138,21 @@ export function useTranscriptsHub() {
   );
 
   useEffect(() => {
+    activeScopeKeyRef.current = requestedScopeKey;
     if (!userId) return;
-    const ids: HubSectionId[] = ["processor", "session", "cleanup", "unsorted"];
-    for (const id of ids) {
-      void loadPage(id, 0, false);
-    }
-  }, [loadPage, userId]);
+    const timeoutId = window.setTimeout(() => {
+      const ids: HubSectionId[] = [
+        "processor",
+        "session",
+        "cleanup",
+        "unsorted",
+      ];
+      for (const id of ids) {
+        void loadPage(id, 0, false);
+      }
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [loadPage, requestedScopeKey, userId]);
 
   return { sections, loadMore, refreshSection };
 }

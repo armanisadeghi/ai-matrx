@@ -13,6 +13,7 @@ import type {
 } from "@/features/transcripts/types/hub";
 import { hubItemKey } from "@/features/transcripts/types/hub";
 import { buildHubTree } from "@/features/transcripts/utils/hubGrouping";
+import { scopeKey, type ListScope } from "@/lib/list-scope/types";
 
 function mergeHubItems(
   base: TranscriptHubItem[],
@@ -34,34 +35,43 @@ export function useTranscriptsHubGrouping(
   items: TranscriptHubItem[],
   groupByParent: boolean,
   sortKey: TranscriptSortKey,
+  scope: ListScope,
 ) {
-  const [recordings, setRecordings] = useState<RecordingHubItem[]>([]);
-  const [hydratedParents, setHydratedParents] = useState<TranscriptHubItem[]>(
-    [],
-  );
-  const [loadingRecordings, setLoadingRecordings] = useState(false);
+  const requestedScopeKey = scopeKey(scope);
+  const [recordingResult, setRecordingResult] = useState<{
+    scopeKey: string;
+    items: RecordingHubItem[];
+  }>({ scopeKey: "", items: [] });
+  const [parentResult, setParentResult] = useState<{
+    scopeKey: string;
+    items: TranscriptHubItem[];
+  }>({ scopeKey: "", items: [] });
+
+  const recordings =
+    groupByParent && recordingResult.scopeKey === requestedScopeKey
+      ? recordingResult.items
+      : [];
+  const hydratedParents =
+    groupByParent && parentResult.scopeKey === requestedScopeKey
+      ? parentResult.items
+      : [];
+  const loadingRecordings =
+    groupByParent && recordingResult.scopeKey !== requestedScopeKey;
 
   useEffect(() => {
-    if (!groupByParent) {
-      setRecordings([]);
-      setHydratedParents([]);
-      setLoadingRecordings(false);
-      return undefined;
-    }
+    if (!groupByParent) return undefined;
 
     let cancelled = false;
-    setLoadingRecordings(true);
 
-    void fetchActiveRecordingHubItems().then((rows) => {
+    void fetchActiveRecordingHubItems(scope).then((rows) => {
       if (cancelled) return;
-      setRecordings(rows);
-      setLoadingRecordings(false);
+      setRecordingResult({ scopeKey: requestedScopeKey, items: rows });
     });
 
     return () => {
       cancelled = true;
     };
-  }, [groupByParent]);
+  }, [groupByParent, requestedScopeKey, scope]);
 
   const missingParentIds = useMemo(() => {
     if (!groupByParent || recordings.length === 0) return [];
@@ -83,15 +93,21 @@ export function useTranscriptsHubGrouping(
     if (!groupByParent || missingParentIds.length === 0) return undefined;
 
     let cancelled = false;
-    void fetchHubSessionItemsByIds(missingParentIds).then((parents) => {
+    void fetchHubSessionItemsByIds(missingParentIds, scope).then((parents) => {
       if (cancelled) return;
-      setHydratedParents((prev) => mergeHubItems(prev, parents));
+      setParentResult((prev) => ({
+        scopeKey: requestedScopeKey,
+        items:
+          prev.scopeKey === requestedScopeKey
+            ? mergeHubItems(prev.items, parents)
+            : parents,
+      }));
     });
 
     return () => {
       cancelled = true;
     };
-  }, [groupByParent, missingParentIdsKey]);
+  }, [groupByParent, missingParentIdsKey, requestedScopeKey, scope]);
 
   const itemsWithParents = useMemo(
     () => mergeHubItems(items, hydratedParents),
