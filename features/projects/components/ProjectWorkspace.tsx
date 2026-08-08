@@ -6,8 +6,9 @@
  * Mirrors OrgWorkspace, but the container is a project. Sections:
  *   - Hero: name, org/personal + role badges, members, scope chips, stats, actions
  *   - Tasks: ProjectTaskList (grouped Open/Done, nested subtasks, quick-add)
- *   - Associated resources: catalogue resources with this project_id (role-grouped
- *     tiles → ContainerResourceSheet with peek/open)
+ *   - Associated resources: the canonical association grid (AssociationCardGrid
+ *     under a PrimaryEntityProvider) — attach/detach writes platform.associations
+ *     edges, which convey project-member access to each attached item
  *   - Scopes & Knowledge: EntityScopeTagger + knowledge-graph deep link
  *   - Advanced: ProjectReferencesPanel (every table FK-ing the project)
  *
@@ -63,14 +64,10 @@ import {
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ProjectContextPicker } from "@/features/projects/components/ProjectContextSection";
-import {
-  CONTENT_ROLES,
-  entriesByRole,
-  type OrgResourceEntry,
-} from "@/features/organizations/resource-catalogue";
-import { useContainerInventory } from "@/features/organizations/hooks/useContainerInventory";
-import { OrgResourceRoleSection } from "@/features/organizations/components/OrgResourceRoleSection";
-import { ContainerResourceSheet } from "@/features/organizations/components/ContainerResourceSheet";
+import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
+import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
+import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
+import { curatedTokens } from "@/features/scopes/registry/entityRegistry";
 import { ProjectTaskList } from "./ProjectTaskList";
 import { ProjectCopyForAiButton } from "./ProjectCopyForAiButton";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
@@ -106,10 +103,6 @@ export function ProjectWorkspace() {
     open: 0,
     done: 0,
   });
-  const [sheetEntry, setSheetEntry] = React.useState<OrgResourceEntry | null>(
-    null,
-  );
-
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -170,22 +163,25 @@ export function ProjectWorkspace() {
       setProject((prev) => (prev ? { ...prev, ...patch } : prev)),
     [],
   );
-  const { counts, loading: countsLoading } = useContainerInventory({
-    column: "project_id",
-    value: project?.id ?? null,
+  // Canonical association reads — the project's attached resources are its
+  // incoming platform.associations edges (the spine conveys project-member
+  // access down to each attached item). Tasks keep their own FK-based section.
+  const {
+    status: linksStatus,
+    countFor,
+    totalCount,
+  } = useContainerLinks({
+    containerType: "project",
+    containerId: project?.id ?? null,
+    orgId: project?.organizationId ?? null,
   });
+  const countsLoading = linksStatus === "loading" || linksStatus === "idle";
 
-  const totalResources = React.useMemo(
-    () =>
-      Object.entries(counts).reduce<number>(
-        (sum, [key, c]) =>
-          EXCLUDE_FROM_RESOURCES.has(key)
-            ? sum
-            : sum + (typeof c === "number" ? c : 0),
-        0,
-      ),
-    [counts],
+  const resourceTokens = curatedTokens().filter(
+    (t) => !EXCLUDE_FROM_RESOURCES.has(t),
   );
+
+  const totalResources = totalCount;
 
   if (resolving) {
     return (
@@ -241,9 +237,9 @@ export function ProjectWorkspace() {
   // still-loading nulls — same discipline as the on-page `totalResources` stat.
   const resourceCounts: Record<string, number> = {};
   if (!countsLoading) {
-    for (const [key, c] of Object.entries(counts)) {
-      if (EXCLUDE_FROM_RESOURCES.has(key) || typeof c !== "number") continue;
-      resourceCounts[key] = c;
+    for (const token of resourceTokens) {
+      const c = countFor(token);
+      if (c > 0) resourceCounts[token as string] = c;
     }
   }
 
@@ -438,31 +434,29 @@ export function ProjectWorkspace() {
             />
           </Card>
 
-          {/* Associated resources */}
-          <div className="space-y-5">
-            <div className="flex items-center gap-2">
-              <Boxes className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-semibold">Associated resources</h2>
-              <span className="text-xs text-muted-foreground">
-                Everything linked to this project
-              </span>
+          {/* Associated resources — the canonical association grid. Attaching
+              here writes a platform.associations edge, so project members get
+              conveyed access to each attached item (the access spine). */}
+          <PrimaryEntityProvider
+            value={{
+              type: "project",
+              id: project.id,
+              orgId: project.organizationId ?? null,
+              label: project.name,
+            }}
+          >
+            <div className="space-y-5">
+              <div className="flex items-center gap-2">
+                <Boxes className="h-5 w-5 text-muted-foreground" />
+                <h2 className="text-lg font-semibold">Associated resources</h2>
+                <span className="text-xs text-muted-foreground">
+                  Attach files, documents, data stores and more — project
+                  members get access automatically
+                </span>
+              </div>
+              <AssociationCardGrid tokens={resourceTokens} />
             </div>
-            {CONTENT_ROLES.map((r) => {
-              const entries = entriesByRole(r.id).filter(
-                (e) => !EXCLUDE_FROM_RESOURCES.has(e.key),
-              );
-              return (
-                <OrgResourceRoleSection
-                  key={r.id}
-                  role={r.id}
-                  entries={entries}
-                  counts={counts}
-                  loading={countsLoading}
-                  onOpen={(entry) => setSheetEntry(entry)}
-                />
-              );
-            })}
-          </div>
+          </PrimaryEntityProvider>
 
           {/* Scopes & Knowledge — read-only Scope Type: Scope display */}
           <Card className="p-5">
@@ -514,15 +508,6 @@ export function ProjectWorkspace() {
           </details>
         </div>
 
-        {project && (
-          <ContainerResourceSheet
-            open={sheetEntry !== null}
-            onOpenChange={(o) => !o && setSheetEntry(null)}
-            entry={sheetEntry}
-            column="project_id"
-            value={project.id}
-          />
-        )}
       </div>
     </SurfaceRuntimeProvider>
   );
