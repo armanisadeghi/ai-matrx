@@ -737,6 +737,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Agent Slots",
+        description:
+          "DB-managed system-agent pins (agent.slot_definition / slot_binding): repin, enable/disable, org/user overrides, and the exemplar test bench for candidate agents.",
+        iconName: "Plug",
+        link: "/administration/agents/slots",
+        isNew: true,
+      },
+      {
         title: "Lookups",
         description:
           "CRUD for tool-registry lookup tables: ui_client, ui_surface (basic), tool_executor. Foundation tables every other registry feature reads.",
