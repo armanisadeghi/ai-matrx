@@ -171,7 +171,7 @@ export function TranscriptsListPage() {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search transcripts, sessions, cleanup…"
-                    className="h-full min-w-0 flex-1 border-0 bg-transparent py-0 text-base text-foreground outline-none placeholder:text-muted-foreground lg:text-sm"
+                    className="min-h-11 min-w-0 flex-1 border-0 bg-transparent py-0 text-base text-foreground outline-none placeholder:text-muted-foreground lg:text-sm"
                     aria-label="Search transcripts hub"
                   />
                   <button
