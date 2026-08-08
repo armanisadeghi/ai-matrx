@@ -11,6 +11,10 @@ import type {
   BacklinkSnapshotRow,
   BacklinkTrendPoint,
 } from "@/features/marketing/data/backlinks-types";
+import {
+  parseDimensionExtras,
+  parseObservationExtras,
+} from "@/features/marketing/components/backlinks/lib/extras";
 
 export function formatCount(value: number | null | undefined): string {
   return value === null || value === undefined
@@ -28,7 +32,16 @@ export function humanBacklinkRow(row: BacklinkObservationRow): string {
   const lastSeen = row.last_seen_at
     ? ` — last seen ${row.last_seen_at.slice(0, 10)}`
     : "";
-  return `${row.source_domain ?? row.source_url}${rank}: ${row.state} ${follow} link${anchor}\n  ${row.source_url}\n  → ${row.target_url}${lastSeen}`;
+  const extras = parseObservationExtras(row.extras);
+  const facts = [
+    extras.semanticLocation ? `placement ${extras.semanticLocation}` : "",
+    row.spam_score !== null && row.spam_score !== undefined
+      ? `spam ${row.spam_score}`
+      : "",
+    extras.isBroken ? "BROKEN target" : "",
+  ].filter(Boolean);
+  const factLine = facts.length ? `\n  ${facts.join(" · ")}` : "";
+  return `${row.source_domain ?? row.source_url}${rank}: ${row.state} ${follow} link${anchor}\n  ${row.source_url}\n  → ${row.target_url}${lastSeen}${factLine}`;
 }
 
 export function humanDimensionRow(row: BacklinkDimensionRow): string {
@@ -101,24 +114,43 @@ export function humanTrend(points: BacklinkTrendPoint[]): string {
 
 /** Compact projection of an observation row for agent payloads at scale. */
 export function projectBacklinkRow(row: BacklinkObservationRow) {
+  const extras = parseObservationExtras(row.extras);
   return {
     source_domain: row.source_domain,
     source_url: row.source_url,
     target_url: row.target_url,
     anchor_text: row.anchor_text,
     state: row.state,
+    link_type: row.link_type,
     is_dofollow: row.is_dofollow,
+    attributes: extras.attributes,
+    placement: extras.semanticLocation,
+    source_rank: row.source_rank,
     domain_rank: row.domain_rank,
+    spam_score: row.spam_score,
+    is_broken: extras.isBroken,
+    target_status_code: extras.urlToStatusCode,
     first_seen_at: row.first_seen_at,
     last_seen_at: row.last_seen_at,
+    lost_at: row.lost_at,
   };
 }
 
 /** Compact projection of a dimension row for agent payloads. */
 export function projectDimensionRow(row: BacklinkDimensionRow) {
+  const extras = parseDimensionExtras(row.extras);
   return {
     label: row.label ?? row.dimension_key,
+    url: row.url,
     backlinks: row.backlinks,
     referring_domains: row.referring_domains,
+    referring_pages: extras.referringPages,
+    broken_backlinks: extras.brokenBacklinks,
+    intersections: extras.intersections,
+    status_code: extras.statusCode,
+    rank_score: row.rank_score,
+    spam_score: row.spam_score,
+    first_seen_at: row.first_seen_at,
+    last_seen_at: row.last_seen_at,
   };
 }

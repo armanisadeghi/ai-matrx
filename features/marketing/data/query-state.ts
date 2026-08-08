@@ -9,7 +9,7 @@ import type {
 } from "@/components/official/matrx-data-table/types";
 import type { MarketingTableStateOptions } from "@/features/marketing/types";
 
-const PAGE_SIZE_OPTIONS = new Set([10, 25, 50, 100]);
+const PAGE_SIZE_OPTIONS = new Set([10, 25, 50, 100, 250]);
 
 function positiveInt(value: string | null, fallback: number): number {
   const parsed = Number(value);
@@ -53,6 +53,21 @@ function readFilters(params: URLSearchParams): ColumnFiltersState {
     if (decoded) filters[key.slice(2)] = decoded;
   }
   return filters;
+}
+
+/**
+ * Remove every URL param this hook owns (page/pageSize/q/anyOf/sort/direction
+ * + `f_*` filters). Views that swap the table under a shared URL (workspace
+ * tabs, insight lenses) call this so one slice's paging/sort/filters never
+ * leak into the next slice's server query.
+ */
+export function clearTableUrlParams(params: URLSearchParams): void {
+  for (const key of ["page", "pageSize", "q", "anyOf", "sort", "direction"]) {
+    params.delete(key);
+  }
+  for (const key of Array.from(params.keys())) {
+    if (key.startsWith("f_")) params.delete(key);
+  }
 }
 
 function writeState(

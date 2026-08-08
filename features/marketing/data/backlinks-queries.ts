@@ -7,6 +7,10 @@ import type {
   BacklinkTrendPoint,
   BacklinkWorkspaceData,
 } from "@/features/marketing/data/backlinks-types";
+import {
+  SPAM_SCORE_WARN_MIN,
+  type BacklinkLensKey,
+} from "@/features/marketing/components/backlinks/lib/vocab";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 
@@ -188,17 +192,35 @@ const BACKLINK_SORT_COLUMNS = new Set([
   "anchor_text",
   "state",
   "is_dofollow",
+  "link_type",
   "first_seen_at",
   "last_seen_at",
+  "lost_at",
   "source_rank",
   "domain_rank",
   "spam_score",
   "created_at",
 ]);
 
+/**
+ * Default sort when the user has not chosen one, per lens. Exported so the
+ * table UI can seed its URL sort state with what the server actually does.
+ */
+export const LENS_DEFAULT_SORT: Record<
+  BacklinkLensKey,
+  { column: string; ascending: boolean }
+> = {
+  best: { column: "domain_rank", ascending: false },
+  new: { column: "first_seen_at", ascending: false },
+  lost: { column: "last_seen_at", ascending: false },
+  broken: { column: "domain_rank", ascending: false },
+  toxic: { column: "spam_score", ascending: false },
+};
+
 export async function listLatestBacklinks(
   siteId: string,
   state: MatrxDataTableQueryState,
+  options?: { lens?: BacklinkLensKey },
   signal?: AbortSignal,
 ): Promise<BacklinkPagedResult<BacklinkObservationRow>> {
   const snapshot = await latestSnapshot(siteId, "backlinks", signal);
@@ -216,6 +238,23 @@ export async function listLatestBacklinks(
       `source_url.ilike.%${search}%,source_domain.ilike.%${search}%,target_url.ilike.%${search}%,anchor_text.ilike.%${search}%`,
     );
   }
+  const lens = options?.lens;
+  if (lens === "best") {
+    query = query.eq("is_dofollow", true).neq("state", "lost");
+  } else if (lens === "new") {
+    query = query.eq("state", "new");
+  } else if (lens === "lost") {
+    query = query.eq("state", "lost");
+  } else if (lens === "broken") {
+    // Same definition the table's broken glyph uses: provider flag OR a
+    // failing target status. `->` (jsonb) compares 400 numerically; `->>`
+    // would compare text lexicographically.
+    query = query.or(
+      "extras->>is_broken.eq.true,extras->url_to_status_code.gte.400",
+    );
+  } else if (lens === "toxic") {
+    query = query.gte("spam_score", SPAM_SCORE_WARN_MIN);
+  }
   const stateFilter = state.columnFilters.state;
   if (stateFilter?.kind === "select" && stateFilter.value) {
     query = query.eq("state", stateFilter.value);
@@ -224,11 +263,22 @@ export async function listLatestBacklinks(
   if (dofollow?.kind === "boolean") {
     query = query.eq("is_dofollow", dofollow.value);
   }
+  const linkType = state.columnFilters.link_type;
+  if (linkType?.kind === "select" && linkType.value) {
+    query = query.eq("link_type", linkType.value);
+  }
+  const placement = state.columnFilters.placement;
+  if (placement?.kind === "select" && placement.value) {
+    query = query.eq("extras->>semantic_location", placement.value);
+  }
+  const fallbackSort = lens ? LENS_DEFAULT_SORT[lens] : null;
   const sortColumn =
     state.sort && BACKLINK_SORT_COLUMNS.has(state.sort.id)
       ? state.sort.id
-      : "domain_rank";
-  const ascending = state.sort?.direction === "asc";
+      : (fallbackSort?.column ?? "domain_rank");
+  const ascending = state.sort
+    ? state.sort.direction === "asc"
+    : (fallbackSort?.ascending ?? false);
   const response = await query
     .order(sortColumn, { ascending, nullsFirst: false })
     .order("id", { ascending: true })
@@ -238,4 +288,97 @@ export async function listLatestBacklinks(
     rows: assertData(response.data, response.error),
     total: response.count ?? 0,
   };
+}
+
+/** Which snapshot dataset owns each dimension kind. */
+const DIMENSION_DATASET_BY_KIND = {
+  referring_domain: "referring_domains",
+  anchor: "anchors",
+  target_page: "domain_pages_summary",
+  competitor_domain: "competitors",
+} as const;
+
+export type BacklinkDimensionKind = keyof typeof DIMENSION_DATASET_BY_KIND;
+
+const DIMENSION_SORT_COLUMNS = new Set([
+  "label",
+  "dimension_key",
+  "backlinks",
+  "referring_domains",
+  "rank_score",
+  "spam_score",
+  "first_seen_at",
+  "last_seen_at",
+]);
+
+/**
+ * Controlled paged read over the LATEST dimension snapshot of one kind —
+ * powers the full Referring domains / Anchors / Top pages / Competitors tabs
+ * (the old UI truncated these to a top-8 card; this never truncates).
+ */
+export async function listDimensionRows(
+  siteId: string,
+  kind: BacklinkDimensionKind,
+  state: MatrxDataTableQueryState,
+  signal?: AbortSignal,
+): Promise<BacklinkPagedResult<BacklinkDimensionRow>> {
+  const snapshot = await latestSnapshot(
+    siteId,
+    DIMENSION_DATASET_BY_KIND[kind],
+    signal,
+  );
+  if (!snapshot) return { rows: [], total: 0 };
+  const { from, to } = rangeFor(state);
+  const db = await seoDb();
+  let query = db
+    .from("backlink_dimension_snapshot")
+    .select("*", { count: "exact" })
+    .eq("site_id", siteId)
+    .eq("snapshot_id", snapshot.id)
+    .eq("dimension_kind", kind);
+  const search = cleanSearch(state.search);
+  if (search) {
+    query = query.or(
+      `label.ilike.%${search}%,dimension_key.ilike.%${search}%,url.ilike.%${search}%`,
+    );
+  }
+  const sortColumn =
+    state.sort && DIMENSION_SORT_COLUMNS.has(state.sort.id)
+      ? state.sort.id
+      : "backlinks";
+  const ascending = state.sort ? state.sort.direction === "asc" : false;
+  const response = await query
+    .order(sortColumn, { ascending, nullsFirst: false })
+    .order("dimension_key", { ascending: true })
+    .range(from, to)
+    .abortSignal(signal ?? new AbortController().signal);
+  return {
+    rows: assertData(response.data, response.error),
+    total: response.count ?? 0,
+  };
+}
+
+/**
+ * The full latest anchor set (bounded by the provider's 1000-row detail cap)
+ * for anchor-profile classification. One read, classified client-side —
+ * a few hundred rows per site.
+ */
+export async function listAllAnchors(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<BacklinkDimensionRow[]> {
+  const snapshot = await latestSnapshot(siteId, "anchors", signal);
+  if (!snapshot) return [];
+  const response = await (
+    await seoDb()
+  )
+    .from("backlink_dimension_snapshot")
+    .select("*")
+    .eq("site_id", siteId)
+    .eq("snapshot_id", snapshot.id)
+    .eq("dimension_kind", "anchor")
+    .order("backlinks", { ascending: false, nullsFirst: false })
+    .limit(1000)
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
 }
