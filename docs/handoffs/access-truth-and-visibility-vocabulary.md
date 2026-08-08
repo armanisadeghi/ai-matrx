@@ -1,15 +1,15 @@
 ---
 status: blocked
-updated: 2026-07-27
+updated: 2026-08-08
 repos: [matrx-frontend]
 vision: []
 ---
 
 # Access truth & the one visibility vocabulary
 
-`blocked` = the remaining code work is small and unblocked, but the two biggest
-items (D105, D106b) need Arman's product decisions first. Start at
-[Remaining work](#remaining-work) — items 1 and 2 need no decision.
+`blocked` = the unblocked code work is done; the two biggest remaining items
+(D105, D106b) need Arman's product decisions first. See
+[Decisions needed](#5-decisions-needed).
 
 ---
 
@@ -111,12 +111,22 @@ client folded `internal` into `personal`):
 - Shipped **v0.4.138** and verified on `https://aimatrx.com` (not localhost):
   list shows `Organization: 34 / Personal: 9 / Public: 7`, `Only you: 0`; Info
   tab renders visibility + itemized reasons; Share tab shows all four levels.
+- **`AccessSummaryPanel` mounted on five surfaces** — file Info tab
+  (`FileInfoTab.tsx`), agent detail (`features/agents/route/AgentViewContent.tsx`,
+  replacing two false "Private" badges), agent Share tab
+  (`features/agents/components/sharing/AgentSharePanel.tsx`), note info
+  (`features/notes/components/NoteInfoPanel.tsx`, "Private" chip demoted to a
+  public-only chip), data-store detail (`features/rag/components/data-stores/DataStoresPage.tsx`,
+  replacing the raw org-uuid chip).
+- **Guard shipped** — `pnpm check:visibility-vocab` (`scripts/check-visibility-vocab.ts`
+  + `scripts/visibility-vocab/allowlist.json`, registered in both release-gate
+  lists): retired spellings, `internal`-omitting unions, and bare "Only you"
+  claims all scream; the 23-finding baseline is allowlisted with per-entry
+  justifications pointing at D105/D106b.
+- `features/image-studio/api/python.ts#EditOutput.visibility` fixed to the
+  canonical union (was offering retired `"shared"`; no caller sent it).
 
 ### Partial
-
-- **`AccessSummaryPanel` is mounted on exactly one surface** — the file Info tab
-  (`FileInfoTab.tsx`). It is generic and takes `entityType`/`entityId`; every
-  other entity's detail/info surface still shows nothing.
 - **Access column container signal** covers scopes only. `AccessCell` reads the
   row-scope store, so a file reachable through a **project / data store /
   workbook** still reads "Personal" in the list. Not wrong (it hedges), but
@@ -128,9 +138,9 @@ client folded `internal` into `personal`):
 
 ### Not started
 
-- The five surfaces in **D106b** still make the same unprovable claim.
-- No automated guard prevents the collapse from returning — nothing fails if
-  someone re-adds a per-domain visibility dialect or a bare "Only you".
+- The five surfaces in **D106b** still make the same unprovable claim (each is
+  now pinned by a `check:visibility-vocab` allowlist entry — delete the entry
+  in the same change that fixes the surface).
 
 ### Known issues / risks
 
@@ -203,28 +213,43 @@ change log), `FOUND_DEFECTS.md` (D105 / D106b / D107).
 
 ## 4. Remaining work
 
-1. **Mount `<AccessSummaryPanel>` on other entities' info surfaces.** It is
-   already generic — `entityType` + `entityId`. Start with agents, notes, and
-   data stores. Pure consumption, no new primitive.
-2. **Add a guard so the collapse cannot return.** Two cheap ones: an ESLint rule
-   banning a `Visibility`-like union that omits `internal`, and a
-   `pnpm check:*` grep for user-visible "Only you". Follow
-   `scripts/schema-check/FEATURE.md` conventions.
-3. **Resolve D107 with ONE controlled experiment.** Restore
+1. **Resolve D107 with ONE controlled experiment.** Restore
    `turbopackMemoryLimit` to `42949672960` alone and release. Green ⇒ the v0.4.137
    revert was the fix, keep 40 GiB and re-land the `React.lazy → next/dynamic`
    campaign. Red ⇒ the ceiling is load-bearing, keep 30 GiB and re-land the
    campaign on top. **Never change the ceiling and re-land the campaign in the
    same release** — that is precisely how this became unattributable.
-4. **After Arman answers D105** — implement his choice. If he picks a backfill,
+2. **After Arman answers D105** — implement his choice. If he picks a backfill,
    push back once: nothing records who set `internal` deliberately, so it can
    only be a blunt date-cutoff sweep that may revoke access people are using.
-5. **After D105 — fix the five D106b surfaces.** Each needs its own conveyance
+3. **After D105 — fix the five D106b surfaces.** Each needs its own conveyance
    check first (does that entity type even have container conveyance?). Do not
-   bulk-rewrite blind.
-6. **Widen the list container signal beyond scopes** (project / data store /
+   bulk-rewrite blind. Each surface has a `scripts/visibility-vocab/allowlist.json`
+   entry — delete it in the fixing change so the guard re-arms.
+4. **Widen the list container signal beyond scopes** (project / data store /
    workbook) *only* if a cheap bulk source exists. If it needs a per-row query,
    don't — that breaks Arman's cost constraint.
+5. **Keep mounting `<AccessSummaryPanel>`** on further entity info surfaces as
+   they come up (scope detail, project, workbook, conversation) — pure
+   consumption, `entityType` + `entityId`, one at a time per the cost
+   constraint. All tokens with a `platform.entity_types.title_column` work.
+
+## 5. Decisions needed
+
+**D105 — the `internal` default on files.** Situation: `files.files.visibility`
+and `files.folders.visibility` both `DEFAULT 'internal'`; live counts ~11,003
+internal vs 10,463 personal. Access never changed — only the label did — so
+~11k files that used to (falsely) read "Only you" now (truthfully) read
+"Organization". Decide: keep `internal` as the default for files (org-first
+posture, matches db-rules §6 "org work defaults internal"), or switch the
+default to `personal` going forward, or also backfill old rows (blunt
+date-cutoff sweep; may revoke access people are using — see Remaining work 2).
+
+**D106b/education — the marketing promise.** Situation:
+`features/education/data/features.ts` FAQ tells users *"Only you, until you
+explicitly share… never a default"*, which is false wherever a table defaults
+to `internal`. Decide: rewrite the copy to match the real default, or make
+education-owned tables default `personal` so the promise is true.
 
 ---
 
