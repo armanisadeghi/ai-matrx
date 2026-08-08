@@ -26,6 +26,7 @@ const RULE: GscDigRuleContent = {
   sortDir: "desc",
   rowLimit: 100,
   baseFilters: {},
+  trafficClass: null,
 };
 
 describe("parseDigConditions", () => {

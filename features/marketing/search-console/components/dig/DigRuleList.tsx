@@ -47,6 +47,7 @@ function RuleRow({
           {rule.name}
           <span className="ml-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
             {rule.dimension === "query" ? "queries" : "pages"}
+            {rule.traffic_class ? ` · ${rule.traffic_class}` : ""}
           </span>
         </p>
         <p className="truncate text-[11px] text-muted-foreground" title={rule.description ?? undefined}>

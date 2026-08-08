@@ -83,6 +83,7 @@ function ruleWriteColumns(input: DigRuleInput) {
     sort_dir: input.content.sortDir,
     row_limit: input.content.rowLimit,
     base_filters: cleanFilters(input.content.baseFilters),
+    traffic_class: input.content.trafficClass,
     site_id: input.siteId,
     organization_id: input.organizationId,
   };
@@ -148,6 +149,7 @@ export async function adoptDigTemplate(
       sort_dir: template.sort_dir,
       row_limit: template.row_limit,
       base_filters: template.base_filters,
+      traffic_class: template.traffic_class,
       site_id: siteId,
       organization_id: organizationId,
       created_by: session.user.id,
@@ -187,6 +189,9 @@ export async function runGscDig(
       p_sort: content.sortMetric,
       p_sort_dir: content.sortDir,
       p_limit: content.rowLimit,
+      ...(content.trafficClass
+        ? { p_traffic_class: content.trafficClass }
+        : {}),
     })
     .abortSignal(signal ?? new AbortController().signal);
   const rows = assertData(response.data, response.error);

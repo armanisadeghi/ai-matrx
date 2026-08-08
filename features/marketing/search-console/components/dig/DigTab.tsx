@@ -45,7 +45,9 @@ import type {
   GscFilters,
   GscRangeKey,
   GscResolvedPeriods,
+  GscTrafficClass,
 } from "@/features/marketing/search-console/types";
+import { GSC_TRAFFIC_CLASSES } from "@/features/marketing/search-console/types";
 
 /** A stored rule row → the runnable content shape (null if unreadable). */
 export function ruleRowContent(rule: GscDigRuleRow): GscDigRuleContent | null {
@@ -66,6 +68,11 @@ export function ruleRowContent(rule: GscDigRuleRow): GscDigRuleContent | null {
           ),
         ) as GscFilters)
       : {};
+  const trafficClass = GSC_TRAFFIC_CLASSES.some(
+    (c) => c.key === rule.traffic_class,
+  )
+    ? (rule.traffic_class as GscTrafficClass)
+    : null;
   return {
     dimension: rule.dimension,
     conditions: parsed.conditions,
@@ -73,6 +80,7 @@ export function ruleRowContent(rule: GscDigRuleRow): GscDigRuleContent | null {
     sortDir: rule.sort_dir === "asc" ? "asc" : "desc",
     rowLimit: rule.row_limit,
     baseFilters,
+    trafficClass,
   };
 }
 
@@ -86,6 +94,7 @@ const NEW_DRAFT: DigRuleDraft = {
     sortDir: "desc",
     rowLimit: 100,
     baseFilters: {},
+    trafficClass: null,
   },
 };
 

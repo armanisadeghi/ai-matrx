@@ -29,6 +29,8 @@ import type {
   GscDigMetric,
   GscDigOp,
 } from "@/features/marketing/search-console/types";
+import type { GscTrafficClass } from "@/features/marketing/search-console/types";
+import { GSC_TRAFFIC_CLASSES } from "@/features/marketing/search-console/types";
 import {
   GSC_DIG_METRICS,
   GSC_DIG_OPS,
@@ -116,6 +118,36 @@ export function DigRuleEditor({
         className="h-7 text-xs"
         aria-label="Rule description"
       />
+      {/* Class pin — dig within ONE traffic class (money / educational /
+          brand / mismatch / unclassified). "Money keywords losing ground"
+          is one rule, not an eyeball join across tabs. */}
+      <Select
+        value={content.trafficClass ?? "all"}
+        onValueChange={(next) =>
+          setContent({
+            trafficClass:
+              next === "all" ? null : (next as GscTrafficClass),
+          })
+        }
+      >
+        <SelectTrigger
+          size="sm"
+          className="h-7 w-full text-xs"
+          aria-label="Traffic class"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all" className="text-xs">
+            All traffic classes
+          </SelectItem>
+          {GSC_TRAFFIC_CLASSES.map((cls) => (
+            <SelectItem key={cls.key} value={cls.key} className="text-xs">
+              {cls.label} only
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       <div className="space-y-1">
         <p className="text-[11px] font-medium text-muted-foreground">

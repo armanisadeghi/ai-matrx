@@ -30,6 +30,7 @@ import {
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
 import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
 import { useRowWatch } from "@/features/marketing/search-console/hooks/useWatchState";
+import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassInsights";
 import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
 import type {
   GscBreakdownRow,
@@ -142,6 +143,20 @@ export function DigResultsTable({
       ),
     },
     buildGscKeyColumn<GscDigResultRow>(dimension, columnLabel),
+    // Class column only when the server attributed classes (query digs and
+    // class-pinned page digs) — an all-null column is noise.
+    ...(rows.some((r) => r.traffic_class !== null)
+      ? [
+          {
+            id: "traffic_class",
+            header: "Class",
+            sortable: false,
+            filter: false,
+            accessorFn: (row) => row.traffic_class,
+            cell: (row) => <ClassChip trafficClass={row.traffic_class} />,
+          } satisfies MatrxColumnDef<GscDigResultRow>,
+        ]
+      : []),
     ...buildGscMetricColumns<GscDigResultRow>(hasCompare, "all"),
     ...(hasCompare
       ? [

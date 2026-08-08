@@ -88,7 +88,16 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
 
 ## The four method tabs (v2, 2026-08-04; Insights 2026-08-07)
 
-- **Dig Here** (`components/dig/`) — the low-hanging-fruit rules engine.
+- **Dig Here** (`components/dig/`) — the low-hanging-fruit rules engine,
+  CLASS-AWARE since 2026-08-08: a rule may pin one traffic class
+  (`gsc_dig_rule.traffic_class` → `gsc_perf_dig.p_traffic_class`;
+  [`migrations/seo_gsc_dig_class.sql`](../../../migrations/seo_gsc_dig_class.sql)).
+  Query digs always output each row's class; a class-PINNED page dig
+  evaluates over the `query_page` profile (class travels with the query —
+  totals sit below the bare `page` profile from Google's anonymized-query
+  loss, inherent to class attribution); an unpinned page dig keeps `page`
+  and reports class NULL. Class templates: Money keywords losing ground /
+  Mismatch traffic rising / Educational risers (UUIDs `…0006-0008`).
   Rules live in `seo.gsc_dig_rule` (system templates: fixed UUIDs
   `a1d16001-…`, ownerless, world-readable, re-seeded by the migration;
   user rules: owner-write, org-read; adoption = copy-insert). Evaluation
@@ -269,6 +278,11 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-08 — Class-aware Dig Here: traffic_class pin on rules +
+  gsc_perf_dig p_traffic_class/class output (seo_gsc_dig_class.sql), class
+  picker in the editor, class chips in results/rule list, three class
+  templates seeded. Verified live (money-dig surfaced "hard drive
+  destruction" −67% clicks on datadestruction.com).
 - 2026-08-08 — Import narrator banner (server-aware via
   seo.gsc_backfill_status, survives refresh), split Sync/History spinner
   state, history-to-horizon loop, inline custom-range editor (popover

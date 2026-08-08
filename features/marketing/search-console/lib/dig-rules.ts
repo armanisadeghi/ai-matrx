@@ -13,6 +13,7 @@ import type {
   GscDigMetric,
   GscDigOp,
   GscFilters,
+  GscTrafficClass,
 } from "@/features/marketing/search-console/types";
 import {
   GSC_DIG_METRICS,
@@ -35,6 +36,10 @@ export interface GscDigRuleContent {
   sortDir: "asc" | "desc";
   rowLimit: number;
   baseFilters: GscFilters;
+  /** Pin the rule to ONE traffic class (seo.gsc_keyword_class_map) — null
+   *  digs across all classes. A class-pinned page rule evaluates over the
+   *  query_page profile server-side (class travels with the query). */
+  trafficClass: GscTrafficClass | null;
 }
 
 export function isDigMetric(value: unknown): value is GscDigMetric {
@@ -151,6 +156,7 @@ export function digRuleSummary(conditions: GscDigCondition[]): string {
 export function digRuleContentKey(rule: GscDigRuleContent): string {
   return JSON.stringify([
     rule.dimension,
+    rule.trafficClass,
     rule.conditions.map((c) => [c.metric, c.op, c.value]),
     rule.sortMetric,
     rule.sortDir,
