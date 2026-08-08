@@ -77,6 +77,10 @@ export function SetupAiBar({
     researchStage === "creating" ||
     researchStage === "running" ||
     researchStage === "assembling";
+  // ONE thing at a time across the whole bar: a research run mid-draft would
+  // relink the site while the draft still reasons over the old report, and a
+  // draft mid-research would ground on a report about to be replaced.
+  const anyBusy = researchBusy || anyAgentBusy;
   const reportStatus = (() => {
     if (researchBusy) {
       return `${RESEARCH_STAGE_LABEL[researchStage]} Keep this tab open — the report lands here.`;
@@ -107,7 +111,7 @@ export function SetupAiBar({
           // prerequisite for every other button on this screen.
           variant={reportReady ? "ghost" : "outline"}
           className="h-7 shrink-0 gap-1.5 px-2.5 text-xs"
-          disabled={researchBusy}
+          disabled={anyBusy}
           title="Create a research topic for this site's company and run the full pipeline — the finished report grounds every AI step here."
           onClick={onCreateResearch}
         >
@@ -136,7 +140,7 @@ export function SetupAiBar({
         <Button
           size="sm"
           className="h-7 shrink-0 gap-1.5 px-2.5 text-xs"
-          disabled={!reportReady || anyAgentBusy}
+          disabled={!reportReady || anyBusy}
           title={
             reportReady
               ? "One click: pick the shape, set every count, name every services/locations page, and plan the article topics — all staged for your review, nothing written until you commit."
@@ -155,7 +159,7 @@ export function SetupAiBar({
           size="sm"
           variant="outline"
           className="h-7 shrink-0 gap-1.5 px-2.5 text-xs"
-          disabled={!reportReady || anyAgentBusy}
+          disabled={!reportReady || anyBusy}
           title={
             reportReady
               ? "Just the first step: recommend the site shape and set every family count."
