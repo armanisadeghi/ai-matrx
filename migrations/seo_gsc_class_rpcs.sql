@@ -165,10 +165,11 @@ CREATE OR REPLACE FUNCTION seo.gsc_perf_class_summary(
   cmp_impressions bigint,
   cmp_queries bigint
 )
-LANGUAGE plpgsql STABLE
+LANGUAGE plpgsql STABLE SECURITY DEFINER
 SET search_path = seo, pg_temp
 AS $$
 BEGIN
+  PERFORM seo.gsc_assert_site_access(p_site_id);
   IF (p_compare_start IS NULL) <> (p_compare_end IS NULL) THEN
     RAISE EXCEPTION 'gsc_compare_bounds_mismatch: set both compare bounds or neither';
   END IF;
@@ -245,12 +246,13 @@ CREATE OR REPLACE FUNCTION seo.gsc_perf_class_movers(
   class_mix jsonb,
   total_count bigint
 )
-LANGUAGE plpgsql STABLE
+LANGUAGE plpgsql STABLE SECURITY DEFINER
 SET search_path = seo, pg_temp
 AS $$
 DECLARE
   v_profile text;
 BEGIN
+  PERFORM seo.gsc_assert_site_access(p_site_id);
   IF p_dimension NOT IN ('query', 'page') THEN
     RAISE EXCEPTION 'gsc_dimension_unknown: %', p_dimension;
   END IF;
@@ -385,10 +387,11 @@ CREATE OR REPLACE FUNCTION seo.gsc_perf_shifts(
   pages jsonb,
   total_count bigint
 )
-LANGUAGE plpgsql STABLE
+LANGUAGE plpgsql STABLE SECURITY DEFINER
 SET search_path = seo, pg_temp
 AS $$
 BEGIN
+  PERFORM seo.gsc_assert_site_access(p_site_id);
   IF p_min_clicks < 1 THEN
     RAISE EXCEPTION 'gsc_min_clicks_out_of_range: %', p_min_clicks;
   END IF;
@@ -514,7 +517,7 @@ CREATE OR REPLACE FUNCTION seo.gsc_perf_juice(
   other_clicks bigint,
   total_count bigint
 )
-LANGUAGE plpgsql STABLE
+LANGUAGE plpgsql STABLE SECURITY DEFINER
 SET search_path = seo, pg_temp
 AS $$
 DECLARE
@@ -523,6 +526,7 @@ DECLARE
   v_prior_start date;
   v_months_start date;
 BEGIN
+  PERFORM seo.gsc_assert_site_access(p_site_id);
   IF p_month_min_clicks < 1 OR p_min_months < 1 OR p_min_months > 6 THEN
     RAISE EXCEPTION 'gsc_juice_params_out_of_range: month_min_clicks=% min_months=%', p_month_min_clicks, p_min_months;
   END IF;
@@ -603,7 +607,11 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION seo.gsc_keyword_class_map(uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION seo.gsc_perf_class_summary(uuid, date, date, date, date) TO authenticated;
-GRANT EXECUTE ON FUNCTION seo.gsc_perf_class_movers(uuid, text, date, date, date, date, text, text, int, int) TO authenticated;
-GRANT EXECUTE ON FUNCTION seo.gsc_perf_shifts(uuid, date, date, date, date, int, int, int) TO authenticated;
-GRANT EXECUTE ON FUNCTION seo.gsc_perf_juice(uuid, date, int, int, int, int) TO authenticated;
+REVOKE ALL ON FUNCTION seo.gsc_perf_class_summary(uuid, date, date, date, date) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION seo.gsc_perf_class_movers(uuid, text, date, date, date, date, text, text, int, int) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION seo.gsc_perf_shifts(uuid, date, date, date, date, int, int, int) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION seo.gsc_perf_juice(uuid, date, int, int, int, int) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION seo.gsc_perf_class_summary(uuid, date, date, date, date) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION seo.gsc_perf_class_movers(uuid, text, date, date, date, date, text, text, int, int) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION seo.gsc_perf_shifts(uuid, date, date, date, date, int, int, int) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION seo.gsc_perf_juice(uuid, date, int, int, int, int) TO authenticated, service_role;
