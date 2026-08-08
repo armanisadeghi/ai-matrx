@@ -16,70 +16,23 @@
 //
 // `defaultHidden` is a starting point, never a restriction — anything here is
 // one click away in the column picker, and the choice is persisted per user.
+//
+// The spec shape and the shared cell helpers (relativeTime, timeCell, the date
+// buckets) live in lib/entity-list/columns — this file is only the AGENT
+// column registry.
 
 import { Star, Archive, Building2 } from "lucide-react";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { cleanMarkdownPreview } from "@/utils/markdown-processors/clean-markdown-to-text";
+import {
+  DATE_FILTER_OPTIONS,
+  Muted,
+  timeCell,
+  type EntityColumnSpec,
+} from "@/lib/entity-list/columns";
 import type { AgentBrowseRow } from "./types";
 
-/**
- * A date column's finite value set is "how recently", not "which exact
- * timestamp" — so Updated / Created filter by relative bucket, served by
- * `agx_since_bucket` in SQL. No column is exempt from filtering.
- */
-export const DATE_FILTER_OPTIONS = [
-  { value: "1h", label: "Last hour" },
-  { value: "24h", label: "Last 24 hours" },
-  { value: "7d", label: "Last 7 days" },
-  { value: "30d", label: "Last 30 days" },
-  { value: "90d", label: "Last 90 days" },
-  { value: "1y", label: "Last year" },
-];
-
-export interface BrowseColumnSpec {
-  id: string;
-  label: string;
-  /** Off until the user turns it on. */
-  defaultHidden?: boolean;
-  /** Only meaningful outside the "mine" scope (owner/org/access). */
-  scopedToShared?: boolean;
-  /** Never hideable — the row needs something to identify it by. */
-  locked?: boolean;
-  /** Facet kind that supplies this column's filter options, when finite. */
-  facet?: string;
-  column: MatrxColumnDef<AgentBrowseRow>;
-}
-
-export function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.round(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  if (days < 31) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
-}
-
-function Muted({ children }: { children: React.ReactNode }) {
-  return <span className="text-muted-foreground">{children}</span>;
-}
-
-function timeCell(iso: string | null) {
-  if (!iso) return <Muted>—</Muted>;
-  return (
-    <span
-      className="tabular-nums text-muted-foreground"
-      title={new Date(iso).toLocaleString()}
-    >
-      {relativeTime(iso)}
-    </span>
-  );
-}
-
-export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
+export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
   {
     id: "favorite",
     label: "Favorite",
@@ -92,7 +45,7 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
       filter: "boolean",
       width: 40,
       align: "center",
-      // The interactive star is injected by AgentBrowseTable, which owns the
+      // The interactive star is injected by EntityListTable, which owns the
       // toggle handler. Declared here so it sorts and filters like any other
       // column — clickable and sortable are not competing requirements.
     },
@@ -357,13 +310,3 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
     },
   },
 ];
-
-/** Column ids hidden by default — the initial `hiddenColumns` for a new user. */
-export const DEFAULT_HIDDEN_COLUMNS = BROWSE_COLUMNS.filter(
-  (c) => c.defaultHidden,
-).map((c) => c.id);
-
-/** Columns the user can edit inline. Used to build the save payload. */
-export const EDITABLE_COLUMN_IDS = BROWSE_COLUMNS.filter(
-  (c) => c.column.editable,
-).map((c) => c.id);

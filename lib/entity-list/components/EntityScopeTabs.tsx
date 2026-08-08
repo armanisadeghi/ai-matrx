@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/browse/components/BrowseScopeTabs.tsx
+// lib/entity-list/components/EntityScopeTabs.tsx
 //
 // THE VIEW LAW made visible: the fixed five destinations, each a different
 // question, each with a TRUE server-side count.
@@ -98,7 +98,7 @@ function CountPill({ n, active }: { n: number; active: boolean }) {
   );
 }
 
-export function BrowseScopeTabs({ scope, scopes, counts, onChange }: Props) {
+export function EntityScopeTabs({ scope, scopes, counts, onChange }: Props) {
   return (
     <div
       className="inline-flex min-w-0 items-center gap-0.5 rounded-lg border border-border bg-card p-0.5 sm:gap-1 sm:p-1"

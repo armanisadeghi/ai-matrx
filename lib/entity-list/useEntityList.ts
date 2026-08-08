@@ -1,74 +1,55 @@
 "use client";
 
-// features/agents/browse/useAgentBrowse.ts
+// lib/entity-list/useEntityList.ts
 //
-// The query half of the list surface. Owns the server round trip; owns nothing
-// about presentation (that's useListViewPrefs).
+// The query half of a canonical entity-list surface. Owns the server round
+// trip; owns nothing about presentation (that's useListViewPrefs). Lifted from
+// features/agents/browse/useAgentBrowse with behaviour unchanged.
 //
 // Every fetch is generation-guarded: a slow response for an abandoned query can
-// never overwrite a newer one. That class of bug is invisible until a user types
-// fast on a slow connection and the list settles on the wrong results.
+// never overwrite a newer one. That class of bug is invisible until a user
+// types fast on a slow connection and the list settles on the wrong results.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
+import type { EntityListController, EntityListService } from "./config";
 import {
-  fetchAgentBrowsePage,
-  fetchBrowseFacets,
-  fetchBrowseScopeCounts,
-} from "./service";
-import {
-  DEFAULT_BROWSE_QUERY,
+  DEFAULT_ENTITY_LIST_QUERY,
   EMPTY_FACETS,
   EMPTY_SCOPE_COUNTS,
-  type AgentBrowseRow,
-  type BrowseFacets,
-  type BrowseQuery,
-  type BrowseScope,
-  type BrowseScopeCounts,
+  type EntityFacets,
+  type EntityFilters,
+  type EntityListQuery,
+  type EntityScopeCounts,
 } from "./types";
+import type { ListScope } from "@/lib/list-scope/types";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
-export interface UseAgentBrowseResult {
-  query: BrowseQuery;
-  rows: AgentBrowseRow[];
-  total: number;
-  counts: BrowseScopeCounts;
-  facets: BrowseFacets;
-  isLoading: boolean;
-  isFetching: boolean;
-  error: string | null;
-
-  setScope: (scope: BrowseScope) => void;
-  /** Replace the whole column-filter bag (the table emits it wholesale). */
-  setFilters: (filters: BrowseQuery["filters"]) => void;
-  setSearch: (search: string) => void;
-  setDeep: (deep: boolean) => void;
-  patchQuery: (patch: Partial<BrowseQuery>) => void;
-  setPage: (page: number) => void;
-  /** Clear the narrowing filters. Leaves scope + search alone — those are
-   *  where the user is, not how they narrowed it. */
-  resetFilters: () => void;
-  refresh: () => void;
-  /** Drop a row locally after a confirmed delete — no full refetch flash. */
-  removeRow: (id: string) => void;
-  /** Patch a row locally after an optimistic edit (favorite, rename, archive). */
-  patchRow: (id: string, patch: Partial<AgentBrowseRow>) => void;
-}
-
-export function useAgentBrowse(
+export interface UseEntityListArgs<TRow> {
+  service: EntityListService<TRow>;
+  getRowId: (row: TRow) => string;
+  /** Plural, lowercase — error toasts ("Could not load agents"). */
+  entityLabelPlural: string;
   view: Pick<
     ListViewPrefs,
     "sort" | "direction" | "pageSize" | "favoritesFirst"
-  >,
-): UseAgentBrowseResult {
-  const [query, setQuery] = useState<BrowseQuery>(DEFAULT_BROWSE_QUERY);
+  >;
+}
+
+export function useEntityList<TRow>({
+  service,
+  getRowId,
+  entityLabelPlural,
+  view,
+}: UseEntityListArgs<TRow>): EntityListController<TRow> {
+  const [query, setQuery] = useState<EntityListQuery>(DEFAULT_ENTITY_LIST_QUERY);
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [rows, setRows] = useState<AgentBrowseRow[]>([]);
+  const [rows, setRows] = useState<TRow[]>([]);
   const [total, setTotal] = useState(0);
-  const [counts, setCounts] = useState<BrowseScopeCounts>(EMPTY_SCOPE_COUNTS);
-  const [facets, setFacets] = useState<BrowseFacets>(EMPTY_FACETS);
+  const [counts, setCounts] = useState<EntityScopeCounts>(EMPTY_SCOPE_COUNTS);
+  const [facets, setFacets] = useState<EntityFacets>(EMPTY_FACETS);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +57,11 @@ export function useAgentBrowse(
 
   const generation = useRef(0);
   const hasLoadedOnce = useRef(false);
+
+  // The service is config — static per surface. A ref keeps a (mistakenly)
+  // unstable service object from re-firing every effect.
+  const serviceRef = useRef(service);
+  serviceRef.current = service;
 
   // Debounce only the text; every other query field applies immediately.
   useEffect(() => {
@@ -86,7 +72,7 @@ export function useAgentBrowse(
     return () => clearTimeout(id);
   }, [query.search]);
 
-  const effectiveQuery: BrowseQuery = { ...query, search: debouncedSearch };
+  const effectiveQuery: EntityListQuery = { ...query, search: debouncedSearch };
   const queryKey = JSON.stringify({
     q: effectiveQuery,
     sort: view.sort,
@@ -103,7 +89,7 @@ export function useAgentBrowse(
 
     void (async () => {
       try {
-        const page = await fetchAgentBrowsePage(effectiveQuery, {
+        const page = await serviceRef.current.fetchPage(effectiveQuery, {
           sort: view.sort,
           direction: view.direction,
           favoritesFirst: view.favoritesFirst,
@@ -116,11 +102,15 @@ export function useAgentBrowse(
       } catch (err) {
         if (gen !== generation.current) return;
         const message =
-          err instanceof Error ? err.message : "Failed to load agents";
+          err instanceof Error
+            ? err.message
+            : `Failed to load ${entityLabelPlural}`;
         setError(message);
         // Loud recovery: the list going empty must never look like "you have
-        // no agents" when it was actually a failed read.
-        toast.error("Could not load agents", { description: message });
+        // nothing here" when it was actually a failed read.
+        toast.error(`Could not load ${entityLabelPlural}`, {
+          description: message,
+        });
       } finally {
         if (gen === generation.current) {
           hasLoadedOnce.current = true;
@@ -146,12 +136,12 @@ export function useAgentBrowse(
     let cancelled = false;
     void (async () => {
       try {
-        const next = await fetchBrowseScopeCounts(effectiveQuery);
+        const next = await serviceRef.current.fetchCounts(effectiveQuery);
         if (!cancelled) setCounts(next);
       } catch (err) {
         // Counts are an adornment; a failure must not blank the list. Still
         // reported, never swallowed.
-        console.error("[agents/browse] scope counts failed", err);
+        console.error(`[entity-list] scope counts failed`, err);
       }
     })();
     return () => {
@@ -175,10 +165,10 @@ export function useAgentBrowse(
     let cancelled = false;
     void (async () => {
       try {
-        const next = await fetchBrowseFacets(effectiveQuery);
+        const next = await serviceRef.current.fetchFacets(effectiveQuery);
         if (!cancelled) setFacets(next);
       } catch (err) {
-        console.error("[agents/browse] facets failed", err);
+        console.error(`[entity-list] facets failed`, err);
       }
     })();
     return () => {
@@ -187,7 +177,7 @@ export function useAgentBrowse(
     // eslint-disable-next-line react-hooks/exhaustive-deps -- facetsKey is the serialized dep set
   }, [facetsKey]);
 
-  const patchQuery = useCallback((patch: Partial<BrowseQuery>) => {
+  const patchQuery = useCallback((patch: Partial<EntityListQuery>) => {
     setQuery((prev) => ({
       ...prev,
       ...patch,
@@ -198,11 +188,11 @@ export function useAgentBrowse(
   }, []);
 
   const setScope = useCallback(
-    (scope: BrowseScope) => patchQuery({ scope }),
+    (scope: ListScope) => patchQuery({ scope }),
     [patchQuery],
   );
   const setFilters = useCallback(
-    (filters: BrowseQuery["filters"]) => patchQuery({ filters }),
+    (filters: EntityFilters) => patchQuery({ filters }),
     [patchQuery],
   );
   const setSearch = useCallback(
@@ -221,7 +211,7 @@ export function useAgentBrowse(
     () =>
       setQuery((prev) => ({
         ...prev,
-        archived: DEFAULT_BROWSE_QUERY.archived,
+        archived: DEFAULT_ENTITY_LIST_QUERY.archived,
         filters: {},
         page: 1,
       })),
@@ -229,16 +219,24 @@ export function useAgentBrowse(
   );
   const refresh = useCallback(() => setRefreshToken((n) => n + 1), []);
 
-  const removeRow = useCallback((id: string) => {
-    setRows((prev) => prev.filter((r) => r.id !== id));
-    setTotal((prev) => Math.max(prev - 1, 0));
-  }, []);
+  const removeRow = useCallback(
+    (id: string) => {
+      setRows((prev) => prev.filter((r) => getRowId(r) !== id));
+      setTotal((prev) => Math.max(prev - 1, 0));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getRowId is config, static per surface
+    [],
+  );
 
-  const patchRow = useCallback((id: string, patch: Partial<AgentBrowseRow>) => {
-    setRows((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, ...patch } : r)),
-    );
-  }, []);
+  const patchRow = useCallback(
+    (id: string, patch: Partial<TRow>) => {
+      setRows((prev) =>
+        prev.map((r) => (getRowId(r) === id ? { ...r, ...patch } : r)),
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getRowId is config, static per surface
+    [],
+  );
 
   return {
     query,
