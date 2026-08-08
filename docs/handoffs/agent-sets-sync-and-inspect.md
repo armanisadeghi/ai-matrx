@@ -43,13 +43,13 @@ The **authoring** half of Agent Sets (the `/agents/sets/[orchestratorId]` builde
 - **Orchestrator Inspector.** Hub node hover toolbar (Quick look + "Orchestrator details") → `OrchestratorInspector.tsx`: snapshot, About, **View system prompt** (opens the System-Instructions-only editor), shared `AgentIODetails` (inputs/outputs), Open/Run. The I/O block was extracted into `AgentIODetails.tsx` and is consumed by both inspectors (no duplication).
 - **New-tab fix.** The header "Orchestrator" action opens in a new tab (`newTab: true`), matching its up-right-arrow icon.
 - **Content King** (Arman's real set `67408929-…`) data repaired directly (edges + prompt).
+- **Orchestrator inspector in Grid view.** `SetMemberGrid` now renders a non-sortable `OrchestratorTile` (accent hub, outside the DndContext, whole tile clickable for touch) with Quick look + Orchestrator details wired to the same `onOpenOrchestrator` path as the canvas.
 
 ### Partial — started, unfinished
 - **The headless "empty run" bug is mitigated, NOT root-caused.** In-browser, the describer sometimes returns empty `responseText` (the AI run doesn't execute) — this is what produced the original silent-corruption. Retry + loud error now handle it gracefully, but *why* the run doesn't execute is unconfirmed (suspected: v2 runtime / the API-endpoint or runtime toggles / a corrupted shared dev server). The describer itself is proven correct server-side. **Next person: reproduce on a clean runtime and read the new error toast — it names the real server error.**
 - **Deployment not confirmed live.** All code is committed and was swept into release `v0.4.118` by a concurrent session, but liveness on Vercel was not verified. Confirm the deployed build serves this code.
 
 ### Not started
-- **Orchestrator inspector in Grid view.** Only the Canvas hub node exposes it; `SetMemberGrid` shows members but has no orchestrator card/affordance.
 - Runtime delegation live verification, live canvas highlight, pipelines/DAG — all in the sibling handoff / `AGENT_SETS_ROADMAP.md`, not here.
 
 ### Known issues / risks
@@ -96,8 +96,7 @@ members (edges) + each member's config dump
 
 1. **Confirm deployment + smoke-test on a clean runtime.** Verify `v0.4.118` (or later) is live on Vercel and serves this code. Then log in at `/login` (`admin@admin.com` / `Password1234#`), `/agents/sets` → Generate orchestrator → add 2–3 members → **Sync agent listings**. Expect: member Role titles/gaps populate, the orchestrator prompt's `<available_agents>` matches them exactly, success toast reports the count.
 2. **Root-cause the headless empty-run bug.** If Sync ever returns the "role describer produced no output" error on a healthy runtime, that toast now carries the real server error — chase it (likely v2 `/v2/ai/agents/{id}` behavior or a runtime/endpoint toggle). Entry point: `pollForCompletion` and the execute path in `launch-agent-execution.thunk.ts`; the run is `displayMode:"background", isEphemeral:true`.
-3. **Add the orchestrator inspector to Grid view.** `SetMemberGrid` currently has no orchestrator affordance. Add a hub tile/button that calls the same `onOpenOrchestrator` path `SetBuilder` already wires for the canvas.
-4. **Delete the throwaway agent** `8bddf72b-…` once the Supabase MCP is re-authorized.
+3. **Delete the throwaway agent** `8bddf72b-…` once the Supabase MCP is re-authorized.
 
 ---
 

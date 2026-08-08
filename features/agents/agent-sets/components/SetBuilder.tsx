@@ -292,6 +292,7 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
                   members={members}
                   accent={accent}
                   onEdit={openMember}
+                  onOpenOrchestrator={openOrchestrator}
                 />
               )}
             </div>
