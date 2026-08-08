@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-28
+updated: 2026-08-08
 repos: [matrx-frontend, aidream]
 vision: []   # vision was given in-session; captured verbatim below
 ---
@@ -82,37 +82,23 @@ descriptions are fragments or absent.
 
 ## Remaining work (priority order)
 
-1. **Re-verify against prod.** `POST /ai/context/preview` is confirmed live
-   (present in `https://server.app.matrxserver.com/openapi.json`; `76934c9b9`
-   is an ancestor of the SHA prod reports at `/health/version`), but the only
-   browser pass ran against local aidream. Open the panel with the FE on the
-   prod backend; confirm block + variables render and errors don't fire. Trap:
-   the panel errors LOUDLY by design — an error state here is signal, not styling.
-2. **Live-verify the bindings section.** `bindings` renders only when an agent
-   with scope-bound variables/slots is active; no visible agent had any, so the
-   UI section has never displayed real data. Create/use an agent with a
-   `ctx_item` binding, open the panel with that agent, verify "Agent variable &
-   slot fill". The 422 `ScopeBindingUnresolved` path is code-verified only.
-3. **Itemize the always-sent baseline** in the Attached tab: attachments/resource
-   payloads (`resourcePayloads` in
-   `features/agents/redux/execution-system/thunks/execute-instance.thunk.ts` ~L140-152),
-   `request.variables`, observational memory (~L202-229), injected tool defs.
-   These are often the biggest part of what the agent sees.
-4. **Make items actionable** — per-item remove (X) in the Attached tab, reusing
-   the rail's `removeContextEntry` / `setConversationDocumentEnabledThunk`.
-   See it, then control it.
-5. **Copy-button hover check on touch.** Hover-revealed `InlineCopyButton`s are
-   invisible until hover; add `pointer-coarse:opacity-100` (pattern:
-   `RailPill` in `ConversationContextRail.tsx`).
+1. **Live-verify the bindings section** — chipped for a focused session: needs an
+   agent with a `ctx_item`-bound variable (none visible today). Until then the
+   "Agent variable & slot fill" UI and the 422 `ScopeBindingUnresolved` path
+   have never shown real data.
+2. **Declare the `matrx-user/context-preview` surface** — chipped: the panel has
+   no surface manifest (COMPLETENESS LAW gap). Pattern: `inheritsFrom:
+   "matrx-user/chat"`, see `assistant-message.manifest.ts`.
+3. **Canvas rung 6 (ambassador)** — the panel is only reachable from the chat
+   composer's `+` menu. Candidate additional hosts: agent run pages, shortcut
+   launch surfaces, the RunControls Context tab.
 
 ## Done
 
-- Endpoint built + deployed — `aidream/api/routers/context_preview.py` (aidream `76934c9b9`).
-- Panel + overlay + hook built — `features/agents/components/context-preview/` (FE `a86cfa209`, `01a97bb9e`).
-- `ContextLensBar` built (single T2-style pill) — later rehomed to `PlusAttachMenu` by a concurrent session.
-- Blocking `AgentSeesSheet` deleted; its content lives on as the Attached tab.
-- Browser-verified against LOCAL aidream: org-only, org+scope, two-scope
-  collision, live refetch on selection change, Attached tab.
+- Endpoint built + DEPLOYED to prod — `aidream/api/routers/context_preview.py`; panel re-verified against prod 2026-08-08.
+- Panel + overlay + hook + `ContextLensBar` built — `features/agents/components/context-preview/`; lens bar hosted in `PlusAttachMenu` ("Chat Options" `+`).
+- Attached tab itemizes every always-sent wire leg (resources / variables / memory / tools) with per-item remove via the composer's own actions; touch-visible copy buttons; Copy-all-for-AI in the Resolved strip (branch `claude/context-preview-catchup`, PR #51; identical commit `450a2c244` also sits additively on `claude/wave-a-finish` after a shared-worktree branch switch).
+- Blocking `AgentSeesSheet` deleted; browser-verified org-only / org+scope / two-scope collision / live refetch.
 
 ## Decisions needed (Arman)
 
