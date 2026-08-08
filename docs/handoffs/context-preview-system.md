@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-08
+updated: 2026-08-08   # bindings live-verify complete
 repos: [matrx-frontend, aidream]
 vision: []   # vision was given in-session; captured verbatim below
 ---
@@ -82,18 +82,24 @@ descriptions are fragments or absent.
 
 ## Remaining work (priority order)
 
-1. **Live-verify the bindings section** — chipped for a focused session: needs an
-   agent with a `ctx_item`-bound variable (none visible today). Until then the
-   "Agent variable & slot fill" UI and the 422 `ScopeBindingUnresolved` path
-   have never shown real data.
-2. **Declare the `matrx-user/context-preview` surface** — chipped: the panel has
+1. **Declare the `matrx-user/context-preview` surface** — chipped: the panel has
    no surface manifest (COMPLETENESS LAW gap). Pattern: `inheritsFrom:
    "matrx-user/chat"`, see `assistant-message.manifest.ts`.
-3. **Canvas rung 6 (ambassador)** — the panel is only reachable from the chat
+2. **Canvas rung 6 (ambassador)** — the panel is only reachable from the chat
    composer's `+` menu. Candidate additional hosts: agent run pages, shortcut
    launch surfaces, the RunControls Context tab.
 
 ## Done
+
+- Bindings section live-verified 2026-08-08 — standing test asset: agent
+  "Context Binding Test Agent" (`agent.definition` id
+  `02894aa7-18c5-4b51-901a-91118442dce4`, Castellano & Reyes org): two
+  `ctx_item`-bound variables on the clients scope type (`client_type` with
+  `onMissing:"error"`, `claims_administrator`) + one bound context slot
+  (`client_primary_contact`). Verified in `/chat/a/<id>`: CSV Pharmacy and
+  Golden State each render their own scope-filled values in "Agent variable &
+  slot fill"; deselecting the Client scope renders the loud 422
+  `ScopeBindingUnresolved` "Preview unavailable" state with the server detail.
 
 - Endpoint built + DEPLOYED to prod — `aidream/api/routers/context_preview.py`; panel re-verified against prod 2026-08-08.
 - Panel + overlay + hook + `ContextLensBar` built — `features/agents/components/context-preview/`; lens bar hosted in `PlusAttachMenu` ("Chat Options" `+`).
