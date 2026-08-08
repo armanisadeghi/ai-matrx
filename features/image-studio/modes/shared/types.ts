@@ -66,6 +66,13 @@ export interface ModeShellProps {
    * file (e.g. the marketing Media workspace saving a new brand asset).
    */
   preserveSource?: boolean;
+  /**
+   * Fired whenever the file the editor is working against changes — i.e.
+   * when `preserveSource` chains an AI-op result onto its own new row.
+   * Callers with sibling actions that target "the image currently in the
+   * editor" (e.g. the marketing standards strip) key off this.
+   */
+  onWorkingFileIdChange?: (fileId: string) => void;
   /** Called after a successful save. */
   onSave?: (result: SaveResult) => void;
   /** Called when the user cancels (modal mode). */

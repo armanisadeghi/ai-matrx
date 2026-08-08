@@ -181,6 +181,7 @@ export function EditModeShell({
   defaultFolder = EDIT_FOLDER,
   presentation = "page",
   preserveSource = false,
+  onWorkingFileIdChange,
   onSave,
   onCancel,
 }: ModeShellProps) {
@@ -285,7 +286,10 @@ export function EditModeShell({
         // Derivative-only mode: never fold the op result into the source's
         // version history. The backend already created a new cld_files row
         // for the result — chain the next op (and the caller's save) on it.
-        if (newFileId) setChainFileId(newFileId);
+        if (newFileId) {
+          setChainFileId(newFileId);
+          onWorkingFileIdChange?.(newFileId);
+        }
         toast.success("Result loaded — the original file is untouched.");
         return;
       }
@@ -343,7 +347,7 @@ export function EditModeShell({
         );
       }
     },
-    [defaultFolder, effectiveCloudFileId, mask, preserveSource],
+    [defaultFolder, effectiveCloudFileId, mask, preserveSource, onWorkingFileIdChange],
   );
 
   const handleVersionRestored = useCallback(() => {
@@ -528,13 +532,15 @@ export function EditModeShell({
 
   const handleGenerateVariants = useCallback(
     async (preset: AssetPreset) => {
-      if (!effectiveCloudFileId) {
+      // Variants render from the image currently in the editor — the chained
+      // op result in preserveSource mode, the source file otherwise.
+      if (!opTargetFileId) {
         toast.info("Save first, then we can render size variants.");
         return;
       }
       setSavingVariants(preset);
       try {
-        await addAssetVariants(effectiveCloudFileId, { preset });
+        await addAssetVariants(opTargetFileId, { preset });
         toast.success(`${labelForPreset(preset)} variants generated.`);
       } catch (err) {
         const msg =
@@ -544,7 +550,7 @@ export function EditModeShell({
         setSavingVariants(null);
       }
     },
-    [effectiveCloudFileId],
+    [opTargetFileId],
   );
 
   // Back navigates to the editor landing — the user's expected "start over"
@@ -599,9 +605,12 @@ export function EditModeShell({
             </Tooltip>
           ) : null}
 
+          {/* Inline rename writes to the SOURCE file — disabled (display-
+              only) in preserveSource mode, where the source must stay
+              untouched. */}
           <FilenameField
             displayName={displayName}
-            cloudFileId={effectiveCloudFileId}
+            cloudFileId={preserveSource ? null : effectiveCloudFileId}
             onRename={handleRename}
           />
           {effectiveCloudFileId ? null : (

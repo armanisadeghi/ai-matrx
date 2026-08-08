@@ -12,8 +12,12 @@
  * On top of the editor sits a "Fit to standards" strip: one-click renders of
  * the site's media-standards slots (`web.site.settings.media_standards`) via
  * the generic `POST /images/edit` `resize` op (`fit: "cover"`, the slot's
- * format). Every produced file is saved back as a new `web.brand_asset` row
- * so results land in the brand library beside the source.
+ * format). Slot renders target the WORKING file — the latest chained AI-op
+ * result / editor save reported through `onWorkingFileIdChange`, so "remove
+ * background, then render the hero slot" operates on what's on screen, not
+ * the untouched source. Every produced file is saved back as a new
+ * `web.brand_asset` row so results land in the brand library beside the
+ * source.
  *
  * Reuse map (nothing forked): EditModeShell (canonical editor) ·
  * `applyEdit` (typed Python image-ops client) · `useCreateBrandAsset`
@@ -108,14 +112,54 @@ export function AssetImageEditorDialog({
   organizationId: string;
   standards: SiteMediaStandards;
 }) {
+  const fileId = asset?.file_id ?? null;
+  return (
+    <Dialog open={Boolean(asset && fileId)} onOpenChange={onOpenChange}>
+      <DialogContent className="flex h-[94dvh] w-[96vw] max-w-[1400px] flex-col gap-0 overflow-hidden p-0 sm:max-w-[1400px]">
+        {asset && fileId ? (
+          // Keyed per asset so working-file / per-slot state never leaks
+          // between different assets opened in the same dialog instance.
+          <AssetEditorBody
+            key={asset.id}
+            asset={asset}
+            sourceFileId={fileId}
+            brandId={brandId}
+            organizationId={organizationId}
+            standards={standards}
+            onClose={() => onOpenChange(false)}
+          />
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AssetEditorBody({
+  asset,
+  sourceFileId,
+  brandId,
+  organizationId,
+  standards,
+  onClose,
+}: {
+  asset: BrandAsset;
+  sourceFileId: string;
+  brandId: string;
+  organizationId: string;
+  standards: SiteMediaStandards;
+  onClose: () => void;
+}) {
   const createAsset = useCreateBrandAsset();
   const [renderingSlotId, setRenderingSlotId] = useState<string | null>(null);
   const [renderedSlotIds, setRenderedSlotIds] = useState<Set<string>>(
     () => new Set(),
   );
+  // The file the editor is currently working against: the source until an
+  // AI op / save chains onto a new result row (EditModeShell reports these
+  // via onWorkingFileIdChange). Slot renders always target THIS id.
+  const [workingFileId, setWorkingFileId] = useState<string>(sourceFileId);
 
-  const fileId = asset?.file_id ?? null;
-  const baseTitle = asset?.title || "Asset";
+  const baseTitle = asset.title || "Asset";
 
   const renderableSlots = useMemo(
     () =>
@@ -131,7 +175,6 @@ export function AssetImageEditorDialog({
       title: string;
       notes: string;
     }): Promise<void> => {
-      if (!asset) return;
       await createAsset.mutateAsync({
         organizationId,
         brandId,
@@ -149,11 +192,11 @@ export function AssetImageEditorDialog({
 
   const renderSlot = useCallback(
     async (slot: MediaStandardSlot) => {
-      if (!fileId || !asset || !slot.width || !slot.height) return;
+      if (!slot.width || !slot.height) return;
       setRenderingSlotId(slot.id);
       try {
         const result = await applyEdit({
-          source_id: fileId,
+          source_id: workingFileId,
           op: "resize",
           params: { width: slot.width, height: slot.height, fit: "cover" },
           output: {
@@ -182,18 +225,19 @@ export function AssetImageEditorDialog({
         setRenderingSlotId(null);
       }
     },
-    [asset, baseTitle, fileId, saveDerivative],
+    [asset.id, baseTitle, saveDerivative, workingFileId],
   );
 
   const handleEditorSave = useCallback(
     (result: SaveResult) => {
-      if (!asset) return;
-      if (result.fileId === asset.file_id) {
+      if (result.fileId === sourceFileId) {
         // preserveSource makes this unreachable, but guard anyway: a save
         // that landed on the source file needs no new library row.
         toast.success("Image saved.");
         return;
       }
+      // Subsequent slot renders should run against what was just saved.
+      setWorkingFileId(result.fileId);
       void (async () => {
         try {
           await saveDerivative({
@@ -215,82 +259,76 @@ export function AssetImageEditorDialog({
         }
       })();
     },
-    [asset, saveDerivative],
+    [asset.id, saveDerivative, sourceFileId],
   );
 
   const source = useMemo(
-    () =>
-      fileId ? ({ kind: "cloudFileId", cloudFileId: fileId } as const) : null,
-    [fileId],
+    () => ({ kind: "cloudFileId", cloudFileId: sourceFileId }) as const,
+    [sourceFileId],
   );
 
   return (
-    <Dialog open={Boolean(asset && fileId)} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[94dvh] w-[96vw] max-w-[1400px] flex-col gap-0 overflow-hidden p-0 sm:max-w-[1400px]">
-        <DialogHeader className="shrink-0 space-y-0.5 border-b border-border px-3 py-2">
-          <DialogTitle className="text-sm">
-            Edit image — {baseTitle}
-          </DialogTitle>
-          <DialogDescription className="text-[11px]">
-            Every save creates a new brand-library asset. The original is
-            never modified.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <DialogHeader className="shrink-0 space-y-0.5 border-b border-border px-3 py-2">
+        <DialogTitle className="text-sm">Edit image — {baseTitle}</DialogTitle>
+        <DialogDescription className="text-[11px]">
+          Every save creates a new brand-library asset. The original is never
+          modified.
+        </DialogDescription>
+      </DialogHeader>
 
-        {renderableSlots.length > 0 ? (
-          <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-border bg-muted/30 px-2 py-1">
-            <span className="mr-1 flex shrink-0 items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
-              <Ruler className="h-3 w-3" />
-              Fit to standards
-            </span>
-            {renderableSlots.map((slot) => {
-              const rendering = renderingSlotId === slot.id;
-              const done = renderedSlotIds.has(slot.id);
-              return (
-                <Tooltip key={slot.id}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 shrink-0 gap-1.5 text-xs text-foreground/80 hover:text-foreground"
-                      disabled={renderingSlotId !== null}
-                      onClick={() => void renderSlot(slot)}
-                    >
-                      {rendering ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : done ? (
-                        <Check className="h-3.5 w-3.5 text-emerald-500" />
-                      ) : null}
-                      {slot.name}
-                      <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
-                        {slot.width}×{slot.height}
-                      </span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Render a {slot.width}×{slot.height}{" "}
-                    {slotOutputFormat(slot.format)} (cover crop) and save it
-                    to the brand library
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
-          </div>
-        ) : null}
-
-        <div className="min-h-0 flex-1">
-          {source ? (
-            <EditModeShell
-              source={source}
-              defaultFolder={LIBRARY_FOLDER}
-              presentation="modal"
-              preserveSource
-              onSave={handleEditorSave}
-              onCancel={() => onOpenChange(false)}
-            />
-          ) : null}
+      {renderableSlots.length > 0 ? (
+        <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-border bg-muted/30 px-2 py-1">
+          <span className="mr-1 flex shrink-0 items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+            <Ruler className="h-3 w-3" />
+            Fit to standards
+          </span>
+          {renderableSlots.map((slot) => {
+            const rendering = renderingSlotId === slot.id;
+            const done = renderedSlotIds.has(slot.id);
+            return (
+              <Tooltip key={slot.id}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 shrink-0 gap-1.5 text-xs text-foreground/80 hover:text-foreground"
+                    disabled={renderingSlotId !== null}
+                    onClick={() => void renderSlot(slot)}
+                  >
+                    {rendering ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : done ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-500" />
+                    ) : null}
+                    {slot.name}
+                    <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                      {slot.width}×{slot.height}
+                    </span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Render a {slot.width}×{slot.height}{" "}
+                  {slotOutputFormat(slot.format)} cover-crop of the image in
+                  the editor and save it to the brand library
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
         </div>
-      </DialogContent>
-    </Dialog>
+      ) : null}
+
+      <div className="min-h-0 flex-1">
+        <EditModeShell
+          source={source}
+          defaultFolder={LIBRARY_FOLDER}
+          presentation="modal"
+          preserveSource
+          onWorkingFileIdChange={setWorkingFileId}
+          onSave={handleEditorSave}
+          onCancel={onClose}
+        />
+      </div>
+    </>
   );
 }
