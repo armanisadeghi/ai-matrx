@@ -449,11 +449,17 @@ function TagsEditor({
           size="sm"
           variant="ghost"
           className="h-7 px-2"
+          aria-label="Cancel edit"
           onClick={onCancel}
         >
           <X className="h-3.5 w-3.5" />
         </Button>
-        <Button size="sm" className="h-7 px-2" onClick={() => onCommit(tags)}>
+        <Button
+          size="sm"
+          className="h-7 px-2"
+          aria-label="Apply tags"
+          onClick={() => onCommit(tags)}
+        >
           <Check className="h-3.5 w-3.5" />
         </Button>
       </div>
@@ -493,6 +499,7 @@ function NumberEditor({
           size="sm"
           variant="ghost"
           className="h-7"
+          aria-label="Cancel edit"
           onClick={onCancel}
         >
           <X className="h-3.5 w-3.5" />
@@ -501,6 +508,7 @@ function NumberEditor({
           type="button"
           size="sm"
           className="h-7"
+          aria-label="Apply value"
           onClick={() => {
             const n = Number(draft);
             if (Number.isFinite(n)) onCommit(n);

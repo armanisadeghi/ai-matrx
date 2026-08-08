@@ -144,6 +144,7 @@ export function CopyButtons({
         className={buttonCls}
         disabled={disabled}
         onClick={handleHuman}
+        aria-label={`Copy ${label} (human-readable)`}
         title={`Copy ${label} (human-readable)`}
       >
         {copied === "human" ? (
@@ -161,6 +162,7 @@ export function CopyButtons({
           className={buttonCls}
           disabled={disabled}
           onClick={handleJson}
+          aria-label={`Copy ${label} as JSON`}
           title={`Copy ${label} as JSON`}
         >
           {copied === "json" ? (
@@ -178,6 +180,7 @@ export function CopyButtons({
         className={buttonCls}
         disabled={disabled}
         onClick={handleAgent}
+        aria-label={`Copy ${label} for AI agent`}
         title={`Copy ${label} with full context, formatted for an AI agent`}
       >
         {copied === "agent" ? (

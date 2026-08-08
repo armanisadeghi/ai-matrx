@@ -67,3 +67,60 @@ describe("MatrxDataTable controlled mode", () => {
     expect(markup).toContain("1-1 of 2");
   });
 });
+
+describe("MatrxDataTable accessibility & mobile presentation", () => {
+  it("names icon-only controls and reports sort state", () => {
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[{ id: "row-a", name: "Alpha" }]}
+        columns={COLUMNS}
+        getRowId={(row) => row.id}
+        query={{
+          mode: "controlled",
+          state: {
+            ...CONTROLLED_STATE,
+            page: 1,
+            sort: { id: "name", direction: "asc" },
+          },
+          totalItems: 1,
+          onStateChange: jest.fn(),
+        }}
+        detail={{}}
+      />,
+    );
+
+    expect(markup).toContain('aria-sort="ascending"');
+    // (The header filter trigger's `Sort or filter <column>` aria-label lives
+    // inside a Radix Popover trigger, which does not render in static markup —
+    // covered by browser verification instead.)
+    // CONTROLLED_STATE carries a non-empty search → the clear X renders.
+    expect(markup).toContain('aria-label="Clear search"');
+    // detail enabled → the row panel-icon renders.
+    expect(markup).toContain('aria-label="Open in window"');
+  });
+
+  it("freezes the first (identity) column below sm by default", () => {
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[{ id: "row-a", name: "Alpha" }]}
+        columns={COLUMNS}
+        getRowId={(row) => row.id}
+        detail={{ enabled: false }}
+      />,
+    );
+    expect(markup).toContain("max-sm:sticky");
+  });
+
+  it('mobile="plain" opts out of the frozen first column', () => {
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[{ id: "row-a", name: "Alpha" }]}
+        columns={COLUMNS}
+        getRowId={(row) => row.id}
+        detail={{ enabled: false }}
+        mobile="plain"
+      />,
+    );
+    expect(markup).not.toContain("max-sm:sticky");
+  });
+});

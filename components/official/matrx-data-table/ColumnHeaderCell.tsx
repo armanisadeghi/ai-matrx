@@ -39,6 +39,8 @@ import { isColumnFilterActive } from "./filter-engine";
 
 interface ColumnHeaderCellProps {
   label: React.ReactNode;
+  /** Plain-text column name for icon-only control aria-labels. */
+  labelText?: string;
   sortable: boolean;
   isSorted: boolean;
   sortDirection: SortDirection;
@@ -56,6 +58,7 @@ interface ColumnHeaderCellProps {
 
 export function ColumnHeaderCell({
   label,
+  labelText,
   sortable,
   isSorted,
   sortDirection,
@@ -115,6 +118,11 @@ export function ColumnHeaderCell({
             <PopoverTrigger asChild>
               <button
                 type="button"
+                aria-label={
+                  labelText
+                    ? `Sort or filter ${labelText}`
+                    : "Sort or filter column"
+                }
                 title="Sort or filter column"
                 onClick={(e) => e.stopPropagation()}
                 className={cn(
@@ -189,6 +197,9 @@ export function ColumnHeaderCell({
           {filterActive ? (
             <button
               type="button"
+              aria-label={
+                labelText ? `Clear ${labelText} filter` : "Clear this filter"
+              }
               title="Clear this filter"
               onClick={(e) => {
                 e.stopPropagation();
@@ -274,6 +285,7 @@ function FilterBody({
             {text ? (
               <button
                 type="button"
+                aria-label="Clear filter text"
                 className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
                 onClick={() => onChange(undefined)}
               >

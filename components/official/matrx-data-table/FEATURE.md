@@ -39,6 +39,46 @@ tables (AI Models, relationships, …) can cut over to one contract.
 - **Never static-import `WindowPanel`** from a route — go through `DataRowWindow.dynamic.tsx`.
 - **No barrel `index.ts`.** Import from source files.
 
+## Mobile presentation (< `sm`, ~640px) — deliberate horizontal scroll
+
+**Chosen: a frozen-identity-column scroll surface, not a card/list mode.**
+Below `sm` the table sizes to its content (`w-max`) and the container scrolls
+horizontally; the **first column freezes** (`max-sm:sticky left-0`, opaque
+`bg-card` inherit) so every row stays identifiable, and a **right-edge fade +
+chevron affordance** renders while more columns sit off-screen (recomputed on
+scroll/resize, gone at scroll end). Desktop rendering is untouched.
+
+*Why scroll over cards:* every consumer keeps full parity for free — sort,
+per-column filters, inline edit, FK cells, row/window actions all keep working
+with zero per-consumer config. A card mode would fork rendering (its own edit,
+copy, FK, selection surfaces), demand a "primary column" convention ~20
+existing consumers never declared, and silently drop the column-comparison
+scanning that admin tables exist for. Scroll keeps ONE rendering path; the
+frozen identity column + visible affordance is what makes it intentional
+rather than raw overflow.
+
+- **Zero-config.** Consumers do nothing. Opt out with `mobile="plain"`
+  (removes the frozen column + affordance; content-sized scrolling stays —
+  wrapping every column at 390px is never the right rendering).
+- The first visible column is the identity column — order columns so the
+  row's name/title/id comes first.
+
+## Accessible names — every icon-only control MUST have `aria-label`
+
+`title` alone is not an accessible name contract — every icon-only interactive
+element gets an explicit `aria-label` (keep `title` too for hover tooltips).
+The primitive covers its own controls: sort/filter header trigger
+(`Sort or filter <column>` — pass string `header`s so the label is meaningful;
+non-string headers fall back to the column id), clear-filter Xs, search/any-of
+clear Xs, facet clear X, pagination arrows, panel-icon (`Open in window`),
+UUID copy/open buttons, editor Save/Cancel, Copy/Export buttons.
+
+**Consumer rule:** any icon-only or state-only control you render inside a
+`cell`, `rowActions`, `headerActions`, or facet — a `Switch`, icon `Button`,
+checkbox — must carry a row-specific `aria-label` (e.g.
+`aria-label={`Enable ${row.name}`}`), not a bare icon. Sorted headers also
+expose `aria-sort` on the `<th>` automatically.
+
 ## Contract (short)
 
 ```tsx
@@ -103,6 +143,7 @@ Do not drop these when replacing `AiModelTable`:
 
 ## Change Log
 
+- `2026-08-08` — Mobile scroll surface completed: right-edge fade + chevron scroll affordance, `mobile="scroll"|"plain"` opt-out, frozen-column decision documented. Accessible-name audit: `aria-label` on every icon-only control (header filter trigger with column name, clear Xs, panel-icon, UUID open/copy, editor Save/Cancel, Copy/Export), `aria-sort` on sorted `<th>`. Consumer aria-label rule added.
 - `2026-07-19` — Sticky header uses `bg-muted/90` + backdrop blur so column labels contrast with `bg-card` body rows.
 - `2026-07-19` — Filter overhaul: multi-select (OR `values` set, back-compat with single `value`), automatic (empty)/(not empty) select sentinels, text filter Contains/(empty)/(not empty) modes, explicit-select options uncapped, empties sort last both directions.
 

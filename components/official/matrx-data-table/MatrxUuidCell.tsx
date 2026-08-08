@@ -160,6 +160,7 @@ export function MatrxUuidCell({
       return (
         <button
           type="button"
+          aria-label={`Open ${label ?? "record"} ${display}`}
           onClick={(e) => void handleOpen(e)}
           disabled={opening}
           className="inline-flex min-w-0 items-center gap-1 font-mono text-xs text-sky-600 hover:underline dark:text-sky-400 disabled:opacity-60"
@@ -176,6 +177,7 @@ export function MatrxUuidCell({
           href={href}
           target="_blank"
           rel="noopener noreferrer"
+          aria-label={`Open ${label ?? "record"} ${display} in a new tab`}
           onClick={stop}
           className="inline-flex min-w-0 items-center gap-1 font-mono text-xs text-sky-600 hover:underline dark:text-sky-400"
         >

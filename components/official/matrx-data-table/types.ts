@@ -328,6 +328,15 @@ export interface MatrxDataTableProps<T> {
   zebra?: boolean;
   className?: string;
   tableClassName?: string;
+  /**
+   * Mobile (< sm) presentation. Default `"scroll"` — a deliberate horizontal
+   * scroll surface: the table sizes to its content, the first (identity)
+   * column freezes, and a right-edge fade + chevron affordance shows while
+   * more columns sit off-screen. `"plain"` opts out of the frozen column and
+   * the affordance (content-sized scrolling stays — wrapping every column at
+   * 390px is never the right rendering). Zero-config for consumers.
+   */
+  mobile?: "scroll" | "plain";
   /** Called after a row is selected for detail (in addition to opening the panel). */
   onRowOpen?: (row: T) => void;
 }

@@ -4,11 +4,13 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import { Eraser, PanelRight, Search, X } from "lucide-react";
+import { ChevronRight, Eraser, PanelRight, Search, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,8 +87,10 @@ export function MatrxDataTable<T>({
   zebra = true,
   className,
   tableClassName,
+  mobile = "scroll",
   onRowOpen,
 }: MatrxDataTableProps<T>) {
+  const mobileScroll = mobile !== "plain";
   const controlledQuery = query?.mode === "controlled" ? query : null;
   const emitControlledQueryChange = useCallback(
     (
@@ -199,6 +203,21 @@ export function MatrxDataTable<T>({
   const [windowRowId, setWindowRowId] = useState<string | null>(null);
   const [edits, setEdits] = useState<CellEditsMap>({});
   const [saving, setSaving] = useState(false);
+
+  // Mobile scroll affordance: edge fades (+ chevron) show that more columns
+  // exist off-screen. Recomputed on scroll/resize; desktop hides them via CSS.
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [scrollHintRight, setScrollHintRight] = useState(false);
+  const updateScrollHint = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setScrollHintRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+  }, []);
+  useEffect(() => {
+    updateScrollHint();
+    window.addEventListener("resize", updateScrollHint);
+    return () => window.removeEventListener("resize", updateScrollHint);
+  }, [updateScrollHint, data, columns]);
 
   const visibleColumns = useMemo(
     () => columns.filter((c) => !c.hidden),
@@ -419,6 +438,7 @@ export function MatrxDataTable<T>({
               {searchValue ? (
                 <button
                   type="button"
+                  aria-label="Clear search"
                   className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
                   onClick={() => setSearchValue("")}
                 >
@@ -441,6 +461,7 @@ export function MatrxDataTable<T>({
               {anyOfValue ? (
                 <button
                   type="button"
+                  aria-label="Clear match-any search"
                   className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
                   onClick={() => setAnyOfValue("")}
                 >
@@ -517,13 +538,16 @@ export function MatrxDataTable<T>({
       )}
 
       {/* Table */}
-      <div
-        aria-busy={isLoading || isFetching}
-        className={cn(
-          "relative min-h-0 flex-1 overflow-auto rounded-md border border-border bg-card",
-          tableClassName,
-        )}
-      >
+      <div className="relative min-h-0 flex-1">
+        <div
+          ref={scrollRef}
+          onScroll={updateScrollHint}
+          aria-busy={isLoading || isFetching}
+          className={cn(
+            "relative h-full w-full overflow-auto rounded-md border border-border bg-card",
+            tableClassName,
+          )}
+        >
         {isFetching && !isLoading ? (
           <div
             role="status"
@@ -533,18 +557,21 @@ export function MatrxDataTable<T>({
             <span className="sr-only">Refreshing table data</span>
           </div>
         ) : null}
-        {/* Below `sm` the table sizes to its CONTENT (w-max) and the container
-            scrolls horizontally, instead of crushing every column into an
-            unreadable wrap. Cells go nowrap + capped width (see below) and the
-            first column freezes, so a row stays identifiable while scrolling.
-            Desktop (>= sm) is byte-identical to before. */}
-        {/* Mobile-first on purpose: below `sm` the table sizes to its CONTENT
-            (w-max + max-w-none — a global `table { max-width: 100% }` otherwise
-            clamps it and silently kills the scroll) so the container scrolls
-            horizontally instead of crushing every column. `sm:` restores the
-            exact desktop rendering. Written mobile-first rather than with
-            `max-sm:` because a base `w-full` outranks `max-sm:w-max`. */}
-        <table className="w-max min-w-full max-w-none caption-bottom text-sm sm:w-full sm:min-w-0 sm:max-w-full">
+        {/* Below `sm` the table sizes to its CONTENT (w-max + max-w-none — a
+            global `table { max-width: 100% }` otherwise clamps it and silently
+            kills the scroll) so the container scrolls horizontally instead of
+            crushing every column into an unreadable wrap. Cells go nowrap and
+            the first column freezes (unless `mobile="plain"`), so a row stays
+            identifiable while scrolling. Written mobile-first rather than with
+            `max-sm:` because a base `w-full` outranks `max-sm:w-max`; `sm:`
+            restores the exact desktop rendering.
+            The `table` + `overflow-visible` utilities are LOAD-BEARING: a
+            globals.css base rule makes every `table` `display:block;
+            overflow-x:auto` under 768px, which turns the table into its own
+            scroller — the frozen column then sticks to the table's scrollport
+            (which itself moves) and never freezes. Utilities outrank the
+            `@layer base` rule and restore real table layout. */}
+        <table className="table w-max min-w-full max-w-none caption-bottom overflow-visible text-sm sm:w-full sm:min-w-0 sm:max-w-full">
           <thead className="sticky top-0 z-10 border-b border-border bg-muted/90 shadow-[0_1px_0_0_var(--border)] backdrop-blur-sm">
             <tr>
               {visibleColumns.map((col, colIdx) => {
@@ -554,27 +581,36 @@ export function MatrxDataTable<T>({
                 return (
                   <th
                     key={id}
+                    aria-sort={
+                      isSorted
+                        ? sort?.direction === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : undefined
+                    }
                     className={cn(
                       "h-9 px-2 text-left align-middle max-sm:whitespace-nowrap",
-                      colIdx === 0 &&
-                        "max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-inherit",
+                      // bg-inherit picks up the thead's translucent bg-muted/90
+                      // but NOT its backdrop-filter — re-apply the blur so
+                      // scrolled-under header text can't ghost through.
+                      mobileScroll &&
+                        colIdx === 0 &&
+                        "max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-inherit max-sm:backdrop-blur-sm",
+                      // Consumer widths are desktop tuning: applied from `sm`
+                      // up via a CSS var, so mobile stays content-sized
+                      // (nowrap + a hard width would bleed into the next cell).
+                      col.width !== undefined && "sm:w-[var(--matrx-col-w)]",
                       col.headerClassName,
                       col.align === "center" && "text-center",
                       col.align === "right" && "text-right",
                     )}
-                    style={
-                      col.width !== undefined
-                        ? {
-                            width:
-                              typeof col.width === "number"
-                                ? `${col.width}px`
-                                : col.width,
-                          }
-                        : undefined
-                    }
+                    style={columnWidthVar(col.width)}
                   >
                     <ColumnHeaderCell
                       label={col.header}
+                      labelText={
+                        typeof col.header === "string" ? col.header : id
+                      }
                       sortable={col.sortable !== false}
                       isSorted={Boolean(isSorted)}
                       sortDirection={sort?.direction ?? "asc"}
@@ -694,26 +730,16 @@ export function MatrxDataTable<T>({
                             // nowrap (NOT truncate — truncate clips the cell and
                             // defeats w-max, killing the horizontal scroll).
                             "max-sm:whitespace-nowrap",
-                            colIdx === 0 &&
+                            mobileScroll &&
+                              colIdx === 0 &&
                               "max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:bg-inherit",
+                            col.width !== undefined &&
+                              "sm:w-[var(--matrx-col-w)] sm:max-w-[var(--matrx-col-w)]",
                             col.className,
                             col.align === "center" && "text-center",
                             col.align === "right" && "text-right",
                           )}
-                          style={
-                            col.width !== undefined
-                              ? {
-                                  width:
-                                    typeof col.width === "number"
-                                      ? `${col.width}px`
-                                      : col.width,
-                                  maxWidth:
-                                    typeof col.width === "number"
-                                      ? `${col.width}px`
-                                      : col.width,
-                                }
-                              : undefined
-                          }
+                          style={columnWidthVar(col.width)}
                         >
                           {editable && col.editable ? (
                             <EditableTableCell
@@ -770,6 +796,7 @@ export function MatrxDataTable<T>({
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                              aria-label="Open in window"
                               title="Open in window"
                               onClick={(e) => openWindow(row, e)}
                             >
@@ -785,6 +812,19 @@ export function MatrxDataTable<T>({
             )}
           </tbody>
         </table>
+        </div>
+        {/* Mobile-only scroll affordance: right/left edge fades over the
+            scroll container (siblings, so they don't scroll away). The right
+            fade carries a chevron until the user reaches the end. Desktop
+            (>= sm) never shows them; `mobile="plain"` opts out entirely. */}
+        {mobileScroll && scrollHintRight ? (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 z-30 flex w-10 items-center justify-end rounded-r-md bg-gradient-to-l from-card via-card/60 to-transparent pr-0.5 sm:hidden"
+          >
+            <ChevronRight className="h-4 w-4 text-muted-foreground/70" />
+          </div>
+        ) : null}
       </div>
 
       {(controlledQuery || defaultPageSize !== 0) && totalItems > 0 ? (
@@ -836,6 +876,7 @@ export function MatrxDataTable<T>({
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
+                  aria-label="Open in window"
                   title="Open in window"
                   onClick={() => openWindow(selectedRow)}
                 >
@@ -915,6 +956,20 @@ export function MatrxDataTable<T>({
       ) : null}
     </div>
   );
+}
+
+/**
+ * Consumer column widths apply ONLY from `sm` up (via the paired
+ * `sm:w-[var(--matrx-col-w)]` utilities) — below `sm` the table is
+ * content-sized, and a hard width plus nowrap would bleed text across cells.
+ */
+function columnWidthVar(
+  width: string | number | undefined,
+): CSSProperties | undefined {
+  if (width === undefined) return undefined;
+  return {
+    "--matrx-col-w": typeof width === "number" ? `${width}px` : width,
+  } as CSSProperties;
 }
 
 function renderCell<T>(

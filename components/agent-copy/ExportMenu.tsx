@@ -56,6 +56,7 @@ export function ExportMenu({
           size={isIcon ? "icon" : "sm"}
           className={isIcon ? `h-7 w-7 ${className ?? ""}` : className}
           disabled={disabled}
+          aria-label={`Export ${label}`}
           title={`Export ${label}`}
           onClick={(e) => e.stopPropagation()}
         >

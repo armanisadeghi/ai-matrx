@@ -50,6 +50,7 @@ export function ToolbarFacets({ facets }: { facets: ToolbarFacet[] }) {
                     <span
                       role="button"
                       tabIndex={0}
+                      aria-label={`Clear ${facet.label ?? opt.label} filter`}
                       title="Clear this filter"
                       className="ml-0.5 inline-flex rounded-sm p-0.5 hover:bg-primary-foreground/20"
                       onClick={(e) => {
