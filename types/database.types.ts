@@ -16367,6 +16367,75 @@ export type Database = {
         }
         Relationships: []
       }
+      content_blocks: {
+        Row: {
+          block_id: string
+          category_id: string | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          icon_name: string
+          id: string
+          is_active: boolean | null
+          label: string
+          metadata: Json
+          organization_id: string
+          project_id: string | null
+          sort_order: number | null
+          task_id: string | null
+          template: string
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number
+        }
+        Insert: {
+          block_id: string
+          category_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          icon_name: string
+          id?: string
+          is_active?: boolean | null
+          label: string
+          metadata?: Json
+          organization_id: string
+          project_id?: string | null
+          sort_order?: number | null
+          task_id?: string | null
+          template: string
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Update: {
+          block_id?: string
+          category_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          icon_name?: string
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          project_id?: string | null
+          sort_order?: number | null
+          task_id?: string | null
+          template?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       conversation: {
         Row: {
           created_at: string
@@ -26004,75 +26073,6 @@ export type Database = {
         }
         Relationships: []
       }
-      content_blocks: {
-        Row: {
-          block_id: string
-          category_id: string | null
-          created_at: string | null
-          created_by: string | null
-          deleted_at: string | null
-          description: string | null
-          icon_name: string
-          id: string
-          is_active: boolean | null
-          label: string
-          metadata: Json
-          organization_id: string
-          project_id: string | null
-          sort_order: number | null
-          task_id: string | null
-          template: string
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-        }
-        Insert: {
-          block_id: string
-          category_id?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          icon_name: string
-          id?: string
-          is_active?: boolean | null
-          label: string
-          metadata?: Json
-          organization_id: string
-          project_id?: string | null
-          sort_order?: number | null
-          task_id?: string | null
-          template: string
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Update: {
-          block_id?: string
-          category_id?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          icon_name?: string
-          id?: string
-          is_active?: boolean | null
-          label?: string
-          metadata?: Json
-          organization_id?: string
-          project_id?: string | null
-          sort_order?: number | null
-          task_id?: string | null
-          template?: string
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Relationships: []
-      }
       custom_app_configs: {
         Row: {
           accent_color: string | null
@@ -27854,66 +27854,6 @@ export type Database = {
           prompt_builtin_id: string | null
           sort_order: number | null
           template: string | null
-        }
-        Relationships: []
-      }
-      content_template: {
-        Row: {
-          content: string | null
-          created_at: string | null
-          created_by: string | null
-          deleted_at: string | null
-          id: string | null
-          is_public: boolean | null
-          label: string | null
-          metadata: Json | null
-          organization_id: string | null
-          project_id: string | null
-          role: Database["public"]["Enums"]["message_role"] | null
-          tags: string[] | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number | null
-          visibility: Database["platform"]["Enums"]["visibility"] | null
-        }
-        Insert: {
-          content?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string | null
-          is_public?: boolean | null
-          label?: string | null
-          metadata?: Json | null
-          organization_id?: string | null
-          project_id?: string | null
-          role?: Database["public"]["Enums"]["message_role"] | null
-          tags?: string[] | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number | null
-          visibility?: Database["platform"]["Enums"]["visibility"] | null
-        }
-        Update: {
-          content?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string | null
-          is_public?: boolean | null
-          label?: string | null
-          metadata?: Json | null
-          organization_id?: string | null
-          project_id?: string | null
-          role?: Database["public"]["Enums"]["message_role"] | null
-          tags?: string[] | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number | null
-          visibility?: Database["platform"]["Enums"]["visibility"] | null
         }
         Relationships: []
       }
