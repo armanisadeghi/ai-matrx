@@ -541,6 +541,11 @@ export function SiteOverview() {
               metrics={metrics}
               pendingDiscovered={pendingDiscovered.data ?? 0}
               sitePath={sitePath}
+              gscConnected={statuses.some(
+                (status) =>
+                  status.key === "search_console" &&
+                  status.state === "connected",
+              )}
             />
 
             <div className="grid gap-3.5 sm:gap-4 lg:grid-cols-2">
@@ -774,10 +779,12 @@ function KpiGrid({
   metrics,
   pendingDiscovered,
   sitePath,
+  gscConnected,
 }: {
   metrics: SiteOverviewMetrics;
   pendingDiscovered: number;
   sitePath: string;
+  gscConnected: boolean;
 }) {
   return (
     <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
@@ -845,14 +852,27 @@ function KpiGrid({
         }
         href={`${sitePath}/pages`}
       />
-      <MetricCell
-        variant="card"
-        icon={<Search className="h-4 w-4" />}
-        label="In Google"
-        value={metrics.pagesInGsc.toLocaleString()}
-        detail="pages with search impressions"
-        href={`${sitePath}/pages?coverage=in_gsc`}
-      />
+      {gscConnected ? (
+        <MetricCell
+          variant="card"
+          icon={<Search className="h-4 w-4" />}
+          label="In Google"
+          value={metrics.pagesInGsc.toLocaleString()}
+          detail="pages with search impressions"
+          href={`${sitePath}/pages?coverage=in_gsc`}
+        />
+      ) : (
+        // A dead "0" without Search Console connected reads as "invisible on
+        // Google" — say what's actually missing and route to the fix.
+        <MetricCell
+          variant="card"
+          icon={<Search className="h-4 w-4" />}
+          label="In Google"
+          value="—"
+          detail="Connect Search Console"
+          href={`${sitePath}/integrations`}
+        />
+      )}
     </section>
   );
 }
