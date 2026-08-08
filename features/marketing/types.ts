@@ -387,6 +387,7 @@ export const BRAND_ASSET_KINDS = [
   "color",
   "font",
   "document",
+  "portal",
   "other",
 ] as const;
 export type BrandAssetKind = (typeof BRAND_ASSET_KINDS)[number];
@@ -408,6 +409,7 @@ export const BRAND_ASSET_KIND_LABELS: Record<BrandAssetKind, string> = {
   color: "Color",
   font: "Font",
   document: "Document",
+  portal: "Brand portal",
   other: "Other asset",
 };
 
@@ -424,9 +426,16 @@ export interface CreateBrandAssetInput {
   /**
    * Provenance — defaults to "manual". "generated" = AI-generated here;
    * "research" = promoted from the research media pool; "discovered" =
-   * promoted from crawl/discovery evidence; "uploaded" = user file upload.
+   * promoted from crawl/discovery evidence; "uploaded" = user file upload;
+   * "stock" = saved from a licensed-free stock provider (Unsplash).
    */
-  source?: "discovered" | "uploaded" | "manual" | "generated" | "research";
+  source?:
+    | "discovered"
+    | "uploaded"
+    | "manual"
+    | "generated"
+    | "research"
+    | "stock";
 }
 
 export interface UpdateBrandAssetInput {

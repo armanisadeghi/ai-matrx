@@ -11,6 +11,7 @@
 import { useMemo, useRef, useState } from "react";
 import {
   CircleOff,
+  Globe,
   ImageIcon,
   Loader2,
   Pencil,
@@ -65,12 +66,21 @@ function assetColorValue(asset: BrandAsset): string | null {
     : null;
 }
 
+function portalHostname(url: string): string | null {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
 const SOURCE_LABELS: Record<string, string> = {
   discovered: "Discovered",
   uploaded: "Uploaded",
   manual: "Manual",
   generated: "AI generated",
   research: "From research",
+  stock: "Stock source",
 };
 
 function AssetTile({
@@ -118,6 +128,19 @@ function AssetTile({
             loading="lazy"
           />
         </div>
+      ) : asset.kind === "portal" && asset.source_url ? (
+        <a
+          href={asset.source_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={asset.source_url}
+          className="flex aspect-[4/3] flex-col items-center justify-center gap-1 bg-muted/40 text-muted-foreground transition-colors hover:text-primary"
+        >
+          <Globe className="h-5 w-5" />
+          <span className="max-w-full truncate px-2 text-[10px]">
+            {portalHostname(asset.source_url) ?? "Open portal"}
+          </span>
+        </a>
       ) : (
         <div className="flex aspect-[4/3] items-center justify-center bg-muted/40 text-muted-foreground">
           <CircleOff className="h-5 w-5" />

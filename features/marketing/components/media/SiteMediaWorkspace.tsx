@@ -5,6 +5,7 @@ import { useParams, usePathname, useRouter, useSearchParams } from "next/navigat
 import {
   FolderOpen,
   Globe,
+  ImageDown,
   ImageIcon,
   Lightbulb,
   Ruler,
@@ -26,18 +27,20 @@ import { CrawledMediaView } from "@/features/marketing/components/media/CrawledM
 import { BrandLibraryView } from "@/features/marketing/components/media/BrandLibraryView";
 import { ResearchMediaView } from "@/features/marketing/components/media/ResearchMediaView";
 import { GenerateMediaView } from "@/features/marketing/components/media/GenerateMediaView";
+import { StockSourcesView } from "@/features/marketing/components/media/StockSourcesView";
 import { MediaStandardsView } from "@/features/marketing/components/media/MediaStandardsView";
 import { parseSiteMediaStandards } from "@/features/marketing/data/media-library";
 import type { ResearchImageRow } from "@/features/marketing/data/media-library";
 import type { SnapshotMediaAsset } from "@/features/marketing/lib/snapshot-media";
 
 /**
- * SiteMediaWorkspace — the site's full media command center, five views on
+ * SiteMediaWorkspace — the site's full media command center, six views on
  * one route (`?view=`):
  *
  *  - `crawled`   — every image observed across canonical pages (evidence)
  *  - `library`   — the brand's OWNED assets (uploads, promoted, generated)
  *  - `research`  — research-captured images: reuse + inspiration
+ *  - `sources`   — free stock search (Unsplash) + the brand's portal links
  *  - `generate`  — order AI images off the preset menu, saved to the library
  *  - `standards` — the site's target image sizes/rules, feeding Generate
  *
@@ -50,6 +53,7 @@ const VIEWS = [
   { id: "crawled", label: "Crawled", icon: Globe },
   { id: "library", label: "Library", icon: FolderOpen },
   { id: "research", label: "Research", icon: Lightbulb },
+  { id: "sources", label: "Sources", icon: ImageDown },
   { id: "generate", label: "Generate", icon: Sparkles },
   { id: "standards", label: "Standards", icon: Ruler },
 ] as const;
@@ -201,6 +205,11 @@ export function SiteMediaWorkspace() {
           />
         ) : view === "research" ? (
           <ResearchMediaView brandId={brandId} onUseAsBrief={useResearchBrief} />
+        ) : view === "sources" ? (
+          <StockSourcesView
+            brandId={brandId}
+            organizationId={site.organization_id}
+          />
         ) : view === "generate" ? (
           <GenerateMediaView
             brandId={brandId}
