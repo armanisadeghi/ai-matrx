@@ -51,14 +51,12 @@ first real user surfaces shipped: **Word/PowerPoint preview in Files, Convert-to
    `aidream/cli/scan_thumbnail_backfill.py`; note the variant-key dedup trap in FOUND_DEFECTS.md).
 2. **Desktop bundle verification** (matrx-local — chip spawned). PyInstaller sidecar never
    exercised for docx/pptx/openpyxl + templates.
-3. **Workflow nodes** (aidream/matrx-graph — chip spawned). Deterministic `generate` + `extract`
-   nodes with input_kind/output_kind.
-4. **Files-service catch-up** (ops). `packages/matrx-files/Dockerfile` carries LibreOffice but
+3. **Files-service catch-up** (ops). `packages/matrx-files/Dockerfile` carries LibreOffice but
    that image deploys manually and is not the traffic path yet. Nothing breaks meanwhile.
-5. **Visual-fidelity preview (optional next rung).** Today's preview is extracted text. A
+4. **Visual-fidelity preview (optional next rung).** Today's preview is extracted text. A
    LibreOffice→PDF render lane (reusing the convert endpoint) could show true layout — decide if
    fidelity matters before building.
-6. **xlsx "extract" parity note:** xlsx previews client-side via SheetJS (good); the office
+5. **xlsx "extract" parity note:** xlsx previews client-side via SheetJS (good); the office
    markdown endpoint also handles xlsx if a text view is ever wanted.
 
 ## Done
@@ -71,6 +69,12 @@ first real user surfaces shipped: **Word/PowerPoint preview in Files, Convert-to
   chat inline via `UniversalInlineFile`), Convert-to-PDF action, "New → AI document" prompt
   prefill into `/chat/new`.
 - Local desktop read + generate — matrx-local, catalog synced (bundle verification pending).
+- **2026-08-08 (workflow nodes):** four graph nodes live — `office.generate_document` /
+  `office.generate_presentation` / `office.generate_spreadsheet` (inputs ARE the `office_*`
+  kinds via new `@action(input_kind=/output_kind=)` support) + `office.extract`
+  (`aidream/graph_actions/office/`); result kinds `office_file_result` +
+  `office_extraction_result` seeded live (`migrations/content_ir_seed_office_result_kinds.sql`);
+  E2E proven against the real scheduler + DB (generate → extract round-trip + kind-gate negative).
 
 ## Decisions needed
 
