@@ -11,7 +11,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { FlaskConical, Loader2, Plus, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -104,8 +104,10 @@ export function SlotTestBench({
   const [newLabel, setNewLabel] = useState("");
   const [newVariables, setNewVariables] = useState("{}");
 
-  const reload = useCallback(() => {
-    setLoading(true);
+  // Every setState lives in an async callback — never synchronously in the
+  // effect (react-hooks/set-state-in-effect). Initial state is loading=true;
+  // the button-driven reload may flip it synchronously (event handler).
+  const fetchData = useCallback(() => {
     fetchSlotExemplars(slot.id)
       .then(setExemplars)
       .catch((error: unknown) =>
@@ -116,9 +118,14 @@ export function SlotTestBench({
       .finally(() => setLoading(false));
   }, [slot.id]);
 
+  const reload = useCallback(() => {
+    setLoading(true);
+    fetchData();
+  }, [fetchData]);
+
   useEffect(() => {
-    reload();
-  }, [reload]);
+    fetchData();
+  }, [fetchData]);
 
   const buildCandidate = useCallback((): SlotTestCandidate | null => {
     const candidate: SlotTestCandidate = {};

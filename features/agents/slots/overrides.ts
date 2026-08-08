@@ -9,19 +9,20 @@
  * Cross-repo system-of-record:
  * /Users/armanisadeghi/code/common-docs/systems/agent-slots/FEATURE.md
  *
- * Writes ride RLS directly (entity variant — the caller owns their user
- * binding; org admins hold editor on org rows via iam.has_access).
- *
- * 🚨 KNOWN GAP (loud, tracked in aidream docs/handoffs/content-ir-agent-slots.md
- * item 4): the aidream BIND ENDPOINT with server-side contract enforcement is
- * not live yet — aidream exposes only POST /agent-slots/{key}/test. Until it
- * ships, this surface enforces the slot contract CLIENT-side only
- * (checkSlotContract below, the proven compareContracts superset rule). When
- * the endpoint lands, route creates/updates through it and keep this check as
- * the instant pre-flight.
+ * READS ride RLS directly (slot definitions are public; RLS scopes bindings
+ * to rows the caller can see). WRITES go through the ONE bind path — aidream
+ * PUT/DELETE /agent-slots/{slot_key}/binding — because binding is genuine
+ * compute: the server contract-checks the candidate agent (required
+ * variables/context slots + output_schema vs the slot's required output
+ * keys) at WRITE time and rejects with a 422 whose detail is shown to the
+ * user VERBATIM. `checkSlotContract` below is the instant client-side
+ * pre-flight (research's proven compareContracts superset rule); the server
+ * check is the authority.
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { callApi } from "@/lib/api/call-api";
+import type { AppDispatch } from "@/lib/redux/store";
 import type { Database, Json } from "@/types/database.types";
 import { isJsonObject, type JsonValue } from "@/types/json";
 import { invalidateClientSlotCache } from "./service";
@@ -172,99 +173,146 @@ export async function fetchSlotOverridesData(): Promise<SlotOverridesData> {
   return { slots, bindings, agentsById, versionAgentIds };
 }
 
+/** Light single-slot fetch for the inline consumer picker: the slot row, the
+ * system default agent's display name, and the caller's own user binding
+ * (RLS returns only rows they can see). */
+export interface SlotPickerData {
+  slot: SlotDefinitionRow;
+  defaultAgentId: string | null;
+  defaultAgentName: string;
+  myBinding: SlotBindingRow | null;
+}
+
+export async function fetchSlotPickerData(
+  slotKey: string,
+  userId: string,
+): Promise<SlotPickerData> {
+  const supabase = createClient();
+  const { data: slot, error } = await supabase
+    .schema("agent")
+    .from("slot_definition")
+    .select("*")
+    .eq("slot_key", slotKey)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) throw error;
+  if (!slot) {
+    throw new Error(`agent slot "${slotKey}" not found — declare it server-side first`);
+  }
+
+  let defaultAgentId = slot.default_agent_id;
+  if (!defaultAgentId && slot.default_agent_version_id) {
+    const { data: version, error: versionError } = await supabase
+      .schema("agent")
+      .from("definition_version")
+      .select("agent_id")
+      .eq("id", slot.default_agent_version_id)
+      .maybeSingle();
+    if (versionError) throw versionError;
+    defaultAgentId = version?.agent_id ?? null;
+  }
+
+  let defaultAgentName = "(no default agent)";
+  if (defaultAgentId) {
+    // By-id lookup — legal under the canonical-selection law.
+    const { data: agent, error: agentError } = await supabase
+      .schema("agent")
+      .from("definition")
+      .select("id, name")
+      .eq("id", defaultAgentId)
+      .maybeSingle();
+    if (agentError) throw agentError;
+    defaultAgentName = agent?.name ?? "(unknown agent)";
+  }
+
+  const { data: binding, error: bindingError } = await supabase
+    .schema("agent")
+    .from("slot_binding")
+    .select("*")
+    .eq("slot_id", slot.id)
+    .eq("principal_type", "user")
+    .eq("subject_user_id", userId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (bindingError) throw bindingError;
+
+  return {
+    slot,
+    defaultAgentId,
+    defaultAgentName,
+    myBinding: binding ?? null,
+  };
+}
+
 export interface SlotBindingInput {
   /** Swap the agent (floating — user-surface bindings never version-pin; the
    * client run path has no is_version channel). Null = settings-only. */
   agentId: string | null;
   /** LLMParams-shaped settings override (model, thinking_level, …). Null =
-   * agent-swap-only. At least one of the two must be set (DB check). */
+   * agent-swap-only. At least one of the two must be set. */
   configOverrides: Record<string, JsonValue> | null;
 }
 
-export async function createUserSlotBinding(
-  slot: SlotDefinitionRow,
-  userId: string,
-  input: SlotBindingInput,
-): Promise<SlotBindingRow> {
-  const supabase = createClient();
-  // organization_id is stamped by the platform org-default trigger for
-  // authenticated writes (a user binding keys on the USER; its org column is
-  // incidental). Org bindings pass the target org explicitly instead.
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("slot_binding")
-    .insert({
-      slot_id: slot.id,
-      principal_type: "user",
-      subject_user_id: userId,
-      agent_id: input.agentId,
-      use_latest: input.agentId != null,
-      config_overrides: input.configOverrides,
-      visibility: "personal",
-    } as Database["agent"]["Tables"]["slot_binding"]["Insert"])
-    .select("*")
-    .single();
-  if (error) throw error;
-  invalidateClientSlotCache(slot.slot_key);
-  return data;
+export interface SlotBindingPrincipalInput {
+  principalType: "user" | "org";
+  /** The org being bound — REQUIRED for org principals (the caller must
+   * administer it; the server verifies). Omit for user bindings: callApi
+   * injects the ambient organization_id, which is incidental there (a user
+   * binding keys on the USER — access never depends on the active org). */
+  organizationId?: string;
 }
 
-export async function createOrgSlotBinding(
-  slot: SlotDefinitionRow,
-  organizationId: string,
-  input: SlotBindingInput,
-): Promise<SlotBindingRow> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("slot_binding")
-    .insert({
-      slot_id: slot.id,
-      principal_type: "org",
-      organization_id: organizationId,
-      agent_id: input.agentId,
-      use_latest: input.agentId != null,
-      config_overrides: input.configOverrides,
-      visibility: "internal",
-    })
-    .select("*")
-    .single();
-  if (error) throw error;
-  invalidateClientSlotCache(slot.slot_key);
-  return data;
-}
-
-export async function updateSlotBinding(
-  bindingId: string,
+/** Create or update the principal's binding for a slot through the ONE bind
+ * path (aidream PUT, contract-enforced server-side). Throws with the server's
+ * 422 detail verbatim on a contract violation. */
+export async function putSlotBinding(
+  dispatch: AppDispatch,
   slotKey: string,
+  principal: SlotBindingPrincipalInput,
   input: SlotBindingInput & { isEnabled?: boolean },
-): Promise<SlotBindingRow> {
-  const supabase = createClient();
-  const patch: Database["agent"]["Tables"]["slot_binding"]["Update"] = {
-    agent_id: input.agentId,
-    use_latest: input.agentId != null,
-    config_overrides: input.configOverrides,
-  };
-  if (input.isEnabled != null) patch.is_enabled = input.isEnabled;
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("slot_binding")
-    .update(patch)
-    .eq("id", bindingId)
-    .select("*")
-    .single();
-  if (error) throw error;
+): Promise<void> {
+  const result = await dispatch(
+    callApi({
+      path: "/agent-slots/{slot_key}/binding",
+      method: "PUT",
+      pathParams: { slot_key: slotKey },
+      body: {
+        principal_type: principal.principalType,
+        agent_id: input.agentId,
+        agent_version_id: null,
+        use_latest: input.agentId != null,
+        config_overrides: input.configOverrides,
+        is_enabled: input.isEnabled ?? true,
+        ...(principal.organizationId
+          ? { organization_id: principal.organizationId }
+          : {}),
+      },
+    }),
+  );
+  if (result.error) throw new Error(result.error.message);
   invalidateClientSlotCache(slotKey);
-  return data;
 }
 
-export async function deleteSlotBinding(bindingId: string, slotKey: string): Promise<void> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .schema("agent")
-    .from("slot_binding")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", bindingId);
-  if (error) throw error;
+/** Remove the principal's binding — back to the layer below (org default or
+ * system default). Idempotent. */
+export async function removeSlotBinding(
+  dispatch: AppDispatch,
+  slotKey: string,
+  principal: SlotBindingPrincipalInput,
+): Promise<void> {
+  const result = await dispatch(
+    callApi({
+      path: "/agent-slots/{slot_key}/binding",
+      method: "DELETE",
+      pathParams: { slot_key: slotKey },
+      body: {
+        principal_type: principal.principalType,
+        ...(principal.organizationId
+          ? { organization_id: principal.organizationId }
+          : {}),
+      },
+    }),
+  );
+  if (result.error) throw new Error(result.error.message);
   invalidateClientSlotCache(slotKey);
 }

@@ -3,10 +3,10 @@
 /**
  * Per-slot override editor — one principal (me, or an org I admin) at a time:
  * swap the agent (my agents, contract-checked) and/or override settings
- * (model, thinking level). Writes agent.slot_binding via RLS.
- *
- * Contract enforcement is CLIENT-side until the aidream bind endpoint ships
- * (loudly tracked in overrides.ts and the feature doc).
+ * (model, thinking level). Writes ride the ONE bind path — aidream
+ * PUT/DELETE /agent-slots/{slot_key}/binding — which contract-enforces the
+ * candidate at write time; its 422 detail is surfaced to the user VERBATIM.
+ * The client-side check here is the instant pre-flight only.
  */
 
 import { useCallback, useMemo, useState } from "react";
@@ -54,11 +54,9 @@ import {
 import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
 import {
   checkSlotContract,
-  createOrgSlotBinding,
-  createUserSlotBinding,
-  deleteSlotBinding,
   parseSlotContract,
-  updateSlotBinding,
+  putSlotBinding,
+  removeSlotBinding,
   type SlotAgentSummary,
   type SlotBindingRow,
   type SlotContractCheck,
@@ -85,7 +83,6 @@ interface SlotOverrideEditorProps {
   principal: OverridePrincipal;
   binding: SlotBindingRow | null;
   agentsById: Record<string, SlotAgentSummary>;
-  userId: string;
   onChanged: () => void;
 }
 
@@ -94,7 +91,6 @@ export function SlotOverrideEditor({
   principal,
   binding,
   agentsById,
-  userId,
   onChanged,
 }: SlotOverrideEditorProps) {
   const dispatch = useAppDispatch();
@@ -239,13 +235,16 @@ export function SlotOverrideEditor({
     }
     setSaving(true);
     try {
-      if (binding) {
-        await updateSlotBinding(binding.id, slot.slot_key, { agentId, configOverrides });
-      } else if (principal.kind === "org" && principal.organizationId) {
-        await createOrgSlotBinding(slot, principal.organizationId, { agentId, configOverrides });
-      } else {
-        await createUserSlotBinding(slot, userId, { agentId, configOverrides });
-      }
+      await putSlotBinding(
+        dispatch,
+        slot.slot_key,
+        {
+          principalType: principal.kind,
+          organizationId:
+            principal.kind === "org" ? (principal.organizationId ?? undefined) : undefined,
+        },
+        { agentId, configOverrides },
+      );
       toast.success(
         principal.kind === "org"
           ? `Override saved for ${principal.label}.`
@@ -264,7 +263,11 @@ export function SlotOverrideEditor({
     if (!binding) return;
     setRemoving(true);
     try {
-      await deleteSlotBinding(binding.id, slot.slot_key);
+      await removeSlotBinding(dispatch, slot.slot_key, {
+        principalType: principal.kind,
+        organizationId:
+          principal.kind === "org" ? (principal.organizationId ?? undefined) : undefined,
+      });
       toast.success("Override removed — back to the system default.");
       setRemoveOpen(false);
       onChanged();

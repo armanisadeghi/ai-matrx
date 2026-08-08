@@ -30,6 +30,7 @@ import {
   type AgentSlotSummary,
   type AgentSlotsHealthSummary,
 } from "@/features/surfaces/manifests/agent-slots.manifest";
+import { SlotOverridePanel } from "@/features/agents/slots/components/SlotOverridePanel";
 import { SlotTestBench } from "./SlotTestBench";
 import {
   fetchAgentVersions,
@@ -139,32 +140,35 @@ function SlotEditor({
   const [agentId, setAgentId] = useState<string | null>(initialAgentId);
   const [useLatest, setUseLatest] = useState<boolean>(Boolean(slot.use_latest));
   const [versionId, setVersionId] = useState<string | null>(slot.default_agent_version_id);
-  const [versions, setVersions] = useState<SlotVersionInfo[]>([]);
-  const [loadingVersions, setLoadingVersions] = useState(false);
+  // Versions keyed by the agent they were fetched for — "loading" is DERIVED
+  // (requested agent ≠ loaded agent), so the effect never sets state
+  // synchronously (react-hooks/set-state-in-effect).
+  const [loadedVersions, setLoadedVersions] = useState<{
+    agentId: string;
+    rows: SlotVersionInfo[];
+  } | null>(null);
   const [saving, setSaving] = useState(false);
+  const versions = loadedVersions?.agentId === agentId ? loadedVersions.rows : [];
+  const loadingVersions = !useLatest && agentId != null && loadedVersions?.agentId !== agentId;
 
   useEffect(() => {
     if (!agentId || useLatest) return;
     let cancelled = false;
-    setLoadingVersions(true);
     fetchAgentVersions(agentId)
       .then((rows) => {
         if (cancelled) return;
-        setVersions(rows);
-        if (!rows.some((r) => r.id === versionId)) {
-          setVersionId(rows[0]?.id ?? null);
-        }
+        setLoadedVersions({ agentId, rows });
+        setVersionId((prev) =>
+          rows.some((r) => r.id === prev) ? prev : (rows[0]?.id ?? null),
+        );
       })
       .catch((error: unknown) => {
         toast.error(`Failed to load versions: ${error instanceof Error ? error.message : String(error)}`);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingVersions(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [agentId, useLatest, versionId]);
+  }, [agentId, useLatest]);
 
   const save = useCallback(async () => {
     if (!agentId) {
@@ -258,6 +262,8 @@ function SlotEditor({
   );
 }
 
+/** Read-only roll-up of EVERY binding on the slot (all principals the admin
+ * can see) — editing happens in the SlotOverridePanel above it. */
 function OverridesList({
   bindings,
   data,
@@ -268,7 +274,7 @@ function OverridesList({
   if (bindings.length === 0) return null;
   return (
     <div className="text-xs">
-      <div className="font-medium text-muted-foreground mb-1">Overrides</div>
+      <div className="font-medium text-muted-foreground mb-1">All overrides</div>
       {bindings.map((b) => {
         const versionAgentId = b.agent_version_id
           ? data.versionsById[b.agent_version_id]?.agentId
@@ -321,6 +327,19 @@ function SlotDetail({
       />
       <div className="border-t border-border pt-3">
         <SlotTestBench key={row.id} slot={row.slot} agentOptions={agentOptions} />
+      </div>
+      <div className="border-t border-border pt-3">
+        <div className="text-xs font-medium text-muted-foreground mb-2">
+          Overrides — swap the agent or just its settings, per principal
+        </div>
+        {/* key: the panel + editor seed local state from props — remount per slot */}
+        <SlotOverridePanel
+          key={row.id}
+          slot={row.slot}
+          bindings={bindings}
+          agentsById={data.agentsById}
+          onChanged={onSaved}
+        />
       </div>
       <OverridesList bindings={bindings} data={data} />
     </div>
@@ -398,8 +417,10 @@ export function AgentSlotsConsole() {
     [builtinAgents],
   );
 
-  const reload = useCallback(() => {
-    setFetching(true);
+  // Every setState lives in an async callback — never synchronously in the
+  // effect (react-hooks/set-state-in-effect). Initial state is loading=true;
+  // the button-driven reload may flip `fetching` synchronously (event handler).
+  const fetchData = useCallback(() => {
     fetchSlotConsoleData()
       .then(setData)
       .catch((error: unknown) => {
@@ -413,10 +434,15 @@ export function AgentSlotsConsole() {
       });
   }, []);
 
+  const reload = useCallback(() => {
+    setFetching(true);
+    fetchData();
+  }, [fetchData]);
+
   useEffect(() => {
     dispatch(fetchAgentsListFull());
-    reload();
-  }, [dispatch, reload]);
+    fetchData();
+  }, [dispatch, fetchData]);
 
   const toggleEnabled = useCallback(
     async (row: SlotRow, enabled: boolean) => {

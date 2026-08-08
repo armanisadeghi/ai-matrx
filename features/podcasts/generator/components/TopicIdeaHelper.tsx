@@ -18,6 +18,7 @@ import { Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { KindRequestDialog } from "@/features/content-ir/react/actions/KindRequestDialog";
 import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
+import { SlotAgentPicker } from "@/features/agents/slots/components/SlotAgentPicker";
 
 /** FIRST CLIENT-SIDE SLOT SWAP (2026-08-08): which agent generates topic
  * ideas is DB-managed via the `podcast_client.topic_ideas` slot (declared in
@@ -51,7 +52,10 @@ export function TopicIdeaHelper({
 
   return (
     <>
-      <div className="mt-1.5 flex items-center justify-end">
+      <div className="mt-1.5 flex items-center justify-end gap-1">
+        {/* First consumer of the reusable slot picker: swap which agent
+            generates ideas (your agent vs the system default). */}
+        <SlotAgentPicker slotKey={TOPIC_IDEAS_SLOT_KEY} />
         <Button
           type="button"
           variant="ghost"

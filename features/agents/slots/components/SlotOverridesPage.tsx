@@ -22,7 +22,6 @@ import {
   RefreshCw,
   ShieldCheck,
   Building2,
-  UserRound,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,7 +37,7 @@ import {
   type SlotDefinitionRow,
   type SlotOverridesData,
 } from "../overrides";
-import { SlotOverrideEditor, type OverridePrincipal } from "./SlotOverrideEditor";
+import { SlotOverridePanel } from "./SlotOverridePanel";
 
 interface SlotView {
   slot: SlotDefinitionRow;
@@ -68,7 +67,6 @@ export function SlotOverridesPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [openSlotId, setOpenSlotId] = useState<string | null>(null);
-  const [principalKeyBySlot, setPrincipalKeyBySlot] = useState<Record<string, string>>({});
 
   // Every setState lives in an async callback — never synchronously in the
   // effect (react-hooks/set-state-in-effect).
@@ -172,25 +170,6 @@ export function SlotOverridesPage() {
     return [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [views]);
 
-  const principalsFor = useCallback(
-    (slotId: string): OverridePrincipal[] => {
-      const principals: OverridePrincipal[] = [
-        { key: "user", kind: "user", organizationId: null, label: "Me" },
-      ];
-      for (const org of adminOrgs) {
-        principals.push({
-          key: `org:${org.id}`,
-          kind: "org",
-          organizationId: org.id,
-          label: org.name,
-        });
-      }
-      void slotId;
-      return principals;
-    },
-    [adminOrgs],
-  );
-
   if (loading || (!data && !loadError)) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -238,16 +217,11 @@ export function SlotOverridesPage() {
                   data={data}
                   userId={userId}
                   orgNamesById={orgNamesById}
-                  principals={principalsFor(view.slot.id)}
-                  principalKey={principalKeyBySlot[view.slot.id] ?? "user"}
-                  onPrincipalChange={(key) =>
-                    setPrincipalKeyBySlot((prev) => ({ ...prev, [view.slot.id]: key }))
-                  }
+                  canEditAnyOrg={adminOrgs.length > 0}
                   open={openSlotId === view.slot.id}
                   onToggle={() =>
                     setOpenSlotId((prev) => (prev === view.slot.id ? null : view.slot.id))
                   }
-                  orgsLoading={orgsLoading}
                   onChanged={() => load()}
                 />
               ))}
@@ -289,35 +263,23 @@ function SlotCard({
   data,
   userId,
   orgNamesById,
-  principals,
-  principalKey,
-  onPrincipalChange,
+  canEditAnyOrg,
   open,
   onToggle,
-  orgsLoading,
   onChanged,
 }: {
   view: SlotView;
   data: SlotOverridesData;
   userId: string | null;
   orgNamesById: Record<string, string>;
-  principals: OverridePrincipal[];
-  principalKey: string;
-  onPrincipalChange: (key: string) => void;
+  canEditAnyOrg: boolean;
   open: boolean;
   onToggle: () => void;
-  orgsLoading: boolean;
   onChanged: () => void;
 }) {
   const { slot } = view;
   const disabled = !slot.is_enabled;
-
-  const principal =
-    principals.find((p) => p.key === principalKey) ?? principals[0];
-  const principalBinding: SlotBindingRow | null =
-    principal.kind === "user"
-      ? view.myBinding
-      : (principal.organizationId && view.orgBindings[principal.organizationId]) || null;
+  const slotBindings = data.bindings.filter((b) => b.slot_id === slot.id);
 
   return (
     <article
@@ -389,46 +351,8 @@ function SlotCard({
 
       {open && userId ? (
         <div className="border-t border-border/50 px-4 py-3.5">
-          {principals.length > 1 ? (
-            <div className="mb-3 flex flex-wrap items-center gap-1.5">
-              {principals.map((p) => {
-                const active = p.key === principal.key;
-                const hasBinding =
-                  p.kind === "user"
-                    ? view.myBinding != null
-                    : Boolean(p.organizationId && view.orgBindings[p.organizationId]);
-                return (
-                  <button
-                    key={p.key}
-                    type="button"
-                    onClick={() => onPrincipalChange(p.key)}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium transition-colors",
-                      active
-                        ? "bg-primary/10 text-primary ring-1 ring-inset ring-primary/25"
-                        : "bg-muted/50 text-muted-foreground ring-1 ring-inset ring-border/60 hover:text-foreground",
-                    )}
-                  >
-                    {p.kind === "user" ? (
-                      <UserRound className="h-3 w-3" />
-                    ) : (
-                      <Building2 className="h-3 w-3" />
-                    )}
-                    {p.label}
-                    {hasBinding ? <span className="h-1.5 w-1.5 rounded-full bg-current" /> : null}
-                  </button>
-                );
-              })}
-              {orgsLoading ? (
-                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-              ) : null}
-            </div>
-          ) : null}
-
           {/* Org overrides the user can SEE but not edit (member, not admin). */}
-          {principal.kind === "user" &&
-          Object.keys(view.orgBindings).length > 0 &&
-          !principals.some((p) => p.kind === "org") ? (
+          {Object.keys(view.orgBindings).length > 0 && !canEditAnyOrg ? (
             <p className="mb-3 text-[11.5px] text-muted-foreground">
               {Object.entries(view.orgBindings)
                 .map(([orgId, b]) => {
@@ -443,13 +367,11 @@ function SlotCard({
             </p>
           ) : null}
 
-          <SlotOverrideEditor
-            key={`${principal.key}:${principalBinding?.id ?? "none"}:${principalBinding?.updated_at ?? ""}`}
+          <SlotOverridePanel
+            key={slot.id}
             slot={slot}
-            principal={principal}
-            binding={principalBinding}
+            bindings={slotBindings}
             agentsById={data.agentsById}
-            userId={userId}
             onChanged={onChanged}
           />
         </div>
