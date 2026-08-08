@@ -17,9 +17,14 @@ import { useState } from "react";
 import { Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { KindRequestDialog } from "@/features/content-ir/react/actions/KindRequestDialog";
+import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
 
-/** Topic Idea Generator (builtin) — returns a batch of topic ideas to pick from. */
-const TOPIC_IDEA_AGENT_ID = "2edcbd85-91e0-4f0a-9890-1e7d262e2c62";
+/** FIRST CLIENT-SIDE SLOT SWAP (2026-08-08): which agent generates topic
+ * ideas is DB-managed via the `podcast_client.topic_ideas` slot (declared in
+ * aidream `agent_slots/client_slots.py`, repinned from
+ * /administration/agents/slots). No hardcoded agent id, no silent fallback —
+ * if the slot can't resolve, the affordance disables and says why. */
+const TOPIC_IDEAS_SLOT_KEY = "podcast_client.topic_ideas";
 
 function topicFromIdea(value: unknown): string {
   if (typeof value === "string") return value;
@@ -42,6 +47,7 @@ export function TopicIdeaHelper({
   seedConcept?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const { slot, loading, error } = useAgentSlot(TOPIC_IDEAS_SLOT_KEY);
 
   return (
     <>
@@ -52,16 +58,18 @@ export function TopicIdeaHelper({
           size="sm"
           className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
           onClick={() => setOpen(true)}
+          disabled={loading || !slot}
+          title={error ?? undefined}
         >
           <Lightbulb className="h-3.5 w-3.5" />
-          Need an idea? Get help
+          {error ? "Idea helper unavailable" : "Need an idea? Get help"}
         </Button>
       </div>
 
       <KindRequestDialog
         open={open}
         onOpenChange={setOpen}
-        agentId={TOPIC_IDEA_AGENT_ID}
+        agentId={slot?.agentId ?? ""}
         title="Get topic ideas"
         description="Describe a concept or area of interest. We'll suggest a few episode ideas — pick the one you like."
         fields={[

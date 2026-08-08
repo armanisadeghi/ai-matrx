@@ -24,6 +24,9 @@ export interface SlotAgentInfo {
   /** Current master version counter (agent.definition.version). */
   version: number | null;
   isArchived: boolean;
+  /** 'builtin' = system agent. Anything else pinned as a slot DEFAULT is a
+   * defect — surface it loudly in the console. */
+  agentType: string | null;
 }
 
 export interface SlotVersionInfo {
@@ -99,7 +102,7 @@ export async function fetchSlotConsoleData(): Promise<SlotConsoleData> {
     const { data, error } = await supabase
       .schema("agent")
       .from("definition")
-      .select("id, name, version, is_archived")
+      .select("id, name, version, is_archived, agent_type")
       .in("id", [...agentIds]);
     if (error) throw error;
     for (const row of data ?? []) {
@@ -108,6 +111,7 @@ export async function fetchSlotConsoleData(): Promise<SlotConsoleData> {
         name: row.name ?? row.id,
         version: row.version,
         isArchived: Boolean(row.is_archived),
+        agentType: row.agent_type,
       };
     }
   }
@@ -162,28 +166,11 @@ export async function fetchAgentVersions(agentId: string): Promise<SlotVersionIn
   }));
 }
 
+/** Picker option shape. Options come from the canonical Redux agent slice
+ * (`selectBuiltinAgents`) — NEVER from a raw table query. See FEATURE.md. */
 export interface SlotAgentOption {
   id: string;
   name: string;
   description: string | null;
   category: string | null;
-}
-
-/** All non-archived agents visible to the admin — options for repinning. */
-export async function fetchAgentOptions(): Promise<SlotAgentOption[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("definition")
-    .select("id, name, description, category")
-    .eq("is_archived", false)
-    .is("deleted_at", null)
-    .order("name");
-  if (error) throw error;
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    name: row.name ?? row.id,
-    description: row.description,
-    category: row.category,
-  }));
 }

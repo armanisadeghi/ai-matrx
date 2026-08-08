@@ -12,9 +12,12 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { isJsonObject } from "@/types/json";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
+import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
 import { SearchableAgentSelect } from "@/features/agent-apps/components/SearchableAgentSelect";
 import {
-  fetchAgentOptions,
   fetchAgentVersions,
   fetchSlotConsoleData,
   updateSlotDefinition,
@@ -27,7 +30,7 @@ import {
 function pinSummary(
   slot: SlotDefinitionRow,
   data: SlotConsoleData,
-): { agentName: string; pinLabel: string; drift: string | null } {
+): { agentName: string; pinLabel: string; drift: string | null; nonSystem: boolean } {
   if (slot.default_agent_version_id) {
     const version = data.versionsById[slot.default_agent_version_id];
     const agent = version?.agentId ? data.agentsById[version.agentId] : undefined;
@@ -40,6 +43,7 @@ function pinSummary(
         pinned != null && latest != null && latest > pinned
           ? `v${latest} is latest`
           : null,
+      nonSystem: agent != null && agent.agentType !== "builtin",
     };
   }
   const agent = slot.default_agent_id ? data.agentsById[slot.default_agent_id] : undefined;
@@ -47,6 +51,7 @@ function pinSummary(
     agentName: agent?.name ?? "(unknown agent)",
     pinLabel: "latest",
     drift: agent?.isArchived ? "agent is archived" : null,
+    nonSystem: agent != null && agent.agentType !== "builtin",
   };
 }
 
@@ -190,18 +195,31 @@ function SlotEditor({
 }
 
 export function AgentSlotsConsole() {
+  const dispatch = useAppDispatch();
   const [data, setData] = useState<SlotConsoleData | null>(null);
-  const [agentOptions, setAgentOptions] = useState<SlotAgentOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  // Canonical agent listing: the Redux agent-definition slice, filtered to
+  // SYSTEM agents. A slot default must be a system (builtin) agent — an
+  // admin pinning a personal/shared agent here would break every user the
+  // slot serves. Never hand-query agent.definition for a picker.
+  const builtinAgents = useAppSelector(selectBuiltinAgents);
+  const agentOptions = useMemo<SlotAgentOption[]>(
+    () =>
+      builtinAgents.map((a) => ({
+        id: a.id,
+        name: a.name ?? a.id,
+        description: a.description ?? null,
+        category: a.category ?? null,
+      })),
+    [builtinAgents],
+  );
+
   const reload = useCallback(() => {
     setLoading(true);
-    Promise.all([fetchSlotConsoleData(), fetchAgentOptions()])
-      .then(([console, options]) => {
-        setData(console);
-        setAgentOptions(options);
-      })
+    fetchSlotConsoleData()
+      .then(setData)
       .catch((error: unknown) => {
         toast.error(
           `Failed to load agent slots: ${error instanceof Error ? error.message : String(error)}`,
@@ -211,8 +229,9 @@ export function AgentSlotsConsole() {
   }, []);
 
   useEffect(() => {
+    dispatch(fetchAgentsListFull());
     reload();
-  }, [reload]);
+  }, [dispatch, reload]);
 
   const toggleEnabled = useCallback(
     async (slot: SlotDefinitionRow, enabled: boolean) => {
@@ -290,7 +309,15 @@ export function AgentSlotsConsole() {
                         )}
                       </td>
                       <td className="px-2 py-1.5">
-                        <div className="font-mono text-xs">{slot.slot_key}</div>
+                        <div className="font-mono text-xs">
+                          {slot.slot_key}
+                          {isJsonObject(slot.metadata) &&
+                            slot.metadata.migration_status === "placeholder" && (
+                              <Badge variant="outline" className="ml-1.5 align-middle">
+                                placeholder
+                              </Badge>
+                            )}
+                        </div>
                         <div className="text-xs text-muted-foreground">{slot.label}</div>
                       </td>
                       <td className="px-2 py-1.5">{summary?.agentName}</td>
@@ -301,6 +328,11 @@ export function AgentSlotsConsole() {
                         {summary?.drift && (
                           <Badge variant="destructive" className="ml-1">
                             {summary.drift}
+                          </Badge>
+                        )}
+                        {summary?.nonSystem && (
+                          <Badge variant="destructive" className="ml-1">
+                            NOT a system agent — fix this pin
                           </Badge>
                         )}
                       </td>
