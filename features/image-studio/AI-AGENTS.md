@@ -311,7 +311,7 @@ Already shipped. Vision agent that produces image metadata (filename, alt-text, 
 
 These are NOT agents. They're thin Next.js API routes that proxy to the AIDREAM Python backend, using the same auth + envelope pattern as `features/files/`. Output is always a `cloud_file_id`. Front-end calls them via small typed clients in `features/image-studio/api/`.
 
-> **Deployment gate (verified 2026-07-15):** `/images/generate`, `/images/face-detect`, `/images/edit-by-prompt`, and `/images/suggest-edits` are not present in aidream's deployed router. Their clients remain as future contracts, while `constants/backend-capabilities.ts` keeps every corresponding user action disabled or absent. Flip a capability only after the deployed OpenAPI contract contains the route.
+> **Deployment gate (updated 2026-08-08):** `/images/generate` is now LIVE (aidream `image_generate.py` router — NDJSON stream over `execute_ai_request`, terminal `image_generate_complete`; capability flipped `true`). `/images/face-detect`, `/images/edit-by-prompt`, and `/images/suggest-edits` are still not present in aidream's deployed router. Their clients remain as future contracts, while `constants/backend-capabilities.ts` keeps every corresponding user action disabled or absent. Flip a capability only after the deployed OpenAPI contract contains the route.
 
 | Next.js route                                      | Python endpoint               | Inputs                              | Output                       | Backing model(s)            |
 | -------------------------------------------------- | ----------------------------- | ----------------------------------- | ---------------------------- | --------------------------- |

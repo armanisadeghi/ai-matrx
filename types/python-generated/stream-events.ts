@@ -673,6 +673,21 @@ export interface ImageEditCompleteData {
   asset?: Record<string, unknown>;
 }
 
+export interface GeneratedImageFileItem {
+  cloud_file_id: string;
+  public_url?: string | null;
+  mime?: string | null;
+  width?: number | null;
+  height?: number | null;
+}
+
+export interface ImageGenerateCompleteData {
+  type?: "image_generate_complete";
+  prompt?: string;
+  model?: string | null;
+  files?: GeneratedImageFileItem[];
+}
+
 export interface ImageOpStageData {
   type?: "image_op_stage";
   op: string;
@@ -1440,6 +1455,7 @@ export type TypedDataPayload =
   | FunctionResultData
   | ImageDocumentDetectedData
   | ImageEditCompleteData
+  | ImageGenerateCompleteData
   | ImageOpStageData
   | ImageOutputData
   | ImageStudioCommitCompleteData

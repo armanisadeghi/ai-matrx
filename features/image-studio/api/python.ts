@@ -19,7 +19,11 @@ import { postJson, postNdjson } from "@/lib/python-client";
 import { apiGet } from "@/lib/api/typed-client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { components } from "@/types/python-generated/api-types";
-import type { ImageEditCompleteData } from "@/types/python-generated/stream-events";
+import type {
+  GeneratedImageFileItem,
+  ImageEditCompleteData,
+  ImageGenerateCompleteData,
+} from "@/types/python-generated/stream-events";
 
 // ---------------------------------------------------------------------------
 // Output options — shared across every op
@@ -63,15 +67,6 @@ export interface AssetEnvelope {
   /** Variant key → URL set. */
   variants: Record<string, AssetVariantUrl>;
   metadata?: Record<string, unknown>;
-}
-
-// Legacy result shape returned by bg-remove convenience endpoint.
-export interface ImageResult {
-  cloud_file_id: string;
-  public_url: string;
-  mime: string;
-  width: number;
-  height: number;
 }
 
 /**
@@ -356,9 +351,13 @@ export async function listOps(): Promise<ImageOpsCatalog> {
 }
 
 // ---------------------------------------------------------------------------
-// Generate (text → image) — preserved for the existing generate route +
-// the ImageAssetUploader's "Generate" tab. Not part of the IMAGE_OPS edit
-// surface but lives at the same `/images/*` namespace.
+// Generate (text → image) — POST /images/generate. Live since 2026-08-08:
+// a thin aidream streaming wrapper over execute_ai_request with an
+// image-modality catalog model (default gpt-image-2). Speaks NDJSON like
+// the edit surface: `info` + one `media_block` per persisted asset, then a
+// terminal `image_generate_complete` carrying the persisted files
+// (cloud_file_id + always-renderable public_url). Each result is a real
+// cld_files row with metadata.generation provenance.
 // ---------------------------------------------------------------------------
 
 export interface GenerateImageBody {
@@ -369,18 +368,46 @@ export interface GenerateImageBody {
   model?: string;
 }
 
+/** One generated file — DERIVED from the generated stream-event contract. */
+export type GeneratedImageFile = GeneratedImageFileItem;
+
 export interface GenerateImageResponse {
-  files: ImageResult[];
+  files: GeneratedImageFile[];
 }
 
+/**
+ * Drain the /images/generate NDJSON stream and resolve with the terminal
+ * `image_generate_complete` payload (same drain pattern as drainEditStream).
+ * Pre-stream HTTP failures (auth, 422) still throw BackendApiError from
+ * postNdjson; provider errors arrive in-band as `error` events.
+ */
 export async function generateImage(
   body: GenerateImageBody,
 ): Promise<GenerateImageResponse> {
-  const { data } = await postJson<GenerateImageResponse, GenerateImageBody>(
-    "/images/generate",
-    body,
-  );
-  return data;
+  const organizationId = await ensureOrgId(undefined);
+  let complete: ImageGenerateCompleteData | null = null;
+  for await (const evt of postNdjson("/images/generate", {
+    ...body,
+    organization_id: organizationId,
+  })) {
+    if (evt.event === "error") {
+      throw new Error(
+        evt.data.user_message ?? evt.data.message ?? "Image generation failed.",
+      );
+    }
+    if (evt.event !== "data") continue;
+    const d = evt.data;
+    if (!d || typeof d !== "object" || !("type" in d)) continue;
+    if (d.type === "image_generate_complete") {
+      complete = d as ImageGenerateCompleteData;
+    }
+  }
+  if (!complete) {
+    throw new Error(
+      "The image-generate stream ended without a result event.",
+    );
+  }
+  return { files: complete.files ?? [] };
 }
 
 // ---------------------------------------------------------------------------
