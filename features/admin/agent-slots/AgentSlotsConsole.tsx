@@ -402,10 +402,10 @@ export function AgentSlotsConsole() {
         header: "Slot",
         width: 240,
         cell: (r) => (
-          <div className="font-mono text-xs">
-            {r.slotKey}
+          <div className="flex flex-col items-start gap-0.5">
+            <span className="whitespace-nowrap font-mono text-xs">{r.slotKey}</span>
             {r.isPlaceholder && (
-              <Badge variant="outline" className="ml-1.5 align-middle">
+              <Badge variant="outline" className="text-[10px]">
                 placeholder
               </Badge>
             )}
