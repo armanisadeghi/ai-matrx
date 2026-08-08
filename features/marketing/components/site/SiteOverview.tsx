@@ -554,6 +554,7 @@ export function SiteOverview() {
                 pendingDiscovered={pendingDiscovered.data ?? 0}
                 statuses={statuses}
                 sitePath={sitePath}
+                domain={site.domain}
               />
               <QuickWorkCard
                 sitePath={sitePath}
@@ -890,11 +891,13 @@ function AttentionCard({
   pendingDiscovered,
   statuses,
   sitePath,
+  domain,
 }: {
   metrics: SiteOverviewMetrics;
   pendingDiscovered: number;
   statuses: SiteConnectionStatus[];
   sitePath: string;
+  domain: string;
 }) {
   const pagesWithoutKeyword = Math.max(
     0,
@@ -970,8 +973,29 @@ function AttentionCard({
       })),
   ];
 
+  const attentionCopy = webCopy({
+    kind: "web-site-attention",
+    label: "Needs attention",
+    description:
+      "Everything on this managed site currently waiting on a human: review queues, open findings, indexing blocks, and connection problems.",
+    surface: `Needs attention — ${domain}`,
+    data: items.map((item) => ({
+      key: item.key,
+      count: item.count,
+      label: item.label,
+      href: item.href,
+    })),
+    lines: items.length
+      ? items.map((item): [string, string] => [
+          item.key,
+          `${item.count !== null ? `${item.count.toLocaleString()} ` : ""}${item.label}`,
+        ])
+      : [["Status", "Nothing needs attention right now"]],
+    attributes: { items: items.length },
+  });
+
   return (
-    <SectionCard title="Needs attention">
+    <SectionCard title="Needs attention" copy={attentionCopy}>
       {items.length ? (
         <ul className="divide-y divide-border">
           {items.map((item) => (
