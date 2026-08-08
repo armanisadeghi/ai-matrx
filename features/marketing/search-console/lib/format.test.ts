@@ -17,6 +17,10 @@ describe("formatGscDate", () => {
     expect(formatGscDate("2025-12-31")).toBe("Dec 31, 2025");
   });
 
+  it("reads only the day from a trailing timestamp", () => {
+    expect(formatGscDate("2026-07-26T00:00:00Z")).toBe("Jul 26, 2026");
+  });
+
   it("returns — for null or garbage", () => {
     expect(formatGscDate(null)).toBe("—");
     expect(formatGscDate("not-a-date")).toBe("—");

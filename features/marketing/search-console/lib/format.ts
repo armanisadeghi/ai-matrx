@@ -34,7 +34,9 @@ interface DateParts {
 }
 
 function parts(iso: string): DateParts | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  // Tolerate a trailing timestamp (`2026-07-26T00:00:00Z`) — some rollup
+  // columns carry one — but only ever read the DAY, in UTC.
+  const match = /^(\d{4})-(\d{2})-(\d{2})(?:[T ].*)?$/.exec(iso);
   if (!match) return null;
   const month = Number(match[2]);
   if (month < 1 || month > 12) return null;

@@ -57,7 +57,17 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   (`gsc_perf_freshness`) so a lagging sync never fakes a traffic collapse
   — the header therefore always prints the RESOLVED window beside "data
   through", because otherwise a clamped range change looks like nothing
-  happened. The KPI band takes `isFetching` (not just `isLoading`): with
+  happened. **Dig Here and Insights additionally render `GscPeriodStrip`
+  (`components/PeriodStrip.tsx`) at the top of the tab** — "Evaluating
+  <current> vs <compare>" in plain dates, flagging an auto-derived compare,
+  and embedding the SAME `RangeCompareControl` the header uses (both write
+  URL state, so they can never disagree; never fork a second period label
+  inside a view — the strip is the ONE place). **GSC days format ONLY via
+  `lib/format.ts`** (`formatGscDate` / `formatGscWindow` /
+  `describeGscWindow`, UTC parts) — `formatCompactDate` is a local-tz
+  DATETIME formatter that rendered `2026-07-09` as "Jul 8, 5:00 PM".
+  **Every empty state names the window it found nothing in**
+  (`describeGscWindow`) — an undated "nothing matches" reads as broken. The KPI band takes `isFetching` (not just `isLoading`): with
   `keepPreviousData`, `isLoading` is false forever after the first load,
   so without it the tiles sit frozen on stale numbers during every
   refetch; `yoy` compare shifts
@@ -334,6 +344,12 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-08 — Period strip: `GscPeriodStrip` atop Dig Here + Insights
+  (plain-date "Evaluating X vs Y", auto-compare flag, embedded
+  RangeCompareControl; absorbed the per-view compareAuto/period labels);
+  every dig/insight empty state names its window; new `lib/format.ts`
+  UTC-safe date formatting replaces `formatCompactDate` in the header +
+  portfolio (was rendering GSC days a day early with a bogus time).
 - 2026-08-08 — Brand identity round 2 (Arman's rulings): `brand_aliases`
   profile source (people/legal names — seeded for All Green, Titanium,
   IOPBM), word-boundary strong matching (competitor domains excluded),

@@ -14,10 +14,10 @@ import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { listSites } from "@/features/marketing/data/service";
 import {
-  formatCompactDate,
   LoadingSurface,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { formatGscDate } from "@/features/marketing/search-console/lib/format";
 import {
   humanLines,
   webLocation,
@@ -131,7 +131,7 @@ export function SearchConsolePortfolio({
                   [
                     "Data through",
                     site.gsc_latest_date
-                      ? formatCompactDate(site.gsc_latest_date)
+                      ? formatGscDate(site.gsc_latest_date)
                       : "never",
                   ],
                   ["Days behind", behind ?? "unknown"],
@@ -194,8 +194,8 @@ export function SearchConsolePortfolio({
         >
           {site.gsc_latest_date
             ? behind !== null && behind >= GSC_STALE_AFTER_DAYS
-              ? `Stale — data only through ${formatCompactDate(site.gsc_latest_date)} (${behind} days behind)`
-              : `Data through ${formatCompactDate(site.gsc_latest_date)}`
+              ? `Stale — data only through ${formatGscDate(site.gsc_latest_date)} (${behind} days behind)`
+              : `Data through ${formatGscDate(site.gsc_latest_date)}`
             : "No Search Console data yet"}
           <ArrowUpRight className="ml-1 inline h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
         </p>
