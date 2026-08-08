@@ -136,19 +136,33 @@ export function FindingsTable() {
       header: "Page",
       filter: false,
       sortable: false,
-      cell: (row) => (
-        <div className="min-w-48 max-w-lg">
-          <p className="truncate font-mono text-[11px]">
-            {row.page_path ||
-              (row.page_id ? row.page_id.slice(0, 12) : "Site-level")}
-          </p>
-          {row.page_url ? (
-            <p className="truncate text-[10px] text-muted-foreground">
-              {row.page_url}
+      cell: (row) =>
+        row.page_id ? (
+          // Interactive cell: drills straight into the page workspace (the
+          // row itself opens the finding detail).
+          <button
+            type="button"
+            className="block min-w-48 max-w-lg cursor-pointer text-left hover:underline"
+            title="Open the page workspace"
+            onClick={(event) => {
+              event.stopPropagation();
+              navigate(`${sitePath}/pages/${row.page_id}`);
+            }}
+          >
+            <p className="truncate font-mono text-[11px]">
+              {row.page_path || row.page_id.slice(0, 12)}
             </p>
-          ) : null}
-        </div>
-      ),
+            {row.page_url ? (
+              <p className="truncate text-[10px] text-muted-foreground">
+                {row.page_url}
+              </p>
+            ) : null}
+          </button>
+        ) : (
+          <div className="min-w-48 max-w-lg">
+            <p className="truncate font-mono text-[11px]">Site-level</p>
+          </div>
+        ),
     },
     {
       id: "suppressed",

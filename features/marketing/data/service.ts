@@ -324,6 +324,59 @@ export async function listSites(
     };
   }
 
+  if (requestedSort === "health_score") {
+    // The health score lives on web.v_site_score, which only has rows for
+    // scored sites — an ORDER BY on the view would silently DROP unscored
+    // sites from the page. Rank scored sites via the view, append unscored
+    // ones (by id), page over the concatenation, then hydrate. Same bounded
+    // id-prefilter as the KPI sorts (portfolio scale — hundreds).
+    const idResponse = await query
+      .order("id", { ascending: true })
+      .range(0, 1999)
+      .abortSignal(abortSignal);
+    const matching = assertData(idResponse.data, idResponse.error);
+    const total = idResponse.count ?? matching.length;
+    if (matching.length === 0) return { rows: [], total };
+
+    const scoreResponse = await db
+      .from("v_site_score")
+      .select("site_id, site_score, scored_pages")
+      .in(
+        "site_id",
+        matching.map((site) => site.id),
+      )
+      .abortSignal(abortSignal);
+    const scores = assertData(scoreResponse.data, scoreResponse.error);
+    const scoreBySite = new Map(scores.map((score) => [score.site_id, score]));
+    const scored = matching.filter((site) => scoreBySite.has(site.id));
+    const unscored = matching.filter((site) => !scoreBySite.has(site.id));
+    scored.sort((a, b) => {
+      const diff =
+        Number(scoreBySite.get(a.id)?.site_score ?? 0) -
+        Number(scoreBySite.get(b.id)?.site_score ?? 0);
+      return (ascending ? diff : -diff) || a.id.localeCompare(b.id);
+    });
+    const ordered = [...scored, ...unscored].slice(from, to + 1);
+    if (ordered.length === 0) return { rows: [], total };
+
+    const kpiResponse = await db
+      .from("v_site_kpis")
+      .select(SITE_KPI_COLUMNS)
+      .in(
+        "site_id",
+        ordered.map((site) => site.id),
+      )
+      .abortSignal(abortSignal);
+    const kpiRows = assertData(kpiResponse.data, kpiResponse.error);
+    const kpisBySite = new Map(kpiRows.map((row) => [row.site_id, row]));
+    return {
+      rows: ordered.map((site) =>
+        mergeSiteListRow(site, scoreBySite.get(site.id), kpisBySite.get(site.id)),
+      ),
+      total,
+    };
+  }
+
   query = query.order(sortColumn, { ascending, nullsFirst: false });
   query = query.order("id", { ascending });
   const response = await query.range(from, to).abortSignal(abortSignal);

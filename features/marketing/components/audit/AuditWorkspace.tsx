@@ -20,6 +20,7 @@ import {
   useSiteAuditTrend,
 } from "@/features/marketing/data/hooks";
 import { AuditScoreTrendChart } from "@/features/marketing/components/audit/AuditScoreTrendChart";
+import { CatalogueAnalysisPanel } from "@/features/marketing/components/analysis/CatalogueAnalysisPanel";
 import {
   LoadingSurface,
   MetricCell,
@@ -484,6 +485,8 @@ function AuditBody({
             )}
           />
         </section>
+
+        <CatalogueAnalysisPanel />
 
         <SectionCard anchor="section_passes" title="Pass rates" copy={copy}>
           <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
