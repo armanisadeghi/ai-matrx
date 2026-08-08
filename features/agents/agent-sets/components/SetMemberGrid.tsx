@@ -24,13 +24,14 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Network, PanelRight, Webhook } from "lucide-react";
+import { Loader2, Network, PanelRight, Webhook } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { removeAgentFromSet, reorderSetMembers } from "@/features/agents/redux/agent-sets/thunks";
 import { AgentRoleCard } from "./AgentRoleCard";
 import { AgentPeekButton } from "./AgentPeekButton";
+import { useMemberRunState } from "../run/SetRunStatusContext";
 import { accentClasses } from "./accents";
 import type { SetAccent } from "../constants";
 import type { AgentSetMember } from "../types";
@@ -128,15 +129,33 @@ function SortableRow({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: member.agentId,
   });
+  // Cheap parity with the canvas rings — Grid is the mobile builder but is
+  // also usable on desktop, where the run panel can stream beside it.
+  const runState = useMemberRunState(member.agentId);
+  const a = accentClasses(accent);
 
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={isDragging ? "opacity-60" : undefined}
+      className={cn("relative", isDragging && "opacity-60")}
       {...attributes}
       {...listeners}
     >
+      {runState === "running" ? (
+        <span className="absolute -left-1 -top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full border border-border bg-card shadow-sm">
+          <Loader2 className={cn("h-2.5 w-2.5 animate-spin", a.text)} />
+        </span>
+      ) : runState ? (
+        <span
+          className={cn(
+            "absolute -left-1 -top-1 z-10 h-2.5 w-2.5 rounded-full border border-background shadow-sm",
+            runState === "done"
+              ? "bg-emerald-500 dark:bg-emerald-400"
+              : "bg-destructive",
+          )}
+        />
+      ) : null}
       <AgentRoleCard
         agentId={member.agentId}
         roleTitle={member.roleTitle}

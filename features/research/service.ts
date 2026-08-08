@@ -15,6 +15,7 @@ import type {
   ResearchDocument,
   ResearchMedia,
   ResearchTemplate,
+  ResearchIntent,
   SourceFilters,
   TopicCreate,
   TopicUpdate,
@@ -1376,6 +1377,22 @@ export async function getTemplates(): Promise<ResearchTemplate[]> {
     .select("*")
     .is("deleted_at", null)
     .order("name", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+/**
+ * The fixed research-intent catalog (`research.research_intent`, ~17 rows),
+ * active only, in display order. Read-only reference data — a topic's intent
+ * is set via `useResearchApi().setTopicIntent`, never a direct write here.
+ */
+export async function getResearchIntents(): Promise<ResearchIntent[]> {
+  const { data, error } = await supabase
+    .schema("research")
+    .from("research_intent")
+    .select("*")
+    .eq("is_active", true)
+    .order("position", { ascending: true });
   if (error) throw error;
   return data ?? [];
 }

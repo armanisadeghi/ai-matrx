@@ -1,8 +1,8 @@
 /**
  * Kind content-block persistence — the client seam for storing a DERIVED
  * teaching block (from `kind-content-block-generator.ts`) into
- * `skill.render_definition` (the canonical content/render-block table;
- * `public.content_blocks` is retired — see scripts/dead-relations.json).
+ * `skill.render_definition` (the canonical content/render-block table; the
+ * old public content_blocks table is retired — see scripts/dead-relations.json).
  *
  * Two authorization worlds, ONE generator feeding both:
  *   - admin (platform kinds): the block lives in the system org, which no user

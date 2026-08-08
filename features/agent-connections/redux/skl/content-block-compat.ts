@@ -4,7 +4,7 @@
  * `skl` slice (`skill.render_definition`).
  *
  * "Content blocks" and "render blocks" are the SAME rows: `skill.render_definition`
- * (2026-08 canonicalization; `public.content_blocks` is retired — see
+ * (2026-08 canonicalization; the old public content_blocks table is retired — see
  * scripts/dead-relations.json). Consumers that used the old slice's selectors
  * (the unified agent context menu, agent-shortcuts hooks) read through these
  * selectors instead. Reads hydrate via `fetchRenderDefinitions` /

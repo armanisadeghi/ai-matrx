@@ -16,6 +16,7 @@ import {
   type StoredAuditMetrics,
 } from "@/features/marketing/seo/audit/stored";
 import { evaluateUrlQuality } from "@/features/marketing/seo/audit/url-quality";
+import { isResourceContentType } from "@/features/marketing/lib/page-content-class";
 import type { AuditSeverity } from "@/features/marketing/seo/audit/types";
 
 /** Raw fetch shape: one canonical page + its latest snapshot's metric columns. */
@@ -106,7 +107,7 @@ export function buildSiteAuditRollup(rows: AuditSourceRow[]): SiteAuditRollup {
   };
 
   for (const row of rows) {
-    if (row.contentTypeLast !== null && row.contentTypeLast !== "html") {
+    if (isResourceContentType(row.contentTypeLast)) {
       nonHtmlResources += 1;
       continue;
     }

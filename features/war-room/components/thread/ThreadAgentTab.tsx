@@ -23,7 +23,9 @@ import { AssociationEntitySelect } from "@/features/scopes/components/associatio
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { ConversationPickerWindow } from "@/features/agents/components/conversation-history/ConversationPickerWindow";
 import { selectAssistantConversationId } from "@/features/transcript-studio/redux/selectors";
-import { WAR_ROOM_THREAD_AGENT_ID } from "@/features/war-room/constants";
+import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
+import { SlotAgentPicker } from "@/features/agents/slots/components/SlotAgentPicker";
+import { WAR_ROOM_THREAD_AGENT_SLOT } from "@/features/war-room/constants";
 import {
   selectActiveAudioSessionId,
   selectActiveConversationId,
@@ -176,6 +178,14 @@ export function ThreadAgentTab({
     selectAssistantConversationId(sessionId),
   );
 
+  // The persona a NEW thread chat starts with — the `war_room.thread` slot.
+  // Unresolved ⇒ the explicit Start-chat affordances are DISABLED and say why;
+  // there is no hardcoded fallback id to quietly start the wrong agent.
+  const { slot: threadSlot, error: threadSlotError } = useAgentSlot(
+    WAR_ROOM_THREAD_AGENT_SLOT,
+  );
+  const threadAgentId = threadSlot?.agentId ?? null;
+
   // Hydrate-only — NEVER creates a session or conversation (that happens
   // exactly once, at thread provisioning). A legacy thread missing either
   // gets the explicit "Set up chat" empty state below.
@@ -246,20 +256,19 @@ export function ThreadAgentTab({
           </span>
           <button
             type="button"
-            onClick={() =>
+            disabled={!threadAgentId}
+            title={threadSlotError ?? undefined}
+            onClick={() => {
+              if (!threadAgentId) return;
               void dispatch(addAudioSessionToThread(threadId)).then((sid) => {
                 if (sid) {
                   void dispatch(
-                    startThreadConversation(
-                      threadId,
-                      sid,
-                      WAR_ROOM_THREAD_AGENT_ID,
-                    ),
+                    startThreadConversation(threadId, sid, threadAgentId),
                   );
                 }
-              })
-            }
-            className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+              });
+            }}
+            className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="size-3.5" />
             Set up chat
@@ -290,20 +299,20 @@ export function ThreadAgentTab({
             </span>
             <button
               type="button"
-              onClick={() =>
+              disabled={!threadAgentId}
+              title={threadSlotError ?? undefined}
+              onClick={() => {
+                if (!threadAgentId) return;
                 void dispatch(
-                  startThreadConversation(
-                    threadId,
-                    sessionId,
-                    WAR_ROOM_THREAD_AGENT_ID,
-                  ),
-                )
-              }
-              className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+                  startThreadConversation(threadId, sessionId, threadAgentId),
+                );
+              }}
+              className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus className="size-3.5" />
               Start chat
             </button>
+            <SlotAgentPicker slotKey={WAR_ROOM_THREAD_AGENT_SLOT} />
           </div>
         </div>
       </div>

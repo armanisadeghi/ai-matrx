@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-08-06`
+**Last updated:** `2026-08-08`
 
 ---
 
@@ -46,6 +46,8 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 ## Data model
 
 **Tables** (Supabase, `research` schema, `rs_` prefix): `rs_topic`, `rs_keyword`, `rs_source`, `rs_content`, `rs_analysis`, `rs_synthesis`, `rs_tag`, `rs_document`, `rs_media`, `rs_template`, plus the `rs_source_keywords` **view**. Normal feature tables (RLS-gated, client writes allowed) — none are protected-resources.
+
+**Research intent (2026-08-08).** `research.research_intent` is a fixed reference catalog (17 rows, `is_active`/`position` ordered) of what a topic is trying to produce — `key`, `label`, `primary_objective`, `keyword_guidance`, quota-package defaults (`default_keyword_count`, `min_keyword_count`, `max_keyword_count`), `retrieval_mode`, `authority_weight`, `include_youtube_default`. A topic optionally points at one via `rs_topic.intent_key` (nullable FK; NULL = legacy, treated as `topic_deep_dive`); `rs_topic.intent_brief` is the composed statement injected into every research agent's prompt for that topic. **`intent_key`/`intent_brief` are NEVER written directly to Supabase from the client.** The one writer is aidream `POST /research/topics/{id}/intent` (`{intent_key, apply_quotas?, user_ask?}` → `{intent_key, quota_updates}`), which composes the brief AND applies the intent's quota package — a direct column write would leave the brief stale and quotas untouched. Client surface: `service.ts#getResearchIntents` / `service/server.ts#getResearchIntentsServer` (read-only reference reads), `useResearchApi().setTopicIntent` (the writer), `components/settings/IntentSection.tsx` (the picker, above the quota ladder in `TopicSettingsForm`, confirm-gated since it resets quotas), `components/shared/IntentBadge.tsx` (quiet chip next to the topic title in the topic layout header, renders nothing when unset).
 
 **The junction tables are GONE.** `rs_keyword_source` and `rs_source_tag` no longer exist — source⇄keyword and source⇄tag are canonical `platform.associations` edges (`research_source → research_keyword` / `research_source → research_tag`), with the per-keyword search rank carried on the edge's `position`. `research.rs_source_keywords` is a **view** over that join and is the only place the old shape survives. Anything reading these relationships joins `platform.associations` (see `migrations/research_overview_readiness_ledger.sql` for the canonical predicate) — never a junction table.
 
@@ -286,6 +288,17 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-08 — **Research intent surfaced.** New `research.research_intent`
+  catalog + `rs_topic.intent_key`/`intent_brief` (server-composed, written
+  only through `POST /research/topics/{id}/intent`). Added
+  `service.ts#getResearchIntents` / `service/server.ts#getResearchIntentsServer`,
+  `useResearchApi().setTopicIntent`, `components/settings/IntentSection.tsx`
+  (picker above the quota ladder in `TopicSettingsForm`, confirm-gated
+  because applying an intent resets quotas to its package) and
+  `components/shared/IntentBadge.tsx` (muted chip next to the topic title in
+  `app/(core)/research/topics/[topicId]/layout.tsx`). Also surfaced the
+  already-live but invisible `rs_topic.videos_per_keyword` quota column in
+  `QuotaSettingsSection`/`TopicQuotaFields`.
 - 2026-08-08 — **Video sources are legible on the GENERIC surfaces.** New
   `getYouTubeVideoIdentities` (direct Supabase read of the compact
   `research.youtube_video` identity slice, keyed by video id parsed from

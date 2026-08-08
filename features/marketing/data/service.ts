@@ -1225,14 +1225,22 @@ export async function searchPagesForMetaApply(
   let query = db
     .from("page")
     .select(
-      "id, site_id, url, version, target_keyword, meta_title_desired, meta_description_desired",
+      "id, site_id, url, version, target_keyword, meta_title_desired, meta_description_desired, site!inner(id)",
     )
     .is("deleted_at", null)
+    // A page whose SITE was soft-deleted is not part of any workspace, but the
+    // site delete does NOT cascade to its pages (deliberately — page soft-delete
+    // hard-deletes the row's association edges). Every site-scoped reader is
+    // safe by construction; this one searches across sites, so it must say so.
+    // 817 orphan rows existed when this was added, and they were the entire
+    // cause of the "same URL appears twice" report — there are zero same-site
+    // duplicates, `page_site_id_url_hash_key` has always guaranteed that.
+    .is("site.deleted_at", null)
     // Crawls record assets as page rows too — offering someone a .png or a
     // wp-json endpoint to "apply a meta title to" is noise. `content_type_last`
     // is the crawler's own verdict, so filter on it rather than guessing from
     // the URL. NULL stays in: it means not-yet-crawled, not not-a-page.
-    .or("content_type_last.is.null,content_type_last.eq.html")
+    .or(PAGE_CONTENT_TYPE_OR_FILTER)
     .eq("status", "active");
 
   const trimmed = term.trim();

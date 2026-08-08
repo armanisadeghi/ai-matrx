@@ -64,7 +64,6 @@ const sklSlice = createSlice({
           Object.assign(existing, patch);
         } else {
           state.renderDefinitions.byId[patch.id] = {
-            id: patch.id,
             blockId: "",
             label: "",
             description: null,

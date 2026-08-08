@@ -8,6 +8,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
@@ -38,6 +39,9 @@ import { useOrchestratorPromptStatus } from "../hooks/useOrchestratorPromptStatu
 import { addAgentToSet, createAgentSet } from "@/features/agents/redux/agent-sets/thunks";
 import { enableOrchestratorSync, syncOrchestratorPrompt } from "../orchestrator/thunks";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
+import { selectDisplayConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
+import { SetRunStatusContext } from "../run/SetRunStatusContext";
+import { useSetMemberRunStatus } from "../run/useSetMemberRunStatus";
 import { AgentLibraryRail } from "./AgentLibraryRail";
 import SetBuilderCanvas from "./SetBuilderCanvas";
 import { SetMemberGrid } from "./SetMemberGrid";
@@ -46,6 +50,13 @@ import { OrchestratorInspector } from "./OrchestratorInspector";
 import { SetSettingsDialog } from "./SetSettingsDialog";
 import { accentClasses } from "./accents";
 import { DEFAULT_SET_ACCENT } from "../constants";
+
+// Loaded only when the user opens the embedded run panel — it drags the whole
+// conversation runtime with it (see SetRunPanel's own dynamic AgentRunnerPage).
+const SetRunPanel = dynamic(
+  () => import("../run/SetRunPanel").then((m) => m.SetRunPanel),
+  { ssr: false },
+);
 
 export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
   const dispatch = useAppDispatch();
@@ -70,14 +81,25 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [orchestratorOpen, setOrchestratorOpen] = useState(false);
-  // The right-side inspector shows EITHER a member or the orchestrator, never both.
+  // The embedded run experience (desktop): AgentRunnerPage co-mounted with the
+  // canvas so member nodes light up live. Mutually exclusive with the member /
+  // orchestrator inspectors — one right-side panel at a time.
+  const [runOpen, setRunOpen] = useState(false);
+  // The right-side panel shows a member, the orchestrator, or the run — never two.
   const openMember = (agentId: string) => {
     setOrchestratorOpen(false);
+    setRunOpen(false);
     setEditingId(agentId);
   };
   const openOrchestrator = () => {
     setEditingId(null);
+    setRunOpen(false);
     setOrchestratorOpen(true);
+  };
+  const openRun = () => {
+    setEditingId(null);
+    setOrchestratorOpen(false);
+    setRunOpen(true);
   };
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -91,6 +113,15 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
 
   const memberIds = useMemo(() => members.map((m) => m.agentId), [members]);
   const promptStatus = useOrchestratorPromptStatus(orchestratorId, memberIds);
+
+  // ── live member highlight ──────────────────────────────────────────────
+  // The embedded runner registers under this surfaceKey; the focus registry is
+  // the canonical way to observe its active conversation (no runner fork).
+  // Observed even while the panel is closed — a still-streaming run keeps
+  // lighting the canvas after the user closes the panel (retainOnUnmount).
+  const runSurfaceKey = `agent-set-builder:${orchestratorId}`;
+  const runConversationId = useAppSelector(selectDisplayConversation(runSurfaceKey));
+  const runStatus = useSetMemberRunStatus(runConversationId, memberIds);
   // Derived — when a member is removed it simply resolves to null and the
   // inspector unmounts (no setState-in-effect cleanup needed).
   const editingMember = editingId ? members.find((m) => m.agentId === editingId) ?? null : null;
@@ -185,12 +216,22 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
       icon: PanelLeft,
       onPress: () => setLibraryOverride(!libraryOpen),
     },
-    {
-      label: "Run",
-      icon: Play,
-      primary: true,
-      href: `/agents/${orchestratorId}/run`,
-    },
+    // Desktop opens the embedded run panel beside the canvas (live member
+    // highlight); mobile keeps the full runner route — canvas highlight is
+    // meaningless on a phone.
+    isMobile
+      ? {
+          label: "Run",
+          icon: Play,
+          primary: true,
+          href: `/agents/${orchestratorId}/run`,
+        }
+      : {
+          label: runOpen ? "Hide run panel" : "Run",
+          icon: Play,
+          primary: !runOpen,
+          onPress: () => (runOpen ? setRunOpen(false) : openRun()),
+        },
     // TEMPLATE orchestrators (prompt HAS the <available_agents> section our
     // system fills) → the Sync action; out-of-sync promotes it to a solid pill.
     ...(promptStatus.isTemplate
@@ -275,28 +316,30 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
         )}
 
         <main className="relative flex-1 overflow-hidden">
-          {view === "canvas" ? (
-            <SetBuilderCanvas
-              orchestratorId={orchestratorId}
-              accent={accent}
-              members={members}
-              config={config}
-              onEditMember={openMember}
-              onOpenOrchestrator={openOrchestrator}
-            />
-          ) : (
-            <div className="h-full overflow-y-auto">
-              {members.length === 0 ? null : (
-                <SetMemberGrid
-                  orchestratorId={orchestratorId}
-                  members={members}
-                  accent={accent}
-                  onEdit={openMember}
-                  onOpenOrchestrator={openOrchestrator}
-                />
-              )}
-            </div>
-          )}
+          <SetRunStatusContext.Provider value={runStatus}>
+            {view === "canvas" ? (
+              <SetBuilderCanvas
+                orchestratorId={orchestratorId}
+                accent={accent}
+                members={members}
+                config={config}
+                onEditMember={openMember}
+                onOpenOrchestrator={openOrchestrator}
+              />
+            ) : (
+              <div className="h-full overflow-y-auto">
+                {members.length === 0 ? null : (
+                  <SetMemberGrid
+                    orchestratorId={orchestratorId}
+                    members={members}
+                    accent={accent}
+                    onEdit={openMember}
+                    onOpenOrchestrator={openOrchestrator}
+                  />
+                )}
+              </div>
+            )}
+          </SetRunStatusContext.Provider>
 
           {members.length === 0 && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -325,6 +368,16 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
             orchestratorId={orchestratorId}
             accent={accent}
             onClose={() => setOrchestratorOpen(false)}
+          />
+        )}
+
+        {runOpen && !isMobile && (
+          <SetRunPanel
+            orchestratorId={orchestratorId}
+            surfaceKey={runSurfaceKey}
+            accent={accent}
+            conversationId={runConversationId}
+            onClose={() => setRunOpen(false)}
           />
         )}
       </div>

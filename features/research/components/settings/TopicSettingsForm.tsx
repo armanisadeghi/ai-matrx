@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
 import { AutonomySelector } from "../init/AutonomySelector";
+import { IntentSection } from "./IntentSection";
 import { StatusBadge } from "../shared/StatusBadge";
 import {
   updateTopic,
@@ -155,7 +156,14 @@ export function TopicSettingsForm({
     max_documents: topic.max_documents,
     max_tag_consolidations: topic.max_tag_consolidations,
     max_auto_tag_calls: topic.max_auto_tag_calls,
+    videos_per_keyword: topic.videos_per_keyword,
   });
+  // Local mirror of the topic's intent — updated optimistically the instant
+  // `POST /research/topics/{id}/intent` succeeds, ahead of the background
+  // `refresh()` that syncs the rest of the topic.
+  const [intentKey, setIntentKey] = useState<string | null>(
+    topic.intent_key ?? null,
+  );
 
   // Association-backed project link. null = no project (valid), undefined =
   // still loading the edge.
@@ -219,6 +227,7 @@ export function TopicSettingsForm({
         max_documents: quotas.max_documents,
         max_tag_consolidations: quotas.max_tag_consolidations,
         max_auto_tag_calls: quotas.max_auto_tag_calls,
+        videos_per_keyword: quotas.videos_per_keyword,
       });
       if (projectChanged) {
         try {
@@ -464,6 +473,20 @@ export function TopicSettingsForm({
           />
         </div>
       </section>
+
+      {/* Research intent — above the quota ladder; applying one resets the
+          fields QuotaSettingsSection renders below to that intent's package. */}
+      <IntentSection
+        topic={topic}
+        intentKey={intentKey}
+        disabled={saving}
+        onApplied={(result) => {
+          setIntentKey(result.intent_key);
+          if (result.quota_updates) {
+            setQuotas((q) => ({ ...q, ...result.quota_updates }));
+          }
+        }}
+      />
 
       {/* Pipeline limits / quota ladder */}
       <QuotaSettingsSection
