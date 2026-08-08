@@ -371,15 +371,28 @@ export function stripCitationMarkers(text: string): string {
  * runs, no markdown parser. Inline spans with backticks INSIDE the span
  * content (``a ` b``) pair conservatively on run length, which matches
  * CommonMark for the cases streamed model output actually produces.
+ * Fences are recognized behind blockquote markers (`> ```js`) and at ANY
+ * indentation — models routinely quote/indent code, and an unrecognized
+ * open fence would let a marker land inside streaming code (the one case
+ * with no self-healing fallback). Known remaining gap: pure 4-space
+ * indented code blocks with no fence delimiters are not detected.
+ *
+ * Results are memoized (bounded FIFO) — the streaming render path calls
+ * this on every Redux update, usually with an unchanged string.
  */
+const _codeRegionsCache = new Map<string, ReadonlyArray<readonly [number, number]>>();
+const _CODE_REGIONS_CACHE_MAX = 32;
+
 export function computeCodeRegions(
   text: string,
 ): ReadonlyArray<readonly [number, number]> {
   if (!text.includes("`") && !text.includes("~")) return [];
+  const cached = _codeRegionsCache.get(text);
+  if (cached) return cached;
   const regions: Array<readonly [number, number]> = [];
 
   // --- Fenced blocks (line-based) ---
-  const fenceRe = /^ {0,3}(`{3,}|~{3,})/;
+  const fenceRe = /^(?:[ \t]*>)*[ \t]*(`{3,}|~{3,})/;
   let fenceStart = -1;
   let fenceChar = "";
   let fenceLen = 0;
@@ -413,8 +426,22 @@ export function computeCodeRegions(
   if (fenceStart !== -1) regions.push([fenceStart, textLen] as const);
 
   // --- Inline code spans (outside fence regions) ---
-  const insideFence = (i: number) =>
-    regions.some(([s, e]) => i >= s && i < e);
+  // Fence regions are sorted and non-overlapping by construction; binary
+  // search keeps the char scan O(n log k) (the previous `.some` over a
+  // growing array was quadratic on backtick-dense pathological texts).
+  const fenceRegions = regions.slice();
+  const insideFence = (i: number) => {
+    let lo = 0;
+    let hi = fenceRegions.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const [s, e] = fenceRegions[mid];
+      if (i < s) hi = mid - 1;
+      else if (i >= e) lo = mid + 1;
+      else return true;
+    }
+    return false;
+  };
   let i = 0;
   while (i < textLen) {
     if (text[i] !== "`" || insideFence(i)) {
@@ -445,6 +472,11 @@ export function computeCodeRegions(
     if (!closed) i = runEnd; // Unpaired run — literal backticks.
   }
 
+  if (_codeRegionsCache.size >= _CODE_REGIONS_CACHE_MAX) {
+    const oldest = _codeRegionsCache.keys().next().value;
+    if (oldest !== undefined) _codeRegionsCache.delete(oldest);
+  }
+  _codeRegionsCache.set(text, regions);
   return regions;
 }
 

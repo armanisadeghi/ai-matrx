@@ -352,3 +352,39 @@ describe("insertCitationMarkers — unicode safety", () => {
     expect(index.sources).toHaveLength(2);
   });
 });
+
+describe("computeCodeRegions — blockquote/indented fences (adversarial fixes)", () => {
+  const { computeCodeRegions, insertCitationMarkers } = jest.requireActual(
+    "../message-citations",
+  );
+
+  it("detects an unclosed fence behind blockquote markers", () => {
+    const text = "> intro\n> ```js\n> const apiKey = 'secret';";
+    const regions = computeCodeRegions(text);
+    expect(regions.length).toBeGreaterThan(0);
+    const out = insertCitationMarkers(text, [{ sourceNumber: 1, answerEnd: 30 }]);
+    // Marker must snap to end-of-text (unclosed fence), never inside the code.
+    expect(out.indexOf("<matrxcite")).toBe(text.length);
+  });
+
+  it("detects an unclosed 4-space-indented fence", () => {
+    const text = "    ```js\n    const apiKey = 'secret';";
+    const out = insertCitationMarkers(text, [{ sourceNumber: 1, answerEnd: 25 }]);
+    expect(out.indexOf("<matrxcite")).toBe(text.length);
+  });
+
+  it("closes a blockquoted fence and keeps text after it markable", () => {
+    const text = "> ```js\n> code();\n> ```\nafter text here";
+    const regions = computeCodeRegions(text);
+    expect(regions.length).toBe(1);
+    const fenceEnd = regions[0][1];
+    const out = insertCitationMarkers(text, [{ sourceNumber: 2, answerEnd: 5 }]);
+    const at = out.indexOf("<matrxcite");
+    expect(at).toBeGreaterThanOrEqual(fenceEnd);
+  });
+
+  it("memoizes results for identical strings", () => {
+    const text = "some `inline` code";
+    expect(computeCodeRegions(text)).toBe(computeCodeRegions(text));
+  });
+});
