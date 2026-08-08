@@ -1,0 +1,459 @@
+"use client";
+
+/**
+ * /agents/slots — the user/org-facing agent-slot override surface.
+ *
+ * Browse every live slot ("which agent runs this step"), see the resolved
+ * agent with provenance (system default vs org vs your override — user wins),
+ * and create/edit/delete agent.slot_binding rows: swap the agent, or
+ * settings-only (model / thinking level).
+ *
+ * Generalizes research's /research/topics/[id]/agents pattern onto the
+ * platform-wide slot system. Cross-repo system-of-record:
+ * common-docs/systems/agent-slots/FEATURE.md.
+ */
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ArrowDownUp,
+  ChevronDown,
+  KeyRound,
+  Loader2,
+  RefreshCw,
+  ShieldCheck,
+  Building2,
+  UserRound,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
+import { useUserOrganizations } from "@/features/organizations/hooks";
+import {
+  fetchSlotOverridesData,
+  type SlotBindingRow,
+  type SlotDefinitionRow,
+  type SlotOverridesData,
+} from "../overrides";
+import { SlotOverrideEditor, type OverridePrincipal } from "./SlotOverrideEditor";
+
+interface SlotView {
+  slot: SlotDefinitionRow;
+  domain: string;
+  defaultAgentName: string;
+  myBinding: SlotBindingRow | null;
+  /** Org bindings on orgs the user belongs to, keyed by org id. */
+  orgBindings: Record<string, SlotBindingRow>;
+  /** The layer that decides the agent for THIS user (user > org > system). */
+  provenance: "user" | "org" | "system";
+  /** Agent name after applying that layer. */
+  resolvedAgentName: string;
+  settingsOnly: boolean;
+}
+
+function slotDomain(slotKey: string): string {
+  const dot = slotKey.indexOf(".");
+  return dot > 0 ? slotKey.slice(0, dot) : slotKey;
+}
+
+export function SlotOverridesPage() {
+  const dispatch = useAppDispatch();
+  const userId = useAppSelector(selectUserId);
+  const { organizations, loading: orgsLoading } = useUserOrganizations();
+
+  const [data, setData] = useState<SlotOverridesData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [openSlotId, setOpenSlotId] = useState<string | null>(null);
+  const [principalKeyBySlot, setPrincipalKeyBySlot] = useState<Record<string, string>>({});
+
+  // Every setState lives in an async callback — never synchronously in the
+  // effect (react-hooks/set-state-in-effect).
+  const load = useCallback(() => {
+    fetchSlotOverridesData()
+      .then((next) => {
+        setData(next);
+        setLoadError(null);
+      })
+      .catch((err: unknown) => {
+        const message = (err as { message?: string } | null)?.message ?? "unknown error";
+        setLoadError(message);
+        toast.error(`Couldn't load agent slots: ${message}`);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    load();
+    // Canonical agent listing for the override picker (owned + shared + builtins).
+    void dispatch(fetchAgentsListFull());
+  }, [dispatch, load]);
+
+  const orgNamesById = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const org of organizations) out[org.id] = org.name;
+    return out;
+  }, [organizations]);
+
+  const adminOrgs = useMemo(
+    () => organizations.filter((o) => o.role === "admin" || o.role === "owner"),
+    [organizations],
+  );
+
+  const views = useMemo<SlotView[]>(() => {
+    if (!data || !userId) return [];
+    const myOrgIds = new Set(organizations.map((o) => o.id));
+    return data.slots.map((slot) => {
+      const bindings = data.bindings.filter((b) => b.slot_id === slot.id && b.is_enabled);
+      const myBinding =
+        data.bindings.find(
+          (b) =>
+            b.slot_id === slot.id && b.principal_type === "user" && b.subject_user_id === userId,
+        ) ?? null;
+      const orgBindings: Record<string, SlotBindingRow> = {};
+      for (const b of bindings) {
+        if (b.principal_type === "org" && myOrgIds.has(b.organization_id)) {
+          orgBindings[b.organization_id] = b;
+        }
+      }
+
+      const defaultAgentId = slot.default_agent_version_id
+        ? (data.versionAgentIds[slot.default_agent_version_id] ?? null)
+        : slot.default_agent_id;
+      const defaultAgentName = defaultAgentId
+        ? (data.agentsById[defaultAgentId]?.name ?? "(unknown agent)")
+        : "(no default agent)";
+
+      // Mirror the runtime precedence for display: system → org → user, agent
+      // set by the LAST layer that names one (settings-only layers don't move it).
+      let provenance: SlotView["provenance"] = "system";
+      let resolvedAgentId = defaultAgentId;
+      const firstOrgSwap = Object.values(orgBindings).find((b) => b.agent_id);
+      if (firstOrgSwap?.agent_id) {
+        provenance = "org";
+        resolvedAgentId = firstOrgSwap.agent_id;
+      }
+      if (myBinding?.is_enabled && myBinding.agent_id) {
+        provenance = "user";
+        resolvedAgentId = myBinding.agent_id;
+      }
+      const settingsOnly =
+        provenance === "system" &&
+        Boolean(
+          (myBinding?.is_enabled && myBinding.config_overrides != null) ||
+            Object.values(orgBindings).some((b) => b.config_overrides != null),
+        );
+
+      return {
+        slot,
+        domain: slotDomain(slot.slot_key),
+        defaultAgentName,
+        myBinding,
+        orgBindings,
+        provenance,
+        resolvedAgentName: resolvedAgentId
+          ? (data.agentsById[resolvedAgentId]?.name ?? "(unknown agent)")
+          : defaultAgentName,
+        settingsOnly,
+      };
+    });
+  }, [data, organizations, userId]);
+
+  const domains = useMemo(() => {
+    const grouped = new Map<string, SlotView[]>();
+    for (const view of views) {
+      const list = grouped.get(view.domain) ?? [];
+      list.push(view);
+      grouped.set(view.domain, list);
+    }
+    return [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [views]);
+
+  const principalsFor = useCallback(
+    (slotId: string): OverridePrincipal[] => {
+      const principals: OverridePrincipal[] = [
+        { key: "user", kind: "user", organizationId: null, label: "Me" },
+      ];
+      for (const org of adminOrgs) {
+        principals.push({
+          key: `org:${org.id}`,
+          kind: "org",
+          organizationId: org.id,
+          label: org.name,
+        });
+      }
+      void slotId;
+      return principals;
+    },
+    [adminOrgs],
+  );
+
+  if (loading || (!data && !loadError)) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (loadError || !data) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+        <p className="text-sm text-destructive">Couldn't load agent slots: {loadError}</p>
+        <Button variant="outline" size="sm" onClick={() => load()} className="gap-1.5">
+          <RefreshCw className="h-3.5 w-3.5" /> Retry
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full overflow-y-auto">
+      <div className="mx-auto w-full max-w-4xl px-4 pb-16 pt-[calc(var(--shell-header-h)+0.75rem)]">
+        <p className="mb-4 text-[13px] leading-relaxed text-muted-foreground">
+          Every step below runs a system-provided agent. Swap in one of your own agents, or keep
+          the system agent and override its settings. Your override wins over your organization's;
+          both win over the system default.
+        </p>
+
+        {domains.length === 0 ? (
+          <p className="rounded-lg border border-border/60 bg-card px-4 py-6 text-center text-sm text-muted-foreground">
+            No agent slots are live yet.
+          </p>
+        ) : null}
+
+        {domains.map(([domain, domainViews]) => (
+          <section key={domain} className="mb-6">
+            <h2 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              {domain.replace(/_/g, " ")}
+            </h2>
+            <div className="space-y-2">
+              {domainViews.map((view) => (
+                <SlotCard
+                  key={view.slot.id}
+                  view={view}
+                  data={data}
+                  userId={userId}
+                  orgNamesById={orgNamesById}
+                  principals={principalsFor(view.slot.id)}
+                  principalKey={principalKeyBySlot[view.slot.id] ?? "user"}
+                  onPrincipalChange={(key) =>
+                    setPrincipalKeyBySlot((prev) => ({ ...prev, [view.slot.id]: key }))
+                  }
+                  open={openSlotId === view.slot.id}
+                  onToggle={() =>
+                    setOpenSlotId((prev) => (prev === view.slot.id ? null : view.slot.id))
+                  }
+                  orgsLoading={orgsLoading}
+                  onChanged={() => load()}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProvenancePill({ view }: { view: SlotView }) {
+  if (view.provenance === "user") {
+    return (
+      <Badge className="gap-1 border-primary/25 bg-primary/10 text-[10.5px] font-medium text-primary hover:bg-primary/10">
+        <KeyRound className="h-2.5 w-2.5" /> Your override
+      </Badge>
+    );
+  }
+  if (view.provenance === "org") {
+    return (
+      <Badge className="gap-1 border-sky-500/30 bg-sky-500/10 text-[10.5px] font-medium text-sky-700 hover:bg-sky-500/10 dark:text-sky-400">
+        <Building2 className="h-2.5 w-2.5" /> Org override
+      </Badge>
+    );
+  }
+  return (
+    <Badge
+      variant="outline"
+      className="gap-1 border-border/70 text-[10.5px] font-medium text-muted-foreground"
+    >
+      <ShieldCheck className="h-2.5 w-2.5" /> System default
+    </Badge>
+  );
+}
+
+function SlotCard({
+  view,
+  data,
+  userId,
+  orgNamesById,
+  principals,
+  principalKey,
+  onPrincipalChange,
+  open,
+  onToggle,
+  orgsLoading,
+  onChanged,
+}: {
+  view: SlotView;
+  data: SlotOverridesData;
+  userId: string | null;
+  orgNamesById: Record<string, string>;
+  principals: OverridePrincipal[];
+  principalKey: string;
+  onPrincipalChange: (key: string) => void;
+  open: boolean;
+  onToggle: () => void;
+  orgsLoading: boolean;
+  onChanged: () => void;
+}) {
+  const { slot } = view;
+  const disabled = !slot.is_enabled;
+
+  const principal =
+    principals.find((p) => p.key === principalKey) ?? principals[0];
+  const principalBinding: SlotBindingRow | null =
+    principal.kind === "user"
+      ? view.myBinding
+      : (principal.organizationId && view.orgBindings[principal.organizationId]) || null;
+
+  return (
+    <article
+      className={cn(
+        "rounded-xl border border-border/60 bg-card transition-colors",
+        open ? "border-border" : "hover:border-border",
+        disabled && "opacity-60",
+      )}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-start gap-3 px-4 py-3 text-left"
+        aria-expanded={open}
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <h3 className="text-[14px] font-semibold tracking-[-0.01em] text-foreground">
+              {slot.label}
+            </h3>
+            <ProvenancePill view={view} />
+            {view.settingsOnly ? (
+              <Badge
+                variant="outline"
+                className="gap-1 border-amber-500/30 bg-amber-500/10 text-[10.5px] font-medium text-amber-700 dark:text-amber-400"
+              >
+                Settings adjusted
+              </Badge>
+            ) : null}
+            {disabled ? (
+              <Badge
+                variant="outline"
+                className="border-border/70 text-[10.5px] font-medium text-muted-foreground"
+              >
+                Disabled
+              </Badge>
+            ) : null}
+          </div>
+          {slot.description ? (
+            <p className="mt-0.5 line-clamp-2 text-[12.5px] leading-relaxed text-muted-foreground">
+              {slot.description}
+            </p>
+          ) : null}
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground/80">
+            <code className="font-mono">{slot.slot_key}</code>
+            <span className="inline-flex items-center gap-1">
+              <ArrowDownUp className="h-2.5 w-2.5" />
+              runs <span className="font-medium text-foreground/80">{view.resolvedAgentName}</span>
+              {view.provenance !== "system" ? (
+                <span className="text-muted-foreground/60">
+                  (default: {view.defaultAgentName})
+                </span>
+              ) : null}
+            </span>
+            {slot.input_kind || slot.output_kind ? (
+              <span className="font-mono text-muted-foreground/60">
+                {slot.input_kind ?? "text"} → {slot.output_kind ?? "text"}
+              </span>
+            ) : null}
+          </div>
+        </div>
+        <ChevronDown
+          className={cn(
+            "mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+
+      {open && userId ? (
+        <div className="border-t border-border/50 px-4 py-3.5">
+          {principals.length > 1 ? (
+            <div className="mb-3 flex flex-wrap items-center gap-1.5">
+              {principals.map((p) => {
+                const active = p.key === principal.key;
+                const hasBinding =
+                  p.kind === "user"
+                    ? view.myBinding != null
+                    : Boolean(p.organizationId && view.orgBindings[p.organizationId]);
+                return (
+                  <button
+                    key={p.key}
+                    type="button"
+                    onClick={() => onPrincipalChange(p.key)}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium transition-colors",
+                      active
+                        ? "bg-primary/10 text-primary ring-1 ring-inset ring-primary/25"
+                        : "bg-muted/50 text-muted-foreground ring-1 ring-inset ring-border/60 hover:text-foreground",
+                    )}
+                  >
+                    {p.kind === "user" ? (
+                      <UserRound className="h-3 w-3" />
+                    ) : (
+                      <Building2 className="h-3 w-3" />
+                    )}
+                    {p.label}
+                    {hasBinding ? <span className="h-1.5 w-1.5 rounded-full bg-current" /> : null}
+                  </button>
+                );
+              })}
+              {orgsLoading ? (
+                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+              ) : null}
+            </div>
+          ) : null}
+
+          {/* Org overrides the user can SEE but not edit (member, not admin). */}
+          {principal.kind === "user" &&
+          Object.keys(view.orgBindings).length > 0 &&
+          !principals.some((p) => p.kind === "org") ? (
+            <p className="mb-3 text-[11.5px] text-muted-foreground">
+              {Object.entries(view.orgBindings)
+                .map(([orgId, b]) => {
+                  const name = orgNamesById[orgId] ?? "your organization";
+                  const agentName = b.agent_id
+                    ? (data.agentsById[b.agent_id]?.name ?? "a custom agent")
+                    : "the default agent with adjusted settings";
+                  return `${name} overrides this step (${agentName})`;
+                })
+                .join(" · ")}
+              . Your override below wins over the org's.
+            </p>
+          ) : null}
+
+          <SlotOverrideEditor
+            key={`${principal.key}:${principalBinding?.id ?? "none"}:${principalBinding?.updated_at ?? ""}`}
+            slot={slot}
+            principal={principal}
+            binding={principalBinding}
+            agentsById={data.agentsById}
+            userId={userId}
+            onChanged={onChanged}
+          />
+        </div>
+      ) : null}
+    </article>
+  );
+}

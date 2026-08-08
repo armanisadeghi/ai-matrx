@@ -4,6 +4,8 @@ Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agen
 
 Route: `/administration/agents/slots` (`app/(admin)/administration/agents/slots/page.tsx`). Code: `service.ts` (direct supabase reads/writes on `agent.slot_definition` / `agent.slot_binding`; super-admin writes ride RLS via `has_access` editor on system-org rows — no bespoke RPC) + `AgentSlotsConsole.tsx`.
 
+The USER/ORG-facing override surface (browse slots, provenance, write `slot_binding` overrides) is `/agents/slots` — `features/agents/slots/FEATURE.md`. This console stays admin-only (pins, health, bench).
+
 ## The two laws (Arman's ruling, 2026-08-08 — violations are defects, fix on sight)
 
 1. **THE SYSTEM-AGENT LAW.** A slot DEFAULT may only reference a **system agent** (`agent_type='builtin'`, system-org owned, no user). A personal/shared/org agent pinned as a slot default breaks every user the slot serves — it fails the moment ownership, visibility, or archival shifts, and it fails on some page far from where it was pinned. The console picker therefore offers ONLY system agents; any row whose default drifts to a non-builtin shows a destructive **"NOT a system agent — fix this pin"** badge; aidream's `sync_declared_slots` screams the same on every boot. Promote an agent to system via `agx_duplicate_agent(p_as_system => true)`, then pin the promoted copy. (User/org OVERRIDE bindings are the opposite case — those are *supposed* to be the principal's own agents.)

@@ -48,6 +48,14 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/agents/slots",
+      label: "Step Agents (slot overrides)",
+      description:
+        "User/org-facing agent-slot override surface — browse system steps, see the resolved agent with provenance, swap in your own agent or override settings. Admin pin console: /administration/agents/slots.",
+      filePath: "app/(core)/agents/slots/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/agents/sets/[orchestratorId]",
       label: "Set Builder",
       description:

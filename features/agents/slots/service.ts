@@ -77,9 +77,22 @@ function toLlmParams(obj: JsonObject): LLMParamsBody {
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map<string, { at: number; value: ResolvedClientSlot }>();
 
+/** Subscribers re-resolve when a slot's cached resolution is invalidated
+ * (binding saved/removed) — how a mounted picker/consumer refreshes without
+ * prop-drilling a reload. `slotKey === undefined` means "all slots". */
+const invalidationListeners = new Set<(slotKey: string | undefined) => void>();
+
+export function onSlotCacheInvalidated(
+  listener: (slotKey: string | undefined) => void,
+): () => void {
+  invalidationListeners.add(listener);
+  return () => invalidationListeners.delete(listener);
+}
+
 export function invalidateClientSlotCache(slotKey?: string): void {
   if (slotKey) cache.delete(slotKey);
   else cache.clear();
+  for (const listener of invalidationListeners) listener(slotKey);
 }
 
 export async function resolveAgentSlot(slotKey: string): Promise<ResolvedClientSlot> {
