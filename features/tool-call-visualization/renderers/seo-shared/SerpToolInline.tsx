@@ -17,6 +17,7 @@ import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { cn } from "@/lib/utils";
 import { SerpResult } from "@/features/marketing/seo/serp/SerpResult";
 import { SerpFieldChips } from "@/features/marketing/seo/serp/SerpValidation";
+import { ApplyMetaToPage } from "@/features/marketing/seo/serp/ApplyMetaToPage";
 import type { SerpEntry } from "@/features/marketing/seo/serp/types";
 
 const MAX_INLINE = 6;
@@ -101,6 +102,10 @@ export function SerpToolInline({
                 ) : null}
               </div>
               <div className="flex shrink-0 items-center gap-1">
+                <ApplyMetaToPage
+                  title={entry.title}
+                  description={entry.description}
+                />
                 {entry.title ? (
                   <CopyButton content={entry.title} size="icon" tooltip="Copy title" />
                 ) : null}

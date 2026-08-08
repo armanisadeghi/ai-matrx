@@ -535,6 +535,20 @@ export interface ConfirmFactInput {
   label: string | null;
 }
 
+/**
+ * A page a generated title/description can be applied to. Carries `version`
+ * because `updatePageIntent` is optimistically locked on it.
+ */
+export interface MetaApplyTarget {
+  id: string;
+  site_id: string;
+  url: string;
+  version: number;
+  target_keyword: string | null;
+  meta_title_desired: string | null;
+  meta_description_desired: string | null;
+}
+
 export interface UpdatePageIntentInput {
   siteId: string;
   pageId: string;

@@ -31,6 +31,7 @@ import type {
   MarketingBrand,
   MarketingPage,
   MarketingSite,
+  MetaApplyTarget,
   PageListRow,
   PageSnapshot,
   PageUpdate,
@@ -1204,6 +1205,41 @@ export async function getPageWorkspace(
       gsc_position_28d: null,
     },
   };
+}
+
+/**
+ * Pages a generated title/description can be applied to, searched by URL.
+ *
+ * Deliberately NOT `listPages`: that is site-scoped, table-shaped and paginated
+ * for the pages workspace. Applying metadata starts from a title with no site
+ * context (an agent generated it in chat), so this searches across every site
+ * RLS lets the caller see and returns only what the write needs — including
+ * `version`, because `updatePageIntent` is optimistically locked on it.
+ */
+export async function searchPagesForMetaApply(
+  term: string,
+  limit = 12,
+  signal?: AbortSignal,
+): Promise<MetaApplyTarget[]> {
+  const db = await authenticatedWebDb(supabase);
+  let query = db
+    .from("page")
+    .select(
+      "id, site_id, url, version, target_keyword, meta_title_desired, meta_description_desired",
+    )
+    .is("deleted_at", null);
+
+  const trimmed = term.trim();
+  if (trimmed) {
+    query = query.ilike("url", `%${trimmed}%`);
+  }
+
+  const response = await query
+    .order("last_seen", { ascending: false, nullsFirst: false })
+    .limit(limit)
+    .abortSignal(signal as AbortSignal);
+  if (response.error) throw response.error;
+  return response.data ?? [];
 }
 
 export async function updatePageIntent(
