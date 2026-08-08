@@ -16,8 +16,12 @@
 --      content_role='supporting_content' -> 'educational'.
 --   2. BRAND MATCH (class_source='brand_match') — deterministic, zero-AI
 --      token matching against the site's own identity: domain minus TLD,
---      web.site.name, and the linked web.brand.name (corporate cruft
---      tokens stripped). Branded traffic "is not real SEO" (Arman) and is
+--      web.site.name, the linked web.brand.name, and every entry of
+--      web.brand.profile->'brand_aliases' (jsonb text array — the
+--      user/agent-authored alias list: key people ("angie sadeghi" for a
+--      medical practice), legal names, DBAs, former names, common
+--      misspellings; corporate cruft tokens stripped from all sources).
+--      Branded traffic "is not real SEO" (Arman) and is
 --      pulled out even when intent_class says transactional — "all green
 --      recycling near me" is still brand. Placed BELOW site_keyword_value
 --      deliberately: an explicit per-site valuation is the user's rescue
@@ -35,7 +39,15 @@
 --        measured live 2026-08-07) and is demoted to STRONG-only —
 --        otherwise the brand rung would swallow the site's entire money
 --        vocabulary. The 250 threshold is corpus-derived and lives here
---        ONLY.
+--        ONLY. A LEGAL-SUFFIX match also counts as STRONG: the query is
+--        EXACTLY the alias tokens plus a legal entity token
+--        (inc/llc/ltd/corp/corporation/incorporated), nothing else —
+--        "data destruction inc" is the company even though "data
+--        destruction" is generic (Arman's ruling 2026-08-07: for a brand
+--        that IS the service term, only inc/.com-shaped queries are truly
+--        branded); "terminal data destruction ltd" carries an extra token
+--        and stays out. STRONG containment is word-boundary-anchored so
+--        guardiandatadestruction.com never matches datadestruction.com.
 --   3. seo.keyword.intent_class (universal, agent-classified):
 --      transactional/commercial_investigation -> 'money';
 --      informational -> 'educational'; navigational -> 'brand'.
@@ -76,6 +88,14 @@ AS $$
       SELECT lower(b.name)
       FROM web.site s JOIN web.brand b ON b.id = s.brand_id AND b.deleted_at IS NULL
       WHERE s.id = p_site_id AND s.deleted_at IS NULL
+      UNION
+      SELECT lower(al.v)
+      FROM web.site s
+      JOIN web.brand b ON b.id = s.brand_id AND b.deleted_at IS NULL
+      CROSS JOIN LATERAL jsonb_array_elements_text(
+        CASE WHEN jsonb_typeof(b.profile->'brand_aliases') = 'array'
+             THEN b.profile->'brand_aliases' ELSE '[]'::jsonb END) AS al(v)
+      WHERE s.id = p_site_id AND s.deleted_at IS NULL
     ) names
     CROSS JOIN LATERAL (
       SELECT ARRAY(
@@ -90,8 +110,21 @@ AS $$
   -- contains the alias literally unspaced) vs weak (spaced/joined variant
   -- or full token coverage).
   brand_hit AS MATERIALIZED (
+    -- strong = the alias typed UNSPACED at a word boundary (bare substring
+    -- would hand guardiandatadestruction.com to datadestruction.com), OR
+    -- the exact name plus a legal entity token and NOTHING else ("data
+    -- destruction inc" is the company; "terminal data destruction ltd" is
+    -- somebody else's).
     SELECT kw.id AS kid, ba.joined,
-           strpos(kw.normalized_phrase, ba.joined) > 0 AS strong
+           (kw.normalized_phrase ~ ('(^|[^a-z0-9])' || ba.joined || '($|[^a-z0-9])')
+            OR (ba.toks <@ string_to_array(kw.normalized_phrase, ' ')
+                AND string_to_array(kw.normalized_phrase, ' ')
+                    && ARRAY['inc','llc','ltd','corp','corporation','incorporated']
+                AND NOT EXISTS (
+                  SELECT 1 FROM unnest(string_to_array(kw.normalized_phrase, ' ')) AS qt
+                  WHERE qt <> '' AND NOT (qt = ANY(ba.toks))
+                    AND NOT (qt = ANY(ARRAY['inc','llc','ltd','corp','corporation','incorporated']))
+                ))) AS strong
     FROM seo.keyword kw
     JOIN brand_alias ba
       ON strpos(kw.normalized_phrase, ba.probe) > 0

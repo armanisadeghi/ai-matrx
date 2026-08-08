@@ -128,15 +128,21 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   content_role → `money`/`educational`) beats **BRAND MATCH**
   (`class_source='brand_match'`, 2026-08-07: deterministic zero-AI token
   matching of the query against the site's identity — domain minus TLD +
-  `web.site.name` + `web.brand.name`, never a hand-written per-site list;
+  `web.site.name` + `web.brand.name` + every entry of
+  **`web.brand.profile->'brand_aliases'`** (jsonb text array: key people,
+  legal names, DBAs, misspellings — the ONE place user/agent-supplied
+  brand identity goes; "angie sadeghi" makes IOPBM's doctor queries
+  brand), never a hand-written per-site list in code;
   branded traffic "is not real SEO" and is pulled out even when intent
   says transactional, so brand sits ABOVE intent_class and BELOW the
   user's explicit valuation — the rescue hatch when a brand name collides
   with a service term. A **genericity guard** demotes an alias whose
-  spaced/token form matches >250 corpus keywords to literal-unspaced
-  matching only — datadestruction.com's "data destruction" IS its money
-  vocabulary; the threshold + match rules live ONLY in the migration's
-  header) beats universal
+  spaced/token form matches >250 corpus keywords to strong-only matching
+  (word-boundary unspaced form, or exact name + a legal entity token) —
+  datadestruction.com's "data destruction" IS its money vocabulary, so
+  only "datadestruction.com" / "data destruction inc"-shaped queries are
+  brand there (Arman's ruling); the threshold + match rules live ONLY in
+  the migration's header) beats universal
   `seo.keyword.intent_class` (transactional + commercial_investigation →
   `money`, informational → `educational`, navigational → `brand`) beats
   `unclassified` — which is a FIRST-CLASS bucket and the classifier work
@@ -188,6 +194,38 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   `web.page.first_seen` is discovery-observed and must NOT be used for
   this). Page creation reuses `createManualPage`; "Track as new page"
   lives in the page context menu.
+
+## Brand identity — what data alone cannot see (roadmap)
+
+Deterministic matching covers the derivable identity; everything else
+enters through **`web.brand.profile->'brand_aliases'`** — extend that
+array, never the resolver's alias derivation, for per-site knowledge.
+Seeded 2026-08-07 from Arman: All Green + Titanium Success → "arman
+sadeghi"; IOPBM → "angie sadeghi", "angizeh sadeghi". Open items, in
+value order:
+
+- **Brand profile editor UI** — no surface edits `brand_aliases` yet;
+  today it is agent/DB-written only. Belongs on the brands pillar
+  (`/marketing` → brand editor), a plain string-list field.
+- **AI first-pass alias discovery** — a one-shot per-site agent (site
+  name + domain + homepage + top GSC queries in, alias array out) fills
+  `brand_aliases`: founders/doctors/attorneys, legal names ("angizeh
+  sadeghi md, inc."), DBAs, former names, obvious misspellings ("armani
+  sadeghi", "army sadeghi" exist in the corpus). With web access this is
+  a lookup, not a guess. Slots into the classifier agent-slot system
+  (aidream `docs/handoffs/content-ir-agent-slots.md`).
+- **Misspelling matching** — alias entries cover known ones; a trigram
+  similarity rung is possible later but needs a threshold argument, so
+  it waits for evidence the alias list under-catches.
+- **Competitor brand class** — "absolute data destruction",
+  "guardiandatadestruction.com" are somebody else's brand traffic and
+  currently land in unclassified/educational. A future 'competitor'
+  class could derive from per-site competitor lists (same
+  `profile` mechanism) or `seo.keyword.brand_presence` once classifier
+  coverage exists; product-semantics call is Arman's.
+- **`seo.keyword.brand_presence`** — the universal agent-classified
+  column could feed a resolver rung once populated; today coverage is
+  ~zero.
 
 ## Doctrine
 
@@ -296,6 +334,11 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-08 — Brand identity round 2 (Arman's rulings): `brand_aliases`
+  profile source (people/legal names — seeded for All Green, Titanium,
+  IOPBM), word-boundary strong matching (competitor domains excluded),
+  exact-name + legal-suffix strong rule ("data destruction inc" = brand,
+  "terminal data destruction ltd" ≠), roadmap section added.
 - 2026-08-08 — Brand-match rung in `gsc_keyword_class_map`: zero-cost
   deterministic brand detection from web.site/web.brand identity
   (class_source='brand_match', genericity guard at 250). Verified live:
