@@ -15,6 +15,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AgentAppsGrid } from "@/features/agent-apps/components/layouts/AgentAppsGrid";
 import type { AgentAppSummary } from "@/features/agent-apps/types";
 import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { humanAgentApp } from "@/features/agent-apps/format";
 
 interface AgentAppsPanelProps {
   agentId: string;
@@ -81,6 +83,21 @@ export function AgentAppsPanel({
                 </span>
               )}
             </h2>
+            {apps.length > 0 && (
+              <CopyButtons
+                size="icon"
+                label={`Apps running ${agentName}`}
+                human={() => apps.map(humanAgentApp).join("\n\n")}
+                json={() => apps}
+                agent={() => ({
+                  kind: "agent-apps",
+                  location: `AI Matrx — Agent — ${agentName} — Apps`,
+                  description: `Every app that runs the "${agentName}" agent.`,
+                  data: apps,
+                  attributes: { count: apps.length, agentId },
+                })}
+              />
+            )}
           </div>
 
           <AgentAppsGrid
