@@ -54,6 +54,18 @@ import {
   type AgentAppCategoryRow,
   type CreateAgentAppCategoryInput,
 } from "@/lib/services/agent-apps-admin-service";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+
+function humanCategory(c: AgentAppCategoryRow): string {
+  return [
+    `${c.name} (${c.id})`,
+    c.description ?? null,
+    c.icon ? `Icon: ${c.icon}` : null,
+    `Sort order: ${c.sort_order}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
 
 export default function AgentAppsCategoriesAdminPage() {
   const { toast } = useToast();
@@ -271,6 +283,21 @@ export default function AgentAppsCategoriesAdminPage() {
               Categories
             </h2>
             <div className="flex gap-1.5">
+              {categories.length > 0 && (
+                <CopyButtons
+                  size="icon"
+                  label={`Categories (${categories.length})`}
+                  human={() => categories.map(humanCategory).join("\n\n")}
+                  json={() => categories}
+                  agent={() => ({
+                    kind: "agent-app-categories",
+                    location: "AI Matrx Admin — Agent Apps — Categories",
+                    description: "Every agent-app category.",
+                    data: categories,
+                    attributes: { count: categories.length },
+                  })}
+                />
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -317,7 +344,7 @@ export default function AgentAppsCategoriesAdminPage() {
               <div
                 key={c.id}
                 onClick={() => setSelectedId(c.id)}
-                className={`flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer transition-colors mb-1 ${
+                className={`group/x flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer transition-colors mb-1 ${
                   selectedId === c.id
                     ? "bg-accent text-accent-foreground"
                     : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
@@ -332,6 +359,21 @@ export default function AgentAppsCategoriesAdminPage() {
                     </div>
                   </div>
                 </div>
+                <CopyButtons
+                  size="xs"
+                  label={c.name}
+                  className="opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
+                  human={() => humanCategory(c)}
+                  json={() => c}
+                  agent={() => ({
+                    kind: "agent-app-category",
+                    location: "AI Matrx Admin — Agent Apps — Categories",
+                    description: "A single agent-app category.",
+                    data: c,
+                    summary: humanCategory(c),
+                    attributes: { id: c.id },
+                  })}
+                />
                 <div className="flex flex-col gap-0.5">
                   <Button
                     variant="ghost"
@@ -386,6 +428,20 @@ export default function AgentAppsCategoriesAdminPage() {
                       Unsaved Changes
                     </Badge>
                   )}
+                  <CopyButtons
+                    size="icon"
+                    label={selected.name}
+                    human={() => humanCategory(selected)}
+                    json={() => selected}
+                    agent={() => ({
+                      kind: "agent-app-category",
+                      location: "AI Matrx Admin — Agent Apps — Categories",
+                      description: "The category record open in this edit pane.",
+                      data: selected,
+                      summary: humanCategory(selected),
+                      attributes: { id: selected.id },
+                    })}
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   {hasUnsaved && (
