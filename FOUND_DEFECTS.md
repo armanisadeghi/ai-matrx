@@ -13,6 +13,25 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D131 — Session-identity drift under long-lived tabs silently lost ~14h of note edits (2026-08-08 incident)
+
+The auth cookie is domain-wide: on 2026-08-07 a Google-OAuth-verification login as
+`oauth-review@aimatrx.com` (22:17Z) rotated it under Arman's open `/notes` tab; the note he
+created at 22:54Z was INSERTed owned by the reviewer account; a 23:56Z login back as
+`arman@armansadeghi.com` rotated it again, after which EVERY autosave from the still-open tab
+was RLS-filtered to 0 rows for ~14h and a second note's INSERT failed its
+`created_by = auth.uid()` check — that note (`9d973ee3-…`) never reached the DB and is
+unrecoverable. Verified via `history.row_versions` (single INSERT, zero UPDATEs) and
+`auth.users.last_sign_in_at`. **Fixed 2026-08-08:** `AuthSessionWatcher` now detects identity
+drift (auth events + focus/visibility/60s cookie re-reads vs the booted user id) and hard-stops
+the tab with a blocking "Account Changed" overlay; the orphaned note was re-owned to the main
+account by SQL. **Open remainder:** (a) decide whether unsaved in-memory edits can be preserved
+across the forced reload (e.g. local draft snapshot before blocking); (b) the notes autosave
+error surfacing existed but 14h of failing saves were ignorable — consider escalating a
+persistent save-failure (N consecutive failures) to a blocking banner on the editor itself;
+(c) test-account logins (oauth-review, admin@admin.com walkthroughs) should use isolated
+browser profiles/incognito by convention — document in the OAuth-verification plan.
+
 ### D130 — Headless image-gen pipeline: client promise never settles though the server run completed (2026-08-08)
 
 `generatePageImageTwoStep` (features/marketing/lib/generate-page-image.ts, also used by PageImagePlanCard) hung >8 min in the site Media Generate view while the SERVER completed both runs — chat.conversation `989ac832-0fed-4757-b0dc-694ca357081e` holds the prompt AND the assistant image message (files.files `0300f253-…`) stamped 08:44:57Z. All internal waits are ≤180s, so the non-settling promise is `launchAgentExecution`/`executeInstance` (suspects: 409 on the conversation-start stream reservation; matrx-files FileRecord `file_id`-vs-`id` contract drift on the image block). Band-aid shipped: GenerateMediaView wraps the order in a 5-minute `Promise.race` with a loud may-have-completed toast. Root-cause chip dispatched (task_d4ead8c4). Fix = a terminal server run ALWAYS settles the client promise with the fileId.
