@@ -13,6 +13,7 @@
 | `components/SlotOverridesPage.tsx` | `/agents/slots` — browse every live (non-placeholder) slot grouped by domain, resolved agent with provenance pill (Your override / Org override / System default, user > org > system), expand → `SlotOverridePanel`. |
 | `components/SlotOverridePanel.tsx` | Principal chips (Me + orgs I admin) around the editor — the ONE binding-editor composition, embedded by both `/agents/slots` and the admin console's slot detail. |
 | `components/SlotOverrideEditor.tsx` | Per-principal editor: swap agent (SearchableAgentSelect over owned + shared agents, contract-checked, blocked on missing inputs), settings-only overrides (model via SmartModelSelect + thinking level), Copy default & customize (fork via `agx_duplicate_*`, opens builder), remove via ConfirmDialog. Remount-keyed by principal + binding — no state-sync effect. |
+| `useSlotRunner.ts` | **The consumer primitive** — `useAgentSlot` + `useRunAgent` in one: `runSlot(args)` runs the slot's agent, `unavailable`/`slotError` drive the disabled state. Migrating a hardcoded call site is two lines (`run({agentId: X_AGENT_ID, …})` → `runSlot({…})`). Resolves at CALL time so a binding saved seconds ago applies to the next run; the slot's `config_overrides` (the user's binding) win per key over the feature's defaults. |
 | `components/SlotAgentPicker.tsx` | The reusable consumer-facing "which agent runs this step" control — compact popover: system default + the user's own/shared agents, save-on-pick, reset-to-default, link to `/agents/slots`. First consumer: podcast topic ideas (`TopicIdeaHelper`, slot `podcast_client.topic_ideas`). Drop it beside any slot-resolved affordance. |
 
 Route: `app/(core)/agents/slots/page.tsx` (+ `SlotsHeader` in the shell header center).
@@ -25,8 +26,25 @@ Route: `app/(core)/agents/slots/page.tsx` (+ `SlotsHeader` in the shell header c
 - Agent options come from the canonical Redux listing (`fetchAgentsListFull` + `selectOwnedAgents`/`selectSharedWithMeAgents`) — never a raw table query (ESLint `matrx/no-raw-agent-list-query`).
 - **One write path.** Bindings are written ONLY through the aidream bind endpoint (`PUT/DELETE /agent-slots/{slot_key}/binding`) — a supabase `.insert()/.update()` on `agent.slot_binding` from this repo is a defect (it skips bind-time contract enforcement: required variables/context slots superset + the candidate's `output_schema` must carry the slot's required output keys). The server is the authority; `checkSlotContract` is only the instant client pre-flight; the 422 detail is the contract verdict — surface it verbatim. Refresh the generated API types whenever the endpoint changes.
 
+## Migrating a hardcoded call site (the sweep)
+
+`agent.slot_definition` rows carrying `metadata.migration_status='placeholder'` are call sites that still run a hardcoded id; `metadata.code_ref` names the exact constant. That query IS the worklist:
+
+```sql
+select slot_key, metadata->>'code_ref' from agent.slot_definition
+where deleted_at is null and metadata->>'migration_status' = 'placeholder'
+  and metadata->>'side' = 'client';
+```
+
+Recipe: React run site → `useSlotRunner`; React non-run site (a `defaultAgentId` prop, an on-click launch) → `useAgentSlot` + gate the affordance on resolution; thunk/handler → `await resolveAgentSlot`. Drop `<SlotAgentPicker>` wherever the user should be able to choose. Then move the slot from aidream's `scripts/seed_slot_placeholders.py` into a real `declare_slot(...)` in `aidream/services/agent_slots/client_slots.py` and release — `sync_declared_slots` pops the placeholder marker, so the DB stops claiming the hardcoded path still runs.
+
+**Migrated:** research Outputs Studio (3), content-plan setup (7), kind architect, agent-app coding agent, flashcards spoken-front TTS. **Remaining:** War Room (3 — persisted agent ids, spun off), cx-chat + new-chat defaults (2), `projects.create_assistant` (debug-only), and the surface manifests that re-declare the same UUIDs as static constants (`war-room*.manifest.ts`) — a manifest is static data and cannot resolve a slot at module scope, so that one needs a decision, not a rewrite.
+
+**Known gap:** `launchAgentExecution` consumers (content-plan) apply the slot's AGENT but not its `config_overrides` — that path carries model overrides through the instance-model-overrides slice, not a call arg. A settings-only binding is therefore inert there today.
+
 ## Change Log
 
+- 2026-08-08 — `useSlotRunner` added (the two-line consumer primitive) and the first migration wave landed: research Outputs Studio (per-card `SlotAgentPicker`, blog card consolidated onto `OutputCardShell`), content-plan setup's 7 agents, kind architect, agent-app coding agent, flashcards TTS — 13 hardcoded agent ids deleted and declared in aidream `client_slots.py`.
 - 2026-08-08 — Binding writes rewired from direct RLS to the aidream bind endpoint (bind-time contract enforcement live; the "client-side only" gap is closed). Added `SlotOverridePanel` (shared with the admin console, which is now editable) and `SlotAgentPicker` (first consumer: podcast topic ideas). `useAgentSlot` auto-refreshes on binding writes.
 - 2026-08-08 — Created the user/org override surface (`/agents/slots`): browse + provenance + create/edit/delete bindings (agent swap and settings-only), client-side contract gate, org-admin tabs. Live-verified CRUD on a real user binding.
 - 2026-08-08 — Synced the live binding API contract and normalized optional JSON object members before preserving an existing binding's `config_overrides`, keeping the strict API payload free of `undefined` values.
