@@ -199,6 +199,7 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 
 ## Change log
 
+- `2026-08-08` — `hooks/images/unsplashClient.ts` gained `photos.trackDownload` (shim + server route now cover the same method set). First consumer outside presentations: the marketing Media workspace Sources view (`features/marketing/components/media/StockSourcesView.tsx`) — Unsplash search + durable save-to-brand-library.
 - `2026-05-09` — Moved the mobile Images section context into the shared top header (`Images / Section`) and retuned the bottom command pill so it acts like navigation/actions instead of repeating the page title.
 - `2026-05-09` — Reworked the Images mobile bottom command bar toward the Files dock pattern: ellipsis section opener, icon-only app quick links, active Images affordance, and a separate floating primary action.
 - `2026-05-09` — Removed `Profile Photo` from the shared Images navigation registry so it no longer appears in desktop or mobile Images menus; the route remains directly accessible.

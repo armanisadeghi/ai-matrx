@@ -91,6 +91,10 @@ export const unsplashClient = {
       ),
     get: (args: AnyArgs) => call<unknown>("photos.get", args),
     getRandom: (args: AnyArgs) => call<unknown>("photos.getRandom", args),
+    // Unsplash API guideline: fire when a photo is actually USED (saved,
+    // embedded), not merely rendered in results. args: { downloadLocation }.
+    trackDownload: (args: AnyArgs) =>
+      call<unknown>("photos.trackDownload", args),
   },
   collections: {
     list: (args: AnyArgs) =>
