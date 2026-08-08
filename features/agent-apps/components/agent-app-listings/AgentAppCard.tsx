@@ -35,6 +35,8 @@ import type { AgentAppCardModel } from "@/features/agent-apps/redux/agent-app-co
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { formatNumber, humanAgentApp } from "@/features/agent-apps/format";
 
 interface AgentAppCardProps {
   app: AgentAppCardModel;
@@ -56,13 +58,6 @@ const STATUS_PILL_STYLES: Record<AgentAppCardModel["status"], string> = {
   archived: "bg-muted text-muted-foreground",
   suspended: "bg-destructive/15 text-destructive dark:bg-destructive/25",
 };
-
-function formatNumber(n: number | null | undefined): string {
-  if (!n || n <= 0) return "0";
-  if (n < 1000) return String(n);
-  if (n < 1_000_000) return `${(n / 1000).toFixed(n < 10_000 ? 1 : 0)}k`;
-  return `${(n / 1_000_000).toFixed(1)}m`;
-}
 
 export function AgentAppCard({
   app,
@@ -303,6 +298,20 @@ export function AgentAppCard({
             onClick={() => onDelete(app)}
             disabled={isDisabled}
             iconClassName={isDeleting ? "animate-spin" : ""}
+          />
+          <CopyButtons
+            size="icon"
+            label={app.name}
+            human={() => humanAgentApp(app)}
+            json={() => app}
+            agent={() => ({
+              kind: "agent-app",
+              location: "AI Matrx — Agent Apps",
+              description: "A single agent app card.",
+              data: app,
+              summary: humanAgentApp(app),
+              attributes: { id: app.id, status: app.status },
+            })}
           />
         </div>
       </div>

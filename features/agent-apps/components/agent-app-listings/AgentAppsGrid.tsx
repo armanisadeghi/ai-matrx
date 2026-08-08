@@ -70,6 +70,11 @@ import type {
   AgentAppVisibilityFilter,
 } from "@/features/agent-apps/redux/agent-app-consumers/slice";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
+import { selectAllAppCardModels } from "@/features/agent-apps/redux/agent-app-consumers/selectors";
+import { appBrief, humanAgentApp } from "@/features/agent-apps/format";
 
 const SORT_OPTIONS: { value: AgentAppSortOption; label: string }[] = [
   { value: "updated-desc", label: "Recently Updated" },
@@ -177,6 +182,7 @@ export function AgentAppsGrid({
     [consumerId],
   );
   const filteredApps = useAppSelector(selectFiltered);
+  const allAppCardModels = useAppSelector(selectAllAppCardModels);
   const allCategories = useAppSelector(selectAllAppCategories);
   const allTags = useAppSelector(selectAllAppTags);
   const allAgents = useAppSelector(selectAllAppAgents);
@@ -452,6 +458,61 @@ export function AgentAppsGrid({
             }))}
             toastLabel={`${filteredApps.length} app${filteredApps.length === 1 ? "" : "s"}`}
           />
+        )}
+
+        {filteredApps.length > 0 && (
+          <>
+            <CopyButtons
+              size="icon"
+              label={`Agent apps (${filteredApps.length})`}
+              human={() => filteredApps.map(humanAgentApp).join("\n\n")}
+              json={() => filteredApps}
+              agent={() => ({
+                kind: "agent-apps",
+                location: "AI Matrx — Agent Apps",
+                description: "The apps currently shown by the /agent-apps grid (filtered).",
+                data: filteredApps,
+                attributes: { count: filteredApps.length, tab, sortBy },
+                context: { searchTerm, archFilter, visibilityFilter },
+              })}
+              aiVariants={[
+                {
+                  id: "view-briefs",
+                  label: "This view briefs",
+                  hint: "One line per app currently shown",
+                  build: () => ({
+                    kind: "agent-apps-briefs",
+                    location: "AI Matrx — Agent Apps",
+                    description: "One-line briefs for the apps currently shown.",
+                    data: filteredApps.map(appBrief),
+                    attributes: { count: filteredApps.length },
+                  }),
+                },
+                {
+                  id: "all-briefs",
+                  label: "All apps briefs",
+                  hint: "One line per app, ignoring filters",
+                  build: () => ({
+                    kind: "agent-apps-briefs",
+                    location: "AI Matrx — Agent Apps",
+                    description: "One-line briefs for every app, regardless of the active filters.",
+                    data: allAppCardModels.map(appBrief),
+                    attributes: { count: allAppCardModels.length },
+                  }),
+                },
+              ]}
+            />
+            <ExportMenu
+              label="agent-apps"
+              items={[
+                jsonExportItem(() => filteredApps, "JSON (this view)"),
+                csvExportItem(
+                  () => filteredApps as unknown as Array<Record<string, unknown>>,
+                  "CSV (this view)",
+                ),
+              ]}
+            />
+          </>
         )}
 
         {/* New app */}
