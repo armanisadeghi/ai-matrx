@@ -72,8 +72,18 @@ import { CategorySelect } from "./CategorySelect";
 import { useAgentShortcutCrud } from "../hooks/useAgentShortcutCrud";
 import { RESULT_DISPLAY_OPTIONS } from "../constants";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
+import {
+  selectAgentById,
+  selectBuiltinAgents,
+} from "@/features/agents/redux/agent-definition/selectors";
+import {
+  fetchAgentExecutionMinimal,
+  fetchAgentsListFull,
+} from "@/features/agents/redux/agent-definition/thunks";
+import {
+  SearchableAgentSelect,
+  type AgentOption,
+} from "@/features/agent-apps/components/SearchableAgentSelect";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import type { ContextSlot } from "@/features/agents/types/agent-api-types";
 import type {
@@ -422,9 +432,49 @@ export function ShortcutForm({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // THE SYSTEM-AGENT LAW: a GLOBAL shortcut is system configuration — only
+  // system agents (agent_type='builtin') may be bound. Personal/shared/org
+  // agents break every user the shortcut serves the moment ownership,
+  // visibility, or archival shifts.
+  const isGlobalScope = scope === "global";
+  const builtinAgents = useAppSelector(selectBuiltinAgents);
+  useEffect(() => {
+    if (!open || !isGlobalScope) return;
+    dispatch(fetchAgentsListFull());
+  }, [open, isGlobalScope, dispatch]);
+  const builtinOptions = useMemo<AgentOption[]>(
+    () =>
+      builtinAgents
+        .filter((a) => !!a.name && !a.isArchived)
+        .map((a) => ({
+          id: a.id,
+          name: a.name as string,
+          description: a.description ?? null,
+          category: a.category ?? null,
+          isPublic: true,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [builtinAgents],
+  );
+  const builtinIds = useMemo(
+    () => new Set(builtinAgents.map((a) => a.id)),
+    [builtinAgents],
+  );
+  const globalScopeAgentViolation =
+    isGlobalScope &&
+    !!formData.agentId &&
+    builtinAgents.length > 0 &&
+    !builtinIds.has(formData.agentId);
+
   const handleSave = async () => {
     if (!formData.label.trim()) {
       setError("Label is required");
+      return;
+    }
+    if (globalScopeAgentViolation) {
+      setError(
+        "Global shortcuts may only bind a system agent. Promote the agent to a system agent first, then bind the promoted copy.",
+      );
       return;
     }
     if (!formData.categoryId) {
@@ -638,17 +688,47 @@ export function ShortcutForm({
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <Label className="text-sm font-semibold">Agent &amp; Version</Label>
-          <AgentListDropdown
-            onSelect={(id) => {
-              if (id === formData.agentId) return;
-              handleChange("agentId", id);
-              // Drop any pinned version — the picker will auto-pin to the
-              // new agent's current version once its history loads.
-              handleChange("agentVersionId", null);
-            }}
-            label={formData.agentId ? "Change agent…" : "Select agent…"}
-          />
+          {!isGlobalScope && (
+            <AgentListDropdown
+              onSelect={(id) => {
+                if (id === formData.agentId) return;
+                handleChange("agentId", id);
+                // Drop any pinned version — the picker will auto-pin to the
+                // new agent's current version once its history loads.
+                handleChange("agentVersionId", null);
+              }}
+              label={formData.agentId ? "Change agent…" : "Select agent…"}
+            />
+          )}
         </div>
+        {isGlobalScope && (
+          <div className="space-y-1.5">
+            <p className="text-xs text-muted-foreground">
+              Global shortcuts run for every user, so only system agents can be
+              bound here.
+            </p>
+            <SearchableAgentSelect
+              agents={builtinOptions}
+              value={formData.agentId}
+              onChange={(id) => {
+                if (id === formData.agentId) return;
+                handleChange("agentId", id);
+                handleChange("agentVersionId", null);
+              }}
+              placeholder="Search system agents…"
+              emptyLabel="No system agents found."
+            />
+            {globalScopeAgentViolation && (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  The currently bound agent is NOT a system agent — fix this
+                  pin. Promote it via the system-agents admin, then bind the
+                  promoted copy.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        )}
         <AgentVersionPicker
           agentId={formData.agentId}
           agentVersionId={formData.agentVersionId}

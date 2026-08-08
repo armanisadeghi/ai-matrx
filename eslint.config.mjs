@@ -351,6 +351,79 @@ const matrxLintPlugin = {
                 };
             },
         },
+        'no-raw-agent-list-query': {
+            meta: {
+                type: 'problem',
+                docs: {
+                    description:
+                        'Disallow raw multi-row agent.definition queries outside the canonical agent listing services. A raw list query blends mine/shared/org/public/system into one meaningless alphabetical dump and ignores the scope model — the recurring disease Arman banned on 2026-08-08 (THE CANONICAL-SELECTION LAW, common-docs/systems/agent-slots/FEATURE.md). By-id fetches (.eq/.in on "id", .single(), .maybeSingle()) and writes are allowed.',
+                },
+                schema: [],
+                messages: {
+                    banned:
+                        'Raw agent.definition LIST query. Any UI listing agents for selection must use the canonical agent listing system: the Redux agent-definition slice (fetchAgentsListFull / fetchAgentsList + purpose-fit selectors — selectBuiltinAgents for admin/system surfaces, selectActiveAgents for user pickers) or the scoped agx_list_scoped RPC family (features/agents/browse/service.ts). By-id lookups are fine — filter with .eq("id", …) / .in("id", […]) or end with .single()/.maybeSingle(). See common-docs/systems/agent-slots/FEATURE.md § The two selection laws.',
+                },
+            },
+            create(context) {
+                // The canonical listing services themselves (they wrap the
+                // agx_* RPCs; their remaining raw reads are by-id or writes,
+                // but keep them hosts so refactors inside them don't fight
+                // the guard).
+                const ALLOWED = [
+                    '/features/agents/redux/agent-definition/',
+                    '/features/agents/browse/service.ts',
+                    // Admin model-maintenance sweeps (usage report + bulk
+                    // reference replacement) — list-shaped reads scoped by a
+                    // model reference, not agent pickers.
+                    '/features/ai-models/service.ts',
+                    '/features/ai-models/server/replace-model-references.ts',
+                ];
+                const filename = context.filename || context.getFilename?.() || '';
+                if (ALLOWED.some((p) => filename.includes(p))) return {};
+                // A chain is exempt when it is id-scoped (incl. the derived-
+                // builtins by-source container), row-scoped, a count-only
+                // head query, or a write.
+                const EXEMPT_RE =
+                    /\.(?:eq|in)\(\s*["'](?:id|source_agent_id)["']|\.single\(|\.maybeSingle\(|\.insert\(|\.update\(|\.upsert\(|\.delete\(|head:\s*true/;
+                const AGENT_SCHEMA_RE = /\.schema\(\s*["']agent["']\s*\)/;
+                return {
+                    CallExpression(node) {
+                        const callee = node.callee;
+                        if (
+                            callee.type !== 'MemberExpression' ||
+                            callee.property.type !== 'Identifier' ||
+                            callee.property.name !== 'from'
+                        ) {
+                            return;
+                        }
+                        const arg = node.arguments[0];
+                        if (
+                            !arg ||
+                            arg.type !== 'Literal' ||
+                            arg.value !== 'definition'
+                        ) {
+                            return;
+                        }
+                        // Walk to the top of the fluent chain so the text
+                        // includes .schema("agent") below and .eq/.single
+                        // above this .from call.
+                        let top = node;
+                        while (
+                            top.parent &&
+                            (top.parent.type === 'MemberExpression' ||
+                                top.parent.type === 'CallExpression' ||
+                                top.parent.type === 'AwaitExpression')
+                        ) {
+                            top = top.parent;
+                        }
+                        const text = context.sourceCode.getText(top);
+                        if (!AGENT_SCHEMA_RE.test(text)) return;
+                        if (EXEMPT_RE.test(text)) return;
+                        context.report({ node, messageId: 'banned' });
+                    },
+                };
+            },
+        },
         'no-banned-lucide-icons': {
             meta: {
                 type: 'suggestion',
@@ -812,6 +885,10 @@ export default [
             // the ban Arman issued in anger, and the gap that forced the one
             // violation is now closed by `adoptForeignStream`.
             'matrx/no-bespoke-stream-renderer': 'error',
+            // THE CANONICAL-SELECTION LAW (Arman, 2026-08-08): agent lists for
+            // selection come from the agent-definition slice or agx_list_scoped
+            // — never a raw agent.definition list query. Error, not warn.
+            'matrx/no-raw-agent-list-query': 'error',
             'react-hooks/exhaustive-deps': 'off',
             '@next/next/no-img-element': 'off',
             'react/no-unescaped-entities': 'off',

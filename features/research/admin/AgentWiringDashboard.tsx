@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     RefreshCw, Check, Copy, ExternalLink, ChevronDown, ChevronUp,
     Loader2, AlertCircle, CheckCircle2, Edit2,
@@ -26,13 +26,15 @@ import {
     jsonToAgentConfigStrings,
 } from './types';
 import {
-    fetchTemplates, updateTemplateAgentConfig,
-    fetchPromptBuiltins, resolveBuiltinNames,
+    fetchTemplates, updateTemplateAgentConfig, resolveBuiltinNames,
 } from './service';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { selectBuiltinAgents } from '@/features/agents/redux/agent-definition/selectors';
+import { fetchAgentsListFull } from '@/features/agents/redux/agent-definition/thunks';
 
 export function AgentWiringDashboard() {
+    const dispatch = useAppDispatch();
     const [templates, setTemplates] = useState<ResearchTemplate[]>([]);
-    const [builtins, setBuiltins] = useState<PromptBuiltinRef[]>([]);
     const [builtinNames, setBuiltinNames] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
     const [expandedTemplates, setExpandedTemplates] = useState<Set<string>>(new Set());
@@ -42,15 +44,24 @@ export function AgentWiringDashboard() {
 
     const { toast } = useToast();
 
+    // Canonical agent listing (THE CANONICAL-SELECTION LAW): builtins come from
+    // the agent-definition slice, never a raw agent.definition query.
+    const builtinAgents = useAppSelector(selectBuiltinAgents);
+    const builtins = useMemo<PromptBuiltinRef[]>(
+        () =>
+            builtinAgents
+                .filter(a => a.isActive && !a.isArchived && !!a.name)
+                .map(a => ({ id: a.id, name: a.name as string, is_active: true }))
+                .sort((a, b) => a.name.localeCompare(b.name)),
+        [builtinAgents],
+    );
+    useEffect(() => { dispatch(fetchAgentsListFull()); }, [dispatch]);
+
     const loadData = useCallback(async () => {
         try {
             setLoading(true);
-            const [templatesData, builtinsData] = await Promise.all([
-                fetchTemplates(),
-                fetchPromptBuiltins(),
-            ]);
+            const templatesData = await fetchTemplates();
             setTemplates(templatesData);
-            setBuiltins(builtinsData);
 
             const allIds = [
                 ...templatesData.flatMap(t => Object.values(jsonToAgentConfigStrings(t.agent_config))),

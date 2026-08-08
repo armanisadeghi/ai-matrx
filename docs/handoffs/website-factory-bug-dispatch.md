@@ -10,7 +10,7 @@ Vision-level gaps (templates, content record, pipeline steps) are NOT here — t
 
 ## WF-1 — Renderer ignores `theme_config`; theme edits change nothing
 
-**Status:** UNASSIGNED · **Repo:** my-matrx · **Severity:** HIGH
+**Status:** DONE (was already wired in my-matrx c866e98; 2026-08-07 closed the residue: starter kit no longer bakes tokens into global_css — theme_config is live single source, 4 baked sites migrated + prod-verified) · **Repo:** my-matrx · **Severity:** HIGH
 
 The my-matrx public renderer has `lib/render/themeCss.js` (twin of aidream
 `aidream/services/cms/theme_css.py`) but nothing imports it — pages are styled only by
@@ -23,7 +23,7 @@ starter-kit baking deliberately (document which). Close the aidream FOUND_DEFECT
 
 ## WF-2 — Plan statuses don't reflect CMS reality (812 "planned", 1 "published" vs 42 published pages)
 
-**Status:** UNASSIGNED · **Repo:** aidream + matrx-frontend · **Severity:** HIGH
+**Status:** DONE (2026-08-07 — page_service.publish advances the linked node from EVERY path, forward-only; live check found 0 stale nodes to backfill) · **Repo:** aidream + matrx-frontend · **Severity:** HIGH
 
 The only producer of `plan.node` status `published` is `cms_align` (manual). Live data: 28
 CMS pages carry `plan_node_id` and 42 are published, but exactly 1 plan node reads `published`.
@@ -66,7 +66,7 @@ what agents can. **Fix:** add both toggles to the PageEditor Settings tab
 
 ## WF-6 — Site settings page: theme, navigation, footer are read-only JSON
 
-**Status:** DONE (2026-08-07 — SiteAdvancedSettings editors; theme RENDERING still gated on WF-1) · **Repo:** matrx-frontend · **Severity:** MEDIUM
+**Status:** DONE (2026-08-07 — SiteAdvancedSettings editors) · **Repo:** matrx-frontend · **Severity:** MEDIUM
 
 `/cms/[siteId]/settings` (`app/(core)/cms/[siteId]/settings/page.tsx:236-256`) shows
 `theme_config`, `navigation`, `footer_config` as a read-only preview labeled "editable here in a
@@ -77,7 +77,7 @@ edits to actually render.
 
 ## WF-7 — Starter kit has zero UI exposure
 
-**Status:** UNASSIGNED · **Repo:** matrx-frontend · **Severity:** MEDIUM
+**Status:** DONE (2026-08-07 — POST /content-plan/cms-sites/{id}/starter-kit + Install button with dry-run preview and force confirm on /cms settings) · **Repo:** matrx-frontend · **Severity:** MEDIUM
 
 `cms_site starter_kit` (seeds theme CSS + header with nav token + footer + navigation;
 `aidream/services/cms/starter_kit.py`) is agent-tool-only. A human creating a site at `/cms`

@@ -19,16 +19,19 @@ import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 
 const SELECT_COLS = "id, name, description, category, tags, updated_at";
 
+// THE CANONICAL-SELECTION LAW: agent lists come from the scoped listing system
+// (agx_list_scoped with a true scope), never a raw agent.definition query.
 const fetchOwned = async (orgId: string) => {
-  const res = await supabase
-    .schema("agent")
-    .from("definition")
-    .select(SELECT_COLS)
-    .is("deleted_at", null)
-    .eq("organization_id", orgId)
-    .eq("is_archived", false)
-    .order("updated_at", { ascending: false });
-  return (res.data ?? []) as Array<Record<string, unknown>>;
+  const res = await supabase.rpc("agx_list_scoped", {
+    p_scope: "orgs",
+    p_org_id: orgId,
+    p_sort: "updated_at",
+    p_dir: "desc",
+    p_limit: 500,
+    p_offset: 0,
+  });
+  if (res.error) throw res.error;
+  return (res.data ?? []) as unknown as Array<Record<string, unknown>>;
 };
 
 const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => ({

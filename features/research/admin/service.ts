@@ -133,40 +133,11 @@ export async function updateTemplateAgentConfig(
   });
 }
 
-export async function fetchPromptBuiltins(): Promise<PromptBuiltinRef[]> {
-  // prompt_builtins migrated 1:1 to agent.definition (agent_type='builtin'), same UUIDs
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("definition")
-    .select("id, name, is_active")
-    .is("deleted_at", null)
-    .eq("agent_type", "builtin")
-    .eq("is_active", true)
-    .order("name", { ascending: true });
-
-  if (error)
-    throw new Error(`Failed to fetch prompt builtins: ${error.message}`);
-  return (data ?? []) as PromptBuiltinRef[];
-}
-
-export async function fetchPromptBuiltinById(
-  id: string,
-): Promise<PromptBuiltinRef | null> {
-  // prompt_builtins migrated 1:1 to agent.definition (agent_type='builtin'), same UUIDs
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("definition")
-    .select("id, name, is_active")
-    .is("deleted_at", null)
-    .eq("id", id)
-    .single();
-
-  if (error) {
-    if (error.code === "PGRST116") return null;
-    throw new Error(`Failed to fetch prompt builtin: ${error.message}`);
-  }
-  return data as PromptBuiltinRef;
-}
+// NOTE: the builtin AGENT LIST deliberately has no fetcher here. Listing agents
+// for selection goes through the canonical agent-definition slice
+// (fetchAgentsListFull + selectBuiltinAgents) — THE CANONICAL-SELECTION LAW
+// (common-docs/systems/agent-slots/FEATURE.md § The two selection laws).
+// The by-id lookups below are name resolution, not listing.
 
 export async function resolveBuiltinNames(
   ids: string[],

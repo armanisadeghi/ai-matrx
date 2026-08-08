@@ -18,6 +18,12 @@ import { Save, Loader2, Trash2, ExternalLink } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { normalizeDomainInput } from "@/features/cms/utils/pageUrls";
 import { SiteAdvancedSettings } from "@/features/cms/components/settings/SiteAdvancedSettings";
+import {
+  installStarterKit,
+  StarterKitNotEmptyError,
+  type StarterKitOutcome,
+} from "@/features/cms/services/starterKitClient";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
@@ -37,6 +43,43 @@ export default function SiteSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  // Starter kit (WF-7) — dry-run preview, then apply; force behind a
+  // destructive confirm when the site already has a shell.
+  const dispatch = useAppDispatch();
+  const [kitPreview, setKitPreview] = useState<StarterKitOutcome | null>(null);
+  const [kitBusy, setKitBusy] = useState(false);
+  const [kitForceState, setKitForceState] = useState<{
+    message: string;
+  } | null>(null);
+
+  const runKit = async (options: { force?: boolean; dryRun?: boolean }) => {
+    setKitBusy(true);
+    try {
+      const outcome = await installStarterKit(dispatch, siteId, options);
+      if (options.dryRun) {
+        setKitPreview(outcome);
+      } else {
+        setKitPreview(null);
+        setKitForceState(null);
+        toast.success(
+          `Starter kit installed — ${outcome.componentCount} component(s), ` +
+            `${outcome.navigationSeeded ? "navigation seeded" : "navigation untouched"}.`,
+        );
+        await refreshSite();
+      }
+    } catch (err) {
+      if (err instanceof StarterKitNotEmptyError && !options.force) {
+        setKitForceState({ message: err.message });
+      } else {
+        toast.error(
+          err instanceof Error ? err.message : "Starter kit failed",
+        );
+      }
+    } finally {
+      setKitBusy(false);
+    }
+  };
 
   // Danger zone — delete site
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -266,6 +309,66 @@ export default function SiteSettingsPage() {
               )}
             </div>
 
+            {/* Starter kit (WF-7) */}
+            <div className="rounded-lg border border-border bg-card p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">
+                Site Shell
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                The starter kit seeds a working shell: base CSS (reset, layout,
+                nav/header/footer rules), a header and footer component, and
+                navigation from your show-in-nav pages. Theme tokens stay live
+                data — edit them in Theme Tokens below any time.
+              </p>
+              {kitPreview ? (
+                <div className="rounded-md border border-border/60 bg-muted/20 p-3 space-y-1 text-xs text-foreground">
+                  <p className="font-medium">Dry run — nothing written yet:</p>
+                  <p>
+                    {kitPreview.globalCssChars.toLocaleString()} chars of shell
+                    CSS
+                    {kitPreview.globalCssReplacedChars > 0
+                      ? ` (replacing ${kitPreview.globalCssReplacedChars.toLocaleString()} existing)`
+                      : ""}
+                    , header + footer components,{" "}
+                    {kitPreview.navigationSeeded
+                      ? "navigation seeded from pages"
+                      : "navigation left as is"}
+                    .
+                  </p>
+                  {kitPreview.notes.map((note, i) => (
+                    <p key={i} className="text-muted-foreground">
+                      {note}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  disabled={kitBusy}
+                  onClick={() => runKit({ dryRun: true })}
+                >
+                  {kitBusy ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : null}
+                  Preview (dry run)
+                </Button>
+                <Button
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  disabled={kitBusy}
+                  onClick={() => runKit({})}
+                >
+                  {kitBusy ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : null}
+                  Install starter kit
+                </Button>
+              </div>
+            </div>
+
             {/* Danger zone */}
             <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 space-y-3">
               <h3 className="text-sm font-semibold text-destructive">
@@ -306,6 +409,17 @@ export default function SiteSettingsPage() {
           value !== site.slug ? "Slug does not match" : null
         }
         onConfirm={() => runDelete(false)}
+      />
+
+      <ConfirmDialog
+        open={!!kitForceState}
+        onOpenChange={(open) => !kitBusy && !open && setKitForceState(null)}
+        title="Replace this site's existing shell?"
+        description={`${kitForceState?.message ?? ""} Re-running the kit replaces the global CSS and the header/footer components (all versioned — restorable from History).`}
+        confirmLabel="Replace shell"
+        variant="destructive"
+        busy={kitBusy}
+        onConfirm={() => runKit({ force: true })}
       />
 
       <ConfirmDialog

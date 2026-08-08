@@ -344,6 +344,17 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-07` (round 2) — **Starter kit for humans + theme un-bake + shell integrity
+  (WF-1/2/4/7).** `/cms/[siteId]/settings` gained a "Site Shell" card — Install starter kit
+  with dry-run preview, force behind a destructive confirm — over aidream's new direct route
+  `POST /content-plan/cms-sites/{id}/starter-kit` (no plan pairing needed; client:
+  `features/cms/services/starterKitClient.ts`; ownership + F4 policy enforced server-side,
+  refusals verbatim). Server side, same day: the kit STOPPED baking theme tokens into
+  `global_css` (the bake sat after the renderer's live theme layer and shadowed every theme
+  edit — the 4 baked sites were migrated live, `theme_config` now the complete single source,
+  prod-verified); `page_service.publish` now advances the linked plan node forward-only from
+  every publish path (WF-2); and CMS migration `0035` guarantees ONE active header/footer per
+  site with an actionable "deactivate the other first" error (WF-4).
 - `2026-08-07` — **Human parity + plan cross-links (WF-5/6/9/12).** PageEditor
   Settings gained `use_client_header`/`use_client_footer` toggles (agents could
   set them; humans couldn't). `/cms/[siteId]/settings` read-only JSON stubs

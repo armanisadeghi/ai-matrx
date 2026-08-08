@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Plus,
   Trash2,
@@ -75,9 +75,11 @@ import {
   createTemplate,
   updateTemplate,
   deleteTemplate,
-  fetchPromptBuiltins,
   resolveBuiltinNames,
 } from "./service";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
+import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 
 function jsonToStringArray(value: Json | null | undefined): string[] {
   if (value == null) return [];
@@ -111,8 +113,22 @@ const EMPTY_FORM: TemplateFormData = {
 };
 
 export function TemplatesManager() {
+  const dispatch = useAppDispatch();
   const [templates, setTemplates] = useState<ResearchTemplate[]>([]);
-  const [builtins, setBuiltins] = useState<PromptBuiltinRef[]>([]);
+  // Canonical agent listing (THE CANONICAL-SELECTION LAW): builtins come from
+  // the agent-definition slice, never a raw agent.definition query.
+  const builtinAgents = useAppSelector(selectBuiltinAgents);
+  const builtins = useMemo<PromptBuiltinRef[]>(
+    () =>
+      builtinAgents
+        .filter((a) => a.isActive && !a.isArchived && !!a.name)
+        .map((a) => ({ id: a.id, name: a.name as string, is_active: true }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [builtinAgents],
+  );
+  useEffect(() => {
+    dispatch(fetchAgentsListFull());
+  }, [dispatch]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -137,12 +153,8 @@ export function TemplatesManager() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [templatesData, builtinsData] = await Promise.all([
-        fetchTemplates(),
-        fetchPromptBuiltins(),
-      ]);
+      const templatesData = await fetchTemplates();
       setTemplates(templatesData);
-      setBuiltins(builtinsData);
 
       const allAgentIds = templatesData
         .flatMap((t) => Object.values(jsonToAgentConfigStrings(t.agent_config)))

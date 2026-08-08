@@ -13,3 +13,4 @@ Route: `/administration/agents/slots` (`app/(admin)/administration/agents/slots/
 
 - 2026-08-07 — Created: slot list, pin-vs-latest drift badges, repin editor, enable toggle, override display.
 - 2026-08-08 — Picker rewired from a raw `agent.definition` query to `selectBuiltinAgents` (system agents only); non-system-pin badge added; both laws documented here + in the SoR; aidream sync gained the boot-time scream.
+- 2026-08-08 — Repo-wide eradication sweep completed: research admin wiring/templates rewired to `selectBuiltinAgents`, org agents page to `agx_list_scoped`, global shortcuts gated to system agents; ESLint `matrx/no-raw-agent-list-query` (error) now bans raw `agent.definition` list queries outside the canonical services.
