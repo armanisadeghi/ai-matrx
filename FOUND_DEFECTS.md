@@ -13,6 +13,29 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D134 — soft-deleting a row HARD-deletes its association edges; "Dismiss" is therefore not reversible (2026-08-08)
+
+`platform._gc_entity_associations` runs on both DELETE and UPDATE and, when a row
+transitions to `deleted_at IS NOT NULL`, issues an unconditional
+`delete from platform.associations where source/target = this row`. It is wired as
+`_gc_assoc_softdelete` on many entity tables, `web.page` among them.
+
+So every user-facing SOFT delete silently destroys relationship edges permanently. On
+`web.page` this directly contradicts a documented contract: Marketing's verb is **Dismiss**
+(`deleted_at`) with **Restore** offered from `?scope=dismissed`, and the scraper revives
+dismissed pages on re-observation — but the page's supporting-keyword, task, note, and file
+edges are gone by then, and nothing rebuilds them. Same shape wherever soft-delete +
+restore coexist with associations.
+
+Found while fixing the page-registry duplicates: it is the reason the site-delete cascade
+was NOT extended to pages (`v_page_list` joins live sites instead — see
+`features/marketing/FEATURE.md` page-registry invariants).
+
+**Fix:** GC on hard DELETE only, and let soft-deleted rows keep their edges (readers
+already filter by the entity's own `deleted_at`); or tombstone the edges reversibly. Not
+done here — it is a platform-wide trigger on many tables and changing conveyance semantics
+is **Arman's call**, not one an agent takes on its own authority.
+
 ### D133 — Arman's real accounts have viewer access to ZERO marketing sites; masqueraded as "site was deleted" (2026-08-08)
 
 Both agent-review items for the backlinks copy work came back "site was deleted or is no
