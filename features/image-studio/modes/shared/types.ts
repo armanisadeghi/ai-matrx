@@ -58,6 +58,14 @@ export interface ModeShellProps {
   saveFileId?: string | null;
   /** Page vs modal presentation. */
   presentation?: ModePresentation;
+  /**
+   * Derivative-only mode: the source file is NEVER mutated. Saves default to
+   * "new file" (no version-in-place), and AI-op results chain against the
+   * op's own result row instead of being folded into the source's version
+   * history. For callers whose deliverable is a new record pointing at a new
+   * file (e.g. the marketing Media workspace saving a new brand asset).
+   */
+  preserveSource?: boolean;
   /** Called after a successful save. */
   onSave?: (result: SaveResult) => void;
   /** Called when the user cancels (modal mode). */

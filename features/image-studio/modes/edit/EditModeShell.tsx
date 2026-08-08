@@ -180,6 +180,7 @@ export function EditModeShell({
   cloudFileId,
   defaultFolder = EDIT_FOLDER,
   presentation = "page",
+  preserveSource = false,
   onSave,
   onCancel,
 }: ModeShellProps) {
@@ -231,6 +232,13 @@ export function EditModeShell({
   const effectiveCloudFileId =
     cloudFileId ?? (source?.kind === "cloudFileId" ? source.cloudFileId : null);
 
+  // preserveSource: AI-op results create their own cld_files rows; chain
+  // subsequent ops against the LATEST result instead of the untouched source.
+  const [chainFileId, setChainFileId] = useState<string | null>(null);
+  const opTargetFileId = preserveSource
+    ? (chainFileId ?? effectiveCloudFileId)
+    : effectiveCloudFileId;
+
   // Use the Redux file name when available so it stays in sync with renames.
   const reduxFileName = useAppSelector((s) =>
     effectiveCloudFileId ? selectFileName(s, effectiveCloudFileId) : null,
@@ -239,7 +247,8 @@ export function EditModeShell({
 
   // Save mode flag (read by the Filerobot save handler). Tracked via ref so
   // setting it from a menu click doesn't re-render Filerobot underneath us.
-  const nextSaveModeRef = useRef<"version" | "new">("version");
+  const defaultSaveMode: "version" | "new" = preserveSource ? "new" : "version";
+  const nextSaveModeRef = useRef<"version" | "new">(defaultSaveMode);
 
   // Versions rail — open by default, persisted to localStorage.
   const [railOpen, setRailOpen] = useState<boolean>(() => {
@@ -271,6 +280,15 @@ export function EditModeShell({
       setOverrideFilename(newName);
       setReloadKey((k) => k + 1);
       mask.clear();
+
+      if (preserveSource) {
+        // Derivative-only mode: never fold the op result into the source's
+        // version history. The backend already created a new cld_files row
+        // for the result — chain the next op (and the caller's save) on it.
+        if (newFileId) setChainFileId(newFileId);
+        toast.success("Result loaded — the original file is untouched.");
+        return;
+      }
 
       if (!effectiveCloudFileId) {
         toast.success("AI result loaded into the editor.");
@@ -325,7 +343,7 @@ export function EditModeShell({
         );
       }
     },
-    [defaultFolder, effectiveCloudFileId, mask],
+    [defaultFolder, effectiveCloudFileId, mask, preserveSource],
   );
 
   const handleVersionRestored = useCallback(() => {
@@ -343,7 +361,7 @@ export function EditModeShell({
       }
       setSaving(true);
       const mode = nextSaveModeRef.current;
-      nextSaveModeRef.current = "version"; // reset for the next click
+      nextSaveModeRef.current = defaultSaveMode; // reset for the next click
       try {
         const blob = base64ToBlob(saved.imageBase64, saved.mimeType);
         const result = await saveEditedImage({
@@ -380,6 +398,7 @@ export function EditModeShell({
     },
     [
       defaultFolder,
+      defaultSaveMode,
       filename,
       effectiveCloudFileId,
       onSave,
@@ -437,10 +456,10 @@ export function EditModeShell({
   const handleSaveAsDuplicate = useCallback(() => {
     nextSaveModeRef.current = "new";
     if (!triggerFilerobotSave()) {
-      nextSaveModeRef.current = "version";
+      nextSaveModeRef.current = defaultSaveMode;
       toast.info("Open the editor's Save panel to commit the duplicate.");
     }
-  }, [triggerFilerobotSave]);
+  }, [triggerFilerobotSave, defaultSaveMode]);
 
   // Programmatically trigger Filerobot's "Reset/delete all operations"
   // button. We hide it via CSS but keep it clickable so our floating
@@ -668,67 +687,95 @@ export function EditModeShell({
             </TooltipContent>
           </Tooltip>
 
-          {/* Save dropdown */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="h-7 shrink-0 gap-1 text-xs"
-                    disabled={saving}
-                  >
-                    {saving ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Save className="h-3.5 w-3.5" />
-                    )}
-                    Save
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem
-                    onClick={handleHeaderSave}
-                    disabled={!effectiveCloudFileId}
-                  >
-                    <Save className="h-3.5 w-3.5 mr-2" />
-                    Save as new version
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleSaveAsDuplicate}>
-                    <Copy className="h-3.5 w-3.5 mr-2" />
-                    Save as duplicate
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TooltipTrigger>
-            <TooltipContent>
-              Save edits — choose new version or duplicate
-            </TooltipContent>
-          </Tooltip>
+          {/* Save — derivative-only callers get one unambiguous action;
+              everyone else picks version-in-place vs duplicate. */}
+          {preserveSource ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-7 shrink-0 gap-1 text-xs"
+                  disabled={saving}
+                  onClick={handleSaveAsDuplicate}
+                >
+                  {saving ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Save className="h-3.5 w-3.5" />
+                  )}
+                  Save as new file
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Saves a new file — the original is never modified
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="h-7 shrink-0 gap-1 text-xs"
+                      disabled={saving}
+                    >
+                      {saving ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Save className="h-3.5 w-3.5" />
+                      )}
+                      Save
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem
+                      onClick={handleHeaderSave}
+                      disabled={!effectiveCloudFileId}
+                    >
+                      <Save className="h-3.5 w-3.5 mr-2" />
+                      Save as new version
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleSaveAsDuplicate}>
+                      <Copy className="h-3.5 w-3.5 mr-2" />
+                      Save as duplicate
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TooltipTrigger>
+              <TooltipContent>
+                Save edits — choose new version or duplicate
+              </TooltipContent>
+            </Tooltip>
+          )}
 
-          {/* History rail toggle — subtle "selected" state via accent. */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={railOpen ? "secondary" : "ghost"}
-                size="icon"
-                className="h-7 w-7 shrink-0 text-foreground/80 hover:text-foreground"
-                onClick={() => setRailOpen((v) => !v)}
-                disabled={!effectiveCloudFileId}
-              >
-                <History className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {railOpen ? "Hide version history" : "Show version history"}
-            </TooltipContent>
-          </Tooltip>
+          {/* History rail toggle — hidden in preserveSource mode (no
+              versions are ever written there). */}
+          {preserveSource ? null : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={railOpen ? "secondary" : "ghost"}
+                  size="icon"
+                  className="h-7 w-7 shrink-0 text-foreground/80 hover:text-foreground"
+                  onClick={() => setRailOpen((v) => !v)}
+                  disabled={!effectiveCloudFileId}
+                >
+                  <History className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {railOpen ? "Hide version history" : "Show version history"}
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
 
         {/* ── AI toolbar (relocated from sibling) ─────────────────────── */}
         <EditAiToolbar
-          sourceCloudFileId={effectiveCloudFileId}
+          sourceCloudFileId={opTargetFileId}
           sourceUrl={activeUrl}
           sourceDims={sourceDims}
           onResult={handleAiResult}
@@ -811,7 +858,7 @@ export function EditModeShell({
               the right when opened; closing slides it off without
               affecting the canvas. The close X lives on the rail itself
               so users can dismiss it without hunting up to the header. */}
-          {effectiveCloudFileId ? (
+          {effectiveCloudFileId && !preserveSource ? (
             <aside
               className={cn(
                 "absolute top-0 right-0 bottom-0 w-72 border-l border-border bg-card flex flex-col min-h-0 shadow-xl z-30 transition-transform duration-200 ease-out",

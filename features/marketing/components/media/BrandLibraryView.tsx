@@ -17,6 +17,7 @@ import {
   Star,
   Trash2,
   Upload,
+  Crop,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +30,8 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { BrandAssetEditorDialog } from "@/features/marketing/components/brands/BrandAssetEditorDialog";
+import { AssetImageEditorDialog } from "@/features/marketing/components/media/AssetImageEditorDialog";
+import type { SiteMediaStandards } from "@/features/marketing/data/media-library";
 import {
   useBrandAssets,
   useCreateBrandAsset,
@@ -73,12 +76,15 @@ const SOURCE_LABELS: Record<string, string> = {
 function AssetTile({
   asset,
   onEdit,
+  onEditImage,
   onDelete,
   onTogglePrimary,
   busy,
 }: {
   asset: BrandAsset;
   onEdit: (asset: BrandAsset) => void;
+  /** Opens the image-editing suite — only offered when the asset has a file_id. */
+  onEditImage: (asset: BrandAsset) => void;
   onDelete: (asset: BrandAsset) => void;
   onTogglePrimary: (asset: BrandAsset) => void;
   busy: boolean;
@@ -145,10 +151,20 @@ function AssetTile({
             }
           />
         </button>
+        {asset.file_id && asset.kind !== "video" ? (
+          <button
+            type="button"
+            onClick={() => onEditImage(asset)}
+            title="Edit image (crop, standards, remove background, inpaint)"
+            className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <Crop className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => onEdit(asset)}
-          title="Edit"
+          title="Edit details"
           className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
         >
           <Pencil className="h-3.5 w-3.5" />
@@ -170,9 +186,12 @@ function AssetTile({
 export function BrandLibraryView({
   brandId,
   organizationId,
+  standards,
 }: {
   brandId: string;
   organizationId: string;
+  /** Site media standards — drives the editor's "Fit to standards" strip. */
+  standards: SiteMediaStandards;
 }) {
   const assetsQuery = useBrandAssets(brandId);
   const createAsset = useCreateBrandAsset();
@@ -181,6 +200,7 @@ export function BrandLibraryView({
   const { upload, uploading } = useFileUpload();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [editing, setEditing] = useState<BrandAsset | null>(null);
+  const [editingImage, setEditingImage] = useState<BrandAsset | null>(null);
   const [creating, setCreating] = useState(false);
 
   const assets = useMemo(() => assetsQuery.data ?? [], [assetsQuery.data]);
@@ -331,6 +351,7 @@ export function BrandLibraryView({
                   key={asset.id}
                   asset={asset}
                   onEdit={setEditing}
+                  onEditImage={setEditingImage}
                   onDelete={(item) => void onDelete(item)}
                   onTogglePrimary={(item) => void onTogglePrimary(item)}
                   busy={updateAsset.isPending || deleteAsset.isPending}
@@ -340,6 +361,16 @@ export function BrandLibraryView({
           </section>
         ))
       )}
+
+      <AssetImageEditorDialog
+        asset={editingImage}
+        onOpenChange={(open) => {
+          if (!open) setEditingImage(null);
+        }}
+        brandId={brandId}
+        organizationId={organizationId}
+        standards={standards}
+      />
 
       <BrandAssetEditorDialog
         open={creating || editing !== null}

@@ -35,6 +35,8 @@ import {
   SnapshotMediaGallery,
 } from "@/features/marketing/components/media/SnapshotMediaGallery";
 import { AssetDetailSheet } from "@/features/marketing/components/media/AssetDetailSheet";
+import { AssetImageEditorDialog } from "@/features/marketing/components/media/AssetImageEditorDialog";
+import type { BrandAsset } from "@/features/marketing/types";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import type { SizeTier } from "@/lib/media/categorization";
 import type { SiteMediaStandards } from "@/features/marketing/data/media-library";
@@ -88,6 +90,9 @@ export function CrawledMediaView({
   const [pageFilter, setPageFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<SnapshotMediaAsset | null>(null);
+  const [editingImported, setEditingImported] = useState<BrandAsset | null>(
+    null,
+  );
 
   const rows = useMemo(() => media.data ?? [], [media.data]);
 
@@ -361,6 +366,17 @@ export function CrawledMediaView({
           setSelected(null);
           onOrderReplacement(asset);
         }}
+        onEditImported={setEditingImported}
+      />
+
+      <AssetImageEditorDialog
+        asset={editingImported}
+        onOpenChange={(open) => {
+          if (!open) setEditingImported(null);
+        }}
+        brandId={brandId}
+        organizationId={site.organization_id}
+        standards={standards}
       />
     </div>
   );

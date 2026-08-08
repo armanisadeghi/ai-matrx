@@ -201,6 +201,15 @@ Sibling **AI assist toolbar** (above Filerobot's native UI) hosts:
 When an AI op returns a new `cloud_file_id`, the editor force-remounts on
 the result so the user can keep editing the AI output.
 
+**`preserveSource` (ModeShellProps) — derivative-only mode.** The source file
+is never mutated: Save becomes a single "Save as new file" (no
+version-in-place), AI-op results are NOT folded into the source's version
+history (ops chain on the op's own result row via `chainFileId`), and the
+versions rail is hidden. For callers whose deliverable is a new record
+pointing at a new file — first consumer: the marketing Media workspace
+(`features/marketing/components/media/AssetImageEditorDialog.tsx`), which
+saves every result as a new `web.brand_asset` row.
+
 ### Annotate mode (marker.js 2)
 
 `markerjs2` is class-based and imperative — we mount it onto an `<img>` ref
@@ -260,6 +269,11 @@ via `?cloudFileId=` query params.
 
 ## Change Log
 
+- **2026-08-08** — Added `preserveSource` to `ModeShellProps` +
+  `EditModeShell`: derivative-only editing (save-as-new-file default, no
+  version writes onto the source, AI ops chain on their result rows, versions
+  rail hidden). First consumer: the marketing Media workspace's
+  `AssetImageEditorDialog`.
 - **2026-07-29** — Metadata description guidance now imports the canonical
   SEO 70–160 character window instead of embedding another copy.
 - **2026-07-15** — Closed D47 by adding a single verified-backend capability registry. Text generation is visibly disabled on `/images/generate` and in `ImageAssetUploader`; undeployed face-detection, prompt-edit, and edit-suggestion controls are removed from the toolbars. Defensive handler guards remain, so none of the four missing routes can be reached by a real user click.
