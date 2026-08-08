@@ -6,9 +6,10 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
-import type {
-  AgentCopyGroomerConfig,
-  AgentCopyGroomerSection,
+import {
+  groomerPresetVariants,
+  type AgentCopyGroomerConfig,
+  type AgentCopyGroomerSection,
 } from "@/components/agent-copy/groomer-types";
 import { CostModeButtons } from "@/features/marketing/components/operations/CostModeButtons";
 import {
@@ -244,6 +245,7 @@ export function SiteCostWorkspace() {
               summary: pageHuman(),
               attributes: { site_id: site.id, domain: site.root_url },
             })}
+            aiVariants={groomerPresetVariants(groomerConfig)}
           />
           <AgentCopyGroomerLauncher config={groomerConfig} />
         </div>

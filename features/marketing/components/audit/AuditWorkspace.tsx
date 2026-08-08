@@ -28,10 +28,13 @@ import {
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem } from "@/components/agent-copy/export";
 import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
-import type {
-  AgentCopyGroomerConfig,
-  AgentCopyGroomerSection,
+import {
+  groomerPresetVariants,
+  type AgentCopyGroomerConfig,
+  type AgentCopyGroomerSection,
 } from "@/components/agent-copy/groomer-types";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { webCopy, webLocation } from "@/features/marketing/lib/copy-payloads";
@@ -410,6 +413,11 @@ function AuditBody({
               human={() => humanAuditSnapshot(rollup)}
               json={pageFullData}
               agent={pageAgentPayload}
+              aiVariants={groomerPresetVariants(groomerConfig)}
+            />
+            <ExportMenu
+              label={`site-audit-${siteDomain}`}
+              items={[jsonExportItem(pageFullData, "Page data (.json)")]}
             />
             <AgentCopyGroomerLauncher config={groomerConfig} />
           </div>

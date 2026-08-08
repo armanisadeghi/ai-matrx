@@ -21,9 +21,10 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
-import type {
-  AgentCopyGroomerConfig,
-  AgentCopyGroomerSection,
+import {
+  groomerPresetVariants,
+  type AgentCopyGroomerConfig,
+  type AgentCopyGroomerSection,
 } from "@/components/agent-copy/groomer-types";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -470,6 +471,7 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
             human={pageHuman}
             json={pageFullData}
             agent={pageAgentPayload}
+            aiVariants={groomerPresetVariants(groomerConfig)}
           />
           <AgentCopyGroomerLauncher config={groomerConfig} />
           <div className="flex items-center rounded-md border border-border p-0.5">
@@ -556,6 +558,26 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
                 session_id: crawlId,
                 total_matching: links.data?.total ?? 0,
               }),
+              aiVariants: (visible) => [
+                {
+                  id: "key-fields",
+                  label: "Key fields",
+                  hint: "Visible edges projected to core link fields",
+                  build: () => ({
+                    kind: "web-link-edges",
+                    location: pageLocation,
+                    description:
+                      "The currently loaded link-edge rows projected to key fields.",
+                    data: { query: table.state, rows: visible.map(projectLinkRow) },
+                    attributes: {
+                      site_id: site.id,
+                      session_id: crawlId,
+                      total_matching: links.data?.total ?? 0,
+                      detail: "key-fields",
+                    },
+                  }),
+                },
+              ],
             }}
             detail={{
               title: (row) => row.target_url,
