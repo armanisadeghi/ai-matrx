@@ -118,6 +118,7 @@ export function EntityListTable<TRow>({
             : "Add to favorites"
         }
         disabled={!favorite.canToggle(row)}
+        title={favorite.canToggle(row) ? undefined : favorite.disabledTitle}
         onClick={(e) => {
           e.stopPropagation();
           actions.onToggleFavorite?.(row);

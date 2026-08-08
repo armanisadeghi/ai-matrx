@@ -64,15 +64,20 @@ export interface SiteAuditRollup {
   verdicts: { indexable: number; check: number; blocked: number };
   /** Pass counts among audited pages, per section. */
   passes: { serp: number; social: number; headings: number; url: number };
-  /** Distinct issues ranked by page count (errors first, then count). */
+  /**
+   * EVERY distinct issue, ranked errors first then by page count. Complete by
+   * design — truncation happens at render only, so copy/export/show-all can
+   * always reach the full list.
+   */
   topIssues: AuditIssueRollup[];
-  /** Pages ranked by error then warning count (worst first). */
+  /**
+   * EVERY page with at least one finding, worst first (errors, then
+   * warnings). Complete by design — truncation happens at render only.
+   */
   worstPages: AuditPageRollup[];
 }
 
 const SAMPLE_LIMIT = 3;
-const TOP_ISSUE_LIMIT = 14;
-const WORST_PAGE_LIMIT = 10;
 
 export function buildSiteAuditRollup(rows: AuditSourceRow[]): SiteAuditRollup {
   const issueMap = new Map<string, AuditIssueRollup>();
@@ -174,8 +179,7 @@ export function buildSiteAuditRollup(rows: AuditSourceRow[]): SiteAuditRollup {
       if (a.severity !== b.severity) return a.severity === "error" ? -1 : 1;
       if (b.count !== a.count) return b.count - a.count;
       return a.message.localeCompare(b.message);
-    })
-    .slice(0, TOP_ISSUE_LIMIT);
+    });
 
   const worstPages = pages
     .filter((page) => page.errorCount + page.warningCount > 0)
@@ -184,8 +188,7 @@ export function buildSiteAuditRollup(rows: AuditSourceRow[]): SiteAuditRollup {
       if (b.warningCount !== a.warningCount)
         return b.warningCount - a.warningCount;
       return a.path.localeCompare(b.path);
-    })
-    .slice(0, WORST_PAGE_LIMIT);
+    });
 
   return {
     totalPages: rows.length - nonHtmlResources,

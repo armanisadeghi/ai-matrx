@@ -307,7 +307,10 @@ export function EntityFilterPanel<TRow>({
                   options={toOptions(values, section.noneLabel)}
                   selected={selectedOf(section.filterId)}
                   onChange={(v) => setSelect(section.filterId, v)}
-                  searchPlaceholder={`Find ${section.label.toLowerCase()}…`}
+                  searchPlaceholder={
+                    section.searchPlaceholder ??
+                    `Find ${section.label.toLowerCase()}…`
+                  }
                 />
               </FilterSection>
             );
