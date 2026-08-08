@@ -18,6 +18,7 @@ import {
   FolderPlus,
   Loader2,
   Sparkles,
+  Crop,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +38,9 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useCreateBrandAsset } from "@/features/marketing/data/hooks";
+import { fileHandler } from "@/features/files/handler/handler";
 import type { SnapshotMediaAsset } from "@/features/marketing/lib/snapshot-media";
+import type { BrandAsset } from "@/features/marketing/types";
 import type {
   MediaStandardSlot,
   SiteMediaStandards,
@@ -95,6 +98,7 @@ export function AssetDetailSheet({
   organizationId,
   standards,
   onOrderReplacement,
+  onEditImported,
 }: {
   asset: SnapshotMediaAsset | null;
   onOpenChange: (open: boolean) => void;
@@ -104,10 +108,17 @@ export function AssetDetailSheet({
   standards: SiteMediaStandards | null;
   /** Jump to the Generate view prefilled from this asset. */
   onOrderReplacement?: (asset: SnapshotMediaAsset) => void;
+  /**
+   * When set, "Import & edit" appears: the crawled image is imported into
+   * our files, saved as a library asset, and handed here so the host can
+   * open the image editor on it.
+   */
+  onEditImported?: (asset: BrandAsset) => void;
 }) {
   const createAsset = useCreateBrandAsset();
   const [libraryKind, setLibraryKind] = useState<BrandAssetKind>("image");
   const [copied, setCopied] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   const standardCheck = useMemo(
     () => (asset ? nearestStandardSlot(asset, standards) : null),
@@ -120,6 +131,45 @@ export function AssetDetailSheet({
     await navigator.clipboard.writeText(asset.src);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  const importAndEdit = async () => {
+    setImporting(true);
+    try {
+      // Materialize the crawled URL as one of OUR files so the image-ops
+      // backend (and every other file surface) can work on it. This is a
+      // browser-side fetch — a host without CORS headers will fail loudly.
+      const uploaded = await fileHandler.upload(
+        { kind: "external_url", url: asset.src },
+        { folderPath: "Images/Brand Library" },
+      );
+      if (!uploaded.fileId) {
+        throw new Error("Import finished without a file id.");
+      }
+      const created = await createAsset.mutateAsync({
+        organizationId,
+        brandId,
+        kind: "image",
+        sourceUrl: asset.src,
+        fileId: uploaded.fileId,
+        title: asset.alt || null,
+        notes: "Imported from the crawled media inventory for editing.",
+        isPrimary: false,
+        source: "discovered",
+      });
+      toast.success("Imported to the brand library");
+      onEditImported?.(created);
+      onOpenChange(false);
+    } catch (error) {
+      toast.error("Could not import this image", {
+        description:
+          error instanceof Error
+            ? `${error.message} — the host may block cross-origin downloads.`
+            : undefined,
+      });
+    } finally {
+      setImporting(false);
+    }
   };
 
   const addToLibrary = async () => {
@@ -271,6 +321,22 @@ export function AssetDetailSheet({
                 >
                   <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                   Order replacement
+                </Button>
+              ) : null}
+              {onEditImported ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  disabled={importing || createAsset.isPending}
+                  onClick={() => void importAndEdit()}
+                >
+                  {importing ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Crop className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  Import &amp; edit
                 </Button>
               ) : null}
             </div>

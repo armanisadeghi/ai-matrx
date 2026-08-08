@@ -197,6 +197,7 @@ export function SiteMediaWorkspace() {
           <BrandLibraryView
             brandId={brandId}
             organizationId={site.organization_id}
+            standards={standards}
           />
         ) : view === "research" ? (
           <ResearchMediaView brandId={brandId} onUseAsBrief={useResearchBrief} />
