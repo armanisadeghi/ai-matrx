@@ -25,6 +25,7 @@ import { videoBlockFromMediaRef } from "@/features/files/blocks/adapters/from-me
 import { UnifiedVideoBlockRenderer } from "@/features/files/blocks/video/UnifiedVideoBlockRenderer";
 import { EpisodeContentStudio } from "@/features/podcasts/studio/components/EpisodeContentStudio";
 import { EpisodeChaptersPanel } from "@/features/podcasts/studio/components/EpisodeChaptersPanel";
+import { EpisodeTitlePanel } from "@/features/podcasts/studio/components/EpisodeTitlePanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PodcastAudioPlayer } from "@/features/podcasts/components/player/PodcastAudioPlayer";
 import { LiveAudioPlayer } from "@/features/podcasts/generator/components/LiveAudioPlayer";
@@ -355,6 +356,10 @@ export function StudioRunView({ runId }: { runId: string }) {
             assetBusy={assetBusy}
             modelCounts={detail?.model_counts}
           />
+
+          {isDone && state.episodeId && (
+            <EpisodeTitlePanel episodeId={state.episodeId} />
+          )}
 
           {isDone && state.episodeId && (
             <EpisodeChaptersPanel episodeId={state.episodeId} />

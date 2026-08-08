@@ -104,6 +104,21 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-08 (later) — **Title options panel, audience re-pitch, 10-host cap.**
+  (1) Run page gained `EpisodeTitlePanel` (`useEpisodeTitleOptions`,
+  `podcast.title_optimizer` slot — post-episode only so the agent always sees
+  the FINAL script; applying updates `pc_episodes.title`, slug/URL untouched;
+  toast reminds to regenerate blog/show notes). (2) GeneratorForm gained a
+  "Target audience" input (`target_audience` on the generate request → server
+  `audience_adaptation` stage via `podcast.audience_adapter`, runs before the
+  pre-script transform). (3) `MAX_HOST_COUNT` 20 → 10: ElevenLabs
+  `text_to_dialogue` hard-rejects >10 distinct voices (verified live —
+  10-host e2e passed, 14/20 rejected at the provider); server fails fast too.
+  Restore 11–20 when chunked dialogue audio ships (handoff). (4) Server now
+  persists only the canonical script (dialogue + speaker_settings; 36 rows
+  backfilled) and suggests rotated default cast names to script agents when a
+  request names nobody. (5) Duplicate server slots `podcast.blog_writer` /
+  `podcast.show_notes_generator` retired — `podcast_client.*` pair canonical.
 - 2026-08-08 — **Large-cast (7–20 host) hardening: script stage verified live
   at 10/14/20.** Server (aidream): the solo/multihost/roundtable script agents
   now REQUIRE the `<speaker_settings>` declaration (name + gender; server owns

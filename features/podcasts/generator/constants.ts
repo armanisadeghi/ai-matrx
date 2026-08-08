@@ -403,10 +403,14 @@ export const HOST_COUNT_OPTIONS: HostCountOption[] = [
   { value: "2", label: "2", helper: "Classic duo", enabled: true },
   { value: "3", label: "3", helper: null, enabled: true },
   { value: "4", label: "4", helper: null, enabled: true },
-  { value: "5+", label: "5+", helper: "Up to 20", enabled: true },
+  { value: "5+", label: "5+", helper: "Up to 10", enabled: true },
 ];
 
-export const MAX_HOST_COUNT = 20;
+// ElevenLabs text_to_dialogue rejects >10 distinct voices per request
+// ('max_voices_exceeded', verified live 2026-08-08) and the server fails fast
+// above 10. Restore 20 when chunked multi-call dialogue audio ships
+// (docs/handoffs/podcast-system.md).
+export const MAX_HOST_COUNT = 10;
 
 /**
  * Look up an option by key, falling back to the list's first entry when the
