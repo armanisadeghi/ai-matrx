@@ -1227,7 +1227,13 @@ export async function searchPagesForMetaApply(
     .select(
       "id, site_id, url, version, target_keyword, meta_title_desired, meta_description_desired",
     )
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    // Crawls record assets as page rows too — offering someone a .png or a
+    // wp-json endpoint to "apply a meta title to" is noise. `content_type_last`
+    // is the crawler's own verdict, so filter on it rather than guessing from
+    // the URL. NULL stays in: it means not-yet-crawled, not not-a-page.
+    .or("content_type_last.is.null,content_type_last.eq.html")
+    .eq("status", "active");
 
   const trimmed = term.trim();
   if (trimmed) {
