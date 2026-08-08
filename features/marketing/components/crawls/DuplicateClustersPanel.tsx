@@ -9,6 +9,7 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { useCrawlFingerprints } from "@/features/marketing/data/inspection-hooks";
+import type { CrawlFingerprintQueryRow } from "@/features/marketing/data/inspection-types";
 import {
   buildDuplicateClusters,
   DEFAULT_DUPLICATE_SIMILARITY,
@@ -32,17 +33,25 @@ export function DuplicateClustersPanel({ crawlId }: { crawlId: string }) {
   );
   const query = useCrawlFingerprints(site.id, crawlId);
 
-  const rows = useMemo<FingerprintPageRow[]>(
-    () =>
-      (query.data?.rows ?? []).map((row) => ({
-        snapshotId: row.id,
-        pageId: row.page_id,
-        url: row.page?.url ?? row.final_url ?? row.page_id,
-        wordCount: row.word_count,
-        fingerprint: parseSnapshotFingerprint(row.fingerprint ?? null),
-      })),
-    [query.data],
-  );
+  const rows = useMemo<FingerprintPageRow[]>(() => {
+    // Clusters are over PAGES, not captures: a session that re-captured a
+    // page (crash resume, retry) must not pair a page with its own older
+    // snapshot as a "100% duplicate". Keep only the latest capture per page.
+    const latestByPage = new Map<string, CrawlFingerprintQueryRow>();
+    for (const row of query.data?.rows ?? []) {
+      const existing = latestByPage.get(row.page_id);
+      if (!existing || row.captured_at > existing.captured_at) {
+        latestByPage.set(row.page_id, row);
+      }
+    }
+    return [...latestByPage.values()].map((row) => ({
+      snapshotId: row.id,
+      pageId: row.page_id,
+      url: row.page?.url ?? row.final_url ?? row.page_id,
+      wordCount: row.word_count,
+      fingerprint: parseSnapshotFingerprint(row.fingerprint ?? null),
+    }));
+  }, [query.data]);
   const report = useMemo(
     () => buildDuplicateClusters(rows, similarity),
     [rows, similarity],

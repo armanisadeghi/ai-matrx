@@ -71,7 +71,7 @@ export interface InspectionPagedResult<T> {
  */
 export type CrawlFingerprintQueryRow = Pick<
   InspectionSnapshot,
-  "id" | "page_id" | "final_url" | "word_count"
+  "id" | "page_id" | "final_url" | "word_count" | "captured_at"
 > & {
   fingerprint: InspectionSnapshot["extracted"] | null;
   page: InspectionPageReference | null;

@@ -353,7 +353,7 @@ const FINGERPRINT_PAGE_SIZE = 1000;
 // postgrest-js select parser blows TS2589 on the JSON arrow path; the result
 // shape is pinned by `.returns<CrawlFingerprintQueryRow[]>()` below.
 const FINGERPRINT_SELECT: string =
-  "id, page_id, final_url, word_count, fingerprint:extracted->fingerprint, page:page(url)";
+  "id, page_id, final_url, word_count, captured_at, fingerprint:extracted->fingerprint, page:page(url)";
 
 /**
  * Fetch EVERY capture's content fingerprint for one crawl session — duplicate
