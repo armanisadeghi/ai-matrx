@@ -150,12 +150,20 @@ export interface EntityListConfig<TRow> {
 
   /** Inline table editing. Absent → the table is read-only. */
   edit?: {
-    /** Persist one row's pending edits (1-4 scalar fields). */
-    save: (rowId: string, edit: Partial<TRow>) => Promise<void>;
+    /** Persist one row's pending edits (1-4 scalar fields). Receives the full
+     *  row so heterogeneous surfaces can route the write by kind. */
+    save: (row: TRow, edit: Partial<TRow>) => Promise<void>;
   };
 
   /** Deep-search toggle beside the search box. Absent → no toggle. */
   deepSearch?: { label: string };
+
+  /**
+   * Whether this surface has an archived axis (an `is_archived` flag its RPC
+   * honors). Default true. False hides the panel's Archived section and the
+   * query's `archived` field stays at its "active" default.
+   */
+  supportsArchived?: boolean;
 
   /** Facet-chip sections for the Filters & Sort panel, in display order. */
   facetSections: EntityFacetSection[];
