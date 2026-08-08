@@ -218,7 +218,7 @@ export default function ImportTasksModal({
             title: item.title,
             description: "",
             project_id: projectId,
-            status: isCompleted ? "completed" : "incomplete",
+            status: isCompleted ? "completed" : "inbox",
           });
 
       if (newTask) {

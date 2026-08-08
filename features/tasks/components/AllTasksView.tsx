@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { isOpenStatus } from "@/features/tasks/constants/status";
 import { ChevronDown, ChevronRight, FolderOpen, CheckSquare } from 'lucide-react';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { selectProjects } from '@/features/tasks/redux/selectors';
@@ -64,16 +65,14 @@ export default function AllTasksView({ selectedTaskId, onTaskSelect, onTaskToggl
 
   // Filter tasks based on current filter and showCompleted setting
   const getFilteredTasksForProject = (project: Project) => {
-    // Get today's date at midnight local time for consistent comparison
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split('T')[0];
+    // Local-date string — toISOString() shifts UTC+ users to yesterday.
+    const todayStr = new Date().toLocaleDateString('sv-SE');
 
     let tasks: Task[] = project.tasks;
 
-    // Filter out completed tasks if showCompleted is false (default)
+    // Hide closed tasks (completed/cancelled/dismissed) unless showing done
     if (!showCompleted) {
-      tasks = tasks.filter((task) => !task.completed);
+      tasks = tasks.filter((task) => isOpenStatus(task.status));
     }
 
     let filteredTasks: Task[];

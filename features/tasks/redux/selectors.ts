@@ -14,12 +14,27 @@ import {
 import type { Task, TaskWithProject, Project, TaskSortConfig } from "../types";
 import { sortTasks } from "../utils/taskSorting";
 import { matchesSearch } from "@/utils/search-scoring";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  normalizeTaskStatus,
+  isClosedStatus,
+  TASK_STATUS_META,
+  TASK_STATUS_ORDER,
+} from "../constants/status";
+import {
+  SMART_VIEWS,
+  SMART_VIEW_BY_KEY,
+  buildSmartViewContext,
+  type SmartViewKey,
+} from "../constants/smartViews";
 import {
   selectActiveProject,
+  selectTaskUserStateMap,
   selectShowAllProjects,
   selectShowCompleted,
   selectSearchQuery,
   selectTaskFilter,
+  selectSmartView,
   selectSortBy,
   selectSortOrder,
   selectGroupBy,
@@ -54,23 +69,34 @@ export const selectProjects = createSelector(
       }
     }
 
-    const toUiTask = (rec: (typeof taskRecords)[number]): Task => ({
-      id: rec.id,
-      title: rec.title,
-      completed: rec.status === "completed",
-      description: rec.description ?? "",
-      attachments: [],
-      dueDate: rec.due_date ?? "",
-      priority: (rec.priority as Task["priority"]) ?? null,
-      assigneeId: rec.assignee_id ?? null,
-      parentTaskId: rec.parent_task_id ?? null,
-      subtasks: [],
-      updatedAt: rec.updated_at ?? null,
-      userId: rec.created_by ?? null,
-      isPublic: rec.visibility === "public",
-      settings: ((rec.settings as { labels?: string[] } | undefined) ??
-        {}) as Task["settings"],
-    });
+    const toUiTask = (rec: (typeof taskRecords)[number]): Task => {
+      const status = normalizeTaskStatus(rec.status);
+      return {
+        id: rec.id,
+        title: rec.title,
+        completed: status === "completed",
+        status,
+        description: rec.description ?? "",
+        attachments: [],
+        dueDate: rec.due_date ?? "",
+        startDate: rec.start_date ?? null,
+        completedAt: rec.completed_at ?? null,
+        recurrenceRule: rec.recurrence_rule ?? null,
+        priority: (rec.priority as Task["priority"]) ?? null,
+        assigneeId: rec.assignee_id ?? null,
+        parentTaskId: rec.parent_task_id ?? null,
+        subtasks: [],
+        updatedAt: rec.updated_at ?? null,
+        userId: rec.created_by ?? null,
+        isPublic: rec.visibility === "public",
+        origin: (rec.origin as Task["origin"]) ?? "user",
+        sourceType: rec.source_type ?? null,
+        sourceUrl: rec.source_url ?? null,
+        sourceLabel: rec.source_label ?? null,
+        settings: ((rec.settings as { labels?: string[] } | undefined) ??
+          {}) as Task["settings"],
+      };
+    };
 
     const buildNested = (tasks: typeof taskRecords): Task[] => {
       const map = new Map<string, Task>();
@@ -218,12 +244,15 @@ export const selectFilteredTasks = createSelector(
     selectSearchQuery,
     selectShowCompleted,
     selectTaskFilter,
+    selectSmartView,
+    selectUserId,
     selectSortBy,
     selectSortOrder,
     selectTaskIdsMatchingScopeFilter,
     selectTaskIdsMatchingAppContextScopes,
     selectOrganizationId,
     selectValidProjectIds,
+    selectTaskUserStateMap,
   ],
   (
     projects,
@@ -233,16 +262,18 @@ export const selectFilteredTasks = createSelector(
     searchQuery,
     showCompleted,
     filter,
+    smartView,
+    currentUserId,
     sortBy,
     sortOrder,
     scopeTaskIds,
     appContextScopeTaskIds,
     appOrgId,
     validProjectIdsForTaskPipe,
+    userStateMap,
   ): TaskWithProject[] => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split("T")[0];
+    // Local-date string — toISOString() would shift UTC+ users to yesterday.
+    const todayStr = new Date().toLocaleDateString("sv-SE");
 
     let tasks: TaskWithProject[] = [];
 
@@ -279,8 +310,25 @@ export const selectFilteredTasks = createSelector(
       );
     }
 
-    if (!showCompleted) {
-      tasks = tasks.filter((t) => !t.completed);
+    // Smart view (Inbox/Today/Upcoming/Overdue/Assigned to me/…) — the
+    // registry in constants/smartViews.ts is the single definition.
+    const view = SMART_VIEW_BY_KEY[smartView] ?? SMART_VIEW_BY_KEY.all;
+    const viewCtx = buildSmartViewContext(currentUserId);
+    if (!view.includesClosed && !showCompleted) {
+      // Closed tasks (completed/cancelled/dismissed) hidden by default.
+      tasks = tasks.filter((t) => !isClosedStatus(t.status));
+    }
+    if (view.key !== "all") {
+      tasks = tasks.filter((t) => view.predicate(t, viewCtx));
+    }
+    // Snoozed tasks disappear from the attention views (everything except
+    // All tasks / Completed) until their snooze expires.
+    if (view.key !== "all" && view.key !== "completed") {
+      const nowIso = new Date().toISOString();
+      tasks = tasks.filter((t) => {
+        const snoozedUntil = userStateMap[t.id]?.snoozedUntil;
+        return !snoozedUntil || snoozedUntil <= nowIso;
+      });
     }
 
     switch (filter) {
@@ -330,7 +378,14 @@ export const selectFilteredTasks = createSelector(
       direction: "asc",
     };
     const sorted = sortTasks(tasks, sortConfig);
-    return sortOrder === "asc" ? sorted.reverse() : sorted;
+    const directed = sortOrder === "asc" ? sorted.reverse() : sorted;
+    // Pinned tasks float to the top within the current ordering.
+    const pinned: TaskWithProject[] = [];
+    const rest: TaskWithProject[] = [];
+    for (const t of directed) {
+      (userStateMap[t.id]?.pinnedAt ? pinned : rest).push(t);
+    }
+    return pinned.length ? [...pinned, ...rest] : directed;
   },
 );
 
@@ -412,16 +467,19 @@ export const selectGroupedFilteredTasks = createSelector(
       });
     } else if (groupBy === "status") {
       for (const t of tasks) {
-        const key = t.completed ? "completed" : "open";
-        push(key, t.completed ? "Completed" : "Open", t);
+        const status = normalizeTaskStatus(t.status);
+        push(status, TASK_STATUS_META[status].label, t);
       }
+      groups.sort(
+        (a, b) =>
+          (TASK_STATUS_ORDER[a.key as keyof typeof TASK_STATUS_ORDER] ?? 99) -
+          (TASK_STATUS_ORDER[b.key as keyof typeof TASK_STATUS_ORDER] ?? 99),
+      );
     } else if (groupBy === "dueDate") {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayStr = today.toISOString().split("T")[0];
-      const in7 = new Date(today);
+      const todayStr = new Date().toLocaleDateString("sv-SE");
+      const in7 = new Date();
       in7.setDate(in7.getDate() + 7);
-      const in7Str = in7.toISOString().split("T")[0];
+      const in7Str = in7.toLocaleDateString("sv-SE");
       for (const t of tasks) {
         let key = "nodate";
         let label = "No due date";
@@ -460,5 +518,55 @@ export const selectGroupedFilteredTasks = createSelector(
     });
 
     return groups;
+  },
+);
+
+/**
+ * Per-smart-view task counts for the sidebar badges — "what you'd see if you
+ * clicked it": org-context-scoped and snooze-aware, over all projects.
+ * (Search and the active-project drill-down are deliberately ignored so the
+ * badges stay stable while typing/drilling.)
+ */
+export const selectSmartViewCounts = createSelector(
+  [
+    selectAllTasksFlat,
+    selectAllTasks,
+    selectUserId,
+    selectOrganizationId,
+    selectTaskUserStateMap,
+  ],
+  (
+    tasks,
+    allTaskRecords,
+    currentUserId,
+    appOrgId,
+    userStateMap,
+  ): Record<SmartViewKey, number> => {
+    const ctx = buildSmartViewContext(currentUserId);
+    const nowIso = new Date().toISOString();
+    // Respect the active org context so counts always agree with the list.
+    let scoped = tasks;
+    if (appOrgId) {
+      const byId = new Map(allTaskRecords.map((r) => [r.id, r] as const));
+      scoped = tasks.filter((t) => {
+        const rec = byId.get(t.id);
+        return rec ? rec.organization_id === appOrgId : true;
+      });
+    }
+    const counts = {} as Record<SmartViewKey, number>;
+    for (const view of SMART_VIEWS) {
+      let n = 0;
+      for (const t of scoped) {
+        if (!view.includesClosed && isClosedStatus(t.status)) continue;
+        if (view.key !== "all" && !view.predicate(t, ctx)) continue;
+        if (view.key !== "all" && view.key !== "completed") {
+          const snoozedUntil = userStateMap[t.id]?.snoozedUntil;
+          if (snoozedUntil && snoozedUntil > nowIso) continue;
+        }
+        n += 1;
+      }
+      counts[view.key] = n;
+    }
+    return counts;
   },
 );

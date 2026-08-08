@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { isOpenStatus } from "@/features/tasks/constants/status";
 import {
   CheckSquare,
   Eye,
@@ -79,7 +80,7 @@ export function SubtaskRail({
   const completed = subtasks.filter((s) => s.status === "completed").length;
   const visibleSubtasks = showCompleted
     ? subtasks
-    : subtasks.filter((s) => s.status !== "completed");
+    : subtasks.filter((s) => isOpenStatus(s.status));
 
   const addSubtask = async (): Promise<boolean> => {
     const title = draft.trim();

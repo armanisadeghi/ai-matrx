@@ -280,7 +280,7 @@ export const createTaskWithAssociation = createAsyncThunk<
     organization_id: input.organization_id ?? null,
     priority: input.priority ?? null,
     due_date: input.due_date ?? null,
-    status: "incomplete",
+    status: "inbox",
   });
   if (!task) return null;
 

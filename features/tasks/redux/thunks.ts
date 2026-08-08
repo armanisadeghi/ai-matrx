@@ -3,6 +3,8 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import * as taskService from "../services/taskService";
+import * as taskUserStateService from "../services/taskUserStateService";
+import { isClosedStatus } from "../constants/status";
 import type { UpdateTaskInput } from "../services/taskService";
 import {
   createProject as createProjectSvc,
@@ -32,6 +34,9 @@ import {
   setNewTaskTitle,
   setLastCreatedTaskId,
   clearTaskEdit,
+  hydrateTaskUserState,
+  patchTaskUserState,
+  type TaskUserStateEntry,
 } from "./taskUiSlice";
 
 /**
@@ -155,6 +160,14 @@ function toTaskRecord(
     settings: (row as { settings?: Record<string, unknown> }).settings ?? null,
     created_at: row.created_at ?? null,
     created_by: row.created_by,
+    origin: row.origin ?? null,
+    source_type: row.source_type ?? null,
+    source_url: row.source_url ?? null,
+    source_label: row.source_label ?? null,
+    start_date: row.start_date ?? null,
+    completed_at: row.completed_at ?? null,
+    updated_at: row.updated_at ?? null,
+    recurrence_rule: row.recurrence_rule ?? null,
   } satisfies TaskRecord;
 }
 
@@ -267,7 +280,7 @@ export const createSubtaskThunk = createAsyncThunk<
       parent_task_id: parentTaskId,
       project_id: inheritedProjectId,
       organization_id: inheritedOrgId,
-      status: "incomplete",
+      status: "inbox",
     });
     if (!created) return null;
 
@@ -293,7 +306,10 @@ export const toggleTaskCompleteThunk = createAsyncThunk<
     return;
   }
   const prevStatus = current.status;
-  const newStatus = prevStatus === "completed" ? "incomplete" : "completed";
+  const wasCompleted = prevStatus === "completed";
+  // Recurring tasks roll forward on completion instead of closing (the
+  // service handles it) — optimistically treat as completed either way.
+  const newStatus = wasCompleted ? "active" : "completed";
 
   // Optimistic update on the agent-context slice
   dispatch(
@@ -315,9 +331,35 @@ export const toggleTaskCompleteThunk = createAsyncThunk<
   }
 
   try {
-    const updated = await taskService.updateTask(taskId, {
-      status: newStatus,
-    });
+    const updated = wasCompleted
+      ? await taskService.updateTask(taskId, { status: "active" })
+      : await taskService.completeTask({
+          id: taskId,
+          recurrence_rule: current.recurrence_rule ?? null,
+          due_date: current.due_date,
+        });
+    if (updated) {
+      // Reconcile with the server truth (a recurring task comes back
+      // 'planned' with a rolled-forward due date, not 'completed').
+      const record = toTaskRecord(updated, current.organization_id);
+      if (record) {
+        dispatch(upsertTaskWithLevel({ record, level: "full-data" }));
+        if (
+          current.project_id &&
+          record.status !== "completed" &&
+          newStatus === "completed"
+        ) {
+          // Rolled forward — it is still open; undo the optimistic decrement.
+          dispatch(
+            adjustProjectTaskCount({
+              projectId: current.project_id,
+              openDelta: 1,
+              totalDelta: 0,
+            }),
+          );
+        }
+      }
+    }
     if (!updated) {
       // Rollback
       dispatch(
@@ -370,15 +412,77 @@ export const updateTaskFieldThunk = createAsyncThunk<
       }),
     );
 
+    // Keep project open counts honest on status transitions (the toggle
+    // thunk does this too; the two paths must never disagree).
+    const wasClosed = isClosedStatus(current.status);
+    const willBeClosed =
+      patch.status !== undefined ? isClosedStatus(patch.status) : wasClosed;
+    const openDelta = wasClosed === willBeClosed ? 0 : willBeClosed ? -1 : 1;
+    if (current.project_id && openDelta !== 0) {
+      dispatch(
+        adjustProjectTaskCount({
+          projectId: current.project_id,
+          openDelta,
+          totalDelta: 0,
+        }),
+      );
+    }
+
     try {
-      const updated = await taskService.updateTask(taskId, patch);
-      if (!updated) {
+      // Completing is special-cased through the canonical completion path so
+      // recurring tasks roll forward regardless of which control completed
+      // them (status picker, agent tool, or checkbox).
+      const updated =
+        patch.status === "completed" && !wasClosed
+          ? await (async () => {
+              const { status: _s, ...rest } = patch;
+              if (Object.keys(rest).length > 0) {
+                await taskService.updateTask(taskId, rest);
+              }
+              return taskService.completeTask({
+                id: taskId,
+                recurrence_rule: current.recurrence_rule ?? null,
+                due_date: patch.due_date ?? current.due_date,
+              });
+            })()
+          : await taskService.updateTask(taskId, patch);
+      if (updated) {
+        // Reconcile with the server truth (completed_at bookkeeping, and a
+        // recurring task comes back 'planned' with a rolled-forward due date).
+        const record = toTaskRecord(updated, current.organization_id);
+        if (record) {
+          dispatch(upsertTaskWithLevel({ record, level: "full-data" }));
+          if (
+            current.project_id &&
+            willBeClosed &&
+            !isClosedStatus(record.status)
+          ) {
+            // Rolled forward — still open; undo the optimistic decrement.
+            dispatch(
+              adjustProjectTaskCount({
+                projectId: current.project_id,
+                openDelta: 1,
+                totalDelta: 0,
+              }),
+            );
+          }
+        }
+      } else {
         dispatch(
           upsertTaskWithLevel({
             record: current as TaskRecord,
             level: "full-data",
           }),
         );
+        if (current.project_id && openDelta !== 0) {
+          dispatch(
+            adjustProjectTaskCount({
+              projectId: current.project_id,
+              openDelta: -openDelta,
+              totalDelta: 0,
+            }),
+          );
+        }
       }
     } finally {
       dispatch(setOperatingTaskId(null));
@@ -413,7 +517,7 @@ export const moveTaskThunk = createAsyncThunk<
       dispatch(
         adjustProjectTaskCount({
           projectId: fromProjectId,
-          openDelta: current.status === "completed" ? 0 : -1,
+          openDelta: isClosedStatus(current.status) ? 0 : -1,
           totalDelta: -1,
         }),
       );
@@ -422,7 +526,7 @@ export const moveTaskThunk = createAsyncThunk<
       dispatch(
         adjustProjectTaskCount({
           projectId: normalizedTo,
-          openDelta: current.status === "completed" ? 0 : 1,
+          openDelta: isClosedStatus(current.status) ? 0 : 1,
           totalDelta: 1,
         }),
       );
@@ -467,7 +571,7 @@ export const deleteTaskThunk = createAsyncThunk<
       dispatch(
         adjustProjectTaskCount({
           projectId,
-          openDelta: current.status === "completed" ? 0 : -1,
+          openDelta: isClosedStatus(current.status) ? 0 : -1,
           totalDelta: -1,
         }),
       );
@@ -515,4 +619,65 @@ export const saveTaskEditsThunk = createAsyncThunk<
     );
   }
   dispatch(clearTaskEdit(taskId));
+});
+
+// ─── Per-user notification/triage state (workspace.task_user_state) ─────────
+
+export const loadTaskUserStateThunk = createAsyncThunk<
+  void,
+  void,
+  { state: RootState; dispatch: AppDispatch }
+>("tasksUi/loadTaskUserState", async (_, { dispatch }) => {
+  const rows = await taskUserStateService.listMyTaskUserStates();
+  const map: Record<string, TaskUserStateEntry> = {};
+  for (const r of rows) {
+    map[r.task_id] = {
+      snoozedUntil: r.snoozed_until,
+      acknowledgedAt: r.acknowledged_at,
+      dismissedAt: r.dismissed_at,
+      pinnedAt: r.pinned_at,
+      seenAt: r.seen_at,
+    };
+  }
+  dispatch(hydrateTaskUserState(map));
+});
+
+/** Snooze (or unsnooze with `until: null`) — optimistic, server-synced. */
+export const snoozeTaskThunk = createAsyncThunk<
+  void,
+  { taskId: string; until: Date | null },
+  { state: RootState; dispatch: AppDispatch }
+>("tasksUi/snoozeTask", async ({ taskId, until }, { dispatch, getState }) => {
+  const prev = getState().tasksUi.userState[taskId]?.snoozedUntil ?? null;
+  dispatch(
+    patchTaskUserState({
+      taskId,
+      patch: { snoozedUntil: until ? until.toISOString() : null },
+    }),
+  );
+  const result = until
+    ? await taskUserStateService.snoozeTask(taskId, until)
+    : await taskUserStateService.unsnoozeTask(taskId);
+  if (!result) {
+    dispatch(patchTaskUserState({ taskId, patch: { snoozedUntil: prev } }));
+  }
+});
+
+/** Pin/unpin a task for the current user — optimistic, server-synced. */
+export const pinTaskThunk = createAsyncThunk<
+  void,
+  { taskId: string; pinned: boolean },
+  { state: RootState; dispatch: AppDispatch }
+>("tasksUi/pinTask", async ({ taskId, pinned }, { dispatch, getState }) => {
+  const prev = getState().tasksUi.userState[taskId]?.pinnedAt ?? null;
+  dispatch(
+    patchTaskUserState({
+      taskId,
+      patch: { pinnedAt: pinned ? new Date().toISOString() : null },
+    }),
+  );
+  const result = await taskUserStateService.pinTask(taskId, pinned);
+  if (!result) {
+    dispatch(patchTaskUserState({ taskId, patch: { pinnedAt: prev } }));
+  }
 });

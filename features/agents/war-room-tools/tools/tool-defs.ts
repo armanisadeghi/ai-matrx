@@ -20,7 +20,7 @@
 import type { ToolSpecInline } from "@/features/agents/types/tool-injection.types";
 import { WAR_ROOM_TOOL_NAMES, type WarRoomToolName } from "./names";
 
-const TASK_STATUS = ["incomplete", "completed"] as const;
+const TASK_STATUS = ["inbox", "planned", "active", "completed", "cancelled", "dismissed"] as const;
 const TASK_PRIORITY = ["low", "medium", "high"] as const;
 
 const DEFS: Record<WarRoomToolName, ToolSpecInline> = {

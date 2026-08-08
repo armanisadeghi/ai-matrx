@@ -34,6 +34,7 @@ import { selectProjectById } from "@/features/agent-context/redux/projectsSlice"
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
 import type { TaskPriority } from "../TaskPriorityPicker";
+import { normalizeTaskStatus } from "@/features/tasks/constants/status";
 
 type Priority = TaskPriority;
 
@@ -77,9 +78,21 @@ export function useTaskEditorController(taskId: string) {
       draft.labels !== undefined
         ? draft.labels
         : ((task?.settings as { labels?: string[] } | null)?.labels ?? []),
+    status:
+      draft.status !== undefined
+        ? draft.status
+        : normalizeTaskStatus(task?.status),
+    startDate:
+      draft.start_date !== undefined
+        ? draft.start_date
+        : (task?.start_date ?? null),
+    recurrenceRule:
+      draft.recurrence_rule !== undefined
+        ? draft.recurrence_rule
+        : (task?.recurrence_rule ?? null),
   };
 
-  const completed = task?.status === "completed";
+  const completed = normalizeTaskStatus(task?.status) === "completed";
   const isOperating = operatingTaskId === taskId;
 
   // Plain functions (React Compiler memoizes) — mirrors the original TaskEditor.

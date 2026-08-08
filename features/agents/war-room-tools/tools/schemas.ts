@@ -16,8 +16,18 @@
 
 import { z } from "zod";
 
-// Shared scalar shapes (match ctx_tasks exactly).
-const taskStatusSchema = z.enum(["incomplete", "completed"]);
+// Shared scalar shapes (match workspace.tasks exactly — canonical vocabulary
+// in features/tasks/constants/status.ts; 'incomplete' accepted for agent
+// back-compat and normalized to 'inbox' in the handler).
+const taskStatusSchema = z.enum([
+  "inbox",
+  "planned",
+  "active",
+  "completed",
+  "cancelled",
+  "dismissed",
+  "incomplete",
+]);
 const taskPrioritySchema = z.enum(["low", "medium", "high"]);
 /** ISO date (YYYY-MM-DD) or full timestamp; null clears. Loose on format —
  *  the column is a date and Supabase coerces; we only guard the type. */

@@ -34695,6 +34695,33 @@ export type Database = {
           thread_id: string
         }[]
       }
+      wsp_resolve_system_task: {
+        Args: {
+          p_dedupe_key: string
+          p_organization_id?: string
+          p_outcome?: string
+        }
+        Returns: Json
+      }
+      wsp_upsert_system_task: {
+        Args: {
+          p_assignee_id?: string
+          p_dedupe_key: string
+          p_description?: string
+          p_due_date?: string
+          p_metadata?: Json
+          p_organization_id?: string
+          p_origin?: string
+          p_priority?: string
+          p_project_id?: string
+          p_source_id?: string
+          p_source_label?: string
+          p_source_type?: string
+          p_source_url?: string
+          p_title: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       admin_level: "developer" | "senior_admin" | "super_admin"
@@ -52697,22 +52724,75 @@ export type Database = {
         }
         Relationships: []
       }
+      task_user_state: {
+        Row: {
+          acknowledged_at: string | null
+          dismissed_at: string | null
+          pinned_at: string | null
+          seen_at: string | null
+          snoozed_until: string | null
+          task_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          dismissed_at?: string | null
+          pinned_at?: string | null
+          seen_at?: string | null
+          snoozed_until?: string | null
+          task_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          dismissed_at?: string | null
+          pinned_at?: string | null
+          seen_at?: string | null
+          snoozed_until?: string | null
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_user_state_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assignee_id: string | null
+          completed_at: string | null
           created_at: string
           created_by: string | null
+          dedupe_key: string | null
           deleted_at: string | null
           description: string | null
           due_date: string | null
+          due_time: string | null
           id: string
           metadata: Json
           organization_id: string
+          origin: string
           parent_task_id: string | null
           priority: Database["public"]["Enums"]["task_priority"] | null
           project_id: string | null
+          recurrence_rule: string | null
+          reminders: Json
           settings: Json
+          source_id: string | null
+          source_label: string | null
+          source_type: string | null
+          source_url: string | null
+          start_date: string | null
           status: string
+          timezone: string | null
           title: string
           updated_at: string
           updated_by: string | null
@@ -52721,19 +52801,31 @@ export type Database = {
         }
         Insert: {
           assignee_id?: string | null
+          completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          dedupe_key?: string | null
           deleted_at?: string | null
           description?: string | null
           due_date?: string | null
+          due_time?: string | null
           id?: string
           metadata?: Json
           organization_id: string
+          origin?: string
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
           project_id?: string | null
+          recurrence_rule?: string | null
+          reminders?: Json
           settings?: Json
+          source_id?: string | null
+          source_label?: string | null
+          source_type?: string | null
+          source_url?: string | null
+          start_date?: string | null
           status?: string
+          timezone?: string | null
           title: string
           updated_at?: string
           updated_by?: string | null
@@ -52742,19 +52834,31 @@ export type Database = {
         }
         Update: {
           assignee_id?: string | null
+          completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          dedupe_key?: string | null
           deleted_at?: string | null
           description?: string | null
           due_date?: string | null
+          due_time?: string | null
           id?: string
           metadata?: Json
           organization_id?: string
+          origin?: string
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
           project_id?: string | null
+          recurrence_rule?: string | null
+          reminders?: Json
           settings?: Json
+          source_id?: string | null
+          source_label?: string | null
+          source_type?: string | null
+          source_url?: string | null
+          start_date?: string | null
           status?: string
+          timezone?: string | null
           title?: string
           updated_at?: string
           updated_by?: string | null

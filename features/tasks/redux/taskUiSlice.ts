@@ -4,6 +4,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { DatabaseTask, ProjectWithTasks } from "../types/database";
 import type { TaskFilterType } from "../types";
 import type { TaskSortField } from "../types/sort";
+import type { SmartViewKey } from "../constants/smartViews";
 
 export interface TaskUiState {
   // Hierarchical data (source of truth for the tasks route UI)
@@ -23,6 +24,8 @@ export interface TaskUiState {
   expandedProjects: string[];
   expandedTasks: string[];
   filter: TaskFilterType;
+  /** Smart view (Inbox/Today/Upcoming/…) — registry in constants/smartViews.ts */
+  smartView: SmartViewKey;
   showAllProjects: boolean;
   showCompleted: boolean;
   searchQuery: string;
@@ -51,6 +54,20 @@ export interface TaskUiState {
   // Transient "source" for widgets that are about to create or link a task
   // from some other entity (chat message, note, file, chat block, ...)
   pendingSource: PendingSource | null;
+
+  // Per-user notification/triage state (workspace.task_user_state), keyed by
+  // task id. Hydrated once by loadTaskUserStateThunk; snoozed tasks drop out
+  // of the attention views.
+  userState: Record<string, TaskUserStateEntry>;
+  userStateLoaded: boolean;
+}
+
+export interface TaskUserStateEntry {
+  snoozedUntil: string | null;
+  acknowledgedAt: string | null;
+  dismissedAt: string | null;
+  pinnedAt: string | null;
+  seenAt: string | null;
 }
 
 export interface PendingSource {
@@ -79,6 +96,9 @@ export interface TaskEditDraft {
   project_id?: string | null;
   assignee_id?: string | null;
   labels?: string[];
+  status?: import("../constants/status").TaskStatus;
+  start_date?: string | null;
+  recurrence_rule?: string | null;
 }
 
 const initialState: TaskUiState = {
@@ -96,6 +116,7 @@ const initialState: TaskUiState = {
   expandedProjects: [],
   expandedTasks: [],
   filter: "all",
+  smartView: "all",
   showAllProjects: true,
   showCompleted: false,
   searchQuery: "",
@@ -113,6 +134,8 @@ const initialState: TaskUiState = {
 
   lastCreatedTaskId: null,
   pendingSource: null,
+  userState: {},
+  userStateLoaded: false,
 };
 
 const slice = createSlice({
@@ -250,6 +273,9 @@ const slice = createSlice({
     // ─── View state ─────────────────────────────────────────────────────────
     setActiveProject(state, action: PayloadAction<string | null>) {
       state.activeProject = action.payload;
+      // Drilling into a project leaves any smart view — the two scopes are
+      // mutually exclusive.
+      if (action.payload !== null) state.smartView = "all";
     },
     toggleProjectExpand(state, action: PayloadAction<string>) {
       const id = action.payload;
@@ -268,6 +294,20 @@ const slice = createSlice({
     },
     setFilter(state, action: PayloadAction<TaskFilterType>) {
       state.filter = action.payload;
+      // Legacy filter surfaces (mobile, quick sheet) know nothing about smart
+      // views — applying one leaves the view, or the two would compound into
+      // a guaranteed-empty list.
+      if (action.payload !== "all") state.smartView = "all";
+    },
+    /** Selecting a smart view widens the scope to all projects — the view IS
+     *  the scope. Completed is self-sufficient (includesClosed). */
+    setSmartView(state, action: PayloadAction<SmartViewKey>) {
+      state.smartView = action.payload;
+      if (action.payload !== "all") {
+        state.showAllProjects = true;
+        state.activeProject = null;
+        state.filter = "all";
+      }
     },
     setShowAllProjects(state, action: PayloadAction<boolean>) {
       state.showAllProjects = action.payload;
@@ -349,6 +389,29 @@ const slice = createSlice({
     clearPendingSource(state) {
       state.pendingSource = null;
     },
+
+    // ─── Per-user notification/triage state ─────────────────────────────────
+    hydrateTaskUserState(
+      state,
+      action: PayloadAction<Record<string, TaskUserStateEntry>>,
+    ) {
+      state.userState = action.payload;
+      state.userStateLoaded = true;
+    },
+    patchTaskUserState(
+      state,
+      action: PayloadAction<{ taskId: string; patch: Partial<TaskUserStateEntry> }>,
+    ) {
+      const { taskId, patch } = action.payload;
+      const current = state.userState[taskId] ?? {
+        snoozedUntil: null,
+        acknowledgedAt: null,
+        dismissedAt: null,
+        pinnedAt: null,
+        seenAt: null,
+      };
+      state.userState[taskId] = { ...current, ...patch };
+    },
   },
 });
 
@@ -374,6 +437,7 @@ export const {
   setExpandedProjects,
   toggleTaskExpand,
   setFilter,
+  setSmartView,
   setShowAllProjects,
   setShowCompleted,
   setSearchQuery,
@@ -394,6 +458,8 @@ export const {
   setLastCreatedTaskId,
   setPendingSource,
   clearPendingSource,
+  hydrateTaskUserState,
+  patchTaskUserState,
 } = slice.actions;
 
 export default slice.reducer;
@@ -424,6 +490,7 @@ export const selectExpandedProjects = (s: StateWithTasksUi) =>
 export const selectExpandedTasks = (s: StateWithTasksUi) =>
   s.tasksUi.expandedTasks;
 export const selectTaskFilter = (s: StateWithTasksUi) => s.tasksUi.filter;
+export const selectSmartView = (s: StateWithTasksUi) => s.tasksUi.smartView;
 export const selectShowAllProjects = (s: StateWithTasksUi) =>
   s.tasksUi.showAllProjects;
 export const selectShowCompleted = (s: StateWithTasksUi) =>
@@ -460,3 +527,7 @@ export const selectTaskIsDirty =
   };
 export const selectPendingSource = (s: StateWithTasksUi) =>
   s.tasksUi.pendingSource;
+export const selectTaskUserStateMap = (s: StateWithTasksUi) =>
+  s.tasksUi.userState;
+export const selectTaskUserStateLoaded = (s: StateWithTasksUi) =>
+  s.tasksUi.userStateLoaded;

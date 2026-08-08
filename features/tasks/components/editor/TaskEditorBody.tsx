@@ -31,6 +31,9 @@ import {
   Tag,
   Info,
   Clock,
+  CircleDot,
+  Repeat,
+  CalendarArrowUp,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -56,6 +59,10 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TaskPriorityPicker, TASK_PRIORITY_META } from "../TaskPriorityPicker";
 import { TaskDueDatePicker } from "../TaskDueDatePicker";
+import { TaskStatusPicker } from "../TaskStatusPicker";
+import { TaskRecurrencePicker } from "../TaskRecurrencePicker";
+import { TaskProvenanceChip } from "../TaskProvenanceChip";
+import { TaskSnoozeButton } from "../TaskSnoozeButton";
 import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
 import { formatDateOnly } from "@/utils/dateOnly";
 import { cn } from "@/utils/cn";
@@ -327,8 +334,16 @@ export function TaskEditorBody({
         >
           {/* Quick meta pills — at-a-glance task vitals, moved out of the
             compact title row so the row stays single-line. */}
-          {(effective.priority || effective.dueDate || subtasks.length > 0) && (
+          {/* Always rendered — the snooze control lives here. */}
+          {(
             <div className="flex items-center gap-1.5 flex-wrap -mt-1">
+              <TaskProvenanceChip
+                origin={task.origin ?? null}
+                sourceType={task.source_type ?? null}
+                sourceUrl={task.source_url ?? null}
+                sourceLabel={task.source_label ?? null}
+              />
+              <TaskSnoozeButton taskId={taskId} />
               {effective.priority && (
                 <span
                   className={cn(
@@ -367,10 +382,17 @@ export function TaskEditorBody({
                 : "overflow-hidden rounded-xl border border-border/60 bg-card/40",
             )}
           >
+            <PropertyRow icon={CircleDot} label="Status" first compact={compact}>
+              <TaskStatusPicker
+                variant={compact ? "pill" : "segmented"}
+                value={effective.status}
+                onChange={(v) => patch("status", v)}
+              />
+            </PropertyRow>
+
             <PropertyRow
               icon={UserIcon}
               label="Assignee"
-              first
               compact={compact}
             >
               <TaskAssigneePicker
@@ -412,13 +434,31 @@ export function TaskEditorBody({
             <PropertyRow
               icon={Calendar}
               label="Due date"
-              last
               compact={compact}
             >
               <TaskDueDatePicker
                 variant={compact ? "pill" : "field"}
                 value={effective.dueDate ?? null}
                 onChange={(v) => patch("due_date", v)}
+              />
+            </PropertyRow>
+
+            <PropertyRow
+              icon={CalendarArrowUp}
+              label="Start date"
+              compact={compact}
+            >
+              <TaskDueDatePicker
+                variant="pill"
+                value={effective.startDate ?? null}
+                onChange={(v) => patch("start_date", v)}
+              />
+            </PropertyRow>
+
+            <PropertyRow icon={Repeat} label="Repeat" last compact={compact}>
+              <TaskRecurrencePicker
+                value={effective.recurrenceRule ?? null}
+                onChange={(v) => patch("recurrence_rule", v)}
               />
             </PropertyRow>
           </section>

@@ -50,7 +50,7 @@ export const toggleSubtaskHandler: WarRoomToolHandler<
     if (targetCompleted === undefined) {
       await dispatch(toggleTaskCompleteThunk({ taskId: args.subtask_id }));
     } else {
-      const desired = targetCompleted ? "completed" : "incomplete";
+      const desired = targetCompleted ? ("completed" as const) : ("active" as const);
       if (subtask.status !== desired) {
         await dispatch(
           updateTaskFieldThunk({
