@@ -14,7 +14,6 @@
  * render_block skill exists and is active. No new fetch, no new state.
  */
 
-import type { ComponentType, ReactNode } from "react";
 import {
   Layers,
   ListChecks,
@@ -42,16 +41,8 @@ const CHIP_ICONS: Record<string, LucideIcon> = {
 
 export function ShapeChipsRow({
   conversationId,
-  row: LabeledRow,
 }: {
   conversationId: string;
-  /**
-   * The host panel's labeled-row wrapper (QuicksetPanel's `Row`). Passed in —
-   * not applied by the caller — so the "Shapes" label only renders when at
-   * least one chip resolves (cold skills slice / zero matches → nothing, not
-   * an empty labeled row).
-   */
-  row: ComponentType<{ label: string; children: ReactNode }>;
 }) {
   const dispatch = useAppDispatch();
   // Same slice-backed list RunSkillPicker reads — the slice status guard makes
@@ -79,9 +70,13 @@ export function ShapeChipsRow({
       }),
     );
 
+  // Full-width tag flow — NOT the quickset label-column grid: the control
+  // column is too narrow for 5 chips (they stacked one per line). The label
+  // leads the flow and renders only when chips resolved (cold skills slice /
+  // zero matches → nothing, not an empty labeled row).
   return (
-    <LabeledRow label="Shapes">
-      <div className="flex flex-wrap gap-1">
+    <div className="flex min-h-8 flex-wrap items-center gap-x-1.5 gap-y-1 py-0.5">
+      <span className="mr-0.5 text-xs text-foreground">Shapes</span>
         {chips.map((chip) => {
           const Icon = CHIP_ICONS[chip.key] ?? Layers;
           const selected = added.has(chip.registryId);
@@ -108,7 +103,6 @@ export function ShapeChipsRow({
             </button>
           );
         })}
-      </div>
-    </LabeledRow>
+    </div>
   );
 }

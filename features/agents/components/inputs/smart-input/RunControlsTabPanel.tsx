@@ -26,12 +26,10 @@ import {
   Crown,
   Bug,
   ScrollText,
-  SlidersVertical,
   FileText,
   Brain,
   Zap,
 } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 
@@ -53,9 +51,7 @@ import {
 import {
   selectBuilderAdvancedSettings,
   selectIsCreator,
-  selectSubmitOnEnter,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { setSubmitOnEnter } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectChatIncognitoActive } from "@/features/agents/components/chat/chat-incognito.slice";
 import { useVerifiedSandboxBinding } from "@/hooks/sandbox/use-verified-binding";
 import {
@@ -81,7 +77,6 @@ export type RunControlsTab =
   | "sandbox"
   | "memory"
   | "settings"
-  | "preferences"
   | "creator";
 
 export interface RunControlsTabDef {
@@ -126,7 +121,6 @@ const BASE_TABS: RunControlsTabDef[] = [
   { id: "sandbox", label: "Sandbox", icon: Box },
   { id: "memory", label: "Memory", icon: Brain },
   { id: "settings", label: "Settings", icon: Settings2 },
-  { id: "preferences", label: "Preferences", icon: SlidersVertical },
 ];
 
 export function TabStatusDot({ label }: { label?: string }) {
@@ -170,7 +164,6 @@ export function useRunControlsState(
   const showCreatorTab = isCreator || isAdmin;
   const showDebugAction = isAdmin && isDebugMode;
 
-  const submitOnEnter = useAppSelector(selectSubmitOnEnter(conversationId));
   const workingDocEnabled = useAppSelector(
     selectWorkingDocEnabled(conversationId),
   );
@@ -261,9 +254,6 @@ export function useRunControlsState(
       isCreator,
       showCreatorPanel,
       showDebugAction,
-      submitOnEnter,
-      onSubmitOnEnterChange: (value: boolean) =>
-        dispatch(setSubmitOnEnter({ conversationId, value })),
       onToggleCreatorPanel: () => dispatch(toggleShowCreatorPanel()),
       onOpenDebug: () => openChatDebug({ sessionId: conversationId }),
     },
@@ -288,8 +278,6 @@ export interface RunControlsTabPanelProps {
   isCreator: boolean;
   showCreatorPanel: boolean;
   showDebugAction: boolean;
-  submitOnEnter: boolean;
-  onSubmitOnEnterChange: (value: boolean) => void;
   onToggleCreatorPanel: () => void;
   onOpenDebug: () => void;
 }
@@ -305,8 +293,6 @@ export function RunControlsTabPanel({
   isCreator,
   showCreatorPanel,
   showDebugAction,
-  submitOnEnter,
-  onSubmitOnEnterChange,
   onToggleCreatorPanel,
   onOpenDebug,
 }: RunControlsTabPanelProps) {
@@ -384,79 +370,57 @@ export function RunControlsTabPanel({
           <RunSettingsEditor conversationId={conversationId} />
         </div>
       )}
-      {activeTab === "preferences" && (
-        <div className={cn(scrollClass, "px-3 py-3")}>
-          <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5 transition-colors hover:bg-muted/40">
-            <span className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">
-                Submit on Enter
-              </span>
-            </span>
-            <Switch
-              checked={submitOnEnter}
-              onCheckedChange={onSubmitOnEnterChange}
-            />
-          </label>
-        </div>
-      )}
       {activeTab === "creator" && (
-        <div className="flex h-full flex-col gap-2 overflow-y-auto overscroll-contain px-3 py-3">
-          {isCreator && (
-            <button
-              type="button"
-              onClick={onToggleCreatorPanel}
-              aria-pressed={showCreatorPanel}
-              className={cn(
-                "flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors",
-                showCreatorPanel
-                  ? "border-amber-500/40 bg-amber-500/10"
-                  : "border-border hover:bg-muted/60",
-              )}
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-500">
-                <Crown className="h-5 w-5" />
-              </span>
-              <span className="flex flex-col">
-                <span className="text-sm font-medium text-foreground">
-                  Creator panel
-                </span>
-              </span>
-            </button>
-          )}
+        <div className={cn(scrollClass, "px-3 py-2")}>
+          <div className="space-y-0.5">
+            {isCreator && (
+              <button
+                type="button"
+                onClick={onToggleCreatorPanel}
+                aria-pressed={showCreatorPanel}
+                className={cn(
+                  "flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs transition-colors",
+                  showCreatorPanel
+                    ? "bg-amber-500/10 text-foreground"
+                    : "text-foreground hover:bg-muted/60",
+                )}
+              >
+                <Crown className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                <span className="min-w-0 flex-1 truncate">Creator panel</span>
+                {showCreatorPanel && (
+                  <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                    on
+                  </span>
+                )}
+              </button>
+            )}
 
-          {showDebugAction && (
-            <button
-              type="button"
-              onClick={onOpenDebug}
-              className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-500/15 text-orange-500">
-                <Bug className="h-5 w-5" />
-              </span>
-              <span className="flex flex-col">
-                <span className="text-sm font-medium text-foreground">
+            {showDebugAction && (
+              <button
+                type="button"
+                onClick={onOpenDebug}
+                className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs text-foreground transition-colors hover:bg-muted/60"
+              >
+                <Bug className="h-3.5 w-3.5 shrink-0 text-orange-500" />
+                <span className="min-w-0 flex-1 truncate">
                   Debug instance state
                 </span>
-              </span>
-            </button>
-          )}
+              </button>
+            )}
 
-          <button
-            type="button"
-            onClick={() => {
-              openPromptPreview({ conversationId });
-            }}
-            className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
-          >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-sky-500">
-              <ScrollText className="h-5 w-5" />
-            </span>
-            <span className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">
+            <button
+              type="button"
+              onClick={() => {
+                openPromptPreview({ conversationId });
+              }}
+              className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs text-foreground transition-colors hover:bg-muted/60"
+            >
+              <ScrollText className="h-3.5 w-3.5 shrink-0 text-sky-500" />
+              <span className="min-w-0 flex-1 truncate">
                 Preview full prompt
               </span>
-            </span>
-          </button>
+            </button>
+          </div>
         </div>
       )}
     </div>
