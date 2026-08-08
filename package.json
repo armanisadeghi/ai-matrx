@@ -1,6 +1,6 @@
 {
     "name": "app-matrx",
-    "version": "0.4.333",
+    "version": "0.4.334",
     "private": true,
     "scripts": {
         "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--dns-result-order=ipv4first' next dev",
