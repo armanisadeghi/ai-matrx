@@ -146,10 +146,15 @@ become 5 linked datasets under one workbook.
   (popover of opt-in operations with live counts → review dialog → one atomic merge write).
   Grid-agnostic; owned by [`lib/content-cleanup/`](../../lib/content-cleanup/FEATURE.md), NOT by
   this feature. Wired into `TableToolbar` via its `cleanupControl` slot.
-- `features/data-tables/components/VersionHistoryViewer.tsx` — read-only row audit log;
-  consumes `useRowVersions`. Drop into any sheet/dialog/inline panel that wants to show
-  a single row's edit history. Renders insert/update/delete with key-level diffs, honours
-  `changed_by = NULL` as "System".
+- `features/data-tables/components/VersionHistoryViewer.tsx` — row audit log with restore;
+  consumes `useRowVersions` + the typed service layer. Read-only by default; pass
+  `tableId` + `editable` to unlock **Restore this version** (whole-row rewrite via
+  `upsertRow`), **Restore deleted row** (re-insert of the last snapshot as a new row),
+  and per-field **revert** (`upsertCell` back to the prior value) — all confirm-gated
+  where destructive, all themselves versioned. Also: relative timestamps (absolute on
+  hover), field display-name labels via `fieldLabels`, copy-snapshot-as-JSON, Load more
+  past the first 50, `onRowChanged` refetch callback. Honours `changed_by = NULL` as
+  "System".
 
 **Services / business logic**
 - `utils/user-tables-rpc.ts` — RPC response unwrapping (`unwrapGetUserTableComplete`,
@@ -459,6 +464,14 @@ into:
 Decide before agent-heavy workloads land.
 
 ## Change log
+
+- 2026-08-08 — **Row history is interactive.** `VersionHistoryViewer` gained restore
+  (whole-row rewrite to a snapshot; deleted rows re-insert as a new row), per-field
+  revert, copy-snapshot-JSON, relative timestamps, display-name field labels, and
+  Load more — all through the existing `upsertRow`/`upsertCell` service layer so every
+  restore is itself versioned. `UserTableViewer` passes `tableId`/`editable`/
+  `fieldLabels`/`onRowChanged`, and the History row action now renders for READ-ONLY
+  viewers of shared tables too (history is a read; write actions stay gated).
 
 - 2026-08-08 — `univer-snapshot-rows.ts` added: `univerSnapshotToRows(snapshot)`
   reads a workbook snapshot back out as a plain string grid — the missing

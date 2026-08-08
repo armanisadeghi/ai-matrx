@@ -1861,41 +1861,44 @@ const UserTableViewer = ({
                           <Eye className="h-4 w-4 text-purple-400 dark:text-purple-500" />
                         </Button>
                       ) : (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditRow(row.id, row.data);
-                            }}
-                            title="Edit Row"
-                          >
-                            <Pencil className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setHistoryRowId(row.id);
-                            }}
-                            title="View row history"
-                          >
-                            <History className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteRow(row.id);
-                            }}
-                            title="Delete Row"
-                          >
-                            <Trash className="h-4 w-4 text-red-500 dark:text-red-400" />
-                          </Button>
-                        </>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditRow(row.id, row.data);
+                          }}
+                          title="Edit Row"
+                        >
+                          <Pencil className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                        </Button>
+                      )}
+                      {/* History is a READ — viewers of shared tables get it
+                          too (RLS scopes what they see); restore actions
+                          inside the panel stay gated by `editable`. */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setHistoryRowId(row.id);
+                        }}
+                        title="View row history"
+                      >
+                        <History className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                      </Button>
+                      {!isReadOnly && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteRow(row.id);
+                          }}
+                          title="Delete Row"
+                        >
+                          <Trash className="h-4 w-4 text-red-500 dark:text-red-400" />
+                        </Button>
                       )}
                     </div>
                   </TableCell>
@@ -2104,7 +2107,24 @@ const UserTableViewer = ({
         defaultSize={32}
         contentClassName="overflow-y-auto"
       >
-        <VersionHistoryViewer rowId={historyRowId} />
+        <VersionHistoryViewer
+          rowId={historyRowId}
+          tableId={tableId}
+          editable={!isReadOnly}
+          fieldLabels={Object.fromEntries(
+            fields.map((f) => [f.field_name, f.display_name]),
+          )}
+          onRowChanged={() => {
+            setAllSortedData(null);
+            loadTableData(
+              currentPage,
+              limit,
+              sortField,
+              sortDirection,
+              searchTerm,
+            );
+          }}
+        />
       </MatrxDynamicPanelHost>
     </div>
   );
