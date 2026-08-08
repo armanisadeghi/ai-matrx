@@ -22,11 +22,19 @@ durable business truth — never chat-only.
 
 ## Invariants
 
+- **UX doctrine (Arman, 2026-08-08):** no page title/intro prose (the tab
+  says Intake — data starts at the top); the analysis AUTO-STARTS on load;
+  every bundle slice streams onto the screen the moment the server has it
+  (`seo.intake_bundle_period` events → `PeriodPreviewCard`); exactly ONE
+  activity indicator exists at any time (the status-line spinner); the page
+  owns its scroll (`h-full overflow-y-auto` — the site layout is
+  overflow-hidden and pages that skip this cannot scroll at all).
 - **The interview run is a DURABLE command** (`seo.collection_run`,
   provider `aidream`, operation `sites.intake_interview`, target = site id).
-  Same-day re-click replays the persisted result instantly (zero paid
-  calls); `force_refresh` (the "Re-run" button) mints a fresh run. A dropped
-  stream loses nothing — the toast says to click again.
+  A non-forced start (including the auto-start) replays the NEWEST
+  completed analysis instantly, whatever identity ran it (zero paid calls);
+  `force_refresh` ("Re-run analysis") mints a fresh run. A dropped stream
+  loses nothing — reloading the page shows the finished result.
 - **One write path per truth.** Keyword rulings → `seo.gsc_set_keyword_class`
   (the SAME RPC the classification-review UI calls; stamps
   `site_keyword_value.traffic_class` + `notes`, the resolver's top-precedence

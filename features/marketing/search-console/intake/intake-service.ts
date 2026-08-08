@@ -95,21 +95,28 @@ export interface IntakeAnswer {
   answer: string;
 }
 
-export interface IntakeStageEvent {
-  kind: string;
-  label: string;
-  at: number;
+/** One streamed bundle slice — emitted by the server the moment the slice
+ *  exists so the UI shows data, never a bare spinner. */
+export interface IntakeBundlePeriodPreview {
+  key: string;
+  start: string;
+  end: string;
+  class_summary: { columns: string[]; rows: (string | number | null)[][] };
+  top_queries: { columns: string[]; rows: (string | number | null)[][] };
+  query_count: number;
+  page_count: number;
 }
 
 const STAGE_LABELS: Record<string, string> = {
-  "seo.command_run": "Interview run claimed",
-  "seo.intake_bundle_started": "Reading Search Console history…",
-  "seo.intake_bundle_ready": "Data bundle ready — running the analyst…",
-  "seo.intake_agent_completed": "Analysis complete",
-  "seo.intake_keyword_rulings_applied": "Keyword rulings saved",
-  "seo.intake_brand_aliases_applied": "Brand aliases saved",
+  "seo.intake_bundle_started": "Reading this site's Search Console history…",
+  "seo.intake_bundle_planned": "Reading this site's Search Console history…",
+  "seo.intake_bundle_ready":
+    "The analyst is reading the data (about a minute)…",
+  "seo.intake_agent_completed": "Preparing the proposal…",
+  "seo.intake_keyword_rulings_applied": "Keyword rulings saved…",
+  "seo.intake_brand_aliases_applied": "Brand aliases saved…",
   "seo.intake_strategy_started": "Valuing your topic tree…",
-  "seo.intake_strategy_completed": "Topic valuations saved",
+  "seo.intake_strategy_completed": "Topic valuations saved…",
 };
 
 export function intakeStageLabel(kind: string): string | null {
