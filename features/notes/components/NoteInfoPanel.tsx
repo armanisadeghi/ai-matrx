@@ -27,7 +27,7 @@ import {
   Copy,
   Check,
   Globe,
-  Lock,
+  Users,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -44,6 +44,7 @@ import { NoteContextSection } from "./NoteContextSection";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 import { createFolder } from "../service/notesService";
 import { notesEditorManifest } from "@/features/surfaces/manifests/notes-editor.manifest";
+import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
 
 interface NoteInfoPanelProps {
@@ -202,22 +203,21 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
         <span className="text-sm font-medium truncate">
           {note.label || "Untitled"}
         </span>
-        <span
-          className={cn(
-            "ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[0.625rem] shrink-0",
-            isPublic
-              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-              : "bg-muted text-muted-foreground",
-          )}
-          title={isPublic ? "This note is public" : "This note is private"}
-        >
-          {isPublic ? (
+        {/*
+         * Public is the only claim this chip can prove from one column.
+         * Non-public notes get the truthful reasons in the Sharing section
+         * below instead of a "Private" label that ignores org visibility,
+         * direct grants, and container reachability.
+         */}
+        {isPublic && (
+          <span
+            className="ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[0.625rem] shrink-0 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+            title="This note is public"
+          >
             <Globe className="w-2.5 h-2.5" />
-          ) : (
-            <Lock className="w-2.5 h-2.5" />
-          )}
-          {isPublic ? "Public" : "Private"}
-        </span>
+            Public
+          </span>
+        )}
       </div>
 
       {/* ── Content stats ─────────────────────────────────────────────── */}
@@ -290,6 +290,10 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
       <div className="px-1" data-surface-value="note_scope_assignments">
         <NoteContextSection noteId={noteId} />
       </div>
+
+      {/* ── Sharing — who can see this note, and why ──────────────────── */}
+      <SectionHeader icon={Users} label="Sharing" />
+      <AccessSummaryPanel entityType="note" entityId={noteId} className="pb-1" />
 
       {/* ── Tags ──────────────────────────────────────────────────────── */}
       {tags.length > 0 && (
