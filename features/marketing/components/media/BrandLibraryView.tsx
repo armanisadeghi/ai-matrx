@@ -12,6 +12,7 @@ import { useMemo, useRef, useState } from "react";
 import {
   CircleOff,
   Globe,
+  FileVideo,
   ImageIcon,
   Loader2,
   Pencil,
@@ -40,7 +41,9 @@ import {
   useUpdateBrandAsset,
 } from "@/features/marketing/data/hooks";
 import { secureImageUrl } from "@/features/marketing/lib/website-url";
+import { youTubeThumbnail, youtubeId } from "@/lib/media/youtube";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import {
   BRAND_ASSET_KIND_LABELS,
   isJsonRecord,
@@ -113,9 +116,47 @@ function AssetTile({
 }) {
   const preview = assetPreviewUrl(asset);
   const color = assetColorValue(asset);
+  const videoPoster =
+    asset.kind === "video" && asset.source_url
+      ? (() => {
+          const yt = youtubeId(asset.source_url);
+          return yt ? youTubeThumbnail(yt) : null;
+        })()
+      : null;
+  // Local (not `asset.file_id` inline) — the React Compiler lint taints the
+  // whole base object when a member expression is passed to a `ref` prop.
+  const videoFileId = asset.kind === "video" ? asset.file_id : null;
+  const videoTitle = asset.title ?? "Brand video";
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card">
-      {asset.file_id ? (
+      {videoFileId ? (
+        <div className="aspect-[4/3] bg-muted/40">
+          <InlineMediaRef
+            ref={videoFileId}
+            as="video"
+            size="fill"
+            fit="contain"
+            alt={videoTitle}
+            preload="metadata"
+          />
+        </div>
+      ) : asset.kind === "video" ? (
+        videoPoster ? (
+          <div className="aspect-[4/3] bg-muted/40">
+            {/* Third-party provider poster — external asset, no file_id. */}
+            <img
+              src={videoPoster}
+              alt={asset.title ?? "Video poster"}
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        ) : (
+          <div className="flex aspect-[4/3] items-center justify-center bg-muted/40 text-muted-foreground">
+            <FileVideo className="h-5 w-5" />
+          </div>
+        )
+      ) : asset.file_id ? (
         <CaptureThumb
           fileId={asset.file_id}
           alt={asset.title ?? asset.kind}

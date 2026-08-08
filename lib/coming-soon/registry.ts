@@ -81,6 +81,17 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "/research/topics/[id]/context picker (Media inventory, Page images)",
     ],
   },
+  "marketing.generate-video": {
+    id: "marketing.generate-video",
+    label: "Generate promo clip",
+    owner: "marketing",
+    promise:
+      "Order a short AI-generated promo clip (16:9 or 9:16, 4–8s) off the media menu, rendered by the platform's video models and saved to the brand library like generated images are today.",
+    stage: "blocked",
+    blockedBy:
+      "aidream has five video providers (Veo/Sora/Kling/Wan/grok-imagine) reachable only via an agent pinned to a video model or the ai.generate_video workflow node — video runs take minutes and the marketing headless-agent shell (5-min client deadline, dies on navigation) needs a durable job path before the order UX is honest.",
+    surfaces: ["/marketing/brands/[brandId]/sites/[siteId]/media?view=videos"],
+  },
   "marketing.campaigns": {
     id: "marketing.campaigns",
     label: "Campaigns",
