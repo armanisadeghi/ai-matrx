@@ -86,8 +86,8 @@
     "app/**/*",
     "packages/**/*.ts",
     "packages/**/*.tsx",
-    ".next-agent-6fb661625327/types/**/*.ts",
-    ".next-agent-6fb661625327/dev/types/**/*.ts"
+    ".next-agent-ed658a51f1dc/types/**/*.ts",
+    ".next-agent-ed658a51f1dc/dev/types/**/*.ts"
   ],
   "exclude": [
     ".next*/**",

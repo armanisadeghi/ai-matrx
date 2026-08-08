@@ -359,9 +359,105 @@ export function stripCitationMarkers(text: string): string {
 }
 
 /**
+ * Markdown code regions of a text: `[start, end)` half-open UTF-16 ranges
+ * covering fenced code blocks (``` / ~~~, opening delimiter through the char
+ * just after the closing run — unclosed fences run to end-of-text) and inline
+ * code spans (a backtick run paired with the next run of the SAME length,
+ * per CommonMark; unpaired runs are literal text, not regions). A citation
+ * marker inserted strictly inside a region renders as literal garbage, so
+ * `insertCitationMarkers` snaps such offsets to the region's end.
+ *
+ * Deliberately cheap: one line scan for fences + one char scan for inline
+ * runs, no markdown parser. Inline spans with backticks INSIDE the span
+ * content (``a ` b``) pair conservatively on run length, which matches
+ * CommonMark for the cases streamed model output actually produces.
+ */
+export function computeCodeRegions(
+  text: string,
+): ReadonlyArray<readonly [number, number]> {
+  if (!text.includes("`") && !text.includes("~")) return [];
+  const regions: Array<readonly [number, number]> = [];
+
+  // --- Fenced blocks (line-based) ---
+  const fenceRe = /^ {0,3}(`{3,}|~{3,})/;
+  let fenceStart = -1;
+  let fenceChar = "";
+  let fenceLen = 0;
+  let lineStart = 0;
+  const textLen = text.length;
+  while (lineStart <= textLen) {
+    const nl = text.indexOf("\n", lineStart);
+    const lineEnd = nl === -1 ? textLen : nl;
+    const line = text.slice(lineStart, lineEnd);
+    const m = fenceRe.exec(line);
+    if (m) {
+      const run = m[1];
+      if (fenceStart === -1) {
+        // Opening fence.
+        fenceStart = lineStart;
+        fenceChar = run[0];
+        fenceLen = run.length;
+      } else if (
+        run[0] === fenceChar &&
+        run.length >= fenceLen &&
+        line.slice(m[0].length).trim() === ""
+      ) {
+        // Closing fence: region ends just after the closing run.
+        regions.push([fenceStart, lineStart + m[0].length] as const);
+        fenceStart = -1;
+      }
+    }
+    if (nl === -1) break;
+    lineStart = nl + 1;
+  }
+  if (fenceStart !== -1) regions.push([fenceStart, textLen] as const);
+
+  // --- Inline code spans (outside fence regions) ---
+  const insideFence = (i: number) =>
+    regions.some(([s, e]) => i >= s && i < e);
+  let i = 0;
+  while (i < textLen) {
+    if (text[i] !== "`" || insideFence(i)) {
+      i += 1;
+      continue;
+    }
+    let runEnd = i;
+    while (runEnd < textLen && text[runEnd] === "`") runEnd += 1;
+    const runLen = runEnd - i;
+    // Find the next run of EXACTLY this length (the CommonMark closer).
+    let j = runEnd;
+    let closed = false;
+    while (j < textLen) {
+      if (text[j] !== "`" || insideFence(j)) {
+        j += 1;
+        continue;
+      }
+      let jEnd = j;
+      while (jEnd < textLen && text[jEnd] === "`") jEnd += 1;
+      if (jEnd - j === runLen) {
+        regions.push([i, jEnd] as const);
+        i = jEnd;
+        closed = true;
+        break;
+      }
+      j = jEnd;
+    }
+    if (!closed) i = runEnd; // Unpaired run — literal backticks.
+  }
+
+  return regions;
+}
+
+/**
  * Insert this part's markers into its text:
  *  - markers WITH an `answerEnd` offset go at that char offset (clamped),
  *    inserted in descending offset order so earlier offsets stay valid;
+ *  - an offset landing between the halves of a UTF-16 surrogate pair is
+ *    nudged past the pair (provider offsets are code points, JS slices are
+ *    code units — never split a glyph);
+ *  - an offset landing strictly inside a markdown code region (fenced block
+ *    or inline code span — see `computeCodeRegions`) snaps to just after the
+ *    closing delimiter, so the marker never renders as literal code text;
  *  - markers WITHOUT an offset append at the part's end, BEFORE any trailing
  *    whitespace — cited blocks routinely end mid-sentence (", and ") and the
  *    marker must hug the cited text, not the following word.
@@ -371,6 +467,9 @@ export function insertCitationMarkers(
   markers: ReadonlyArray<BlockCitationMarker>,
 ): string {
   if (markers.length === 0 || text.length === 0) return text;
+
+  // Code regions are only needed for offset markers; computed lazily once.
+  let codeRegions: ReadonlyArray<readonly [number, number]> | null = null;
 
   const atOffset = new Map<number, number[]>();
   const atEnd: number[] = [];
@@ -387,6 +486,15 @@ export function insertCitationMarkers(
         text.charCodeAt(clamped) <= 0xdfff
       ) {
         clamped += 1;
+      }
+      // A marker strictly inside a code fence / inline code span renders as
+      // literal garbage — snap to just after the closing delimiter.
+      codeRegions ??= computeCodeRegions(text);
+      for (const [start, end] of codeRegions) {
+        if (clamped > start && clamped < end) {
+          clamped = end;
+          break;
+        }
       }
       const list = atOffset.get(clamped) ?? [];
       if (!list.includes(m.sourceNumber)) list.push(m.sourceNumber);
