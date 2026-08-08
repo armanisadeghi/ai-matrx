@@ -50,6 +50,7 @@ import {
 } from "@/lib/redux/slices/windowManagerSlice";
 import type { OverlayState } from "@/lib/redux/slices/overlaySlice";
 import { getStaticEntryByOverlayId } from "@/features/window-panels/registry/windowRegistryMetadata";
+import { safeViewportDims } from "@/features/window-panels/utils/rectClamp";
 import type { WindowRect } from "@/features/window-panels/window-panel.types";
 import { toast } from "@/lib/toast";
 
@@ -216,12 +217,16 @@ function evaluate(store: WMApi, watch: Watch): Evaluation | null {
   }
   const windowId = renderAcks.get(watch.overlayId) ?? watch.slug;
   const entry = state.windowManager.windows[windowId];
+  // Judge geometry against sanitized dims — a degenerate 0×0 measurement
+  // (hidden/prerendered page) makes every on-screen rect read as off-screen,
+  // and a false scream trains people to ignore the real ones.
+  const { vw, vh } = safeViewportDims();
   return {
     diag: diagnoseOverlayRender({
       entry,
       windowsHidden: state.windowManager.windowsHidden,
-      viewportWidth: window.innerWidth,
-      viewportHeight: window.innerHeight,
+      viewportWidth: vw,
+      viewportHeight: vh,
     }),
     windowId,
     entry,
@@ -326,14 +331,16 @@ function scream(store: WMApi, watch: Watch, res: Evaluation): void {
     duration: TOAST_DURATION_MS,
     action: {
       label: "Show it",
-      onClick: () =>
+      onClick: () => {
+        const dims = safeViewportDims();
         store.dispatch(
           revealWindow({
             id: renderAcks.get(overlayId) ?? watch.slug,
-            viewportWidth: window.innerWidth,
-            viewportHeight: window.innerHeight,
+            viewportWidth: dims.vw,
+            viewportHeight: dims.vh,
           }),
-        ),
+        );
+      },
     },
   });
 
@@ -401,11 +408,12 @@ export const overlayRenderWatchdogMiddleware: Middleware<object, WMState> =
     //    (no-op on a first open, where the component hasn't mounted yet —
     //    `registerWindow` shows it). This dispatch re-enters the middleware
     //    but `revealWindow`'s type is ignored above, so there's no loop.
+    const revealDims = safeViewportDims();
     store.dispatch(
       revealWindow({
         id: renderAcks.get(overlayId) ?? meta.slug,
-        viewportWidth: window.innerWidth,
-        viewportHeight: window.innerHeight,
+        viewportWidth: revealDims.vw,
+        viewportHeight: revealDims.vh,
       }),
     );
 

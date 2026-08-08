@@ -288,6 +288,17 @@ const windowManagerSlice = createSlice({
       const { id, title, initial, persistence, viewport } = action.payload;
       if (state.windows[id]) return;
 
+      // Defense in depth against the "window opens invisible" class: a caller
+      // that computed its initial rect against a degenerate viewport (hidden /
+      // prerendered page → innerWidth 0 → "90vw" → width 0) would otherwise
+      // register a zero-size or off-screen rect that nothing ever heals.
+      // clampRectToViewport rejects non-positive sizes (→ centered fallback
+      // dims) and pulls off-screen coords back into reach; it is a no-op for
+      // sane rects and self-guards against a degenerate viewport payload.
+      const safeInitial = viewport
+        ? clampRectToViewport(initial, viewport)
+        : initial;
+
       const pending = persistence
         ? state.pendingRestores[
             windowSessionKey(persistence.overlayId, persistence.instanceId)
@@ -309,7 +320,7 @@ const windowManagerSlice = createSlice({
         id,
         title: title ?? pending?.title ?? id,
         state: pending?.state ?? "windowed",
-        windowed: pendingRenderRect ?? initial,
+        windowed: pendingRenderRect ?? safeInitial,
         preMinimizedRect:
           pending?.state === "minimized" ? pending.windowedRect : null,
         zIndex: pending?.zIndex ?? state.nextZIndex++,

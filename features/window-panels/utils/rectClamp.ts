@@ -32,6 +32,46 @@ const FALLBACK_H = 360;
 
 let warnedDegenerateViewport = false;
 
+/** SSR / degenerate-measurement fallback viewport. */
+const FALLBACK_VIEWPORT_W = 1280;
+const FALLBACK_VIEWPORT_H = 800;
+
+let warnedDegenerateMeasurement = false;
+
+/**
+ * Viewport dimensions that are safe to derive or judge window geometry from.
+ *
+ * `window.innerWidth/innerHeight` can measure 0 (hidden or prerendered page,
+ * pre-layout read, headless run). Deriving an initial rect from that turns
+ * "90vw" into width 0 — the window registers a 0×0 rect, renders as nothing,
+ * and stays invisible until something re-clamps it (the "window opens
+ * invisible" class, watchdog reason: zero-size). Judging visibility against a
+ * 0×0 viewport is just as wrong — every on-screen rect reads as off-screen.
+ * A degenerate measurement is never a real screen: fall back to sane
+ * dimensions and scream once.
+ */
+export function safeViewportDims(): { vw: number; vh: number } {
+  if (typeof window === "undefined") {
+    return { vw: FALLBACK_VIEWPORT_W, vh: FALLBACK_VIEWPORT_H };
+  }
+  const rawW = window.innerWidth;
+  const rawH = window.innerHeight;
+  const degenerate =
+    !Number.isFinite(rawW) || !Number.isFinite(rawH) || rawW <= 0 || rawH <= 0;
+  if (degenerate && !warnedDegenerateMeasurement) {
+    warnedDegenerateMeasurement = true;
+    console.error(
+      "[window-panels] degenerate viewport measurement",
+      { innerWidth: rawW, innerHeight: rawH },
+      "— using fallback dimensions so window geometry cannot collapse to zero.",
+    );
+  }
+  return {
+    vw: Number.isFinite(rawW) && rawW > 0 ? rawW : FALLBACK_VIEWPORT_W,
+    vh: Number.isFinite(rawH) && rawH > 0 ? rawH : FALLBACK_VIEWPORT_H,
+  };
+}
+
 /**
  * Clamp a rect into the current viewport. Pure — caller passes both the
  * rect and the viewport so this works in tests without DOM globals.

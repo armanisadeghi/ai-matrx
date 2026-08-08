@@ -126,4 +126,61 @@ describe("windowManagerSlice — silent-render hardening", () => {
       expect(s.windows["a"].zIndex).toBeGreaterThan(before);
     });
   });
+
+  describe("registerWindow — initial-rect clamping (zero-size / invisible-open class)", () => {
+    it("heals a zero-size initial rect when a viewport is supplied", () => {
+      // A hidden/prerendered page measures innerWidth 0, so "90vw" resolves to
+      // width 0. Registration must not store that — it renders as nothing and
+      // stays invisible (watchdog reason: zero-size).
+      let s = init();
+      s = reducer(
+        s,
+        registerWindow({
+          id: "a",
+          initial: { x: 0, y: 0, width: 0, height: 0 },
+          viewport: { width: VW, height: VH },
+        }),
+      );
+      const r = s.windows["a"].windowed;
+      expect(r.width).toBeGreaterThan(0);
+      expect(r.height).toBeGreaterThan(0);
+    });
+
+    it("clamps an off-screen initial rect into the viewport", () => {
+      let s = init();
+      s = reducer(
+        s,
+        registerWindow({
+          id: "a",
+          initial: { x: 99999, y: 99999, width: 400, height: 300 },
+          viewport: { width: VW, height: VH },
+        }),
+      );
+      const r = s.windows["a"].windowed;
+      expect(r.x).toBeLessThan(VW);
+      expect(r.y).toBeLessThan(VH);
+    });
+
+    it("keeps a sane initial rect untouched", () => {
+      let s = init();
+      s = reducer(
+        s,
+        registerWindow({
+          id: "a",
+          initial: rect(),
+          viewport: { width: VW, height: VH },
+        }),
+      );
+      expect(s.windows["a"].windowed).toEqual(rect());
+    });
+
+    it("preserves geometry as-is when no viewport is supplied (legacy callers)", () => {
+      let s = init();
+      s = reducer(
+        s,
+        registerWindow({ id: "a", initial: rect({ x: 5000 }) }),
+      );
+      expect(s.windows["a"].windowed.x).toBe(5000);
+    });
+  });
 });

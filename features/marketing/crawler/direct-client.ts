@@ -71,6 +71,8 @@ export const CRAWL_LIVE_EVENT_TYPES = [
   "crawl_started",
   "page_discovered",
   "url_classified",
+  "urls_classified",
+  "page_captured",
   "page_fetched",
   "page_parsed",
   "page_failed",

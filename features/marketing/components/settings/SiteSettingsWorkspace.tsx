@@ -19,54 +19,33 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import type { Json } from "@/types/database.types";
+import { Textarea } from "@/components/ui/textarea";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
-import { isJsonRecord } from "@/features/marketing/types";
 import { updateSiteSettings } from "@/features/marketing/data/settings-service";
 import { useDeleteSite } from "@/features/marketing/data/hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { ClampedNumberInput } from "@/features/marketing/components/shared/ClampedNumberInput";
+import {
+  cancelCrawl,
+  type CrawlStartOptions,
+} from "@/features/marketing/crawler/direct-client";
+import {
+  crawlOptionsFromSettings,
+  invalidCrawlPatterns,
+  parsePatternLines,
+  settingsWithCrawlDefaults,
+  type InvalidCrawlPattern,
+} from "@/features/marketing/crawler/crawl-defaults";
 import { extractErrorMessage } from "@/utils/errors";
 import { SiteStrategyCard } from "@/features/marketing/components/settings/SiteStrategyCard";
 import { ScheduleStatusPanel } from "@/features/marketing/components/settings/ScheduleStatusPanel";
 import { SiteAnalyticsCard } from "@/features/marketing/components/settings/SiteAnalyticsCard";
 import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
 
-interface CrawlDefaults {
-  respectRobots: boolean;
-  seedFromSitemap: boolean;
-  followSubdomains: boolean;
-  captureScreenshots: boolean;
-  maxPages: number;
-  concurrency: number;
-  renderMode: "http_only" | "http_first" | "browser_always";
-}
-
-function crawlDefaults(settings: Json): CrawlDefaults {
-  const root = isJsonRecord(settings) ? settings : {};
-  const raw = isJsonRecord(root.crawl_defaults) ? root.crawl_defaults : {};
-  return {
-    respectRobots: raw.respect_robots === true,
-    seedFromSitemap: raw.seed_from_sitemap !== false,
-    followSubdomains: raw.follow_subdomains === true,
-    captureScreenshots: raw.capture_screenshots !== false,
-    maxPages:
-      typeof raw.max_pages === "number" && raw.max_pages > 0
-        ? raw.max_pages
-        : 500,
-    concurrency:
-      typeof raw.concurrency === "number" && raw.concurrency > 0
-        ? raw.concurrency
-        : 8,
-    renderMode:
-      raw.render_mode === "http_only" || raw.render_mode === "browser_always"
-        ? raw.render_mode
-        : "http_first",
-  };
-}
+// crawl_defaults round-trips ONLY through features/marketing/crawler/crawl-defaults.ts.
 
 export function SiteSettingsWorkspace() {
-  const { site } = useMarketingSite();
+  const { site, crawlActivity } = useMarketingSite();
   const router = useRouter();
   const deleteMutation = useDeleteSite();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -74,7 +53,21 @@ export function SiteSettingsWorkspace() {
   const [name, setName] = useState(site.name);
   const [status, setStatus] = useState(site.status);
   const [visibility, setVisibility] = useState(site.visibility);
-  const [crawl, setCrawl] = useState(() => crawlDefaults(site.settings));
+  const [crawl, setCrawl] = useState<CrawlStartOptions>(() =>
+    crawlOptionsFromSettings(site.settings),
+  );
+  const [includeText, setIncludeText] = useState<string>(() =>
+    crawlOptionsFromSettings(site.settings).include_patterns.join("\n"),
+  );
+  const [excludeText, setExcludeText] = useState<string>(() =>
+    crawlOptionsFromSettings(site.settings).exclude_patterns.join("\n"),
+  );
+  const pendingOptions: CrawlStartOptions = {
+    ...crawl,
+    include_patterns: parsePatternLines(includeText),
+    exclude_patterns: parsePatternLines(excludeText),
+  };
+  const patternProblems = invalidCrawlPatterns(pendingOptions);
   const update = useMutation({
     mutationFn: updateSiteSettings,
     onSuccess: (next) => {
@@ -86,25 +79,21 @@ export function SiteSettingsWorkspace() {
   });
 
   const save = () => {
-    const existing = isJsonRecord(site.settings) ? site.settings : {};
+    if (patternProblems.length) {
+      toast.error("Fix the invalid URL patterns before saving", {
+        description: patternProblems
+          .map((problem) => `${problem.pattern}: ${problem.error}`)
+          .join(" · "),
+      });
+      return;
+    }
     update.mutate({
       siteId: site.id,
       expectedVersion: site.version,
       name: name.trim(),
       status,
       visibility,
-      settings: {
-        ...existing,
-        crawl_defaults: {
-          respect_robots: crawl.respectRobots,
-          seed_from_sitemap: crawl.seedFromSitemap,
-          follow_subdomains: crawl.followSubdomains,
-          capture_screenshots: crawl.captureScreenshots,
-          max_pages: crawl.maxPages,
-          concurrency: crawl.concurrency,
-          render_mode: crawl.renderMode,
-        },
-      },
+      settings: settingsWithCrawlDefaults(site.settings, pendingOptions),
     });
   };
 
@@ -120,7 +109,7 @@ export function SiteSettingsWorkspace() {
       status,
       visibility,
       root_url: site.root_url,
-      crawl_defaults: crawl,
+      crawl_defaults: pendingOptions,
       stored_settings: site.settings,
     },
     lines: [
@@ -128,13 +117,20 @@ export function SiteSettingsWorkspace() {
       ["Root URL", site.root_url],
       ["Lifecycle", status],
       ["Visibility", visibility],
-      ["Respect robots.txt", crawl.respectRobots ? "yes" : "no"],
-      ["Seed from sitemap", crawl.seedFromSitemap ? "yes" : "no"],
-      ["Follow subdomains", crawl.followSubdomains ? "yes" : "no"],
-      ["Capture screenshots", crawl.captureScreenshots ? "yes" : "no"],
-      ["Maximum pages", crawl.maxPages],
-      ["Concurrency", crawl.concurrency],
-      ["Render mode", crawl.renderMode],
+      ["Respect robots.txt", pendingOptions.respect_robots ? "yes" : "no"],
+      ["Seed from sitemap", pendingOptions.seed_from_sitemap ? "yes" : "no"],
+      ["Follow subdomains", pendingOptions.follow_subdomains ? "yes" : "no"],
+      [
+        "Capture screenshots",
+        pendingOptions.capture_screenshots ? "yes" : "no",
+      ],
+      ["Maximum pages", pendingOptions.max_pages],
+      ["Maximum depth", pendingOptions.max_depth ?? "unlimited"],
+      ["Concurrency", pendingOptions.concurrency],
+      ["Render mode", pendingOptions.render_mode],
+      ["Include patterns", pendingOptions.include_patterns.join(", ") || "—"],
+      ["Exclude patterns", pendingOptions.exclude_patterns.join(", ") || "—"],
+      ["Host rate limit", `${pendingOptions.host_rps} rps`],
     ],
     attributes: { site_id: site.id },
   });
@@ -223,52 +219,52 @@ export function SiteSettingsWorkspace() {
             <ToggleRow
               label="Respect robots.txt"
               detail="Off by default for sites managed by their owner."
-              checked={crawl.respectRobots}
+              checked={crawl.respect_robots}
               onCheckedChange={(checked) =>
-                setCrawl((current) => ({ ...current, respectRobots: checked }))
+                setCrawl((current) => ({ ...current, respect_robots: checked }))
               }
             />
             <ToggleRow
               label="Seed from sitemap"
               detail="Use sitemap URLs as crawl evidence."
-              checked={crawl.seedFromSitemap}
+              checked={crawl.seed_from_sitemap}
               onCheckedChange={(checked) =>
                 setCrawl((current) => ({
                   ...current,
-                  seedFromSitemap: checked,
+                  seed_from_sitemap: checked,
                 }))
               }
             />
             <ToggleRow
               label="Follow subdomains"
               detail="Include related hosts in this site's scope."
-              checked={crawl.followSubdomains}
+              checked={crawl.follow_subdomains}
               onCheckedChange={(checked) =>
                 setCrawl((current) => ({
                   ...current,
-                  followSubdomains: checked,
+                  follow_subdomains: checked,
                 }))
               }
             />
             <ToggleRow
               label="Capture screenshots"
               detail="Persist visual evidence for vision batches."
-              checked={crawl.captureScreenshots}
+              checked={crawl.capture_screenshots}
               onCheckedChange={(checked) =>
                 setCrawl((current) => ({
                   ...current,
-                  captureScreenshots: checked,
+                  capture_screenshots: checked,
                 }))
               }
             />
             <NumberSetting
               id="crawl-max-pages"
               label="Maximum pages"
-              value={crawl.maxPages}
+              value={crawl.max_pages}
               min={1}
               max={50_000}
               onChange={(value) =>
-                setCrawl((current) => ({ ...current, maxPages: value }))
+                setCrawl((current) => ({ ...current, max_pages: value }))
               }
             />
             <NumberSetting
@@ -281,14 +277,37 @@ export function SiteSettingsWorkspace() {
                 setCrawl((current) => ({ ...current, concurrency: value }))
               }
             />
+            <NumberSetting
+              id="crawl-max-depth"
+              label="Maximum depth (0 = unlimited)"
+              value={crawl.max_depth ?? 0}
+              min={0}
+              max={100}
+              onChange={(value) =>
+                setCrawl((current) => ({
+                  ...current,
+                  max_depth: value > 0 ? value : null,
+                }))
+              }
+            />
+            <NumberSetting
+              id="crawl-host-rps"
+              label="Host rate limit (requests/sec)"
+              value={crawl.host_rps}
+              min={1}
+              max={50}
+              onChange={(value) =>
+                setCrawl((current) => ({ ...current, host_rps: value }))
+              }
+            />
             <div className="space-y-1.5 sm:col-span-2">
               <Label className="text-xs">Render mode</Label>
               <Select
-                value={crawl.renderMode}
+                value={crawl.render_mode}
                 onValueChange={(value) =>
                   setCrawl((current) => ({
                     ...current,
-                    renderMode: value as CrawlDefaults["renderMode"],
+                    render_mode: value as CrawlStartOptions["render_mode"],
                   }))
                 }
               >
@@ -301,9 +320,32 @@ export function SiteSettingsWorkspace() {
                     HTTP first, browser fallback
                   </SelectItem>
                   <SelectItem value="browser_always">Browser always</SelectItem>
+                  <SelectItem value="browser_with_screenshot">
+                    Browser + screenshots
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            <PatternSetting
+              id="crawl-include-patterns"
+              label="Include URL patterns"
+              detail="Regex, one per line. Empty = crawl everything in scope."
+              value={includeText}
+              onChange={setIncludeText}
+              problems={patternProblems.filter(
+                (problem) => problem.field === "include_patterns",
+              )}
+            />
+            <PatternSetting
+              id="crawl-exclude-patterns"
+              label="Exclude URL patterns"
+              detail="Regex, one per line. Matching URLs are never fetched."
+              value={excludeText}
+              onChange={setExcludeText}
+              problems={patternProblems.filter(
+                (problem) => problem.field === "exclude_patterns",
+              )}
+            />
           </div>
         </section>
 
@@ -355,6 +397,19 @@ export function SiteSettingsWorkspace() {
         busy={deleteMutation.isPending}
         onConfirm={async () => {
           try {
+            // Cancel-to-terminal before hiding the site — deleting with a
+            // live crawl leaves the worker writing into an invisible session.
+            if (crawlActivity.activeCrawl) {
+              try {
+                await cancelCrawl(crawlActivity.activeCrawl.id);
+              } catch (cancelError) {
+                toast.error(
+                  "A crawl is running and could not be canceled — not deleting",
+                  { description: extractErrorMessage(cancelError) },
+                );
+                return;
+              }
+            }
             await deleteMutation.mutateAsync(site.id);
             toast.success(`Deleted ${site.name}`);
             router.push(
@@ -402,6 +457,48 @@ function ToggleRow({
         <p className="text-[10px] leading-4 text-muted-foreground">{detail}</p>
       </div>
       <Switch checked={checked} onCheckedChange={onCheckedChange} />
+    </div>
+  );
+}
+
+function PatternSetting({
+  id,
+  label,
+  detail,
+  value,
+  onChange,
+  problems,
+}: {
+  id: string;
+  label: string;
+  detail: string;
+  value: string;
+  onChange: (value: string) => void;
+  problems: InvalidCrawlPattern[];
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-xs">
+        {label}
+      </Label>
+      <Textarea
+        id={id}
+        rows={3}
+        spellCheck={false}
+        className="font-mono text-xs"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        aria-invalid={problems.length > 0}
+      />
+      {problems.length ? (
+        <p className="text-[11px] text-destructive">
+          {problems
+            .map((problem) => `${problem.pattern}: ${problem.error}`)
+            .join(" · ")}
+        </p>
+      ) : (
+        <p className="text-[10px] leading-4 text-muted-foreground">{detail}</p>
+      )}
     </div>
   );
 }

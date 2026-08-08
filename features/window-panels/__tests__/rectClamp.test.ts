@@ -5,7 +5,7 @@
  * off-screen on a smaller device, and that NaN / 0 / absurd inputs always
  * fall back to sensible defaults.
  */
-import { clampRectToViewport } from "../utils/rectClamp";
+import { clampRectToViewport, safeViewportDims } from "../utils/rectClamp";
 
 const VIEWPORT = { width: 1440, height: 900 };
 const MOBILE = { width: 375, height: 667 };
@@ -157,5 +157,35 @@ describe("clampRectToViewport", () => {
       expect(out.width).toBeGreaterThan(0);
       expect(out.height).toBeGreaterThan(0);
     });
+  });
+});
+
+describe("safeViewportDims", () => {
+  // jsdom exposes window.innerWidth/innerHeight as writable properties.
+  const realW = window.innerWidth;
+  const realH = window.innerHeight;
+  afterEach(() => {
+    Object.assign(window, { innerWidth: realW, innerHeight: realH });
+  });
+
+  it("returns the real measurement when it is sane", () => {
+    Object.assign(window, { innerWidth: 1440, innerHeight: 900 });
+    expect(safeViewportDims()).toEqual({ vw: 1440, vh: 900 });
+  });
+
+  it("falls back when the viewport measures 0×0 (hidden/prerendered page)", () => {
+    // The exact state that produced the "window opens invisible" class:
+    // "90vw" resolved against innerWidth 0 → a 0×0 registered rect.
+    Object.assign(window, { innerWidth: 0, innerHeight: 0 });
+    const { vw, vh } = safeViewportDims();
+    expect(vw).toBeGreaterThan(0);
+    expect(vh).toBeGreaterThan(0);
+  });
+
+  it("falls back per-axis on non-finite measurements", () => {
+    Object.assign(window, { innerWidth: NaN, innerHeight: 900 });
+    const { vw, vh } = safeViewportDims();
+    expect(vw).toBeGreaterThan(0);
+    expect(vh).toBe(900);
   });
 });

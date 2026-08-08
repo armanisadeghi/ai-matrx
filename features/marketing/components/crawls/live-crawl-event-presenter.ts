@@ -79,7 +79,14 @@ function pageSubject(event: CrawlLiveEvent): string {
 function warningText(event: CrawlLiveEvent): string | null {
   const message = event.message;
   if (typeof message !== "string") return null;
-  const trimmed = message.trim();
+  const trimmed = message
+    // eslint-disable-next-line no-control-regex -- ANSI color codes leak in from server-side log formatting
+    .replace(/\[[0-9;]*m/g, "")
+    // Exception dumps end up in `message` when a server layer stringifies an
+    // error; everything from the traceback on belongs in the logs table only.
+    .split(/\n\s*Traceback/i)[0]
+    .replace(/\s+/g, " ")
+    .trim();
   if (!trimmed) return null;
   return trimmed.length > 240 ? `${trimmed.slice(0, 237)}...` : trimmed;
 }
@@ -193,6 +200,8 @@ export function presentLiveCrawlEvent(
   switch (event.event_type) {
     case "page_discovered":
     case "url_classified":
+    case "urls_classified":
+    case "page_captured":
     case "page_parsed":
       return null;
     case "crawl_session_created":

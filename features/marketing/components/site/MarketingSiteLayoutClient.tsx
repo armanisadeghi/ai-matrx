@@ -89,6 +89,7 @@ function sectionSuffix(
     "cost",
     "access",
     "settings",
+    "intake",
   ]) {
     if (rest.startsWith(`/${section}`)) return `/${section}`;
   }

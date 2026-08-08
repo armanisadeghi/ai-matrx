@@ -8,6 +8,7 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -23,15 +24,17 @@ import { ClampedNumberInput } from "@/features/marketing/components/shared/Clamp
 import { LiveCrawlFeed } from "@/features/marketing/components/crawls/LiveCrawlFeed";
 import {
   cancelCrawl,
-  defaultCrawlOptions,
   mergeCrawlLiveEvents,
   startSiteCrawl,
   type CrawlLiveEvent,
   type CrawlStartOptions,
 } from "@/features/marketing/crawler/direct-client";
+import {
+  crawlOptionsFromSettings,
+  invalidCrawlPatterns,
+  parsePatternLines,
+} from "@/features/marketing/crawler/crawl-defaults";
 import { marketingKeys } from "@/features/marketing/data/hooks";
-import { isJsonRecord } from "@/features/marketing/types";
-import type { Json } from "@/types/database.types";
 import { extractErrorMessage } from "@/utils/errors";
 
 type RunStatus =
@@ -43,41 +46,20 @@ type RunStatus =
   | "partial"
   | "failed";
 
-function siteCrawlOptions(settings: Json): CrawlStartOptions {
-  if (!isJsonRecord(settings)) return defaultCrawlOptions;
-  const raw = isJsonRecord(settings.crawl_defaults)
-    ? settings.crawl_defaults
-    : {};
-  const renderMode = raw.render_mode;
-  return {
-    ...defaultCrawlOptions,
-    max_pages:
-      typeof raw.max_pages === "number" && raw.max_pages > 0
-        ? raw.max_pages
-        : defaultCrawlOptions.max_pages,
-    concurrency:
-      typeof raw.concurrency === "number" && raw.concurrency > 0
-        ? raw.concurrency
-        : defaultCrawlOptions.concurrency,
-    respect_robots: raw.respect_robots === true,
-    seed_from_sitemap: raw.seed_from_sitemap !== false,
-    follow_subdomains: raw.follow_subdomains === true,
-    capture_screenshots: raw.capture_screenshots !== false,
-    render_mode:
-      renderMode === "http_only" ||
-      renderMode === "browser_always" ||
-      renderMode === "browser_with_screenshot"
-        ? renderMode
-        : "http_first",
-  };
-}
+// Site crawl defaults round-trip ONLY through crawler/crawl-defaults.ts.
 
 export function NewCrawlWorkspace() {
   const { site, sitePath, crawlActivity } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
   const [options, setOptions] = useState<CrawlStartOptions>(() =>
-    siteCrawlOptions(site.settings),
+    crawlOptionsFromSettings(site.settings),
+  );
+  const [includeText, setIncludeText] = useState<string>(() =>
+    crawlOptionsFromSettings(site.settings).include_patterns.join("\n"),
+  );
+  const [excludeText, setExcludeText] = useState<string>(() =>
+    crawlOptionsFromSettings(site.settings).exclude_patterns.join("\n"),
   );
   const [localStatus, setLocalStatus] = useState<RunStatus>("idle");
   const [localSessionId, setLocalSessionId] = useState<string | null>(null);
@@ -104,6 +86,12 @@ export function NewCrawlWorkspace() {
   const active = ["connecting", "running", "canceling"].includes(status);
   const controlsDisabled = active || Boolean(crawlActivity.error);
   const visibleError = error ?? crawlActivity.error?.message ?? null;
+  const launchOptions: CrawlStartOptions = {
+    ...options,
+    include_patterns: parsePatternLines(includeText),
+    exclude_patterns: parsePatternLines(excludeText),
+  };
+  const patternProblems = invalidCrawlPatterns(launchOptions);
 
   const update = <K extends keyof CrawlStartOptions>(
     key: K,
@@ -111,6 +99,14 @@ export function NewCrawlWorkspace() {
   ) => setOptions((current) => ({ ...current, [key]: value }));
 
   const start = async () => {
+    if (patternProblems.length) {
+      toast.error("Fix the invalid URL patterns before starting", {
+        description: patternProblems
+          .map((problem) => `${problem.pattern}: ${problem.error}`)
+          .join(" · "),
+      });
+      return;
+    }
     let terminalStatus: "complete" | "partial" | "failed" = "complete";
     setStreamEvents([]);
     setLocalSessionId(null);
@@ -118,7 +114,7 @@ export function NewCrawlWorkspace() {
     setError(null);
     setLocalStatus("connecting");
     try {
-      const result = await startSiteCrawl(site.id, options, {
+      const result = await startSiteCrawl(site.id, launchOptions, {
         onConnected: ({ sessionId: connectedSessionId }) => {
           setLocalSessionId(connectedSessionId);
           setLocalStatus("running");
@@ -190,7 +186,7 @@ export function NewCrawlWorkspace() {
       getScope={() =>
         createMarketingCrawlsScope({
           ...getBaseValues(),
-          crawl_options: { ...options },
+          crawl_options: { ...launchOptions },
           active_crawl_id: sessionId ?? undefined,
           crawl_run_status: status,
           live_events: events.length
@@ -329,13 +325,71 @@ export function NewCrawlWorkspace() {
                   </span>
                 </label>
               ))}
+
+              {(
+                [
+                  {
+                    id: "crawl-include-patterns",
+                    label: "Include URL patterns",
+                    field: "include_patterns" as const,
+                    value: includeText,
+                    onChange: setIncludeText,
+                  },
+                  {
+                    id: "crawl-exclude-patterns",
+                    label: "Exclude URL patterns",
+                    field: "exclude_patterns" as const,
+                    value: excludeText,
+                    onChange: setExcludeText,
+                  },
+                ] as const
+              ).map((item) => {
+                const problems = patternProblems.filter(
+                  (problem) => problem.field === item.field,
+                );
+                return (
+                  <div key={item.id} className="space-y-1">
+                    <Label htmlFor={item.id} className="text-[11px]">
+                      {item.label}
+                    </Label>
+                    <Textarea
+                      id={item.id}
+                      rows={2}
+                      spellCheck={false}
+                      className="min-h-0 font-mono text-xs"
+                      value={item.value}
+                      disabled={controlsDisabled}
+                      onChange={(event) => item.onChange(event.target.value)}
+                      aria-invalid={problems.length > 0}
+                    />
+                    {problems.length ? (
+                      <p className="text-[10px] leading-4 text-destructive">
+                        {problems
+                          .map(
+                            (problem) =>
+                              `${problem.pattern}: ${problem.error}`,
+                          )
+                          .join(" · ")}
+                      </p>
+                    ) : (
+                      <p className="text-[10px] leading-4 text-muted-foreground">
+                        Regex, one per line. Empty = no{" "}
+                        {item.field === "include_patterns"
+                          ? "restriction"
+                          : "exclusions"}
+                        .
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="mt-auto flex shrink-0 items-center gap-2 border-t border-border px-3 py-2">
               <Button
                 size="sm"
                 className="h-8 flex-1"
-                disabled={controlsDisabled}
+                disabled={controlsDisabled || patternProblems.length > 0}
                 onClick={() => void start()}
               >
                 {status === "failed" || status === "complete" ? (

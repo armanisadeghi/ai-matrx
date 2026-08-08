@@ -81,6 +81,10 @@ import {
   updateSiteIdentity,
 } from "@/features/marketing/data/service";
 import {
+  fetchResearchImages,
+  saveSiteMediaStandards,
+} from "@/features/marketing/data/media-library";
+import {
   getLatestPagespeedFailure,
   listPagePerformance,
 } from "@/features/marketing/pagespeed/data";
@@ -120,6 +124,8 @@ export const marketingKeys = {
     [...marketingKeys.site(siteId), "audit-trend"] as const,
   siteMedia: (siteId: string) =>
     [...marketingKeys.site(siteId), "media"] as const,
+  researchImages: (organizationId: string) =>
+    [...marketingKeys.root, "research-images", organizationId] as const,
   siteStructure: (siteId: string) =>
     [...marketingKeys.site(siteId), "structure"] as const,
   homepageMeta: (siteId: string) =>
@@ -458,6 +464,13 @@ export function useCrawl(siteId: string, crawlId: string) {
     queryKey: marketingKeys.crawl(siteId, crawlId),
     queryFn: ({ signal }) => getCrawl(siteId, crawlId, signal),
     enabled: Boolean(siteId && crawlId),
+    // A running session's stats move constantly; a frozen detail page while
+    // the crawler works was board item 7 ("running crawl unmanageable after
+    // leaving launch screen"). Poll only while the session is live.
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === "running" || status === "queued" ? 3_000 : false;
+    },
   });
 }
 
@@ -517,6 +530,32 @@ export function useUpdateSiteIdentity() {
         queryKey: [...marketingKeys.root, "sites"],
       });
     },
+  });
+}
+
+/** Save `settings.media_standards` on the site row (read-merge-write). */
+export function useSaveSiteMediaStandards() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: saveSiteMediaStandards,
+    onSuccess: (site) => {
+      void queryClient.invalidateQueries({
+        queryKey: marketingKeys.site(site.id),
+      });
+    },
+  });
+}
+
+/**
+ * Research-captured images visible to this organization — the inspiration /
+ * reuse pool for the site Media workspace. Bounded fetch, filters client-side.
+ */
+export function useResearchImages(organizationId: string | null) {
+  return useQuery({
+    queryKey: marketingKeys.researchImages(organizationId ?? "none"),
+    queryFn: ({ signal }) => fetchResearchImages(organizationId ?? "", signal),
+    enabled: Boolean(organizationId),
+    staleTime: 120_000,
   });
 }
 

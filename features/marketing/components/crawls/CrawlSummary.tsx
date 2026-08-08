@@ -1,5 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Ban, Radio } from "lucide-react";
+import { toast } from "@/lib/toast";
+import { Button } from "@/components/ui/button";
+import { cancelCrawl } from "@/features/marketing/crawler/direct-client";
+import { extractErrorMessage } from "@/utils/errors";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
@@ -28,8 +35,37 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 
 export function CrawlSummary({ crawlId }: { crawlId: string }) {
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const crawl = useCrawl(site.id, crawlId);
+  const [canceling, setCanceling] = useState(false);
+  const isActive =
+    crawl.data?.status === "queued" || crawl.data?.status === "running";
+
+  // Realtime heartbeats already invalidate this query; polling is the
+  // fallback so a running session's detail page never freezes.
+  useEffect(() => {
+    if (!isActive) return;
+    const timer = window.setInterval(() => void crawl.refetch(), 5_000);
+    return () => window.clearInterval(timer);
+  }, [isActive, crawl]);
+
+  const requestCancel = async () => {
+    setCanceling(true);
+    try {
+      await cancelCrawl(crawlId);
+      toast.info("Cancellation requested", {
+        description: "The crawl finishes as partial once the worker stops.",
+      });
+      void crawl.refetch();
+    } catch (error) {
+      toast.error("Could not cancel crawl", {
+        description: extractErrorMessage(error),
+      });
+    } finally {
+      setCanceling(false);
+    }
+  };
+
   if (crawl.isLoading) return <LoadingSurface label="Loading crawl…" />;
   if (crawl.isError || !crawl.data) {
     return (
@@ -147,6 +183,30 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
     <CrawlSurfaceProvider crawlId={crawlId} crawl={row} view="summary">
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       <div className="flex shrink-0 items-center justify-end gap-1.5">
+        {isActive ? (
+          <>
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 border-primary/40 px-2 text-primary"
+            >
+              <Link href={`${sitePath}/crawls/new`}>
+                <Radio className="h-3.5 w-3.5 animate-pulse" /> Watch live
+              </Link>
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-7 gap-1.5 px-2"
+              disabled={canceling}
+              onClick={() => void requestCancel()}
+            >
+              <Ban className="h-3.5 w-3.5" /> Cancel crawl
+            </Button>
+            <span className="mr-auto" />
+          </>
+        ) : null}
         <CopyButtons
           size="icon"
           label={`Crawl summary (${row.id.slice(0, 8)})`}

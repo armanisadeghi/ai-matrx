@@ -2618,10 +2618,11 @@ export async function createBrandAsset(
       brand_id: input.brandId,
       kind: input.kind,
       source_url: input.sourceUrl,
+      file_id: input.fileId ?? null,
       title: input.title,
       notes: input.notes,
       is_primary: input.isPrimary,
-      source: "manual",
+      source: input.source ?? "manual",
       confirmed_at: new Date().toISOString(),
     })
     .select(BRAND_ASSET_COLUMNS)

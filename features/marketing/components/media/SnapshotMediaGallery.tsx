@@ -96,18 +96,35 @@ function PhotoTile({
   asset,
   aspectClass,
   showPages,
+  onSelect,
 }: {
   asset: SnapshotMediaAsset;
   aspectClass: string;
   showPages: boolean;
+  onSelect?: (asset: SnapshotMediaAsset) => void;
 }) {
   return (
     <div
       className={cn(
         "group relative overflow-hidden rounded-lg border bg-card transition-all",
         asset.missingAlt ? "border-amber-500/40" : "border-border",
+        onSelect &&
+          "cursor-pointer hover:border-primary/50 hover:shadow-sm",
       )}
       title={assetTooltip(asset)}
+      onClick={onSelect ? () => onSelect(asset) : undefined}
+      role={onSelect ? "button" : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      onKeyDown={
+        onSelect
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSelect(asset);
+              }
+            }
+          : undefined
+      }
     >
       <div
         className={cn(
@@ -172,14 +189,34 @@ function PhotoTile({
   );
 }
 
-function GraphicTile({ asset }: { asset: SnapshotMediaAsset }) {
+function GraphicTile({
+  asset,
+  onSelect,
+}: {
+  asset: SnapshotMediaAsset;
+  onSelect?: (asset: SnapshotMediaAsset) => void;
+}) {
   return (
     <div
       className={cn(
         "group relative inline-flex h-20 items-center justify-center overflow-hidden rounded-lg border bg-muted/20 transition-all",
         asset.missingAlt ? "border-amber-500/40" : "border-border",
+        onSelect && "cursor-pointer hover:border-primary/50",
       )}
       title={assetTooltip(asset)}
+      onClick={onSelect ? () => onSelect(asset) : undefined}
+      role={onSelect ? "button" : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      onKeyDown={
+        onSelect
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSelect(asset);
+              }
+            }
+          : undefined
+      }
     >
       {/* Third-party crawl asset — see the exception note at the top. */}
       <img
@@ -202,14 +239,34 @@ function GraphicTile({ asset }: { asset: SnapshotMediaAsset }) {
   );
 }
 
-function IconTile({ asset }: { asset: SnapshotMediaAsset }) {
+function IconTile({
+  asset,
+  onSelect,
+}: {
+  asset: SnapshotMediaAsset;
+  onSelect?: (asset: SnapshotMediaAsset) => void;
+}) {
   return (
     <div
       className={cn(
         "flex h-11 w-11 items-center justify-center overflow-hidden rounded-md border bg-card transition-transform hover:z-10 hover:scale-110",
         asset.missingAlt ? "border-amber-500/40" : "border-border/60",
+        onSelect && "cursor-pointer hover:border-primary/50",
       )}
       title={assetTooltip(asset)}
+      onClick={onSelect ? () => onSelect(asset) : undefined}
+      role={onSelect ? "button" : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      onKeyDown={
+        onSelect
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSelect(asset);
+              }
+            }
+          : undefined
+      }
     >
       {/* Third-party crawl asset — see the exception note at the top. */}
       <img
@@ -231,6 +288,7 @@ function PhotoAspectSection({
   featuredGrid,
   standardGrid,
   showPages,
+  onSelect,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
@@ -240,6 +298,7 @@ function PhotoAspectSection({
   featuredGrid: string;
   standardGrid: string;
   showPages: boolean;
+  onSelect?: (asset: SnapshotMediaAsset) => void;
 }) {
   // Assets arrive sorted by area (largest first). Split into a big-tile
   // "featured" band and a small-tile "standard" band so resolution drives
@@ -262,6 +321,7 @@ function PhotoAspectSection({
               asset={asset}
               aspectClass={aspectClass}
               showPages={showPages}
+              onSelect={onSelect}
             />
           ))}
         </div>
@@ -274,6 +334,7 @@ function PhotoAspectSection({
               asset={asset}
               aspectClass={aspectClass}
               showPages={showPages}
+              onSelect={onSelect}
             />
           ))}
         </div>
@@ -285,10 +346,13 @@ function PhotoAspectSection({
 export function SnapshotMediaGallery({
   buckets,
   showPages = false,
+  onSelect,
 }: {
   buckets: SnapshotMediaBuckets;
   /** Show which pages each asset appears on (site-level aggregation). */
   showPages?: boolean;
+  /** Click-to-drill: opens the asset detail surface when provided. */
+  onSelect?: (asset: SnapshotMediaAsset) => void;
 }) {
   const total =
     buckets.landscape.length +
@@ -316,6 +380,7 @@ export function SnapshotMediaGallery({
           featuredGrid="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"
           standardGrid="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2"
           showPages={showPages}
+          onSelect={onSelect}
         />
       ) : null}
       {buckets.square.length > 0 ? (
@@ -328,6 +393,7 @@ export function SnapshotMediaGallery({
           featuredGrid="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"
           standardGrid="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2"
           showPages={showPages}
+          onSelect={onSelect}
         />
       ) : null}
       {buckets.portrait.length > 0 ? (
@@ -340,6 +406,7 @@ export function SnapshotMediaGallery({
           featuredGrid="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"
           standardGrid="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2"
           showPages={showPages}
+          onSelect={onSelect}
         />
       ) : null}
       {buckets.unknownAspect.length > 0 ? (
@@ -352,6 +419,7 @@ export function SnapshotMediaGallery({
           featuredGrid="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"
           standardGrid="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2"
           showPages={showPages}
+          onSelect={onSelect}
         />
       ) : null}
       {buckets.graphics.length > 0 ? (
@@ -364,7 +432,7 @@ export function SnapshotMediaGallery({
           />
           <div className="flex flex-wrap gap-2">
             {buckets.graphics.map((asset) => (
-              <GraphicTile key={asset.src} asset={asset} />
+              <GraphicTile key={asset.src} asset={asset} onSelect={onSelect} />
             ))}
           </div>
         </section>
@@ -379,7 +447,7 @@ export function SnapshotMediaGallery({
           />
           <div className="flex flex-wrap gap-1.5 rounded-lg border border-border/60 bg-muted/20 p-2">
             {buckets.icons.map((asset) => (
-              <IconTile key={asset.src} asset={asset} />
+              <IconTile key={asset.src} asset={asset} onSelect={onSelect} />
             ))}
           </div>
         </section>

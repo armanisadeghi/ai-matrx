@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Play, RefreshCw, ScanSearch, Trash2 } from "lucide-react";
+import { Ban, Play, Radio, RefreshCw, ScanSearch, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -25,6 +25,7 @@ import {
   useCrawls,
   useDeleteCrawlSession,
 } from "@/features/marketing/data/hooks";
+import { cancelCrawl } from "@/features/marketing/crawler/direct-client";
 import { extractErrorMessage } from "@/utils/errors";
 import type { CrawlSession } from "@/features/marketing/types";
 import {
@@ -52,9 +53,11 @@ const TRIGGER_OPTIONS = [
   { value: "scheduled", label: "Scheduled" },
 ];
 
+const ACTIVE_STATUSES = new Set(["queued", "running"]);
+
 export function CrawlsTable() {
   const router = useRouter();
-  const { site, sitePath } = useMarketingSite();
+  const { site, sitePath, crawlActivity } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const table = useMarketingTableState({
     defaultSort: { id: "started_at", direction: "desc" },
@@ -62,13 +65,58 @@ export function CrawlsTable() {
   const crawls = useCrawls(site.id, table.queryState);
   const deleteMutation = useDeleteCrawlSession(site.id);
   const [deleting, setDeleting] = useState<CrawlSession | null>(null);
+  const [cancelingId, setCancelingId] = useState<string | null>(null);
+  const activeCrawl = crawlActivity.activeCrawl;
+
+  // Live elapsed time for running rows — a frozen duration on a running
+  // crawl reads as a hung crawler.
+  const hasActiveRow =
+    Boolean(activeCrawl) ||
+    (crawls.data?.rows ?? []).some((row) => ACTIVE_STATUSES.has(row.status));
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!hasActiveRow) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, [hasActiveRow]);
+
+  const requestCancel = async (row: CrawlSession) => {
+    setCancelingId(row.id);
+    try {
+      await cancelCrawl(row.id);
+      toast.info("Cancellation requested", {
+        description: "The crawl finishes as partial once the worker stops.",
+      });
+      crawlActivity.refresh();
+      void crawls.refetch();
+    } catch (error) {
+      toast.error("Could not cancel crawl", {
+        description: extractErrorMessage(error),
+      });
+    } finally {
+      setCancelingId(null);
+    }
+  };
 
   const confirmDelete = async () => {
     if (!deleting) return;
     try {
+      // Never hide active work: cancel-to-terminal before the soft delete,
+      // otherwise the detached worker keeps writing into an invisible session.
+      if (ACTIVE_STATUSES.has(deleting.status)) {
+        try {
+          await cancelCrawl(deleting.id);
+        } catch (cancelError) {
+          toast.error("Could not cancel the running crawl — not deleting", {
+            description: extractErrorMessage(cancelError),
+          });
+          return;
+        }
+      }
       await deleteMutation.mutateAsync(deleting.id);
       toast.success("Crawl session deleted");
       setDeleting(null);
+      crawlActivity.refresh();
     } catch (error) {
       toast.error("Could not delete crawl session", {
         description: extractErrorMessage(error),
@@ -116,7 +164,9 @@ export function CrawlsTable() {
       sortable: false,
       cell: (row) => (
         <span className="text-xs tabular-nums">
-          {formatDuration(row.started_at, row.finished_at)}
+          {ACTIVE_STATUSES.has(row.status)
+            ? formatDuration(row.started_at, new Date(now).toISOString())
+            : formatDuration(row.started_at, row.finished_at)}
         </span>
       ),
     },
@@ -335,15 +385,25 @@ export function CrawlsTable() {
                 />
                 Refresh
               </Button>
-              <Button
-                size="sm"
-                className="h-8 gap-1.5"
-                onClick={() =>
-                  router.push(`${sitePath}/crawls/new`)
-                }
-              >
-                <Play className="h-3.5 w-3.5" /> Start crawl
-              </Button>
+              {activeCrawl ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1.5 border-primary/40 text-primary"
+                  onClick={() => router.push(`${sitePath}/crawls/new`)}
+                >
+                  <Radio className="h-3.5 w-3.5 animate-pulse" /> Open live
+                  crawl
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  className="h-8 gap-1.5"
+                  onClick={() => router.push(`${sitePath}/crawls/new`)}
+                >
+                  <Play className="h-3.5 w-3.5" /> Start crawl
+                </Button>
+              )}
             </div>
           ),
         }}
@@ -384,17 +444,33 @@ export function CrawlsTable() {
           router.push(`${sitePath}/crawls/${row.id}`)
         }
         rowActions={(row) => (
-          <button
-            type="button"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-            title="Delete crawl session"
-            onClick={(event) => {
-              event.stopPropagation();
-              setDeleting(row);
-            }}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          <div className="flex items-center gap-0.5">
+            {ACTIVE_STATUSES.has(row.status) ? (
+              <button
+                type="button"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                title="Cancel crawl"
+                disabled={cancelingId === row.id}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void requestCancel(row);
+                }}
+              >
+                <Ban className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              title="Delete crawl session"
+              onClick={(event) => {
+                event.stopPropagation();
+                setDeleting(row);
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
         )}
         emptyState={{
           icon: <ScanSearch className="h-8 w-8 text-muted-foreground" />,
@@ -407,8 +483,16 @@ export function CrawlsTable() {
       <ConfirmDialog
         open={Boolean(deleting)}
         onOpenChange={(open) => !open && setDeleting(null)}
-        title="Delete crawl session?"
-        description="The session moves to trash with its URL ledger and event log attached. Snapshots it captured stay with their pages."
+        title={
+          deleting && ACTIVE_STATUSES.has(deleting.status)
+            ? "Cancel and delete crawl session?"
+            : "Delete crawl session?"
+        }
+        description={
+          deleting && ACTIVE_STATUSES.has(deleting.status)
+            ? "This crawl is still active. It will be canceled first, then the session moves to trash — deleting without canceling would leave the worker writing into an invisible session."
+            : "The session moves to trash with its URL ledger and event log attached. Snapshots it captured stay with their pages."
+        }
         variant="destructive"
         confirmLabel="Delete session"
         busy={deleteMutation.isPending}

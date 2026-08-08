@@ -42,6 +42,7 @@ import {
   INITIAL_DRAG_OUT_STATE,
   type DragOutState,
 } from "../popout/popoutDragDetector";
+import { safeViewportDims } from "../utils/rectClamp";
 
 // ─── Config ────────────────────────────────────────────────────────────────────
 
@@ -78,8 +79,7 @@ function resolveSize(
 ): number {
   if (value === undefined) return fallback;
   if (typeof value === "number") return value;
-  const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
-  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  const { vw, vh } = safeViewportDims();
   if (value.endsWith("vh")) return Math.round((parseFloat(value) / 100) * vh);
   if (value.endsWith("vw")) return Math.round((parseFloat(value) / 100) * vw);
   return parseFloat(value) || fallback;
@@ -90,8 +90,7 @@ function resolvePosition(
   w: number,
   h: number,
 ): { x: number; y: number } {
-  const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
-  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  const { vw, vh } = safeViewportDims();
   const pad = 40;
   switch (pos) {
     case "top-left":
@@ -222,11 +221,12 @@ export function useWindowPanel(
     const w = opts.initialRect?.width ?? resolveSize(opts.width, DEFAULT_WIDTH);
     const h =
       opts.initialRect?.height ?? resolveSize(opts.height, DEFAULT_HEIGHT);
+    const { vw, vh } = safeViewportDims();
     const pos =
       opts.initialRect?.x !== undefined || opts.initialRect?.y !== undefined
         ? {
-            x: opts.initialRect?.x ?? Math.max(0, (window.innerWidth - w) / 2),
-            y: opts.initialRect?.y ?? Math.max(0, (window.innerHeight - h) / 4),
+            x: opts.initialRect?.x ?? Math.max(0, (vw - w) / 2),
+            y: opts.initialRect?.y ?? Math.max(0, (vh - h) / 4),
           }
         : resolvePosition(opts.position, w, h);
     const initial: WindowRect = { ...pos, width: w, height: h };
@@ -236,7 +236,9 @@ export function useWindowPanel(
         title: opts.title,
         initial,
         persistence: opts.persistence,
-        viewport: { width: window.innerWidth, height: window.innerHeight },
+        // Sanitized dims: a degenerate 0×0 measurement must never become the
+        // clamp target, or every rect collapses to garbage (see safeViewportDims).
+        viewport: { width: vw, height: vh },
       }),
     );
     const pendingKey = opts.persistence

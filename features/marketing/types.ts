@@ -414,6 +414,14 @@ export interface CreateBrandAssetInput {
   title: string | null;
   notes: string | null;
   isPrimary: boolean;
+  /** Our own file (uploads, AI-generated). Either this or sourceUrl. */
+  fileId?: string | null;
+  /**
+   * Provenance — defaults to "manual". "generated" = AI-generated here;
+   * "research" = promoted from the research media pool; "discovered" =
+   * promoted from crawl/discovery evidence; "uploaded" = user file upload.
+   */
+  source?: "discovered" | "uploaded" | "manual" | "generated" | "research";
 }
 
 export interface UpdateBrandAssetInput {

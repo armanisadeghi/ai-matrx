@@ -42,7 +42,7 @@ import {
   type MarketingSite,
 } from "@/features/marketing/types";
 
-const MARKETING_SITE_SURFACE_NAME = "matrx-user/marketing-site" as const;
+export const MARKETING_SITE_SURFACE_NAME = "matrx-user/marketing-site" as const;
 
 /**
  * The inherited keys every site-descendant scope helper accepts. Matches the
