@@ -299,6 +299,22 @@ find yourself writing code to add an output, something above is wrong.
   `app/(core)/research/topics/[topicId]/layout.tsx`). Also surfaced the
   already-live but invisible `rs_topic.videos_per_keyword` quota column in
   `QuotaSettingsSection`/`TopicQuotaFields`.
+- 2026-08-08 — **Per-keyword goals (the focused lens) shipped end-to-end.**
+  `rs_keyword.goal` + `rs_analysis.keyword_id` live (migration
+  `research_keyword_goal_and_analysis_lens.sql`). Server: the goal rides
+  inside the existing `topic` context variable via `get_keyword_context`
+  (aidream `research/service.py`) — effective immediately with no
+  prompt-version churn; a keyword WITH a goal gets its own per-lens analyses
+  (dedup key is now `(source_id, keyword_id)`; lens runs never overwrite the
+  source's topic-level `page_analysis`/verdict), goal-less keywords keep the
+  8-for-1 shared topic-level analysis; keyword synthesis prefers its own
+  lens rows and never sees another keyword's; the keyword-update path
+  finally tells the Updater what topic/keyword/goal it is updating. FE:
+  `ResearchKeyword.goal`, `addKeywords(..., goalsByKeyword)`,
+  `updateKeywordGoal` (direct write), KeywordManager captures a goal on add
+  and shows/edits it inline on every row. Open: goal capture in the creation
+  wizard (`ResearchInitForm`) and a Suggest-agent prompt version emitting
+  `keyword_goals` (plumbing tolerates both).
 - 2026-08-08 — **Video sources are legible on the GENERIC surfaces.** New
   `getYouTubeVideoIdentities` (direct Supabase read of the compact
   `research.youtube_video` identity slice, keyed by video id parsed from

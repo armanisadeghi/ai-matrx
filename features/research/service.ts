@@ -381,6 +381,8 @@ export async function getKeywords(topicId: string): Promise<ResearchKeyword[]> {
 export async function addKeywords(
   topicId: string,
   input: KeywordCreate,
+  /** Optional focused lens per keyword (keyword text → goal sentence). */
+  goalsByKeyword?: Record<string, string>,
 ): Promise<ResearchKeyword[]> {
   const keywords = Array.from(
     new Map(
@@ -391,6 +393,12 @@ export async function addKeywords(
     ).values(),
   );
   if (keywords.length === 0) return [];
+  const goalFor = (keyword: string): string | null => {
+    const raw =
+      goalsByKeyword?.[keyword] ?? goalsByKeyword?.[keyword.toLocaleLowerCase()];
+    const trimmed = raw?.trim();
+    return trimmed ? trimmed : null;
+  };
 
   const { data: topic, error: topicError } = await supabase
     .schema("research")
@@ -406,6 +414,7 @@ export async function addKeywords(
       topic_id: topicId,
       organization_id: topic.organization_id,
       keyword,
+      goal: goalFor(keyword),
       search_provider: input.search_provider ?? topic.default_search_provider,
       search_params: topic.default_search_params,
     };
@@ -444,6 +453,23 @@ export async function deleteKeyword(keywordId: string): Promise<void> {
     .schema("research")
     .from("rs_keyword")
     .delete()
+    .eq("id", keywordId);
+  if (error) throw error;
+}
+
+/**
+ * Set or clear a keyword's focused-lens goal. Pure UI↔DB — direct write.
+ * Clearing (null) returns the keyword to the shared topic-level lens.
+ */
+export async function updateKeywordGoal(
+  keywordId: string,
+  goal: string | null,
+): Promise<void> {
+  const trimmed = goal?.trim();
+  const { error } = await supabase
+    .schema("research")
+    .from("rs_keyword")
+    .update({ goal: trimmed ? trimmed : null })
     .eq("id", keywordId);
   if (error) throw error;
 }

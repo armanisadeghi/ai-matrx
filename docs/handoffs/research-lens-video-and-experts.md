@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-28
+updated: 2026-08-08
 repos: [matrx-frontend, aidream]
 vision:
   [
@@ -11,9 +11,10 @@ vision:
 
 # Research — per-keyword goals and experts
 
-The canonical YouTube research library is shipped. The remaining workstreams
-change **what the AI agents receive**: focused per-keyword goals and expert
-identification/curation.
+The canonical YouTube research library, generic-surface video legibility, and
+the per-keyword focused lens (workstream A) are shipped. The remaining
+workstreams: expert identification/curation, wizard goal capture, and media
+multi-select.
 
 ---
 
@@ -213,17 +214,45 @@ readiness ledger silently reads zero).
   full provider response in `analysis_text`. Completed global artifacts
   materialize idempotently into the existing `rs_content`/`rs_analysis` spine,
   so topic synthesis and documents consume them without a second model call.
+- **Video legibility on the generic surfaces** (2026-08-08). One batched
+  direct read of `research.youtube_video` (`getYouTubeVideoIdentities` +
+  `useYouTubeVideoIndex`) feeds `VideoSourceMeta` (channel · duration · views
+  · subs · honest processing chip; live status vocabulary
+  `unprocessed | processing | partial | completed | failed`) in `SourceList`,
+  `SourceResultsTable`, and `SourceDetail` (inline player + meta rows).
+- **Per-keyword goals — workstream A core** (2026-08-08). `rs_keyword.goal` +
+  `rs_analysis.keyword_id` live (`research_keyword_goal_and_analysis_lens.sql`,
+  ledger-recorded, both repos' types regenerated). The goal rides inside the
+  existing `topic` context variable via `get_keyword_context`
+  (aidream `research/service.py`) so every prompt is lens-aware with NO
+  prompt-version change. Goal keywords get their own per-lens analyses —
+  dedup key `(source_id, keyword_id)` in `_select_analysis_candidates` /
+  Phase C; lens runs never overwrite the source's topic-level
+  `page_analysis`/verdict; goal-less keywords keep the shared topic-level
+  analysis (8-for-1 preserved). Keyword synthesis prefers its own lens rows
+  and never sees another keyword's. The keyword-Updater blindness bug is
+  fixed (context header inside `new_information`). API: `KeywordCreate.goals`
+  (index-aligned) + `KeywordResponse.goal`; `apply_suggestion_to_topic`
+  accepts `keyword_goals`; `SuggestSetupOutput.keyword_goals` tolerated
+  absent. FE: `updateKeywordGoal` direct write; KeywordManager captures on
+  add + inline view/edit per row (verified live against the DB).
 
 ### Partial
 
-- **Video legibility outside the YouTube surface.** The dedicated Research
-  YouTube route and previews show channel, duration, views, thumbnail, and
-  processing state. The generic Sources and Content routes still render the
-  corresponding materialized rows as ordinary research records.
+- **Workstream A residuals:**
+  - Creation wizard (`ResearchInitForm` KeywordEditor + AiCanvas) does not
+    capture/show goals yet — `addKeywords(..., goalsByKeyword)` is ready.
+  - The Suggest agent's PROMPT does not emit `keyword_goals` yet — needs an
+    agent version bump (slot `research.suggest_setup`); all plumbing
+    tolerates its absence.
+  - The Updater/PageSummary/KeywordSynthesis DB prompts could gain native
+    `goal` variables later; today the lens rides the `topic` variable by
+    design (zero-churn). The topic-update path (`_synthesize_topic_update`)
+    still has its inverted override precedence (`synthesis.py`).
+  - aidream is NOT deployed with these changes yet.
 
 ### Not started
 
-- **Per-keyword goals (workstream A)** — the whole focused-lens idea.
 - **Expert identification** — YouTube results already carry subscriber count,
   video count, view/like counts and channel identity. **Nothing consumes any of
   it.** The Authority Ranker receives these fields but scores _trustworthiness_,
@@ -259,37 +288,27 @@ readiness ledger silently reads zero).
 
 ## 4. Remaining work — in order
 
-1. **Make video legible on generic Research routes.** Video sources and
-   transcripts already have a rich dedicated UI; carry that identity into the
-   generic Sources, `/content`, and source-detail surfaces. Reuse the canonical
-   `research.youtube_video` association and existing YouTube UI rather than
-   reading stale `raw_search_result` snapshots.
+1. **Workstream A residuals** (see Partial above): wizard goal capture,
+   Suggest-agent prompt version emitting `keyword_goals`, aidream deploy +
+   live pipeline verification of a goal-keyword run.
 
-2. **Per-keyword goals (workstream A).** A goal column on `rs_keyword`; captured
-   at topic creation (the Suggest agent takes ONE field today and invents
-   keywords — it must produce goals too) and on add-keyword. Thread into
-   `PageSummaryInputs` and add `keyword_id` to `rs_analysis` so a source can hold
-   one analysis per lens. Existing analyses stay valid as the topic-level lens.
-   **Read `PIPELINE_FLOW.md` §3 first** — this changes the analysis dedup key,
-   which is what makes reuse work.
-
-3. **Expert identification.** An agent pass over video results producing
+2. **Expert identification.** An agent pass over video results producing
    first-class expert records on the topic (name, channel, reach signals, the
    videos they appear in) with their own surface and a report section. Build them
    absorbable by the coming contact system.
 
-4. **Expert channel library, industry-gated.** New table(s) — Arman expects them.
+3. **Expert channel library, industry-gated.** New table(s) — Arman expects them.
    Copy the `rag.data_store_grants` shape (`audience` + `industry_id` +
    `organization_id`) so entitlement rides the existing Industries spine rather
    than a second sharing mechanism. Writes via SECURITY DEFINER RPC, audited,
    per `features/industries/FEATURE.md` doctrine.
 
-5. **Scraped-page media multi-select + batch transcribe.** Selection UI on `MediaGallery.tsx`
+4. **Scraped-page media multi-select + batch transcribe.** Selection UI on `MediaGallery.tsx`
    (copy the checkbox + bottom action-bar pattern from
    `features/transcript-studio/components/scribe/RecordingCardList.tsx`), plus a
    batch endpoint. Must map a media row back to its source.
 
-6. **Non-YouTube video.** Decide whether to support it; today it silently cannot
+5. **Non-YouTube video.** Decide whether to support it; today it silently cannot
    be processed at all.
 
 ---

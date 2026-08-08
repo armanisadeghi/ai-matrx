@@ -516,6 +516,13 @@ export interface ResearchKeyword {
   topic_id: string;
   keyword: string;
   /**
+   * The FOCUSED LENS: one user sentence saying what THIS search is for
+   * ("information about the partner, not the firm"). Threaded by the server
+   * into every agent prompt that touches the keyword; keywords with a goal
+   * get their own per-lens rs_analysis rows. null = topic-level lens.
+   */
+  goal: string | null;
+  /**
    * 1-indexed priority order within a topic. Position 1 = highest priority.
    * The server MUST search/scrape keywords in ascending position order, and
    * apply per-topic max-keywords limits by holding back the highest positions
