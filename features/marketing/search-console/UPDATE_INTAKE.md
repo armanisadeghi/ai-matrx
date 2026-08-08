@@ -91,6 +91,50 @@ eventually answers it.
 
 The workflow is now recorded in this file and will govern subsequent entries.
 
+### GSC-001 — Browser-native navigation fidelity
+
+- **Captured:** 2026-08-07
+- **Type:** Critical UX defect / navigation contract
+- **Status:** Ready
+- **Source:** Arman, direct production use
+
+#### Requirements
+
+- Back/Forward must replay every meaningful Search Console navigation state
+  exactly, including all state required to reproduce the visible data view.
+- Every navigational target must expose its complete destination URL and retain
+  native link behavior, including Cmd/Ctrl-click and Open in New Tab.
+
+#### Investigation
+
+- Confirmed systemic history loss: `SearchConsoleWorkspace.applyState` sends
+  every site, tab, range, comparison, filter, rule, insight, and row-drill
+  transition through `router.replace`, overwriting the current history entry.
+- Confirmed non-link navigation: portfolio cards, site switcher items, tabs,
+  insight selectors, and row drills use click handlers on buttons or clickable
+  containers, so modifier-click cannot open the destination in a new tab.
+- URL coverage is incomplete: table query/sort/page state, Watchlist kind,
+  Insights dimension/thresholds, traffic class/direction, chart metric
+  selection, and floating drill-down state are local or overlay state. Durable
+  navigation state must be classified and added to the canonical URL model;
+  transient editor/dialog state should remain local.
+
+#### Likely ownership
+
+- Canonical URL codec: `lib/url-state.ts`
+- History policy and top-level transitions: `components/SearchConsoleWorkspace.tsx`
+- Native link conversion: portfolio, site switcher, tabs, insight selectors,
+  dimension tables, and drill-down openers
+- Regression coverage: URL round trips plus browser-level Back/Forward and
+  modifier-click tests
+
+#### Acceptance contract
+
+A copied or newly opened URL reconstructs the same meaningful view; each
+meaningful transition creates a history entry; Back/Forward replays transitions
+without state drift; modifier-click opens the computed destination without
+mutating the source tab.
+
 ## Cumulative unanswered questions
 
 None yet.
