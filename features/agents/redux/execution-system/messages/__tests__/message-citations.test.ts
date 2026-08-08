@@ -8,6 +8,7 @@
 import {
   buildMessageCitationIndex,
   citationMarkerTag,
+  citationSourceDisplayKind,
   EMPTY_CITATION_INDEX,
   insertCitationMarkers,
   parseNormalizedCitation,
@@ -115,6 +116,97 @@ describe("buildMessageCitationIndex", () => {
     } finally {
       warnSpy.mockRestore();
     }
+  });
+});
+
+describe("search_result citations (RAG / document_search tool results)", () => {
+  // The backend emits kind:"search_result" carrying OUR file_id + page
+  // (decoded from matrx:// sources); url is null.
+  const searchResult = (over: Record<string, unknown> = {}) =>
+    citation({
+      kind: "search_result",
+      cited_text: "quoted from the tool result",
+      title: "Q3 Report.pdf",
+      url: null,
+      file_id: "file-sr-1",
+      page: 7,
+      source_start: null,
+      source_end: null,
+      answer_start: null,
+      answer_end: null,
+      raw: { type: "search_result_location" },
+      ...over,
+    });
+
+  it("produces a numbered source deduped by (kind, file_id, page)", () => {
+    const idx = buildMessageCitationIndex([
+      {
+        type: "text",
+        text: "Revenue grew.",
+        citations: [
+          searchResult(),
+          // Same file+page, different quote → SAME source (count 2).
+          searchResult({ cited_text: "another quote from the same page" }),
+          // Same file, different page → distinct source.
+          searchResult({ page: 9 }),
+          // Different file, same page → distinct source.
+          searchResult({ file_id: "file-sr-2" }),
+        ],
+      },
+    ]);
+    expect(idx.sources.map((s) => s.number)).toEqual([1, 2, 3]);
+    expect(idx.sources[0]).toMatchObject({
+      kind: "search_result",
+      fileId: "file-sr-1",
+      page: 7,
+      url: null,
+      count: 2,
+      title: "Q3 Report.pdf",
+    });
+    expect(idx.sources[1]).toMatchObject({ fileId: "file-sr-1", page: 9 });
+    expect(idx.sources[2]).toMatchObject({ fileId: "file-sr-2", page: 7 });
+    // One chip marker per distinct source on the part.
+    expect(idx.markersByPartIndex[0]).toEqual([
+      { sourceNumber: 1, answerEnd: null },
+      { sourceNumber: 2, answerEnd: null },
+      { sourceNumber: 3, answerEnd: null },
+    ]);
+  });
+
+  it("dedupe keys on file_id, not title — same title over different files stays distinct", () => {
+    const idx = buildMessageCitationIndex([
+      {
+        type: "text",
+        text: "x",
+        citations: [
+          searchResult({ file_id: "file-a" }),
+          searchResult({ file_id: "file-b" }),
+        ],
+      },
+    ]);
+    expect(idx.sources).toHaveLength(2);
+  });
+
+  it("reads as a document, never a globe — even when a url is present", () => {
+    const idx = buildMessageCitationIndex([
+      { type: "text", text: "x", citations: [searchResult()] },
+    ]);
+    expect(citationSourceDisplayKind(idx.sources[0])).toBe("document");
+    // Hypothetical search_result with a url and no file_id: still a document.
+    expect(
+      citationSourceDisplayKind({
+        kind: "search_result",
+        url: "https://example.com",
+        fileId: null,
+      }),
+    ).toBe("document");
+    // Sanity: web stays web; grounding resolved to our file reads as document.
+    expect(
+      citationSourceDisplayKind({ kind: "web", url: "https://x.com", fileId: null }),
+    ).toBe("web");
+    expect(
+      citationSourceDisplayKind({ kind: "grounding", url: "https://x.com", fileId: "f1" }),
+    ).toBe("document");
   });
 });
 

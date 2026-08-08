@@ -174,6 +174,30 @@ export function parseNormalizedCitation(
 }
 
 // ---------------------------------------------------------------------------
+// Display-kind mapping (icon / visual treatment)
+// ---------------------------------------------------------------------------
+
+/**
+ * How a source should READ in the UI: as a document (file icon) or a web
+ * source (globe icon). Kind-first, ratified 2026-08-08:
+ *  - `search_result` is ALWAYS a document — it is a citable tool-result block
+ *    (RAG / document_search over OUR files, carrying `file_id` + `page`), not
+ *    a web hit, even when a `url` happens to be present.
+ *  - `document_*` kinds are documents.
+ *  - `web` / `grounding` are web sources — unless the capture layer resolved
+ *    them to one of our files (`fileId` set), in which case the document
+ *    click-through wins and the chip should read as a document.
+ */
+export function citationSourceDisplayKind(
+  source: Pick<MessageCitationSource, "kind" | "url" | "fileId">,
+): "document" | "web" {
+  if (source.kind === "web" || source.kind === "grounding") {
+    return source.fileId ? "document" : "web";
+  }
+  return "document";
+}
+
+// ---------------------------------------------------------------------------
 // Index building
 // ---------------------------------------------------------------------------
 
