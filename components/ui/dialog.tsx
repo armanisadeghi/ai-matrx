@@ -18,12 +18,19 @@ const Dialog = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>
 >(({ children, ...props }, ref) => {
   const isMounted = useIsMounted();
+  const modal = props.modal ?? true;
 
   if (!isMounted) {
     return null;
   }
 
-  return <DialogPrimitive.Root {...props}>{children}</DialogPrimitive.Root>;
+  return (
+    <RadixDialogModalProvider modal={modal}>
+      <DialogPrimitive.Root {...props} modal={modal}>
+        {children}
+      </DialogPrimitive.Root>
+    </RadixDialogModalProvider>
+  );
 });
 Dialog.displayName = "Dialog";
 
@@ -52,6 +59,10 @@ import { useIsMounted } from "@/hooks/use-is-mounted";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { treeContainsComponent } from "@/lib/react/treeContainsComponent";
 import { usePopoutContainer } from "@/features/window-panels/popout/usePopoutContainer";
+import {
+  RadixDialogModalProvider,
+  useRadixDialogModal,
+} from "@/components/ui/radix-dialog-modal-context";
 
 /**
  * Context that provides the Dialog content DOM element so that nested portaled
@@ -77,6 +88,25 @@ const DialogOverlay = React.forwardRef<
   />
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
+
+/**
+ * Unstyled, non-portalling Content for custom Dialog layouts. It preserves
+ * Radix focus/background behavior and derives `aria-modal` from Dialog Root.
+ */
+const DialogContentPrimitive = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
+>(({ ...props }, ref) => {
+  const isModal = useRadixDialogModal();
+  return (
+    <DialogPrimitive.Content
+      {...props}
+      ref={ref}
+      aria-modal={isModal || undefined}
+    />
+  );
+});
+DialogContentPrimitive.displayName = "DialogContentPrimitive";
 
 /**
  * Desktop (default): centered modal card.
@@ -134,7 +164,7 @@ const DialogContent = React.forwardRef<
   return (
     <DialogPortal>
       <DialogOverlay />
-      <DialogPrimitive.Content
+      <DialogContentPrimitive
         ref={mergedRef}
         className={cn(
           asSheet ? DIALOG_MOBILE_SHEET_CLASSES : DIALOG_DESKTOP_CLASSES,
@@ -156,7 +186,7 @@ const DialogContent = React.forwardRef<
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
-      </DialogPrimitive.Content>
+      </DialogContentPrimitive>
     </DialogPortal>
   );
 });
@@ -221,6 +251,7 @@ export {
   Dialog,
   DialogPortal,
   DialogOverlay,
+  DialogContentPrimitive,
   DialogTrigger,
   DialogClose,
   DialogContent,

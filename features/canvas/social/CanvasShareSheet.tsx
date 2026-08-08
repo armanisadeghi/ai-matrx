@@ -3,21 +3,22 @@
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
+  DialogClose,
+  DialogContentPrimitive,
   DialogOverlay,
   DialogPortal,
   DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   Drawer,
+  DrawerContentPrimitive,
   DrawerPortal,
   DrawerOverlay,
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
-import * as DrawerPrimitive from "vaul";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,14 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Copy,
-  Check,
-  Share2,
-  Link2,
-  Globe,
-  Lock,
-} from "lucide-react";
+import { Copy, Check, Share2, Link2, Globe, Lock } from "lucide-react";
 import { Twitter, Facebook, Linkedin } from "@/components/icons/brand-icons";
 import { useCanvasShare } from "@/hooks/canvas/useCanvasShare";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
@@ -444,11 +438,15 @@ function useShareLogic({
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!open) {
-      setTimeout(reset, 300);
+    if (open) return undefined;
+
+    const resetTimer = window.setTimeout(() => {
+      reset();
       setCopied(false);
       setThumbnailUrl(null);
-    }
+    }, 300);
+
+    return () => window.clearTimeout(resetTimer);
   }, [open, reset]);
 
   useEffect(() => {
@@ -559,7 +557,7 @@ function MobileCanvasShareSheet(props: CanvasShareSheetProps) {
     <Drawer open={props.open} onOpenChange={props.onOpenChange}>
       <DrawerPortal>
         <DrawerOverlay className="z-[20000]" />
-        <DrawerPrimitive.Content className="fixed inset-x-0 bottom-0 z-[20000] mt-24 flex h-auto max-h-[92dvh] flex-col rounded-t-[10px] border border-border bg-background shadow-lg">
+        <DrawerContentPrimitive className="fixed inset-x-0 bottom-0 z-[20000] mt-24 flex h-auto max-h-[92dvh] flex-col rounded-t-[10px] border border-border bg-background shadow-lg">
           {/* Drag handle */}
           <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted shrink-0" />
 
@@ -594,7 +592,7 @@ function MobileCanvasShareSheet(props: CanvasShareSheetProps) {
               selectContentClass="z-[20001]"
             />
           </div>
-        </DrawerPrimitive.Content>
+        </DrawerContentPrimitive>
       </DrawerPortal>
     </Drawer>
   );
@@ -611,7 +609,7 @@ function DesktopCanvasShareSheet(props: CanvasShareSheetProps) {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="z-[20000]" />
-        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-[20000] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-0 border border-border bg-background shadow-lg p-6 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
+        <DialogContentPrimitive className="fixed left-[50%] top-[50%] z-[20000] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-0 border border-border bg-background shadow-lg p-6 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
           <DialogHeader className="mb-4">
             <DialogTitle className="flex items-center gap-2">
               <Share2 className="w-5 h-5" />
@@ -635,10 +633,10 @@ function DesktopCanvasShareSheet(props: CanvasShareSheetProps) {
             selectContentClass="z-[20001]"
           />
 
-          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+          <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
             <span className="sr-only">Close</span>✕
-          </DialogPrimitive.Close>
-        </DialogPrimitive.Content>
+          </DialogClose>
+        </DialogContentPrimitive>
       </DialogPortal>
     </Dialog>
   );

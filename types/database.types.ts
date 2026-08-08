@@ -37439,6 +37439,7 @@ export type Database = {
         }[]
       }
       fn_purge_library_document: { Args: { p_id: string }; Returns: Json }
+      fn_purge_library_file: { Args: { p_file_id: string }; Returns: Json }
       fn_restore_library_document: { Args: { p_id: string }; Returns: Json }
       library_grant_publish: {
         Args: {

@@ -5,15 +5,27 @@ import { Drawer as DrawerPrimitive } from "vaul";
 
 import { cn } from "@/lib/utils";
 import { treeContainsComponent } from "@/lib/react/treeContainsComponent";
+import { RadixDialogModalProvider } from "@/components/ui/radix-dialog-modal-context";
+
+type DrawerProps = React.ComponentProps<typeof DrawerPrimitive.Root> & {
+  /** Vaul does not forward false to its underlying Radix root. */
+  modal?: true;
+};
 
 const Drawer = ({
+  children,
   shouldScaleBackground = true,
   ...props
-}: React.ComponentProps<typeof DrawerPrimitive.Root>) => (
-  <DrawerPrimitive.Root
-    shouldScaleBackground={shouldScaleBackground}
-    {...props}
-  />
+}: DrawerProps) => (
+  <RadixDialogModalProvider modal>
+    <DrawerPrimitive.Root
+      modal
+      shouldScaleBackground={shouldScaleBackground}
+      {...props}
+    >
+      {children}
+    </DrawerPrimitive.Root>
+  </RadixDialogModalProvider>
 );
 Drawer.displayName = "Drawer";
 
@@ -47,6 +59,18 @@ const DrawerDescription = React.forwardRef<
 ));
 DrawerDescription.displayName = DrawerPrimitive.Description.displayName;
 
+/**
+ * Unstyled, non-portalling Content for custom Drawer layouts. It derives
+ * explicit modal semantics while Vaul retains focus/background behavior.
+ */
+const DrawerContentPrimitive = React.forwardRef<
+  React.ComponentRef<typeof DrawerPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>
+>(({ ...props }, ref) => (
+  <DrawerPrimitive.Content {...props} ref={ref} aria-modal="true" />
+));
+DrawerContentPrimitive.displayName = "DrawerContentPrimitive";
+
 const DrawerContent = React.forwardRef<
   React.ComponentRef<typeof DrawerPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>
@@ -57,7 +81,7 @@ const DrawerContent = React.forwardRef<
   return (
     <DrawerPortal>
       <DrawerOverlay />
-      <DrawerPrimitive.Content
+      <DrawerContentPrimitive
         ref={ref}
         className={cn(
           "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
@@ -68,7 +92,7 @@ const DrawerContent = React.forwardRef<
       >
         <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
         {children}
-      </DrawerPrimitive.Content>
+      </DrawerContentPrimitive>
     </DrawerPortal>
   );
 });
@@ -118,6 +142,7 @@ export {
   DrawerTrigger,
   DrawerClose,
   DrawerContent,
+  DrawerContentPrimitive,
   DrawerHeader,
   DrawerFooter,
   DrawerTitle,

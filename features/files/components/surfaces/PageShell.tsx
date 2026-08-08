@@ -99,7 +99,9 @@ import {
   moveFile as moveFileThunk,
   updateFolder as updateFolderThunk,
   loadFolderContents,
+  loadTrash,
 } from "@/features/files/redux/thunks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import {
   AlertDialog,
@@ -266,6 +268,16 @@ function PageShellDesktop({
   const treeStatus = useAppSelector(selectTreeStatus);
   const allFiles = useAppSelector(selectAllFilesArray);
   const allFolders = useAppSelector(selectAllFoldersArray);
+  const currentUserId = useAppSelector(selectUserId);
+
+  // Trash hydration: the main tree load excludes deleted rows and every
+  // delete removes its record from the store, so the trash section must
+  // fetch its own rows (Wave A). Re-fires on section entry; idempotent.
+  useEffect(() => {
+    if (section === "trash" && currentUserId) {
+      void dispatch(loadTrash({ userId: currentUserId }));
+    }
+  }, [section, currentUserId, dispatch]);
   const filesById = useAppSelector(selectAllFilesMap);
   const foldersById = useAppSelector(selectAllFoldersMap);
   const permissionsByResourceId = useAppSelector(
@@ -989,8 +1001,11 @@ function PageShellDesktop({
           </ResizablePanelGroup>
 
           {/* Bulk-actions toolbar — fixed-position pill at the bottom of the
-           * viewport. Renders nothing unless one or more rows are selected. */}
-          <BulkActionsBar />
+           * viewport. Renders nothing unless one or more rows are selected.
+           * Hidden in trash: its actions (move/visibility/soft-delete) are
+           * wrong for trashed rows — per-row Restore / Delete forever live on
+           * the row menu instead (bulk trash ops tracked as a follow-up). */}
+          {section !== "trash" && <BulkActionsBar />}
 
           {/* Confirm dialog for keyboard-shortcut deletes. Destructive ops
            * always go through a dialog so an accidental Backspace press
@@ -1110,7 +1125,7 @@ function SectionPlaceholder({ section }: { section: CloudFilesSection }) {
       <EmptyState
         icon={Trash2}
         title="Trash is empty"
-        description="Deleted files stay here for 30 days before they're purged."
+        description="Deleted files stay here until you restore them or delete them forever."
       />
     );
   }

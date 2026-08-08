@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { PDF_SURFACES } from "@/features/pdf/surfaces/registry";
 import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 import {
+  ArchiveRestore,
   Copy,
   CopyPlus,
   Download,
@@ -66,6 +67,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import {
+  purgeFile as purgeFileThunk,
+  restoreFile as restoreFileThunk,
+} from "@/features/files/redux/thunks";
 import type { Visibility } from "@/features/files/types";
 import { clearSelection, setActiveFileId } from "@/features/files/redux/slice";
 import {
@@ -454,7 +460,35 @@ export function FileContextMenu({
           {children}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
-          {isInMulti ? (
+          {file?.deletedAt ? (
+            // Trash mode (Wave A lifecycle): exactly two actions — Restore,
+            // or the ONLY hard-delete path in the system (purge from trash).
+            <>
+              <DropdownMenuItem
+                onClick={() => void dispatch(restoreFileThunk({ fileId }))}
+              >
+                <ArchiveRestore className="mr-2 h-4 w-4" />
+                Restore
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() =>
+                  void (async () => {
+                    const ok = await confirmDialog({
+                      title: "Permanently delete file?",
+                      description: `"${file.fileName}" and all of its extracted data (pages, segments, embeddings) will be gone forever. This cannot be undone.`,
+                      confirmLabel: "Delete forever",
+                      variant: "destructive",
+                    });
+                    if (ok) void dispatch(purgeFileThunk({ fileId }));
+                  })()
+                }
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete forever
+              </DropdownMenuItem>
+            </>
+          ) : isInMulti ? (
             // Batch mode — operates on the whole selection. The single-file
             // items (Rename, Show versions, File info, Visibility) don't
             // make sense across N files, so we hide them.

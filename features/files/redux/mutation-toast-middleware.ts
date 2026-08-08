@@ -38,6 +38,7 @@ const MUTATION_THUNK_NAMES = new Set<string>([
   "moveFile",
   "deleteFile",
   "restoreFile",
+  "purgeFile",
   "updateFileMetadata",
   "restoreVersion",
   // (uploadFiles is intentionally excluded — uploads surface per-file errors
@@ -46,6 +47,8 @@ const MUTATION_THUNK_NAMES = new Set<string>([
   "createFolder",
   "updateFolder",
   "deleteFolder",
+  "restoreFolder",
+  "purgeFolder",
   // bulk
   "bulkDeleteFiles",
   "bulkMoveFiles",
@@ -74,6 +77,9 @@ const TITLE: Record<string, string> = {
   deleteFile: "Couldn't delete",
   deleteAny: "Couldn't delete",
   restoreFile: "Couldn't restore",
+  restoreFolder: "Couldn't restore folder",
+  purgeFile: "Couldn't permanently delete",
+  purgeFolder: "Couldn't permanently delete folder",
   updateFileMetadata: "Couldn't update file",
   restoreVersion: "Couldn't restore that version",
   uploadFiles: "Upload failed",

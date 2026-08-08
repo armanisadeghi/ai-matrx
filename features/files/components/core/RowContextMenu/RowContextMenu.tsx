@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { PDF_SURFACES } from "@/features/pdf/surfaces/registry";
 import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 import {
+  ArchiveRestore,
   ClipboardPaste,
   Copy,
   CopyPlus,
@@ -55,6 +56,10 @@ import {
 } from "@/features/files/redux/slice";
 import {
   moveFile as moveFileThunk,
+  purgeFile as purgeFileThunk,
+  purgeFolder as purgeFolderThunk,
+  restoreFile as restoreFileThunk,
+  restoreFolder as restoreFolderThunk,
   updateFolder as updateFolderThunk,
   uploadFiles as uploadFilesThunk,
 } from "@/features/files/redux/thunks";
@@ -192,6 +197,61 @@ export function FileRowContextMenu({
 
   if (!file) {
     return <>{children}</>;
+  }
+
+  // Trash mode (Wave A lifecycle): a trashed row offers exactly two actions —
+  // Restore, or the ONLY hard-delete path in the system (purge from trash).
+  if (file.deletedAt) {
+    const trashItems: ContextMenuExtraItem[] = [
+      {
+        kind: "item",
+        id: "file-restore",
+        label: "Restore",
+        icon: ArchiveRestore,
+        onSelect: () => void dispatch(restoreFileThunk({ fileId })),
+      },
+      {
+        kind: "item",
+        id: "file-purge",
+        label: "Delete forever",
+        icon: Trash2,
+        destructive: true,
+        onSelect: () =>
+          void (async () => {
+            const ok = await confirm({
+              title: "Permanently delete file?",
+              description: `"${file.fileName}" and all of its extracted data (pages, segments, embeddings) will be gone forever. This cannot be undone.`,
+              confirmLabel: "Delete forever",
+              variant: "destructive",
+            });
+            if (ok) void dispatch(purgeFileThunk({ fileId }));
+          })(),
+      },
+    ];
+    return (
+      <NonEditableContextMenu
+        sourceFeature="files"
+        surfaceName={FILES_SURFACE}
+        contextData={{
+          content: file.fileName,
+          active_file_id: fileId,
+          active_file_name: file.fileName,
+          active_file_mime_type: file.mimeType ?? "",
+        }}
+        entity={{
+          type: "file",
+          id: fileId,
+          title: file.fileName,
+          resourceType: "file",
+        }}
+        extraSections={[
+          { id: "file-trash-actions", anchor: "after-clipboard", items: trashItems },
+        ]}
+        enableFloatingIcon={false}
+      >
+        {children}
+      </NonEditableContextMenu>
+    );
   }
 
   const items: ContextMenuExtraItem[] = [
@@ -495,6 +555,56 @@ export function FolderRowContextMenu({
 
   if (!folder) {
     return <>{children}</>;
+  }
+
+  // Trash mode (Wave A lifecycle) — mirror of the file trash menu.
+  if (folder.deletedAt) {
+    const trashItems: ContextMenuExtraItem[] = [
+      {
+        kind: "item",
+        id: "folder-restore",
+        label: "Restore",
+        icon: ArchiveRestore,
+        onSelect: () => void dispatch(restoreFolderThunk({ folderId })),
+      },
+      {
+        kind: "item",
+        id: "folder-purge",
+        label: "Delete forever",
+        icon: Trash2,
+        destructive: true,
+        onSelect: () =>
+          void (async () => {
+            const ok = await confirm({
+              title: "Permanently delete folder?",
+              description: `"${folder.folderName}" and everything inside it will be gone forever. This cannot be undone.`,
+              confirmLabel: "Delete forever",
+              variant: "destructive",
+            });
+            if (ok) void dispatch(purgeFolderThunk({ folderId }));
+          })(),
+      },
+    ];
+    return (
+      <NonEditableContextMenu
+        sourceFeature="files"
+        surfaceName={FILES_SURFACE}
+        contextData={{
+          content: folder.folderName,
+          active_folder_id: folderId,
+        }}
+        extraSections={[
+          {
+            id: "folder-trash-actions",
+            anchor: "after-clipboard",
+            items: trashItems,
+          },
+        ]}
+        enableFloatingIcon={false}
+      >
+        {children}
+      </NonEditableContextMenu>
+    );
   }
 
   const items: ContextMenuExtraItem[] = [

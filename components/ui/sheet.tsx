@@ -8,6 +8,8 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { treeContainsComponent } from "@/lib/react/treeContainsComponent";
+import { RadixDialogModalProvider } from "@/components/ui/radix-dialog-modal-context";
+import { DialogContentPrimitive } from "@/components/ui/dialog";
 
 /**
  * Hydration-safe Sheet wrapper.
@@ -20,12 +22,19 @@ const Sheet = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Root>
 >(({ children, ...props }, ref) => {
   const isMounted = useIsMounted();
+  const modal = props.modal ?? true;
 
   if (!isMounted) {
     return null;
   }
 
-  return <SheetPrimitive.Root {...props}>{children}</SheetPrimitive.Root>;
+  return (
+    <RadixDialogModalProvider modal={modal}>
+      <SheetPrimitive.Root {...props} modal={modal}>
+        {children}
+      </SheetPrimitive.Root>
+    </RadixDialogModalProvider>
+  );
 });
 Sheet.displayName = "Sheet";
 
@@ -117,7 +126,7 @@ const SheetContent = React.forwardRef<
     return (
       <SheetPortal>
         {!hideOverlay && <SheetOverlay className={overlayClassName} />}
-        <SheetPrimitive.Content
+        <DialogContentPrimitive
           ref={ref}
           className={cn(sheetVariants({ side }), className)}
           {...(hasDescription ? {} : { "aria-describedby": undefined })}
@@ -130,7 +139,7 @@ const SheetContent = React.forwardRef<
             </SheetPrimitive.Close>
           )}
           {children}
-        </SheetPrimitive.Content>
+        </DialogContentPrimitive>
       </SheetPortal>
     );
   },

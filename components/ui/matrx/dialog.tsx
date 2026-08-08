@@ -8,6 +8,8 @@ import { Cross2Icon } from "@radix-ui/react-icons";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { treeContainsComponent } from "@/lib/react/treeContainsComponent";
 import { usePopoutContainer } from "@/features/window-panels/popout/usePopoutContainer";
+import { RadixDialogModalProvider } from "@/components/ui/radix-dialog-modal-context";
+import { DialogContentPrimitive } from "@/components/ui/dialog";
 
 /**
  * Context that provides the Dialog content DOM element so that nested portaled
@@ -30,12 +32,19 @@ const Dialog = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>
 >(({ children, ...props }, ref) => {
   const isMounted = useIsMounted();
+  const modal = props.modal ?? true;
 
   if (!isMounted) {
     return null;
   }
 
-  return <DialogPrimitive.Root {...props}>{children}</DialogPrimitive.Root>;
+  return (
+    <RadixDialogModalProvider modal={modal}>
+      <DialogPrimitive.Root {...props} modal={modal}>
+        {children}
+      </DialogPrimitive.Root>
+    </RadixDialogModalProvider>
+  );
 });
 Dialog.displayName = "Dialog";
 
@@ -132,7 +141,7 @@ const DialogContent = React.forwardRef<
   return (
     <DialogPortal>
       <DialogOverlay />
-      <DialogPrimitive.Content
+      <DialogContentPrimitive
         ref={mergedRef}
         className={cn(
           "fixed left-[50%] top-[50%] z-[9999] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 overflow-hidden border bg-background p-4 shadow-lg duration-200 sm:rounded-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
@@ -153,7 +162,7 @@ const DialogContent = React.forwardRef<
           <Cross2Icon className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
-      </DialogPrimitive.Content>
+      </DialogContentPrimitive>
     </DialogPortal>
   );
 });

@@ -39,9 +39,12 @@ import {
   revokeShareLink as revokeCanonicalShareLink,
 } from "@/utils/permissions/shareLinks";
 import {
+  restoreFileDirect,
+  restoreFolderDirect,
   softDeleteFileDirect,
   softDeleteFolderDirect,
 } from "@/features/files/api/direct";
+import { ragDb } from "@/utils/supabase/ragDb";
 import { fileHandler } from "@/features/files/handler/handler";
 import { newRequestId } from "@/lib/python-client";
 import { extractErrorMessage } from "@/utils/errors";
@@ -1350,6 +1353,203 @@ export const deleteFile = createAsyncThunk<void, DeleteFileArg, ThunkApi>(
     }
   },
 );
+
+// ---------------------------------------------------------------------------
+// Trash — hydrate, restore, purge (Wave A: active → soft-deleted → deleted)
+// ---------------------------------------------------------------------------
+
+/**
+ * Hydrate the trash section. The main tree load runs with
+ * `p_include_deleted: false` and every delete/echo REMOVES rows from the
+ * store, so soft-deleted records never reach Redux on their own — this thunk
+ * pages the same RPC with deleted rows included and upserts ONLY the trashed
+ * ones (`deletedAt` set). It never touches the folder tree spine, so trashed
+ * rows can't leak into live folder listings; the section filters in
+ * PageShell/row-data pick them up by `deletedAt`.
+ */
+export const loadTrash = createAsyncThunk<void, { userId: string }, ThunkApi>(
+  "cloudFiles/loadTrash",
+  async ({ userId }, { dispatch }) => {
+    const rows: ReturnType<typeof parseCloudTreeRows> = [];
+    for (let page = 0; page < TREE_MAX_PAGES; page += 1) {
+      const { data, error } = await supabase.rpc("get_user_file_tree", {
+        p_user_id: userId,
+        p_limit: TREE_PAGE_SIZE,
+        p_offset: page * TREE_PAGE_SIZE,
+        p_include_folders: true,
+        p_include_deleted: true,
+      });
+      if (error) throw error;
+      const pageRows = parseCloudTreeRows(data);
+      rows.push(...pageRows);
+      if (pageRows.length < TREE_PAGE_SIZE) break;
+    }
+
+    const files: Partial<CloudFile>[] = [];
+    const folders: Partial<CloudFolder>[] = [];
+    for (const row of rows) {
+      if (!row.deleted_at) continue;
+      if (row.kind === "file") {
+        if (isHiddenFromUserTree(row.file_path)) continue;
+        files.push({
+          id: row.id,
+          ownerId: row.owner_id,
+          filePath: row.file_path,
+          fileName: row.file_name,
+          parentFolderId: row.parent_folder_id,
+          mimeType: row.mime_type,
+          fileSize: row.size_bytes,
+          visibility: row.visibility,
+          currentVersion: row.current_version,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          deletedAt: row.deleted_at,
+        });
+      } else {
+        if (isHiddenFromUserTree(row.folder_path)) continue;
+        folders.push({
+          id: row.id,
+          ownerId: row.owner_id,
+          folderPath: row.folder_path,
+          folderName: row.folder_name,
+          parentId: row.parent_id,
+          visibility: row.visibility,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          deletedAt: row.deleted_at,
+        });
+      }
+    }
+    dispatch(upsertFiles(files));
+    dispatch(upsertFolders(folders));
+  },
+);
+
+/** Restore a trashed file: flip `deletedAt` off and reattach to its folder. */
+export const restoreFile = createAsyncThunk<void, { fileId: string }, ThunkApi>(
+  "cloudFiles/restoreFile",
+  async ({ fileId }, { dispatch, getState }) => {
+    const record = getFileFromState(getState(), fileId);
+    if (!record?.deletedAt) return;
+    const requestId = newRequestId();
+
+    // Optimistic: back to live, back under its parent.
+    dispatch(upsertFile({ ...record, deletedAt: null }));
+    dispatch(
+      attachChildToFolder({
+        parentFolderId: record.parentFolderId,
+        kind: "file",
+        id: fileId,
+      }),
+    );
+    registerRequest({
+      requestId,
+      kind: "file-restore",
+      resourceId: fileId,
+      resourceType: "file",
+    });
+    try {
+      await restoreFileDirect(fileId);
+    } catch (err) {
+      dispatch(upsertFile(record)); // rollback to trashed
+      dispatch(
+        detachChildFromFolder({
+          parentFolderId: record.parentFolderId,
+          kind: "file",
+          id: fileId,
+        }),
+      );
+      throw err;
+    } finally {
+      releaseRequest(requestId);
+    }
+  },
+);
+
+/**
+ * Restore a trashed folder + its subtree. The RPC un-deletes descendants in
+ * SQL; rather than mirroring that cascade optimistically we reconcile by
+ * reloading the live tree afterwards (folder restore is rare — correctness
+ * over cleverness).
+ */
+export const restoreFolder = createAsyncThunk<
+  void,
+  { folderId: string },
+  ThunkApi
+>("cloudFiles/restoreFolder", async ({ folderId }, { dispatch, getState }) => {
+  const folder = getState().cloudFiles.foldersById[folderId];
+  if (!folder?.deletedAt) return;
+  await restoreFolderDirect(folderId);
+  dispatch(upsertFolder({ ...folder, deletedAt: null }));
+  const userId = folder.ownerId;
+  await dispatch(loadUserFileTree({ userId }));
+  await dispatch(loadTrash({ userId }));
+});
+
+/**
+ * Delete forever (Wave A purge): callable only on an ALREADY-TRASHED file.
+ * Two halves, both idempotent:
+ *   1. `rag.fn_purge_library_file` — synchronously purges the document
+ *      family (docs + chunks + pages + memberships) under the DB's
+ *      trash-first guard.
+ *   2. The Python hard-delete — removes the files row + S3 bytes
+ *      (S3 knowledge is server-only; never purge bytes from the browser).
+ */
+export const purgeFile = createAsyncThunk<void, { fileId: string }, ThunkApi>(
+  "cloudFiles/purgeFile",
+  async ({ fileId }, { dispatch, getState }) => {
+    const record = getFileFromState(getState(), fileId);
+    if (!record?.deletedAt) {
+      throw new Error("Only a trashed file can be permanently deleted.");
+    }
+    const requestId = newRequestId();
+    dispatch(removeFile({ id: fileId }));
+    invalidateBlobCache(fileId);
+    registerRequest({
+      requestId,
+      kind: "delete",
+      resourceId: fileId,
+      resourceType: "file",
+    });
+    try {
+      const { error } = await ragDb(supabase).rpc("fn_purge_library_file", {
+        p_file_id: fileId,
+      });
+      if (error) throw error;
+      await Files.deleteFile(fileId, { hardDelete: true }, { requestId });
+    } catch (err) {
+      dispatch(upsertFile(record)); // rollback — still in trash
+      throw err;
+    } finally {
+      releaseRequest(requestId);
+    }
+  },
+);
+
+/** Delete a trashed folder forever (server purges the subtree + S3). */
+export const purgeFolder = createAsyncThunk<
+  void,
+  { folderId: string },
+  ThunkApi
+>("cloudFiles/purgeFolder", async ({ folderId }, { dispatch, getState }) => {
+  const folder = getState().cloudFiles.foldersById[folderId];
+  if (!folder?.deletedAt) {
+    throw new Error("Only a trashed folder can be permanently deleted.");
+  }
+  const requestId = newRequestId();
+  registerRequest({
+    requestId,
+    kind: "folder-delete",
+    resourceId: folderId,
+    resourceType: "folder",
+  });
+  try {
+    await Folders.deleteFolder(folderId, { hardDelete: true }, { requestId });
+    dispatch(removeFolder({ id: folderId }));
+  } finally {
+    releaseRequest(requestId);
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Writes — versions

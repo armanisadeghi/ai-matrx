@@ -18,6 +18,11 @@
  *                    rounded box                           → use <Checkbox>
  *   3. fake-switch   a rounded-full track with a translate-x thumb, in a file
  *                    that never imports <Switch>           → use <Switch>
+ *   4. raw-dialog    a hand-built role="dialog"/"alertdialog" surface → use
+ *                    Dialog / AlertDialog / Drawer so focus and AT isolation
+ *                    cannot drift from the claimed modal semantics
+ *   5. raw-modal-import direct Radix Dialog/AlertDialog or Vaul imports outside
+ *                       components/ui → consume the shared wrappers
  *
  * The canonical components live in `components/ui/` and are exempt (they ARE
  * the primitive). Radix wrappers and tests are exempt too.
@@ -141,7 +146,12 @@ function selectFiles(args: Args): string[] {
 
 // ─── Scanners ────────────────────────────────────────────────────────────────
 
-type Kind = "raw-input" | "fake-checkbox" | "fake-switch";
+type Kind =
+  | "raw-input"
+  | "fake-checkbox"
+  | "fake-switch"
+  | "raw-dialog"
+  | "raw-modal-import";
 
 interface Finding {
   file: string;
@@ -204,6 +214,18 @@ const SWITCH_STATE_GATED_RE =
 //    (`translate-x-0 : -translate-x-full`), which are panels, not switches.
 const SWITCH_TERNARY_RE =
   /\?[^?{}]*(?<!-)\btranslate-x-[0-9.]+[^?{}]*:[^?{}]*(?<!-)\btranslate-x-[0-9.]+/;
+const RAW_DIALOG_RE = /\brole\s*=\s*["'](?:dialog|alertdialog)["']/g;
+const DYNAMIC_ARIA_MODAL_RE = /\baria-modal\s*=\s*\{[^}]+\}/g;
+const RAW_MODAL_IMPORT_RE =
+  /from\s+["'](@radix-ui\/react-(?:dialog|alert-dialog)|vaul)["']/g;
+
+// These are deliberately non-modal window surfaces. They expose dialog
+// semantics for screen-reader navigation but do not block the application.
+const INTENTIONAL_NON_MODAL_DIALOG_FILES = new Set([
+  "app/(admin)/administration/ui/official-components/component-displays/floating-sheet.tsx",
+  "components/matrx/resizable/MatrxDynamicPanelHost.tsx",
+  "features/window-panels/mobile/MobileCardSurface.tsx",
+]);
 
 function importsSwitch(text: string): boolean {
   return /\bimport\b[^\n]*\bSwitch\b[^\n]*from\s+["'][^"']*\/switch["']/.test(
@@ -269,6 +291,37 @@ function scanFile(file: string): Finding[] {
     }
   }
 
+  // 4. A raw dialog role is an accessibility contract, not just a label. The
+  // shared wrappers keep focus trapping, background AT isolation, restoration,
+  // Escape handling, and aria-modal synchronized.
+  if (!INTENTIONAL_NON_MODAL_DIALOG_FILES.has(file)) {
+    const dynamicModalMatch = text.matchAll(DYNAMIC_ARIA_MODAL_RE).next().value;
+    const rawRoleMatch = text.matchAll(RAW_DIALOG_RE).next().value;
+    const m = dynamicModalMatch ?? rawRoleMatch;
+    if (m) {
+      findings.push({
+        file,
+        line: lineAt(text, m.index ?? 0),
+        kind: "raw-dialog",
+        detail:
+          dynamicModalMatch !== undefined
+            ? "dynamic aria-modal on a hand-built surface — use Dialog or Drawer so the ARIA claim follows real modality behavior"
+            : 'hand-built role="dialog"/"alertdialog" — use Dialog, AlertDialog, or Drawer so modality behavior stays complete',
+      });
+    }
+  }
+
+  // 5. Direct primitive imports let custom content silently bypass our shared
+  // ARIA contract. components/ui is exempt because it owns the wrappers.
+  for (const m of text.matchAll(RAW_MODAL_IMPORT_RE)) {
+    findings.push({
+      file,
+      line: lineAt(text, m.index ?? 0),
+      kind: "raw-modal-import",
+      detail: `direct ${m[1]} import — consume the shared components/ui modal primitive`,
+    });
+  }
+
   return findings;
 }
 
@@ -288,6 +341,8 @@ const KIND_LABEL: Record<Kind, string> = {
   "raw-input": "Raw input",
   "fake-checkbox": "Fake checkbox",
   "fake-switch": "Fake switch",
+  "raw-dialog": "Raw dialog",
+  "raw-modal-import": "Raw modal import",
 };
 
 function main(): number {

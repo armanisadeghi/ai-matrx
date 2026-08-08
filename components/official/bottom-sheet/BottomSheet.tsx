@@ -6,10 +6,11 @@ import { cn } from "@/lib/utils";
 import {
   Drawer,
   DrawerPortal,
-  DrawerContent,
+  DrawerContentPrimitive,
+  DrawerOverlay,
+  DrawerDescription,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Drawer as DrawerPrimitive } from "vaul";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 interface BottomSheetProps {
@@ -31,11 +32,11 @@ function BottomSheet({
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerPortal>
-        <DrawerPrimitive.Overlay
+        <DrawerOverlay
           className="fixed inset-0 z-50"
           style={{ background: "rgba(0, 0, 0, 0.08)" }}
         />
-        <DrawerPrimitive.Content
+        <DrawerContentPrimitive
           className={cn(
             "fixed inset-x-0 bottom-0 z-50 mt-24 flex flex-col rounded-t-2xl overflow-hidden min-h-[60dvh] max-h-[90dvh]",
             contentClassName,
@@ -49,14 +50,12 @@ function BottomSheet({
           }}
         >
           <VisuallyHidden>
-            <DrawerPrimitive.Title>{title}</DrawerPrimitive.Title>
-            <DrawerPrimitive.Description>
-              Bottom sheet panel.
-            </DrawerPrimitive.Description>
+            <DrawerTitle>{title}</DrawerTitle>
+            <DrawerDescription>Bottom sheet panel.</DrawerDescription>
           </VisuallyHidden>
           <div className="mx-auto mt-3 mb-1 h-1.5 w-10 rounded-full bg-muted-foreground/30 flex-shrink-0" />
           {children}
-        </DrawerPrimitive.Content>
+        </DrawerContentPrimitive>
       </DrawerPortal>
     </Drawer>
   );
