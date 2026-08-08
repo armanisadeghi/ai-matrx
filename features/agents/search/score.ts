@@ -2,14 +2,14 @@
 //
 // THE canonical agent relevance scorer. One implementation, every surface.
 //
-// This existed twice with drifted weights — `features/agents/redux/agent-consumers/selectors.ts`
-// (the gallery) and `lib/redux/selectors/agentSelectors.ts` (the chat-side agentCache).
-// The chat copy scored an id match at 50 with no exact-id bonus, so searching a
-// chat-side picker by UUID was effectively dead. Both now delegate here.
+// This existed twice with drifted weights — the gallery copy in
+// `features/agents/redux/agent-consumers/selectors.ts` and a chat-side copy in
+// the (deleted 2026-08) legacy agentCache selectors. The chat copy scored an id
+// match at 50 with no exact-id bonus, so searching a chat-side picker by UUID
+// was effectively dead. Everything now delegates here.
 //
 // Pure: no Redux, no store types, no imports. Anything that can describe an
-// agent structurally can be scored, which is what lets the gallery record
-// (AgentDefinitionRecord) and the slim chat record (AgentRecord) share it.
+// agent structurally can be scored.
 //
 // Adding a field? Add it here and it lights up on every surface at once.
 // Never fork this function.

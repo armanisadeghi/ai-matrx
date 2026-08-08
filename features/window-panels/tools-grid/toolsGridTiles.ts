@@ -92,7 +92,7 @@ import {
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectActiveAgentId } from "@/lib/redux/slices/agent-settings/selectors";
-import { selectOwnedAgentIds } from "@/lib/redux/slices/agentCacheSlice";
+import { selectOwnedAgents } from "@/features/agents/redux/agent-definition/selectors";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
 import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/chat-quick-actions.config";
 
@@ -142,7 +142,7 @@ export interface TileContext {
 function seedAgentId(ctx: TileContext): { agentId: string } | undefined {
   const state = ctx.getState();
   const id =
-    selectActiveAgentId(state) ?? selectOwnedAgentIds(state)[0] ?? null;
+    selectActiveAgentId(state) ?? selectOwnedAgents(state)[0]?.id ?? null;
   return id ? { agentId: id } : undefined;
 }
 
@@ -152,7 +152,7 @@ function seedInitialAgentId(
 ): { initialAgentId: string } | undefined {
   const state = ctx.getState();
   const id =
-    selectActiveAgentId(state) ?? selectOwnedAgentIds(state)[0] ?? null;
+    selectActiveAgentId(state) ?? selectOwnedAgents(state)[0]?.id ?? null;
   return id ? { initialAgentId: id } : undefined;
 }
 

@@ -134,7 +134,6 @@ const REGISTERED_SLICE_KEYS = new Set<string>([
   "fieldBuilder",
   "customAppRuntime",
   "customAppletRuntime",
-  "agentCache",
   "messaging",
   "adminPreferences",
   "entitySystem",
@@ -655,16 +654,6 @@ export function getStateViewerTabs(
         <GenericSliceViewer
           sliceKey="customAppRuntime"
           state={completeState.customAppRuntime}
-        />
-      ),
-    },
-    {
-      id: "agentCache",
-      label: "Agent Cache",
-      content: (
-        <GenericSliceViewer
-          sliceKey="agentCache"
-          state={completeState.agentCache}
         />
       ),
     },

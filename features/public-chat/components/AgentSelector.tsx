@@ -17,7 +17,7 @@ import {
   ChefHat,
   Atom,
 } from "lucide-react";
-import type { AgentConfig } from "../context/DEPRECATED-ChatContext";
+import type { AgentConfig } from "@/features/cx-chat/types/agents";
 
 // ============================================================================
 // TYPES

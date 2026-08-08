@@ -253,7 +253,7 @@ export const loadAgentSettings = createAsyncThunk(
 );
 
 /**
- * Initialize from already-fetched data (e.g. from agentCacheSlice operational depth).
+ * Initialize from already-fetched data (e.g. an agentDefinition record).
  * No network request — just normalizes and loads into slice state.
  */
 export const loadAgentSettingsDirect = createAsyncThunk(

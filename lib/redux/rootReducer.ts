@@ -77,7 +77,6 @@ import adminPreferencesReducer from "./preferences/adminPreferencesSlice";
 import apiConfigReducer from "./slices/apiConfigSlice";
 import urlSyncReducer from "./slices/urlSyncSlice";
 
-import agentCacheReducer from "./slices/agentCacheSlice";
 import agentDefinitionReducer from "@/features/agents/redux/agent-definition/slice";
 import { agentAssignmentsReducer } from "@/features/agents/redux/agent-assignments/agent-assignments.slice";
 import agentComparisonReducer from "@/features/agent-comparison/redux/battleSlice";
@@ -263,7 +262,6 @@ export const slimReducerMap = {
   customAppRuntime: customAppRuntimeSlice,
   customAppletRuntime: customAppletRuntimeSlice,
 
-  agentCache: agentCacheReducer,
 
   messaging: messagingReducer,
 

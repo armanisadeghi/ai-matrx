@@ -9,7 +9,7 @@
 // byProjectId) to enable O(1) lookups without scanning the full artifact map.
 // Thunks maintain these indexes whenever artifacts are upserted or removed.
 //
-// Parallel to agentCacheSlice — same pattern of byId + id-list indexes.
+// byId + id-list index pattern.
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
