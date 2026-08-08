@@ -135,6 +135,63 @@ meaningful transition creates a history entry; Back/Forward replays transitions
 without state drift; modifier-click opens the computed destination without
 mutating the source tab.
 
+### GSC-002 — Dedicated keyword-classification workspace
+
+- **Captured:** 2026-08-07
+- **Type:** Missing workflow / discoverability defect
+- **Status:** Ready
+- **Source:** Arman; verified in production UI and source
+
+#### Requirement
+
+Make classification a first-class Search Console workflow: visible coverage,
+an unclassified queue, review/edit controls, and bulk classifier actions in the
+site context where traffic-class analysis is consumed.
+
+#### Existing pieces
+
+- Insights displays traffic classes but provides no path to classify or review
+  the unclassified rows.
+- `/marketing/admin/keyword-data-quality` exists, but it is a hidden admin-only
+  batch trigger over the oldest universal keywords: no queue, selection,
+  editing, site valuation, or Search Console entry point.
+- Keyword Intelligence can classify one phrase through Research; it is not a
+  dedicated classification workspace.
+
+### GSC-003 — Site keyword inventory beyond observed GSC queries
+
+- **Captured:** 2026-08-07
+- **Type:** Product capability / data-model integration
+- **Status:** Ready
+- **Source:** Arman; verified against live schema and current projections
+
+#### Requirement
+
+Allow a user to add site keywords before GSC discovers them and show them
+throughout the query experience with zero clicks/impressions until real facts
+arrive. They must participate in classification, Dig Here, Insights, and other
+keyword workflows without being misrepresented as Google-sourced observations.
+
+#### Recommended architecture
+
+- Do not create synthetic `search_performance_daily` rows. Upsert the phrase
+  through `seo.fn_upsert_keyword`, then establish site intent through the
+  existing unique `seo.site_keyword_value(site_id, keyword_id)` record.
+- Query projections start from the site's keyword inventory plus observed GSC
+  queries, then left-join canonical GSC aggregates. Missing facts render clicks
+  and impressions as `0`; CTR/position remain unavailable, not fabricated.
+- Reuse the existing classification resolver: site valuation overrides
+  universal `seo.keyword.intent_class`, then falls back to `unclassified`.
+  `seo.rank_target` remains optional when actual SERP monitoring is desired.
+
+#### Existing proof and current gap
+
+- `seo.gsc_perf_watch` already anchors arbitrary keyword ids and returns honest
+  zero rows; `watchQueryRow` already performs the canonical phrase upsert.
+- Watchlist lacks Add Keyword and its favorites are personal/cross-site, so it
+  is not the shared site inventory. `v_site_keyword_performance` is also
+  observation-anchored today despite already joining `site_keyword_value`.
+
 ## Cumulative unanswered questions
 
 None yet.
