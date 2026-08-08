@@ -30,6 +30,15 @@ import { cn } from "@/lib/utils";
 import { searchPagesForMetaApply } from "@/features/marketing/data/service";
 import type { MetaApplyTarget } from "@/features/marketing/types";
 
+/** Host of a page URL — the site it belongs to, without a second query. */
+function siteLabel(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return "unknown site";
+  }
+}
+
 export interface PagePickerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -38,7 +47,12 @@ export interface PagePickerDialogProps {
   confirmLabel: string;
   /** Rendered under the list once a page is chosen — the before/after. */
   preview?: (page: MetaApplyTarget) => ReactNode;
-  onConfirm: (page: MetaApplyTarget) => Promise<void>;
+  /**
+   * Returning the saved row lets the picker refresh the optimistic-lock
+   * version in place. Without it a second attempt re-sends the stale version
+   * and can never succeed.
+   */
+  onConfirm: (page: MetaApplyTarget) => Promise<{ version: number } | void>;
 }
 
 export function PagePickerDialog({
@@ -105,9 +119,20 @@ export function PagePickerDialog({
     try {
       await onConfirm(selected);
       close(false);
+    } catch {
+      // Stays open so the user can retry or pick another page (the action owns
+      // surfacing the error) — but a stale optimistic-lock version would make
+      // every retry fail identically, so re-read the row before letting them.
+      const [fresh] = await searchPagesForMetaApply(selected.url, 1).catch(
+        () => [],
+      );
+      if (fresh) {
+        setSelected(fresh);
+        setPages((current) =>
+          current.map((row) => (row.id === fresh.id ? fresh : row)),
+        );
+      }
     } finally {
-      // Stays open on failure so the user can retry or pick another page —
-      // the action owns surfacing the error.
       setBusy(false);
     }
   };
@@ -144,8 +169,8 @@ export function PagePickerDialog({
             <div className="px-3 py-6 text-sm text-destructive">{loadError}</div>
           ) : pages.length === 0 ? (
             <div className="px-3 py-6 text-sm text-muted-foreground">
-              {term.trim()
-                ? `No pages matching “${term.trim()}”.`
+              {debouncedTerm.trim()
+                ? `No pages matching “${debouncedTerm.trim()}”.`
                 : "No pages available yet. Crawl a site first."}
             </div>
           ) : (
@@ -159,8 +184,15 @@ export function PagePickerDialog({
                   selected?.id === page.id && "bg-accent",
                 )}
               >
-                <span className="min-w-0 flex-1 truncate text-foreground">
-                  {page.url}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-foreground">
+                    {page.url}
+                  </span>
+                  {/* An agency user reads many clients' sites. An unlabeled
+                      list is how one client's metadata lands on another's. */}
+                  <span className="block truncate text-[11px] text-muted-foreground">
+                    {siteLabel(page.url)}
+                  </span>
                 </span>
                 {selected?.id === page.id ? (
                   <Check className="size-4 shrink-0 text-primary" />

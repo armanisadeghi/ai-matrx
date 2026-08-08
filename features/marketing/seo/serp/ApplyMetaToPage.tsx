@@ -23,13 +23,24 @@ import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { PagePickerDialog } from "@/features/marketing/components/pages/PagePickerDialog";
-import { updatePageIntent } from "@/features/marketing/data/service";
+import { useUpdatePageIntent } from "@/features/marketing/data/hooks";
 import type { MetaApplyTarget } from "@/features/marketing/types";
 
 export interface ApplyMetaToPageProps {
   title?: string;
   description?: string;
   className?: string;
+}
+
+/**
+ * An empty string is a REAL result here, not a missing value: `check_batch`
+ * reports a page whose `<title>` is absent as `title: ""` — precisely the
+ * finding the check exists to produce. Treating it as a value would blank the
+ * user's desired title on apply, so blank-or-absent both mean "not supplied".
+ */
+function supplied(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? value : undefined;
 }
 
 /** One field's before → after. Renders nothing for a field this apply omits. */
@@ -81,12 +92,27 @@ export function ApplyMetaToPage({
 }: ApplyMetaToPageProps) {
   const [open, setOpen] = useState(false);
   const [appliedUrl, setAppliedUrl] = useState<string | null>(null);
+  // Both consumers key their rows by array INDEX, so a re-resolve that
+  // reorders entries would otherwise leave this instance showing "Applied"
+  // for a title it never applied. Reset whenever the content changes.
+  const contentKey = `${title ?? ""}|${description ?? ""}`;
+  const [appliedFor, setAppliedFor] = useState(contentKey);
+  if (appliedFor !== contentKey) {
+    setAppliedFor(contentKey);
+    setAppliedUrl(null);
+  }
+  // The canonical mutation, NOT the bare service call — its onSuccess
+  // invalidation is what keeps an open Page Workspace from showing stale
+  // desired values (and from failing its own next write on a stale version).
+  const updateIntent = useUpdatePageIntent();
 
-  if (!title && !description) return null;
+  const nextTitle = supplied(title);
+  const nextDescription = supplied(description);
+  if (!nextTitle && !nextDescription) return null;
 
   const apply = async (page: MetaApplyTarget) => {
     try {
-      const saved = await updatePageIntent({
+      const saved = await updateIntent.mutateAsync({
         siteId: page.site_id,
         pageId: page.id,
         expectedVersion: page.version,
@@ -94,11 +120,13 @@ export function ApplyMetaToPage({
         // apply does not supply must be PRESERVED. A title-only result
         // (action=check_titles) must never blank the page's description.
         targetKeyword: page.target_keyword,
-        desiredMetaTitle: title ?? page.meta_title_desired,
-        desiredMetaDescription: description ?? page.meta_description_desired,
+        desiredMetaTitle: nextTitle ?? page.meta_title_desired,
+        desiredMetaDescription:
+          nextDescription ?? page.meta_description_desired,
       });
       setAppliedUrl(saved.url);
       toast.success("Applied to page", { description: saved.url });
+      return saved;
     } catch (error) {
       toast.error("Could not apply to page", {
         description:
@@ -118,7 +146,11 @@ export function ApplyMetaToPage({
           event.stopPropagation();
           setOpen(true);
         }}
-        title="Apply this title/description to a page"
+        title={
+          appliedUrl
+            ? `Applied to ${appliedUrl} — apply to another page`
+            : "Apply this title/description to a page"
+        }
         className={cn(
           "flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
           className,
@@ -144,12 +176,12 @@ export function ApplyMetaToPage({
             <FieldDiff
               label="Title"
               current={page.meta_title_desired}
-              next={title}
+              next={nextTitle}
             />
             <FieldDiff
               label="Description"
               current={page.meta_description_desired}
-              next={description}
+              next={nextDescription}
             />
           </>
         )}

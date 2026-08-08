@@ -1237,13 +1237,17 @@ export async function searchPagesForMetaApply(
 
   const trimmed = term.trim();
   if (trimmed) {
-    query = query.ilike("url", `%${trimmed}%`);
+    // A URL search box receives percent-encoding (%20, %2F) and underscores
+    // routinely, and both are LIKE metacharacters — unescaped, "%2F" matches
+    // nearly every row. Escape before interpolating.
+    const escaped = trimmed.replace(/[\\%_]/g, (char) => `\\${char}`);
+    query = query.ilike("url", `%${escaped}%`);
   }
 
-  const response = await query
+  query = query
     .order("last_seen", { ascending: false, nullsFirst: false })
-    .limit(limit)
-    .abortSignal(signal as AbortSignal);
+    .limit(limit);
+  const response = await (signal ? query.abortSignal(signal) : query);
   if (response.error) throw response.error;
   return response.data ?? [];
 }
