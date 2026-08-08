@@ -47,10 +47,7 @@ export default function ExtensionBridgeDemoPage() {
   const appendLog = useCallback((entry: Omit<LogEntry, "id">) => {
     if (logPausedRef.current) return;
     setLogEntries((prev) => {
-      const next: LogEntry[] = [
-        { ...entry, id: crypto.randomUUID() },
-        ...prev,
-      ];
+      const next: LogEntry[] = [{ ...entry, id: crypto.randomUUID() }, ...prev];
       return next.slice(0, MAX_LOG_ENTRIES);
     });
   }, []);
@@ -145,9 +142,7 @@ export default function ExtensionBridgeDemoPage() {
                   ts: entry.ts,
                   kind: entry.ok ? "append-success" : "append-error",
                   title: `POST append-message → ${entry.status} (${entry.role}, ${entry.conversationId.slice(0, 8)}…)`,
-                  body: entry.error
-                    ? { error: entry.error }
-                    : entry.response,
+                  body: entry.error ? { error: entry.error } : entry.response,
                 });
               }}
             />
@@ -190,9 +185,8 @@ function DevHints() {
           </code>
         </li>
         <li>
-          Bearer mode requires{" "}
-          <code className="rounded bg-background px-1">AGENT_API_KEY</code> from
-          .env.local pasted into the token field.
+          Bearer mode uses the signed-in user's Supabase access token and omits
+          cookies, matching an extension service-worker request.
         </li>
         <li>
           Broadcast substrate requires Supabase auth (signed-in user). Direct

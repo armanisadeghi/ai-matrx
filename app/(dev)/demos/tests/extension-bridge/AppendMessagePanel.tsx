@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
+import { supabase } from "@/utils/supabase/client";
 import { APPEND_MESSAGE_ENDPOINT, DEFAULT_APPEND_BODY } from "./constants";
 import { JsonViewer } from "./JsonViewer";
 
@@ -39,7 +40,6 @@ export function AppendMessagePanel({
   const [metadataJson, setMetadataJson] = useState<string>(
     JSON.stringify({ source: "extension-bridge-demo" }, null, 2),
   );
-  const [bearerToken, setBearerToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [response, setResponse] = useState<{
     status: number;
@@ -64,13 +64,6 @@ export function AppendMessagePanel({
       }
     }
 
-    if (useBearerAuth && !bearerToken.trim()) {
-      toast.error(
-        "Bearer mode is on but no token provided. Paste AGENT_API_KEY into the token field.",
-      );
-      return;
-    }
-
     setBusy(true);
     setResponse(null);
     try {
@@ -78,7 +71,14 @@ export function AppendMessagePanel({
         "Content-Type": "application/json",
       };
       if (useBearerAuth) {
-        headers["Authorization"] = `Bearer ${bearerToken.trim()}`;
+        const { data, error } = await supabase.auth.getSession();
+        const accessToken = data.session?.access_token;
+        if (error || !accessToken) {
+          throw new Error(
+            "No authenticated Supabase session is available for Bearer mode",
+          );
+        }
+        headers["Authorization"] = `Bearer ${accessToken}`;
       }
       const res = await fetch(APPEND_MESSAGE_ENDPOINT, {
         method: "POST",
@@ -203,21 +203,11 @@ export function AppendMessagePanel({
 
         {useBearerAuth && (
           <div className="space-y-1.5 rounded-md border border-warning/30 bg-warning/5 p-2">
-            <Label htmlFor="bearer-token" className="text-xs">
-              Bearer token (AGENT_API_KEY)
-            </Label>
-            <Input
-              id="bearer-token"
-              type="password"
-              placeholder="mk_agent_…"
-              value={bearerToken}
-              onChange={(e) => setBearerToken(e.target.value)}
-              className="h-9 font-mono text-xs"
-              autoComplete="off"
-            />
             <p className="text-[11px] text-muted-foreground">
-              Paste the value of AGENT_API_KEY from .env.local. Only stored in
-              this component's state — not persisted.
+              Sends the current user's Supabase access token while omitting
+              browser cookies, matching the extension service worker's headless
+              request posture. The token is never displayed or persisted by this
+              panel.
             </p>
           </div>
         )}

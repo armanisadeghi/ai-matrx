@@ -24,7 +24,7 @@ bottom.
   Broadcast channel, `app/api/extension/append-message` is the
   reference inbound route, and the `chrome-extension/agent-bridge`
   surface candidate now declares it (see [§ Surface area](#surface-area)).
-- Phase 2 will add **two substrates** that share one envelope:
+- Phase 2 shipped **two substrates** that share one envelope:
   `chrome.runtime.onMessageExternal` (same machine) and Supabase
   Broadcast (cross machine). A single `FRONTEND_RPC` envelope rides on
   both.
@@ -57,22 +57,20 @@ the substrates, the auth model, and how to add new commands.
 
 ## Surface area
 
-Concrete files in this repo that the extension bridge will touch when
-Phase 2 lands:
+Concrete files that own the shipped bridge:
 
-| Path | Role |
-|---|---|
-| [`lib/supabase/messaging.ts`](../lib/supabase/messaging.ts) | Broadcast / Postgres Changes / Presence substrate. Already used by conversation, typing, and presence channels. Adding a `matrx-extension-bridge:<userId>` channel slots in here. |
-| [`features/window-panels/`](../features/window-panels/) | Overlay registry + URL deep-link substrate. The extension uses `?panels=<typeKey>:<instanceId>` to open a specific panel without a bespoke RPC. |
-| [`features/window-panels/registry/windowRegistry.ts`](../features/window-panels/registry/windowRegistry.ts) | Per-window deep-link declarations (`urlSync.key`). |
-| [`features/window-panels/url-sync/initUrlHydration.ts`](../features/window-panels/url-sync/initUrlHydration.ts) | Where each `?panels=...` key gets a hydrator. |
-| [`app/api/agent/feedback/route.ts`](../app/api/agent/feedback/route.ts) | Reference Bearer-`AGENT_API_KEY` route — pattern the extension's headless calls will follow. |
-| [`app/api/mcp/[transport]/route.ts`](../app/api/mcp/[transport]/route.ts) | Reference dual-auth route (Bearer or `?token=`). |
-| [`app/api/extension/append-message/route.ts`](../app/api/extension/append-message/route.ts) | Headless conversation message-append endpoint — Phase 2 reference inbound route for the extension. |
-| [`hooks/useExtensionBridgeChannel.ts`](../hooks/useExtensionBridgeChannel.ts) | Page-side Broadcast subscriber for `matrx-extension-bridge:<userId>`. Receives FRONTEND_RPC events on cross-machine paths. |
-| [`lib/extension-bridge/openPanelHandler.ts`](../lib/extension-bridge/openPanelHandler.ts) | Translates inbound `openPanel` envelopes into `openOverlay({...})` Redux dispatches against the window-panels store. Validates the payload with `OpenPanelPayloadSchema` and rejects unknown overlayIds. |
-| [`lib/extension-bridge/ExtensionBridgeSubscriber.tsx`](../lib/extension-bridge/ExtensionBridgeSubscriber.tsx) | Top-level bridge subscriber, mounted in `app/Providers.tsx`. Filters `extension->frontend` envelopes for `action: "openPanel"`, calls the handler, and publishes the structured reply on the same Broadcast channel preserving `requestId`. |
-| `wxt.config.ts` (in matrx-extend, NOT this repo) | `externally_connectable.matches` whitelist. Listed here as a cross-repo reference because the whitelist must include this app's origins. |
+| Path                                                                                                            | Role                                                                                                                                                                                                                                        |
+| --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`lib/supabase/messaging.ts`](../lib/supabase/messaging.ts)                                                     | Broadcast / Postgres Changes / Presence substrate. Owns the ref-counted `matrx-extension-bridge:<userId>` channel.                                                                                                                          |
+| [`features/window-panels/`](../features/window-panels/)                                                         | Overlay registry + URL deep-link substrate. The extension uses `?panels=<typeKey>:<instanceId>` to open a specific panel without a bespoke RPC.                                                                                             |
+| [`features/window-panels/registry/windowRegistry.ts`](../features/window-panels/registry/windowRegistry.ts)     | Per-window deep-link declarations (`urlSync.key`).                                                                                                                                                                                          |
+| [`features/window-panels/url-sync/initUrlHydration.ts`](../features/window-panels/url-sync/initUrlHydration.ts) | Where each `?panels=...` key gets a hydrator.                                                                                                                                                                                               |
+| [`app/api/mcp/[transport]/route.ts`](../app/api/mcp/[transport]/route.ts)                                       | Reference dual-auth route (Bearer or `?token=`).                                                                                                                                                                                            |
+| [`app/api/extension/append-message/route.ts`](../app/api/extension/append-message/route.ts)                     | Headless conversation message-append endpoint — Phase 2 reference inbound route for the extension.                                                                                                                                          |
+| [`hooks/useExtensionBridgeChannel.ts`](../hooks/useExtensionBridgeChannel.ts)                                   | Page-side Broadcast subscriber for `matrx-extension-bridge:<userId>`. Receives FRONTEND_RPC events on cross-machine paths.                                                                                                                  |
+| [`lib/extension-bridge/openPanelHandler.ts`](../lib/extension-bridge/openPanelHandler.ts)                       | Translates inbound `openPanel` envelopes into `openOverlay({...})` Redux dispatches against the window-panels store. Validates the payload with `OpenPanelPayloadSchema` and rejects unknown overlayIds.                                    |
+| [`lib/extension-bridge/ExtensionBridgeSubscriber.tsx`](../lib/extension-bridge/ExtensionBridgeSubscriber.tsx)   | Top-level bridge subscriber, mounted in `app/Providers.tsx`. Filters `extension->frontend` envelopes for `action: "openPanel"`, calls the handler, and publishes the structured reply on the same Broadcast channel preserving `requestId`. |
+| `wxt.config.ts` (in matrx-extend, NOT this repo)                                                                | `externally_connectable.matches` whitelist. Listed here as a cross-repo reference because the whitelist must include this app's origins.                                                                                                    |
 
 ### Recent change — `chrome-extension` is now a real surface candidate
 
@@ -99,7 +97,7 @@ reference framing above.
 
 ## Substrates
 
-Two substrates, one envelope. Both planned for Phase 2.
+Two substrates, one envelope. Both are live.
 
 ### 1. `chrome.runtime.onMessageExternal` — same-machine RPC
 
@@ -138,9 +136,9 @@ reach. Broadcast over a per-user channel does:
 ```ts
 type FrontendRpc<TPayload = unknown> = {
   channel: "FRONTEND_RPC";
-  action: string;       // dot-namespaced, e.g. "panel.open" / "conversation.appendMessage"
+  action: string; // dot-namespaced, e.g. "panel.open" / "conversation.appendMessage"
   payload: TPayload;
-  requestId: string;    // UUID — replies match by this
+  requestId: string; // UUID — replies match by this
 };
 ```
 
@@ -200,12 +198,11 @@ Both sides authenticate against the same Supabase project
    origin). Wins when present. Server-side routes read it via
    `createClient()` from `utils/supabase/server.ts` exactly as
    today.
-2. **Bearer token** (`Authorization: Bearer <token>`). Used when the
-   extension calls headless API routes from a service worker context
-   that doesn't carry cookies. Pattern: see
-   `app/api/agent/feedback/route.ts` (single Bearer against
-   `AGENT_API_KEY`) and `app/api/mcp/[transport]/route.ts` (Bearer or
-   `?token=`).
+2. **Supabase Bearer token** (`Authorization: Bearer <access token>`). Used
+   when the extension calls from a service worker context that carries no site
+   cookie. The route validates the user with Supabase Auth and performs every
+   query through that bearer-scoped client so RLS remains authoritative. This
+   is deliberately not `AGENT_API_KEY` and not an admin-client bypass.
 3. **No auth** (rejected — every Phase 2 endpoint requires one of the
    above).
 
@@ -241,7 +238,7 @@ When the extension needs to drive something in this app, the model is:
    `urlSync.key`-driven hydrators are already the public surface
    for this.
 
-**Concrete shape (Phase 2 reference, not yet implemented):**
+**Concrete implemented shape:**
 
 ```ts
 // extension SW
@@ -253,15 +250,17 @@ chrome.runtime.sendMessage(
     payload: { conversationId, role: "user", content: "..." },
     requestId: crypto.randomUUID(),
   },
-  (reply) => { /* match reply.requestId */ },
+  (reply) => {
+    /* match reply.requestId */
+  },
 );
 ```
 
 ```ts
-// matrx-frontend planned route
+// matrx-frontend route
 // app/api/extension/append-message/route.ts
 export async function POST(req: NextRequest) {
-  const auth = await authorizeExtensionRequest(req); // cookie OR Bearer
+  const auth = await authorizeExtensionRequest(req); // cookie OR Supabase Bearer
   if (!auth.ok) return new Response("Unauthorized", { status: 401 });
   const body = await req.json();
   // append to conversation, return updated message ID
@@ -359,13 +358,13 @@ than a navigation side-effect.
 
 ### Choosing between A and B
 
-| Concern | Path A — deep-link | Path B — `openPanel` envelope |
-|---|---|---|
-| Cross-machine | No (URL only loads on the tab you navigate) | Yes |
-| Reply / acknowledgement | None (rely on URL hydration) | Structured `{ ok, ... }` reply |
-| Validation failures | Silent console warning | Returned to caller |
-| Auth requirement | Tab must hydrate the route | User must be signed in (Broadcast is per-user) |
-| Latency | Page load + hydration | Single Broadcast hop (~tens of ms) |
+| Concern                 | Path A — deep-link                          | Path B — `openPanel` envelope                  |
+| ----------------------- | ------------------------------------------- | ---------------------------------------------- |
+| Cross-machine           | No (URL only loads on the tab you navigate) | Yes                                            |
+| Reply / acknowledgement | None (rely on URL hydration)                | Structured `{ ok, ... }` reply                 |
+| Validation failures     | Silent console warning                      | Returned to caller                             |
+| Auth requirement        | Tab must hydrate the route                  | User must be signed in (Broadcast is per-user) |
+| Latency                 | Page load + hydration                       | Single Broadcast hop (~tens of ms)             |
 
 Both paths terminate in the same `openOverlay` Redux action; behavior
 of the registry, mobile presentation, persistence, and instance
@@ -390,7 +389,9 @@ chrome.runtime.sendMessage(
     payload: { reason: "...", since: Date.now() },
     requestId: crypto.randomUUID(),
   },
-  (reply) => { /* reply.payload */ },
+  (reply) => {
+    /* reply.payload */
+  },
 );
 ```
 
@@ -398,6 +399,7 @@ chrome.runtime.sendMessage(
 guard with `typeof chrome !== "undefined" && chrome.runtime`.
 
 ### B. From a server route, or when the extension is on a different
+
 device
 
 Publish to the user's Broadcast channel:

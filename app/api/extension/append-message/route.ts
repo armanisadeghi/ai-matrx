@@ -8,8 +8,10 @@
 //   1. Supabase session cookie (when called from a tab in this app, or
 //      when the extension SW forwards cookies for an authenticated
 //      origin).
-//   2. Bearer token: Authorization: Bearer <AGENT_API_KEY>. Used when
-//      the extension SW calls headlessly with no cookie.
+//   2. Bearer token: Authorization: Bearer <Supabase access token>. Used
+//      when the extension SW calls headlessly with no browser cookie. All
+//      reads/writes run through that caller-scoped client, so RLS still gates
+//      the conversation and message.
 //
 // Behavior — thin wrapper over `createCxMessage` from
 // `features/public-chat/services/cx-chat.ts`. Computes the next
@@ -20,14 +22,16 @@
 // Wire format documented in docs/MATRX_EXTEND_CONNECTION.md.
 
 import { NextRequest, NextResponse } from "next/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import {
   createCxMessage,
   getCxConversation,
 } from "@/features/public-chat/services/cx-chat";
 import type { CxMessageInsert } from "@/features/public-chat/types/cx-tables";
+import type { Database } from "@/types/database.types";
 import { createClient } from "@/utils/supabase/server";
-import { validateAgentApiKey } from "@/lib/services/agent-auth";
+import { requireEnv } from "@/utils/supabase/env";
 import {
   AppendMessageRequestSchema,
   type AppendMessageRequest,
@@ -43,8 +47,9 @@ type AppendMessageInput = AppendMessageRequest;
 
 interface AuthResult {
   ok: boolean;
-  /** Supabase auth.users.id when authenticated via cookie; null on Bearer. */
+  /** Supabase auth.users.id for either cookie or Bearer auth. */
   userId: string | null;
+  client: Awaited<ReturnType<typeof createClient>> | null;
   error?: string;
 }
 
@@ -54,7 +59,7 @@ async function resolveAuth(request: NextRequest): Promise<AuthResult> {
     const supabase = await createClient();
     const { data, error } = await supabase.auth.getUser();
     if (!error && data?.user?.id) {
-      return { ok: true, userId: data.user.id };
+      return { ok: true, userId: data.user.id, client: supabase };
     }
   } catch (err) {
     // Cookie path threw (rare — unreachable Supabase). Fall through to
@@ -62,15 +67,38 @@ async function resolveAuth(request: NextRequest): Promise<AuthResult> {
     console.error("[extension/append-message] cookie auth threw:", err);
   }
 
-  // Bearer fallback.
-  const bearer = validateAgentApiKey(request);
-  if (bearer.valid) {
-    return { ok: true, userId: null };
+  // Bearer fallback. The extension owns a normal Supabase user session, not
+  // a deployment secret. Validate that access token with Auth and keep it on
+  // the PostgREST client so every subsequent query remains owner-RLS scoped.
+  const authHeader = request.headers.get("authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7).trim();
+    if (token) {
+      const bearerClient = createSupabaseClient<Database>(
+        requireEnv(
+          "NEXT_PUBLIC_SUPABASE_URL",
+          process.env.NEXT_PUBLIC_SUPABASE_URL,
+        ),
+        requireEnv(
+          "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+          process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+        ),
+        {
+          global: { headers: { Authorization: `Bearer ${token}` } },
+          auth: { persistSession: false, autoRefreshToken: false },
+        },
+      );
+      const { data, error } = await bearerClient.auth.getUser(token);
+      if (!error && data.user?.id) {
+        return { ok: true, userId: data.user.id, client: bearerClient };
+      }
+    }
   }
 
   return {
     ok: false,
     userId: null,
+    client: null,
     error: "unauthorized",
   };
 }
@@ -79,10 +107,13 @@ async function resolveAuth(request: NextRequest): Promise<AuthResult> {
 // Position resolution — next-monotonic per conversation
 // ---------------------------------------------------------------------------
 
-async function nextPosition(conversationId: string): Promise<number> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .schema("chat").from("message")
+async function nextPosition(
+  conversationId: string,
+  client: NonNullable<AuthResult["client"]>,
+): Promise<number> {
+  const { data, error } = await client
+    .schema("chat")
+    .from("message")
     .select("position")
     .eq("conversation_id", conversationId)
     .is("deleted_at", null)
@@ -90,10 +121,7 @@ async function nextPosition(conversationId: string): Promise<number> {
     .limit(1);
 
   if (error) {
-    console.error(
-      "[extension/append-message] position lookup failed:",
-      error,
-    );
+    console.error("[extension/append-message] position lookup failed:", error);
     throw new Error(error.message);
   }
 
@@ -127,6 +155,15 @@ export async function POST(request: NextRequest) {
       { status: 401 },
     );
   }
+  if (!auth.client) {
+    console.error(
+      "[extension/append-message] auth succeeded without a database client",
+    );
+    return NextResponse.json(
+      { ok: false, error: "auth_client_unavailable" },
+      { status: 500 },
+    );
+  }
 
   // 2. Parse + validate body.
   let parsed: AppendMessageInput;
@@ -153,7 +190,10 @@ export async function POST(request: NextRequest) {
   // 3. Verify conversation exists. Returns 404 instead of letting the
   //    insert fail with a foreign-key error — the extension SW gets a
   //    crisp signal it can branch on.
-  const conversation = await getCxConversation(parsed.conversationId);
+  const conversation = await getCxConversation(
+    parsed.conversationId,
+    auth.client,
+  );
   if (!conversation) {
     return NextResponse.json(
       { ok: false, error: "conversation_not_found" },
@@ -164,13 +204,11 @@ export async function POST(request: NextRequest) {
   // 4. Compute next position (monotonic per conversation).
   let position: number;
   try {
-    position = await nextPosition(parsed.conversationId);
+    position = await nextPosition(parsed.conversationId, auth.client);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "position_lookup_failed";
-    return NextResponse.json(
-      { ok: false, error: message },
-      { status: 500 },
-    );
+    const message =
+      err instanceof Error ? err.message : "position_lookup_failed";
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 
   // 5. Insert.
@@ -187,7 +225,7 @@ export async function POST(request: NextRequest) {
     agent_id: parsed.agentId ?? null,
   };
 
-  const created = await createCxMessage(insert);
+  const created = await createCxMessage(insert, auth.client);
   if (!created) {
     return NextResponse.json(
       { ok: false, error: "insert_failed" },

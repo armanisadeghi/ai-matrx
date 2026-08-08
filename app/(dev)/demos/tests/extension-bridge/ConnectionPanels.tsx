@@ -28,6 +28,7 @@ import {
   sendChromeRpc,
 } from "./chrome-rpc";
 import { KNOWN_EXTENSION_IDS, APPEND_MESSAGE_ENDPOINT } from "./constants";
+import { supabase } from "@/utils/supabase/client";
 
 type DirectStatus = "unknown" | "checking" | "connected" | "not-detected";
 
@@ -106,9 +107,23 @@ export function ConnectionPanels({
     setHealthChecking(true);
     setHealthResult(null);
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (useBearerAuth) {
+        const { data, error } = await supabase.auth.getSession();
+        const accessToken = data.session?.access_token;
+        if (error || !accessToken) {
+          throw new Error(
+            "No authenticated Supabase session is available for Bearer mode",
+          );
+        }
+        headers.Authorization = `Bearer ${accessToken}`;
+      }
       const res = await fetch(APPEND_MESSAGE_ENDPOINT, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
+        credentials: useBearerAuth ? "omit" : "include",
         body: JSON.stringify({
           conversationId: "00000000-0000-0000-0000-000000000000",
           role: "user",
@@ -142,11 +157,7 @@ export function ConnectionPanels({
       ? "subscribed"
       : "connecting";
   const broadcastVariant: "success" | "warning" | "destructive" =
-    !bridgeAuthenticated
-      ? "destructive"
-      : bridgeReady
-        ? "success"
-        : "warning";
+    !bridgeAuthenticated ? "destructive" : bridgeReady ? "success" : "warning";
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -247,8 +258,8 @@ export function ConnectionPanels({
               : "—"}
           </div>
           <p className="text-xs text-muted-foreground">
-            Cross-machine RPC. Use this when your extension and this app are
-            on different devices.
+            Cross-machine RPC. Use this when your extension and this app are on
+            different devices.
           </p>
         </CardContent>
       </Card>
@@ -272,14 +283,21 @@ export function ConnectionPanels({
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Auth mode</span>
               <span className="font-medium">
-                {useBearerAuth ? "Bearer (AGENT_API_KEY)" : "Cookie (session)"}
+                {useBearerAuth ? "Bearer (Supabase user)" : "Cookie (session)"}
               </span>
             </div>
             <div className="mt-1 text-muted-foreground">
               {useBearerAuth ? (
-                <>Token: <span className="font-mono">env AGENT_API_KEY</span></>
+                <>
+                  Token: <span className="font-mono">current user session</span>
+                </>
               ) : userEmail ? (
-                <>Signed in as <span className="font-medium text-foreground">{userName ?? userEmail}</span></>
+                <>
+                  Signed in as{" "}
+                  <span className="font-medium text-foreground">
+                    {userName ?? userEmail}
+                  </span>
+                </>
               ) : (
                 <span>No active session</span>
               )}

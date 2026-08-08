@@ -20,9 +20,8 @@
  * Wire format: see `BridgeEnvelope` and `docs/MATRX_EXTEND_CONNECTION.md`.
  *
  * Usage notes:
- *   - This hook is ALONE — Phase 2 does not auto-mount it. Wire it up
- *     where you actually want to talk to the extension (typically a
- *     top-level provider once that work lands).
+ *   - `ExtensionBridgeSubscriber` mounts this once from `app/Providers.tsx`;
+ *     feature surfaces may also call it and share the ref-counted channel.
  *   - The hook does NOT auto-listen for `frontend->extension` echoes —
  *     `onMessage` callbacks fire only for `direction: 'extension->frontend'`
  *     so handlers don't see their own outbound traffic.
@@ -258,14 +257,15 @@ export function useExtensionBridgeChannel(): UseExtensionBridgeChannelReturn {
     [userId, messagingService],
   );
 
-  const onMessage = useCallback<
-    UseExtensionBridgeChannelReturn["onMessage"]
-  >((handler) => {
-    listenersRef.current.add(handler);
-    return () => {
-      listenersRef.current.delete(handler);
-    };
-  }, []);
+  const onMessage = useCallback<UseExtensionBridgeChannelReturn["onMessage"]>(
+    (handler) => {
+      listenersRef.current.add(handler);
+      return () => {
+        listenersRef.current.delete(handler);
+      };
+    },
+    [],
+  );
 
   return {
     send,

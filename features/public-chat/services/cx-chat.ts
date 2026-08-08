@@ -18,6 +18,8 @@ import type {
   CxConversationWithMessages,
 } from "../types/cx-tables";
 
+type CxDatabaseClient = Awaited<ReturnType<typeof createClient>>;
+
 // ============================================================================
 // cx_conversation queries
 // ============================================================================
@@ -25,10 +27,12 @@ import type {
 /** Get a single conversation by ID */
 export async function getCxConversation(
   conversationId: string,
+  client?: CxDatabaseClient,
 ): Promise<CxConversation | null> {
-  const supabase = await createClient();
+  const supabase = client ?? (await createClient());
   const { data, error } = await supabase
-    .schema("chat").from("conversation")
+    .schema("chat")
+    .from("conversation")
     .select("*")
     .eq("id", conversationId)
     .is("deleted_at", null)
@@ -60,7 +64,8 @@ export async function createCxConversation(
     ),
   };
   const { data, error } = await supabase
-    .schema("chat").from("conversation")
+    .schema("chat")
+    .from("conversation")
     .insert(insert)
     .select()
     .single();
@@ -79,7 +84,8 @@ export async function updateCxConversation(
 ): Promise<CxConversation | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .schema("chat").from("conversation")
+    .schema("chat")
+    .from("conversation")
     .update(updates)
     .eq("id", conversationId)
     .select()
@@ -98,7 +104,8 @@ export async function deleteCxConversation(
 ): Promise<boolean> {
   const supabase = await createClient();
   const { error } = await supabase
-    .schema("chat").from("conversation")
+    .schema("chat")
+    .from("conversation")
     .update({ deleted_at: new Date().toISOString(), status: "archived" })
     .eq("id", conversationId);
 
@@ -121,7 +128,8 @@ export async function getUserChatHistory(
 ): Promise<CxConversationSummary[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .schema("chat").from("conversation")
+    .schema("chat")
+    .from("conversation")
     // Ownership is `created_by` (canonical, trigger-stamped); `user_id` is
     // deprecated and slated for drop. RLS also gates this query by visibility.
     .select("id, title, status, message_count, created_at, updated_at")
@@ -148,7 +156,8 @@ export async function getCxMessages(
 ): Promise<CxMessage[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .schema("chat").from("message")
+    .schema("chat")
+    .from("message")
     .select("*")
     .eq("conversation_id", conversationId)
     .is("deleted_at", null)
@@ -169,10 +178,12 @@ export async function getCxMessages(
 /** Create a single message */
 export async function createCxMessage(
   message: CxMessageInsert,
+  client?: CxDatabaseClient,
 ): Promise<CxMessage | null> {
-  const supabase = await createClient();
+  const supabase = client ?? (await createClient());
   const { data, error } = await supabase
-    .schema("chat").from("message")
+    .schema("chat")
+    .from("message")
     .insert(message)
     .select()
     .single();
@@ -191,7 +202,8 @@ export async function bulkCreateCxMessages(
   if (messages.length === 0) return [];
   const supabase = await createClient();
   const { data, error } = await supabase
-    .schema("chat").from("message")
+    .schema("chat")
+    .from("message")
     .insert(messages)
     .select();
 
@@ -212,7 +224,8 @@ export async function getCxToolCalls(
 ): Promise<CxToolCall[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .schema("chat").from("tool_call")
+    .schema("chat")
+    .from("tool_call")
     .select("*")
     .eq("conversation_id", conversationId)
     .is("deleted_at", null)
