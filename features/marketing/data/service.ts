@@ -1734,29 +1734,13 @@ const DISCOVERED_COLUMNS =
  * pagination with a true total — never a silent cap. Ordering ends in the
  * unique `id` so pages are stable while rows share a category/confidence.
  */
-export function listDiscoveredItems(
-  brandId: string,
-  status: DiscoveredItemStatus | null,
-  signal?: AbortSignal,
-): Promise<DiscoveredItem[]>;
-export function listDiscoveredItems(
+export async function listDiscoveredItems(
   brandId: string,
   status: DiscoveredItemStatus | null,
   page: number,
   pageSize: number,
   signal?: AbortSignal,
-): Promise<PagedResult<DiscoveredItem>>;
-export async function listDiscoveredItems(
-  brandId: string,
-  status: DiscoveredItemStatus | null,
-  pageOrSignal?: number | AbortSignal,
-  pageSize?: number,
-  signal?: AbortSignal,
-): Promise<DiscoveredItem[] | PagedResult<DiscoveredItem>> {
-  const paged = typeof pageOrSignal === "number";
-  const page = paged ? pageOrSignal : 1;
-  const effectivePageSize = paged ? (pageSize ?? 50) : 500;
-  const effectiveSignal = paged ? signal : pageOrSignal;
+): Promise<PagedResult<DiscoveredItem>> {
   const db = await authenticatedWebDb(supabase);
   let query = db
     .from("discovered_item")
@@ -1764,17 +1748,15 @@ export async function listDiscoveredItems(
     .eq("brand_id", brandId)
     .is("deleted_at", null);
   if (status) query = query.eq("status", status);
-  const from = (page - 1) * effectivePageSize;
+  const from = (page - 1) * pageSize;
   const response = await query
     .order("category", { ascending: true })
     .order("confidence", { ascending: false, nullsFirst: false })
     .order("id", { ascending: true })
-    .range(from, from + effectivePageSize - 1)
-    .abortSignal(effectiveSignal ?? new AbortController().signal);
-  const rows = assertData(response.data, response.error);
-  if (!paged) return rows;
+    .range(from, from + pageSize - 1)
+    .abortSignal(signal ?? new AbortController().signal);
   return {
-    rows,
+    rows: assertData(response.data, response.error),
     total: response.count ?? 0,
   };
 }
