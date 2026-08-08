@@ -21,10 +21,11 @@ Route: `app/(core)/agents/slots/page.tsx` (+ `SlotsHeader` in the shell header c
 - **Settings editor patches only `model` + `thinking_level`** and preserves unknown `config_overrides` keys it doesn't own.
 - Agent options come from the canonical Redux listing (`fetchAgentsListFull` + `selectOwnedAgents`/`selectSharedWithMeAgents`) — never a raw table query (ESLint `matrx/no-raw-agent-list-query`).
 
-## 🚨 Known gap — bind-time contract enforcement is CLIENT-side only
+## Bind-time contract enforcement
 
-The aidream bind endpoint (server-side contract + `output_kind` schema enforcement at write time) is **not live** — aidream exposes only `POST /agent-slots/{slot_key}/test`. Until it ships (aidream `docs/handoffs/content-ir-agent-slots.md` item 4), `checkSlotContract` is the only gate: a client bypassing this UI can write a non-conforming binding, which the runtime then drops loudly at resolution (broken-override failover). When the endpoint lands, route creates/updates through it and keep the client check as instant pre-flight.
+Writes use aidream `PUT/DELETE /agent-slots/{slot_key}/binding`. The server performs the authoritative contract and `output_kind` checks; `checkSlotContract` remains the instant client pre-flight. Generated API types must be refreshed whenever this endpoint changes.
 
 ## Change Log
 
 - 2026-08-08 — Created the user/org override surface (`/agents/slots`): browse + provenance + create/edit/delete bindings (agent swap and settings-only), client-side contract gate, org-admin tabs. Live-verified CRUD on a real user binding.
+- 2026-08-08 — Synced the live binding API contract and normalized optional JSON object members before preserving an existing binding's `config_overrides`, keeping the strict API payload free of `undefined` values.

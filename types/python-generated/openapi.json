@@ -25091,7 +25091,7 @@
           "RAG"
         ],
         "summary": "Rag Search Endpoint",
-        "description": "Streaming search (stream-everything mandate, 2026-07-06). Identical\nbehavior to ``POST /search/stream`` — that route stays as an alias; this\nis the canonical path. Emits ``rag.citation`` events per hit as retrieval\nfuses, then one consolidated ``RagSearchResult``.",
+        "description": "Streaming search (stream-everything mandate, 2026-07-06). Identical\nbehavior to ``POST /search/stream`` — that route stays as an alias; this\nis the canonical path. Emits one consolidated ``RagSearchResult``. (The\nper-hit ``rag.citation`` events were deleted 2026-08-08 — zero consumers;\nanswer citations flow through the unified provider-native channel.)",
         "operationId": "rag_search_endpoint_rag_search_post",
         "requestBody": {
           "content": {
@@ -25131,7 +25131,7 @@
           "RAG"
         ],
         "summary": "Rag Cross Doc Stream",
-        "description": "End-to-end trial-prep flow: split retrieval → synthesis →\nfaithfulness check, all events streamed.\n\nEvent sequence (ordered):\n\n  rag.cross_doc.retrieval.started\n  rag.citation                 (one per library hit, tag=library_tag)\n  rag.citation                 (one per case   hit, tag=case_tag)\n  rag.cross_doc.retrieval.complete\n  rag.cross_doc.synth.chunk    (token-streamed answer chunks)\n  rag.cross_doc.synth.complete\n  rag.cross_doc.verify.complete\n  rag.cross_doc.result         (final consolidated payload)\n\nThe FE renders the citations as chips, the answer as streaming text,\nand the per-claim verdicts as colored highlights over the answer.",
+        "description": "End-to-end trial-prep flow: split retrieval → synthesis →\nfaithfulness check, all events streamed.\n\nEvent sequence (ordered):\n\n  rag.cross_doc.retrieval.started\n  rag.cross_doc.retrieval.complete\n  rag.cross_doc.synth.chunk    (token-streamed answer chunks)\n  rag.cross_doc.synth.complete\n  rag.cross_doc.verify.complete\n  rag.cross_doc.result         (final consolidated payload)\n\nThe FE renders the answer as streaming text and the per-claim verdicts\nas colored highlights over the answer.",
         "operationId": "rag_cross_doc_stream_rag_cross_doc_stream_post",
         "requestBody": {
           "content": {
@@ -28549,6 +28549,108 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SlotTestResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-slots/{slot_key}/binding": {
+      "put": {
+        "tags": [
+          "Agent Slots"
+        ],
+        "summary": "Put Slot Binding",
+        "operationId": "put_slot_binding_agent_slots__slot_key__binding_put",
+        "parameters": [
+          {
+            "name": "slot_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slot Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SlotBindingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BindingResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Agent Slots"
+        ],
+        "summary": "Delete Slot Binding",
+        "operationId": "delete_slot_binding_agent_slots__slot_key__binding_delete",
+        "parameters": [
+          {
+            "name": "slot_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slot Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SlotBindingDeleteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotBindingDeleteResponse"
                 }
               }
             }
@@ -34185,6 +34287,109 @@
         }
       }
     },
+    "/office/{file_id}/markdown": {
+      "get": {
+        "tags": [
+          "Office"
+        ],
+        "summary": "Extract Office Markdown",
+        "description": "Read an existing Office file (the caller must be able to read it) into\nclean markdown + per-portion markdown (slide / sheet / section). Powers the\nfrontend docx/pptx previewer.",
+        "operationId": "extract_office_markdown_office__file_id__markdown_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeExtractionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/office/{file_id}/convert": {
+      "post": {
+        "tags": [
+          "Office"
+        ],
+        "summary": "Convert Office File",
+        "description": "Render an existing Office file to PDF (LibreOffice lane) and persist the\nPDF as a new asset owned by the caller. Returns the new file's FileRef.",
+        "operationId": "convert_office_file_office__file_id__convert_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OfficeConvertRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeGenerationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/media/upload": {
       "post": {
         "tags": [
@@ -35879,6 +36084,16 @@
             "schema": {
               "type": "string",
               "title": "Folder Id"
+            }
+          },
+          {
+            "name": "hard_delete",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Hard Delete"
             }
           }
         ],
@@ -53290,6 +53505,98 @@
         "additionalProperties": false,
         "type": "object",
         "title": "BgRemoveParams"
+      },
+      "BindingResult": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "slot_key": {
+            "type": "string",
+            "title": "Slot Key"
+          },
+          "principal_type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "org"
+            ],
+            "title": "Principal Type"
+          },
+          "subject_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject User Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "agent_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Version Id"
+          },
+          "use_latest": {
+            "type": "boolean",
+            "title": "Use Latest"
+          },
+          "config_overrides": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Overrides"
+          },
+          "is_enabled": {
+            "type": "boolean",
+            "title": "Is Enabled"
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "slot_key",
+          "principal_type",
+          "organization_id",
+          "use_latest",
+          "is_enabled",
+          "created"
+        ],
+        "title": "BindingResult"
       },
       "BingApiKeyConnectionRequest": {
         "properties": {
@@ -85140,6 +85447,89 @@
         "title": "OccupationalCodesResponse",
         "description": "Wrapper around the bundled California job-codes config.\n\nThe shape of `codes` is:\n    Record<JobCode, Record<JobTitle, IndustryCategory>>\ne.g. `{\"230\": {\"Carpenter\": \"Construction\", ...}, ...}`"
       },
+      "OfficeConvertRequest": {
+        "properties": {
+          "target": {
+            "type": "string",
+            "title": "Target",
+            "default": "pdf"
+          },
+          "visibility": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visibility"
+          }
+        },
+        "type": "object",
+        "title": "OfficeConvertRequest",
+        "description": "Conversion options. `target` exists for forward-compat; only \"pdf\"."
+      },
+      "OfficeExtractionResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "office_kind": {
+            "type": "string",
+            "title": "Office Kind"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "markdown": {
+            "type": "string",
+            "title": "Markdown",
+            "default": ""
+          },
+          "portions": {
+            "items": {
+              "$ref": "#/components/schemas/OfficePortionOut"
+            },
+            "type": "array",
+            "title": "Portions"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "office_kind"
+        ],
+        "title": "OfficeExtractionResponse",
+        "description": "AI-facing markdown view of an existing Office file."
+      },
       "OfficeGenerationRequest": {
         "properties": {
           "document": {
@@ -85287,6 +85677,46 @@
         ],
         "title": "OfficeGenerationResponse",
         "description": "FileRef-shaped result the client binds to directly."
+      },
+      "OfficePortionOut": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "markdown": {
+            "type": "string",
+            "title": "Markdown",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "number",
+          "kind"
+        ],
+        "title": "OfficePortionOut",
+        "description": "One slide / sheet / section of an extracted document (FE-facing)."
       },
       "OnSignInResponse": {
         "properties": {
@@ -88905,6 +89335,18 @@
             "$ref": "#/components/schemas/PostPrepOption",
             "description": "Optional transformation applied after source preparation.",
             "default": "none"
+          },
+          "target_audience": {
+            "type": "string",
+            "title": "Target Audience",
+            "description": "Optional target audience the prepared content is re-pitched for before scripting; empty skips the adaptation stage.",
+            "default": ""
+          },
+          "audience_guidance": {
+            "type": "string",
+            "title": "Audience Guidance",
+            "description": "Optional extra steering (tone, length, emphasis) for the audience adaptation stage.",
+            "default": ""
           },
           "number_of_speakers": {
             "type": "integer",
@@ -100537,6 +100979,135 @@
         "type": "object",
         "title": "SlideSpec",
         "description": "One slide of a generated presentation."
+      },
+      "SlotBindingDeleteRequest": {
+        "properties": {
+          "principal_type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "org"
+            ],
+            "title": "Principal Type",
+            "default": "user"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "title": "SlotBindingDeleteRequest"
+      },
+      "SlotBindingDeleteResponse": {
+        "properties": {
+          "slot_key": {
+            "type": "string",
+            "title": "Slot Key"
+          },
+          "principal_type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "org"
+            ],
+            "title": "Principal Type"
+          },
+          "removed": {
+            "type": "boolean",
+            "title": "Removed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slot_key",
+          "principal_type",
+          "removed"
+        ],
+        "title": "SlotBindingDeleteResponse"
+      },
+      "SlotBindingRequest": {
+        "properties": {
+          "principal_type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "org"
+            ],
+            "title": "Principal Type",
+            "default": "user"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "agent_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Version Id"
+          },
+          "use_latest": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Use Latest"
+          },
+          "config_overrides": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Overrides"
+          },
+          "is_enabled": {
+            "type": "boolean",
+            "title": "Is Enabled",
+            "default": true
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "title": "SlotBindingRequest"
       },
       "SlotCandidate": {
         "properties": {
