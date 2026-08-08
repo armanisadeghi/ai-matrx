@@ -20,12 +20,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import type { MessageCitationSource } from "@/features/agents/redux/execution-system/messages/message-citations";
-import { useMessageCitationSources } from "./MessageCitationsContext";
 import {
-  citationSourceIsOpenable,
-  useOpenCitationSource,
-} from "./useOpenCitationSource";
+  citationSourceDisplayKind,
+  type MessageCitationSource,
+} from "@/features/agents/redux/execution-system/messages/message-citations";
+import { useMessageCitationSources } from "./MessageCitationsContext";
+import { citationSourceIsOpenable } from "./citation-open-request";
+import { useOpenCitationSource } from "./useOpenCitationSource";
 
 interface CitationMarkerInlineProps {
   "data-n"?: string | number;
@@ -94,7 +95,7 @@ export function CitationMarkerInline(props: CitationMarkerInlineProps) {
   }
 
   const Icon =
-    source.kind === "web" || (source.url && !source.fileId) ? Globe : FileText;
+    citationSourceDisplayKind(source) === "web" ? Globe : FileText;
   const label = citationSourceLabel(source);
   const locator = citationSourceLocator(source);
   const openable = citationSourceIsOpenable(source);

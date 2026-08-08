@@ -21,15 +21,16 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import type { MessageCitationSource } from "@/features/agents/redux/execution-system/messages/message-citations";
+import {
+  citationSourceDisplayKind,
+  type MessageCitationSource,
+} from "@/features/agents/redux/execution-system/messages/message-citations";
 import {
   citationSourceLabel,
   citationSourceLocator,
 } from "@/components/mardown-display/chat-markdown/citations/CitationMarkerInline";
-import {
-  citationSourceIsOpenable,
-  useOpenCitationSource,
-} from "@/components/mardown-display/chat-markdown/citations/useOpenCitationSource";
+import { citationSourceIsOpenable } from "@/components/mardown-display/chat-markdown/citations/citation-open-request";
+import { useOpenCitationSource } from "@/components/mardown-display/chat-markdown/citations/useOpenCitationSource";
 
 export interface MessageSourcesRowProps {
   sources: MessageCitationSource[];
@@ -50,9 +51,7 @@ export function MessageSourcesRow({
       <div className="flex flex-wrap gap-1">
         {sources.map((source) => {
           const Icon =
-            source.kind === "web" || (source.url && !source.fileId)
-              ? Globe
-              : FileText;
+            citationSourceDisplayKind(source) === "web" ? Globe : FileText;
           const label = citationSourceLabel(source);
           const locator = citationSourceLocator(source);
           const openable = citationSourceIsOpenable(source);
