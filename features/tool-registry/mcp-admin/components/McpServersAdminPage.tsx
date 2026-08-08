@@ -68,6 +68,24 @@ import {
   type McpTestResult,
 } from "@/features/tool-registry/mcp-admin/services/mcpAdmin.service";
 import { AddMcpServerDialog } from "@/features/tool-registry/mcp-admin/components/AddMcpServerDialog";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import {
+  csvExportItem,
+  jsonExportItem,
+} from "@/components/agent-copy/export";
+import {
+  configSummary,
+  serverBrief,
+  serverMeta,
+  serverSummary,
+  serverToolSummary,
+  serversListSummary,
+  type ServerToolRow,
+} from "@/features/tool-registry/mcp-admin/format";
+
+const PAGE_LOCATION =
+  "AI Matrx Admin — Tool Registry · MCP Servers (/administration/agents/mcp-servers)";
 
 export function McpServersAdminPage() {
   const [servers, setServers] = useState<McpServerRow[]>([]);
@@ -118,11 +136,62 @@ export function McpServersAdminPage() {
         {loading && (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
         )}
+        {servers.length > 0 && (
+          <div className="ml-auto flex items-center">
+            <CopyButtons
+              size="icon"
+              label="MCP servers"
+              human={() => serversListSummary(servers)}
+              json={() => servers.map(serverMeta)}
+              agent={() => ({
+                kind: "mcp-servers",
+                location: PAGE_LOCATION,
+                description:
+                  "All registered MCP servers in the tool registry (sanitized — no endpoint URLs or OAuth ids).",
+                data: servers.map(serverMeta),
+                attributes: { count: servers.length },
+                context: {
+                  search: search.trim() || undefined,
+                  visible: filtered.length,
+                },
+              })}
+              aiVariants={[
+                {
+                  id: "summary",
+                  label: "Summary",
+                  hint: "Slug, vendor, status, transport, sync per server",
+                  build: () => ({
+                    kind: "mcp-servers",
+                    location: PAGE_LOCATION,
+                    description:
+                      "Compact digest of all registered MCP servers.",
+                    data: servers.map(serverBrief),
+                    attributes: { count: servers.length },
+                    summary: serversListSummary(servers),
+                  }),
+                },
+              ]}
+            />
+            <ExportMenu
+              label="mcp-servers"
+              items={[
+                jsonExportItem(() => servers.map(serverMeta)),
+                csvExportItem(
+                  () =>
+                    servers.map(serverBrief) as unknown as Array<
+                      Record<string, unknown>
+                    >,
+                  "CSV (server summary)",
+                ),
+              ]}
+            />
+          </div>
+        )}
         <Button
           size="sm"
           variant="ghost"
           onClick={() => void load()}
-          className="h-7 ml-auto gap-1.5 text-xs"
+          className={`h-7 gap-1.5 text-xs ${servers.length > 0 ? "" : "ml-auto"}`}
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Refresh list
@@ -168,7 +237,25 @@ export function McpServersAdminPage() {
                 const fresh = computeFreshness(s);
                 const isSel = s.slug === selectedSlug;
                 return (
-                  <li key={s.slug}>
+                  <li key={s.slug} className="relative group/srv">
+                    {/* Sibling overlay, not a child of the row button — nested
+                        buttons are invalid HTML. */}
+                    <CopyButtons
+                      size="xs"
+                      label={`Server ${s.slug}`}
+                      className="absolute right-1.5 bottom-1 z-10 rounded border border-border bg-card opacity-0 group-hover/srv:opacity-100 focus-within:opacity-100"
+                      human={() => serverSummary(s)}
+                      json={() => serverMeta(s)}
+                      agent={() => ({
+                        kind: "mcp-server",
+                        location: PAGE_LOCATION,
+                        description:
+                          "One registered MCP server (sanitized row).",
+                        data: serverMeta(s),
+                        summary: serverSummary(s),
+                        attributes: { slug: s.slug, status: s.status },
+                      })}
+                    />
                     <button
                       onClick={() => setSelectedSlug(s.slug)}
                       className={`w-full text-left px-3 py-2 border-b border-border/50 hover:bg-muted/40 transition-colors ${isSel ? "bg-muted" : ""}`}
@@ -352,6 +439,21 @@ function ServerDetail({
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
+            <CopyButtons
+              size="icon"
+              label={`Server ${server.slug}`}
+              human={() => serverSummary(server)}
+              json={() => serverMeta(server)}
+              agent={() => ({
+                kind: "mcp-server",
+                location: PAGE_LOCATION,
+                description:
+                  "The MCP server record currently open in the admin detail pane (sanitized — no endpoint URLs or OAuth ids).",
+                data: serverMeta(server),
+                summary: serverSummary(server),
+                attributes: { slug: server.slug, status: server.status },
+              })}
+            />
             {server.docs_url && (
               <Button
                 asChild
@@ -441,14 +543,7 @@ function ServerDetail({
 }
 
 function ToolsTab({ slug }: { slug: string }) {
-  const [tools, setTools] = useState<
-    {
-      id: string;
-      name: string;
-      description: string;
-      is_active: boolean | null;
-    }[]
-  >([]);
+  const [tools, setTools] = useState<ServerToolRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -474,42 +569,87 @@ function ToolsTab({ slug }: { slug: string }) {
   }
 
   return (
-    <div className="rounded-md border border-border bg-card overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Canonical name</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead className="w-[80px]">Active</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {tools.map((t) => (
-            <TableRow
-              key={t.id}
-              className={t.is_active === false ? "opacity-60" : ""}
-            >
-              <TableCell className="font-mono text-xs">
-                <a
-                  href={`/administration/agents/mcp-tools/${t.id}`}
-                  className="text-foreground hover:text-primary hover:underline"
-                >
-                  {t.name}
-                </a>
-              </TableCell>
-              <TableCell className="text-xs">{t.description}</TableCell>
-              <TableCell>
-                <Badge
-                  variant={t.is_active ? "default" : "secondary"}
-                  className="text-[10px]"
-                >
-                  {t.is_active ? "active" : "inactive"}
-                </Badge>
-              </TableCell>
+    <div className="space-y-2">
+      <div className="flex items-center justify-end gap-1">
+        <CopyButtons
+          size="icon"
+          label={`Tools of ${slug}`}
+          human={() => tools.map(serverToolSummary).join("\n")}
+          json={() => tools}
+          agent={() => ({
+            kind: "mcp-server-tools",
+            location: PAGE_LOCATION,
+            description: `All tools registered under the MCP server "${slug}".`,
+            data: tools,
+            attributes: { server: slug, count: tools.length },
+          })}
+        />
+        <ExportMenu
+          label={`${slug}-tools`}
+          items={[
+            jsonExportItem(() => tools),
+            csvExportItem(
+              () => tools as unknown as Array<Record<string, unknown>>,
+              "CSV",
+            ),
+          ]}
+        />
+      </div>
+      <div className="rounded-md border border-border bg-card overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Canonical name</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead className="w-[80px]">Active</TableHead>
+              <TableHead className="w-[56px]" />
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {tools.map((t) => (
+              <TableRow
+                key={t.id}
+                className={`group/tool ${t.is_active === false ? "opacity-60" : ""}`}
+              >
+                <TableCell className="font-mono text-xs">
+                  <a
+                    href={`/administration/agents/mcp-tools/${t.id}`}
+                    className="text-foreground hover:text-primary hover:underline"
+                  >
+                    {t.name}
+                  </a>
+                </TableCell>
+                <TableCell className="text-xs">{t.description}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant={t.is_active ? "default" : "secondary"}
+                    className="text-[10px]"
+                  >
+                    {t.is_active ? "active" : "inactive"}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <CopyButtons
+                    size="xs"
+                    label={`Tool ${t.name}`}
+                    className="opacity-0 group-hover/tool:opacity-100 focus-within:opacity-100"
+                    human={() => serverToolSummary(t)}
+                    json={() => t}
+                    agent={() => ({
+                      kind: "mcp-server-tool",
+                      location: PAGE_LOCATION,
+                      description: `One tool registered under the MCP server "${slug}".`,
+                      data: t,
+                      summary: serverToolSummary(t),
+                      attributes: { server: slug, name: t.name },
+                    })}
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
@@ -577,14 +717,38 @@ function ConfigsTab({ serverId }: { serverId: string }) {
           args; HTTP/SSE configs typically just store the endpoint via the
           server row.
         </p>
-        <Button
-          size="sm"
-          onClick={() => setCreating(true)}
-          className="h-7 gap-1.5 text-xs flex-shrink-0"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Add config
-        </Button>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {configs.length > 0 && (
+            <>
+              <CopyButtons
+                size="icon"
+                label="Server configs"
+                human={() => configs.map(configSummary).join("\n\n")}
+                json={() => configs}
+                agent={() => ({
+                  kind: "mcp-server-configs",
+                  location: PAGE_LOCATION,
+                  description:
+                    "All connection configs of the MCP server currently open in the admin detail pane.",
+                  data: configs,
+                  attributes: { count: configs.length },
+                })}
+              />
+              <ExportMenu
+                label="mcp-server-configs"
+                items={[jsonExportItem(() => configs)]}
+              />
+            </>
+          )}
+          <Button
+            size="sm"
+            onClick={() => setCreating(true)}
+            className="h-7 gap-1.5 text-xs flex-shrink-0"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add config
+          </Button>
+        </div>
       </div>
       {loading && <InlineLoading />}
       {error && <ErrorBox msg={error} />}
@@ -622,6 +786,21 @@ function ConfigsTab({ serverId }: { serverId: string }) {
                 )}
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
+                <CopyButtons
+                  size="xs"
+                  label={`Config ${c.label}`}
+                  human={() => configSummary(c)}
+                  json={() => c}
+                  agent={() => ({
+                    kind: "mcp-server-config",
+                    location: PAGE_LOCATION,
+                    description:
+                      "One connection config of the MCP server open in the admin detail pane.",
+                    data: c,
+                    summary: configSummary(c),
+                    attributes: { label: c.label, type: c.config_type },
+                  })}
+                />
                 {!c.is_default && (
                   <Button
                     variant="ghost"
@@ -995,6 +1174,20 @@ function ConnectionsTab({ serverId }: { serverId: string }) {
         <span className="text-xs text-muted-foreground">
           user{count === 1 ? "" : "s"} connected
         </span>
+        <CopyButtons
+          size="xs"
+          label="Connected users count"
+          className="ml-auto"
+          human={() => `${count ?? 0} user${count === 1 ? "" : "s"} connected`}
+          agent={() => ({
+            kind: "mcp-server-connections",
+            location: PAGE_LOCATION,
+            description:
+              "Count of users connected to the MCP server open in the admin detail pane.",
+            data: { server_id: serverId, connected_users: count ?? 0 },
+            attributes: { count: count ?? 0 },
+          })}
+        />
       </div>
       <p className="text-[11px] text-muted-foreground mt-2">
         Per-user connection details (auth status, last used, error count) live
@@ -1005,34 +1198,28 @@ function ConnectionsTab({ serverId }: { serverId: string }) {
 }
 
 function MetaTab({ server }: { server: McpServerRow }) {
+  const meta = serverMeta(server);
   return (
     <div className="rounded-md border border-border bg-card p-3">
+      <div className="flex justify-end">
+        <CopyButtons
+          size="xs"
+          label={`Server ${server.slug} metadata`}
+          human={() => serverSummary(server)}
+          json={() => meta}
+          agent={() => ({
+            kind: "mcp-server",
+            location: PAGE_LOCATION,
+            description:
+              "Sanitized metadata of the MCP server open in the admin detail pane.",
+            data: meta,
+            summary: serverSummary(server),
+            attributes: { slug: server.slug, status: server.status },
+          })}
+        />
+      </div>
       <pre className="font-mono text-[11px] overflow-auto whitespace-pre-wrap leading-relaxed">
-        {JSON.stringify(
-          {
-            id: server.id,
-            slug: server.slug,
-            name: server.name,
-            vendor: server.vendor,
-            category: server.category,
-            transport: server.transport,
-            auth_strategy: server.auth_strategy,
-            status: server.status,
-            has_local: server.has_local,
-            has_remote: server.has_remote,
-            supports_mcp_apps: server.supports_mcp_apps,
-            is_official: server.is_official,
-            is_featured: server.is_featured,
-            discovery_ttl_seconds: server.discovery_ttl_seconds,
-            last_synced_at: server.last_synced_at,
-            last_sync_error: server.last_sync_error,
-            metadata: server.metadata,
-            created_at: server.created_at,
-            updated_at: server.updated_at,
-          },
-          null,
-          2,
-        )}
+        {JSON.stringify(meta, null, 2)}
       </pre>
     </div>
   );
@@ -1127,6 +1314,23 @@ function TestResultPanel({ result }: { result: McpTestResult }) {
             {result.endpointTested}
           </code>
         )}
+        <CopyButtons
+          size="xs"
+          label="Connection test result"
+          className={result.endpointTested ? "" : "ml-auto"}
+          human={() =>
+            `${result.ok ? "Reachable" : "Unhealthy"}${result.statusCode !== null ? ` · HTTP ${result.statusCode}` : ""}${result.latencyMs !== null ? ` · ${result.latencyMs}ms` : ""}\n${result.message}${result.error ? `\nerror: ${result.error}` : ""}`
+          }
+          json={() => result}
+          agent={() => ({
+            kind: "mcp-server-test-result",
+            location: PAGE_LOCATION,
+            description:
+              "Latest connection-test result for the MCP server open in the admin detail pane.",
+            data: result,
+            attributes: { ok: result.ok, transport: result.transport },
+          })}
+        />
       </div>
       <p className="text-[11px] leading-relaxed">{result.message}</p>
       {result.error && (
