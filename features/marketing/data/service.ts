@@ -56,7 +56,8 @@ import type {
   UpdatePropertyInput,
   UpdateSiteIdentityInput,
 } from "@/features/marketing/types";
-import { isJsonRecord } from "@/features/marketing/types";
+import { isJsonRecord, isPropertyKind } from "@/features/marketing/types";
+import { extractErrorMessage } from "@/utils/errors";
 import type { Database, Json } from "@/types/database.types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { parseSnapshotImages } from "@/features/marketing/lib/snapshot-content";
@@ -1919,6 +1920,95 @@ export async function confirmDiscoveredFact(
 
 function asRecord(value: DiscoveredItem["value"]): { [key: string]: unknown } {
   return isJsonRecord(value) ? value : {};
+}
+
+export interface BulkConfirmDiscoveredResult {
+  confirmed: number;
+  failed: Array<{ item: DiscoveredItem; message: string }>;
+}
+
+/**
+ * Promote many pending discoveries at once. Each item goes through the ONE
+ * canonical per-category promotion path (asset / property / fact) — never a
+ * second bulk write shape. Sequential on purpose: a promotion is a
+ * multi-statement write (insert + identity sync + status stamp) and a partial
+ * failure must name exactly which items failed instead of aborting the batch.
+ */
+export async function bulkConfirmDiscoveredItems(
+  items: Array<{ item: DiscoveredItem; kind: string; label: string | null }>,
+): Promise<BulkConfirmDiscoveredResult> {
+  let confirmed = 0;
+  const failed: BulkConfirmDiscoveredResult["failed"] = [];
+  for (const { item, kind, label } of items) {
+    try {
+      if (item.category === "media") {
+        await confirmDiscoveredAsset({ item, assetKind: kind, title: label });
+      } else if (item.category === "social") {
+        if (!isPropertyKind(kind) || kind === "website") {
+          throw new Error("Select a valid property type.");
+        }
+        await confirmDiscoveredProperty({
+          item,
+          propertyKind: kind,
+          displayName: label,
+        });
+      } else {
+        await confirmDiscoveredFact({ item, factKind: kind, label });
+      }
+      confirmed += 1;
+    } catch (error) {
+      failed.push({ item, message: extractErrorMessage(error) });
+    }
+  }
+  return { confirmed, failed };
+}
+
+/** Dismiss many pending candidates in one statement. Returns rows changed. */
+export async function bulkDismissDiscoveredItems(
+  itemIds: string[],
+): Promise<number> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("discovered_item")
+    .update({ status: "dismissed", reviewed_at: new Date().toISOString() })
+    .in("id", itemIds)
+    .eq("status", "pending")
+    .select("id");
+  assertMutated(response.data, response.error, "dismiss these discoveries");
+  return response.data?.length ?? 0;
+}
+
+/** Return many dismissed candidates to pending in one statement. */
+export async function bulkUndismissDiscoveredItems(
+  itemIds: string[],
+): Promise<number> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("discovered_item")
+    .update({ status: "pending", reviewed_at: null, reviewed_by: null })
+    .in("id", itemIds)
+    .eq("status", "dismissed")
+    .select("id");
+  assertMutated(response.data, response.error, "restore these discoveries");
+  return response.data?.length ?? 0;
+}
+
+/** Soft-delete many candidates in one statement. Returns rows changed. */
+export async function bulkDeleteDiscoveredItems(
+  itemIds: string[],
+): Promise<number> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("discovered_item")
+    .update({ deleted_at: new Date().toISOString() })
+    .in("id", itemIds)
+    .is("deleted_at", null)
+    .select("id");
+  assertMutated(response.data, response.error, "delete these discoveries");
+  return response.data?.length ?? 0;
 }
 
 export async function dismissDiscoveredItem(itemId: string): Promise<void> {

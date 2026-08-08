@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import {
   AtSign,
   Check,
+  ChevronLeft,
+  ChevronRight,
   ExternalLink,
   FileQuestion,
   Globe2,
@@ -40,6 +42,7 @@ import {
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import {
@@ -54,6 +57,10 @@ import { createMarketingDiscoveryScope } from "@/features/surfaces/manifests/mar
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
+  useBulkConfirmDiscoveredItems,
+  useBulkDeleteDiscoveredItems,
+  useBulkDismissDiscoveredItems,
+  useBulkUndismissDiscoveredItems,
   useConfirmDiscoveredAsset,
   useConfirmDiscoveredFact,
   useConfirmDiscoveredProperty,
@@ -92,6 +99,9 @@ const STATUS_TABS: Array<{ value: DiscoveredItemStatus; label: string }> = [
   { value: "confirmed", label: "Confirmed" },
   { value: "dismissed", label: "Dismissed" },
 ];
+
+const PAGE_SIZE_OPTIONS = [50, 100, 250] as const;
+const DEFAULT_PAGE_SIZE = 100;
 
 const CATEGORY_META: Record<
   string,
@@ -139,10 +149,27 @@ function isSocialCategory(category: string): boolean {
   return category === "social";
 }
 
+/** Which type pool a category's rows choose from (drives bulk type-assign). */
+type KindPool = "asset" | "property" | "fact";
+
+function kindPoolOf(category: string): KindPool {
+  if (isMediaCategory(category)) return "asset";
+  if (isSocialCategory(category)) return "property";
+  return "fact";
+}
+
+function kindOptionsFor(pool: KindPool) {
+  return pool === "asset"
+    ? ASSET_KINDS
+    : pool === "property"
+      ? PROPERTY_TYPE_OPTIONS
+      : FACT_KINDS;
+}
+
 function defaultKind(item: DiscoveredItem): string {
   if (isSocialCategory(item.category)) return inferDiscoveredPropertyType(item);
   const guess = item.guessed_kind ?? "";
-  const pool = isMediaCategory(item.category) ? ASSET_KINDS : FACT_KINDS;
+  const pool = kindOptionsFor(kindPoolOf(item.category));
   if (pool.some((option) => option.value === guess)) return guess;
   return pool[pool.length - 1].value;
 }
@@ -171,19 +198,192 @@ function itemContextSnippet(item: DiscoveredItem): string | null {
 export function DiscoveryInbox() {
   const { site } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
-  const [status, setStatus] = useState<DiscoveredItemStatus>("pending");
-  const items = useDiscoveredItems(site.brand_id, status);
+  const [status, setStatusState] = useState<DiscoveredItemStatus>("pending");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const [kindOverrides, setKindOverrides] = useState<Record<string, string>>(
+    {},
+  );
+  const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
   const pendingCount = usePendingDiscoveredCount(site.brand_id);
+  const bulkConfirm = useBulkConfirmDiscoveredItems();
+  const bulkDismiss = useBulkDismissDiscoveredItems();
+  const bulkUndismiss = useBulkUndismissDiscoveredItems();
+  const bulkDelete = useBulkDeleteDiscoveredItems();
+
+  // A review action on the last page can shrink the list under the stored
+  // page number — clamp at render so the query never strands the user on an
+  // empty over-shot page. `knownTotal` is last-seen data, so the clamp is a
+  // derived value, never an effect.
+  const [knownTotal, setKnownTotal] = useState(0);
+  const knownPageCount = Math.max(1, Math.ceil(knownTotal / pageSize));
+  const currentPage = Math.min(page, knownPageCount);
+  const items = useDiscoveredItems(site.brand_id, status, currentPage, pageSize);
+
+  const rows = useMemo(() => items.data?.rows ?? [], [items.data]);
+  const total = items.data?.total ?? 0;
+  if (items.data !== undefined && total !== knownTotal) setKnownTotal(total);
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+
+  const setStatus = (next: DiscoveredItemStatus) => {
+    setStatusState(next);
+    setPage(1);
+    setKnownTotal(0);
+    setSelected(new Set());
+  };
+  const goToPage = (next: number) => {
+    setPage(next);
+    setSelected(new Set());
+  };
 
   const grouped = useMemo(() => {
     const groups = new Map<string, DiscoveredItem[]>();
-    for (const item of items.data ?? []) {
+    for (const item of rows) {
       const bucket = groups.get(item.category) ?? [];
       bucket.push(item);
       groups.set(item.category, bucket);
     }
     return [...groups.entries()];
-  }, [items.data]);
+  }, [rows]);
+
+  const effectiveKind = (item: DiscoveredItem) =>
+    kindOverrides[item.id] ?? defaultKind(item);
+
+  // Selection is only meaningful against the rows actually on screen —
+  // refetches can move ids out from under a stale selection.
+  const selectedItems = useMemo(
+    () => rows.filter((item) => selected.has(item.id)),
+    [rows, selected],
+  );
+  const selectable = status !== "confirmed";
+  const selectedPools = useMemo(
+    () => new Set(selectedItems.map((item) => kindPoolOf(item.category))),
+    [selectedItems],
+  );
+  const bulkTypePool =
+    selectedPools.size === 1 ? [...selectedPools][0] : null;
+
+  const toggleSelected = (itemId: string, next: boolean) => {
+    setSelected((current) => {
+      const draft = new Set(current);
+      if (next) draft.add(itemId);
+      else draft.delete(itemId);
+      return draft;
+    });
+  };
+  const setManySelected = (itemIds: string[], next: boolean) => {
+    setSelected((current) => {
+      const draft = new Set(current);
+      for (const id of itemIds) {
+        if (next) draft.add(id);
+        else draft.delete(id);
+      }
+      return draft;
+    });
+  };
+
+  const bulkBusy =
+    bulkConfirm.isPending ||
+    bulkDismiss.isPending ||
+    bulkUndismiss.isPending ||
+    bulkDelete.isPending;
+
+  const assignBulkKind = (kind: string) => {
+    setKindOverrides((current) => {
+      const draft = { ...current };
+      for (const item of selectedItems) draft[item.id] = kind;
+      return draft;
+    });
+  };
+
+  const runBulkConfirm = async () => {
+    const ready = selectedItems.filter(
+      (item) => effectiveKind(item) !== "other",
+    );
+    const needLabel = selectedItems.length - ready.length;
+    if (ready.length === 0) {
+      toast.error(
+        "Every selected item is typed Other — Other needs a per-item label, so confirm those individually.",
+      );
+      return;
+    }
+    try {
+      const result = await bulkConfirm.mutateAsync(
+        ready.map((item) => ({
+          item,
+          kind: effectiveKind(item),
+          label: null,
+        })),
+      );
+      setSelected(new Set());
+      if (result.failed.length > 0) {
+        toast.error(
+          `Confirmed ${result.confirmed}, ${result.failed.length} failed`,
+          {
+            description: result.failed
+              .slice(0, 3)
+              .map((f) => `${itemDisplayValue(f.item)}: ${f.message}`)
+              .join(" · "),
+          },
+        );
+      } else {
+        toast.success(`Confirmed ${result.confirmed} items`);
+      }
+      if (needLabel > 0) {
+        toast.info(
+          `${needLabel} item${needLabel === 1 ? "" : "s"} typed Other skipped — Other needs a per-item label.`,
+        );
+      }
+    } catch (error) {
+      toast.error("Could not confirm items", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
+
+  const runBulkDismiss = async () => {
+    try {
+      const changed = await bulkDismiss.mutateAsync(
+        selectedItems.map((item) => item.id),
+      );
+      setSelected(new Set());
+      toast.success(`Dismissed ${changed} items`);
+    } catch (error) {
+      toast.error("Could not dismiss items", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
+
+  const runBulkRestore = async () => {
+    try {
+      const changed = await bulkUndismiss.mutateAsync(
+        selectedItems.map((item) => item.id),
+      );
+      setSelected(new Set());
+      toast.success(`Returned ${changed} items to pending`);
+    } catch (error) {
+      toast.error("Could not restore items", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
+
+  const runBulkDelete = async () => {
+    try {
+      const changed = await bulkDelete.mutateAsync(
+        selectedItems.map((item) => item.id),
+      );
+      setSelected(new Set());
+      setConfirmingBulkDelete(false);
+      toast.success(`Deleted ${changed} discoveries`);
+    } catch (error) {
+      toast.error("Could not delete items", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
 
   if (!site.brand_id) {
     return (
@@ -203,7 +403,6 @@ export function DiscoveryInbox() {
     );
   }
 
-  const rows = items.data ?? [];
   const inboxCopy = webCopy({
     kind: "web-discovery-inbox",
     label: `Discovery inbox (${status})`,
@@ -214,7 +413,9 @@ export function DiscoveryInbox() {
     lines: [
       ["Site", site.domain],
       ["Status filter", status],
-      ["Items", rows.length],
+      ["Total items", total],
+      ["Loaded on this page", rows.length],
+      ["Page", `${currentPage} of ${pageCount}`],
       ...grouped.map(
         ([category, categoryItems]): [string, string] => [
           (CATEGORY_META[category] ?? CATEGORY_META.other).label,
@@ -227,6 +428,8 @@ export function DiscoveryInbox() {
       brand_id: site.brand_id,
       status,
       count: rows.length,
+      total,
+      page: currentPage,
     },
   });
 
@@ -241,10 +444,10 @@ export function DiscoveryInbox() {
     {
       id: "items",
       title: `Discovered items (${status})`,
-      description: `${rows.length} items currently loaded for the "${status}" tab.`,
+      description: `${rows.length} of ${total} items loaded for the "${status}" tab (page ${currentPage} of ${pageCount}).`,
       cuttable: true,
       levelLabels: {
-        full: `All ${rows.length} (raw)`,
+        full: `All ${rows.length} loaded (raw)`,
         compact: "Top 25",
         brief: "Counts by category",
       },
@@ -268,14 +471,9 @@ export function DiscoveryInbox() {
     summary: inboxCopy.human(),
     sections: groomerSections(),
   });
-  const pageFullData = (): Record<string, unknown> => {
-    const full: Record<string, unknown> = {};
-    for (const section of groomerSections()) {
-      const value = section.build("full");
-      if (value !== null && value !== undefined) full[section.id] = value;
-    }
-    return full;
-  };
+
+  const rangeStart = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const rangeEnd = (currentPage - 1) * pageSize + rows.length;
 
   return (
     <SurfaceRuntimeProvider
@@ -283,9 +481,9 @@ export function DiscoveryInbox() {
       getScope={() => {
         // pending_count comes from the dedicated brand-scoped count query —
         // never the loaded rows' length, which caps at the list query's
-        // limit and would lie above it. pending_items stays honest only when
-        // the Pending tab's data is the data actually loaded — other tabs
-        // load different rows.
+        // page size and would lie above it. pending_items stays honest only
+        // when the Pending tab's data is the data actually loaded — other
+        // tabs load different rows.
         const pendingLoaded = status === "pending" && items.data !== undefined;
         const loadedItems =
           items.data === undefined
@@ -329,7 +527,7 @@ export function DiscoveryInbox() {
             <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
               Discovery inbox
               <span className="text-xs font-normal tabular-nums text-muted-foreground">
-                {rows.length}
+                {total}
               </span>
             </h1>
             <p className="text-xs text-muted-foreground">
@@ -382,6 +580,119 @@ export function DiscoveryInbox() {
           </div>
         </header>
 
+        {selectable && rows.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Checkbox
+                checked={
+                  selectedItems.length === 0
+                    ? false
+                    : selectedItems.length === rows.length
+                      ? true
+                      : "indeterminate"
+                }
+                onCheckedChange={(next) =>
+                  setManySelected(
+                    rows.map((item) => item.id),
+                    next === true,
+                  )
+                }
+                aria-label="Select all items on this page"
+              />
+              {selectedItems.length > 0 ? (
+                <span className="font-medium text-foreground tabular-nums">
+                  {selectedItems.length} selected
+                </span>
+              ) : (
+                <span>Select all on page</span>
+              )}
+            </label>
+            {selectedItems.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {status === "pending" ? (
+                  <>
+                    <Select
+                      // Reset per selection so a fresh pick always fires.
+                      key={selectedItems.map((i) => i.id).join(",")}
+                      onValueChange={assignBulkKind}
+                      disabled={!bulkTypePool || bulkBusy}
+                    >
+                      <SelectTrigger className="h-7 w-40 text-xs">
+                        <SelectValue
+                          placeholder={
+                            bulkTypePool
+                              ? "Set type for selected"
+                              : "Mixed categories"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(bulkTypePool
+                          ? kindOptionsFor(bulkTypePool)
+                          : []
+                        ).map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      className="h-7 gap-1"
+                      disabled={bulkBusy}
+                      onClick={() => void runBulkConfirm()}
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      Confirm {selectedItems.length}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 gap-1 text-muted-foreground"
+                      disabled={bulkBusy}
+                      onClick={() => void runBulkDismiss()}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      Dismiss
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 gap-1 text-muted-foreground"
+                    disabled={bulkBusy}
+                    onClick={() => void runBulkRestore()}
+                  >
+                    <Undo2 className="h-3.5 w-3.5" />
+                    Restore
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1 text-muted-foreground hover:text-destructive"
+                  disabled={bulkBusy}
+                  onClick={() => setConfirmingBulkDelete(true)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-muted-foreground"
+                  disabled={bulkBusy}
+                  onClick={() => setSelected(new Set())}
+                >
+                  Clear
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         {grouped.length === 0 ? (
           <div className="flex min-h-56 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-card/50 p-6 text-center">
             <FileQuestion className="h-8 w-8 text-muted-foreground" />
@@ -400,12 +711,33 @@ export function DiscoveryInbox() {
           grouped.map(([category, categoryItems]) => {
             const meta = CATEGORY_META[category] ?? CATEGORY_META.other;
             const Icon = meta.icon;
+            const categorySelected = categoryItems.filter((item) =>
+              selected.has(item.id),
+            ).length;
             return (
               <section
                 key={category}
                 className="overflow-hidden rounded-lg border border-border bg-card"
               >
                 <header className="flex items-center gap-2 border-b border-border px-3 py-2">
+                  {selectable ? (
+                    <Checkbox
+                      checked={
+                        categorySelected === 0
+                          ? false
+                          : categorySelected === categoryItems.length
+                            ? true
+                            : "indeterminate"
+                      }
+                      onCheckedChange={(next) =>
+                        setManySelected(
+                          categoryItems.map((item) => item.id),
+                          next === true,
+                        )
+                      }
+                      aria-label={`Select all ${meta.label} items`}
+                    />
+                  ) : null}
                   <Icon className="h-4 w-4 text-muted-foreground" />
                   <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {meta.label}
@@ -420,6 +752,18 @@ export function DiscoveryInbox() {
                       key={item.id}
                       item={item}
                       readOnly={status !== "pending"}
+                      kind={effectiveKind(item)}
+                      onKindChange={(kind) =>
+                        setKindOverrides((current) => ({
+                          ...current,
+                          [item.id]: kind,
+                        }))
+                      }
+                      selectable={selectable}
+                      selected={selected.has(item.id)}
+                      onSelectedChange={(next) =>
+                        toggleSelected(item.id, next)
+                      }
                     />
                   ))}
                 </ul>
@@ -427,7 +771,69 @@ export function DiscoveryInbox() {
             );
           })
         )}
+
+        {total > 0 ? (
+          <footer className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2">
+            <span className="text-xs tabular-nums text-muted-foreground">
+              Showing {rangeStart}–{rangeEnd} of {total}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Select
+                value={String(pageSize)}
+                onValueChange={(value) => {
+                  setPageSize(Number(value));
+                  goToPage(1);
+                }}
+              >
+                <SelectTrigger className="h-7 w-24 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map((size) => (
+                    <SelectItem key={size} value={String(size)}>
+                      {size} / page
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 gap-1"
+                disabled={currentPage <= 1 || items.isFetching}
+                onClick={() => goToPage(currentPage - 1)}
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                Prev
+              </Button>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {currentPage} / {pageCount}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 gap-1"
+                disabled={currentPage >= pageCount || items.isFetching}
+                onClick={() => goToPage(currentPage + 1)}
+              >
+                Next
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </footer>
+        ) : null}
       </div>
+
+      <ConfirmDialog
+        open={confirmingBulkDelete}
+        onOpenChange={setConfirmingBulkDelete}
+        title={`Delete ${selectedItems.length} discoveries?`}
+        description="The candidates move to trash. If the crawler finds the same values again they will not reappear."
+        variant="destructive"
+        confirmLabel="Delete"
+        busy={bulkDelete.isPending}
+        onConfirm={() => void runBulkDelete()}
+      />
     </main>
     </SurfaceRuntimeProvider>
   );
@@ -436,9 +842,19 @@ export function DiscoveryInbox() {
 function DiscoveryRow({
   item,
   readOnly,
+  kind,
+  onKindChange,
+  selectable,
+  selected,
+  onSelectedChange,
 }: {
   item: DiscoveredItem;
   readOnly: boolean;
+  kind: string;
+  onKindChange: (kind: string) => void;
+  selectable: boolean;
+  selected: boolean;
+  onSelectedChange: (selected: boolean) => void;
 }) {
   const confirmAsset = useConfirmDiscoveredAsset();
   const confirmFact = useConfirmDiscoveredFact();
@@ -447,7 +863,6 @@ function DiscoveryRow({
   const undismiss = useUndismissDiscoveredItem();
   const deleteMutation = useDeleteDiscoveredItem();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [kind, setKind] = useState(() => defaultKind(item));
   const [customLabel, setCustomLabel] = useState("");
   const media = isMediaCategory(item.category);
   const social = isSocialCategory(item.category);
@@ -455,11 +870,7 @@ function DiscoveryRow({
   const SocialIcon = socialPreview
     ? (SOCIAL_ICONS[socialPreview.kind] ?? AtSign)
     : AtSign;
-  const kindOptions = media
-    ? ASSET_KINDS
-    : social
-      ? PROPERTY_TYPE_OPTIONS
-      : FACT_KINDS;
+  const kindOptions = kindOptionsFor(kindPoolOf(item.category));
   const customLabelRequired = kind === "other";
   const busy =
     confirmAsset.isPending ||
@@ -568,7 +979,19 @@ function DiscoveryRow({
   };
 
   return (
-    <li className="flex flex-wrap items-center gap-3 px-3 py-2">
+    <li
+      className={cn(
+        "flex flex-wrap items-center gap-3 px-3 py-2",
+        selected && "bg-accent/40",
+      )}
+    >
+      {selectable ? (
+        <Checkbox
+          checked={selected}
+          onCheckedChange={(next) => onSelectedChange(next === true)}
+          aria-label={`Select ${display}`}
+        />
+      ) : null}
       {socialPreview ? (
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-muted/40 text-foreground shadow-sm">
           <SocialIcon className="h-5 w-5" aria-hidden />
@@ -701,7 +1124,7 @@ function DiscoveryRow({
         </div>
       ) : (
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-          <Select value={kind} onValueChange={setKind}>
+          <Select value={kind} onValueChange={onKindChange}>
             <SelectTrigger className="h-8 w-40 text-xs">
               <SelectValue />
             </SelectTrigger>

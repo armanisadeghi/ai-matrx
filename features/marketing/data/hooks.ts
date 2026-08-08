@@ -8,6 +8,10 @@ import {
 } from "@tanstack/react-query";
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import {
+  bulkConfirmDiscoveredItems,
+  bulkDeleteDiscoveredItems,
+  bulkDismissDiscoveredItems,
+  bulkUndismissDiscoveredItems,
   confirmDiscoveredAsset,
   confirmDiscoveredProperty,
   getBrand,
@@ -132,8 +136,21 @@ export const marketingKeys = {
     [...marketingKeys.site(siteId), "homepage-meta"] as const,
   heroScreenshot: (siteId: string) =>
     [...marketingKeys.site(siteId), "hero-screenshot"] as const,
-  discovered: (brandId: string, status: DiscoveredItemStatus | null) =>
-    [...marketingKeys.root, "brand", brandId, "discovered", status] as const,
+  discovered: (
+    brandId: string,
+    status: DiscoveredItemStatus | null,
+    page: number,
+    pageSize: number,
+  ) =>
+    [
+      ...marketingKeys.root,
+      "brand",
+      brandId,
+      "discovered",
+      status,
+      page,
+      pageSize,
+    ] as const,
   discoveredCount: (brandId: string) =>
     [...marketingKeys.root, "brand", brandId, "discovered-count"] as const,
   pages: (siteId: string, state: MatrxDataTableQueryState) =>
@@ -562,11 +579,15 @@ export function useResearchImages(organizationId: string | null) {
 export function useDiscoveredItems(
   brandId: string | null,
   status: DiscoveredItemStatus | null,
+  page: number,
+  pageSize: number,
 ) {
   return useQuery({
-    queryKey: marketingKeys.discovered(brandId ?? "none", status),
-    queryFn: ({ signal }) => listDiscoveredItems(brandId ?? "", status, signal),
+    queryKey: marketingKeys.discovered(brandId ?? "none", status, page, pageSize),
+    queryFn: ({ signal }) =>
+      listDiscoveredItems(brandId ?? "", status, page, pageSize, signal),
     enabled: Boolean(brandId),
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -579,8 +600,8 @@ export function usePendingDiscoveredCount(brandId: string | null) {
   });
 }
 
-function useDiscoveryMutation<TInput>(
-  mutationFn: (input: TInput) => Promise<void>,
+function useDiscoveryMutation<TInput, TResult = void>(
+  mutationFn: (input: TInput) => Promise<TResult>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -607,6 +628,22 @@ export function useConfirmDiscoveredFact() {
 
 export function useDismissDiscoveredItem() {
   return useDiscoveryMutation(dismissDiscoveredItem);
+}
+
+export function useBulkConfirmDiscoveredItems() {
+  return useDiscoveryMutation(bulkConfirmDiscoveredItems);
+}
+
+export function useBulkDismissDiscoveredItems() {
+  return useDiscoveryMutation(bulkDismissDiscoveredItems);
+}
+
+export function useBulkUndismissDiscoveredItems() {
+  return useDiscoveryMutation(bulkUndismissDiscoveredItems);
+}
+
+export function useBulkDeleteDiscoveredItems() {
+  return useDiscoveryMutation(bulkDeleteDiscoveredItems);
 }
 
 export function useBrands(state: MatrxDataTableQueryState) {
