@@ -31,6 +31,10 @@ import {
   NAV_ITEM_SELECTED,
   NAV_ITEM_UNSELECTED,
 } from "@/features/shell/components/header/navItemClasses";
+import {
+  NavItemTooltip,
+  NavTooltipProvider,
+} from "@/features/shell/components/header/NavItemTooltip";
 
 export type AgentPageMode =
   | "view"
@@ -146,34 +150,37 @@ export function AgentModeController({
 
   return (
     <>
-      <div className="matrx-glass-thin-border flex items-center gap-0 rounded-full p-0.5">
-        {MODES.map(({ id, label, icon: Icon }) => {
-          const isActive = id === mode;
-          return (
-            <Link
-              key={id}
-              href={getModeHref(id)}
-              onClick={(e) => {
-                if (e.metaKey || e.ctrlKey) return;
-                e.preventDefault();
-                handleModeChange(id);
-              }}
-              title={label}
-              className={cn(
-                "flex items-center justify-center gap-1 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer",
-                "px-2.5",
-                "[&_svg]:w-3.5 [&_svg]:h-3.5",
-                isActive
-                  ? NAV_ITEM_SELECTED
-                  : NAV_ITEM_UNSELECTED,
-              )}
-            >
-              <Icon />
-              <span className="hidden xl:inline">{label}</span>
-            </Link>
-          );
-        })}
-      </div>
+      <NavTooltipProvider>
+        <div className="matrx-glass-thin-border flex items-center gap-0 rounded-full p-0.5">
+          {MODES.map(({ id, label, icon: Icon }) => {
+            const isActive = id === mode;
+            return (
+              <NavItemTooltip key={id} label={label} contentClassName="xl:hidden">
+                <Link
+                  href={getModeHref(id)}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey) return;
+                    e.preventDefault();
+                    handleModeChange(id);
+                  }}
+                  aria-label={label}
+                  className={cn(
+                    "flex items-center justify-center gap-1 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer",
+                    "px-2.5",
+                    "[&_svg]:w-3.5 [&_svg]:h-3.5",
+                    isActive
+                      ? NAV_ITEM_SELECTED
+                      : NAV_ITEM_UNSELECTED,
+                  )}
+                >
+                  <Icon />
+                  <span className="hidden xl:inline">{label}</span>
+                </Link>
+              </NavItemTooltip>
+            );
+          })}
+        </div>
+      </NavTooltipProvider>
 
       <AlertDialog open={showDirtyDialog} onOpenChange={setShowDirtyDialog}>
         <AlertDialogContent>

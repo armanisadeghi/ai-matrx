@@ -14,6 +14,10 @@ import {
   NAV_ITEM_SELECTED,
   NAV_ITEM_UNSELECTED,
 } from "@/features/shell/components/header/navItemClasses";
+import {
+  NavItemTooltip,
+  NavTooltipProvider,
+} from "@/features/shell/components/header/NavItemTooltip";
 
 export function TranscriptsModeController() {
   const router = useRouter();
@@ -27,33 +31,36 @@ export function TranscriptsModeController() {
   };
 
   return (
-    <div className="pointer-events-auto matrx-glass-thin-border flex min-w-0 items-center gap-0 rounded-full p-0.5">
-      {TRANSCRIPTS_MODES.map(({ id, label, icon: Icon, href }) => {
-        const isActive = id === mode;
-        return (
-          <Link
-            key={id}
-            href={href}
-            onClick={(e) => {
-              if (e.metaKey || e.ctrlKey) return;
-              e.preventDefault();
-              handleModeChange(id);
-            }}
-            title={label}
-            className={cn(
-              "flex cursor-pointer items-center justify-center gap-1 rounded-full py-0.5 text-[0.6875rem] font-medium transition-colors",
-              "px-2.5",
-              "[&_svg]:h-3.5 [&_svg]:w-3.5",
-              isActive
-                ? NAV_ITEM_SELECTED
-                : NAV_ITEM_UNSELECTED,
-            )}
-          >
-            <Icon />
-            <span className="hidden lg:inline">{label}</span>
-          </Link>
-        );
-      })}
-    </div>
+    <NavTooltipProvider>
+      <div className="pointer-events-auto matrx-glass-thin-border flex min-w-0 items-center gap-0 rounded-full p-0.5">
+        {TRANSCRIPTS_MODES.map(({ id, label, icon: Icon, href }) => {
+          const isActive = id === mode;
+          return (
+            <NavItemTooltip key={id} label={label} contentClassName="lg:hidden">
+              <Link
+                href={href}
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey) return;
+                  e.preventDefault();
+                  handleModeChange(id);
+                }}
+                aria-label={label}
+                className={cn(
+                  "flex cursor-pointer items-center justify-center gap-1 rounded-full py-0.5 text-[0.6875rem] font-medium transition-colors",
+                  "px-2.5",
+                  "[&_svg]:h-3.5 [&_svg]:w-3.5",
+                  isActive
+                    ? NAV_ITEM_SELECTED
+                    : NAV_ITEM_UNSELECTED,
+                )}
+              >
+                <Icon />
+                <span className="hidden lg:inline">{label}</span>
+              </Link>
+            </NavItemTooltip>
+          );
+        })}
+      </div>
+    </NavTooltipProvider>
   );
 }

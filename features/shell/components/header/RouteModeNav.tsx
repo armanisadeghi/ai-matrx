@@ -23,6 +23,11 @@
 //
 // cmd/ctrl+click on any item opens that sub-route in a new tab (Link + href),
 // per the repo navigation-feedback rule.
+//
+// Icon-only items name themselves via NavItemTooltip (fast styled tooltip
+// below the pill, instant when scanning across siblings) — never a native
+// `title=`, and never a hover-expanding inline label (labels differ in width,
+// so inline expansion always shifts the pill).
 
 import { useLayoutEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -46,6 +51,10 @@ import {
   NAV_ITEM_SELECTED,
   NAV_ITEM_UNSELECTED,
 } from "@/features/shell/components/header/navItemClasses";
+import {
+  NavItemTooltip,
+  NavTooltipProvider,
+} from "@/features/shell/components/header/NavItemTooltip";
 import { centerSlotWidth } from "@/features/shell/components/header/RouteHeader";
 
 export interface RouteNavItem {
@@ -149,10 +158,16 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
     return () => ro.disconnect();
   }, [items, canIcons, current?.href]);
 
-  const renderItem = (item: RouteNavItem, showLabel: boolean) => {
+  // `withTooltip` is true only in the VISIBLE pill — the hidden measurers
+  // render plain items so Radix triggers never join the measurement DOM.
+  const renderItem = (
+    item: RouteNavItem,
+    showLabel: boolean,
+    withTooltip = false,
+  ) => {
     const Icon = item.icon;
     const isActive = item.href === current?.href;
-    return (
+    const link = (
       <Link
         key={item.href}
         href={item.href}
@@ -161,7 +176,6 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
           e.preventDefault();
           navigate(item.href);
         }}
-        title={item.name}
         aria-label={item.name}
         aria-current={isActive ? "page" : undefined}
         className={cn(ITEM, isActive ? NAV_ITEM_SELECTED : NAV_ITEM_UNSELECTED)}
@@ -169,6 +183,12 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
         {Icon && <Icon />}
         {showLabel && <span>{item.name}</span>}
       </Link>
+    );
+    if (!withTooltip || showLabel) return link;
+    return (
+      <NavItemTooltip key={item.href} label={item.name}>
+        {link}
+      </NavItemTooltip>
     );
   };
 
@@ -310,11 +330,17 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
           </DropdownMenu>
         )
       ) : (
-        <div className={PILL} data-route-nav-variant={variant}>
-          {items.map((item) =>
-            renderItem(item, variant === "full" || item.href === current?.href),
-          )}
-        </div>
+        <NavTooltipProvider>
+          <div className={PILL} data-route-nav-variant={variant}>
+            {items.map((item) =>
+              renderItem(
+                item,
+                variant === "full" || item.href === current?.href,
+                true,
+              ),
+            )}
+          </div>
+        </NavTooltipProvider>
       )}
     </div>
   );
