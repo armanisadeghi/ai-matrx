@@ -97,7 +97,7 @@ function VariableGroup({
                 content={f.value}
                 formatJson={false}
                 size="xs"
-                className="opacity-0 transition-opacity group-hover/var:opacity-100"
+                className="opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/var:opacity-100"
               />
             </li>
           );
@@ -105,6 +105,31 @@ function VariableGroup({
       </ul>
     </section>
   );
+}
+
+/** One plain-text bundle of everything resolved — for "Copy all for AI". */
+function buildCopyAllText(data: ContextPreviewResponse): string {
+  const parts: string[] = [];
+  if (data.injected_block) {
+    parts.push("## Injected context block\n\n" + data.injected_block);
+  }
+  const tier = (title: string, vars: unknown) => {
+    const keys = vars && typeof vars === "object" ? Object.keys(vars) : [];
+    if (keys.length === 0) return;
+    const lines = keys.sort().map((k) => {
+      const f = varFields((vars as Record<string, unknown>)[k]);
+      return `- ${k}: ${f.value}`;
+    });
+    parts.push(`## ${title}\n\n${lines.join("\n")}`);
+  };
+  tier("Variables — injected directly", data.variables?.direct);
+  tier("Variables — tool-accessible", data.variables?.tool_accessible);
+  tier("Variables — searchable", data.variables?.searchable);
+  if (data.bindings) {
+    tier("Agent variables (scope-filled)", data.bindings.variables);
+    tier("Agent context slots (scope-filled)", data.bindings.context);
+  }
+  return parts.join("\n\n");
 }
 
 function ResolvedView({
@@ -116,6 +141,10 @@ function ResolvedView({
 }) {
   const preview = useContextPreview({ conversationId, agentId, enabled: true });
   const { status, data, error, refresh } = preview;
+  const copyAllText = useMemo(
+    () => (data ? buildCopyAllText(data) : ""),
+    [data],
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -138,6 +167,19 @@ function ResolvedView({
           {status === "loading" ? "Resolving…" : "Server truth"}
         </span>
         <span className="flex-1" />
+        {copyAllText && (
+          <span
+            className="relative h-7 w-7 shrink-0"
+            title="Copy everything the agent receives"
+          >
+            <InlineCopyButton
+              content={copyAllText}
+              formatJson={false}
+              size="sm"
+              tooltipText="Copy all for AI"
+            />
+          </span>
+        )}
         <Button
           variant="ghost"
           size="sm"
@@ -223,7 +265,7 @@ function ResolvedBody({
               content={block}
               formatJson={false}
               size="sm"
-              className="opacity-0 transition-opacity group-hover/block:opacity-100"
+              className="opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/block:opacity-100"
             />
           </div>
         ) : (
