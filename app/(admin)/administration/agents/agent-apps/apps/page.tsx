@@ -63,6 +63,10 @@ import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
   createAdminAgentAppsScope,
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
+import { appBrief, humanAgentApp } from "@/features/agent-apps/format";
 
 type SortField =
   | "name"
@@ -411,6 +415,105 @@ export default function AgentAppsAdminListPage() {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
+              {filteredAndSortedApps.length > 0 && (
+                <>
+                  <CopyButtons
+                    size="icon"
+                    label={`Agent apps (${filteredAndSortedApps.length})`}
+                    human={() =>
+                      filteredAndSortedApps.map(humanAgentApp).join("\n\n")
+                    }
+                    json={() => filteredAndSortedApps}
+                    agent={() => ({
+                      kind: "agent-apps",
+                      location: "AI Matrx Admin — Agent Apps",
+                      description:
+                        "Every agent app currently shown in the admin table (this view).",
+                      data: filteredAndSortedApps,
+                      attributes: {
+                        count: filteredAndSortedApps.length,
+                        totalCount: apps.length,
+                      },
+                    })}
+                    aiVariants={[
+                      {
+                        id: "briefs",
+                        label: "This view briefs",
+                        hint: "One line per app currently shown",
+                        build: () => ({
+                          kind: "agent-apps-briefs",
+                          location: "AI Matrx Admin — Agent Apps",
+                          description: "One-line briefs for the apps currently shown.",
+                          data: filteredAndSortedApps.map(appBrief),
+                          attributes: { count: filteredAndSortedApps.length },
+                        }),
+                      },
+                    ]}
+                    aiCustom={{
+                      label: "Custom export…",
+                      hint: "Toggle only-filtered-view / include description",
+                      options: [
+                        {
+                          kind: "toggle",
+                          key: "onlyFiltered",
+                          label: "Only this view",
+                          hint: "Off = every app in the admin table (up to 1000)",
+                          default: true,
+                        },
+                        {
+                          kind: "toggle",
+                          key: "includeDescription",
+                          label: "Include description",
+                          hint: "Adds each app's full description text",
+                          default: false,
+                        },
+                      ],
+                      build: (opts) => {
+                        const source = opts.onlyFiltered
+                          ? filteredAndSortedApps
+                          : apps;
+                        const lines = source.map((a) => {
+                          const bits = [
+                            appBrief(a),
+                            opts.includeDescription && a.description
+                              ? `  ${a.description}`
+                              : null,
+                          ].filter(Boolean);
+                          return bits.join("\n");
+                        });
+                        return {
+                          text: lines.join("\n\n"),
+                          meta: { apps: source.length },
+                        };
+                      },
+                      wrap: (text, opts, meta) => ({
+                        kind: "agent-apps-custom-export",
+                        location: "AI Matrx Admin — Agent Apps",
+                        description: "Custom-groomed export of the admin agent-apps table.",
+                        data: text,
+                        attributes: {
+                          onlyFiltered: Boolean(opts.onlyFiltered),
+                          includeDescription: Boolean(opts.includeDescription),
+                          count: meta?.apps,
+                        },
+                      }),
+                    }}
+                  />
+                  <ExportMenu
+                    label="agent-apps-admin"
+                    items={[
+                      jsonExportItem(() => filteredAndSortedApps, "JSON (this view)"),
+                      csvExportItem(
+                        () =>
+                          filteredAndSortedApps as unknown as Array<
+                            Record<string, unknown>
+                          >,
+                        "CSV (this view)",
+                      ),
+                    ]}
+                  />
+                </>
+              )}
             </div>
           </div>
 
@@ -832,14 +935,30 @@ export default function AgentAppsAdminListPage() {
                     className="text-right"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7"
-                      onClick={() => handleOpenEdit(app.id)}
-                    >
-                      Manage
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7"
+                        onClick={() => handleOpenEdit(app.id)}
+                      >
+                        Manage
+                      </Button>
+                      <CopyButtons
+                        size="icon"
+                        label={app.name}
+                        human={() => humanAgentApp(app)}
+                        json={() => app}
+                        agent={() => ({
+                          kind: "agent-app",
+                          location: "AI Matrx Admin — Agent Apps",
+                          description: "A single agent-app admin row.",
+                          data: app,
+                          summary: humanAgentApp(app),
+                          attributes: { id: app.id, status: app.status },
+                        })}
+                      />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
