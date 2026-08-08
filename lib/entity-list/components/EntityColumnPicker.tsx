@@ -1,9 +1,9 @@
 "use client";
 
-// features/agents/browse/components/ColumnPicker.tsx
+// lib/entity-list/components/EntityColumnPicker.tsx
 //
-// The table's opinion is a default, not a decision. Everything BROWSE_COLUMNS
-// declares is here; the user's choice persists per surface.
+// The table's opinion is a default, not a decision. Everything the surface's
+// column registry declares is here; the user's choice persists per surface.
 
 import { Columns3, RotateCcw, Check } from "lucide-react";
 import {
@@ -12,28 +12,33 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { BROWSE_COLUMNS, DEFAULT_HIDDEN_COLUMNS, type BrowseColumnSpec } from "../columns";
+import type { EntityColumnSpec } from "../columns";
 
-interface Props {
+interface Props<TRow> {
+  columns: EntityColumnSpec<TRow>[];
+  /** The surface's declared default hidden set — the Reset target. */
+  defaultHidden: string[];
   hiddenColumns: string[];
   /** Owner/org/access carry no information inside "Mine" — hide the toggles too. */
   showSharedColumns: boolean;
   onChange: (hidden: string[]) => void;
 }
 
-export function ColumnPicker({
+export function EntityColumnPicker<TRow>({
+  columns,
+  defaultHidden,
   hiddenColumns,
   showSharedColumns,
   onChange,
-}: Props) {
-  const available: BrowseColumnSpec[] = BROWSE_COLUMNS.filter(
+}: Props<TRow>) {
+  const available = columns.filter(
     (c) => showSharedColumns || !c.scopedToShared,
   );
   const visibleCount = available.filter(
     (c) => !hiddenColumns.includes(c.id),
   ).length;
 
-  const toggle = (spec: BrowseColumnSpec) => {
+  const toggle = (spec: EntityColumnSpec<TRow>) => {
     if (spec.locked) return;
     onChange(
       hiddenColumns.includes(spec.id)
@@ -60,7 +65,7 @@ export function ColumnPicker({
           <span className="text-sm font-semibold">Columns</span>
           <button
             type="button"
-            onClick={() => onChange(DEFAULT_HIDDEN_COLUMNS)}
+            onClick={() => onChange(defaultHidden)}
             className="flex items-center gap-1 text-xs text-primary hover:text-primary/80"
           >
             <RotateCcw className="h-3 w-3" />

@@ -1,6 +1,6 @@
 "use client";
 
-// features/agents/browse/components/BrowseToolbar.tsx
+// lib/entity-list/components/EntityListToolbar.tsx
 //
 // One row: search, Filters & Sort, columns, view, density.
 //
@@ -40,18 +40,31 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
-import { BrowseFilterPanel } from "./BrowseFilterPanel";
-import { ColumnPicker } from "./ColumnPicker";
-import type { BrowseFacets, BrowseQuery } from "../types";
+import type { EntityColumnSpec } from "../columns";
+import type { EntityFacetSection } from "../config";
+import type { EntityFacets, EntityListQuery } from "../types";
+import { EntityFilterPanel } from "./EntityFilterPanel";
+import { EntityColumnPicker } from "./EntityColumnPicker";
 
-interface Props {
-  query: BrowseQuery;
-  facets: BrowseFacets;
+interface Props<TRow> {
+  query: EntityListQuery;
+  facets: EntityFacets;
   isFetching: boolean;
   prefs: ListViewPrefs;
   showSharedColumns: boolean;
+  columns: EntityColumnSpec<TRow>[];
+  defaultHidden: string[];
+  facetSections: EntityFacetSection[];
+  hasFavorites: boolean;
+  /** "Search agents…" */
+  searchPlaceholder: string;
+  /** Label for the deep-search toggle. Absent → no toggle offered. */
+  deepSearchLabel?: string;
+  /** Which alternate views this surface provides. Table is always offered. */
+  hasCards: boolean;
+  hasRows: boolean;
   onSearch: (value: string) => void;
-  onPatchQuery: (patch: Partial<BrowseQuery>) => void;
+  onPatchQuery: (patch: Partial<EntityListQuery>) => void;
   onPatchPrefs: (patch: Partial<ListViewPrefs>) => void;
   onResetFilters: () => void;
   onResetView: () => void;
@@ -91,18 +104,27 @@ function IconToggle({
   );
 }
 
-export function BrowseToolbar({
+export function EntityListToolbar<TRow>({
   query,
   facets,
   isFetching,
   prefs,
   showSharedColumns,
+  columns,
+  defaultHidden,
+  facetSections,
+  hasFavorites,
+  searchPlaceholder,
+  deepSearchLabel,
+  hasCards,
+  hasRows,
   onSearch,
   onPatchQuery,
   onPatchPrefs,
   onResetFilters,
   onResetView,
-}: Props) {
+}: Props<TRow>) {
+  const hasAltViews = hasCards || hasRows;
   return (
     <div className="flex min-w-0 items-center gap-1.5 sm:flex-wrap sm:gap-2">
       <div className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-2.5 lg:h-9 lg:min-w-56">
@@ -115,19 +137,21 @@ export function BrowseToolbar({
           type="search"
           value={query.search}
           onChange={(e) => onSearch(e.target.value)}
-          placeholder="Search agents…"
+          placeholder={searchPlaceholder}
           // 16px minimum prevents iOS zoom-on-focus.
           className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground lg:text-sm"
         />
         {query.search && (
           <>
-            <IconToggle
-              active={query.deep}
-              label="Also search inside prompts"
-              onClick={() => onPatchQuery({ deep: !query.deep })}
-            >
-              <FileSearch className="h-3.5 w-3.5" />
-            </IconToggle>
+            {deepSearchLabel && (
+              <IconToggle
+                active={query.deep}
+                label={deepSearchLabel}
+                onClick={() => onPatchQuery({ deep: !query.deep })}
+              >
+                <FileSearch className="h-3.5 w-3.5" />
+              </IconToggle>
+            )}
             <button
               type="button"
               aria-label="Clear search"
@@ -141,9 +165,12 @@ export function BrowseToolbar({
       </div>
 
       <div className="[&_button]:h-11 lg:[&_button]:h-9">
-        <BrowseFilterPanel
+        <EntityFilterPanel
           query={query}
           facets={facets}
+          columns={columns}
+          facetSections={facetSections}
+          hasFavorites={hasFavorites}
           sort={prefs.sort}
           direction={prefs.direction}
           favoritesFirst={prefs.favoritesFirst}
@@ -157,7 +184,9 @@ export function BrowseToolbar({
       </div>
 
       {prefs.view === "table" && (
-        <ColumnPicker
+        <EntityColumnPicker
+          columns={columns}
+          defaultHidden={defaultHidden}
           hiddenColumns={prefs.hiddenColumns}
           showSharedColumns={showSharedColumns}
           onChange={(hiddenColumns) => onPatchPrefs({ hiddenColumns })}
@@ -177,26 +206,32 @@ export function BrowseToolbar({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52 sm:hidden">
           <DropdownMenuLabel>Display</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={prefs.view}
-            onValueChange={(view) =>
-              onPatchPrefs({ view: view as ListViewPrefs["view"] })
-            }
-          >
-            <DropdownMenuRadioItem value="table">
-              <Table2 className="mr-2 h-3.5 w-3.5" />
-              Table
-            </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="cards">
-              <LayoutGrid className="mr-2 h-3.5 w-3.5" />
-              Cards
-            </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="rows">
-              <List className="mr-2 h-3.5 w-3.5" />
-              Compact list
-            </DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
-          <DropdownMenuSeparator />
+          {hasAltViews && (
+            <DropdownMenuRadioGroup
+              value={prefs.view}
+              onValueChange={(view) =>
+                onPatchPrefs({ view: view as ListViewPrefs["view"] })
+              }
+            >
+              <DropdownMenuRadioItem value="table">
+                <Table2 className="mr-2 h-3.5 w-3.5" />
+                Table
+              </DropdownMenuRadioItem>
+              {hasCards && (
+                <DropdownMenuRadioItem value="cards">
+                  <LayoutGrid className="mr-2 h-3.5 w-3.5" />
+                  Cards
+                </DropdownMenuRadioItem>
+              )}
+              {hasRows && (
+                <DropdownMenuRadioItem value="rows">
+                  <List className="mr-2 h-3.5 w-3.5" />
+                  Compact list
+                </DropdownMenuRadioItem>
+              )}
+            </DropdownMenuRadioGroup>
+          )}
+          {hasAltViews && <DropdownMenuSeparator />}
           <DropdownMenuItem
             onSelect={() =>
               onPatchPrefs({
@@ -219,29 +254,35 @@ export function BrowseToolbar({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <div className="hidden items-center gap-1 rounded-lg border border-border bg-card p-1 sm:flex">
-        <IconToggle
-          active={prefs.view === "table"}
-          label="Table"
-          onClick={() => onPatchPrefs({ view: "table" })}
-        >
-          <Table2 className="h-3.5 w-3.5" />
-        </IconToggle>
-        <IconToggle
-          active={prefs.view === "cards"}
-          label="Cards"
-          onClick={() => onPatchPrefs({ view: "cards" })}
-        >
-          <LayoutGrid className="h-3.5 w-3.5" />
-        </IconToggle>
-        <IconToggle
-          active={prefs.view === "rows"}
-          label="Compact list"
-          onClick={() => onPatchPrefs({ view: "rows" })}
-        >
-          <List className="h-3.5 w-3.5" />
-        </IconToggle>
-      </div>
+      {hasAltViews && (
+        <div className="hidden items-center gap-1 rounded-lg border border-border bg-card p-1 sm:flex">
+          <IconToggle
+            active={prefs.view === "table"}
+            label="Table"
+            onClick={() => onPatchPrefs({ view: "table" })}
+          >
+            <Table2 className="h-3.5 w-3.5" />
+          </IconToggle>
+          {hasCards && (
+            <IconToggle
+              active={prefs.view === "cards"}
+              label="Cards"
+              onClick={() => onPatchPrefs({ view: "cards" })}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </IconToggle>
+          )}
+          {hasRows && (
+            <IconToggle
+              active={prefs.view === "rows"}
+              label="Compact list"
+              onClick={() => onPatchPrefs({ view: "rows" })}
+            >
+              <List className="h-3.5 w-3.5" />
+            </IconToggle>
+          )}
+        </div>
+      )}
 
       <div className="hidden items-center gap-1 rounded-lg border border-border bg-card p-1 sm:flex">
         <IconToggle

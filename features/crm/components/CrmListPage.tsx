@@ -6,7 +6,7 @@
 // canonical entity-list primitives proven at /agents/all:
 //   * MatrxDataTable in CONTROLLED mode (sort/filter/paging are server ops
 //     over the whole result set, served by fetchPartyPage via PostgREST)
-//   * BrowseScopeTabs — THE VIEW LAW made visible (Mine / My Orgs / Public
+//   * EntityScopeTabs (lib/entity-list) — THE VIEW LAW made visible (Mine / My Orgs / Public
 //     with true server counts; "shared" joins when crm grows a grant reader)
 //   * useListViewPrefs — style persists (sort, page size, density);
 //     query (search, filters, page, scope) deliberately does not
@@ -32,7 +32,7 @@ import type {
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { BrowseScopeTabs } from "@/features/agents/browse/components/BrowseScopeTabs";
+import { EntityScopeTabs } from "@/lib/entity-list/components/EntityScopeTabs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
@@ -350,7 +350,7 @@ export function CrmListPage({
         >
           <div className="flex flex-wrap items-center gap-2">
             <div className="[&_button]:h-11 [&_button]:min-w-11 lg:[&_button]:h-7 lg:[&_button]:min-w-0">
-              <BrowseScopeTabs
+              <EntityScopeTabs
                 scope={list.query.scope}
                 scopes={CRM_LIST_SCOPES}
                 counts={list.counts}
