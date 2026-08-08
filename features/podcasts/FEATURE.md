@@ -89,8 +89,9 @@ files, with a live-streaming studio, resumable runs, and public share pages.
   **Live 2026-06-11:** generate from the run page (`EpisodeContentStudio`),
   publish, public route `/podcast/[slug]/blog`. Show notes share the path
   (rendered inline on the episode page).
-- Near-term: RSS feed per show, `file_id` persistence on episodes, transcripts +
-  chapters + show notes, search, embeddable player, automated heal (pg_cron).
+- Near-term: RSS feed per show, `file_id` persistence on episodes, search,
+  embeddable player, automated heal (pg_cron). (Chapters + show notes are
+  live — see 2026-08-08 / 2026-06-11 change-log entries.)
 
 Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 `components/coming-soon` primitive) so the vision is visible and the server side
@@ -98,6 +99,22 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-08 — **Chapter markers + pre-script processing went live (Coming
+  Soon retired on both).** Run page: the Chapter markers ComingSoonCard is now
+  `EpisodeChaptersPanel` → `useEpisodeChapters` — resolves the FLOATING
+  `podcast.chapter_marker` slot client-side (`resolveAgentSlot`; the old
+  version-pinned placeholder row was converted, since client slots must
+  float), runs it one-shot (`useRunAgent`), parses `{chapters:[…]}` via the
+  canonical `extractFirstObject`, and persists under
+  `pc_episodes.metadata.chapters` via `podcastService.saveEpisodeChapters`
+  (`PcEpisode.chapters` is mapped from metadata — NOT a column; never pass it
+  to create/updateEpisode). Generator form: the Pre-script processing layer is
+  interactive — one optional transform sent as `post_prep_option`
+  (`translation` targets the episode's language / `summarization` /
+  `expansion` / `fact_checking`), each backed by its own
+  `podcast.post_prep_*` agent slot and applied server-side in
+  `_apply_post_prep` (soft stage: failure keeps the original content).
+  Post-script processing remains display-only Coming Soon.
 - 2026-08-08 — **Podcast agents are DB-managed slots; casts, styles, and
   languages stopped being one-size-fits-all.** Server (aidream, same-day):
   every pipeline agent (research, extraction, all script bands, both audio

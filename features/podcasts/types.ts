@@ -51,6 +51,15 @@ export type PcEpisodeSpeaker = {
   voice: string;
 };
 
+/** One auto-generated chapter marker (podcast.chapter_marker agent output),
+ *  persisted under `pc_episodes.metadata.chapters` for the player/RSS layer. */
+export type PcEpisodeChapter = {
+  /** Approximate start time, `MM:SS` or `HH:MM:SS`; first is always 00:00. */
+  start_hint: string;
+  title: string;
+  summary: string;
+};
+
 export type PcEpisode = {
   id: string;
   slug: string;
@@ -72,6 +81,10 @@ export type PcEpisode = {
   /** Full generated dialogue script (migration pc_episodes_script) — null on
    *  older rows / uploaded episodes. Source for transcript + article gen. */
   script: string | null;
+  /** Auto-generated chapter markers (stored in metadata.chapters) — null until
+   *  generated. Write via podcastService.saveEpisodeChapters, never
+   *  updateEpisode (it is not a column). */
+  chapters: PcEpisodeChapter[] | null;
   is_published: boolean;
   created_at: string;
   updated_at: string;
@@ -192,6 +205,28 @@ function parseSpeakers(raw: Json | null): PcEpisodeSpeaker[] | null {
   return out.length ? out : null;
 }
 
+export function parseChapters(raw: unknown): PcEpisodeChapter[] | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const list = "chapters" in raw ? raw.chapters : null;
+  if (!Array.isArray(list)) return null;
+  const out: PcEpisodeChapter[] = [];
+  for (const item of list) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const start =
+      "start_hint" in item && typeof item.start_hint === "string"
+        ? item.start_hint
+        : "";
+    const title =
+      "title" in item && typeof item.title === "string" ? item.title : "";
+    const summary =
+      "summary" in item && typeof item.summary === "string"
+        ? item.summary
+        : "";
+    if (title) out.push({ start_hint: start, title, summary });
+  }
+  return out.length ? out : null;
+}
+
 function parseRssSettings(raw: Json | null): PcShowRssSettings | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   return raw as PcShowRssSettings;
@@ -256,6 +291,7 @@ export function mapPcEpisodeRow(row: PcEpisodeRow): PcEpisode {
     host_count: row.host_count,
     speakers: parseSpeakers(row.speakers),
     script: row.script,
+    chapters: parseChapters(row.metadata),
     is_published: row.is_published,
     created_at: row.created_at,
     updated_at: row.updated_at,

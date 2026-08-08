@@ -14,7 +14,6 @@ import {
   ArrowLeft,
   Plus,
   RefreshCw,
-  Bookmark,
   Clapperboard,
   AlertTriangle,
 } from "lucide-react";
@@ -24,8 +23,8 @@ import { EntityModeHeader } from "@/features/shell/components/header/templates/E
 import { podcastMediaRef } from "@/features/podcasts/generator/media";
 import { videoBlockFromMediaRef } from "@/features/files/blocks/adapters/from-media-ref";
 import { UnifiedVideoBlockRenderer } from "@/features/files/blocks/video/UnifiedVideoBlockRenderer";
-import { ComingSoonCard } from "@/components/coming-soon/ComingSoonCard";
 import { EpisodeContentStudio } from "@/features/podcasts/studio/components/EpisodeContentStudio";
+import { EpisodeChaptersPanel } from "@/features/podcasts/studio/components/EpisodeChaptersPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PodcastAudioPlayer } from "@/features/podcasts/components/player/PodcastAudioPlayer";
 import { LiveAudioPlayer } from "@/features/podcasts/generator/components/LiveAudioPlayer";
@@ -357,12 +356,8 @@ export function StudioRunView({ runId }: { runId: string }) {
             modelCounts={detail?.model_counts}
           />
 
-          {isDone && (
-            <ComingSoonCard
-              icon={Bookmark}
-              title="Chapter markers"
-              description="Auto-generated timestamps that let listeners jump to each topic."
-            />
+          {isDone && state.episodeId && (
+            <EpisodeChaptersPanel episodeId={state.episodeId} />
           )}
         </div>
 
