@@ -1,7 +1,7 @@
 "use client";
 
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ContentTemplateDB } from "@/features/content-templates/types/content-templates-db";
+import { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
 import {
     Dialog,
     DialogContent,
@@ -17,11 +17,11 @@ import { Button } from "@/components/ui/button";
 import { Copy, Pencil, Globe, Lock } from "lucide-react";
 
 interface TemplatePreviewDrawerProps {
-    template: ContentTemplateDB | null;
+    template: MessageTemplateDB | null;
     isOpen: boolean;
     onClose: () => void;
     canEdit: boolean;
-    onEdit: (template: ContentTemplateDB) => void;
+    onEdit: (template: MessageTemplateDB) => void;
     onCopyContent: (content: string) => void;
 }
 

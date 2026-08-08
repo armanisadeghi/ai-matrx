@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * TemplateSelector — front door for the content-templates picker UI.
+ * TemplateSelector — front door for the message-templates picker UI.
  *
  * The heavy impl (TemplateBrowserModal, SaveTemplateModal, template services)
  * lives in `TemplateSelectorImpl.tsx`. This shell renders a lightweight icon
@@ -15,7 +15,7 @@ import { useState } from "react";
 import { FileText } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
-import type { MessageRole } from "@/features/content-templates/types/content-templates-db";
+import type { MessageRole } from "@/features/message-templates/types/message-templates-db";
 
 export interface TemplateSelectorProps {
   role: MessageRole;

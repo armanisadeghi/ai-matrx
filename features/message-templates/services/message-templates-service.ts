@@ -1,11 +1,11 @@
 import {
-  ContentTemplateDB,
-  CreateContentTemplateInput,
-  UpdateContentTemplateInput,
-  ContentTemplateQueryOptions,
+  MessageTemplateDB,
+  CreateMessageTemplateInput,
+  UpdateMessageTemplateInput,
+  MessageTemplateQueryOptions,
   MessageRole,
   TemplatesByRole,
-} from "@/features/content-templates/types/content-templates-db";
+} from "@/features/message-templates/types/message-templates-db";
 import { createClient } from "@/utils/supabase/client";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -23,7 +23,7 @@ function getClient() {
   }
 }
 
-// Fetch all content templates from database.
+// Fetch all message templates from database.
 //
 // VIEW LAW: `is_public` decides the branch. Callers that pass `is_public`
 // explicitly are declaring a deliberate public-library browse (org-neutral
@@ -31,11 +31,11 @@ function getClient() {
 // (no `is_public` passed) is the caller's personal template list and MUST
 // be mine-scoped — it must not blend in every org's/public templates just
 // because RLS lets them through.
-export async function fetchContentTemplates(
-  options: ContentTemplateQueryOptions = {},
+export async function fetchMessageTemplates(
+  options: MessageTemplateQueryOptions = {},
 ) {
   const supabase = getClient();
-  let query = supabase.from("content_template").select("*");
+  let query = supabase.from("message_template").select("*");
 
   // Apply filters
   if (options.role) {
@@ -80,22 +80,22 @@ export async function fetchContentTemplates(
 
   if (error) throw new Error(error.message || "Failed to fetch templates");
 
-  return data as ContentTemplateDB[];
+  return data as MessageTemplateDB[];
 }
 
-// Fetch content templates by role
+// Fetch message templates by role
 export async function fetchTemplatesByRole(role: MessageRole) {
-  return fetchContentTemplates({ role });
+  return fetchMessageTemplates({ role });
 }
 
 // Fetch public templates only
 export async function fetchPublicTemplates() {
-  return fetchContentTemplates({ is_public: true });
+  return fetchMessageTemplates({ is_public: true });
 }
 
 // Fetch templates grouped by role
 export async function fetchTemplatesGroupedByRole(): Promise<TemplatesByRole> {
-  const templates = await fetchContentTemplates();
+  const templates = await fetchMessageTemplates();
 
   const grouped: TemplatesByRole = {
     system: [],
@@ -116,10 +116,10 @@ export async function fetchTemplatesGroupedByRole(): Promise<TemplatesByRole> {
 // Get a single template by ID
 export async function getTemplateById(
   id: string,
-): Promise<ContentTemplateDB | null> {
+): Promise<MessageTemplateDB | null> {
   const supabase = getClient();
   const { data, error } = await supabase
-    .from("content_template")
+    .from("message_template")
     .select("*")
     .eq("id", id)
     .single();
@@ -129,20 +129,20 @@ export async function getTemplateById(
     throw new Error(error.message || "Failed to fetch template");
   }
 
-  return data as ContentTemplateDB;
+  return data as MessageTemplateDB;
 }
 
 // Create a new template
 export async function createTemplate(
-  input: CreateContentTemplateInput,
-): Promise<ContentTemplateDB> {
+  input: CreateMessageTemplateInput,
+): Promise<MessageTemplateDB> {
   const supabase = getClient();
 
   const userId = requireUserId();
   const organizationId = await ensureOrgId(undefined);
 
   const { data, error } = await supabase
-    .from("content_template")
+    .from("message_template")
     .insert([
       {
         label: input.label,
@@ -160,13 +160,13 @@ export async function createTemplate(
 
   if (error) throw new Error(error.message || "Failed to create template");
 
-  return data as ContentTemplateDB;
+  return data as MessageTemplateDB;
 }
 
 // Update an existing template
 export async function updateTemplate(
-  input: UpdateContentTemplateInput,
-): Promise<ContentTemplateDB> {
+  input: UpdateMessageTemplateInput,
+): Promise<MessageTemplateDB> {
   const supabase = getClient();
 
   const updateData: any = {};
@@ -179,7 +179,7 @@ export async function updateTemplate(
   if (input.tags !== undefined) updateData.tags = input.tags;
 
   const { data, error } = await supabase
-    .from("content_template")
+    .from("message_template")
     .update(updateData)
     .eq("id", input.id)
     .select()
@@ -187,7 +187,7 @@ export async function updateTemplate(
 
   if (error) throw new Error(error.message || "Failed to update template");
 
-  return data as ContentTemplateDB;
+  return data as MessageTemplateDB;
 }
 
 // Delete a template
@@ -195,7 +195,7 @@ export async function deleteTemplate(id: string): Promise<void> {
   const supabase = getClient();
 
   const { error } = await supabase
-    .from("content_template")
+    .from("message_template")
     .delete()
     .eq("id", id);
 
@@ -206,7 +206,7 @@ export async function deleteTemplate(id: string): Promise<void> {
 export async function toggleTemplatePublic(
   id: string,
   isPublic: boolean,
-): Promise<ContentTemplateDB> {
+): Promise<MessageTemplateDB> {
   return updateTemplate({ id, is_public: isPublic });
 }
 
@@ -215,7 +215,7 @@ export async function getAllTags(): Promise<string[]> {
   const supabase = getClient();
 
   const { data, error } = await supabase
-    .from("content_template")
+    .from("message_template")
     .select("tags");
 
   if (error) throw new Error(error.message || "Failed to fetch tags");
@@ -234,12 +234,12 @@ export async function getAllTags(): Promise<string[]> {
 // Search templates by tags
 export async function searchTemplatesByTags(
   tags: string[],
-): Promise<ContentTemplateDB[]> {
-  return fetchContentTemplates({ tags });
+): Promise<MessageTemplateDB[]> {
+  return fetchMessageTemplates({ tags });
 }
 
 // Cache management
-let cachedTemplates: ContentTemplateDB[] | null = null;
+let cachedTemplates: MessageTemplateDB[] | null = null;
 let cacheTimestamp: number = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
@@ -254,7 +254,7 @@ export async function getCachedTemplates(forceRefresh = false) {
     return cachedTemplates;
   }
 
-  cachedTemplates = await fetchContentTemplates();
+  cachedTemplates = await fetchMessageTemplates();
   cacheTimestamp = now;
 
   return cachedTemplates;

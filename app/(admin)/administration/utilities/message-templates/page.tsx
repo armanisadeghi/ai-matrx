@@ -1,9 +1,9 @@
-import { ContentTemplateManager } from '@/features/content-templates/admin/ContentTemplateManager';
+import { MessageTemplateManager } from '@/features/message-templates/admin/MessageTemplateManager';
 
-export default function ContentTemplatesPage() {
+export default function MessageTemplatesPage() {
     return (
         <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
-            <ContentTemplateManager className="flex-1" />
+            <MessageTemplateManager className="flex-1" />
         </div>
     );
 }

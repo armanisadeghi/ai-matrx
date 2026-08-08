@@ -39,15 +39,15 @@ import {
 } from "@/components/official/bottom-sheet/BottomSheet";
 import { cn } from "@/lib/utils";
 import {
-  ContentTemplateDB,
+  MessageTemplateDB,
   MessageRole,
-} from "@/features/content-templates/types/content-templates-db";
+} from "@/features/message-templates/types/message-templates-db";
 import {
-  fetchContentTemplates,
+  fetchMessageTemplates,
   deleteTemplate,
   clearTemplateCache,
-} from "@/features/content-templates/services/content-templates-service";
-import { ContentTemplatesPageHeader } from "./ContentTemplatesPageHeader";
+} from "@/features/message-templates/services/message-templates-service";
+import { MessageTemplatesPageHeader } from "./MessageTemplatesPageHeader";
 import { TemplateCard } from "./TemplateCard";
 import { TemplateActionDrawer } from "./TemplateActionDrawer";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -211,16 +211,16 @@ function TopBar({
   );
 }
 
-export function UserContentTemplateManager() {
+export function UserMessageTemplateManager() {
   // Presentation-aware nav. Inside the settings window/drawer this
   // dismisses the shell before pushing — so opening a template no
   // longer leaves a stale settings overlay floating over the editor.
-  // Standalone /settings/content-templates route just pushes.
+  // Standalone /settings/message-templates route just pushes.
   const navigate = useSettingsNavigate();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
-  const [templates, setTemplates] = useState<ContentTemplateDB[]>([]);
+  const [templates, setTemplates] = useState<MessageTemplateDB[]>([]);
   const [loading, setLoading] = useState(true);
   const { id: currentUserId } = useAppSelector(selectUser);
 
@@ -240,11 +240,11 @@ export function UserContentTemplateManager() {
   >(null);
 
   // Action state
-  const [actionTarget, setActionTarget] = useState<ContentTemplateDB | null>(
+  const [actionTarget, setActionTarget] = useState<MessageTemplateDB | null>(
     null,
   );
   const [isActionOpen, setIsActionOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<ContentTemplateDB | null>(
+  const [deleteTarget, setDeleteTarget] = useState<MessageTemplateDB | null>(
     null,
   );
   const [isDeleting, setIsDeleting] = useState(false);
@@ -252,7 +252,7 @@ export function UserContentTemplateManager() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await fetchContentTemplates();
+      const data = await fetchMessageTemplates();
       setTemplates(data);
     } catch (err) {
       console.error("Error loading templates:", err);
@@ -352,25 +352,25 @@ export function UserContentTemplateManager() {
     setSelectedTags([]);
   };
 
-  const canEdit = (t: ContentTemplateDB) => t.user_id === currentUserId;
+  const canEdit = (t: MessageTemplateDB) => t.user_id === currentUserId;
 
   const handleNewTemplate = () =>
-    startTransition(() => navigate("/settings/content-templates/new"));
-  const handleView = (t: ContentTemplateDB) =>
-    startTransition(() => navigate(`/settings/content-templates/${t.id}`));
-  const handleEdit = (t: ContentTemplateDB) =>
+    startTransition(() => navigate("/settings/message-templates/new"));
+  const handleView = (t: MessageTemplateDB) =>
+    startTransition(() => navigate(`/settings/message-templates/${t.id}`));
+  const handleEdit = (t: MessageTemplateDB) =>
     startTransition(() =>
-      navigate(`/settings/content-templates/${t.id}?mode=edit`),
+      navigate(`/settings/message-templates/${t.id}?mode=edit`),
     );
-  const handleDuplicate = (t: ContentTemplateDB) =>
+  const handleDuplicate = (t: MessageTemplateDB) =>
     startTransition(() =>
-      navigate(`/settings/content-templates/new?from=${t.id}`),
+      navigate(`/settings/message-templates/new?from=${t.id}`),
     );
-  const handleCardClick = (t: ContentTemplateDB) => {
+  const handleCardClick = (t: MessageTemplateDB) => {
     setActionTarget(t);
     setIsActionOpen(true);
   };
-  const handleDeleteRequest = (t: ContentTemplateDB) => setDeleteTarget(t);
+  const handleDeleteRequest = (t: MessageTemplateDB) => setDeleteTarget(t);
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
@@ -422,7 +422,7 @@ export function UserContentTemplateManager() {
 
   return (
     <>
-      <ContentTemplatesPageHeader />
+      <MessageTemplatesPageHeader />
 
       <div className="h-[calc(100dvh-var(--header-height))] flex flex-col bg-transparent">
         <TopBar

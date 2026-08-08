@@ -46,7 +46,7 @@ const RESOURCE_ICONS: Record<string, LucideIcon> = {
   code_file: Code2,
   code_folder: Folder,
   code_repository: Braces,
-  content_template: FileText,
+  message_template: FileText,
   fc_card: GraduationCap,
   fc_set: GraduationCap,
   flashcard_data: GraduationCap,

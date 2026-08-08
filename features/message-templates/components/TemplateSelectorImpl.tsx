@@ -8,7 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { MessageRole } from "@/features/content-templates/types/content-templates-db";
+import { MessageRole } from "@/features/message-templates/types/message-templates-db";
 import { TemplateBrowserModal } from "./TemplateBrowserModal";
 import { SaveTemplateModal } from "./SaveTemplateModal";
 

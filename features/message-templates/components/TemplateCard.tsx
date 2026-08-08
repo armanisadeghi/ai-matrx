@@ -1,6 +1,6 @@
 "use client";
 
-import { ContentTemplateDB } from "@/features/content-templates/types/content-templates-db";
+import { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Globe, Lock } from "lucide-react";
@@ -9,8 +9,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 interface TemplateCardProps {
-  template: ContentTemplateDB;
-  onClick: (template: ContentTemplateDB) => void;
+  template: MessageTemplateDB;
+  onClick: (template: MessageTemplateDB) => void;
   isDisabled?: boolean;
 }
 
@@ -50,7 +50,7 @@ export function TemplateCard({
             onClick={(e) => e.stopPropagation()}
           >
             <ShareButton
-              resourceType="content_template"
+              resourceType="message_template"
               resourceId={template.id}
               resourceName={template.label ?? "Template"}
               isOwner={true}

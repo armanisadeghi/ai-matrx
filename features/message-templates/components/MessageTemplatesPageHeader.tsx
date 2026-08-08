@@ -3,7 +3,7 @@
 import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
 import { FileText } from "lucide-react";
 
-export function ContentTemplatesPageHeader() {
+export function MessageTemplatesPageHeader() {
   return (
     <PageSpecificHeader>
       <div className="flex items-center justify-center w-full">

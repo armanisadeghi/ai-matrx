@@ -221,9 +221,9 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: Workflow,
     labelPlural: "Workflows",
   },
-  content_template: {
+  message_template: {
     Icon: LayoutTemplate,
-    labelPlural: "Content Templates",
+    labelPlural: "Message Templates",
   },
   // Pick Lists / user lists (`/lists`) — canonical token is structured_list
   // (legacy names picklist / udt_picklists / user_lists are dead).

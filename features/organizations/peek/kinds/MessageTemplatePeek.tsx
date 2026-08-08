@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * ContentTemplatePeek — quick read-only preview for a content_template row.
+ * MessageTemplatePeek — quick read-only preview for a message_template row.
  *
  * Same pattern as FilePeek: fetch the row by id, fill <PeekDialog>.
- * The content_template table uses "label" as its title column.
+ * The message_template table uses "label" as its title column.
  */
 
 import React from "react";
@@ -13,13 +13,13 @@ import { supabase } from "@/utils/supabase/client";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
-interface ContentTemplateRow {
+interface MessageTemplateRow {
   label: string | null;
   created_at: string | null;
 }
 
-export default function ContentTemplatePeek({ id, open, onClose }: PeekProps) {
-  const [row, setRow] = React.useState<ContentTemplateRow | null>(null);
+export default function MessageTemplatePeek({ id, open, onClose }: PeekProps) {
+  const [row, setRow] = React.useState<MessageTemplateRow | null>(null);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -27,13 +27,13 @@ export default function ContentTemplatePeek({ id, open, onClose }: PeekProps) {
     (async () => {
       setLoading(true);
       const { data } = await supabase
-        .from("content_template")
+        .from("message_template")
         .select("label, created_at")
         .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {
-        setRow((data as ContentTemplateRow) ?? null);
+        setRow((data as MessageTemplateRow) ?? null);
         setLoading(false);
       }
     })();
@@ -46,9 +46,9 @@ export default function ContentTemplatePeek({ id, open, onClose }: PeekProps) {
     <PeekDialog
       open={open}
       onClose={onClose}
-      title={row?.label || "Content Template"}
+      title={row?.label || "Message Template"}
       icon={<LayoutTemplate className="h-4 w-4 text-violet-600 dark:text-violet-400" />}
-      href={`/settings/content-templates/${id}`}
+      href={`/settings/message-templates/${id}`}
       loading={loading}
     >
       {row ? (

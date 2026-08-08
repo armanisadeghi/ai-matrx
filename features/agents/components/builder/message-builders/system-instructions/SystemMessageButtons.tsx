@@ -19,7 +19,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { TemplateSelector } from "@/features/content-templates/components/TemplateSelector";
+import { TemplateSelector } from "@/features/message-templates/components/TemplateSelector";
 import { VariableSelector } from "@/features/agents/components/variables-management/VariableSelector";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 

@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
-import { TemplateViewPage } from "@/features/content-templates/components/TemplateViewPage";
-import { ContentTemplateDB } from "@/features/content-templates/types/content-templates-db";
+import { TemplateViewPage } from "@/features/message-templates/components/TemplateViewPage";
+import { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
 import { notFound } from "next/navigation";
 
 interface PageProps {
@@ -15,7 +15,7 @@ export default async function TemplateDetailPage({ params, searchParams }: PageP
     const supabase = await createClient();
 
     const [templateResult, userResult] = await Promise.all([
-        supabase.from("content_template").select("*").eq("id", id).single(),
+        supabase.from("message_template").select("*").eq("id", id).single(),
         supabase.auth.getUser(),
     ]);
 
@@ -23,7 +23,7 @@ export default async function TemplateDetailPage({ params, searchParams }: PageP
         notFound();
     }
 
-    const template = templateResult.data as ContentTemplateDB;
+    const template = templateResult.data as MessageTemplateDB;
     const userId = userResult.data.user?.id;
     const canEdit = template.user_id === userId;
 

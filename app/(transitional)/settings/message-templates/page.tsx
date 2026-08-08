@@ -1,5 +1,5 @@
-import { UserContentTemplateManager } from "@/features/content-templates/components/UserContentTemplateManager";
+import { UserMessageTemplateManager } from "@/features/message-templates/components/UserMessageTemplateManager";
 
-export default function UserContentTemplatesPage() {
-    return <UserContentTemplateManager />;
+export default function UserMessageTemplatesPage() {
+    return <UserMessageTemplateManager />;
 }

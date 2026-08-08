@@ -34,12 +34,12 @@ import {
 import { Search, FileText, Globe, Lock, Tag, Filter, X } from "lucide-react";
 import {
   MessageRole,
-  ContentTemplateDB,
-} from "@/features/content-templates/types/content-templates-db";
+  MessageTemplateDB,
+} from "@/features/message-templates/types/message-templates-db";
 import {
-  fetchContentTemplates,
+  fetchMessageTemplates,
   getAllTags,
-} from "@/features/content-templates/services/content-templates-service";
+} from "@/features/message-templates/services/message-templates-service";
 import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { idMatchesQuery } from "@/utils/search-scoring";
@@ -67,11 +67,11 @@ export function TemplateBrowserModal({
   role,
   onSelectTemplate,
 }: TemplateBrowserModalProps) {
-  const [templates, setTemplates] = useState<ContentTemplateDB[]>([]);
+  const [templates, setTemplates] = useState<MessageTemplateDB[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTemplate, setSelectedTemplate] =
-    useState<ContentTemplateDB | null>(null);
+    useState<MessageTemplateDB | null>(null);
   const [selectedRole, setSelectedRole] = useState<MessageRole | "all">(
     role || "all",
   );
@@ -94,7 +94,7 @@ export function TemplateBrowserModal({
   const loadTemplates = async () => {
     try {
       setLoading(true);
-      const data = await fetchContentTemplates({
+      const data = await fetchMessageTemplates({
         order_by: "updated_at",
         order_direction: "desc",
       });
@@ -183,7 +183,7 @@ export function TemplateBrowserModal({
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search content templates..."
+            placeholder="Search message templates..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9"
@@ -443,10 +443,10 @@ export function TemplateBrowserModal({
       <MobileOverlayWrapper
         isOpen={isOpen}
         onClose={handleClose}
-        title="Content Templates"
+        title="Message Templates"
         description={
           role
-            ? `${role.charAt(0).toUpperCase() + role.slice(1)} content templates`
+            ? `${role.charAt(0).toUpperCase() + role.slice(1)} message templates`
             : "Select a template"
         }
         maxHeight="xl"
@@ -460,7 +460,7 @@ export function TemplateBrowserModal({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl w-[90vw] h-[85dvh] p-0 gap-0 overflow-hidden flex flex-col">
         <DialogHeader className="px-6 py-3 border-b border-border/50 flex-shrink-0">
-          <DialogTitle>Content Templates</DialogTitle>
+          <DialogTitle>Message Templates</DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-auto min-h-0">{content}</div>
       </DialogContent>

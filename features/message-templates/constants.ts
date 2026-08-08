@@ -1,4 +1,4 @@
-import { MessageRole } from './types/content-templates-db';
+import { MessageRole } from './types/message-templates-db';
 
 export const MESSAGE_ROLES: { value: MessageRole; label: string }[] = [
     { value: 'system', label: 'System' },

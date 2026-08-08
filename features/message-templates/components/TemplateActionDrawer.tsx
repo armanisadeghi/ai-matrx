@@ -1,7 +1,7 @@
 "use client";
 
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ContentTemplateDB } from "@/features/content-templates/types/content-templates-db";
+import { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
 import {
     Dialog,
     DialogContent,
@@ -24,14 +24,14 @@ import {
 } from "lucide-react";
 
 interface TemplateActionDrawerProps {
-    template: ContentTemplateDB | null;
+    template: MessageTemplateDB | null;
     isOpen: boolean;
     onClose: () => void;
     canEdit: boolean;
-    onView: (template: ContentTemplateDB) => void;
-    onEdit: (template: ContentTemplateDB) => void;
-    onDuplicate: (template: ContentTemplateDB) => void;
-    onDelete: (template: ContentTemplateDB) => void;
+    onView: (template: MessageTemplateDB) => void;
+    onEdit: (template: MessageTemplateDB) => void;
+    onDuplicate: (template: MessageTemplateDB) => void;
+    onDelete: (template: MessageTemplateDB) => void;
 }
 
 const ROLE_COLORS: Record<string, string> = {

@@ -1,8 +1,8 @@
-// Database types for content templates system
+// Database types for message templates system
 
 export type MessageRole = 'user' | 'system' | 'assistant' | 'tool';
 
-export interface ContentTemplateDB {
+export interface MessageTemplateDB {
     id: string;
     label: string | null;
     content: string | null;
@@ -16,7 +16,7 @@ export interface ContentTemplateDB {
 }
 
 // Input types for creating/updating records
-export interface CreateContentTemplateInput {
+export interface CreateMessageTemplateInput {
     label: string;
     content: string;
     role: MessageRole;
@@ -25,12 +25,12 @@ export interface CreateContentTemplateInput {
     tags?: string[];
 }
 
-export interface UpdateContentTemplateInput extends Partial<CreateContentTemplateInput> {
+export interface UpdateMessageTemplateInput extends Partial<CreateMessageTemplateInput> {
     id: string;
 }
 
 // Query options
-export interface ContentTemplateQueryOptions {
+export interface MessageTemplateQueryOptions {
     role?: MessageRole;
     is_public?: boolean;
     search?: string;
@@ -42,13 +42,13 @@ export interface ContentTemplateQueryOptions {
 }
 
 // API response types
-export interface ContentTemplatesResponse {
-    templates: ContentTemplateDB[];
+export interface MessageTemplatesResponse {
+    templates: MessageTemplateDB[];
     total: number;
 }
 
 // Grouped by role
 export interface TemplatesByRole {
-    [role: string]: ContentTemplateDB[];
+    [role: string]: MessageTemplateDB[];
 }
 

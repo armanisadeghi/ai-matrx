@@ -54,19 +54,19 @@ import {
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
-  ContentTemplateDB,
-  CreateContentTemplateInput,
-  UpdateContentTemplateInput,
+  MessageTemplateDB,
+  CreateMessageTemplateInput,
+  UpdateMessageTemplateInput,
   MessageRole,
-} from "@/features/content-templates/types/content-templates-db";
+} from "@/features/message-templates/types/message-templates-db";
 import {
-  fetchContentTemplates,
+  fetchMessageTemplates,
   createTemplate,
   updateTemplate,
   deleteTemplate,
   getAllTags,
   clearTemplateCache,
-} from "@/features/content-templates/services/content-templates-service";
+} from "@/features/message-templates/services/message-templates-service";
 import MarkdownStream from "@/components/MarkdownStream";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { useApiTestConfig } from "@/components/api-test-config/useApiTestConfig";
@@ -78,7 +78,7 @@ import type {
   RenderBlockEvent,
 } from "@/types/python-generated/stream-events";
 
-interface ContentTemplateManagerProps {
+interface MessageTemplateManagerProps {
   className?: string;
 }
 
@@ -144,11 +144,11 @@ const MESSAGE_ROLES: { value: MessageRole; label: string }[] = [
   { value: "tool", label: "Tool" },
 ];
 
-export function ContentTemplateManager({
+export function MessageTemplateManager({
   className,
-}: ContentTemplateManagerProps) {
+}: MessageTemplateManagerProps) {
   // State
-  const [templates, setTemplates] = useState<ContentTemplateDB[]>([]);
+  const [templates, setTemplates] = useState<MessageTemplateDB[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
@@ -157,10 +157,10 @@ export function ContentTemplateManager({
   const [selectedRole, setSelectedRole] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editData, setEditData] = useState<Partial<ContentTemplateDB>>({});
+  const [editData, setEditData] = useState<Partial<MessageTemplateDB>>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [createFormData, setCreateFormData] = useState<
-    Partial<CreateContentTemplateInput>
+    Partial<CreateMessageTemplateInput>
   >({});
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(
     new Set(["system", "user", "assistant"]),
@@ -301,7 +301,7 @@ export function ContentTemplateManager({
     try {
       setLoading(true);
       const [templatesData, tagsData] = await Promise.all([
-        fetchContentTemplates(),
+        fetchMessageTemplates(),
         getAllTags(),
       ]);
       setTemplates(templatesData);
@@ -348,7 +348,7 @@ export function ContentTemplateManager({
       acc[roleKey].push(template);
       return acc;
     },
-    {} as Record<string, ContentTemplateDB[]>,
+    {} as Record<string, MessageTemplateDB[]>,
   );
 
   // Initialize edit data when template is selected
@@ -435,7 +435,7 @@ export function ContentTemplateManager({
         return;
       }
 
-      await createTemplate(createFormData as CreateContentTemplateInput);
+      await createTemplate(createFormData as CreateMessageTemplateInput);
 
       setIsCreateDialogOpen(false);
       clearTemplateCache();
@@ -474,7 +474,7 @@ export function ContentTemplateManager({
     }
   };
 
-  const handleDeleteTemplate = async (template: ContentTemplateDB) => {
+  const handleDeleteTemplate = async (template: MessageTemplateDB) => {
     const ok = await confirm({
       title: `Delete "${template.label}"?`,
       description: "This template will be permanently deleted.",
@@ -508,7 +508,7 @@ export function ContentTemplateManager({
     }
   };
 
-  const handleTogglePublic = async (template: ContentTemplateDB) => {
+  const handleTogglePublic = async (template: MessageTemplateDB) => {
     try {
       await updateTemplate({
         id: template.id,
@@ -605,7 +605,7 @@ export function ContentTemplateManager({
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Content Templates
+              Message Templates
             </h2>
             <Button onClick={handleCreateNew} size="sm">
               <Plus className="w-4 h-4 mr-1" />

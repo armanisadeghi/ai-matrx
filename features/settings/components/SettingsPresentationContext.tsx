@@ -9,7 +9,7 @@
  * (`userPreferencesWindow`), or as the mobile push-nav drawer.
  *
  * The bug this solves: components like `<SettingsLink>`,
- * `<OrganizationCard>`, and `<UserContentTemplateManager>` call
+ * `<OrganizationCard>`, and `<UserMessageTemplateManager>` call
  * `router.push("/somewhere")` unconditionally. That's correct on a
  * route, but inside the settings window it navigates the *whole page*
  * away — silently dismissing the window and yanking the user out of

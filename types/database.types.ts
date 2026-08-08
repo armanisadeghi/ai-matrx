@@ -51303,6 +51303,7 @@ export type Database = {
           gsc_prev_days: number | null
           page_count: number | null
           pages_in_gsc: number | null
+          resource_count: number | null
           site_id: string | null
         }
         Relationships: []

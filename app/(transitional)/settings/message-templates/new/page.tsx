@@ -1,6 +1,6 @@
-import { TemplateEditor } from "@/features/content-templates/components/TemplateEditor";
+import { TemplateEditor } from "@/features/message-templates/components/TemplateEditor";
 import { createClient } from "@/utils/supabase/server";
-import { ContentTemplateDB } from "@/features/content-templates/types/content-templates-db";
+import { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
 
 interface PageProps {
     searchParams: Promise<{ from?: string }>;
@@ -9,21 +9,21 @@ interface PageProps {
 export default async function NewTemplatePage({ searchParams }: PageProps) {
     const { from } = await searchParams;
 
-    let sourceTemplate: ContentTemplateDB | null = null;
+    let sourceTemplate: MessageTemplateDB | null = null;
 
     if (from) {
         const supabase = await createClient();
         const { data } = await supabase
-            .from("content_template")
+            .from("message_template")
             .select("*")
             .eq("id", from)
             .single();
 
         if (data) {
             sourceTemplate = {
-                ...(data as ContentTemplateDB),
+                ...(data as MessageTemplateDB),
                 id: "",
-                label: `${(data as ContentTemplateDB).label} (Copy)`,
+                label: `${(data as MessageTemplateDB).label} (Copy)`,
                 is_public: false,
                 created_at: "",
                 updated_at: null,

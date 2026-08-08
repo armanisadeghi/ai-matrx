@@ -3,9 +3,9 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ContentTemplateDB,
+  MessageTemplateDB,
   MessageRole,
-} from "@/features/content-templates/types/content-templates-db";
+} from "@/features/message-templates/types/message-templates-db";
 import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,7 +44,7 @@ import {
   updateTemplate,
   deleteTemplate,
   clearTemplateCache,
-} from "@/features/content-templates/services/content-templates-service";
+} from "@/features/message-templates/services/message-templates-service";
 
 const MESSAGE_ROLES: { value: MessageRole; label: string }[] = [
   { value: "system", label: "System" },
@@ -63,7 +63,7 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 interface TemplateViewPageProps {
-  template: ContentTemplateDB;
+  template: MessageTemplateDB;
   canEdit: boolean;
   defaultMode?: "view" | "edit";
 }

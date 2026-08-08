@@ -1,7 +1,7 @@
 "use client";
 
-import { UserContentTemplateManager } from "@/features/content-templates/components/UserContentTemplateManager";
+import { UserMessageTemplateManager } from "@/features/message-templates/components/UserMessageTemplateManager";
 
-export default function ContentTemplatesTab() {
-  return <UserContentTemplateManager />;
+export default function MessageTemplatesTab() {
+  return <UserMessageTemplateManager />;
 }

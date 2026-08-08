@@ -9,10 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, X, Tag, PanelLeft, Columns2 } from "lucide-react";
-import { MessageRole } from "@/features/content-templates/types/content-templates-db";
+import { MessageRole } from "@/features/message-templates/types/message-templates-db";
 import { useIsMobile } from "@/hooks/use-mobile";
 import MarkdownStream from "@/components/MarkdownStream";
-import { createTemplate, clearTemplateCache } from "@/features/content-templates/services/content-templates-service";
+import { createTemplate, clearTemplateCache } from "@/features/message-templates/services/message-templates-service";
 import { useToast } from "@/components/ui/use-toast";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 

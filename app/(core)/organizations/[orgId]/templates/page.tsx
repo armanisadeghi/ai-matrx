@@ -12,7 +12,7 @@ const SELECT_COLS = "id, label, role, updated_at, tags";
 
 const fetchOwned = async (orgId: string) => {
   const res = await supabase
-    .from("content_template")
+    .from("message_template")
     .select(SELECT_COLS)
     .is("deleted_at", null)
     .eq("organization_id", orgId)
@@ -29,7 +29,7 @@ const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => ({
   source,
 });
 
-const getHref = (id: string) => `/settings/content-templates/${id}`;
+const getHref = (id: string) => `/settings/message-templates/${id}`;
 
 export default function OrgTemplatesPage() {
   const params = useParams();
@@ -49,7 +49,7 @@ export default function OrgTemplatesPage() {
 
   return (
     <OrgResourceLayout
-      resourceName="Content Templates"
+      resourceName="Message Templates"
       icon={<ClipboardType className="h-4 w-4" />}
     >
       {!resolvedOrgId ? (
@@ -59,14 +59,14 @@ export default function OrgTemplatesPage() {
       ) : (
         <OrgResourceList
           orgId={resolvedOrgId}
-          resourceType="content_template"
-          tableName="content_template"
+          resourceType="message_template"
+          tableName="message_template"
           selectColumns={SELECT_COLS}
           ownedQuery={fetchOwned}
           mapRow={mapRow}
           getHref={getHref}
-          emptyTitle="No shared content templates yet"
-          emptyDescription="Content templates you create under this organization will appear here, along with templates other members share."
+          emptyTitle="No shared message templates yet"
+          emptyDescription="Message templates you create under this organization will appear here, along with templates other members share."
           emptyIcon={<ClipboardType className="h-8 w-8 text-purple-600 dark:text-purple-400" />}
         />
       )}

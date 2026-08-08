@@ -15,16 +15,16 @@ import { ArrowLeft, Save, Loader2, FileText, GitCompareArrows } from "lucide-rea
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { useToast } from "@/components/ui/use-toast";
 import {
-  ContentTemplateDB,
-  CreateContentTemplateInput,
-  UpdateContentTemplateInput,
+  MessageTemplateDB,
+  CreateMessageTemplateInput,
+  UpdateMessageTemplateInput,
   MessageRole,
-} from "@/features/content-templates/types/content-templates-db";
+} from "@/features/message-templates/types/message-templates-db";
 import {
   createTemplate,
   updateTemplate,
   clearTemplateCache,
-} from "@/features/content-templates/services/content-templates-service";
+} from "@/features/message-templates/services/message-templates-service";
 import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
 
 const MESSAGE_ROLES: { value: MessageRole; label: string }[] = [
@@ -35,7 +35,7 @@ const MESSAGE_ROLES: { value: MessageRole; label: string }[] = [
 ];
 
 interface TemplateEditorProps {
-  template?: ContentTemplateDB | null;
+  template?: MessageTemplateDB | null;
   mode: "create" | "edit";
 }
 
@@ -175,7 +175,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
     setIsSaving(true);
     try {
       if (mode === "create") {
-        const input: CreateContentTemplateInput = {
+        const input: CreateMessageTemplateInput = {
           label: label.trim(),
           content: content.trim(),
           role,
@@ -185,7 +185,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
         await createTemplate(input);
         toast({ title: "Template created" });
       } else if (template?.id) {
-        const input: UpdateContentTemplateInput = {
+        const input: UpdateMessageTemplateInput = {
           id: template.id,
           label: label.trim(),
           content: content.trim(),

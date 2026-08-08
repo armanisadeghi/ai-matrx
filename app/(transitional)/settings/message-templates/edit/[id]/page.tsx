@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
-import { TemplateEditor } from "@/features/content-templates/components/TemplateEditor";
-import { ContentTemplateDB } from "@/features/content-templates/types/content-templates-db";
+import { TemplateEditor } from "@/features/message-templates/components/TemplateEditor";
+import { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
 import { notFound } from "next/navigation";
 
 interface PageProps {
@@ -12,7 +12,7 @@ export default async function EditTemplatePage({ params }: PageProps) {
     const supabase = await createClient();
 
     const { data, error } = await supabase
-        .from("content_template")
+        .from("message_template")
         .select("*")
         .eq("id", id)
         .single();
@@ -21,5 +21,5 @@ export default async function EditTemplatePage({ params }: PageProps) {
         notFound();
     }
 
-    return <TemplateEditor mode="edit" template={data as ContentTemplateDB} />;
+    return <TemplateEditor mode="edit" template={data as MessageTemplateDB} />;
 }
