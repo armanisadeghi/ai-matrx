@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   CirclePause,
   CirclePlay,
   ExternalLink,
+  EyeOff,
   FileCode2,
   Loader2,
   Map as MapIcon,
   RefreshCw,
-  Trash2,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
@@ -31,11 +32,14 @@ import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/sit
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
   marketingKeys,
-  useDeleteSitemap,
+  useDismissSitemap,
+  useDismissedSitemaps,
+  useRestoreSitemap,
   useSetSitemapActive,
   useSitemapCoverage,
   useSitemaps,
 } from "@/features/marketing/data/hooks";
+import { PreviouslyDismissedBadge } from "@/features/marketing/components/shared/PreviouslyDismissedBadge";
 import {
   formatCompactDate,
   formatDate,
@@ -53,13 +57,32 @@ export function SitemapsWorkspace() {
   const { site, sitePath } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const sitemaps = useSitemaps(site.id);
   const coverage = useSitemapCoverage(site.id);
   const [syncing, setSyncing] = useState(false);
   const setActiveMutation = useSetSitemapActive(site.id);
-  const deleteMutation = useDeleteSitemap(site.id);
-  const [deleting, setDeleting] = useState<SiteSitemap | null>(null);
+  const dismissMutation = useDismissSitemap(site.id);
+  const restoreMutation = useRestoreSitemap(site.id);
+  const [dismissing, setDismissing] = useState<SiteSitemap | null>(null);
+  // Deliberate destination, never a default view (THE VIEW LAW).
+  const showDismissed = searchParams.get("scope") === "dismissed";
+  const dismissed = useDismissedSitemaps(site.id, showDismissed);
+
+  const setDismissedScope = useCallback(
+    (on: boolean) => {
+      const next = new URLSearchParams(searchParams.toString());
+      if (on) next.set("scope", "dismissed");
+      else next.delete("scope");
+      const query = next.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      });
+    },
+    [router, pathname, searchParams],
+  );
 
   const toggleActive = async (sitemap: SiteSitemap) => {
     try {
@@ -77,14 +100,29 @@ export function SitemapsWorkspace() {
     }
   };
 
-  const confirmDelete = async () => {
-    if (!deleting) return;
+  const confirmDismiss = async () => {
+    if (!dismissing) return;
     try {
-      await deleteMutation.mutateAsync(deleting.id);
-      toast.success("Sitemap deleted");
-      setDeleting(null);
+      await dismissMutation.mutateAsync(dismissing.id);
+      toast.success("Sitemap dismissed", {
+        description: "Find it under the Dismissed view.",
+      });
+      setDismissing(null);
     } catch (error) {
-      toast.error("Could not delete sitemap", {
+      toast.error("Could not dismiss sitemap", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
+
+  const restoreSitemapRow = async (sitemap: SiteSitemap) => {
+    try {
+      await restoreMutation.mutateAsync(sitemap.id);
+      toast.success("Sitemap restored", {
+        description: `${sitemap.url} and its page memberships are back.`,
+      });
+    } catch (error) {
+      toast.error("Could not restore sitemap", {
         description: extractErrorMessage(error),
       });
     }
@@ -268,6 +306,16 @@ export function SitemapsWorkspace() {
             />
             <AgentCopyGroomerLauncher config={groomerConfig} />
             <Button
+              variant={showDismissed ? "secondary" : "outline"}
+              size="sm"
+              className="h-8 gap-1.5"
+              title="Sitemaps you dismissed. A future sync that re-observes one revives it automatically, flagged as previously dismissed."
+              onClick={() => setDismissedScope(!showDismissed)}
+            >
+              <EyeOff className="h-3.5 w-3.5" />
+              Dismissed
+            </Button>
+            <Button
               size="sm"
               className="h-8 gap-1.5"
               disabled={syncing}
@@ -406,28 +454,99 @@ export function SitemapsWorkspace() {
                       : undefined
                   }
                   onToggleActive={() => void toggleActive(sitemap)}
-                  onDelete={() => setDeleting(sitemap)}
+                  onDismiss={() => setDismissing(sitemap)}
                   mutating={setActiveMutation.isPending}
                 />
               ))}
             </ul>
           </section>
         )}
+
+        {showDismissed ? (
+          <section className="overflow-hidden rounded-lg border border-border bg-card">
+            <header className="flex items-center gap-2 border-b border-border px-3 py-2">
+              <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+              <h2 className="text-xs font-semibold text-foreground">
+                Dismissed sitemaps
+                <span className="ml-1.5 font-normal tabular-nums text-muted-foreground">
+                  {dismissed.data?.length ?? "…"}
+                </span>
+              </h2>
+              <p className="text-[11px] text-muted-foreground">
+                Hidden from primary views. A future sync that re-observes one
+                revives it automatically, flagged as previously dismissed.
+              </p>
+            </header>
+            {dismissed.isError ? (
+              <div className="p-3">
+                <QueryError
+                  error={dismissed.error}
+                  onRetry={() => void dismissed.refetch()}
+                />
+              </div>
+            ) : dismissed.isLoading ? (
+              <p className="p-3 text-xs text-muted-foreground">
+                Loading dismissed sitemaps…
+              </p>
+            ) : (dismissed.data?.length ?? 0) === 0 ? (
+              <p className="p-3 text-xs text-muted-foreground">
+                Nothing dismissed for this site.
+              </p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {(dismissed.data ?? []).map((sitemap) => (
+                  <li
+                    key={sitemap.id}
+                    className="flex flex-wrap items-center gap-3 px-3 py-2"
+                  >
+                    <FileCode2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0 flex-1 basis-64">
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate font-mono text-xs text-foreground">
+                          {sitemap.url}
+                        </p>
+                        <PreviouslyDismissedBadge metadata={sitemap.metadata} />
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        Dismissed{" "}
+                        {sitemap.deleted_at
+                          ? formatDate(sitemap.deleted_at)
+                          : "—"}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-[10px]">
+                      {sitemap.kind === "sitemapindex" ? "Index" : "URL set"}
+                    </Badge>
+                    <button
+                      type="button"
+                      title="Restore this sitemap and its page memberships"
+                      disabled={restoreMutation.isPending}
+                      onClick={() => void restoreSitemapRow(sitemap)}
+                      className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Restore
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ) : null}
       </div>
 
       <ConfirmDialog
-        open={Boolean(deleting)}
-        onOpenChange={(open) => !open && setDeleting(null)}
-        title="Delete sitemap?"
+        open={Boolean(dismissing)}
+        onOpenChange={(open) => !open && setDismissing(null)}
+        title="Dismiss sitemap?"
         description={
-          deleting
-            ? `${deleting.url} and its page-membership evidence move to trash. Canonical pages stay in the registry. A future sync that re-discovers this sitemap re-creates it.`
+          dismissing
+            ? `${dismissing.url} and its page-membership evidence are hidden from primary views (find it under the Dismissed view). Canonical pages stay in the registry. The crawler treats this document as observed reality: if a future sync finds it again, it returns automatically — flagged as previously dismissed.`
             : ""
         }
-        variant="destructive"
-        confirmLabel="Delete sitemap"
-        busy={deleteMutation.isPending}
-        onConfirm={() => void confirmDelete()}
+        confirmLabel="Dismiss sitemap"
+        busy={dismissMutation.isPending}
+        onConfirm={() => void confirmDismiss()}
       />
     </main>
     </SurfaceRuntimeProvider>
@@ -438,13 +557,13 @@ function SitemapRow({
   sitemap,
   onOpen,
   onToggleActive,
-  onDelete,
+  onDismiss,
   mutating,
 }: {
   sitemap: SiteSitemap;
   onOpen: () => void;
   onToggleActive: () => void;
-  onDelete: () => void;
+  onDismiss: () => void;
   mutating: boolean;
 }) {
   const isIndex = sitemap.kind === "sitemapindex";
@@ -493,9 +612,12 @@ function SitemapRow({
         )}
       />
       <div className="min-w-0 flex-1 basis-64">
-        <p className="truncate font-mono text-xs text-foreground">
-          {sitemap.url}
-        </p>
+        <div className="flex items-center gap-1.5">
+          <p className="truncate font-mono text-xs text-foreground">
+            {sitemap.url}
+          </p>
+          <PreviouslyDismissedBadge metadata={sitemap.metadata} />
+        </div>
         {sitemap.fetch_error ? (
           <p className="truncate text-[11px] text-destructive">
             {sitemap.fetch_error}
@@ -560,14 +682,14 @@ function SitemapRow({
       </button>
       <button
         type="button"
-        title="Delete sitemap"
+        title="Dismiss sitemap (hide from primary views)"
         onClick={(event) => {
           event.stopPropagation();
-          onDelete();
+          onDismiss();
         }}
-        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
       >
-        <Trash2 className="h-3.5 w-3.5" />
+        <EyeOff className="h-3.5 w-3.5" />
       </button>
     </li>
   );

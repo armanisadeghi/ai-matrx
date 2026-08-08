@@ -38,12 +38,16 @@ import {
   deleteBusinessFact,
   deleteCrawlSession,
   deleteDiscoveredItem,
-  deletePage,
   deleteProperty,
   deleteScreenshot,
   deleteSite,
-  deleteSitemap,
   dismissDiscoveredItem,
+  dismissPage,
+  dismissSitemap,
+  listDismissedPages,
+  listDismissedSitemaps,
+  restorePage,
+  restoreSitemap,
   getActiveCrawl,
   getCoverageMatrix,
   getCrawl,
@@ -830,11 +834,37 @@ export function useCreateManualPage(siteId: string) {
   return useSiteMutation(createManualPage, siteId);
 }
 
-export function useDeletePage(siteId: string) {
+/** Dismiss (soft-hide) a page — the crawler-reality verb, never "delete". */
+export function useDismissPage(siteId: string) {
   return useSiteMutation(
-    (pageId: string) => deletePage(siteId, pageId),
+    (pageId: string) => dismissPage(siteId, pageId),
     siteId,
   );
+}
+
+export function useRestorePage(siteId: string) {
+  return useSiteMutation(
+    (pageId: string) => restorePage(siteId, pageId),
+    siteId,
+  );
+}
+
+/** Dismissed pages — fetched only when the deliberate scope is open. */
+export function useDismissedPages(
+  siteId: string,
+  state: MatrxDataTableQueryState,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: [
+      ...marketingKeys.site(siteId),
+      "dismissed-pages",
+      state,
+    ] as const,
+    queryFn: ({ signal }) => listDismissedPages(siteId, state, signal),
+    enabled: Boolean(siteId) && enabled,
+    placeholderData: keepPreviousData,
+  });
 }
 
 export function useSetSitemapActive(siteId: string) {
@@ -845,11 +875,28 @@ export function useSetSitemapActive(siteId: string) {
   );
 }
 
-export function useDeleteSitemap(siteId: string) {
+/** Dismiss (soft-hide) a sitemap — the crawler-reality verb, never "delete". */
+export function useDismissSitemap(siteId: string) {
   return useSiteMutation(
-    (sitemapId: string) => deleteSitemap(siteId, sitemapId),
+    (sitemapId: string) => dismissSitemap(siteId, sitemapId),
     siteId,
   );
+}
+
+export function useRestoreSitemap(siteId: string) {
+  return useSiteMutation(
+    (sitemapId: string) => restoreSitemap(siteId, sitemapId),
+    siteId,
+  );
+}
+
+/** Dismissed sitemap documents — fetched only when the deliberate view is open. */
+export function useDismissedSitemaps(siteId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [...marketingKeys.site(siteId), "dismissed-sitemaps"] as const,
+    queryFn: ({ signal }) => listDismissedSitemaps(siteId, signal),
+    enabled: Boolean(siteId) && enabled,
+  });
 }
 
 export function useDeleteScreenshot(siteId: string) {

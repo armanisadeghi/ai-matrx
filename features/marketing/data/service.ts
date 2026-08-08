@@ -2565,8 +2565,14 @@ export async function createManualPage(
   return assertData(response.data, response.error);
 }
 
-/** Soft-delete a canonical page (its snapshots and evidence stay). */
-export async function deletePage(
+/**
+ * DISMISS a canonical page (soft `deleted_at`). The crawler represents
+ * reality (Arman, 2026-08-08): this hides the row from primary views — it is
+ * not history-rewriting, and a future crawl/sitemap/GSC observation revives
+ * the row with `metadata.dismissals` stamped by the server. Snapshots and
+ * evidence stay untouched.
+ */
+export async function dismissPage(
   siteId: string,
   pageId: string,
 ): Promise<void> {
@@ -2579,7 +2585,80 @@ export async function deletePage(
     .eq("id", pageId)
     .is("deleted_at", null)
     .select("id");
-  assertMutated(response.data, response.error, "delete this page");
+  assertMutated(response.data, response.error, "dismiss this page");
+}
+
+/** Return a dismissed page to the registry without waiting for a re-crawl. */
+export async function restorePage(
+  siteId: string,
+  pageId: string,
+): Promise<void> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("page")
+    .update({ deleted_at: null })
+    .eq("site_id", siteId)
+    .eq("id", pageId)
+    .not("deleted_at", "is", null)
+    .select("id");
+  assertMutated(response.data, response.error, "restore this page");
+}
+
+/**
+ * Dismissed canonical pages for one site — the deliberate "Dismissed" scope
+ * (`?scope=dismissed` on the Pages route), never a default view. Queries
+ * `web.page` directly because `v_page_list` (correctly) excludes dismissed
+ * rows from the primary projection.
+ */
+export async function listDismissedPages(
+  siteId: string,
+  state: MatrxDataTableQueryState,
+  signal?: AbortSignal,
+): Promise<PagedResult<MarketingPage>> {
+  const db = await authenticatedWebDb(supabase);
+  const { from, to } = rangeFor(state);
+  const sortColumns = {
+    url: "url",
+    path: "path",
+    provenance: "provenance",
+    dismissed_at: "deleted_at",
+    last_seen: "last_seen",
+  } as const;
+  const requestedSort = state.sort?.id ?? "dismissed_at";
+  const sortColumn =
+    sortColumns[requestedSort as keyof typeof sortColumns] ?? "deleted_at";
+  const ascending = state.sort?.direction === "asc" && requestedSort in sortColumns;
+
+  let query = db
+    .from("page")
+    .select(PAGE_COLUMNS, { count: "exact" })
+    .eq("site_id", siteId)
+    .not("deleted_at", "is", null);
+  const search = cleanSearch(state.search);
+  if (search) {
+    query = query.or(
+      `url.ilike.%${search}%,path.ilike.%${search}%,target_keyword.ilike.%${search}%`,
+    );
+  }
+  const url = textFilter(state, "url");
+  const path = textFilter(state, "path");
+  const provenances = selectFilterValues(state, "provenance");
+  if (url) query = query.ilike("url", `%${url}%`);
+  if (path) query = query.ilike("path", `%${path}%`);
+  if (provenances.length === 1) query = query.eq("provenance", provenances[0]);
+  if (provenances.length > 1) query = query.in("provenance", provenances);
+
+  query = query
+    .order(sortColumn, { ascending, nullsFirst: false })
+    .order("id", { ascending: true });
+  const response = await query
+    .range(from, to)
+    .abortSignal(signal ?? new AbortController().signal);
+  return {
+    rows: assertData(response.data, response.error),
+    total: response.count ?? 0,
+  };
 }
 
 // ============================================================================
@@ -2606,11 +2685,13 @@ export async function setSitemapActive(
 }
 
 /**
- * Soft-delete a sitemap document AND its membership evidence — orphaned
- * `page_sitemap` rows would keep counting pages as "in a sitemap" that no
- * longer exists. A future sync that re-discovers the document re-creates both.
+ * DISMISS a sitemap document (soft `deleted_at`) AND its membership evidence —
+ * orphaned `page_sitemap` rows would keep counting pages as "in a sitemap"
+ * that is hidden. The crawler represents reality (Arman, 2026-08-08): a future
+ * sync that re-observes the document revives both, stamping
+ * `metadata.dismissals` on the sitemap row server-side.
  */
-export async function deleteSitemap(
+export async function dismissSitemap(
   siteId: string,
   sitemapId: string,
 ): Promise<void> {
@@ -2630,7 +2711,54 @@ export async function deleteSitemap(
     .eq("id", sitemapId)
     .is("deleted_at", null)
     .select("id");
-  assertMutated(response.data, response.error, "delete this sitemap");
+  assertMutated(response.data, response.error, "dismiss this sitemap");
+}
+
+/**
+ * Restore a dismissed sitemap without waiting for a re-sync. Membership
+ * evidence is only ever soft-deleted by the dismiss cascade above (it is
+ * system-managed otherwise), so restoring every soft-deleted membership of
+ * this sitemap reverses exactly that cascade.
+ */
+export async function restoreSitemap(
+  siteId: string,
+  sitemapId: string,
+): Promise<void> {
+  const db = await authenticatedWebDb(supabase);
+  const response = await db
+    .from("sitemap")
+    .update({ deleted_at: null })
+    .eq("site_id", siteId)
+    .eq("id", sitemapId)
+    .not("deleted_at", "is", null)
+    .select("id");
+  assertMutated(response.data, response.error, "restore this sitemap");
+  const memberships = await db
+    .from("page_sitemap")
+    .update({ deleted_at: null })
+    .eq("site_id", siteId)
+    .eq("sitemap_id", sitemapId)
+    .not("deleted_at", "is", null);
+  if (memberships.error) throw memberships.error;
+}
+
+/** Dismissed sitemap documents — the deliberate "Dismissed" view, never default. */
+export async function listDismissedSitemaps(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<SiteSitemap[]> {
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("sitemap")
+    .select(SITEMAP_COLUMNS)
+    .eq("site_id", siteId)
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false })
+    .order("id", { ascending: true })
+    .limit(200)
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
 }
 
 // ============================================================================

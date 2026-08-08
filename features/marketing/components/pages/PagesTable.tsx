@@ -3,13 +3,13 @@
 import { useCallback, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
+  EyeOff,
   FileQuestion,
   Plus,
   RefreshCw,
   Search,
   Share2,
   ShieldCheck,
-  Trash2,
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -26,9 +26,11 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import { FetchPageButton } from "@/features/marketing/components/pages/FetchPageButton";
 import { fetchPageNow } from "@/features/marketing/crawler/direct-client";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
+import { DismissedPagesTable } from "@/features/marketing/components/pages/DismissedPagesTable";
+import { PreviouslyDismissedBadge } from "@/features/marketing/components/shared/PreviouslyDismissedBadge";
 import {
   useCreateManualPage,
-  useDeletePage,
+  useDismissPage,
   usePages,
 } from "@/features/marketing/data/hooks";
 import {
@@ -137,13 +139,34 @@ function CoverageChips() {
   const searchParams = useSearchParams();
   const raw = searchParams.get("coverage");
   const active = isPageCoverageFilter(raw) ? raw : null;
+  const dismissedActive = searchParams.get("scope") === "dismissed";
 
   const setCoverage = useCallback(
     (value: string | null) => {
       const next = new URLSearchParams(searchParams.toString());
       if (value) next.set("coverage", value);
       else next.delete("coverage");
+      // Coverage applies to the live registry, never the dismissed scope.
+      next.delete("scope");
       // Coverage changes the result set; return to page 1.
+      next.delete("page");
+      const query = next.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      });
+    },
+    [router, pathname, searchParams],
+  );
+
+  const setDismissedScope = useCallback(
+    (on: boolean) => {
+      const next = new URLSearchParams(searchParams.toString());
+      if (on) {
+        next.set("scope", "dismissed");
+        next.delete("coverage");
+      } else {
+        next.delete("scope");
+      }
       next.delete("page");
       const query = next.toString();
       router.replace(query ? `${pathname}?${query}` : pathname, {
@@ -175,6 +198,23 @@ function CoverageChips() {
           </button>
         );
       })}
+      <span aria-hidden className="mx-0.5 h-4 w-px bg-border" />
+      {/* Deliberate destination, never a default view (THE VIEW LAW). */}
+      <button
+        type="button"
+        onClick={() => setDismissedScope(!dismissedActive)}
+        title="Pages you dismissed from the registry. A future crawl, sitemap, or GSC observation revives them automatically, flagged as previously dismissed."
+        className={cn(
+          "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+          dismissedActive
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground",
+        )}
+      >
+        <EyeOff className="h-3 w-3" />
+        Dismissed
+        {dismissedActive ? <X className="h-3 w-3" /> : null}
+      </button>
     </div>
   );
 }
@@ -186,23 +226,26 @@ export function PagesTable() {
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const coverageRaw = searchParams.get("coverage");
   const coverage = isPageCoverageFilter(coverageRaw) ? coverageRaw : null;
+  const dismissedScope = searchParams.get("scope") === "dismissed";
   const table = useMarketingTableState({
     defaultSort: { id: "gsc_clicks_28d", direction: "desc" },
   });
   const pages = usePages(site.id, table.queryState, coverage);
   const createMutation = useCreateManualPage(site.id);
-  const deleteMutation = useDeletePage(site.id);
+  const dismissMutation = useDismissPage(site.id);
   const [adding, setAdding] = useState(false);
-  const [deleting, setDeleting] = useState<PageListRow | null>(null);
+  const [dismissing, setDismissing] = useState<PageListRow | null>(null);
 
-  const confirmDelete = async () => {
-    if (!deleting) return;
+  const confirmDismiss = async () => {
+    if (!dismissing) return;
     try {
-      await deleteMutation.mutateAsync(deleting.id);
-      toast.success("Page deleted");
-      setDeleting(null);
+      await dismissMutation.mutateAsync(dismissing.id);
+      toast.success("Page dismissed", {
+        description: "Find it under the Dismissed filter.",
+      });
+      setDismissing(null);
     } catch (error) {
-      toast.error("Could not delete page", {
+      toast.error("Could not dismiss page", {
         description: extractErrorMessage(error),
       });
     }
@@ -217,15 +260,18 @@ export function PagesTable() {
       cellKind: "text",
       cell: (row) => (
         <div className="min-w-64 max-w-xl">
-          {row.observed_title ? (
-            <p className="truncate text-xs font-medium text-foreground">
-              {row.observed_title}
-            </p>
-          ) : (
-            <p className="truncate font-mono text-xs font-medium text-foreground">
-              {row.path || "/"}
-            </p>
-          )}
+          <div className="flex items-center gap-1.5">
+            {row.observed_title ? (
+              <p className="truncate text-xs font-medium text-foreground">
+                {row.observed_title}
+              </p>
+            ) : (
+              <p className="truncate font-mono text-xs font-medium text-foreground">
+                {row.path || "/"}
+              </p>
+            )}
+            <PreviouslyDismissedBadge metadata={row.metadata} />
+          </div>
           <p className="truncate text-[10px] text-muted-foreground">
             {row.observed_title ? `${row.path || "/"} · ${row.url}` : row.url}
           </p>
@@ -408,6 +454,9 @@ export function PagesTable() {
     <main className="flex h-full flex-col gap-2 overflow-hidden bg-textured p-3 sm:p-4">
       <CoverageChips />
       <div className="min-h-0 flex-1 overflow-hidden">
+        {dismissedScope ? (
+          <DismissedPagesTable />
+        ) : (
         <MatrxDataTable<PageListRow>
           data={pages.data?.rows ?? []}
           columns={columns}
@@ -498,14 +547,14 @@ export function PagesTable() {
               />
               <button
                 type="button"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                title="Delete page"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                title="Dismiss page (hide from primary views)"
                 onClick={(event) => {
                   event.stopPropagation();
-                  setDeleting(row);
+                  setDismissing(row);
                 }}
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <EyeOff className="h-3.5 w-3.5" />
               </button>
             </>
           )}
@@ -519,6 +568,7 @@ export function PagesTable() {
               : "A crawl, sitemap, GSC sync, or manual entry can add URLs to this independent registry.",
           }}
         />
+        )}
       </div>
 
       <TextInputDialog
@@ -570,18 +620,17 @@ export function PagesTable() {
         }}
       />
       <ConfirmDialog
-        open={Boolean(deleting)}
-        onOpenChange={(open) => !open && setDeleting(null)}
-        title="Delete page?"
+        open={Boolean(dismissing)}
+        onOpenChange={(open) => !open && setDismissing(null)}
+        title="Dismiss page?"
         description={
-          deleting
-            ? `${deleting.url} moves to trash and leaves the registry. Its snapshots stay in the database. A future crawl, sitemap, or GSC sync that finds the URL again will NOT resurrect it automatically.`
+          dismissing
+            ? `${dismissing.url} is hidden from primary views (find it under the Dismissed filter). Its snapshots and history stay. The crawler treats this URL as observed reality: if a future crawl, sitemap, or GSC sync finds it again, it returns automatically — flagged as previously dismissed.`
             : ""
         }
-        variant="destructive"
-        confirmLabel="Delete page"
-        busy={deleteMutation.isPending}
-        onConfirm={() => void confirmDelete()}
+        confirmLabel="Dismiss page"
+        busy={dismissMutation.isPending}
+        onConfirm={() => void confirmDismiss()}
       />
     </main>
     </SurfaceRuntimeProvider>
