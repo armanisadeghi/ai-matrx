@@ -33,6 +33,18 @@ Source + full docs: [`components/agent-copy/README.md`](../../../components/agen
   until hover (`opacity-0 group-hover/x:opacity-100 focus-within:opacity-100`).
 - **Three flavors where data is structured:** human, **JSON** (pass `json` to
   CopyButtons), and Copy-for-AI. Scalars skip JSON.
+- **Copy-for-AI scales to its data — sometimes it's a MENU, not a button.**
+  Small/bounded data → the plain CopyButtons pair. Medium → pass
+  `aiVariants` to CopyButtons (or use **`AiCopyMenu`** directly): a dropdown
+  with a focused/short variant + the auto "Everything" escape hatch (chevron
+  iff dropdown). Massive/unbounded → add `aiCustom`: a custom-preview dialog
+  (toggles/presets/sliders) with live char/byte/~token counts. Shortening
+  logic lives in pure per-data builders, never in the chrome. Derive preset
+  variants from an existing section list (Backlinks does
+  `applyGroomerPreset` over its groomer sections — never a second list), and
+  keep envelope `context` identical across variants: a short variant is lossy
+  in data, never in ambient context. `MatrxDataTable` takes
+  `copy.aiVariants`/`copy.aiCustom` for the toolbar view copy.
 - **Every data surface offers EXPORT** (`ExportMenu` + `export.ts`): lists and
   tables get JSON + CSV downloads; pages get their data JSON. Copy without
   export is half the job.
@@ -129,6 +141,28 @@ areas. Declare sections once and derive the quick payload from
 
 ---
 
+## Module-audit protocol — sweep a feature BEFORE wiring
+
+When assigned a whole feature/module (not one page), do the coverage audit
+first and emit the gap list; only then wire, batch by batch:
+
+1. **Enumerate surfaces.** Routes (`app/**` for the feature — remember thin
+   wrappers delegate to `features/*`), window panels, overlays/dialogs that
+   show data, and demo routes. The feature's `/[feature]/admin` map and
+   FEATURE.md are the fast index; `grep` for `.map(` in its components to
+   find every rendered list.
+2. **Classify each rendered data element** as one of: **list/table** (needs
+   row pair + view copy + ExportMenu), **record/detail** (header pair +
+   per-field), **field group / metric cards** (hover-reveal `xs` pairs),
+   **whole page** (quick pair + Groomer when multi-section), or **non-record
+   tool** (composer/visualizer — SKIP, no forced buttons).
+3. **Size each one's AI control** (single icon / `aiVariants` dropdown /
+   `+aiCustom` preview) per the sized-to-data table above, and note truncated
+   lists that lack a show-all — those are defects, list them.
+4. **Emit the coverage table** (surface → element → class → current state →
+   planned control) in your summary/handoff BEFORE writing code, then wire in
+   per-page commits using the step-by-step below.
+
 ## Pitfalls (these will bite you)
 
 - **Clickable rows:** if the `<tr>`/row has an `onClick` (navigate/select),
@@ -154,6 +188,10 @@ areas. Declare sections once and derive the quick payload from
 **Done:**
 - Primitive + README + roadmap (`components/agent-copy/`), `xs` size, groomer
   window (`AgentCopyGroomerWindow` + launcher + `groomer-types.ts`).
+- `AiCopyMenu` (2026-08-08): multi-variant dropdown + custom-preview dialog
+  with live size counts; `CopyButtons.aiVariants/aiCustom` in-place upgrade;
+  `MatrxDataTable copy.aiVariants/aiCustom`; shared `clipboard.ts`. Kept in
+  step with aidream `apps/dashboard/src/components/agent-copy/AiCopyMenu.tsx`.
 - Built-in integrations: `MatrxDataTable` `copy` config → row/view/window/field
   pairs; `DataRowInspector` per-field hover copy; `JsonInspector` `agentCopy`.
 - Shared formatters: `lib/sandbox/format.ts`, `features/ai-models/format.ts`,
