@@ -58,6 +58,10 @@ import type {
   AgentShortcutCategory,
   ScopeProps,
 } from "../types";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
+import { contentBlockSummary } from "../format";
 
 export interface ContentBlockListProps extends ScopeProps {
   onEdit?: (block: AgentContentBlock) => void;
@@ -192,6 +196,62 @@ export function ContentBlockList({
     contentBlocks.some((b) => b.categoryId === c.id),
   );
 
+  const copyAllControls = filtered.length > 0 && (
+    <>
+      <CopyButtons
+        size="icon"
+        label="All content blocks"
+        human={() =>
+          filtered
+            .map((b) =>
+              contentBlockSummary(b, {
+                category: categoryById.get(b.categoryId ?? ""),
+                includeContent: false,
+              }),
+            )
+            .join("\n\n")
+        }
+        json={() => filtered}
+        agent={() => ({
+          kind: "agent-content-blocks",
+          location:
+            "AI Matrx Admin — System Agents · Content blocks (/administration/agents/system-agents/content-blocks)",
+          description:
+            "All agent content blocks currently matching this list's filters.",
+          data: filtered,
+          attributes: { count: filtered.length },
+          context: { scope, scopeId },
+        })}
+        aiVariants={[
+          {
+            id: "metadata-only",
+            label: "Metadata only",
+            hint: "Label, category, description — template bodies dropped",
+            build: () => ({
+              kind: "agent-content-blocks-metadata",
+              location:
+                "AI Matrx Admin — System Agents · Content blocks (/administration/agents/system-agents/content-blocks)",
+              description:
+                "Content block metadata (no template bodies) for all filtered blocks.",
+              data: filtered.map(({ template: _template, ...rest }) => rest),
+              attributes: { count: filtered.length },
+            }),
+          },
+        ]}
+      />
+      <ExportMenu
+        label="agent-content-blocks"
+        items={[
+          jsonExportItem(() => filtered),
+          csvExportItem(
+            () => filtered as unknown as Array<Record<string, unknown>>,
+            "CSV",
+          ),
+        ]}
+      />
+    </>
+  );
+
   if (isMobile) {
     return (
       <div className={`flex flex-col h-full ${className ?? ""}`}>
@@ -202,6 +262,7 @@ export function ContentBlockList({
               <Button variant="outline" size="sm" onClick={() => refetch()}>
                 <RefreshCw className="h-3.5 w-3.5" />
               </Button>
+              {copyAllControls}
               {!readonly && onCreate && (
                 <Button size="sm" onClick={onCreate}>
                   <Plus className="h-3.5 w-3.5 mr-1" />
@@ -328,6 +389,7 @@ export function ContentBlockList({
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
+              {copyAllControls}
               {!readonly && onCreate && (
                 <Button onClick={onCreate} size="sm">
                   <Plus className="h-4 w-4 mr-2" />
@@ -402,28 +464,68 @@ export function ContentBlockList({
                   return (
                     <TableRow
                       key={block.id}
-                      className="cursor-pointer hover:bg-muted/50"
+                      className="group/x cursor-pointer hover:bg-muted/50"
                       onClick={() => onEdit?.(block)}
                     >
                       <TableCell onClick={(e) => e.stopPropagation()}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 px-2 gap-2 font-mono text-xs hover:bg-accent w-full justify-start"
-                              onClick={(e) => handleCopyId(block.id, e)}
-                            >
-                              {copiedId === block.id ? (
-                                <Check className="h-3 w-3 text-success flex-shrink-0" />
-                              ) : (
-                                <Copy className="h-3 w-3 flex-shrink-0" />
-                              )}
-                              <span className="truncate">{block.id}</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Copy ID</TooltipContent>
-                        </Tooltip>
+                        <div className="flex items-center gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 gap-2 font-mono text-xs hover:bg-accent w-full justify-start"
+                                onClick={(e) => handleCopyId(block.id, e)}
+                              >
+                                {copiedId === block.id ? (
+                                  <Check className="h-3 w-3 text-success flex-shrink-0" />
+                                ) : (
+                                  <Copy className="h-3 w-3 flex-shrink-0" />
+                                )}
+                                <span className="truncate">{block.id}</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Copy ID</TooltipContent>
+                          </Tooltip>
+                          <CopyButtons
+                            size="xs"
+                            label={block.label}
+                            className="opacity-0 group-hover/x:opacity-100 focus-within:opacity-100 shrink-0"
+                            human={() => contentBlockSummary(block, { category: cat })}
+                            json={() => block}
+                            agent={() => ({
+                              kind: "agent-content-block",
+                              location:
+                                "AI Matrx Admin — System Agents · Content blocks (/administration/agents/system-agents/content-blocks)",
+                              description: "A single agent content block.",
+                              data: block,
+                              summary: contentBlockSummary(block, { category: cat }),
+                              attributes: {
+                                id: block.id,
+                                blockId: block.blockId,
+                              },
+                            })}
+                            aiVariants={[
+                              {
+                                id: "metadata-only",
+                                label: "Metadata only",
+                                hint: "Without the template body",
+                                build: () => {
+                                  const { template: _template, ...rest } = block;
+                                  return {
+                                    kind: "agent-content-block-metadata",
+                                    location:
+                                      "AI Matrx Admin — System Agents · Content blocks (/administration/agents/system-agents/content-blocks)",
+                                    description:
+                                      "Content block metadata (no template body).",
+                                    data: rest,
+                                    attributes: { id: block.id },
+                                  };
+                                },
+                              },
+                            ]}
+                          />
+                        </div>
                       </TableCell>
                       <TableCell>
                         <code className="text-xs">{block.blockId}</code>
