@@ -98,6 +98,18 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-08 — **Large-cast (7–20 host) hardening: script stage verified live
+  at 10/14/20.** Server (aidream): the solo/multihost/roundtable script agents
+  now REQUIRE the `<speaker_settings>` declaration (name + gender; server owns
+  voices) and follow a roster-first + count-check protocol; slots repinned
+  (roundtable v4, multihost v6, solo v4); e2e matrix gained
+  `roundtable_10/14/20`. Live prod runs hit the exact GATE 2 count at all
+  three sizes with matching declarations. KNOWN BLOCKER: a same-day
+  typed-LLMParams regression breaks ALL 3–20 host audio until the
+  `TtsDialogueTurn` fix on `claude/large-cast-podcast-hardening-2sdo9w`
+  deploys — details + resume plan in
+  `docs/HANDOFF_PODCAST_SYSTEM.md` §5.1/§5.2.
+
 - 2026-08-08 — **Podcast agents are DB-managed slots; casts, styles, and
   languages stopped being one-size-fits-all.** Server (aidream, same-day):
   every pipeline agent (research, extraction, all script bands, both audio

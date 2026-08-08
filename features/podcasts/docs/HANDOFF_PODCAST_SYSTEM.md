@@ -1,6 +1,6 @@
 # Podcast System — Authoritative Handoff & Known-State
 
-**Last updated: 2026-06-12.** This handoff records the state
+**Last updated: 2026-08-08** (large-cast hardening + live 10/14/20 verification — see §5.1/§5.2/§5.3). This handoff records the state
 of the podcast generation system across both repos. If you're taking over, read
 this top to bottom — it tells you exactly what works, what doesn't, and what's a
 known weakness. Supersedes `HANDOFF_2026-06-12.md` (archived at `docs/archive/2026/HANDOFF_2026-06-12.md`).
@@ -16,12 +16,14 @@ known weakness. Supersedes `HANDOFF_2026-06-12.md` (archived at `docs/archive/20
 
 The flow is now `Content → Script → Audio` with **hard gates** between stages, and
 it produces real audio across every starting point and host count we've tested
-(1, 2, 3, 6). The class of failure that prompted the rebuild — a script agent's
-thinking text leaking into TTS, and the "speaker name mismatch" error — is now
-**structurally impossible**: nothing reaches TTS that isn't a validated
-`<podcast_dialogue>` script with exactly the requested number of speakers and
-names that match. **The big caveat: none of the server work is deployed to
-production yet.** Everything below was verified against the user's local aidream.
+(1, 2, 3, 6 — and the SCRIPT stage now verified live on prod at 10, 14, 20).
+The class of failure that prompted the rebuild — a script agent's thinking text
+leaking into TTS, and the "speaker name mismatch" error — is now **structurally
+impossible**: nothing reaches TTS that isn't a validated `<podcast_dialogue>`
+script with exactly the requested number of speakers and names that match.
+**The big caveat (2026-08-08): the pipeline IS deployed to production, but a
+same-day typed-params regression broke the 3–20 host AUDIO stage — fix ready,
+awaiting merge + deploy (§5.1).**
 
 ---
 
@@ -93,24 +95,44 @@ emits it yet** — the prompt snippet to add is in `PODCAST_PIPELINE.md` §4.1.
 
 Ordered by importance. These are the honest gaps.
 
-1. **NOT DEPLOYED.** All server gate/flow/ElevenLabs work is committed to aidream
-   `main` but production (`aimatrx.com` → `server.app.matrxserver.com`) runs the
-   old code. Until the user deploys: prod 3+-host returns "create the agent"
-   errors, prod has no gates, and the prod speaker-mismatch bug is still live.
-   **This is the #1 outstanding item and only the user can do it.**
+1. **PROD: 3–20 host AUDIO is broken by a typed-params regression — fix ready,
+   awaiting merge+deploy (2026-08-08).** The old "NOT DEPLOYED" item is
+   obsolete: prod DOES run the gate/flow/ElevenLabs pipeline now (verified live
+   — GATE 2, slot resolution, ElevenLabs turn-building all execute on
+   `server.app.matrxserver.com`). But the 2026-08-08 typed-LLMParams release
+   defined `TtsVoice = str | list[TtsVoiceSpeaker{name,voice}]`, which rejects
+   the `[{text, voice_id}]` ElevenLabs dialogue-turn list — so every 3+-host
+   run dies at `create_audio` with "N validation errors for LLMParams" (1–2
+   host Google runs unaffected). Fix (adds `TtsDialogueTurn` to the union +
+   regression test) is on aidream branch
+   `claude/large-cast-podcast-hardening-2sdo9w`; tracked in aidream
+   `FOUND_DEFECTS.md` + feedback `08ff26d4`. **Merge + `./scripts/release.sh`
+   is the #1 outstanding item.** Today's failed large-cast runs are resumable
+   afterward via `POST /api/podcast/resume/{run_id}` (`e846e356`, `b03cb034`,
+   `8f7acebd`, `ff73af44`) — resume re-runs only audio.
 
-2. **Large casts (7–20 hosts) are UNVERIFIED and the exact-count gate is strict.**
-   We tested up to 6. A 14-host request needs the script agent to produce exactly
-   14 distinct speakers; if it makes 13, GATE 2 **fails the run** (by design — "14
-   means 14"). The roundtable agent's prompt must reliably hit the count, and
-   `<speaker_settings>` is the recommended safety aid. Risk: large-cast runs may
-   fail more often than small ones until the agent is hardened. Test 10/14/20
-   before advertising them as reliable.
+2. **Large casts (7–20 hosts): SCRIPT STAGE VERIFIED LIVE at 10/14/20
+   (2026-08-08).** The roundtable/multihost/solo agents were hardened (required
+   `<speaker_settings>` + a roster-first / post-write count-check protocol; the
+   roundtable user message's "Output only the dialogue block" line — which
+   contradicted and suppressed the declaration — removed) and their
+   `podcast.*_script` slots repinned (roundtable v4 `e7cad8a6`, multihost v6
+   `29bebcba`, solo v4 `3f0b22c2`). Live prod runs against
+   `/api/podcast/generate` (truncated audio, media off): 10 → 10 distinct
+   speakers, 14 → 14, 20 → 20, each with a `<speaker_settings>` declaration
+   matching the dialogue labels exactly (verified in `chat.agent_run_stage`
+   output; GATE 2 passed at all three sizes, ~40–50s per script on Gemini 3.6
+   Flash). `scripts/podcast_e2e_matrix.py` gained `roundtable_10/14/20`
+   scenarios. **Audio for these sizes is still gated on item 1's deploy** —
+   after it lands, resume the runs above (or re-run the matrix) to close the
+   loop end-to-end.
 
-3. **`<speaker_settings>` is wired but unused.** The pipeline reads + validates it,
-   but no script agent emits it today, so voice assignment falls back to the
-   default palette. To get agent-chosen voices (and bulletproof cast matching),
-   the script agents' prompts must be updated (their job; snippet in §4.1).
+3. **`<speaker_settings>` is now REQUIRED and emitted (2026-08-08).** All three
+   generic script agents demand the declaration (name + gender, never voice —
+   the server owns voice selection and pool rotation) and treat it as their
+   final cast self-check. Verified in persisted prod scripts at 1/10/14/20
+   hosts. GATE 2 cross-checks the declared names against the dialogue and
+   rejects a lying declaration.
 
 4. **ElevenLabs has no live streaming.** 3+-host audio works but the client waits
    for the final URL (only Gemini emits `audio_stream_chunk`). Live ElevenLabs
@@ -164,8 +186,10 @@ Ordered by importance. These are the honest gaps.
   matrix exercises the pipeline directly, not the FE→stream→reduce path). Worth
   one real `/podcast/studio/create` run to confirm streaming-audio swap + the
   blog/show-notes generate→publish UI.
-- **Everything on production** (gated behind the user's deploy).
-- **7–20 host** runs (see §5.2).
+- **3–20 host audio on production** — script stage verified live at 10/14/20
+  (§5.2); audio is gated on the §5.1 fix deploying, then resume the recorded
+  runs (or re-run `podcast_e2e_matrix.py roundtable_10 roundtable_14
+  roundtable_20`) to confirm ElevenLabs renders 10/14/20 distinct voices.
 
 ---
 
