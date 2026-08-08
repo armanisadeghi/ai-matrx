@@ -13,7 +13,7 @@
  * with a tooltip and warns once.
  */
 
-import { FileText, Globe } from "lucide-react";
+import { ExternalLink, FileText, Globe, Quote } from "lucide-react";
 import {
   Popover,
   PopoverContent,
