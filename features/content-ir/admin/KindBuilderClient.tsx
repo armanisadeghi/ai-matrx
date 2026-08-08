@@ -14,11 +14,12 @@
  * The read-only Kind Registry board is one click away to confirm what landed.
  *
  * The target is the admin builder agent, not the cautious user creator — see
- * KIND_ARCHITECT_AGENT_ID.
+ * the `content_ir.kind_architect` agent slot.
  */
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
 import { Hammer, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -29,18 +30,21 @@ import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindo
  * Distinct from the user creator (`shapeCreatorAgentId`): no interview, no
  * confirmation gate, activates the kind, and builds to the alive-component bar.
  */
-const KIND_ARCHITECT_AGENT_ID = "9d484ce1-1e2b-4db7-8469-d3ba8550cdd8";
+const KIND_ARCHITECT_SLOT = "content_ir.kind_architect";
 
 export default function KindBuilderClient() {
+  // Which agent builds a kind is a SLOT, not a hardcoded id — swappable from
+  // the admin console or an override at /agents/slots, no deploy.
+  const { slot: architect, error: architectError } = useAgentSlot(KIND_ARCHITECT_SLOT);
   const router = useRouter();
   const openRun = useOpenAgentRunWindow();
   const [structure, setStructure] = useState("");
   const [notes, setNotes] = useState("");
 
-  const canStart = structure.trim().length > 0;
+  const canStart = structure.trim().length > 0 && architect !== null;
 
   const start = () => {
-    if (!canStart) return;
+    if (!canStart || !architect) return;
     const parts = [
       "Build a complete, live kind from this data structure. Run the whole build end to end and activate it.",
       structure.trim(),
@@ -51,7 +55,7 @@ export default function KindBuilderClient() {
     // Open the builder agent in a floating run window on this page, pre-loaded
     // with the brief. The run streams in-place; the admin watches every step.
     openRun({
-      initialAgentId: KIND_ARCHITECT_AGENT_ID,
+      initialAgentId: architect.agentId,
       initialDraftText: parts.join("\n\n"),
     });
   };
