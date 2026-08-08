@@ -2,7 +2,10 @@
 status: active
 updated: 2026-08-08
 repos: [matrx-frontend, aidream]
-vision: [/Users/armanisadeghi/code/aidream/packages/matrx-ai/matrx_ai/agent_runners/PODCAST_PIPELINE.md]
+vision:
+  [
+    /Users/armanisadeghi/code/aidream/packages/matrx-ai/matrx_ai/agent_runners/PODCAST_PIPELINE.md,
+  ]
 ---
 
 # Podcast system — remaining gaps
@@ -37,24 +40,21 @@ adjacent podcast work: live run page + research feed →
 
 ## Remaining work
 
-1. **Large casts (7–20 hosts) unverified.** `scripts/podcast_e2e_matrix.py` tops out at
-   `host_count=6`. GATE 2 is strict (N means N), so an agent producing 13 of 14 speakers fails the
-   run. Test 10/14/20 before advertising reliability.
-2. **Persisted script contains the script agent's RAW output.** Confirmed: `podcast_generator.py`
+1. **Persisted script contains the script agent's RAW output.** Confirmed: `podcast_generator.py`
    sets `PodcastGenerationResult(script=script, …)` (~line 3220) with the unextracted string;
    `_extract_dialogue` (~line 2506) is used only for speaker resolution. So blog/show-notes/
    transcript can inherit reasoning text. Persist the extracted dialogue instead — small change
    around `_validated_script_stage` (~line 1407).
-3. **`SCRIPT_AGENT_REGISTRY` not built.** Named only in `PODCAST_PIPELINE.md` §4 (custom agents slot
+2. **`SCRIPT_AGENT_REGISTRY` not built.** Named only in `PODCAST_PIPELINE.md` §4 (custom agents slot
    in by `(format, language, host_min, host_max)`); no code references it. Today a custom
    format/language means editing `_create_script` / `_is_legacy_script_request`. Build when the
    custom-agent count grows.
-4. **Wire consumers for the four remaining built-but-unconsumed agents** — `podcast.title_optimizer`
+3. **Wire consumers for the four remaining built-but-unconsumed agents** — `podcast.title_optimizer`
    (title options UI on the run/manage pages), `podcast.audience_adapter` (an audience picker beside
    the pre-script processing options), and the live-podcast pair `podcast.relevance_gate` +
    `podcast.live_rewrite` (needs the future live-podcast orchestrator). Slots are declared
    (`podcast_slots.py`) and admin-repinnable; only call sites are missing.
-5. **Collapse the duplicate blog/show-notes slot pairs** — `podcast.blog_writer` /
+4. **Collapse the duplicate blog/show-notes slot pairs** — `podcast.blog_writer` /
    `podcast.show_notes_generator` (server, still `migration_status=placeholder`) duplicate the live
    `podcast_client.blog_writer` / `podcast_client.show_notes` slots; pick ONE slot per logical
    output (decision flagged in both rows' metadata).
@@ -69,7 +69,19 @@ adjacent podcast work: live run page + research feed →
   injected; aidream applies it on generate and restores the stored run org on
   resume.
 - Server gate enforcement deployed — aidream `b3e3dfc40`; gate tests in `scripts/podcast_gate_tests.py`.
-- ElevenLabs streaming shipped, incl. `text_to_dialogue/stream` — aidream ElevenLabs provider.
+- Live audio is verified end to end in the authenticated studio for both bands:
+  Gemini 2-host PCM reached `Listen live`, advanced Play→Pause from 0:00 to
+  0:02 while the rendered edge grew to 0:08, then handed off to the canonical
+  episode; ElevenLabs 3-host MP3 advanced its actual MediaSource element from
+  0.0s to 2.7s while buffering grew from 0.36s to 5.88s, supported pause/seek
+  state, and handed off to a permanent 3:38 file. The implementation is
+  `streamingPcmPlayer.ts` + `streamingMp3Player.ts`, selected in
+  `useStudioRun.ts` from `encoding`/`mime_type`.
+- ElevenLabs streaming includes `text_to_dialogue.stream`; the provider emits
+  ordered MP3 `audio_stream_chunk` events before generation completes and one
+  persisted-file `audio_stream_end`. The strict `LLMParams.tts_voice` contract
+  accepts homogeneous `{text, voice_id}` dialogue lists (the UI test caught and
+  fixed the previous validation failure before the provider call).
 - `<speaker_settings>` now emitted by script agents (name + gender) — aidream `d18b531cd`.
 - `pc_*` tables moved to the `podcast` schema; FE done.
 - Runs / recovery / per-asset-regen subsystem — see `features/podcasts/FEATURE.md`.

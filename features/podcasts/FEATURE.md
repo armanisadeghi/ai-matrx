@@ -7,17 +7,17 @@ files, with a live-streaming studio, resumable runs, and public share pages.
 
 ## Entry points
 
-| Surface | Route | File |
-|---|---|---|
-| Public index | `/podcast` | `app/(core)/podcast/page.tsx` → `PodcastIndexClient.tsx` → `PodcastGrid.tsx` — Studio/create CTAs + "Your podcasts" (owned via `useMyPodcasts`, incl. drafts, Manage links) vs "On the platform" (published, minus yours) |
-| Public episode/show | `/podcast/[slug]` (slug or UUID) | `app/(core)/podcast/[slug]/page.tsx` → `features/podcasts/components/player/{PodcastEpisodePage,PodcastShowPage}.tsx` |
-| Studio dashboard | `/podcast/studio` | `features/podcasts/studio/components/StudioDashboard.tsx` |
-| Create | `/podcast/studio/create` | `CreateView.tsx` → `generator/components/GeneratorForm.tsx` |
-| Entryway prefill | `/podcast/studio/create?topic=...&format=...&agent=...` | Used by `/demos/matrx-entry`; pre-fills the source topic, format, and selected agent profile note before run creation |
-| Live run | `/podcast/studio/run/[id]` | `StudioRunView.tsx` → `studio/runs/useStudioRun.ts` |
-| **Manage show (owner)** | `/podcast/studio/show/[showId]` | `studio/components/ShowManageClient.tsx` — owner-facing show settings: cover/title/description/author, RSS distribution (`rss_settings`), feed URL + submit helpers, episodes list |
-| **Upload episode (owner)** | dialog (Studio dashboard + manage page) | `studio/components/UploadEpisodeDialog.tsx` — non-AI "upload your own audio/video" episode creation via `useFileUpload` |
-| Admin | `/administration/knowledge/podcasts` | `components/admin/PodcastsContainer.tsx` |
+| Surface                    | Route                                                   | File                                                                                                                                                                                                                      |
+| -------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public index               | `/podcast`                                              | `app/(core)/podcast/page.tsx` → `PodcastIndexClient.tsx` → `PodcastGrid.tsx` — Studio/create CTAs + "Your podcasts" (owned via `useMyPodcasts`, incl. drafts, Manage links) vs "On the platform" (published, minus yours) |
+| Public episode/show        | `/podcast/[slug]` (slug or UUID)                        | `app/(core)/podcast/[slug]/page.tsx` → `features/podcasts/components/player/{PodcastEpisodePage,PodcastShowPage}.tsx`                                                                                                     |
+| Studio dashboard           | `/podcast/studio`                                       | `features/podcasts/studio/components/StudioDashboard.tsx`                                                                                                                                                                 |
+| Create                     | `/podcast/studio/create`                                | `CreateView.tsx` → `generator/components/GeneratorForm.tsx`                                                                                                                                                               |
+| Entryway prefill           | `/podcast/studio/create?topic=...&format=...&agent=...` | Used by `/demos/matrx-entry`; pre-fills the source topic, format, and selected agent profile note before run creation                                                                                                     |
+| Live run                   | `/podcast/studio/run/[id]`                              | `StudioRunView.tsx` → `studio/runs/useStudioRun.ts`                                                                                                                                                                       |
+| **Manage show (owner)**    | `/podcast/studio/show/[showId]`                         | `studio/components/ShowManageClient.tsx` — owner-facing show settings: cover/title/description/author, RSS distribution (`rss_settings`), feed URL + submit helpers, episodes list                                        |
+| **Upload episode (owner)** | dialog (Studio dashboard + manage page)                 | `studio/components/UploadEpisodeDialog.tsx` — non-AI "upload your own audio/video" episode creation via `useFileUpload`                                                                                                   |
+| Admin                      | `/administration/knowledge/podcasts`                    | `components/admin/PodcastsContainer.tsx`                                                                                                                                                                                  |
 
 ## Data flow
 
@@ -43,14 +43,19 @@ files, with a live-streaming studio, resumable runs, and public share pages.
    dialogue), then: prepare/research → script → audio + (metadata → images +
    videos) → official video. `_persist_episode` writes a `pc_episodes` row
    (durable media — see Invariants) incl. `host_count` + `speakers`.
-5. **Streaming audio:** during TTS the stream carries `audio_stream_chunk`
-   (base64 s16le PCM) + `audio_stream_end` (canonical URL) events. The client
-   feeds chunks to `features/audio/streamingPcmPlayer.ts` (generic primitive)
-   rendered by `generator/components/LiveAudioPlayer.tsx`, and swaps to
-   `PodcastAudioPlayer` at `audio_stream_end` — minutes before
-   `podcast_complete`. A seq gap drops live playback (corrupt buffer) and waits
-   for the URL. Gemini delivers ONE terminal mega-chunk; per-chunk live listening
-   matters mostly for the ElevenLabs path.
+5. **Streaming audio (no Supabase Realtime):** the same authenticated NDJSON
+   response that carries podcast progress also carries `audio_stream_chunk` +
+   `audio_stream_end`; `useStudioRun` consumes it directly through `callApi`.
+   Gemini chunks are base64 s16le PCM and play through
+   `features/audio/streamingPcmPlayer.ts` (Web Audio). ElevenLabs chunks are
+   base64 MP3 bytes and play through `features/audio/streamingMp3Player.ts`
+   (MediaSource). Both implement the transport used by
+   `generator/components/LiveAudioPlayer.tsx`; `encoding`/`mime_type` selects
+   the implementation on the first chunk. `audio_stream_end` supplies the
+   canonical URL and swaps to `PodcastAudioPlayer` — often minutes before
+   `podcast_complete`. A seq gap, stream-id change, codec change, decoder error,
+   or unsupported MediaSource drops only the transient live preview and waits
+   for the canonical file; it never re-runs paid TTS.
 6. Public pages render via `<InlineMediaRef>` (durable) + `PodcastAudioPlayer`.
 
 ## Tables (`pc_*`, project `txzxabzwovsujtloxrus`)
@@ -127,6 +132,19 @@ is easy to fill in.
   `podcast.post_prep_*` agent slot and applied server-side in
   `_apply_post_prep` (soft stage: failure keeps the original content).
   Post-script processing remains display-only Coming Soon.
+- 2026-08-08 — **Live listening works for both podcast audio bands.** The
+  ElevenLabs 3–20-host provider now emits each MP3 SDK chunk immediately on the
+  existing `audio_stream_chunk` vocabulary while retaining those exact bytes
+  for one canonical persisted file, then emits `audio_stream_end`. The studio
+  adds a MediaSource MP3 player beside the Gemini PCM/Web Audio player and
+  selects by `encoding`/`mime_type`; the same `LiveAudioPlayer` UI, seq/identity
+  guards, and canonical-file handoff cover both. Focused tests prove the server
+  emits before the provider iterator finishes and the client appends MP3 chunks
+  in order before end-of-stream. `LiveAudioPlayer` snapshots the external player
+  every 250 ms while mounted so provider bursts and inconsistent MediaSource
+  progress events cannot leave Play/Pause or timing labels stale. Authenticated
+  studio runs verified live playback and canonical handoff for 2-host Gemini and
+  3-host ElevenLabs.
 - 2026-08-08 — **Podcast agents are DB-managed slots; casts, styles, and
   languages stopped being one-size-fits-all.** Server (aidream, same-day):
   every pipeline agent (research, extraction, all script bands, both audio
@@ -309,13 +327,13 @@ is easy to fill in.
   Image/video slots retry ONCE on the alternate pinned model before failing
   (`_run_asset_with_fallback`), with an informational `note` chip on fallback
   successes (`AssetCard`). Client: generic `features/audio/streamingPcmPlayer.ts`
-  + `LiveAudioPlayer` consume `audio_stream_chunk`/`audio_stream_end`; early
-  player swap at TTS finish; `liveText` now fed by `onChunk` (ProductionTeaser
-  sneak peek is live); GeneratorForm hosts 1–20 + per-host name/voice pickers
-  (`generator/voices.ts`) + theme; N-speaker transcript colors
-  (`SPEAKER_SLOT_TEXT`); episode page shows the cast; one silent player retry on
-  a just-minted CDN URL. Verified end-to-end on local aidream (Maya/Rex custom
-  2-host interview, 6:53 episode, cast persisted) + chunk events verified on prod.
+  - `LiveAudioPlayer` consume `audio_stream_chunk`/`audio_stream_end`; early
+    player swap at TTS finish; `liveText` now fed by `onChunk` (ProductionTeaser
+    sneak peek is live); GeneratorForm hosts 1–20 + per-host name/voice pickers
+    (`generator/voices.ts`) + theme; N-speaker transcript colors
+    (`SPEAKER_SLOT_TEXT`); episode page shows the cast; one silent player retry on
+    a just-minted CDN URL. Verified end-to-end on local aidream (Maya/Rex custom
+    2-host interview, 6:53 episode, cast persisted) + chunk events verified on prod.
 - 2026-06-10 — **Studio bake-off: `*-reimagine` surfaces (ui-reimagine).** Added
   two presentation-only reinventions on top of the unchanged data layer:
   `app/(core)/podcast/studio/create-reimagine/` (the "Studio Command Bar" — a
@@ -340,7 +358,7 @@ is easy to fill in.
   is `done` (not `error`) even on `success=false`; `reconcile` no longer drops
   failed slots (they persist as retryable "Couldn't render" cards via
   `AssetCard`); durable records the old backend marked `failed` heal to `done`
-  on read. Backend needs deploy to stop *new* aborts; client heals existing ones.
+  on read. Backend needs deploy to stop _new_ aborts; client heals existing ones.
 - 2026-06-08 — **Generator sources fully wired + Persian live.** Every source tile
   in `GeneratorForm` is now functional — no more ComingSoon source placeholders.
   Website / Note / YouTube / Audio-file sources resolve external content into an
@@ -356,14 +374,14 @@ is easy to fill in.
   /"From an audio file"; added `youtube` source.
 - 2026-06-08 — **User-facing show management.** Added owner show-settings page
   (`/podcast/studio/show/[showId]` → `ShowManageClient`): cover/title/description/author
-  + RSS distribution settings persisted to new `pc_shows.rss_settings` jsonb
-  (Apple category list, owner name/email, language, explicit) + computed feed URL
-  with copy/submit helpers (Verify-&-submit gated `ComingSoon`). Added the non-AI
-  "Upload an episode" flow (`UploadEpisodeDialog`): audio via `useFileUpload`
-  (durable public URL), optional cover/video via `AssetUploader`, `display_mode`
-  derived from provided media. Wired `feed.xml` to read `rss_settings ?? {}`.
-  Migration `migrations/pc_shows_rss_settings.sql` written but NOT yet applied —
-  reads guard with `?? {}` until then.
+  - RSS distribution settings persisted to new `pc_shows.rss_settings` jsonb
+    (Apple category list, owner name/email, language, explicit) + computed feed URL
+    with copy/submit helpers (Verify-&-submit gated `ComingSoon`). Added the non-AI
+    "Upload an episode" flow (`UploadEpisodeDialog`): audio via `useFileUpload`
+    (durable public URL), optional cover/video via `AssetUploader`, `display_mode`
+    derived from provided media. Wired `feed.xml` to read `rss_settings ?? {}`.
+    Migration `migrations/pc_shows_rss_settings.sql` written but NOT yet applied —
+    reads guard with `?? {}` until then.
 - 2026-06-08 — Media durability defense-in-depth (DB guard + classifier + server
   primitive + `_persist_episode` fix + ESLint fence); healed 5 live episodes.
   Created this FEATURE.md + roadmap docs. Began the feature push (RSS, file_id,

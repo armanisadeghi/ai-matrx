@@ -12,21 +12,14 @@ import type { FeatureImageStyleValue } from "./featureImageStyles";
 // ── Request ────────────────────────────────────────────────────────────────
 
 export type PodcastInputDataType =
-  | "topic"
-  | "partial_content"
-  | "full_content"
-  | "file_url";
+  "topic" | "partial_content" | "full_content" | "file_url";
 
 /** The backend's single style discriminator. Still carries "persian" for the
  *  Farsi pipeline; the form derives it from the user-facing Language. */
 export type PodcastType = "educational" | "news" | "persian";
 
 export type PodcastPostPrepOption =
-  | "none"
-  | "translation"
-  | "summarization"
-  | "expansion"
-  | "fact_checking";
+  "none" | "translation" | "summarization" | "expansion" | "fact_checking";
 
 // ── User-facing dimensions (form-only) ──────────────────────────────────────
 //
@@ -254,18 +247,18 @@ export interface PodcastCompleteEvent {
   error?: string | null;
 }
 
-/** One live segment of the in-flight TTS render — base64 s16le PCM. Emitted by
- *  the streaming TTS provider (matrx_connect AudioStreamChunkData) on the same
- *  data stream. Chunks are a low-latency playback aid, NOT durable files; the
- *  canonical file arrives via `audio_stream_end`. `seq` is monotonic from 0 —
- *  a gap means missed audio (drop live playback, wait for the file). */
+/** One live segment of the in-flight TTS render — Gemini emits s16le PCM and
+ *  ElevenLabs emits consecutive MP3 bytes. Chunks are a low-latency playback
+ *  aid, NOT durable files; the canonical file arrives via `audio_stream_end`.
+ *  `seq` is monotonic from 0 — a gap means missed audio (drop live playback,
+ *  wait for the file). */
 export interface AudioStreamChunkEvent {
   type: "audio_stream_chunk";
   stream_id: string;
   seq: number;
   audio_base64: string;
   mime_type: string;
-  encoding?: string;
+  encoding?: "pcm_s16le" | "mp3";
   sample_rate: number;
   bits_per_sample: number;
   channels: number;

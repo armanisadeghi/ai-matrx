@@ -3,19 +3,20 @@
 // features/podcasts/generator/components/LiveAudioPlayer.tsx
 //
 // Listen-while-it-renders player for the studio run page. Binds a
-// StreamingPcmPlayer (fed by `audio_stream_chunk` events in useStudioRun) to a
+// StreamingAudioPlayer (PCM/Web Audio or MP3/MediaSource, selected from the
+// `audio_stream_chunk` metadata in useStudioRun) to a
 // compact transport: play/pause, live position over the buffered duration, and
 // seek within what has rendered so far. The buffered edge keeps growing as the
 // TTS streams; when the canonical file lands the parent swaps this for the
 // full PodcastAudioPlayer, carrying the position over.
 
-import { useEffect, useReducer } from "react";
+import { useEffect, useState } from "react";
 import { Pause, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { StreamingPcmPlayer } from "@/features/audio/streamingPcmPlayer";
+import type { StreamingAudioPlayer } from "@/features/audio/streamingPcmPlayer";
 
 interface LiveAudioPlayerProps {
-  player: StreamingPcmPlayer;
+  player: StreamingAudioPlayer;
   title?: string;
 }
 
@@ -26,14 +27,32 @@ function formatTime(ms: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function LiveAudioPlayer({ player, title }: LiveAudioPlayerProps) {
-  // The player mutates outside React; onUpdate drives cheap re-renders.
-  const [, forceUpdate] = useReducer((n: number) => n + 1, 0);
-  useEffect(() => player.onUpdate(forceUpdate), [player]);
+function readPlayer(player: StreamingAudioPlayer) {
+  return {
+    positionMs: player.getPositionMs(),
+    bufferedMs: player.getBufferedMs(),
+    playing: player.isPlaying(),
+    ended: player.hasEnded(),
+  };
+}
 
-  const positionMs = player.getPositionMs();
-  const bufferedMs = player.getBufferedMs();
-  const playing = player.isPlaying();
+export function LiveAudioPlayer({ player, title }: LiveAudioPlayerProps) {
+  const [snapshot, setSnapshot] = useState(() => readPlayer(player));
+  useEffect(() => {
+    const update = () => setSnapshot(readPlayer(player));
+    const unsubscribe = player.onUpdate(update);
+    // MediaSource can append a burst of provider chunks before this component's
+    // effect subscribes, and WebKit does not reliably emit `progress` for every
+    // SourceBuffer update. Poll only while the transient live player is mounted
+    // so its transport never displays a stale position or Play/Pause state.
+    const timer = window.setInterval(update, 250);
+    return () => {
+      window.clearInterval(timer);
+      unsubscribe();
+    };
+  }, [player]);
+
+  const { positionMs, bufferedMs, playing, ended } = snapshot;
   const progress = bufferedMs > 0 ? (positionMs / bufferedMs) * 100 : 0;
 
   return (
@@ -94,7 +113,7 @@ export function LiveAudioPlayer({ player, title }: LiveAudioPlayerProps) {
               style={{ width: `${progress}%` }}
             />
             {/* Soft pulse at the buffered edge while the stream is open. */}
-            {!player.hasEnded() && (
+            {!ended && (
               <div className="absolute inset-y-0 right-0 w-4 animate-pulse rounded-r-full bg-primary/20" />
             )}
           </div>
@@ -102,7 +121,7 @@ export function LiveAudioPlayer({ player, title }: LiveAudioPlayerProps) {
             <span>{formatTime(positionMs)}</span>
             <span>
               {formatTime(bufferedMs)}
-              {!player.hasEnded() && (
+              {!ended && (
                 <span className="ml-1 text-muted-foreground/60">rendered</span>
               )}
             </span>

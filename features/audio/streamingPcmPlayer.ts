@@ -25,7 +25,7 @@ export interface StreamingPcmFormat {
   channels: number;
 }
 
-export interface StreamingPcmPlayer {
+export interface StreamingAudioPlayer {
   /** Buffer one base64 chunk of s16le PCM. Safe to call before play(). */
   enqueueBase64: (b64: string) => void;
   /** No more chunks are coming — playback may drain to the true end. */
@@ -44,6 +44,9 @@ export interface StreamingPcmPlayer {
   destroy: () => void;
 }
 
+/** Backward-compatible name for PCM-specific callers. */
+export type StreamingPcmPlayer = StreamingAudioPlayer;
+
 function base64ToInt16(b64: string): Int16Array {
   const binary = atob(b64);
   const len = binary.length;
@@ -54,7 +57,7 @@ function base64ToInt16(b64: string): Int16Array {
 
 export function createStreamingPcmPlayer(
   format: StreamingPcmFormat,
-): StreamingPcmPlayer {
+): StreamingAudioPlayer {
   const sampleRate = format.sampleRate > 0 ? format.sampleRate : 24000;
   const channels = format.channels > 0 ? format.channels : 1;
 
@@ -111,7 +114,10 @@ export function createStreamingPcmPlayer(
   function getPositionFrames(): number {
     if (!playing || !ctx) return pausedAtFrame;
     const elapsed = Math.max(0, ctx.currentTime - anchorCtxTime);
-    return Math.min(anchorFrame + Math.round(elapsed * sampleRate), totalFrames);
+    return Math.min(
+      anchorFrame + Math.round(elapsed * sampleRate),
+      totalFrames,
+    );
   }
 
   function ensureContext(): AudioContext | null {
@@ -171,7 +177,12 @@ export function createStreamingPcmPlayer(
       } catch {
         // already disconnected
       }
-      if (playing && scheduled.length === 0 && ended && nextChunkIndex >= chunks.length) {
+      if (
+        playing &&
+        scheduled.length === 0 &&
+        ended &&
+        nextChunkIndex >= chunks.length
+      ) {
         // True end of the stream — settle as paused at the end.
         pausedAtFrame = totalFrames;
         playing = false;

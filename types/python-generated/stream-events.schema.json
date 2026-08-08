@@ -1976,7 +1976,7 @@
   },
   "AudioStreamChunkData": {
     "additionalProperties": false,
-    "description": "A live segment of streaming TTS audio, emitted as it arrives from the provider.\n\nProviders that stream audio (Gemini TTS via ``generate_content_stream``) yield\nthe audio as a sequence of RAW PCM segments — NOT a self-contained file per\nchunk. Each chunk here carries one such segment so the client can buffer and\nprogressively play it (e.g. via the Web Audio API) while the full render is\nstill in flight. The authoritative, persisted file arrives at the end via\n``AudioStreamEndData`` (and the usual ``MediaBlockData``); these chunks are a\npreview/low-latency-playback aid and are NOT individually renderable as files.\n\n``audio_base64`` is base64 of the raw segment bytes in the format described by\n``encoding`` / ``sample_rate`` / ``bits_per_sample`` / ``channels`` (Gemini:\nsigned 16-bit little-endian PCM, 24 kHz, mono). ``stream_id`` groups every\nchunk + the end marker for one audio render; ``seq`` is monotonic from 0.",
+    "description": "A live segment of streaming TTS audio, emitted as it arrives from the provider.\n\nGemini TTS yields raw PCM segments for Web Audio playback. ElevenLabs yields\nconsecutive MP3 bytes for MediaSource playback. Individual chunks are not\nstandalone files in either case: clients append them in monotonic ``seq``\norder until ``AudioStreamEndData`` hands over the authoritative persisted\nfile.\n\n``audio_base64`` is base64 of the provider bytes in the format described by\n``encoding`` and ``mime_type``. PCM additionally uses ``sample_rate`` /\n``bits_per_sample`` / ``channels``. ``stream_id`` groups every chunk and the\nend marker for one audio render; ``seq`` is monotonic from zero.",
     "properties": {
       "type": {
         "const": "audio_stream_chunk",
@@ -2002,8 +2002,11 @@
         "type": "string"
       },
       "encoding": {
-        "const": "pcm_s16le",
         "default": "pcm_s16le",
+        "enum": [
+          "pcm_s16le",
+          "mp3"
+        ],
         "title": "Encoding",
         "type": "string"
       },

@@ -21,28 +21,29 @@ The class of failure that prompted the rebuild — a script agent's thinking tex
 leaking into TTS, and the "speaker name mismatch" error — is now **structurally
 impossible**: nothing reaches TTS that isn't a validated `<podcast_dialogue>`
 script with exactly the requested number of speakers and names that match.
-**The big caveat (2026-08-08): the pipeline IS deployed to production, but a
-same-day typed-params regression broke the 3–20 host AUDIO stage — fix ready,
-awaiting merge + deploy (§5.1).**
+The same-day typed-params regression that broke the 3–20 host audio stage is
+fixed in this release; production verification for 10/14/20-host audio remains
+pending (§5.2).
 
 ---
 
 ## 2. What's verified (with evidence)
 
-| Capability | Evidence | Status |
-|---|---|---|
-| GATE logic (extract / validate / count / names / speaker_settings) | `scripts/podcast_gate_tests.py` — **26/26 pass**, no money | ✅ |
-| Thinking-text never reaches TTS (the original bug) | unit test "thinking-only RAISES (the prod bug)" | ✅ |
-| Speaker-name mismatch fixed at our layer | unit "cast uses SCRIPT names not pinned Alex/Sarah" + real run `two_host_custom_names` (Maya/Rex through Google TTS) | ✅ |
-| Exact speaker count (N means N) | unit tests + real 1/2/3/6-host runs | ✅ |
-| `partial_content` → script writer (no extractor) | real run `partial_content` PASS+audio | ✅ |
-| `full_content` already-a-script → skip generation | real run `pasted_script` (22s, "skipping generation") | ✅ |
-| 1/2/3/6 hosts produce audio (Gemini + ElevenLabs) | real runs `solo`/`two_host_custom_names`/`three_host`/`six_host_roundtable` all PASS+audio | ✅ |
-| Content gate rejects thin sources | thin fixtures rejected at GATE 1 (331/358 chars) | ✅ |
-| Blog / show-notes generate + publish | `EpisodeContentStudio`, `pc_articles` live | ✅ wired (live-UI run still pending — see §6) |
-| Create form: 1–20 hosts, all formats, per-host names/voices | live DOM check, zero false "Coming Soon" | ✅ |
+| Capability                                                         | Evidence                                                                                                             | Status                                        |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| GATE logic (extract / validate / count / names / speaker_settings) | `scripts/podcast_gate_tests.py` — **26/26 pass**, no money                                                           | ✅                                            |
+| Thinking-text never reaches TTS (the original bug)                 | unit test "thinking-only RAISES (the prod bug)"                                                                      | ✅                                            |
+| Speaker-name mismatch fixed at our layer                           | unit "cast uses SCRIPT names not pinned Alex/Sarah" + real run `two_host_custom_names` (Maya/Rex through Google TTS) | ✅                                            |
+| Exact speaker count (N means N)                                    | unit tests + real 1/2/3/6-host runs                                                                                  | ✅                                            |
+| `partial_content` → script writer (no extractor)                   | real run `partial_content` PASS+audio                                                                                | ✅                                            |
+| `full_content` already-a-script → skip generation                  | real run `pasted_script` (22s, "skipping generation")                                                                | ✅                                            |
+| 1/2/3/6 hosts produce audio (Gemini + ElevenLabs)                  | real runs `solo`/`two_host_custom_names`/`three_host`/`six_host_roundtable` all PASS+audio                           | ✅                                            |
+| Content gate rejects thin sources                                  | thin fixtures rejected at GATE 1 (331/358 chars)                                                                     | ✅                                            |
+| Blog / show-notes generate + publish                               | `EpisodeContentStudio`, `pc_articles` live                                                                           | ✅ wired (live-UI run still pending — see §6) |
+| Create form: 1–20 hosts, all formats, per-host names/voices        | live DOM check, zero false "Coming Soon"                                                                             | ✅                                            |
 
 **Two test suites (run these first when you take over):**
+
 ```bash
 cd aidream
 uv run python scripts/podcast_gate_tests.py                 # deterministic, free, ~30s
@@ -76,6 +77,7 @@ Full detail in `PODCAST_PIPELINE.md` §3. Summary:
 **Audio routing:** ≤2 hosts → Google Gemini; ≥3 → ElevenLabs `text_to_dialogue`.
 
 **Agents (master / pinned version):**
+
 - Script (legacy, 2-host, best quality): `podcast_script_educational` `4541ba46`, `_news` `23ca9704`, `_persian` `3456f665`.
 - Script (generic, host-count-aware): solo `764830c0`, multihost (2–4) `73623c8f`, roundtable (5–20) `ecbecb02`.
 - Audio: Gemini english `055c6d30` / persian `21238b08`; **ElevenLabs dialogue `podcast_audio_dialogue` master `88f05360`, version `293425be`** (model `eleven_v3` = `7b1bc855…`).
@@ -95,21 +97,11 @@ emits it yet** — the prompt snippet to add is in `PODCAST_PIPELINE.md` §4.1.
 
 Ordered by importance. These are the honest gaps.
 
-1. **PROD: 3–20 host AUDIO is broken by a typed-params regression — fix ready,
-   awaiting merge+deploy (2026-08-08).** The old "NOT DEPLOYED" item is
-   obsolete: prod DOES run the gate/flow/ElevenLabs pipeline now (verified live
-   — GATE 2, slot resolution, ElevenLabs turn-building all execute on
-   `server.app.matrxserver.com`). But the 2026-08-08 typed-LLMParams release
-   defined `TtsVoice = str | list[TtsVoiceSpeaker{name,voice}]`, which rejects
-   the `[{text, voice_id}]` ElevenLabs dialogue-turn list — so every 3+-host
-   run dies at `create_audio` with "N validation errors for LLMParams" (1–2
-   host Google runs unaffected). Fix (adds `TtsDialogueTurn` to the union +
-   regression test) is on aidream branch
-   `claude/large-cast-podcast-hardening-2sdo9w`; tracked in aidream
-   `FOUND_DEFECTS.md` + feedback `08ff26d4`. **Merge + `./scripts/release.sh`
-   is the #1 outstanding item.** Today's failed large-cast runs are resumable
-   afterward via `POST /api/podcast/resume/{run_id}` (`e846e356`, `b03cb034`,
-   `8f7acebd`, `ff73af44`) — resume re-runs only audio.
+1. ~~**3–20 host audio rejected ElevenLabs dialogue turns at typed
+   `LLMParams`.**~~ **FIXED 2026-08-08.** `TtsVoice` accepts homogeneous
+   `{text, voice_id}` lists again and regression coverage verifies the typed
+   override reaches `TTSVoiceConfig.dialogue_turns`. Failed runs remain
+   resumable through `POST /api/podcast/resume/{run_id}`.
 
 2. **Large casts (7–20 hosts): SCRIPT STAGE VERIFIED LIVE at 10/14/20
    (2026-08-08).** The roundtable/multihost/solo agents were hardened (required
@@ -123,9 +115,8 @@ Ordered by importance. These are the honest gaps.
    matching the dialogue labels exactly (verified in `chat.agent_run_stage`
    output; GATE 2 passed at all three sizes, ~40–50s per script on Gemini 3.6
    Flash). `scripts/podcast_e2e_matrix.py` gained `roundtable_10/14/20`
-   scenarios. **Audio for these sizes is still gated on item 1's deploy** —
-   after it lands, resume the runs above (or re-run the matrix) to close the
-   loop end-to-end.
+   scenarios. Audio for these sizes remains unverified end to end; resume the
+   runs above (or re-run the matrix) after deployment to close the loop.
 
 3. **`<speaker_settings>` is now REQUIRED and emitted (2026-08-08).** All three
    generic script agents demand the declaration (name + gender, never voice —
@@ -134,12 +125,14 @@ Ordered by importance. These are the honest gaps.
    hosts. GATE 2 cross-checks the declared names against the dialogue and
    rejects a lying declaration.
 
-4. **ElevenLabs has no live streaming.** 3+-host audio works but the client waits
-   for the final URL (only Gemini emits `audio_stream_chunk`). Live ElevenLabs
-   needs server MP3 chunk emission + an MSE path on the client. Medium effort.
+4. ~~**ElevenLabs has no live streaming.**~~ **DONE 2026-08-08.** The provider
+   emits ordered MP3 `audio_stream_chunk` events plus `audio_stream_end`; the
+   studio selects a MediaSource player for MP3 and retains Web Audio for Gemini
+   PCM. Real authenticated 2-host Gemini and 3-host ElevenLabs studio runs both
+   played before generation completed and handed off to canonical files.
 
 5. **Persisted script may contain the agent's thinking text.** The `create_script`
-   stage output is the agent's *full* output (which can include reasoning before
+   stage output is the agent's _full_ output (which can include reasoning before
    the `<podcast_dialogue>` block), and that's what lands in `pc_episodes.script`
    → so blog/show-notes/transcript can inherit thinking text. The clean dialogue
    is available (`_extract_dialogue`); persisting that instead is a 1-line change
@@ -161,7 +154,7 @@ Ordered by importance. These are the honest gaps.
    by adding a slot + a router branch.
 
 8. **4 post-prep agents still draft** (`podcast_post_prep_{translation,
-   summarization,fact_checking,expansion}`) → the create form's "Pre/Post-script
+summarization,fact_checking,expansion}`) → the create form's "Pre/Post-script
    processing" is honestly badged "Coming Soon". Build:
    `uv run python scripts/build_agents.py <names…>`, then wire `post_prep_option`.
 
@@ -182,20 +175,21 @@ Ordered by importance. These are the honest gaps.
 
 ## 6. Verification still pending (not yet done)
 
-- A **full live run through the browser UI** against local aidream (the e2e
-  matrix exercises the pipeline directly, not the FE→stream→reduce path). Worth
-  one real `/podcast/studio/create` run to confirm streaming-audio swap + the
-  blog/show-notes generate→publish UI.
+- ~~A full live run through the browser UI for streaming audio.~~ **DONE
+  2026-08-08** for both Gemini PCM and ElevenLabs MP3, including Play/Pause,
+  advancing position/rendered duration, and canonical-player handoff. The
+  blog/show-notes generate→publish UI remains separate and unverified here.
 - **3–20 host audio on production** — script stage verified live at 10/14/20
-  (§5.2); audio is gated on the §5.1 fix deploying, then resume the recorded
+  (§5.2); resume the recorded
   runs (or re-run `podcast_e2e_matrix.py roundtable_10 roundtable_14
-  roundtable_20`) to confirm ElevenLabs renders 10/14/20 distinct voices.
+roundtable_20`) to confirm ElevenLabs renders 10/14/20 distinct voices.
 
 ---
 
 ## 7. File map
 
 **Server (aidream):**
+
 - `packages/matrx-ai/matrx_ai/agent_runners/podcast_generator.py` — the whole pipeline.
 - `…/agent_runners/PODCAST_PIPELINE.md` — the flow contract (READ FIRST).
 - `scripts/podcast_gate_tests.py` — gate unit tests.
@@ -205,22 +199,26 @@ Ordered by importance. These are the honest gaps.
 - `aidream/api/routers/podcast_generator.py` — HTTP/stream wrapper + episode persistence.
 
 **Frontend (matrx-frontend):**
+
 - `features/podcasts/generator/` — form, constants, voices, reduce, useEpisodeArticles.
 - `features/podcasts/studio/` — run page, EpisodeContentStudio, useStudioRun.
 - `features/podcasts/components/player/` — players, episode/blog pages.
 - `features/audio/streamingPcmPlayer.ts` — client PCM player (Gemini live audio).
+- `features/audio/streamingMp3Player.ts` — client MediaSource player (ElevenLabs live audio).
 - `app/(core)/podcast/` — routes (`studio/create`, `studio/run/[id]`, `[slug]`, `[slug]/blog`).
 
 ---
 
 ## 8. What only the user can do
+
 1. **Deploy aidream** (unblocks everything in prod).
 2. Update the script-agent prompts to emit `<speaker_settings>` (optional robustness).
 3. Build the 4 post-prep agents; decide on chapters.
 4. Provide curated ElevenLabs voices (swap into `features/podcasts/generator/voices.ts`).
 
 ## 9. Commit trail (this body of work, aidream)
+
 - ElevenLabs agent wired + 1/3/6-host verified.
 - Gate enforcement (`Content→Script→Audio`, content + script gates, routing fix).
 - Exact speaker count + names-always-from-script + `<speaker_settings>` contract.
-(All on `main`; bundled into the user's recent podcast commits — `git log --oneline -- packages/matrx-ai/matrx_ai/agent_runners/podcast_generator.py`.)
+  (All on `main`; bundled into the user's recent podcast commits — `git log --oneline -- packages/matrx-ai/matrx_ai/agent_runners/podcast_generator.py`.)

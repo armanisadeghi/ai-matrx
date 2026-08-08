@@ -41,8 +41,9 @@ import {
 } from "@/features/podcasts/generator/types";
 import {
   createStreamingPcmPlayer,
-  type StreamingPcmPlayer,
+  type StreamingAudioPlayer,
 } from "@/features/audio/streamingPcmPlayer";
+import { createStreamingMp3Player } from "@/features/audio/streamingMp3Player";
 import { studioRunsService } from "./service";
 import { rowToRunState, detailToRunState, mergeRowPrompts } from "./mapping";
 import { hasPendingStart, takePendingStart } from "./pendingStart";
@@ -124,7 +125,7 @@ export interface UseStudioRun {
   cancel: () => void;
   /** Live in-flight TTS audio (listen while it renders). Non-null only while a
    *  live stream is delivering audio chunks and the canonical file isn't ready. */
-  livePlayer: StreamingPcmPlayer | null;
+  livePlayer: StreamingAudioPlayer | null;
   /** Real tool activity from the live stream. Empty when the backend sends
    *  none — consumers must degrade to nothing, never assume it's populated. */
   researchActivity: ResearchActivityEntry[];
@@ -151,16 +152,20 @@ export function useStudioRun(runId: string): UseStudioRun {
     ResearchActivityEntry[]
   >([]);
   const [assetBusy, setAssetBusy] = useState<Record<string, boolean>>({});
-  const [livePlayer, setLivePlayer] = useState<StreamingPcmPlayer | null>(null);
+  const [livePlayer, setLivePlayer] = useState<StreamingAudioPlayer | null>(
+    null,
+  );
 
   const abortRef = useRef<AbortController | null>(null);
   const startedRef = useRef(false);
   const streamingRef = useRef(false);
-  const livePlayerRef = useRef<StreamingPcmPlayer | null>(null);
+  const livePlayerRef = useRef<StreamingAudioPlayer | null>(null);
   // Next expected audio chunk seq. A gap means we missed audio (reconnect /
   // dropped frame) — buffered playback would be corrupt, so we stop feeding
   // and fall back to waiting for the canonical file.
   const audioSeqRef = useRef(0);
+  const audioStreamIdRef = useRef<string | null>(null);
+  const audioEncodingRef = useRef<"pcm_s16le" | "mp3" | null>(null);
   const audioStreamBrokenRef = useRef(false);
   const backendRunIdRef = useRef<string | null>(null);
   const resumeAttemptsRef = useRef(0);
@@ -201,6 +206,7 @@ export function useStudioRun(runId: string): UseStudioRun {
     // and leaving it on a blank page. Every other ref above is reset for the
     // same reason; this one was missed.
     startedRef.current = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- a different run identity must not inherit the prior run's orphan verdict.
     setOrphaned(false);
     setCanRerun(false);
 
@@ -213,6 +219,16 @@ export function useStudioRun(runId: string): UseStudioRun {
     imgUrlsRef.current = [];
     vidUrlsRef.current = [];
     setResearchActivity([]);
+
+    function dropLiveAudio(reason: string) {
+      console.warn(
+        `[studio-run] ${reason} — dropping live playback; the canonical file will take over when rendering finishes`,
+      );
+      audioStreamBrokenRef.current = true;
+      livePlayerRef.current?.destroy();
+      livePlayerRef.current = null;
+      setLivePlayer(null);
+    }
 
     function onData(raw: PodcastDataEvent) {
       // Any event is a sign of life — feed the heartbeat watchdog. Resetting
@@ -227,28 +243,58 @@ export function useStudioRun(runId: string): UseStudioRun {
       if (kind === "podcast_tick") return;
 
       if (kind === "audio_stream_chunk") {
-        // Live TTS audio. Chunks feed the player directly (never React state —
-        // base64 PCM at chunk rate would thrash renders). First chunk creates
-        // the player; one state set exposes it to the view.
+        // Live TTS audio. Chunks feed the codec-appropriate player directly
+        // (never React state — base64 at chunk rate would thrash renders).
+        // Gemini PCM uses Web Audio; ElevenLabs MP3 uses MediaSource.
         if (audioStreamBrokenRef.current) return;
         const e = raw as AudioStreamChunkEvent;
-        if (e.seq !== audioSeqRef.current) {
-          console.warn(
-            `[studio-run] audio stream gap (expected seq ${audioSeqRef.current}, got ${e.seq}) — dropping live playback, the canonical file will arrive at stage end`,
+        const encoding =
+          e.encoding === "mp3" || /(?:mpeg|mp3)/i.test(e.mime_type)
+            ? "mp3"
+            : e.encoding === "pcm_s16le" || /(?:l16|pcm)/i.test(e.mime_type)
+              ? "pcm_s16le"
+              : null;
+        if (!encoding) {
+          dropLiveAudio(
+            `unsupported audio stream format ${e.encoding || e.mime_type}`,
           );
-          audioStreamBrokenRef.current = true;
-          livePlayerRef.current?.destroy();
-          livePlayerRef.current = null;
-          setLivePlayer(null);
           return;
         }
+        if (
+          audioStreamIdRef.current !== null &&
+          (audioStreamIdRef.current !== e.stream_id ||
+            audioEncodingRef.current !== encoding)
+        ) {
+          dropLiveAudio(
+            `audio stream identity/format changed mid-render (${audioStreamIdRef.current}/${audioEncodingRef.current} → ${e.stream_id}/${encoding})`,
+          );
+          return;
+        }
+        if (e.seq !== audioSeqRef.current) {
+          dropLiveAudio(
+            `audio stream gap (expected seq ${audioSeqRef.current}, got ${e.seq})`,
+          );
+          return;
+        }
+        audioStreamIdRef.current = e.stream_id;
+        audioEncodingRef.current = encoding;
         audioSeqRef.current = e.seq + 1;
         let player = livePlayerRef.current;
         if (!player) {
-          player = createStreamingPcmPlayer({
-            sampleRate: e.sample_rate || 24000,
-            channels: e.channels || 1,
-          });
+          player =
+            encoding === "mp3"
+              ? createStreamingMp3Player({
+                  mimeType: e.mime_type || "audio/mpeg",
+                  onError: (error) => dropLiveAudio(error.message),
+                })
+              : createStreamingPcmPlayer({
+                  sampleRate: e.sample_rate || 24000,
+                  channels: e.channels || 1,
+                });
+          if (!player) {
+            dropLiveAudio(`no browser player is available for ${encoding}`);
+            return;
+          }
           livePlayerRef.current = player;
           setLivePlayer(player);
         }
@@ -432,6 +478,8 @@ export function useStudioRun(runId: string): UseStudioRun {
       // Fresh stream ⇒ fresh audio chunk sequence (a resume that re-runs the
       // audio stage restarts at seq 0).
       audioSeqRef.current = 0;
+      audioStreamIdRef.current = null;
+      audioEncodingRef.current = null;
       audioStreamBrokenRef.current = false;
       livePlayerRef.current?.destroy();
       livePlayerRef.current = null;
@@ -621,7 +669,8 @@ export function useStudioRun(runId: string): UseStudioRun {
         // be able to restore the orphan verdict as well as clear it. Still no
         // durable record and still not finished ⇒ still orphaned; saying
         // nothing here left a stale optimistic clear in place forever.
-        if (!completedRef.current && !backendRunIdRef.current) setOrphaned(true);
+        if (!completedRef.current && !backendRunIdRef.current)
+          setOrphaned(true);
         return;
       }
       setDetail(d);

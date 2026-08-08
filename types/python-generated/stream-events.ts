@@ -400,7 +400,7 @@ export interface AudioStreamChunkData {
   seq: number;
   audio_base64: string;
   mime_type?: string;
-  encoding?: "pcm_s16le";
+  encoding?: "pcm_s16le" | "mp3";
   sample_rate?: number;
   bits_per_sample?: number;
   channels?: number;
