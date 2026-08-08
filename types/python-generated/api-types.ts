@@ -4703,6 +4703,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/content-plan/cms-sites/{cms_site_id}/starter-kit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cms Site Starter Kit Route
+         * @description WF-7: the starter kit for a CMS site DIRECTLY — no plan pairing needed.
+         *
+         *     The `/sites/{site_id}/cms-starter-kit` sibling resolves a web.site's paired
+         *     CMS site; this one serves the `/cms` admin's "Install starter kit" button
+         *     for sites that never came from a plan. Ownership + the F4 write policy are
+         *     enforced by the SAME guarded seam (`starter_kit_service.apply`) — a policy
+         *     refusal surfaces as a structured 403, never a bypass.
+         */
+        post: operations["cms_site_starter_kit_route_content_plan_cms_sites__cms_site_id__starter_kit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/content-plan/sites/{site_id}/cms-fill/preview": {
         parameters: {
             query?: never;
@@ -49430,6 +49456,41 @@ export interface operations {
             header?: never;
             path: {
                 site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CmsStarterKitBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StarterKitResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cms_site_starter_kit_route_content_plan_cms_sites__cms_site_id__starter_kit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cms_site_id: string;
             };
             cookie?: never;
         };

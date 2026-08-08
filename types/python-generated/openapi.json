@@ -11957,6 +11957,67 @@
         }
       }
     },
+    "/content-plan/cms-sites/{cms_site_id}/starter-kit": {
+      "post": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Cms Site Starter Kit Route",
+        "description": "WF-7: the starter kit for a CMS site DIRECTLY — no plan pairing needed.\n\nThe `/sites/{site_id}/cms-starter-kit` sibling resolves a web.site's paired\nCMS site; this one serves the `/cms` admin's \"Install starter kit\" button\nfor sites that never came from a plan. Ownership + the F4 write policy are\nenforced by the SAME guarded seam (`starter_kit_service.apply`) — a policy\nrefusal surfaces as a structured 403, never a bypass.",
+        "operationId": "cms_site_starter_kit_route_content_plan_cms_sites__cms_site_id__starter_kit_post",
+        "parameters": [
+          {
+            "name": "cms_site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cms Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CmsStarterKitBody"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StarterKitResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/content-plan/sites/{site_id}/cms-fill/preview": {
       "post": {
         "tags": [
