@@ -167,7 +167,7 @@ export const agentListConfig: EntityListConfig<AgentBrowseRow> = {
     disabledTitle: "Shared agents can't be favorited",
   },
   edit: {
-    save: (rowId, edit) => saveAgentRowEdits(rowId, edit as AgentRowEdit),
+    save: (row, edit) => saveAgentRowEdits(row.id, edit as AgentRowEdit),
   },
   deepSearch: { label: "Also search inside prompts" },
   facetSections: [

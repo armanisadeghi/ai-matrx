@@ -26073,6 +26073,66 @@ export type Database = {
         }
         Relationships: []
       }
+      content_template: {
+        Row: {
+          content: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_public: boolean | null
+          label: string | null
+          metadata: Json | null
+          organization_id: string
+          project_id: string | null
+          role: Database["public"]["Enums"]["message_role"] | null
+          tags: string[] | null
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          label?: string | null
+          metadata?: Json | null
+          organization_id: string
+          project_id?: string | null
+          role?: Database["public"]["Enums"]["message_role"] | null
+          tags?: string[] | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          label?: string | null
+          metadata?: Json | null
+          organization_id?: string
+          project_id?: string | null
+          role?: Database["public"]["Enums"]["message_role"] | null
+          tags?: string[] | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       custom_app_configs: {
         Row: {
           accent_color: string | null
@@ -26971,66 +27031,6 @@ export type Database = {
         }
         Relationships: []
       }
-      message_template: {
-        Row: {
-          content: string | null
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          is_public: boolean | null
-          label: string | null
-          metadata: Json | null
-          organization_id: string
-          project_id: string | null
-          role: Database["public"]["Enums"]["message_role"] | null
-          tags: string[] | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          content?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          label?: string | null
-          metadata?: Json | null
-          organization_id: string
-          project_id?: string | null
-          role?: Database["public"]["Enums"]["message_role"] | null
-          tags?: string[] | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          content?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          label?: string | null
-          metadata?: Json | null
-          organization_id?: string
-          project_id?: string | null
-          role?: Database["public"]["Enums"]["message_role"] | null
-          tags?: string[] | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
       microservice_project: {
         Row: {
           created_at: string
@@ -27854,66 +27854,6 @@ export type Database = {
           prompt_builtin_id: string | null
           sort_order: number | null
           template: string | null
-        }
-        Relationships: []
-      }
-      content_template: {
-        Row: {
-          content: string | null
-          created_at: string | null
-          created_by: string | null
-          deleted_at: string | null
-          id: string | null
-          is_public: boolean | null
-          label: string | null
-          metadata: Json | null
-          organization_id: string | null
-          project_id: string | null
-          role: Database["public"]["Enums"]["message_role"] | null
-          tags: string[] | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number | null
-          visibility: Database["platform"]["Enums"]["visibility"] | null
-        }
-        Insert: {
-          content?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string | null
-          is_public?: boolean | null
-          label?: string | null
-          metadata?: Json | null
-          organization_id?: string | null
-          project_id?: string | null
-          role?: Database["public"]["Enums"]["message_role"] | null
-          tags?: string[] | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number | null
-          visibility?: Database["platform"]["Enums"]["visibility"] | null
-        }
-        Update: {
-          content?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string | null
-          is_public?: boolean | null
-          label?: string | null
-          metadata?: Json | null
-          organization_id?: string | null
-          project_id?: string | null
-          role?: Database["public"]["Enums"]["message_role"] | null
-          tags?: string[] | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number | null
-          visibility?: Database["platform"]["Enums"]["visibility"] | null
         }
         Relationships: []
       }
@@ -31039,7 +30979,7 @@ export type Database = {
         Args: never
         Returns: {
           deleted_count: number
-          deleted_templates: Database["public"]["Tables"]["message_template"]["Row"][]
+          deleted_templates: Database["graveyard"]["Tables"]["message_template"]["Row"][]
         }[]
       }
       delete_user_table: { Args: { p_table_id: string }; Returns: Json }
@@ -32849,7 +32789,7 @@ export type Database = {
       }
       get_unused_message_templates: {
         Args: never
-        Returns: Database["public"]["Tables"]["message_template"]["Row"][]
+        Returns: Database["graveyard"]["Tables"]["message_template"]["Row"][]
         SetofOptions: {
           from: "*"
           to: "message_template"
@@ -34598,7 +34538,11 @@ export type Database = {
         }[]
       }
       trx_list_scope_counts: {
-        Args: { p_deep?: boolean; p_filters?: Json; p_search?: string }
+        Args: {
+          p_deep?: boolean
+          p_filters?: Json
+          p_search?: string
+        }
         Returns: {
           label: string
           narrow_id: string
@@ -34619,7 +34563,6 @@ export type Database = {
           p_sort?: string
         }
         Returns: {
-          access_level: string
           created_at: string
           description: string
           duration_seconds: number
@@ -37737,7 +37680,6 @@ export type Database = {
           error: string | null
           id: string
           instructions: string | null
-          keyword_id: string | null
           model_id: string | null
           organization_id: string
           result: string | null
@@ -37759,7 +37701,6 @@ export type Database = {
           error?: string | null
           id?: string
           instructions?: string | null
-          keyword_id?: string | null
           model_id?: string | null
           organization_id: string
           result?: string | null
@@ -37781,7 +37722,6 @@ export type Database = {
           error?: string | null
           id?: string
           instructions?: string | null
-          keyword_id?: string | null
           model_id?: string | null
           organization_id?: string
           result?: string | null
@@ -37800,13 +37740,6 @@ export type Database = {
             columns: ["content_id"]
             isOneToOne: false
             referencedRelation: "rs_content"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rs_analysis_keyword_id_fkey"
-            columns: ["keyword_id"]
-            isOneToOne: false
-            referencedRelation: "rs_keyword"
             referencedColumns: ["id"]
           },
           {
@@ -38085,7 +38018,6 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string | null
-          goal: string | null
           id: string
           is_stale: boolean | null
           keyword: string
@@ -38104,7 +38036,6 @@ export type Database = {
         Insert: {
           created_at?: string | null
           created_by?: string | null
-          goal?: string | null
           id?: string
           is_stale?: boolean | null
           keyword: string
@@ -38123,7 +38054,6 @@ export type Database = {
         Update: {
           created_at?: string | null
           created_by?: string | null
-          goal?: string | null
           id?: string
           is_stale?: boolean | null
           keyword?: string
@@ -44014,6 +43944,17 @@ export type Database = {
           last_backfill_at: string
         }[]
       }
+      gsc_class_import: {
+        Args: { p_dry_run?: boolean; p_rows: Json; p_site_id: string }
+        Returns: {
+          current_class: string
+          keyword_id: string
+          new_class: string
+          notes: string
+          query: string
+          status: string
+        }[]
+      }
       gsc_brand_aliases: {
         Args: { p_site_id: string }
         Returns: {
@@ -44024,7 +43965,10 @@ export type Database = {
           toks: string[]
         }[]
       }
-      gsc_brand_generic_threshold: { Args: never; Returns: number }
+      gsc_brand_generic_threshold: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       gsc_brand_hits: {
         Args: { p_site_id: string }
         Returns: {
@@ -44042,17 +43986,6 @@ export type Database = {
           joined: string
           matched_keywords: number
           strong_matches: number
-        }[]
-      }
-      gsc_class_import: {
-        Args: { p_dry_run?: boolean; p_rows: Json; p_site_id: string }
-        Returns: {
-          current_class: string
-          keyword_id: string
-          new_class: string
-          notes: string
-          query: string
-          status: string
         }[]
       }
       gsc_confirm_keyword_class: {
@@ -44238,23 +44171,6 @@ export type Database = {
           cmp_queries: number
           impressions: number
           queries: number
-          traffic_class: string
-        }[]
-      }
-      gsc_perf_class_summary_multi: {
-        Args: {
-          p_compare_end?: string
-          p_compare_start?: string
-          p_end: string
-          p_site_ids: string[]
-          p_start: string
-        }
-        Returns: {
-          clicks: number
-          cmp_clicks: number
-          cmp_impressions: number
-          impressions: number
-          sites: number
           traffic_class: string
         }[]
       }
@@ -51162,7 +51078,6 @@ export type Database = {
         Row: {
           backlink_count: number | null
           backlink_referring_domains: number | null
-          content_type_last: string | null
           first_seen: string | null
           gsc_clicks_28d: number | null
           gsc_impressions_28d: number | null
@@ -51171,7 +51086,6 @@ export type Database = {
           http_status_last: number | null
           in_gsc: boolean | null
           indexability_verdict: string | null
-          is_resource: boolean | null
           last_seen: string | null
           latest_snapshot_id: string | null
           observed_title: string | null

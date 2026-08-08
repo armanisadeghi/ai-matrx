@@ -291,7 +291,7 @@ Rules + stages: [`lib/coming-soon/FEATURE.md`](./lib/coming-soon/FEATURE.md).
 
 ## Feature entry lists — the canonical shell
 
-`/agents/all` ([`features/agents/browse/FEATURE.md`](./features/agents/browse/FEATURE.md)) is the proving ground for the list page every feature should have: table-first with ONE `…` menu carrying every record action, plus card and dense views, and **Mine / My Orgs / Shared / Public** scopes with true server counts. Building or fixing a feature's list page? Read it first and consume its primitives rather than starting a fifth variant:
+**The list page every feature should have is a config on the ONE shell: `lib/entity-list/` ([`FEATURE.md`](./lib/entity-list/FEATURE.md))** — `<EntityListPage config={...} />` with table-first + ONE `…` menu carrying every record action, card/dense views, and **Mine / My Orgs / Shared / Public** scopes with true server counts. Live consumers: `/agents/all` ([`features/agents/browse/FEATURE.md`](./features/agents/browse/FEATURE.md), the proving ground) and `/transcripts`. Building or fixing a feature's list page? Write a config (service RPCs per `lib/list-scope/FEATURE.md` + column registry + row-actions hook), never a fifth bespoke variant:
 
 - **View style persistence** → `useListViewPrefs` ([`lib/list-views/FEATURE.md`](./lib/list-views/FEATURE.md)). Style persists (view, density, sort, page size, columns); query never does (search, filters, page, scope). Four hand-rolled `localStorage` copies are pending migration onto it.
 - **Row actions** → one `ItemMenuConfig` builder per entity (`components/official/item/`), consumed identically by table, cards, rows, and right-click. Three divergent hard-coded action lists for one entity is the defect this kills.

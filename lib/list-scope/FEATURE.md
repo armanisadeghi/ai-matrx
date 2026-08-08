@@ -73,9 +73,10 @@ rendered for anyone. A tab bar must be self-sufficient from its own query.
 > organizations through `useUserOrganizations`, so it is self-sufficient on
 > routes that have not hydrated an organization Redux slice. The worked
 > implementation of the full five-scope model is
-> `features/agents/browse/components/BrowseScopeTabs.tsx` (live at
-> `/agents/all`). ListScopeSwitcher should absorb that shape rather than the
-> two diverging further.
+> `lib/entity-list/components/EntityScopeTabs.tsx` (live at `/agents/all` and
+> `/transcripts`; also consumed by CRM). ListScopeSwitcher's one remaining
+> consumer is `TranscriptsSidebar` — it should absorb EntityScopeTabs rather
+> than the two diverging further.
 
 ## The primitive
 
