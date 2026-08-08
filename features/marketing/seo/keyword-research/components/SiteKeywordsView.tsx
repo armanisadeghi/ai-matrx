@@ -15,6 +15,7 @@
 import { useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { KeywordClassificationWorkspace } from "@/features/marketing/search-console/components/classification/KeywordClassificationWorkspace";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { cn } from "@/styles/themes/utils";
 import { SiteKeywordPerformanceWorkspace } from "./SiteKeywordPerformanceWorkspace";
 
@@ -55,11 +56,22 @@ export function SiteKeywordsView() {
           <SiteKeywordPerformanceWorkspace />
         </div>
       ) : (
-        <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto bg-textured p-3 sm:p-4">
-          <KeywordClassificationWorkspace />
-        </main>
+        <ClassificationRouteMount />
       )}
     </div>
+  );
+}
+
+function ClassificationRouteMount() {
+  const { site } = useMarketingSite();
+  return (
+    <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto bg-textured p-3 sm:p-4">
+      <KeywordClassificationWorkspace
+        siteId={site.id}
+        siteDomain={site.domain}
+        organizationId={site.organization_id}
+      />
+    </main>
   );
 }
 

@@ -480,6 +480,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  keywordClassificationWindow: {
+    label: "Keyword Classification",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   keywordWindow: {
     label: "Keyword Intelligence",
     instanceMode: "singleton",

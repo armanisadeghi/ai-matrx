@@ -460,6 +460,12 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- 2026-08-08 — `univer-snapshot-rows.ts` added: `univerSnapshotToRows(snapshot)`
+  reads a workbook snapshot back out as a plain string grid — the missing
+  half of the round trip (`pushTableToWorkbook` pushes rows IN). First
+  consumer: Search Console keyword-classification "Import from workbook".
+  Reuse it — never fork a per-feature snapshot walker.
+
 - 2026-07-28 — D97 fixed: DocumentEditor/WorkbookEditor autosave gated by isSnapshotMutation (CommandType.MUTATION + denylist); scrolling no longer writes snapshots.
 
 - `2026-07-24` — **`/data/[id]` layout + cell cleanup.** Three changes.

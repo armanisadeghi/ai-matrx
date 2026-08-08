@@ -42255,6 +42255,66 @@ export type Database = {
         }
         Relationships: []
       }
+      keyword_class_rule: {
+        Row: {
+          auto_apply: boolean
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          is_template: boolean
+          last_applied_at: string | null
+          match_kind: string
+          name: string
+          notes: string | null
+          organization_id: string | null
+          pattern: string
+          site_id: string | null
+          target_class: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          auto_apply?: boolean
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_template?: boolean
+          last_applied_at?: string | null
+          match_kind?: string
+          name: string
+          notes?: string | null
+          organization_id?: string | null
+          pattern: string
+          site_id?: string | null
+          target_class: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          auto_apply?: boolean
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_template?: boolean
+          last_applied_at?: string | null
+          match_kind?: string
+          name?: string
+          notes?: string | null
+          organization_id?: string | null
+          pattern?: string
+          site_id?: string | null
+          target_class?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       keyword_edge: {
         Row: {
           confidence: number | null
@@ -43786,6 +43846,21 @@ export type Database = {
           last_backfill_at: string
         }[]
       }
+      gsc_class_import: {
+        Args: { p_dry_run?: boolean; p_rows: Json; p_site_id: string }
+        Returns: {
+          current_class: string
+          keyword_id: string
+          new_class: string
+          notes: string
+          query: string
+          status: string
+        }[]
+      }
+      gsc_confirm_keyword_class: {
+        Args: { p_keyword_ids: string[]; p_site_id: string }
+        Returns: number
+      }
       gsc_dig_condition_passes: {
         Args: { p_op: string; p_threshold: number; p_value: number }
         Returns: boolean
@@ -43837,9 +43912,12 @@ export type Database = {
       gsc_keyword_class_review: {
         Args: {
           p_classes?: string[]
+          p_confirmed?: boolean
           p_end: string
           p_limit?: number
+          p_match?: string
           p_offset?: number
+          p_pattern?: string
           p_search?: string
           p_site_id: string
           p_sort?: string
@@ -43859,6 +43937,8 @@ export type Database = {
           notes: string
           override_class: string
           query: string
+          ruling_confirmed: boolean
+          ruling_origin: string
           service_match: string
           suppression_reason: string
           total_count: number
@@ -44194,8 +44274,11 @@ export type Database = {
       gsc_set_keyword_class: {
         Args: {
           p_class: string
+          p_confirmed?: boolean
           p_keyword_ids: string[]
           p_notes?: string
+          p_origin?: string
+          p_rule_id?: string
           p_site_id: string
         }
         Returns: {

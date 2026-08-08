@@ -10,7 +10,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Scale } from "lucide-react";
+import { ArrowRight, Scale, Tags } from "lucide-react";
+import { useOpenKeywordClassificationWindow } from "@/features/overlays/openers/keywordClassificationWindow";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { cn } from "@/styles/themes/utils";
@@ -96,6 +97,7 @@ export function QualityView({
     null,
   );
   const [direction, setDirection] = useState<"gain" | "loss">("loss");
+  const openClassificationWindow = useOpenKeywordClassificationWindow();
   const summary = useGscClassSummary(siteId, periods);
   const movers = useGscClassMovers(
     siteId,
@@ -185,6 +187,21 @@ export function QualityView({
     <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto pr-0.5">
       {/* The evaluated windows live in the tab-level GscPeriodStrip — ONE
           place, never a second period label here. */}
+      <div className="flex shrink-0 justify-end">
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 rounded border border-border bg-card px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          title="Open the classification workbench in a floating panel — rule on keywords without leaving this view"
+          onClick={() =>
+            openClassificationWindow({
+              siteId,
+              siteDomain: siteName ?? siteId,
+            })
+          }
+        >
+          <Tags className="h-3 w-3" /> Classify in panel
+        </button>
+      </div>
       <div className="shrink-0 overflow-hidden rounded-md border border-border">
         <table className="w-full text-xs">
           <thead className="bg-muted/60 text-left">

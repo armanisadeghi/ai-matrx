@@ -584,6 +584,13 @@ const KeywordResearchWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/seo/KeywordResearchWindow"),
   { ssr: false },
 );
+const KeywordClassificationWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/marketing/search-console/windows/KeywordClassificationWindow"
+    ),
+  { ssr: false },
+);
 const KeywordWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/seo/KeywordWindow"),
   { ssr: false },
@@ -1208,6 +1215,9 @@ export default function OverlayController() {
     keywordResearchWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "keywordResearchWindow"),
     ),
+    keywordClassificationWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "keywordClassificationWindow"),
+    ),
     keywordWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "keywordWindow"),
     ),
@@ -1560,6 +1570,9 @@ export default function OverlayController() {
     keywordResearchWindow: useAppSelector((s) =>
       selectOverlayData(s, "keywordResearchWindow"),
     ) as Record<string, unknown> | null,
+    keywordClassificationWindow: useAppSelector((s) =>
+      selectOverlayData(s, "keywordClassificationWindow"),
+    ),
     keywordWindow: useAppSelector((s) =>
       selectOverlayData(s, "keywordWindow"),
     ) as Record<string, unknown> | null,
@@ -4051,6 +4064,37 @@ export default function OverlayController() {
                 : undefined
             }
             autoRun={data?.autoRun === true}
+          />
+        );
+      })()}
+
+      {/* keywordClassificationWindow */}
+      {(() => {
+        const isOpen = isOpenById.keywordClassificationWindow;
+        const data = dataById.keywordClassificationWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        if (
+          typeof data?.siteId !== "string" ||
+          !data.siteId ||
+          typeof data?.siteDomain !== "string"
+        ) {
+          return null;
+        }
+        return (
+          <KeywordClassificationWindow
+            onClose={() =>
+              dispatch(
+                closeOverlay({ overlayId: "keywordClassificationWindow" }),
+              )
+            }
+            siteId={data.siteId}
+            siteDomain={data.siteDomain}
+            organizationId={
+              typeof data.organizationId === "string" && data.organizationId
+                ? data.organizationId
+                : null
+            }
           />
         );
       })()}

@@ -243,12 +243,62 @@ class into it (`Classify →` / `Review →`,
   the SAME editor predicate as the table's RLS, once per call (direct
   table writes are not granted to `authenticated`).
 - **Provenance always visible** — `ClassSourceChip` (vocabulary
-  `types.ts::GSC_CLASS_SOURCES`) beside every `ClassChip`; any
-  `site_value` row shows Clear, including legacy semantic-column rulings.
+  `types.ts::GSC_CLASS_SOURCES`) beside every class; any `site_value` row
+  offers "Clear ruling", including legacy semantic-column rulings. The
+  class chip itself IS the control (`ClassCell` — a dropdown fed by
+  `GSC_TRAFFIC_CLASSES`, so a new class needs zero cell changes; Arman's
+  ruling 2026-08-08: never a fixed button row).
+- **Workbench v2 (2026-08-08)** — the full spec landed the same day:
+  - **Live scoreboard** (`ClassStatsBand` over `gsc_perf_class_summary`):
+    per-class keywords/clicks/impressions + the Unclassified countdown,
+    moving on every ruling (the `["marketing","gsc"]` invalidation IS the
+    gamification loop). Tiles filter the table; an unconfirmed chip filters
+    to auto-applied rulings awaiting human eyes.
+  - **Pattern rules** (`seo.keyword_class_rule`, architecture mirrors
+    `gsc_dig_rule`: ownerless world-readable templates with fixed UUIDs
+    `a1d18001-…` re-seeded by `migrations/seo_keyword_class_rules.sql`,
+    owned user rules, copy-insert adoption). Match kinds
+    contains/word/exact/starts_with/ends_with — matching is SERVER-side
+    (`gsc_keyword_class_review` p_pattern/p_match); preview pipes a rule's
+    live matches into the main table preselected, the user prunes, then
+    applies (origin='rule', confirmed=true). Per-rule `auto_apply` opt-in
+    runs once per site per session over NEW unclassified matches with
+    confirmed=false (flagged amber until confirmed via
+    `gsc_confirm_keyword_class`); the editor suppresses offering
+    auto-apply while the current preview is pruned. Provenance rides
+    `site_keyword_value.metadata.classification`
+    ({origin, rule_id, confirmed, applied_at}).
+  - **CSV / workbook round trip** (`ImportExportMenu`): full filtered
+    export, import template, CSV import via papaparse, "Send to workbook"
+    (`pushTableToWorkbook`, features/data-tables) and "Import from
+    workbook" (`getLatestSnapshot` → the NEW
+    `features/data-tables/univer-snapshot-rows.ts` reader). EVERY import
+    path lands in `seo.gsc_class_import` — server dry-run diff (change /
+    cleared / unchanged / unknown_keyword / invalid_class / missing_notes)
+    shown before anything applies; apply routes through
+    `gsc_set_keyword_class` server-side (one mapping, one home).
+  - **Classify with AI** — the EXISTING universal classifier
+    (`seo.keyword_classifier` slot via aidream
+    `POST /seo/keywords/classify`, 200-id chunks, admin-gated
+    server-side): selection or filtered-unclassified batch; results land
+    as `intent_class` = "AI intent" provenance, overridable like any
+    machine signal. The Site Intake Wizard (`intake/`) stays the
+    whole-site AI interview; this is the surgical batch complement.
+  - **Floating panel** (`windows/KeywordClassificationWindow.tsx`, overlay
+    `keywordClassificationWindow`, opener
+    `features/overlays/openers/keywordClassificationWindow.tsx`,
+    ephemeral, viewport-clamped rect): the SAME workspace with
+    `urlState={false}` (local table state — the page underneath owns the
+    URL). Entry: "Classify in panel" atop Traffic quality; the workspace
+    component is props-based (siteId/siteDomain/organizationId) so any
+    surface can mount or open it.
+  - Next round (documented, not built): sub-class / second-layer
+    classification — comparison-style clues ("vs", "before and after")
+    don't fit the four classes and await a sub-class vocabulary ruling.
 - The AI interview/wizard is a SEPARATE program (aidream
   `docs/handoffs/content-ir-agent-slots.md`); this surface is the manual
-  truth layer it will sit beside. Never fork a second write path for
-  classes — extend `gsc_set_keyword_class`.
+  truth layer beside it. Never fork a second write path for classes —
+  extend `gsc_set_keyword_class`.
 
 ## Brand identity — what data alone cannot see (roadmap)
 
@@ -389,6 +439,14 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-08 — **Classification workbench v2** (§ Classification UI):
+  class-chip dropdown cell, live class scoreboard, pattern rules
+  (`seo.keyword_class_rule` + 11 clue templates, preview-prune-apply,
+  opt-in auto-apply with unconfirmed flagging), CSV + Univer-workbook
+  round-trip import with server diff (`gsc_class_import`), Classify-with-AI
+  batch over the universal classifier slot, floating window panel
+  (`keywordClassificationWindow`) + props-based workspace. Live-verified on
+  datadestruction.com incl. a real 2-keyword AI run moving the scoreboard.
 - 2026-08-08 — **Classification UI shipped** (§ Classification UI):
   `?view=classification` on the site keywords route; explicit
   `seo.site_keyword_value.traffic_class` + `notes` columns; resolver reads
