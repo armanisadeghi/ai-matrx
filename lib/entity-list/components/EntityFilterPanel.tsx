@@ -1,18 +1,18 @@
 "use client";
 
-// features/agents/browse/components/BrowseFilterPanel.tsx
+// lib/entity-list/components/EntityFilterPanel.tsx
 //
 // Filters & Sort, in the shape /agents/all established (popover, sections,
 // radio groups, chips with search) — built on the shared primitives in
 // components/official/filter-panel/ and driven by SERVER-computed facets.
 //
 // It writes into the SAME `query.filters` bag the column headers write to, so
-// selecting "Business & Productivity" here and from the Category header are
-// literally the same query. One filter model, two entry points.
+// selecting a category here and from the Category header are literally the
+// same query. One filter model, two entry points.
 //
-// The badge counts only filters the user actually applied. /agents/all's badge
-// read "1" on an untouched page because it counted the sort and the active tab
-// — a permanent lie that trained people to ignore the number.
+// The badge counts only filters the user actually applied — never the sort or
+// the active tab. A badge that reads "1" on an untouched page is a permanent
+// lie that trains people to ignore the number.
 
 import { useState } from "react";
 import { useScrollFade } from "@/components/official/scroll-fade/useScrollFade";
@@ -31,14 +31,17 @@ import {
 } from "@/components/official/filter-panel/parts";
 import { cn } from "@/lib/utils";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
-import { BROWSE_COLUMNS } from "../columns";
-import { countActiveFilters, type BrowseFilters, type BrowseQuery } from "../types";
+import type { EntityColumnSpec } from "../columns";
+import type { EntityFacetSection } from "../config";
 import {
+  countActiveFilters,
   facetCount,
   facetValues,
   type ArchivedFilter,
   type EntityFacets,
-} from "@/lib/entity-list/types";
+  type EntityFilters,
+  type EntityListQuery,
+} from "../types";
 
 type SortKey = `${string}-${ListViewPrefs["direction"]}`;
 
@@ -61,22 +64,21 @@ const ARCH_OPTIONS: { value: ArchivedFilter; label: string }[] = [
   { value: "all", label: "Active + archived" },
 ];
 
-interface Props {
-  query: BrowseQuery;
+interface Props<TRow> {
+  query: EntityListQuery;
   facets: EntityFacets;
+  columns: EntityColumnSpec<TRow>[];
+  facetSections: EntityFacetSection[];
+  /** Offer the Favorites section + pin toggle. */
+  hasFavorites: boolean;
   sort: string;
   direction: ListViewPrefs["direction"];
   favoritesFirst: boolean;
-  onPatchQuery: (patch: Partial<BrowseQuery>) => void;
+  onPatchQuery: (patch: Partial<EntityListQuery>) => void;
   onSortChange: (sort: string, direction: ListViewPrefs["direction"]) => void;
   onFavoritesFirstChange: (next: boolean) => void;
   onResetFilters: () => void;
 }
-
-const NONE_LABEL: Record<string, string> = {
-  category: "Uncategorized",
-  tag: "Untagged",
-};
 
 function toOptions(
   values: { value: string; count: number }[] | undefined,
@@ -89,9 +91,12 @@ function toOptions(
   }));
 }
 
-export function BrowseFilterPanel({
+export function EntityFilterPanel<TRow>({
   query,
   facets,
+  columns,
+  facetSections,
+  hasFavorites,
   sort,
   direction,
   favoritesFirst,
@@ -99,9 +104,9 @@ export function BrowseFilterPanel({
   onSortChange,
   onFavoritesFirstChange,
   onResetFilters,
-}: Props) {
+}: Props<TRow>) {
   const [open, setOpen] = useState(false);
-  // Same cue as the row menu: when Categories/Tags push the panel past its
+  // Same cue as the row menu: when the chip sections push the panel past its
   // available height, the bottom edge fades so the eye knows to scroll.
   const scrollFade = useScrollFade();
   const activeCount = countActiveFilters(query);
@@ -109,7 +114,8 @@ export function BrowseFilterPanel({
 
   const sortOptions: { value: SortKey; label: string }[] = [
     ...EXTRA_SORTS,
-    ...BROWSE_COLUMNS.filter((c) => c.id !== "updated" && c.id !== "created")
+    ...columns
+      .filter((c) => c.id !== "updated" && c.id !== "created")
       .flatMap((c) => [
         { value: `${c.id}-asc` as SortKey, label: `${c.label} (A→Z)` },
         { value: `${c.id}-desc` as SortKey, label: `${c.label} (Z→A)` },
@@ -121,7 +127,7 @@ export function BrowseFilterPanel({
 
   /** Read/write one entry of the shared filter bag. */
   const setSelect = (id: string, values: string[]) => {
-    const next: BrowseFilters = { ...query.filters };
+    const next: EntityFilters = { ...query.filters };
     if (values.length === 0) delete next[id];
     else next[id] = { kind: "select", values };
     onPatchQuery({ filters: next });
@@ -138,7 +144,7 @@ export function BrowseFilterPanel({
   })();
 
   const setFav = (v: (typeof FAV_OPTIONS)[number]["value"]) => {
-    const next: BrowseFilters = { ...query.filters };
+    const next: EntityFilters = { ...query.filters };
     if (v === "all") delete next.favorite;
     else next.favorite = { kind: "boolean", value: v === "only" };
     onPatchQuery({ filters: next });
@@ -215,45 +221,54 @@ export function BrowseFilterPanel({
               }}
               options={sortOptions}
             />
-            <button
-              type="button"
-              onClick={() => onFavoritesFirstChange(!favoritesFirst)}
-              className="mt-2 flex w-full items-center gap-2 text-left text-sm"
-            >
-              <span
-                className={cn(
-                  "relative h-[18px] w-8 shrink-0 rounded-full transition-colors",
-                  favoritesFirst ? "bg-primary" : "border border-border bg-muted",
-                )}
+            {hasFavorites && (
+              <button
+                type="button"
+                onClick={() => onFavoritesFirstChange(!favoritesFirst)}
+                className="mt-2 flex w-full items-center gap-2 text-left text-sm"
               >
                 <span
                   className={cn(
-                    "absolute top-px h-4 w-4 rounded-full bg-white shadow-sm transition-all",
-                    favoritesFirst ? "left-[14px]" : "left-px",
+                    "relative h-[18px] w-8 shrink-0 rounded-full transition-colors",
+                    favoritesFirst
+                      ? "bg-primary"
+                      : "border border-border bg-muted",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "absolute top-px h-4 w-4 rounded-full bg-white shadow-sm transition-all",
+                      favoritesFirst ? "left-[14px]" : "left-px",
+                    )}
+                  />
+                </span>
+                <Star
+                  className={cn(
+                    "h-3.5 w-3.5",
+                    favoritesFirst && "fill-amber-400 text-amber-500",
                   )}
                 />
-              </span>
-              <Star
-                className={cn(
-                  "h-3.5 w-3.5",
-                  favoritesFirst && "fill-amber-400 text-amber-500",
-                )}
-              />
-              <span className="text-foreground">Pin favorites to top</span>
-            </button>
+                <span className="text-foreground">Pin favorites to top</span>
+              </button>
+            )}
           </FilterSection>
 
-          <FilterSection label="Favorites" active={favValue !== "all"}>
-            <RadioSelect
-              value={favValue}
-              onChange={setFav}
-              options={FAV_OPTIONS.map((o) =>
-                o.value === "only"
-                  ? { ...o, hint: String(facetCount(facets, "favorite", "only")) }
-                  : { ...o },
-              )}
-            />
-          </FilterSection>
+          {hasFavorites && (
+            <FilterSection label="Favorites" active={favValue !== "all"}>
+              <RadioSelect
+                value={favValue}
+                onChange={setFav}
+                options={FAV_OPTIONS.map((o) =>
+                  o.value === "only"
+                    ? {
+                        ...o,
+                        hint: String(facetCount(facets, "favorite", "only")),
+                      }
+                    : { ...o },
+                )}
+              />
+            </FilterSection>
+          )}
 
           <FilterSection label="Archived" active={query.archived !== "active"}>
             <RadioSelect<ArchivedFilter>
@@ -261,53 +276,37 @@ export function BrowseFilterPanel({
               onChange={(v) => onPatchQuery({ archived: v })}
               options={ARCH_OPTIONS.map((o) =>
                 o.value === "archived"
-                  ? { ...o, hint: String(facetCount(facets, "archived", "archived")) }
+                  ? {
+                      ...o,
+                      hint: String(facetCount(facets, "archived", "archived")),
+                    }
                   : o,
               )}
             />
           </FilterSection>
 
-          {facetValues(facets, "category").length > 0 && (
-            <FilterSection
-              label={`Categories (${facetValues(facets, "category").length})`}
-              active={selectedOf("category").length > 0}
-            >
-              <FacetChips
-                options={toOptions(facetValues(facets, "category"), NONE_LABEL.category!)}
-                selected={selectedOf("category")}
-                onChange={(v) => setSelect("category", v)}
-                searchPlaceholder="Find category…"
-              />
-            </FilterSection>
-          )}
-
-          {facetValues(facets, "tag").length > 0 && (
-            <FilterSection
-              label={`Tags (${facetValues(facets, "tag").length})`}
-              active={selectedOf("tags").length > 0}
-            >
-              <FacetChips
-                options={toOptions(facetValues(facets, "tag"), NONE_LABEL.tag!)}
-                selected={selectedOf("tags")}
-                onChange={(v) => setSelect("tags", v)}
-                searchPlaceholder="Find tag…"
-              />
-            </FilterSection>
-          )}
-
-          {facetValues(facets, "visibility").length > 1 && (
-            <FilterSection
-              label="Visibility"
-              active={selectedOf("visibility").length > 0}
-            >
-              <FacetChips
-                options={toOptions(facetValues(facets, "visibility"), "None")}
-                selected={selectedOf("visibility")}
-                onChange={(v) => setSelect("visibility", v)}
-                searchPlaceholder="Find…"
-              />
-            </FilterSection>
-          )}
+          {facetSections.map((section) => {
+            const values = facetValues(facets, section.facet);
+            if (values.length < (section.minOptions ?? 1)) return null;
+            return (
+              <FilterSection
+                key={section.facet}
+                label={
+                  section.countInLabel === false
+                    ? section.label
+                    : `${section.label} (${values.length})`
+                }
+                active={selectedOf(section.filterId).length > 0}
+              >
+                <FacetChips
+                  options={toOptions(values, section.noneLabel)}
+                  selected={selectedOf(section.filterId)}
+                  onChange={(v) => setSelect(section.filterId, v)}
+                  searchPlaceholder={`Find ${section.label.toLowerCase()}…`}
+                />
+              </FilterSection>
+            );
+          })}
         </div>
       </PopoverContent>
     </Popover>
