@@ -111,7 +111,14 @@ export const SMART_VIEWS: SmartViewDef[] = [
     icon: CircleCheck,
     description: "Recently completed (last 90 days)",
     includesClosed: true,
-    predicate: (t) => normalizeTaskStatus(t.status) === "completed",
+    predicate: (t) => {
+      if (normalizeTaskStatus(t.status) !== "completed") return false;
+      const doneAt = t.completedAt ?? t.updatedAt;
+      if (!doneAt) return true;
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 90);
+      return new Date(doneAt) >= cutoff;
+    },
   },
 ];
 

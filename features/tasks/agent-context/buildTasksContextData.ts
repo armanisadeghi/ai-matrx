@@ -4,6 +4,7 @@ import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
 import { createTasksScope } from "@/features/surfaces/manifests/tasks.manifest";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { formatEditorSurroundContext } from "@/utils/format-editor-surround-context";
+import { isClosedStatus } from "@/features/tasks/constants/status";
 
 /** Placements for the task editor (target wiring with surfaceName). */
 export const TASKS_CONTEXT_MENU_PLACEMENTS = [
@@ -82,20 +83,21 @@ export interface BuildTasksContextDataArgs {
  * Normalize a DB task `status` into the surface vocabulary the manifest
  * declares for `active_task_status`: `"completed" | "pending" | "overdue"`.
  *
- * The `ctx_tasks.status` column carries lifecycle-ish values (`completed`,
- * `not_started`, `incomplete`, …); anything not `completed` is "pending" for
- * an agent's purposes, and a non-completed task past its due date is "overdue".
+ * Canonical lifecycle lives in `features/tasks/constants/status.ts`. Any
+ * CLOSED status (completed/cancelled/dismissed) reports as "completed" to
+ * agents — a dismissed system task must never read as pending/overdue, or
+ * agents re-surface work the user already set aside. Open tasks past their
+ * due date are "overdue"; other open tasks are "pending".
  */
 function deriveSurfaceStatus(
   status: string | null | undefined,
   dueDate: string | null | undefined,
 ): "completed" | "pending" | "overdue" | "" {
-  if (status === "completed") return "completed";
+  if (isClosedStatus(status)) return "completed";
   if (status == null && dueDate == null) return "";
   if (dueDate) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split("T")[0];
+    // Local-date string; toISOString() shifts UTC+ users to yesterday.
+    const todayStr = new Date().toLocaleDateString("sv-SE");
     if (dueDate < todayStr) return "overdue";
   }
   return "pending";

@@ -15,16 +15,31 @@ import { sendDueDateReminderEmail } from "@/lib/email/notificationService";
  */
 export async function GET(request: Request) {
   try {
-    // Verify cron secret if configured
+    // vercel.json is shared by all three Vercel projects (main/admin/demos),
+    // so this cron would fire three times a day and triple every email.
+    // Only the main app runs it; the satellites (which pin MATRX_PROFILE to
+    // admin/demos) no-op.
+    const profile = process.env.MATRX_PROFILE;
+    if (profile === 'admin' || profile === 'demos') {
+      return NextResponse.json({ success: true, msg: `Skipped on ${profile} deployment` });
+    }
+
+    // Fail CLOSED: without a configured secret this endpoint must not be
+    // publicly triggerable (it sends email).
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret) {
-      const authHeader = request.headers.get('Authorization');
-      if (authHeader !== `Bearer ${cronSecret}`) {
-        return NextResponse.json(
-          { success: false, msg: "Unauthorized" },
-          { status: 401 }
-        );
-      }
+    if (!cronSecret) {
+      console.error('[due-date-reminders] CRON_SECRET is not configured — refusing to run.');
+      return NextResponse.json(
+        { success: false, msg: "CRON_SECRET not configured" },
+        { status: 503 }
+      );
+    }
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader !== `Bearer ${cronSecret}`) {
+      return NextResponse.json(
+        { success: false, msg: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
     const supabase = createAdminClient();
@@ -43,15 +58,22 @@ export async function GET(request: Request) {
     };
 
     // Get open tasks with upcoming or past due dates (canonical lifecycle:
-    // anything not completed/cancelled/dismissed is open).
+    // anything not completed/cancelled/dismissed is open). Bounded window:
+    // tasks overdue by more than 30 days have stopped being "reminders" —
+    // without the lower bound, ancient overdue rows would permanently occupy
+    // PostgREST's row cap and starve tasks that are actually due now.
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const { data: tasks, error } = await workspaceDb(supabase)
       .from('tasks')
       .select('id, title, created_by, due_date, assignee_id')
       .is('deleted_at', null)
       .not('status', 'in', '(completed,cancelled,dismissed)')
       .not('due_date', 'is', null)
+      .gte('due_date', thirtyDaysAgo.toISOString())
       .lte('due_date', dayAfterTomorrow.toISOString())
-      .order('due_date', { ascending: true });
+      .order('due_date', { ascending: true })
+      .limit(2000);
 
     if (error) {
       console.error('Error fetching tasks:', error);
@@ -70,14 +92,27 @@ export async function GET(request: Request) {
     }
 
     // Per-user snooze/dismiss state — a snoozed or dismissed task never nags.
-    const { data: userStates } = await workspaceDb(supabase)
-      .from('task_user_state')
-      .select('task_id, user_id, snoozed_until, dismissed_at')
-      .in('task_id', tasks.map((t) => t.id));
+    // Chunked (URL-length safety) and FAIL-CLOSED: if we can't read mute
+    // state we abort the run rather than email people who snoozed.
     const muted = new Set<string>();
-    for (const s of userStates ?? []) {
-      const snoozed = s.snoozed_until && new Date(s.snoozed_until) > now;
-      if (snoozed || s.dismissed_at) muted.add(`${s.task_id}:${s.user_id}`);
+    const taskIds = tasks.map((t) => t.id);
+    for (let i = 0; i < taskIds.length; i += 150) {
+      const chunk = taskIds.slice(i, i + 150);
+      const { data: userStates, error: muteError } = await workspaceDb(supabase)
+        .from('task_user_state')
+        .select('task_id, user_id, snoozed_until, dismissed_at')
+        .in('task_id', chunk);
+      if (muteError) {
+        console.error('[due-date-reminders] mute-state read failed — aborting run:', muteError.message);
+        return NextResponse.json(
+          { success: false, msg: "Failed to read snooze state; no emails sent", error: muteError.message },
+          { status: 500 }
+        );
+      }
+      for (const s of userStates ?? []) {
+        const snoozed = s.snoozed_until && new Date(s.snoozed_until) > now;
+        if (snoozed || s.dismissed_at) muted.add(`${s.task_id}:${s.user_id}`);
+      }
     }
 
     // Volume-aware: at most 3 reminder emails per user per run — a flooded

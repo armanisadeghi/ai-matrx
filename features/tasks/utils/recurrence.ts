@@ -22,6 +22,7 @@ export interface RecurrenceRule {
 }
 
 const DAY_CODES = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
+type DayCode = (typeof DAY_CODES)[number];
 
 export function parseRecurrenceRule(
   rule: string | null | undefined,
@@ -42,7 +43,6 @@ export function parseRecurrenceRule(
     return null;
   }
   const interval = Math.max(1, parseInt(parts.get("INTERVAL") ?? "1", 10) || 1);
-  type DayCode = (typeof DAY_CODES)[number];
   const byDayRaw = parts.get("BYDAY");
   const byDay = byDayRaw
     ? byDayRaw
@@ -100,11 +100,28 @@ function toDateOnlyStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+function daysInMonth(year: number, monthIndex: number): number {
+  return new Date(year, monthIndex + 1, 0).getDate();
+}
+
+/**
+ * Add whole months while preserving the anchor day-of-month, clamping to the
+ * end of shorter months (Jan 31 + 1 month = Feb 28/29, NOT Mar 3). The anchor
+ * day is passed separately so repeated rolls never drift off month-end.
+ */
+function addMonthsClamped(d: Date, months: number, anchorDay: number): Date {
+  const total = d.getMonth() + months;
+  const year = d.getFullYear() + Math.floor(total / 12);
+  const month = ((total % 12) + 12) % 12;
+  const day = Math.min(anchorDay, daysInMonth(year, month));
+  return new Date(year, month, day);
+}
+
 /**
  * Next occurrence strictly AFTER `fromDate` (yyyy-mm-dd). Anchored on the
  * task's due date. Returns null when the rule can't be parsed.
- * Never returns a date in the past: when the task is completed late, the next
- * occurrence is advanced until it lands after today.
+ * Never returns a date in the past: when the task is completed late, the
+ * next occurrence advances until it lands after `todayStr`.
  */
 export function nextOccurrence(
   rule: string | null | undefined,
@@ -114,26 +131,55 @@ export function nextOccurrence(
   const r = parseRecurrenceRule(rule);
   if (!r || !fromDate) return null;
   const floor = todayStr && todayStr > fromDate ? todayStr : fromDate;
-  let cursor = parseDateOnlyLocal(fromDate);
+  const anchor = parseDateOnlyLocal(fromDate);
+  const anchorDay = anchor.getDate();
   const floorDate = parseDateOnlyLocal(floor);
+  let cursor = new Date(anchor);
 
-  // Hard cap prevents infinite loops on degenerate input.
-  for (let i = 0; i < 1000; i++) {
+  // For long-overdue DAILY/WEEKLY tasks, fast-forward near the floor first so
+  // the iteration cap below can never strip a valid rule of its recurrence.
+  if (cursor < floorDate && (r.freq === "DAILY" || r.freq === "WEEKLY")) {
+    const stepDays = r.freq === "DAILY" ? r.interval : 7 * r.interval;
+    const behindDays = Math.floor(
+      (floorDate.getTime() - cursor.getTime()) / 86400000,
+    );
+    const steps = Math.floor(behindDays / stepDays);
+    if (steps > 1) cursor.setDate(cursor.getDate() + (steps - 1) * stepDays);
+  }
+
+  // Hard cap prevents infinite loops on degenerate input; with the
+  // fast-forward above it is never reached by a valid rule.
+  for (let i = 0; i < 5000; i++) {
     switch (r.freq) {
       case "DAILY":
         cursor.setDate(cursor.getDate() + r.interval);
         break;
       case "WEEKLY": {
         if (r.byDay?.length) {
-          // Advance day-by-day to the next allowed weekday (respecting the
-          // interval when wrapping past the anchor week).
-          const allowed = new Set(r.byDay);
+          const allowed = new Set<DayCode>(r.byDay);
+          // Week windows are anchored on the ORIGINAL due date's week
+          // (weeks start Monday, RRULE default WKST=MO). Only weeks whose
+          // index from the anchor week is a multiple of `interval` count.
+          const weekStart = (d: Date) => {
+            const w = new Date(d);
+            const dow = (w.getDay() + 6) % 7; // Mon=0
+            w.setDate(w.getDate() - dow);
+            w.setHours(0, 0, 0, 0);
+            return w;
+          };
+          const anchorWeek = weekStart(anchor).getTime();
           const next = new Date(cursor);
           for (let step = 1; step <= 7 * r.interval + 7; step++) {
             next.setDate(next.getDate() + 1);
-            // On wrap into a new week beyond interval boundaries, weeks not on
-            // the interval are skipped implicitly by continuing the scan.
-            if (allowed.has(DAY_CODES[next.getDay()])) break;
+            const weekIndex = Math.round(
+              (weekStart(next).getTime() - anchorWeek) / (7 * 86400000),
+            );
+            if (
+              weekIndex % r.interval === 0 &&
+              allowed.has(DAY_CODES[next.getDay()])
+            ) {
+              break;
+            }
           }
           cursor = next;
         } else {
@@ -142,10 +188,10 @@ export function nextOccurrence(
         break;
       }
       case "MONTHLY":
-        cursor.setMonth(cursor.getMonth() + r.interval);
+        cursor = addMonthsClamped(cursor, r.interval, anchorDay);
         break;
       case "YEARLY":
-        cursor.setFullYear(cursor.getFullYear() + r.interval);
+        cursor = addMonthsClamped(cursor, 12 * r.interval, anchorDay);
         break;
     }
     if (cursor > floorDate) return toDateOnlyStr(cursor);

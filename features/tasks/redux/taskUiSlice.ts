@@ -294,6 +294,10 @@ const slice = createSlice({
     },
     setFilter(state, action: PayloadAction<TaskFilterType>) {
       state.filter = action.payload;
+      // Legacy filter surfaces (mobile, quick sheet) know nothing about smart
+      // views — applying one leaves the view, or the two would compound into
+      // a guaranteed-empty list.
+      if (action.payload !== "all") state.smartView = "all";
     },
     /** Selecting a smart view widens the scope to all projects — the view IS
      *  the scope. Completed is self-sufficient (includesClosed). */

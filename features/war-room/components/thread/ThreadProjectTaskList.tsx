@@ -25,6 +25,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { isOpenStatus } from "@/features/tasks/constants/status";
 import {
   CornerDownRight,
   Eye,
@@ -156,7 +157,7 @@ function ProjectTaskBody({
   const completed = tasks.filter((t) => t.status === "completed").length;
   const visibleTasks = showCompleted
     ? tasks
-    : tasks.filter((t) => t.status !== "completed");
+    : tasks.filter((t) => isOpenStatus(t.status));
 
   return (
     <div className="flex h-full min-h-0 flex-col @container/proj">
@@ -340,7 +341,7 @@ function ProjectTaskRow({
 
   const visibleSubtasks = showCompletedStyle
     ? subtasks
-    : subtasks.filter((t) => t.status !== "completed");
+    : subtasks.filter((t) => isOpenStatus(t.status));
 
   return (
     <>

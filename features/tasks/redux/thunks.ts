@@ -4,6 +4,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import * as taskService from "../services/taskService";
 import * as taskUserStateService from "../services/taskUserStateService";
+import { isClosedStatus } from "../constants/status";
 import type { UpdateTaskInput } from "../services/taskService";
 import {
   createProject as createProjectSvc,
@@ -411,15 +412,77 @@ export const updateTaskFieldThunk = createAsyncThunk<
       }),
     );
 
+    // Keep project open counts honest on status transitions (the toggle
+    // thunk does this too; the two paths must never disagree).
+    const wasClosed = isClosedStatus(current.status);
+    const willBeClosed =
+      patch.status !== undefined ? isClosedStatus(patch.status) : wasClosed;
+    const openDelta = wasClosed === willBeClosed ? 0 : willBeClosed ? -1 : 1;
+    if (current.project_id && openDelta !== 0) {
+      dispatch(
+        adjustProjectTaskCount({
+          projectId: current.project_id,
+          openDelta,
+          totalDelta: 0,
+        }),
+      );
+    }
+
     try {
-      const updated = await taskService.updateTask(taskId, patch);
-      if (!updated) {
+      // Completing is special-cased through the canonical completion path so
+      // recurring tasks roll forward regardless of which control completed
+      // them (status picker, agent tool, or checkbox).
+      const updated =
+        patch.status === "completed" && !wasClosed
+          ? await (async () => {
+              const { status: _s, ...rest } = patch;
+              if (Object.keys(rest).length > 0) {
+                await taskService.updateTask(taskId, rest);
+              }
+              return taskService.completeTask({
+                id: taskId,
+                recurrence_rule: current.recurrence_rule ?? null,
+                due_date: patch.due_date ?? current.due_date,
+              });
+            })()
+          : await taskService.updateTask(taskId, patch);
+      if (updated) {
+        // Reconcile with the server truth (completed_at bookkeeping, and a
+        // recurring task comes back 'planned' with a rolled-forward due date).
+        const record = toTaskRecord(updated, current.organization_id);
+        if (record) {
+          dispatch(upsertTaskWithLevel({ record, level: "full-data" }));
+          if (
+            current.project_id &&
+            willBeClosed &&
+            !isClosedStatus(record.status)
+          ) {
+            // Rolled forward — still open; undo the optimistic decrement.
+            dispatch(
+              adjustProjectTaskCount({
+                projectId: current.project_id,
+                openDelta: 1,
+                totalDelta: 0,
+              }),
+            );
+          }
+        }
+      } else {
         dispatch(
           upsertTaskWithLevel({
             record: current as TaskRecord,
             level: "full-data",
           }),
         );
+        if (current.project_id && openDelta !== 0) {
+          dispatch(
+            adjustProjectTaskCount({
+              projectId: current.project_id,
+              openDelta: -openDelta,
+              totalDelta: 0,
+            }),
+          );
+        }
       }
     } finally {
       dispatch(setOperatingTaskId(null));
@@ -454,7 +517,7 @@ export const moveTaskThunk = createAsyncThunk<
       dispatch(
         adjustProjectTaskCount({
           projectId: fromProjectId,
-          openDelta: current.status === "completed" ? 0 : -1,
+          openDelta: isClosedStatus(current.status) ? 0 : -1,
           totalDelta: -1,
         }),
       );
@@ -463,7 +526,7 @@ export const moveTaskThunk = createAsyncThunk<
       dispatch(
         adjustProjectTaskCount({
           projectId: normalizedTo,
-          openDelta: current.status === "completed" ? 0 : 1,
+          openDelta: isClosedStatus(current.status) ? 0 : 1,
           totalDelta: 1,
         }),
       );
@@ -508,7 +571,7 @@ export const deleteTaskThunk = createAsyncThunk<
       dispatch(
         adjustProjectTaskCount({
           projectId,
-          openDelta: current.status === "completed" ? 0 : -1,
+          openDelta: isClosedStatus(current.status) ? 0 : -1,
           totalDelta: -1,
         }),
       );

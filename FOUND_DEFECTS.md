@@ -13,6 +13,14 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D129 — Tasks: known small gaps from the 2026-08 lifecycle upgrade adversarial review (2026-08-07)
+
+Three verified-but-deferred findings from the tasks world-class build (branch `feat/tasks-world-class`); the 12 serious ones were fixed in the same session.
+- `taskUiSlice.operatingTaskId` is a single slot — rapid toggling of TWO different tasks lets the second toggle bypass the in-flight guard for the first, so project open-count deltas can interleave and drift until refetch. **Fix:** make it a `Set<string>` (`operatingTaskIds`).
+- A snooze expiring does not resurface the task until some other store change recomputes `selectFilteredTasks` (the `now` is captured per-recompute). **Fix:** a cheap interval tick (e.g. 60s) into a `nowMinute` selector input on /tasks.
+- Monthly recurrence loses its month-end anchor across successive rolls once clamped (Jan 31 → Feb 28 → Mar 28, not Mar 31): `nextOccurrence` anchors on the *current* due date only. **Fix:** persist the original anchor day (e.g. `BYMONTHDAY=-1` or a metadata key) and honor it.
+
+
 ### D128 — MCP user connections dead since the vault cutover; connect flow unverified E2E (2026-08-06)
 
 All 4 `tool.mcp_user_conn` rows are `status='expired'` with `credential_item_id IS NULL`

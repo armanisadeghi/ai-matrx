@@ -753,10 +753,10 @@ export async function completeTask(
     Partial<Pick<DatabaseTask, "recurrence_rule" | "due_date">>,
 ): Promise<DatabaseTask | null> {
   const todayStr = new Date().toLocaleDateString("sv-SE"); // yyyy-mm-dd local
-  const rolled =
-    task.recurrence_rule && task.due_date
-      ? nextOccurrence(task.recurrence_rule, task.due_date, todayStr)
-      : null;
+  // A recurring task with no due date anchors its cycle on today.
+  const rolled = task.recurrence_rule
+    ? nextOccurrence(task.recurrence_rule, task.due_date || todayStr, todayStr)
+    : null;
 
   if (rolled) {
     return updateTask(task.id, {

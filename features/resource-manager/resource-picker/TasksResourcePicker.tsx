@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { isOpenStatus } from "@/features/tasks/constants/status";
 import {
   ChevronLeft,
   ChevronRight,
@@ -70,7 +71,7 @@ export function TasksResourcePicker({
 
     // Filter by completion status
     if (!showCompleted) {
-      tasks = tasks.filter((task) => task.status !== "completed");
+      tasks = tasks.filter((task) => isOpenStatus(task.status));
     }
 
     // Filter by search query
@@ -87,7 +88,7 @@ export function TasksResourcePicker({
   // Count tasks per project (incomplete/total)
   const getProjectTaskCount = (project: ProjectWithTasks) => {
     const tasks = project.tasks || [];
-    const incomplete = tasks.filter((t) => t.status !== "completed").length;
+    const incomplete = tasks.filter((t) => isOpenStatus(t.status)).length;
     const total = tasks.length;
     return { incomplete, total };
   };
