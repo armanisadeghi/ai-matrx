@@ -88,27 +88,13 @@ guard with a confirm dialog.
 
 ## WF-8 — CMS fill durable queue has never run and has no chaos test
 
-**Status:** DONE (2026-08-08) · **Repo:** aidream · **Severity:** MEDIUM
-
-Root cause of "0 rows ever": the pipeline could not run at all — two boot-class defects, both
-fixed in `aidream/services/content_plan/cms_fill.py`:
-
-1. `_build_site_context` imported the nonexistent `DEFAULT_THEME_PROPERTIES` from
-   `starter_kit` (which exports `DEFAULT_THEME_CONFIG`) — every preview and every job died on
-   that import. Now merges via `merge_default_theme_config` + `theme_config_to_custom_properties`.
-2. `llm_to_pydantic` requires an AppContext; boot-resumed jobs (and detached coordinators after
-   their request finished) had none — every resumed item would have errored to dead_letter.
-   `_run_job` now builds its own system-run context from `job.acting_user_id`.
-
-Chaos test added (durable-queue deliverable 8):
-`aidream/services/cms/tests/test_cms_fill_chaos_live.py` — real SIGKILL mid-fill, boot-resume,
-zero dropped / zero duplicated, succeeded work not re-run, killed claim reclaimed. Passed live.
-Real fill run end-to-end from `/marketing/content-plan/[siteId]?view=setup` rung 4 on
-cosmeticinjectables (preview + fan-out).
-
-UX note (minor, not filed as its own WF): rung 4's buttons are enabled when the site has zero
-fillable draft pages (e.g. everything published) — the server refusal surfaces loudly with the
-fix named, but the rung could pre-compute fillability from the alignment report.
+**Status:** DONE (2026-08-08 — the queue had never run because it COULD not: cms_fill.py imported
+a nonexistent starter_kit constant and boot-resumed jobs had no AppContext for LLM calls; both
+fixed + deployed aidream v0.1.717, root-cause detail in `content_plan/FEATURE.md` Change Log.
+Chaos test added: `aidream/services/cms/tests/test_cms_fill_chaos_live.py` — real SIGKILL
+mid-fill, boot-resume, zero dropped/duplicated; passed live twice. Real fill run end-to-end from
+the Setup rung 4 on cosmeticinjectables. Minor UX residue: rung 4 buttons enable even with zero
+fillable drafts — server refusal is loud and names the fix) · **Repo:** aidream · **Severity:** MEDIUM
 
 ## WF-9 — Doc drift: FE CMS FEATURE.md denies `client_content_exceptions` exists
 
