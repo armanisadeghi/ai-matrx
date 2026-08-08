@@ -10,8 +10,18 @@ import {
   Ruler,
   Sparkles,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { marketingKeys } from "@/features/marketing/data/hooks";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
+import {
+  MARKETING_SITE_MEDIA_SURFACE_NAME,
+  buildSiteMediaScope,
+} from "@/features/marketing/lib/scopes/site-media-scope";
+import type { SiteMediaPageRow } from "@/features/marketing/lib/snapshot-media";
+import type { BrandAsset } from "@/features/marketing/types";
 import { CrawledMediaView } from "@/features/marketing/components/media/CrawledMediaView";
 import { BrandLibraryView } from "@/features/marketing/components/media/BrandLibraryView";
 import { ResearchMediaView } from "@/features/marketing/components/media/ResearchMediaView";
@@ -54,6 +64,8 @@ export function SiteMediaWorkspace() {
   const { site } = useMarketingSite();
   const params = useParams<{ brandId: string }>();
   const brandId = params.brandId;
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
+  const queryClient = useQueryClient();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -116,7 +128,34 @@ export function SiteMediaWorkspace() {
     [setView],
   );
 
+  // Surface emitter — nested inside the site provider (deeper wins), built at
+  // trigger time. The views load their data lazily, so the crawled / library /
+  // research inputs are opportunistic cache reads (getScope must never fetch).
+  const getScope = () =>
+    buildSiteMediaScope({
+      base: getBaseValues(),
+      view,
+      standards,
+      mediaRows: queryClient.getQueryData<SiteMediaPageRow[]>(
+        marketingKeys.siteMedia(site.id),
+      ),
+      brandAssets: queryClient.getQueryData<BrandAsset[]>([
+        ...marketingKeys.root,
+        "brand",
+        brandId,
+        "assets",
+      ]),
+      researchImages: queryClient.getQueryData<ResearchImageRow[]>(
+        marketingKeys.researchImages(site.organization_id),
+      ),
+      siteRootUrl: site.root_url,
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={MARKETING_SITE_MEDIA_SURFACE_NAME}
+      getScope={getScope}
+    >
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-7xl space-y-4 p-3 sm:p-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -173,5 +212,6 @@ export function SiteMediaWorkspace() {
         )}
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

@@ -35,7 +35,7 @@ import {
   resolveOrderDimensions,
   type MediaOrderPreset,
 } from "@/features/marketing/lib/media-order-presets";
-import { MARKETING_SITE_SURFACE_NAME } from "@/features/marketing/lib/scopes/site-surface-base";
+import { MARKETING_SITE_MEDIA_SURFACE_NAME } from "@/features/marketing/lib/scopes/site-media-scope";
 import type { SiteMediaStandards } from "@/features/marketing/data/media-library";
 import type { BrandAssetKind } from "@/features/marketing/types";
 
@@ -137,7 +137,7 @@ export function GenerateMediaView({
           generatePageImageTwoStep({
             spec,
             style: styleOverride.trim() || preset.style,
-            surfaceKey: MARKETING_SITE_SURFACE_NAME,
+            surfaceKey: MARKETING_SITE_MEDIA_SURFACE_NAME,
           }),
         ),
         new Promise<PageImageResult>((resolve) =>

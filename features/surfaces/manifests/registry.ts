@@ -102,6 +102,7 @@ import { agentConnectionsManifest } from "./agent-connections.manifest";
 import { connectionsSkillsManifest } from "./connections-skills.manifest";
 import { keywordResearchManifest } from "./keyword-research.manifest";
 import { marketingSiteKeywordsManifest } from "./marketing-site-keywords.manifest";
+import { marketingSiteMediaManifest } from "./marketing-site-media.manifest";
 import { quickTasksManifest } from "./quick-tasks.manifest";
 import { taskCreateManifest } from "./task-create.manifest";
 import { quickNoteSaveManifest } from "./quick-note-save.manifest";
@@ -247,6 +248,7 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   connectionsSkillsManifest,
   keywordResearchManifest,
   marketingSiteKeywordsManifest,
+  marketingSiteMediaManifest,
   // 2026-07-24 overlay-surface fleet — window panels are surfaces too
   // (identified by overlayId, emitters nested inside the window components).
   quickTasksManifest,
