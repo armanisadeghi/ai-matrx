@@ -48,6 +48,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "agent-stream-data-error": "Server data error",
   "agent-stream-transport": "Stream transport error",
   "agent-stream-client-error": "Stream connection failure",
+  "agent-stream-terminal-guard": "Stream held open after terminal (closed locally)",
   "media-durability": "Media durability violation",
   "reasoning-leak": "Reasoning leaked into answer text",
   "data-shape": "Data-shape contract violation",
