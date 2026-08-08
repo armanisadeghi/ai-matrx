@@ -2,6 +2,13 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { getAllFeedback } from '@/actions/feedback.actions';
+import { CopyButtons } from '@/components/agent-copy/CopyButtons';
+import { ExportMenu } from '@/components/agent-copy/ExportMenu';
+import { csvExportItem, jsonExportItem } from '@/components/agent-copy/export';
+import { categorySummary, feedbackBrief, feedbackRowSummary } from '../format';
+
+const LOCATION =
+    'AI Matrx Admin — Feedback Management · Categories (/administration/users/feedback?tab=categories)';
 import {
     FeedbackCategory,
     UserFeedback,
@@ -313,6 +320,38 @@ export default function CategoriesTab() {
                         <span className="text-xs text-muted-foreground ml-auto">
                             {filteredFeedback.length} item{filteredFeedback.length !== 1 ? 's' : ''}
                         </span>
+                        <CopyButtons
+                            size="icon"
+                            label="Feedback by category"
+                            human={() =>
+                                groupedFeedback
+                                    .map(({ category, items }) =>
+                                        [
+                                            `${category?.name ?? 'Uncategorized'} (${items.length})`,
+                                            ...items.map((i) => `  - ${feedbackRowSummary(i)}`),
+                                        ].join('\n'),
+                                    )
+                                    .join('\n')
+                            }
+                            json={() => groupedFeedback}
+                            agent={() => ({
+                                kind: 'feedback-by-category',
+                                location: LOCATION,
+                                description:
+                                    'User feedback grouped by category (current filters applied).',
+                                data: groupedFeedback.map(({ category, key, items }) => ({
+                                    category,
+                                    key,
+                                    items: items.map(feedbackBrief),
+                                })),
+                                attributes: { groups: groupedFeedback.length },
+                                context: {
+                                    total: filteredFeedback.length,
+                                    status_filter: filterStatus !== 'all' ? filterStatus : undefined,
+                                    type_filter: filterType !== 'all' ? filterType : undefined,
+                                },
+                            })}
+                        />
                     </div>
 
                     {/* Category groups */}
@@ -329,8 +368,9 @@ export default function CategoriesTab() {
                             return (
                                 <Card key={key} className="overflow-hidden">
                                     {/* Category header row */}
+                                    <div className="group/cat relative">
                                     <button
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/40 transition-colors text-left"
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 pr-14 hover:bg-muted/40 transition-colors text-left"
                                         onClick={() => toggleCategory(key)}
                                     >
                                         {isExpanded
@@ -363,6 +403,32 @@ export default function CategoriesTab() {
                                             </span>
                                         </span>
                                     </button>
+                                    {/* Sibling overlay — the header row is a <button>,
+                                        nesting more buttons inside it is invalid HTML. */}
+                                    <CopyButtons
+                                        size="xs"
+                                        label={`Category ${category?.name ?? 'Uncategorized'}`}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/cat:opacity-100 focus-within:opacity-100"
+                                        human={() =>
+                                            [
+                                                `${category?.name ?? 'Uncategorized'} (${items.length})`,
+                                                ...items.map((i) => `  - ${feedbackRowSummary(i)}`),
+                                            ].join('\n')
+                                        }
+                                        json={() => ({ category, items })}
+                                        agent={() => ({
+                                            kind: 'feedback-category-group',
+                                            location: LOCATION,
+                                            description:
+                                                'One category of user feedback with its items (current filters applied).',
+                                            data: { category, items: items.map(feedbackBrief) },
+                                            attributes: {
+                                                category: category?.name ?? 'uncategorized',
+                                                count: items.length,
+                                            },
+                                        })}
+                                    />
+                                    </div>
 
                                     {/* Feedback items */}
                                     {isExpanded && (
@@ -378,9 +444,9 @@ export default function CategoriesTab() {
                                                     {items.map(item => {
                                                         const statusColors = FEEDBACK_STATUS_COLORS[item.status];
                                                         return (
+                                                            <div key={item.id} className="group/fbitem relative">
                                                             <button
-                                                                key={item.id}
-                                                                className="w-full flex items-start gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors text-left group"
+                                                                className="w-full flex items-start gap-3 px-4 py-2.5 pr-14 hover:bg-muted/30 transition-colors text-left group"
                                                                 onClick={() => { setSelectedFeedback(item); setDetailOpen(true); }}
                                                             >
                                                                 <span className="flex-shrink-0 mt-0.5">
@@ -409,6 +475,27 @@ export default function CategoriesTab() {
                                                                     </span>
                                                                 </span>
                                                             </button>
+                                                            <CopyButtons
+                                                                size="xs"
+                                                                label={`Feedback ${item.id.slice(0, 8)}`}
+                                                                className="absolute right-3 top-2 opacity-0 group-hover/fbitem:opacity-100 focus-within:opacity-100"
+                                                                human={() => feedbackRowSummary(item)}
+                                                                json={() => item}
+                                                                agent={() => ({
+                                                                    kind: 'feedback-item',
+                                                                    location: LOCATION,
+                                                                    description:
+                                                                        'One user-feedback record from the by-category view.',
+                                                                    data: item,
+                                                                    summary: feedbackRowSummary(item),
+                                                                    attributes: {
+                                                                        id: item.id,
+                                                                        status: item.status,
+                                                                        category: category?.name ?? 'uncategorized',
+                                                                    },
+                                                                })}
+                                                            />
+                                                            </div>
                                                         );
                                                     })}
                                                 </div>
@@ -435,6 +522,36 @@ export default function CategoriesTab() {
                         />
                     )}
 
+                    {categories.length > 0 && (
+                        <div className="flex items-center justify-end gap-1">
+                            <CopyButtons
+                                size="icon"
+                                label="Feedback categories"
+                                human={() => categories.map(categorySummary).join('\n')}
+                                json={() => categories}
+                                agent={() => ({
+                                    kind: 'feedback-categories',
+                                    location: LOCATION,
+                                    description: 'All feedback category definitions.',
+                                    data: categories,
+                                    attributes: { count: categories.length },
+                                })}
+                            />
+                            <ExportMenu
+                                label="feedback-categories"
+                                items={[
+                                    jsonExportItem(() => categories),
+                                    csvExportItem(
+                                        () =>
+                                            categories as unknown as Array<
+                                                Record<string, unknown>
+                                            >,
+                                        'CSV',
+                                    ),
+                                ]}
+                            />
+                        </div>
+                    )}
                     {categories.length === 0 && !editing ? (
                         <Card className="p-10 text-center">
                             <Tag className="w-8 h-8 mx-auto mb-3 text-muted-foreground/30" />
@@ -475,6 +592,20 @@ export default function CategoriesTab() {
                                         <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">{cat.slug}</span>
                                         <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{itemCount}</span>
                                         <div className="flex items-center gap-1 flex-shrink-0">
+                                            <CopyButtons
+                                                size="xs"
+                                                label={`Category ${cat.name}`}
+                                                human={() => categorySummary(cat)}
+                                                json={() => cat}
+                                                agent={() => ({
+                                                    kind: 'feedback-category',
+                                                    location: LOCATION,
+                                                    description: 'One feedback category definition.',
+                                                    data: { ...cat, item_count: itemCount },
+                                                    summary: categorySummary(cat),
+                                                    attributes: { id: cat.id, slug: cat.slug },
+                                                })}
+                                            />
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
