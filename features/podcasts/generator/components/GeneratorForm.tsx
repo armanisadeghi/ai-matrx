@@ -253,6 +253,9 @@ export function GeneratorForm({
   const [firstShowInfo, setFirstShowInfo] = useState("");
   // Optional prep→script transform (one at a time; "none" = pass-through).
   const [postPrep, setPostPrep] = useState<PodcastPostPrepOption>("none");
+  // Optional audience re-pitch (podcast.audience_adapter, server-side; runs
+  // before the transform above). Empty = skipped.
+  const [targetAudience, setTargetAudience] = useState("");
 
   const activeSource = SOURCE_OPTIONS.find((o) => o.kind === sourceKind);
   if (!activeSource) {
@@ -287,6 +290,7 @@ export function GeneratorForm({
       show_id: showId,
     };
     if (theme.trim()) body.theme = theme.trim();
+    if (targetAudience.trim()) body.target_audience = targetAudience.trim();
     // The server owns provider routing and the exact default cast. Apply only
     // the user's edits to that preview; if preview is unavailable, send no
     // cast and let the generation server resolve it natively.
@@ -556,6 +560,20 @@ export function GeneratorForm({
             caption="Script"
             target="Audio"
             options={POST_SCRIPT_PROCESSING_OPTIONS}
+          />
+        </div>
+        {/* Audience re-pitch (podcast.audience_adapter) — runs server-side on
+            the prepared content, before the transform above, so a translation
+            stays the faithful last step. Empty = stage skipped. */}
+        <div className="space-y-1">
+          <Label htmlFor="target-audience" className="text-xs text-muted-foreground">
+            Target audience (optional) — re-pitch the content for a specific listener
+          </Label>
+          <Input
+            id="target-audience"
+            value={targetAudience}
+            onChange={(e) => setTargetAudience(e.target.value)}
+            placeholder='e.g. "curious beginners", "time-pressed executives", "senior engineers"'
           />
         </div>
       </section>

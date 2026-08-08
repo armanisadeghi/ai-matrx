@@ -112,6 +112,11 @@ export interface PodcastGenerateRequest {
   // Style — the single discriminator the backend honors.
   podcast_type: PodcastType;
   post_prep_option?: PodcastPostPrepOption;
+  // Optional audience re-pitch, run server-side (podcast.audience_adapter
+  // slot) BEFORE post_prep_option so a translation stays the last transform.
+  // Empty/omitted skips the stage entirely.
+  target_audience?: string;
+  audience_guidance?: string;
 
   // Host-count-aware dimensions (honored server-side since 2026-06-10):
   // 1 → solo script + single voice; 2 → the proven two-host path;
