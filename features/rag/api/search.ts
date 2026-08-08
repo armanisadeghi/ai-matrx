@@ -108,26 +108,14 @@ export interface RagSearchRequest {
 }
 
 /**
- * A `rag.citation` stream event — one hit, emitted the moment retrieval
- * fuses it (before rerank finishes). Partial view of `RagSearchHit`.
- */
-export interface RagSearchCitationEvent {
-  rank: number;
-  chunk_id: string;
-  source_kind: string;
-  source_id: string;
-  snippet: string;
-  score?: number;
-}
-
-/**
  * Run a single RAG search. `POST /rag/search` STREAMS NDJSON since the
  * 2026-07-06 stream-everything conversion (identical to the retained
- * `/rag/search/stream` alias): `rag.citation` data events per hit as
- * retrieval fuses, `rag.citation.summary`, then the terminal
- * `rag.search.result` carrying the old `SearchResponseOut` body — this
- * function resolves with that terminal payload, so callers are unchanged.
- * Pass `onCitation` to render hits live while rerank finishes.
+ * `/rag/search/stream` alias) — this function resolves with the terminal
+ * `rag.search.result` payload carrying the old `SearchResponseOut` body.
+ *
+ * (The per-hit `rag.citation` / `rag.citation.summary` events were deleted
+ * 2026-08-08 — a parallel citation channel with zero consumers; answer
+ * citations are provider-native via the unified `citation` stream event.)
  *
  * Like the ingest family, RAG events are namespaced in `data.kind`
  * (dotted), not the typed `data.type` registry.
@@ -139,7 +127,6 @@ export async function ragSearch(
   body: RagSearchRequest,
   opts: {
     signal?: AbortSignal;
-    onCitation?: (citation: RagSearchCitationEvent) => void;
   } = {},
 ): Promise<RagSearchResponse> {
   let result: RagSearchResponse | null = null;
@@ -153,9 +140,7 @@ export async function ragSearch(
     }
     if (evt.event !== "data") continue;
     const d = evt.data as { kind?: string } & Record<string, unknown>;
-    if (d.kind === "rag.citation" && opts.onCitation) {
-      opts.onCitation(d as unknown as RagSearchCitationEvent);
-    } else if (d.kind === "rag.search.result") {
+    if (d.kind === "rag.search.result") {
       result = d as unknown as RagSearchResponse;
     }
   }
