@@ -40,6 +40,10 @@ lib/redux/slices/
 
 ## Change Log
 
+- 2026-08-08 — Fixed the "window opens invisible" class (watchdog `zero-size`):
+  geometry derived from a degenerate 0×0 viewport measurement now falls back to
+  sane dims (`safeViewportDims` in `utils/rectClamp.ts`), `registerWindow`
+  clamps the initial rect, and the watchdog judges visibility with safe dims.
 - 2026-07-29 — Added the callback-aware, multi-instance
   `imageAnnotationWindow`. It lazy-hosts the existing image-studio
   `AnnotateModeShell`, accepts owned file ids or fresh upload/capture sources,
@@ -317,6 +321,8 @@ Window layout is device-local UI state, not cloud/domain data. One workspace id 
 A triggered panel must **never** silently fail to appear. Two layers enforce it via `overlayRenderWatchdogMiddleware` ([`diagnostics/overlayRenderWatchdog.ts`](./diagnostics/overlayRenderWatchdog.ts)):
 
 **Reveal-on-open (proactive).** Every `openOverlay`/`toggleOverlay` for a `kind: "window"` overlay dispatches `revealWindow(id, viewport)`. `revealWindow` restores a minimized window, clamps an off-screen rect back into view, raises z-index, and clears `windowsHidden` — so re-triggering an already-open window is never a no-op. `windowManagerSlice` hardening: `registerWindow` clears `windowsHidden` (a newly opened window is always shown); `unregisterWindow` resets `windowsHidden` at zero windows (the global hide-all can't strand `true` and silently hide the next open).
+
+**Geometry can never collapse to zero.** A hidden/prerendered page measures `window.innerWidth/innerHeight` as **0**, which turns `"90vw"` into width 0 — the window registers a 0×0 rect and opens invisible (watchdog reason: `zero-size`). Three seams kill the class: **every viewport read for geometry goes through `safeViewportDims()`** ([`utils/rectClamp.ts`](./utils/rectClamp.ts) — falls back to 1280×800 on a degenerate measurement and `console.error`s once), `registerWindow` clamps the caller's `initial` rect via `clampRectToViewport` (defense in depth for any caller-computed rect), and the watchdog diagnoses/reveals with safe dims so a degenerate measurement can't false-scream `off-screen`. Never derive window geometry from a raw `window.innerWidth/innerHeight` read.
 
 **Watchdog (loud recovery).** ~2.5 s after an open, the middleware runs the pure `diagnoseOverlayRender` against live Redux + viewport state. If no visible panel is on screen — `windowsHidden` still on, off-screen, or zero-size — it `console.error`s with diagnostics and shows a self-healing `toast.error` ("Show it" → `revealWindow`). Scoped to **singleton window-kind** overlays; minimized and popped-out states count as OK (parked, not failed). Tests: `__tests__/overlayRenderWatchdog.test.ts`, `__tests__/windowManagerReveal.test.ts`.
 

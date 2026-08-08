@@ -31,10 +31,10 @@ Bug-fix policy: "For any issues like these, especially clear-cut fixes, proceed 
 ## Remaining work
 
 1. **Re-crawl to fill media inventories** — existing snapshots only carry image counts; the page/site media galleries (and the `media_inventory` surface value) fill on the next crawl of each site. Operational, not code.
-2. **Task widget** — window sometimes opens invisible (pre-existing window-panels bug; loud "Show it" toast recovers). Root-cause fix spun off as a chip 2026-08-08.
 
 ## Done
 
+- Task-widget invisible-open bug root-caused and fixed (2026-08-08): a degenerate 0×0 viewport measurement made "90vw" register a 0×0 rect; geometry now derives from `safeViewportDims` + `registerWindow` clamps the initial rect (see `features/window-panels/FEATURE.md` § Silent-render guard).
 - Redirect-route hardening audit (2026-08-08): `/marketing/pages/[pageId]` is the ONLY server-side `web./seo./plan.` reader under `app/(core)/marketing` — every other route is a thin shell over client components whose data services all go through `requireAuthenticatedSupabaseSession` (`utils/supabase/webDb.ts`); repo-wide `.schema("web"|"seo"|"plan")` sweep found no other server reader. Verified live: anon + junk-id hits on 10 routes → landing/404, zero 500s.
 - Current | Plan | Studio split with 14 paired rows (`PageWorkspace.tsx`); mixed cards split; plan notes on every unpaired row.
 - Link plans (2026-07-29): page-level `LinksPlan` (accepted anchors + planned inbound/outbound, live-scored) AND site-level compliance (`SiteLinkComplianceView` in the site Links workspace, `data/site-link-compliance.ts`).
