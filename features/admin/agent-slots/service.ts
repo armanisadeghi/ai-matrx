@@ -13,6 +13,10 @@
 
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
+import type { JsonObject } from "@/types/json";
+
+/** Slot/exemplar rows are platform rows owned by the system org. */
+const SYSTEM_ORGANIZATION_ID = "39c38960-d30c-4840-b0c1-c9960de95582";
 
 export type SlotDefinitionRow = Database["agent"]["Tables"]["slot_definition"]["Row"];
 export type SlotBindingRow = Database["agent"]["Tables"]["slot_binding"]["Row"];
@@ -173,4 +177,137 @@ export interface SlotAgentOption {
   name: string;
   description: string | null;
   category: string | null;
+}
+
+// ── Test bench (exemplars + candidate runs) ──────────────────────────────────
+
+export type SlotExemplarRow = Database["agent"]["Tables"]["slot_exemplar"]["Row"];
+
+export async function fetchSlotExemplars(slotId: string): Promise<SlotExemplarRow[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("agent")
+    .from("slot_exemplar")
+    .select("*")
+    .eq("slot_id", slotId)
+    .is("deleted_at", null)
+    .order("position")
+    .order("created_at");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function createSlotExemplar(input: {
+  slotId: string;
+  label: string;
+  variables: JsonObject;
+  userInput?: string | null;
+}): Promise<SlotExemplarRow> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("agent")
+    .from("slot_exemplar")
+    .insert({
+      slot_id: input.slotId,
+      label: input.label,
+      variables: input.variables,
+      user_input: input.userInput ?? null,
+      source: "manual",
+      visibility: "internal",
+      organization_id: SYSTEM_ORGANIZATION_ID,
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteSlotExemplar(id: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .schema("agent")
+    .from("slot_exemplar")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+/** Candidate spec for a bench run — empty object re-runs the current default. */
+export interface SlotTestCandidate {
+  agent_id?: string;
+  agent_version_id?: string;
+  config_overrides?: Record<string, unknown>;
+}
+
+/** Response of aidream POST /agent-slots/{slot_key}/test. Mirrors
+ * SlotTestResult (aidream agent_slots/testing.py); replace with the
+ * OpenAPI-generated alias on the next `pnpm sync-types` after deploy. */
+export interface SlotTestResponse {
+  slot_key: string;
+  agent_id: string;
+  is_version: boolean;
+  provenance: string;
+  output: string;
+  artifact: Record<string, unknown> | null;
+  structural: {
+    checked: boolean;
+    ok: boolean | null;
+    errors: string[];
+    output_kind: string | null;
+    missing_required_keys: string[];
+    degraded_reason: string | null;
+  };
+  usage: Record<string, unknown>;
+  model_id: string | null;
+  duration_ms: number;
+  error: string | null;
+}
+
+function backendBaseUrl(): string {
+  const base =
+    process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL_PROD || "";
+  return base.replace(/\/$/, "");
+}
+
+export async function runSlotTest(
+  slotKey: string,
+  request: {
+    exemplarId?: string;
+    variables?: Record<string, unknown>;
+    userInput?: string;
+    candidate: SlotTestCandidate;
+  },
+): Promise<SlotTestResponse> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Not authenticated");
+  const res = await fetch(
+    `${backendBaseUrl()}/agent-slots/${encodeURIComponent(slotKey)}/test`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        exemplar_id: request.exemplarId,
+        variables: request.variables,
+        user_input: request.userInput,
+        candidate: request.candidate,
+      }),
+    },
+  );
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const body = (await res.json()) as { detail?: unknown };
+      detail = body.detail ? ` — ${JSON.stringify(body.detail)}` : "";
+    } catch {
+      // non-JSON body
+    }
+    throw new Error(`slot test ${res.status}${detail}`);
+  }
+  return (await res.json()) as SlotTestResponse;
 }

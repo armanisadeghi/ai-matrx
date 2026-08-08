@@ -17,6 +17,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
 import { SearchableAgentSelect } from "@/features/agent-apps/components/SearchableAgentSelect";
+import { SlotTestBench } from "./SlotTestBench";
 import {
   fetchAgentVersions,
   fetchSlotConsoleData,
@@ -365,6 +366,7 @@ export function AgentSlotsConsole() {
                             agentOptions={agentOptions}
                             onSaved={reload}
                           />
+                          <SlotTestBench slot={slot} agentOptions={agentOptions} />
                           {bindings.length > 0 && (
                             <div className="px-3 pb-3 text-xs">
                               <div className="font-medium text-muted-foreground mb-1">

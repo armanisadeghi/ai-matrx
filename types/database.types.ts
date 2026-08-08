@@ -1109,6 +1109,100 @@ export type Database = {
           },
         ]
       }
+      slot_exemplar: {
+        Row: {
+          captured_agent_id: string | null
+          captured_model_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          label: string
+          metadata: Json
+          organization_id: string
+          position: number
+          reference_artifact: Json | null
+          reference_output: string | null
+          slot_id: string
+          source: string
+          updated_at: string
+          updated_by: string | null
+          user_input: string | null
+          variables: Json
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          captured_agent_id?: string | null
+          captured_model_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          metadata?: Json
+          organization_id: string
+          position?: number
+          reference_artifact?: Json | null
+          reference_output?: string | null
+          slot_id: string
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_input?: string | null
+          variables?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          captured_agent_id?: string | null
+          captured_model_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          position?: number
+          reference_artifact?: Json | null
+          reference_output?: string | null
+          slot_id?: string
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_input?: string | null
+          variables?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slot_exemplar_captured_agent_id_fkey"
+            columns: ["captured_agent_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "slot_exemplar_captured_agent_id_fkey"
+            columns: ["captured_agent_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "slot_exemplar_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "slot_definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       template: {
         Row: {
           category: string | null
