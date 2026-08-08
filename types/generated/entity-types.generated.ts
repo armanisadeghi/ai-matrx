@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 320 active entity tokens. A token here is FK-valid for
+// 321 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -55,6 +55,7 @@ export type EntityTypeToken =
   | "agent_shortcut"
   | "agent_slot"
   | "agent_slot_binding"
+  | "agent_slot_exemplar"
   | "agent_surface_binding"
   | "agent_template"
   | "agent_usage"
@@ -601,6 +602,7 @@ export type ScopeableEntityToken =
   | "agent_shortcut"
   | "agent_slot"
   | "agent_slot_binding"
+  | "agent_slot_exemplar"
   | "agent_surface_binding"
   | "agent_template"
   | "agent_usage"
@@ -898,6 +900,7 @@ export type ListedEntityToken =
   | "agent"
   | "agent_slot"
   | "agent_slot_binding"
+  | "agent_slot_exemplar"
   | "ai_model"
   | "ai_model_alias"
   | "ai_provider"
@@ -938,6 +941,7 @@ export const ENTITY_TYPE_METADATA = {
   "agent_shortcut": { token: "agent_shortcut", schema: "agent", table: "shortcut", label: "Agent Shortcut", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Agents", referencePickable: true, titleColumn: "label", contentRole: "utility", referenceCategory: null },
   "agent_slot": { token: "agent_slot", schema: "agent", table: "slot_definition", label: "Agent Slot", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "agent_slot_binding": { token: "agent_slot_binding", schema: "agent", table: "slot_binding", label: "Agent Slot Binding", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "agent_slot_exemplar": { token: "agent_slot_exemplar", schema: "agent", table: "slot_exemplar", label: "Agent Slot Exemplar", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "agent_surface_binding": { token: "agent_surface_binding", schema: "platform", table: "associations", label: "Agent Surface Binding", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Agents", referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
   "agent_template": { token: "agent_template", schema: "agent", table: "template", label: "Agent Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Agents", referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "agent_usage": { token: "agent_usage", schema: "agent", table: "usage", label: "Agent Usage", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Agents", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1262,6 +1266,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "agent_shortcut",
   "agent_slot",
   "agent_slot_binding",
+  "agent_slot_exemplar",
   "agent_surface_binding",
   "agent_template",
   "agent_usage",
