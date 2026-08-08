@@ -286,6 +286,18 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-08 — **Video sources are legible on the GENERIC surfaces.** New
+  `getYouTubeVideoIdentities` (direct Supabase read of the compact
+  `research.youtube_video` identity slice, keyed by video id parsed from
+  `rs_source.url` via the canonical `lib/media/youtube.ts` parser) +
+  `useYouTubeVideoIndex` (one batched read per list) +
+  `components/shared/VideoSourceMeta.tsx` (channel · duration · views ·
+  subscriber reach + honest processing chip — live status vocabulary is
+  `unprocessed | processing | partial | completed | failed`). Wired into
+  `SourceList` (desktop row + mobile card + library-thumbnail fallback),
+  `SourceResultsTable` (keyword home + `/content`), and `SourceDetail`
+  (inline `youtube-nocookie` player replaces the static thumbnail, plus
+  Channel/Video/Processing meta rows linking to the topic YouTube library).
 - 2026-08-06 — Final decoupling acceptance repair: every creation-wizard
   `ProTextarea` disables text statistics, and template `${name}` keyword tokens
   resolve before the keywords are persisted.
