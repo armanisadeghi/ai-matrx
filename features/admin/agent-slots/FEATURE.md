@@ -19,6 +19,7 @@ The list is the canonical `MatrxDataTable` (`components/official/matrx-data-tabl
 
 ## Change Log
 
+- 2026-08-08 — One-value-per-column pass (Arman): Label its own column; IO kinds split into separate Input / Output columns. Never re-merge values into a compound column.
 - 2026-08-08 — Console rebuilt on MatrxDataTable (was a hand-rolled `<table>` with no sort/filter/copy); expanded-row editor moved to the side-panel/window workbench; per-slot remount keys added.
 - 2026-08-07 — Created: slot list, pin-vs-latest drift badges, repin editor, enable toggle, override display.
 - 2026-08-08 — Picker rewired from a raw `agent.definition` query to `selectBuiltinAgents` (system agents only); non-system-pin badge added; both laws documented here + in the SoR; aidream sync gained the boot-time scream.

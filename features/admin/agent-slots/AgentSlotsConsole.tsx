@@ -46,7 +46,8 @@ interface SlotRow {
   /** e.g. "v7 is latest" when the pin trails the agent's master version. */
   drift: string | null;
   health: SlotHealth;
-  ioKinds: string;
+  inputKind: string;
+  outputKind: string;
   overridesCount: number;
   isEnabled: boolean;
   isPlaceholder: boolean;
@@ -94,7 +95,8 @@ function buildRow(slot: SlotDefinitionRow, data: SlotConsoleData): SlotRow {
     pinLabel,
     drift,
     health,
-    ioKinds: `${slot.input_kind ?? "—"} → ${slot.output_kind ?? "text"}`,
+    inputKind: slot.input_kind ?? "—",
+    outputKind: slot.output_kind ?? "text",
     overridesCount: (data.bindingsBySlotId[slot.id] ?? []).length,
     isEnabled: Boolean(slot.is_enabled),
     isPlaceholder:
@@ -322,7 +324,8 @@ function humanRow(r: SlotRow): string {
     `Agent: ${r.agentName}`,
     `Pin: ${r.pinLabel}${r.drift ? ` — ${r.drift}` : ""}`,
     `Health: ${r.health}`,
-    `IO: ${r.ioKinds}`,
+    `Input: ${r.inputKind}`,
+    `Output: ${r.outputKind}`,
     `Overrides: ${r.overridesCount}`,
     `Enabled: ${r.isEnabled ? "yes" : "no"}`,
   ].join("\n");
@@ -399,19 +402,17 @@ export function AgentSlotsConsole() {
         header: "Slot",
         width: 240,
         cell: (r) => (
-          <div>
-            <div className="font-mono text-xs">
-              {r.slotKey}
-              {r.isPlaceholder && (
-                <Badge variant="outline" className="ml-1.5 align-middle">
-                  placeholder
-                </Badge>
-              )}
-            </div>
-            {r.label && <div className="text-xs text-muted-foreground">{r.label}</div>}
+          <div className="font-mono text-xs">
+            {r.slotKey}
+            {r.isPlaceholder && (
+              <Badge variant="outline" className="ml-1.5 align-middle">
+                placeholder
+              </Badge>
+            )}
           </div>
         ),
       },
+      { id: "label", accessorKey: "label", header: "Label", width: 180 },
       { id: "agentName", accessorKey: "agentName", header: "Agent", width: 180 },
       {
         id: "pinLabel",
@@ -443,12 +444,20 @@ export function AgentSlotsConsole() {
         ),
       },
       {
-        id: "ioKinds",
-        accessorKey: "ioKinds",
-        header: "IO kinds",
+        id: "inputKind",
+        accessorKey: "inputKind",
+        header: "Input",
         filter: "select",
-        width: 170,
-        cell: (r) => <span className="text-xs text-muted-foreground">{r.ioKinds}</span>,
+        width: 110,
+        cell: (r) => <span className="text-xs text-muted-foreground">{r.inputKind}</span>,
+      },
+      {
+        id: "outputKind",
+        accessorKey: "outputKind",
+        header: "Output",
+        filter: "select",
+        width: 110,
+        cell: (r) => <span className="text-xs text-muted-foreground">{r.outputKind}</span>,
       },
       {
         id: "overridesCount",
