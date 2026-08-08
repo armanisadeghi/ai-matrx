@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { youtubeId } from "@/lib/media/youtube";
 import * as service from "../service";
 import type {
   ResearchTopic,
@@ -179,6 +180,46 @@ export function useResearchSources(
     [topicId, filterKey],
     !!topicId,
   );
+}
+
+/**
+ * Video identity for YouTube-type sources on the GENERIC research surfaces
+ * (source table, content table, source detail). Parses the video id out of
+ * each source URL with the canonical parser and batch-reads the compact
+ * identity slice from the global `research.youtube_video` library in ONE
+ * query. Sources that aren't videos (or whose video was never registered)
+ * simply resolve to undefined — callers render the plain web treatment.
+ */
+export function useYouTubeVideoIndex(sources: ResearchSource[]) {
+  const videoIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const s of sources) {
+      if (s.source_type !== "youtube") continue;
+      const id = youtubeId(s.url);
+      if (id) ids.push(id);
+    }
+    return [...new Set(ids)].sort();
+  }, [sources]);
+  const key = videoIds.join(",");
+
+  const { data, isLoading, error, refresh } = useServiceQuery<
+    Map<string, service.YouTubeVideoIdentity>
+  >(
+    () => service.getYouTubeVideoIdentities(videoIds),
+    [key],
+    videoIds.length > 0,
+  );
+
+  const identityFor = useCallback(
+    (source: ResearchSource): service.YouTubeVideoIdentity | undefined => {
+      if (source.source_type !== "youtube" || !data) return undefined;
+      const id = youtubeId(source.url);
+      return id ? data.get(id) : undefined;
+    },
+    [data],
+  );
+
+  return { identityFor, isLoading, error, refresh };
 }
 
 // ============================================================================

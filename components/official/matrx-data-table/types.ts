@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
+import type {
+  AiCustomSource,
+  AiVariant,
+} from "@/components/agent-copy/AiCopyMenu";
 
 /** How a column's filter UI behaves. `auto` infers from sample values. */
 export type ColumnFilterKind =
@@ -226,6 +230,16 @@ export interface MatrxDataTableCopyConfig<T> {
     visible: T[],
     all: T[],
   ) => Record<string, string | number | boolean | null | undefined>;
+  /**
+   * Graded AI variants for the toolbar's view copy (e.g. "Top 25", "Summary
+   * only"). When set, the toolbar's Copy-for-AI upgrades to a dropdown with
+   * these variants + the full-view payload as the automatic "Everything"
+   * escape hatch. Receives (visible, all) rows at render; builders run at
+   * click time.
+   */
+  aiVariants?: (visible: T[], all: T[]) => AiVariant[];
+  /** Custom-preview source (options dialog + live size counts) for the view. */
+  aiCustom?: (visible: T[], all: T[]) => AiCustomSource;
   /** Show toolbar copy (this view). Default true when copy is set. */
   showToolbar?: boolean;
   /** Show per-row copy. Default true when copy is set. */

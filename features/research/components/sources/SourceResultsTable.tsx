@@ -19,6 +19,8 @@ import {
 } from "./sourceScoreDisplay";
 import { sourceTypeFromDb, type ResearchSource } from "../../types";
 import type { CurationAnalysisState } from "../../service";
+import { useYouTubeVideoIndex } from "../../hooks/useResearchState";
+import { VideoSourceMeta } from "../shared/VideoSourceMeta";
 import {
   SCRAPE_STATUS_CONFIG,
   SOURCE_TYPE_CONFIG,
@@ -170,6 +172,8 @@ export function SourceResultsTable({
   const router = useRouter();
   const showData = !!dataSizeFor;
   const showAnalysis = !!analysisFor;
+  // Video identity for YouTube-type rows (one batched library read).
+  const { identityFor } = useYouTubeVideoIndex(sources);
 
   // Sort + per-column filter state. Inert (and never read) when !interactive.
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({
@@ -508,6 +512,7 @@ export function SourceResultsTable({
         <tbody>
           {rows.map((src) => {
             const rank = rankFor(src);
+            const video = identityFor(src);
             const dataSize = dataSizeFor ? dataSizeFor(src) : null;
             const analysis = analysisFor ? (analysisFor(src) ?? "none") : null;
             const go = () =>
@@ -546,6 +551,9 @@ export function SourceResultsTable({
                           )}
                           <RedundancyGroupBadge group={src.redundancy_group} />
                         </div>
+                      )}
+                      {video && (
+                        <VideoSourceMeta identity={video} className="mt-0.5" />
                       )}
                     </div>
                   </div>

@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-23
+updated: 2026-08-08
 repos: [matrx-frontend, aidream]
 vision: []   # Arman's vision for this system is captured verbatim below; no standalone doc of his exists
 ---
@@ -140,6 +140,22 @@ with an agent) stay private and only convey when explicitly shared. Findings + c
   but if you ever want personal-marked files to also be shielded when dropped into a shared
   container, that's a one-line kernel guard (`v_vis >= internal` on the reachability loop). Not
   done because it's a restrictive kernel change you didn't ask for and there's nothing to fix yet.
+
+## Session-3 (2026-08-08) — project attach surface + review-feedback fixes
+
+- **Project workspace attach surface shipped** (the #1 partial): FK-count resources section
+  replaced with the canonical `PrimaryEntityProvider` + `AssociationCardGrid`; attaching now
+  writes real `file/data_store/… → project` edges. Task + war-room surfaces were already
+  canonical. Conveyance re-proven (rolled-back probe): editor-member → editor on attached file.
+  Gotcha recorded: `system_immutable` crawl artifacts are viewer-ceiling by design
+  (`files.has_access_for`) — probe with a non-crawl file.
+- **Review feedback handled (both `agent.review_queue` rows claimed):** the "Not entitled" AMA
+  chip Arman saw was per-caller truth (his reviewing account's orgs aren't in ca-workers-comp) —
+  but admins can read every library, so the catalog now returns an `'admin'` entitlement fallback
+  (`migrations/library_catalog_admin_entitlement.sql`, applied + ledgered) and the chip shows
+  "Admin access". Console mobile fixes: taller tab/edit/archive touch targets, taxonomy text wraps
+  (recoverable) on mobile. **Ingest 404 on prod = stale aidream deploy — the standing blocker**
+  (paths match on both sides; cloud sandboxes can't reach prod to verify).
 
 ## Done
 

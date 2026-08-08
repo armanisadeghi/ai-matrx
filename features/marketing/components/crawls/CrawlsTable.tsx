@@ -10,9 +10,10 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
 import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
-import type {
-  AgentCopyGroomerConfig,
-  AgentCopyGroomerSection,
+import {
+  groomerPresetVariants,
+  type AgentCopyGroomerConfig,
+  type AgentCopyGroomerSection,
 } from "@/components/agent-copy/groomer-types";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -335,6 +336,7 @@ export function CrawlsTable() {
               summary: pageHuman(),
               attributes: { site_id: site.id, domain: site.root_url },
             })}
+            aiVariants={groomerPresetVariants(groomerConfig)}
           />
           <ExportMenu
             label={`crawls-${site.root_url}`}

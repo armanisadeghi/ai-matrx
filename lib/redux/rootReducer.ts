@@ -92,7 +92,6 @@ import { conversationHistoryReducer } from "@/features/agents/redux/conversation
 import agentShortcutReducer from "@/features/agents/redux/agent-shortcuts/slice";
 import agentShortcutCategoryReducer from "@/features/agents/redux/agent-shortcut-categories/slice";
 import agentUsagesReducer from "@/features/agents/redux/usages/usages.slice";
-import agentContentBlockReducer from "@/features/agents/redux/agent-content-blocks/slice";
 import agentSetsReducer from "@/features/agents/redux/agent-sets/slice";
 import { sklReducer } from "@/features/agent-connections/redux/skl/slice";
 import { skillsReducer } from "@/features/skills/redux/skillsSlice";
@@ -281,7 +280,6 @@ export const slimReducerMap = {
   agentShortcut: agentShortcutReducer,
   agentShortcutCategory: agentShortcutCategoryReducer,
   agentUsages: agentUsagesReducer,
-  agentContentBlock: agentContentBlockReducer,
   // Agent Sets (Orchestrators) — set list + per-set member/config cache.
   // Membership truth lives in platform.associations; see features/agents/agent-sets.
   agentSets: agentSetsReducer,

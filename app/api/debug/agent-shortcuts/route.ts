@@ -28,7 +28,10 @@ export async function GET() {
           .schema("agent")
           .from("shortcut")
           .select("*", { count: "exact", head: true }),
-        supabase.from("content_blocks").select("*", { count: "exact", head: true }),
+        supabase
+          .schema("skill")
+          .from("render_definition")
+          .select("*", { count: "exact", head: true }),
         supabase
           .schema("agent")
           .from("definition")
@@ -66,9 +69,10 @@ export async function GET() {
           )
           .limit(10),
         supabase
-          .from("content_blocks")
+          .schema("skill")
+          .from("render_definition")
           .select(
-            "id,label,block_id,category_id,is_active,user_id,organization_id",
+            "id,label,block_id,category_id,is_active,user_id:created_by,organization_id",
           )
           .limit(10),
         supabase.schema("agent").from("context_menu_view").select("*"),
@@ -115,7 +119,7 @@ export async function GET() {
         }
         if ((contentBlocksCount.count ?? 0) === 0) {
           notes.push(
-            "content_blocks is EMPTY — the Content Blocks submenu will be disabled.",
+            "skill.render_definition is EMPTY — the Content Blocks submenu will be disabled.",
           );
         }
         if (viewRows.error) {

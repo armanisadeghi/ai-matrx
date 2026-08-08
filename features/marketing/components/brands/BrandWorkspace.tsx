@@ -40,6 +40,7 @@ import { BrandAssetEditorDialog } from "@/features/marketing/components/brands/B
 import { BusinessFactEditorDialog } from "@/features/marketing/components/brands/BusinessFactEditorDialog";
 import { PropertyEditorDialog } from "@/features/marketing/components/brands/PropertyEditorDialog";
 import { SiteEditorDialog } from "@/features/marketing/components/sites/SiteEditorDialog";
+import { GscPortfolioClassBar } from "@/features/marketing/search-console/components/ambassador/GscPortfolioClassBar";
 import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
@@ -255,8 +256,34 @@ function BusinessFactRow({
   onDelete: () => void;
 }) {
   const value = factValueText(fact);
+  const factLabel =
+    fact.label ||
+    (isBusinessFactKind(fact.kind)
+      ? BUSINESS_FACT_KIND_LABELS[fact.kind]
+      : fact.kind.replace(/_/g, " "));
   const actions = (
     <div className="flex shrink-0 items-center gap-0.5">
+      <CopyButtons
+        size="xs"
+        {...webCopy({
+          kind: "web-business-fact",
+          label: factLabel,
+          description: "One human-confirmed business fact for this brand.",
+          surface: "Brand cockpit — Business facts",
+          data: fact,
+          lines: [
+            ["Fact", factLabel],
+            ["Value", value],
+            ["Kind", fact.kind],
+          ],
+          attributes: {
+            brand_id: fact.brand_id,
+            fact_id: fact.id,
+            kind: fact.kind,
+          },
+        })}
+        json={() => fact}
+      />
       <RowActionButton title="Edit fact" onClick={onEdit}>
         <Pencil className="h-3.5 w-3.5" />
       </RowActionButton>
@@ -292,10 +319,7 @@ function BusinessFactRow({
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {fact.label ||
-            (isBusinessFactKind(fact.kind)
-              ? BUSINESS_FACT_KIND_LABELS[fact.kind]
-              : fact.kind.replace(/_/g, " "))}
+          {factLabel}
         </p>
         <p className="truncate text-sm text-foreground" title={value}>
           {value}
@@ -697,6 +721,18 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
             </div>
           </section>
 
+          {/* The brand is the anchor entity, but it carried no search data at
+              all — every number lived one or two routes down on an individual
+              site. This is the brand-level answer to "is our money traffic up
+              or down", rolled across every site the brand owns. */}
+          {websiteSites.length > 0 ? (
+            <GscPortfolioClassBar
+              siteIds={websiteSites.map((site) => site.id)}
+              totalSites={websiteSites.length}
+              title={`Search performance across ${current.name}`}
+            />
+          ) : null}
+
           <SectionCard
             title="Websites"
             copy={websitesCopy}
@@ -727,6 +763,31 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                     </div>
                     <SiteConnectionChips site={site} />
                     <div className="flex shrink-0 items-center gap-0.5">
+                      <CopyButtons
+                        size="icon"
+                        {...webCopy({
+                          kind: "web-brand-site",
+                          label: `Site ${site.domain}`,
+                          description:
+                            "One website property (managed site) owned by this brand.",
+                          surface: `Websites — ${current.name}`,
+                          data: site,
+                          lines: [
+                            ["Site", site.name],
+                            ["Domain", site.domain],
+                            ["Status", site.status],
+                            [
+                              "Initialized",
+                              site.initialized_at ? "yes" : "never",
+                            ],
+                          ],
+                          attributes: {
+                            brand_id: current.id,
+                            site_id: site.id,
+                          },
+                        })}
+                        json={() => site}
+                      />
                       <RowActionButton
                         title="Content plan — every URL this site should have"
                         onClick={() =>
@@ -814,6 +875,32 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                         <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
                       ) : null}
                       <div className="flex shrink-0 items-center gap-0.5">
+                        <CopyButtons
+                          size="icon"
+                          {...webCopy({
+                            kind: "web-brand-property",
+                            label:
+                              property.display_name ||
+                              property.kind.replace(/_/g, " "),
+                            description:
+                              "One non-website brand property (social profile or other presence).",
+                            surface: `Social profiles — ${current.name}`,
+                            data: property,
+                            lines: [
+                              ["Kind", property.kind.replace(/_/g, " ")],
+                              ["Name", property.display_name],
+                              ["Handle", handle],
+                              ["URL", href],
+                              ["Status", property.status],
+                            ],
+                            attributes: {
+                              brand_id: current.id,
+                              property_id: property.id,
+                              kind: property.kind,
+                            },
+                          })}
+                          json={() => property}
+                        />
                         <RowActionButton
                           title="Edit property"
                           onClick={() =>
@@ -1021,7 +1108,30 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                             <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                           </span>
                         ) : null}
-                        <div className="absolute right-1 top-1 flex items-center gap-0.5 rounded-md bg-card/90 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+                        <div className="absolute right-1 top-1 flex items-center gap-0.5 rounded-md bg-card/90 opacity-0 shadow-sm transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+                          <CopyButtons
+                            size="xs"
+                            {...webCopy({
+                              kind: "web-brand-asset",
+                              label: `${kindLabel}${asset.title ? ` · ${asset.title}` : ""}`,
+                              description:
+                                "One human-confirmed brand asset (logo, favicon, imagery, or color).",
+                              surface: `Brand assets — ${current.name}`,
+                              data: asset,
+                              lines: [
+                                ["Asset", kindLabel],
+                                ["Title", asset.title],
+                                ["Source URL", asset.source_url],
+                                ["Primary", asset.is_primary ? "yes" : "no"],
+                              ],
+                              attributes: {
+                                brand_id: current.id,
+                                asset_id: asset.id,
+                                kind: asset.kind,
+                              },
+                            })}
+                            json={() => asset}
+                          />
                           <RowActionButton
                             title="Edit asset"
                             onClick={() => setAssetEditor({ open: true, asset })}

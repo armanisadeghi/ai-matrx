@@ -31,6 +31,7 @@ import type {
   MarketingBrand,
   MarketingPage,
   MarketingSite,
+  MetaApplyTarget,
   PageListRow,
   PageSnapshot,
   PageUpdate,
@@ -60,6 +61,7 @@ import { isJsonRecord, isPropertyKind } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import type { Database, Json } from "@/types/database.types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
+import { PAGE_CONTENT_TYPE_OR_FILTER } from "@/features/marketing/lib/page-content-class";
 import {
   parseSnapshotImages,
   parseSnapshotResources,
@@ -203,7 +205,7 @@ export const MARKETING_SITES_IS_DELIBERATE_ORG_BROWSE = true as const;
 
 /** Every KPI column exposed by `web.v_site_kpis` — ONE select string. */
 const SITE_KPI_COLUMNS =
-  "site_id, page_count, pages_in_gsc, gsc_clicks_28d, gsc_impressions_28d, gsc_position_28d, gsc_clicks_prev_28d, gsc_impressions_prev_28d, gsc_cur_days, gsc_prev_days, gsc_latest_date";
+  "site_id, page_count, resource_count, pages_in_gsc, gsc_clicks_28d, gsc_impressions_28d, gsc_position_28d, gsc_clicks_prev_28d, gsc_impressions_prev_28d, gsc_cur_days, gsc_prev_days, gsc_latest_date";
 
 /** Portfolio sort columns served by `web.v_site_kpis` (not `web.site`). */
 const SITE_KPI_SORT_COLUMNS = new Set([
@@ -226,6 +228,9 @@ function mergeSiteListRow(
     health_score: score?.site_score ?? null,
     scored_pages: Number(score?.scored_pages ?? 0),
     page_count: Number(kpis?.page_count ?? 0),
+    // Crawled non-HTML URLs, excluded from page_count. Carried so the list can
+    // SAY what it left out — a silently smaller number is its own defect.
+    resource_count: Number(kpis?.resource_count ?? 0),
     pages_in_gsc: Number(kpis?.pages_in_gsc ?? 0),
     gsc_clicks_28d: kpis?.gsc_clicks_28d ?? null,
     gsc_impressions_28d: kpis?.gsc_impressions_28d ?? null,
@@ -520,11 +525,15 @@ export async function getSiteOverview(
       .eq("site_id", siteId)
       .abortSignal(abortSignal)
       .maybeSingle(),
+    // The headline page count. Reads the projection, not `web.page`: crawls
+    // record every fetched URL in the registry, so the raw table also holds
+    // images/json/xml/pdf. `is_resource` is the server's classification of
+    // that (NULL content type = not yet fetched, still a page).
     db
-      .from("page")
-      .select("id", { count: "exact", head: true })
+      .from("v_page_list")
+      .select("page_id", { count: "exact", head: true })
       .eq("site_id", siteId)
-      .is("deleted_at", null)
+      .eq("is_resource", false)
       .abortSignal(abortSignal),
     db
       .from("finding")
@@ -754,10 +763,31 @@ export function isPageCoverageFilter(
   );
 }
 
+/**
+ * Which half of the anchor registry a Pages read wants.
+ *
+ * Crawls record every fetched URL, so `web.page` legitimately holds images,
+ * json, xml and pdfs alongside HTML pages (597 of 10,608 live rows). They are
+ * real evidence — a sitemap listing non-HTML URLs is an SEO finding — but they
+ * are not what "pages" means to a user, and counting them inflates every total.
+ *
+ * So resources are a deliberate DESTINATION, exactly like `?scope=dismissed`:
+ * `pages` is the default, `resources` is the opt-in view, `all` is the raw
+ * registry. Classification is the server's (`v_page_list.is_resource`).
+ */
+export type PageResourceScope = "pages" | "resources" | "all";
+
+export function isPageResourceScope(
+  value: string | null,
+): value is PageResourceScope {
+  return value === "pages" || value === "resources" || value === "all";
+}
+
 export async function listPages(
   siteId: string,
   state: MatrxDataTableQueryState,
   coverage: PageCoverageFilter | null = null,
+  resourceScope: PageResourceScope = "pages",
   signal?: AbortSignal,
 ): Promise<PagedResult<PageListRow>> {
   const db = await authenticatedWebDb(supabase);
@@ -794,6 +824,12 @@ export async function listPages(
       { count: "exact" },
     )
     .eq("site_id", siteId);
+
+  if (resourceScope === "pages") {
+    query = query.eq("is_resource", false);
+  } else if (resourceScope === "resources") {
+    query = query.eq("is_resource", true);
+  }
 
   if (coverage === "in_sitemap") {
     query = query.gt("sitemap_count", 0);
@@ -1204,6 +1240,59 @@ export async function getPageWorkspace(
       gsc_position_28d: null,
     },
   };
+}
+
+/**
+ * Pages a generated title/description can be applied to, searched by URL.
+ *
+ * Deliberately NOT `listPages`: that is site-scoped, table-shaped and paginated
+ * for the pages workspace. Applying metadata starts from a title with no site
+ * context (an agent generated it in chat), so this searches across every site
+ * RLS lets the caller see and returns only what the write needs — including
+ * `version`, because `updatePageIntent` is optimistically locked on it.
+ */
+export async function searchPagesForMetaApply(
+  term: string,
+  limit = 12,
+  signal?: AbortSignal,
+): Promise<MetaApplyTarget[]> {
+  const db = await authenticatedWebDb(supabase);
+  let query = db
+    .from("page")
+    .select(
+      "id, site_id, url, version, target_keyword, meta_title_desired, meta_description_desired, site!inner(id)",
+    )
+    .is("deleted_at", null)
+    // A page whose SITE was soft-deleted is not part of any workspace, but the
+    // site delete does NOT cascade to its pages (deliberately — page soft-delete
+    // hard-deletes the row's association edges). Every site-scoped reader is
+    // safe by construction; this one searches across sites, so it must say so.
+    // 817 orphan rows existed when this was added, and they were the entire
+    // cause of the "same URL appears twice" report — there are zero same-site
+    // duplicates, `page_site_id_url_hash_key` has always guaranteed that.
+    .is("site.deleted_at", null)
+    // Crawls record assets as page rows too — offering someone a .png or a
+    // wp-json endpoint to "apply a meta title to" is noise. `content_type_last`
+    // is the crawler's own verdict, so filter on it rather than guessing from
+    // the URL. NULL stays in: it means not-yet-crawled, not not-a-page.
+    .or(PAGE_CONTENT_TYPE_OR_FILTER)
+    .eq("status", "active");
+
+  const trimmed = term.trim();
+  if (trimmed) {
+    // A URL search box receives percent-encoding (%20, %2F) and underscores
+    // routinely, and both are LIKE metacharacters — unescaped, "%2F" matches
+    // nearly every row. Escape before interpolating.
+    const escaped = trimmed.replace(/[\\%_]/g, (char) => `\\${char}`);
+    query = query.ilike("url", `%${escaped}%`);
+  }
+
+  query = query
+    .order("last_seen", { ascending: false, nullsFirst: false })
+    .limit(limit);
+  const response = await (signal ? query.abortSignal(signal) : query);
+  if (response.error) throw response.error;
+  return response.data ?? [];
 }
 
 export async function updatePageIntent(

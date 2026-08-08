@@ -5,7 +5,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck, Trash2, UserRoundPlus } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import {
+  humanLines,
+  webCopy,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
@@ -84,26 +88,14 @@ export function SiteAccessWorkspace() {
   const grantSummary = (row: SitePermissionGrant): string =>
     `${row.grantee_type} ${row.grantee_id} · ${row.permission_level}${row.expires_at ? ` · expires ${formatCompactDate(row.expires_at)}` : ""}`;
 
-  const grantRowCopy = (row: SitePermissionGrant) =>
-    webCopy({
-      kind: "web-site-access-grant",
-      label: `Access grant (${row.grantee_type})`,
-      description: "One delegated access grant on this managed site's root.",
-      surface: `Site access — ${site.name}`,
-      data: row,
-      lines: [
-        ["Site", site.name],
-        ["Target", row.grantee_type],
-        ["Grantee ID", row.grantee_id],
-        ["Access", row.permission_level],
-        ["Expires", row.expires_at ? formatCompactDate(row.expires_at) : "never"],
-      ],
-      attributes: {
-        site_id: site.id,
-        grantee_type: row.grantee_type,
-        grantee_id: row.grantee_id,
-      },
-    });
+  const humanGrantRow = (row: SitePermissionGrant): string =>
+    humanLines([
+      ["Site", site.name],
+      ["Target", row.grantee_type],
+      ["Grantee ID", row.grantee_id],
+      ["Access", row.permission_level],
+      ["Expires", row.expires_at ? formatCompactDate(row.expires_at) : "never"],
+    ]);
 
   const grantRows = permissions.data ?? [];
   const accessCopy = webCopy({
@@ -177,7 +169,6 @@ export function SiteAccessWorkspace() {
           className="inline-flex items-center gap-0.5"
           onClick={(event) => event.stopPropagation()}
         >
-          <CopyButtons size="icon" {...grantRowCopy(row)} />
           <Button
             size="icon"
             variant="ghost"
@@ -318,6 +309,28 @@ export function SiteAccessWorkspace() {
             getRowId={(row) => `${row.grantee_type}:${row.grantee_id}`}
             isLoading={permissions.isLoading}
             toolbar={{ searchPlaceholder: "Search site grants…" }}
+            copy={{
+              label: "Access grant",
+              listLabel: "Site grants view",
+              location: webLocation(`Site access — ${site.name}`),
+              rowKind: "web-site-access-grant",
+              listKind: "web-site-access-grants",
+              rowDescription:
+                "One delegated access grant on this managed site's root.",
+              listDescription:
+                "The currently visible delegated access grants for this site.",
+              humanRow: humanGrantRow,
+              rowAttributes: (row) => ({
+                site_id: site.id,
+                grantee_type: row.grantee_type,
+                grantee_id: row.grantee_id,
+              }),
+              listAttributes: (visible, all) => ({
+                site_id: site.id,
+                visible_grants: visible.length,
+                total_grants: all.length,
+              }),
+            }}
             emptyState={{
               icon: <ShieldCheck className="h-8 w-8 text-muted-foreground" />,
               title: "No delegated access",

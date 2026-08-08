@@ -57,6 +57,8 @@ import {
   selectAgentContextSlots,
   selectAgentVariableDefinitions,
 } from "@/features/agents/redux/agent-definition/selectors";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { formatNumber } from "@/features/agent-apps/format";
 
 interface AgentAppOverviewContentProps {
   appId: string;
@@ -87,13 +89,6 @@ function StatChip({
       <span className="text-muted-foreground">{label}</span>
     </div>
   );
-}
-
-function formatNumber(n: number | null | undefined): string {
-  if (!n || n <= 0) return "0";
-  if (n < 1000) return String(n);
-  if (n < 1_000_000) return `${(n / 1000).toFixed(n < 10_000 ? 1 : 0)}k`;
-  return `${(n / 1_000_000).toFixed(1)}m`;
 }
 
 function formatRelative(iso: string | null | undefined): string {
@@ -392,6 +387,33 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
               <History className="w-3.5 h-3.5" /> Versions
             </Link>
           </Button>
+          <CopyButtons
+            size="sm"
+            label={app.name}
+            human={() =>
+              [
+                `${app.name} (${app.slug})`,
+                app.tagline,
+                app.description,
+                `Status: ${statusLabel} · ${visibilityLabel}`,
+                app.category ? `Category: ${app.category}` : null,
+                `Agent: ${agent?.name ?? app.agent_id}`,
+                `Runs: ${formatNumber(app.total_executions)} · ${successPct} success`,
+                `Public URL: ${publicUrl}`,
+              ]
+                .filter(Boolean)
+                .join("\n")
+            }
+            json={() => app}
+            agent={() => ({
+              kind: "agent-app",
+              location: `AI Matrx — Agent App — ${app.name}`,
+              description: "The agent-app record shown on this overview page, plus its agent binding.",
+              data: { app, agent, variables: agentVariables, contextSlots: agentContextSlots },
+              attributes: { id: app.id, status: app.status, slug: app.slug },
+              context: { publicUrl },
+            })}
+          />
         </div>
 
         <Separator />
@@ -491,7 +513,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
                   return (
                     <div
                       key={v.name}
-                      className="flex items-start gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/40"
+                      className="group/x flex items-start gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/40"
                     >
                       <code className="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
                         {`{{${v.name}}}`}
@@ -533,6 +555,31 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
                           required
                         </Badge>
                       )}
+                      <CopyButtons
+                        size="xs"
+                        label={`Variable ${v.name}`}
+                        className="opacity-0 group-hover/x:opacity-100 focus-within:opacity-100 shrink-0"
+                        human={() =>
+                          [
+                            `{{${v.name}}}`,
+                            v.helpText,
+                            v.required ? "Required" : "Optional",
+                            v.defaultValue !== undefined && v.defaultValue !== null
+                              ? `Default: ${String(v.defaultValue)}`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join("\n")
+                        }
+                        json={() => v}
+                        agent={() => ({
+                          kind: "agent-app-variable",
+                          location: `AI Matrx — Agent App — ${app.name} — Variables`,
+                          description: "A single variable definition from the app's agent.",
+                          data: v,
+                          attributes: { name: v.name, required: !!v.required },
+                        })}
+                      />
                     </div>
                   );
                 })}
@@ -558,7 +605,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
                 {agentContextSlots.map((slot, i) => (
                   <div
                     key={slot.key ?? i}
-                    className="flex items-start gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/40"
+                    className="group/x flex items-start gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/40"
                   >
                     <code className="text-xs font-semibold text-cyan-700 dark:text-cyan-400 shrink-0">
                       {slot.key}
@@ -581,6 +628,24 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
                         {slot.type}
                       </Badge>
                     )}
+                    <CopyButtons
+                      size="xs"
+                      label={`Context slot ${slot.key ?? i}`}
+                      className="opacity-0 group-hover/x:opacity-100 focus-within:opacity-100 shrink-0"
+                      human={() =>
+                        [slot.key, slot.label, slot.description]
+                          .filter(Boolean)
+                          .join("\n")
+                      }
+                      json={() => slot}
+                      agent={() => ({
+                        kind: "agent-app-context-slot",
+                        location: `AI Matrx — Agent App — ${app.name} — Context slots`,
+                        description: "A single context slot from the app's agent.",
+                        data: slot,
+                        attributes: { key: slot.key ?? String(i) },
+                      })}
+                    />
                   </div>
                 ))}
               </div>

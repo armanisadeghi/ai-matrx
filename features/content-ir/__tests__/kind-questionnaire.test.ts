@@ -174,7 +174,7 @@ const SIMPLE_EXAMPLE: Record<string, unknown> = {
 
 /**
  * A REAL sample of today's wire format: the exact body the live
- * `public.content_blocks` row `form-questionnaire` teaches every agent to
+ * `skill.render_definition` row `form-questionnaire` teaches every agent to
  * emit, verbatim (note the `Range: 1-5` spacing it uses), plus the
  * description-bearing and old-format `Options:` shapes the parser also
  * produces in the wild.

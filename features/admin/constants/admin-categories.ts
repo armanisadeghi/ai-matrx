@@ -598,11 +598,11 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/utilities/content-blocks",
       },
       {
-        title: "Content Templates",
+        title: "Message Templates",
         description:
           "Manage message templates for prompts including system, user, assistant, and tool messages",
         iconName: "MessageSquare",
-        link: "/administration/utilities/content-templates",
+        link: "/administration/utilities/message-templates",
       },
       {
         title: "Markdown Content Tester",

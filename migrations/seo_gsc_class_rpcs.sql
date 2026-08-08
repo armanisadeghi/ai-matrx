@@ -68,86 +68,112 @@
 -- weighting rules). GSC facts carry keyword_id at 100% (verified live), so
 -- class joins are by keyword_id.
 
+-- ── Brand identity primitives ─────────────────────────────────────────────
+-- ONE derivation, three consumers: gsc_brand_aliases (derive) →
+-- gsc_brand_hits (corpus scan) → gsc_keyword_class_map (classify) +
+-- gsc_brand_identity (narrate to the UI). Never re-derive aliases anywhere
+-- else — client code reads gsc_brand_identity, never re-implements this.
+
+-- The genericity threshold, defined ONCE (see header for the calibration).
+CREATE OR REPLACE FUNCTION seo.gsc_brand_generic_threshold()
+RETURNS int LANGUAGE sql IMMUTABLE AS $$ SELECT 250 $$;
+
+CREATE OR REPLACE FUNCTION seo.gsc_brand_aliases(p_site_id uuid)
+RETURNS TABLE (alias_source text, raw_name text, joined text, toks text[], probe text)
+LANGUAGE sql STABLE
+SET search_path = seo, pg_temp
+AS $$
+  -- Dedup by TOKEN SET (the matching identity — two sources with the same
+  -- tokens are one alias; the same joined form with DIFFERENT tokens, like
+  -- domain ['allgreenrecycling'] vs site name ['all','green','recycling'],
+  -- must BOTH survive or the token-subset rule dies). Source priority
+  -- domain > site_name > brand_name > custom labels a collapsed alias by
+  -- its most fundamental origin.
+  SELECT DISTINCT ON (nt.toks)
+         names.src,
+         names.nm,
+         array_to_string(nt.toks, ''),
+         nt.toks,
+         (SELECT t FROM unnest(nt.toks) t ORDER BY length(t), t LIMIT 1)
+  FROM (
+    SELECT 'domain'::text AS src, 1 AS pri,
+           split_part(regexp_replace(lower(s.domain), '^(www|m)\.', ''), '.', 1) AS nm
+    FROM web.site s WHERE s.id = p_site_id AND s.deleted_at IS NULL
+    UNION ALL
+    SELECT 'site_name', 2, lower(s.name)
+    FROM web.site s WHERE s.id = p_site_id AND s.deleted_at IS NULL
+    UNION ALL
+    SELECT 'brand_name', 3, lower(b.name)
+    FROM web.site s JOIN web.brand b ON b.id = s.brand_id AND b.deleted_at IS NULL
+    WHERE s.id = p_site_id AND s.deleted_at IS NULL
+    UNION ALL
+    SELECT 'custom', 4, lower(al.v)
+    FROM web.site s
+    JOIN web.brand b ON b.id = s.brand_id AND b.deleted_at IS NULL
+    CROSS JOIN LATERAL jsonb_array_elements_text(
+      CASE WHEN jsonb_typeof(b.profile->'brand_aliases') = 'array'
+           THEN b.profile->'brand_aliases' ELSE '[]'::jsonb END) AS al(v)
+    WHERE s.id = p_site_id AND s.deleted_at IS NULL
+  ) names
+  CROSS JOIN LATERAL (
+    SELECT ARRAY(
+      SELECT t FROM unnest(regexp_split_to_array(regexp_replace(names.nm, '[^a-z0-9]+', ' ', 'g'), '\s+')) AS t
+      WHERE t <> ''
+        AND t NOT IN ('inc','llc','ltd','co','corp','corporation','company','the','a','website','site','main','page','homepage','official')
+    ) AS toks
+  ) nt
+  WHERE length(array_to_string(nt.toks, '')) >= 5
+  ORDER BY nt.toks, names.pri;
+$$;
+
+-- Every (keyword, alias) hit in the corpus. strong = the alias typed
+-- UNSPACED at a word boundary (bare substring would hand
+-- guardiandatadestruction.com to datadestruction.com), OR the exact name
+-- plus a legal entity token and NOTHING else ("data destruction inc" is
+-- the company; "terminal data destruction ltd" is somebody else's).
+CREATE OR REPLACE FUNCTION seo.gsc_brand_hits(p_site_id uuid)
+RETURNS TABLE (keyword_id uuid, joined text, strong boolean)
+LANGUAGE sql STABLE
+SET search_path = seo, pg_temp
+AS $$
+  WITH ba AS MATERIALIZED (
+    SELECT * FROM seo.gsc_brand_aliases(p_site_id)
+  )
+  SELECT kw.id, ba.joined,
+         (kw.normalized_phrase ~ ('(^|[^a-z0-9])' || ba.joined || '($|[^a-z0-9])')
+          OR (ba.toks <@ string_to_array(kw.normalized_phrase, ' ')
+              AND string_to_array(kw.normalized_phrase, ' ')
+                  && ARRAY['inc','llc','ltd','corp','corporation','incorporated']
+              AND NOT EXISTS (
+                SELECT 1 FROM unnest(string_to_array(kw.normalized_phrase, ' ')) AS qt
+                WHERE qt <> '' AND NOT (qt = ANY(ba.toks))
+                  AND NOT (qt = ANY(ARRAY['inc','llc','ltd','corp','corporation','incorporated']))
+              )))
+  FROM seo.keyword kw
+  JOIN ba
+    ON strpos(kw.normalized_phrase, ba.probe) > 0
+   AND (position(ba.joined IN translate(kw.normalized_phrase, ' .,''-&/+_:;!?()[]"', '')) > 0
+        OR ba.toks <@ string_to_array(kw.normalized_phrase, ' '))
+  WHERE kw.deleted_at IS NULL;
+$$;
+
 CREATE OR REPLACE FUNCTION seo.gsc_keyword_class_map(p_site_id uuid)
 RETURNS TABLE (keyword_id uuid, traffic_class text, class_source text)
 LANGUAGE sql STABLE
 SET search_path = seo, pg_temp
 AS $$
-  -- Brand identity aliases, derived (never hand-listed): domain minus
-  -- www./m. and TLD, site name, brand name. Each alias carries its token
-  -- set, its joined (space-free) form, and its shortest token as a cheap
-  -- strpos prefilter probe (the corpus scan must stay ~zero-cost — the
-  -- probe cuts 151k expensive checks down to the few thousand rows that
-  -- contain the probe at all). Aliases whose joined form is under 5 chars
-  -- are dropped as degenerate.
-  WITH brand_alias AS MATERIALIZED (
-    SELECT array_to_string(nt.toks, '') AS joined,
-           nt.toks,
-           (SELECT t FROM unnest(nt.toks) t ORDER BY length(t), t LIMIT 1) AS probe
-    FROM (
-      SELECT split_part(regexp_replace(lower(s.domain), '^(www|m)\.', ''), '.', 1) AS nm
-      FROM web.site s WHERE s.id = p_site_id AND s.deleted_at IS NULL
-      UNION
-      SELECT lower(s.name) FROM web.site s WHERE s.id = p_site_id AND s.deleted_at IS NULL
-      UNION
-      SELECT lower(b.name)
-      FROM web.site s JOIN web.brand b ON b.id = s.brand_id AND b.deleted_at IS NULL
-      WHERE s.id = p_site_id AND s.deleted_at IS NULL
-      UNION
-      SELECT lower(al.v)
-      FROM web.site s
-      JOIN web.brand b ON b.id = s.brand_id AND b.deleted_at IS NULL
-      CROSS JOIN LATERAL jsonb_array_elements_text(
-        CASE WHEN jsonb_typeof(b.profile->'brand_aliases') = 'array'
-             THEN b.profile->'brand_aliases' ELSE '[]'::jsonb END) AS al(v)
-      WHERE s.id = p_site_id AND s.deleted_at IS NULL
-    ) names
-    CROSS JOIN LATERAL (
-      SELECT ARRAY(
-        SELECT t FROM unnest(regexp_split_to_array(regexp_replace(names.nm, '[^a-z0-9]+', ' ', 'g'), '\s+')) AS t
-        WHERE t <> ''
-          AND t NOT IN ('inc','llc','ltd','co','corp','corporation','company','the','a','website','site','main','page','homepage','official')
-      ) AS toks
-    ) nt
-    WHERE length(array_to_string(nt.toks, '')) >= 5
-  ),
-  -- One corpus pass: every (keyword, alias) hit, tagged strong (query
-  -- contains the alias literally unspaced) vs weak (spaced/joined variant
-  -- or full token coverage).
-  brand_hit AS MATERIALIZED (
-    -- strong = the alias typed UNSPACED at a word boundary (bare substring
-    -- would hand guardiandatadestruction.com to datadestruction.com), OR
-    -- the exact name plus a legal entity token and NOTHING else ("data
-    -- destruction inc" is the company; "terminal data destruction ltd" is
-    -- somebody else's).
-    SELECT kw.id AS kid, ba.joined,
-           (kw.normalized_phrase ~ ('(^|[^a-z0-9])' || ba.joined || '($|[^a-z0-9])')
-            OR (ba.toks <@ string_to_array(kw.normalized_phrase, ' ')
-                AND string_to_array(kw.normalized_phrase, ' ')
-                    && ARRAY['inc','llc','ltd','corp','corporation','incorporated']
-                AND NOT EXISTS (
-                  SELECT 1 FROM unnest(string_to_array(kw.normalized_phrase, ' ')) AS qt
-                  WHERE qt <> '' AND NOT (qt = ANY(ba.toks))
-                    AND NOT (qt = ANY(ARRAY['inc','llc','ltd','corp','corporation','incorporated']))
-                ))) AS strong
-    FROM seo.keyword kw
-    JOIN brand_alias ba
-      ON strpos(kw.normalized_phrase, ba.probe) > 0
-     AND (position(ba.joined IN translate(kw.normalized_phrase, ' .,''-&/+_:;!?()[]"', '')) > 0
-          OR ba.toks <@ string_to_array(kw.normalized_phrase, ' '))
-    WHERE kw.deleted_at IS NULL
+  WITH bh AS MATERIALIZED (
+    SELECT * FROM seo.gsc_brand_hits(p_site_id)
   ),
   -- THE GENERICITY GUARD (see header): weak matches only count while the
   -- alias stays distinctive in the corpus.
   alias_ok AS MATERIALIZED (
-    SELECT bh.joined, count(*) <= 250 AS weak_ok
-    FROM brand_hit bh
-    GROUP BY bh.joined
+    SELECT bh.joined, count(*) <= seo.gsc_brand_generic_threshold() AS weak_ok
+    FROM bh GROUP BY bh.joined
   ),
   brand_kw AS MATERIALIZED (
-    SELECT DISTINCT bh.kid
-    FROM brand_hit bh
-    JOIN alias_ok ao ON ao.joined = bh.joined
+    SELECT DISTINCT bh.keyword_id AS kid
+    FROM bh JOIN alias_ok ao ON ao.joined = bh.joined
     WHERE bh.strong OR ao.weak_ok
   )
   SELECT kw.id,
@@ -186,6 +212,83 @@ AS $$
   LEFT JOIN brand_kw bk ON bk.kid = kw.id
   WHERE kw.deleted_at IS NULL;
 $$;
+
+-- The identity narrator for the UI: every alias with its origin, match
+-- counts, and demotion state. The panel renders THIS — never a client-side
+-- re-derivation.
+CREATE OR REPLACE FUNCTION seo.gsc_brand_identity(p_site_id uuid)
+RETURNS TABLE (
+  alias text,
+  alias_source text,
+  joined text,
+  demoted boolean,
+  strong_matches bigint,
+  matched_keywords bigint
+)
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = seo, pg_temp
+AS $$
+BEGIN
+  PERFORM seo.gsc_assert_site_access(p_site_id);
+  RETURN QUERY
+  WITH ba AS (
+    SELECT * FROM seo.gsc_brand_aliases(p_site_id)
+  ),
+  counts AS (
+    SELECT h.joined, count(*) AS total, count(*) FILTER (WHERE h.strong) AS strong_ct
+    FROM seo.gsc_brand_hits(p_site_id) h
+    GROUP BY h.joined
+  )
+  SELECT ba.raw_name,
+         ba.alias_source,
+         ba.joined,
+         COALESCE(c.total, 0) > seo.gsc_brand_generic_threshold(),
+         COALESCE(c.strong_ct, 0)::bigint,
+         COALESCE(c.total, 0)::bigint
+  FROM ba
+  LEFT JOIN counts c ON c.joined = ba.joined
+  ORDER BY CASE ba.alias_source
+             WHEN 'domain' THEN 1 WHEN 'site_name' THEN 2
+             WHEN 'brand_name' THEN 3 ELSE 4 END,
+           ba.raw_name;
+END;
+$$;
+
+-- THE one FE write path for custom aliases (intake's server-side apply is
+-- the other writer; both land on web.brand.profile.brand_aliases). Replaces
+-- the whole custom list — the panel manages it as a set. Screams when the
+-- site has no linked brand row instead of silently dropping the write.
+CREATE OR REPLACE FUNCTION seo.gsc_set_brand_aliases(p_site_id uuid, p_aliases text[])
+RETURNS text[]
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+SET search_path = seo, pg_temp
+AS $$
+DECLARE
+  v_brand_id uuid;
+  v_clean text[];
+BEGIN
+  PERFORM seo.gsc_assert_site_editor(p_site_id);
+  SELECT s.brand_id INTO v_brand_id
+  FROM web.site s WHERE s.id = p_site_id AND s.deleted_at IS NULL;
+  IF v_brand_id IS NULL THEN
+    RAISE EXCEPTION 'gsc_no_brand_for_site: site % has no linked web.brand row — link a brand before setting aliases', p_site_id;
+  END IF;
+  SELECT COALESCE(array_agg(DISTINCT t.a ORDER BY t.a), '{}') INTO v_clean
+  FROM (SELECT btrim(lower(x)) AS a FROM unnest(COALESCE(p_aliases, '{}')) x) t
+  WHERE t.a <> '';
+  UPDATE web.brand
+  SET profile = jsonb_set(COALESCE(profile, '{}'::jsonb), '{brand_aliases}', to_jsonb(v_clean), true),
+      updated_at = now()
+  WHERE id = v_brand_id;
+  RETURN v_clean;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION seo.gsc_brand_generic_threshold() TO authenticated;
+GRANT EXECUTE ON FUNCTION seo.gsc_brand_aliases(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION seo.gsc_brand_hits(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION seo.gsc_brand_identity(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION seo.gsc_set_brand_aliases(uuid, text[]) TO authenticated;
 
 -- The headline decomposition: current vs compare clicks/impressions PER
 -- CLASS, with distinct-query counts. This is the view that catches "money

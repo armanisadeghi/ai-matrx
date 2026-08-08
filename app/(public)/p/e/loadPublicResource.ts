@@ -69,7 +69,7 @@ function firstString(row: Record<string, unknown>, keys: string[]): string | und
  * `conversation` is not community-library content). Add a type here only when it
  * has a public renderer and is genuinely meant for the SEO/community lane.
  */
-const PUBLIC_LANE_TYPES = new Set<string>(["fc_set", "note", "content_template"]);
+const PUBLIC_LANE_TYPES = new Set<string>(["fc_set", "note", "message_template"]);
 
 export async function loadPublicResource(
   resourceType: string,

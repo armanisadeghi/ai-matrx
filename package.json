@@ -1,6 +1,6 @@
 {
     "name": "app-matrx",
-    "version": "0.4.328",
+    "version": "0.4.333",
     "private": true,
     "scripts": {
         "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--dns-result-order=ipv4first' next dev",
@@ -136,6 +136,8 @@
         "check:doc-claims:strict": "tsx scripts/check-doc-claims.ts --strict",
         "check:access-guards": "tsx scripts/check-access-guards.ts",
         "check:access-guards:strict": "tsx scripts/check-access-guards.ts --strict",
+        "check:visibility-vocab": "tsx scripts/check-visibility-vocab.ts",
+        "check:visibility-vocab:strict": "tsx scripts/check-visibility-vocab.ts --strict",
         "check:access-matrix": "tsx scripts/access-matrix/check-access-matrix.ts",
         "check:access-matrix:strict": "tsx scripts/access-matrix/check-access-matrix.ts --strict",
         "check:access-drift": "tsx scripts/access-matrix/check-access-drift.ts",

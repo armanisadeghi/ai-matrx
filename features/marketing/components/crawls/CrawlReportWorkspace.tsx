@@ -38,8 +38,10 @@ import {
   type CanonicalLookup,
   type CrawlSnapshotReportRow,
 } from "@/features/marketing/lib/crawl-report-row";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   humanLines,
+  webCopy,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -975,6 +977,38 @@ export function CrawlReportWorkspace({
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-3">
+          <CopyButtons
+            size="icon"
+            {...webCopy({
+              kind: "web-crawl-report",
+              label: `${report.label} report`,
+              description:
+                "This crawl report's identity and current result counts (row data is copyable from the table below).",
+              surface: `Crawl report — ${report.label} — session ${crawlId}`,
+              data: {
+                report_key: report.key,
+                report_label: report.label,
+                report_source: report.source,
+                session_id: crawlId,
+                loaded_rows: query.data?.rows.length ?? 0,
+                total_rows: query.data?.total ?? 0,
+                evidence_notice: evidenceNotice,
+              },
+              lines: [
+                ["Report", report.label],
+                ["Session", crawlId],
+                ["Site", site.root_url],
+                ["Rows", query.data?.total ?? 0],
+                ["Loaded", query.data?.rows.length ?? 0],
+                ["Notice", evidenceNotice],
+              ],
+              attributes: {
+                session_id: crawlId,
+                site_id: site.id,
+                report_key: report.key,
+              },
+            })}
+          />
           {reportKey === "content" ? (
             <div
               role="tablist"

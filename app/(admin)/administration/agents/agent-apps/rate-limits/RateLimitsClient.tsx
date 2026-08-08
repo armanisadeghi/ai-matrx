@@ -49,6 +49,32 @@ import {
   unblockAgentAppRateLimit,
   AgentAppRateLimitRow,
 } from '@/lib/services/agent-apps-admin-service';
+import { CopyButtons } from '@/components/agent-copy/CopyButtons';
+import { ExportMenu } from '@/components/agent-copy/ExportMenu';
+import { jsonExportItem, csvExportItem } from '@/components/agent-copy/export';
+
+function humanRateLimit(limit: AgentAppRateLimitRow): string {
+  const identifier = limit.user_id
+    ? `User: ${limit.user_id}`
+    : limit.ip_address
+      ? `IP: ${limit.ip_address}`
+      : limit.fingerprint
+        ? `Fingerprint: ${limit.fingerprint}`
+        : 'Unknown identifier';
+  return [
+    `${limit.app_name ?? limit.app_id} — ${limit.is_blocked ? 'Blocked' : 'Active'}`,
+    identifier,
+    `Executions: ${limit.execution_count}`,
+    `First: ${new Date(limit.first_execution_at).toLocaleString()}`,
+    `Last: ${new Date(limit.last_execution_at).toLocaleString()}`,
+    limit.blocked_until
+      ? `Blocked until: ${new Date(limit.blocked_until).toLocaleString()}`
+      : null,
+    limit.blocked_reason ? `Reason: ${limit.blocked_reason}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
 
 type SortField = 'app_name' | 'execution_count' | 'first_execution_at' | 'last_execution_at' | 'window_start_at';
 type SortDirection = 'asc' | 'desc';
@@ -334,6 +360,41 @@ export function RateLimitsClient() {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
+              {filteredAndSortedRateLimits.length > 0 && (
+                <>
+                  <CopyButtons
+                    size="icon"
+                    label={`Rate limits (${filteredAndSortedRateLimits.length})`}
+                    human={() =>
+                      filteredAndSortedRateLimits.map(humanRateLimit).join('\n\n')
+                    }
+                    json={() => filteredAndSortedRateLimits}
+                    agent={() => ({
+                      kind: 'agent-app-rate-limits',
+                      location: 'AI Matrx Admin — Agent Apps — Rate Limits',
+                      description: 'Rate limit rows currently shown (filtered).',
+                      data: filteredAndSortedRateLimits,
+                      attributes: { count: filteredAndSortedRateLimits.length },
+                    })}
+                  />
+                  <ExportMenu
+                    label="agent-app-rate-limits"
+                    items={[
+                      jsonExportItem(
+                        () => filteredAndSortedRateLimits,
+                        'JSON (this view)',
+                      ),
+                      csvExportItem(
+                        () =>
+                          filteredAndSortedRateLimits as unknown as Array<
+                            Record<string, unknown>
+                          >,
+                        'CSV (this view)',
+                      ),
+                    ]}
+                  />
+                </>
+              )}
             </div>
           </div>
 
@@ -613,24 +674,40 @@ export function RateLimitsClient() {
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
-                    {limit.is_blocked ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" size="sm" onClick={() => handleUnblock(limit)} disabled={unblockingId !== null} className="h-7">
-                            <Shield className="w-3 h-3 mr-1" />
-                            Unblock
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {limit.blocked_until && (
-                            <div>Until: {new Date(limit.blocked_until).toLocaleString()}</div>
-                          )}
-                          {limit.blocked_reason && <div>Reason: {limit.blocked_reason}</div>}
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">-</span>
-                    )}
+                    <div className="flex items-center justify-end gap-1">
+                      {limit.is_blocked ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => handleUnblock(limit)} disabled={unblockingId !== null} className="h-7">
+                              <Shield className="w-3 h-3 mr-1" />
+                              Unblock
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {limit.blocked_until && (
+                              <div>Until: {new Date(limit.blocked_until).toLocaleString()}</div>
+                            )}
+                            {limit.blocked_reason && <div>Reason: {limit.blocked_reason}</div>}
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                      <CopyButtons
+                        size="icon"
+                        label={limit.app_name ?? limit.id}
+                        human={() => humanRateLimit(limit)}
+                        json={() => limit}
+                        agent={() => ({
+                          kind: 'agent-app-rate-limit',
+                          location: 'AI Matrx Admin — Agent Apps — Rate Limits',
+                          description: 'A single rate limit row.',
+                          data: limit,
+                          summary: humanRateLimit(limit),
+                          attributes: { id: limit.id, is_blocked: limit.is_blocked },
+                        })}
+                      />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

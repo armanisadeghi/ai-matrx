@@ -74,7 +74,9 @@ import {
 import { removeContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import { prefetchThreadFileSignals } from "@/features/war-room/service/prefetchThreadFileSignals";
-import { WAR_ROOM_THREAD_AGENT_ID } from "@/features/war-room/constants";
+import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
+import { WAR_ROOM_THREAD_AGENT_SLOT } from "@/features/war-room/constants";
+import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 import { setClientTools } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
 import { WAR_ROOM_TOOL_NAMES } from "@/features/agents/war-room-tools/tools/names";
@@ -118,6 +120,26 @@ export default function ThreadAgentPanel({
   );
   const attachments = useAppSelector(selectAttachmentsForThread(threadId));
   const activeAgentId = useAppSelector(selectActiveAssistantAgentId(sessionId));
+
+  // The tier's default persona — from the `war_room.thread` slot, never a
+  // hardcoded id. "Settled" means resolved OR loudly failed: an EXISTING chat
+  // must keep binding either way (studio falls back to its own user-default
+  // resolution), so a broken slot degrades the DEFAULT, not the user's chats.
+  const { slot: threadSlot, error: threadSlotError } = useAgentSlot(
+    WAR_ROOM_THREAD_AGENT_SLOT,
+  );
+  const threadAgentId = threadSlot?.agentId ?? null;
+  const threadSlotSettled = threadAgentId !== null || threadSlotError !== null;
+  useEffect(() => {
+    if (threadSlotError) {
+      reportWarRoomError(
+        "thread-agent/slot",
+        new Error(
+          `War Room thread agent slot "${WAR_ROOM_THREAD_AGENT_SLOT}" could not resolve: ${threadSlotError}`,
+        ),
+      );
+    }
+  }, [threadSlotError]);
 
   // Ensure the task's subtasks are hydrated so `tile_task.subtasks` is complete.
   useEffect(() => {
@@ -212,11 +234,17 @@ export default function ThreadAgentPanel({
   // an existing one. The old auto-mint fabricated a new conversation on every
   // refresh (a fresh id has no cx_conversation row until its first turn, so
   // the pointer was lost and re-minted each load).
-  const { conversationId } = useStudioAssistant(sessionId, {
-    buildExtraEntries,
-    defaultAgentId: WAR_ROOM_THREAD_AGENT_ID,
-    autoCreate: false,
-  });
+  // Held until the slot settles so the tile's persona can't lose a race to
+  // studio's own seeded fallback (the AUDIO_ASSISTANT borrow this persona
+  // replaced) on a legacy session whose stored chat has no roster entry.
+  const { conversationId } = useStudioAssistant(
+    threadSlotSettled ? sessionId : null,
+    {
+      buildExtraEntries,
+      defaultAgentId: threadAgentId ?? undefined,
+      autoCreate: false,
+    },
+  );
 
   // ── Prune stale per-session transcript keys (D14 fence 2 hygiene) ────────
   // `setContextEntries` MERGES — it never removes a key. So a `session_NN_*`
@@ -295,15 +323,25 @@ export default function ThreadAgentPanel({
     // existing edge label when none is passed; the title resolver fills the
     // display name from the live chat title.
     if (!conversationIsReal) return;
+    // The chat's ACTUAL agent (studio's roster) is the truth being recorded;
+    // the slot only names the agent a brand-new chat was minted with. With
+    // neither we skip the stamp rather than write a guessed agent into a
+    // durable edge — the effect re-runs the moment one arrives.
+    const agentId = activeAgentId ?? threadAgentId;
+    if (!agentId) return;
     void dispatch(
       attachEntityToThread(threadId, "conversation", conversationId, {
-        metadata: {
-          role: "agent",
-          agentId: activeAgentId ?? WAR_ROOM_THREAD_AGENT_ID,
-        },
+        metadata: { role: "agent", agentId },
       }),
     );
-  }, [threadId, conversationId, conversationIsReal, activeAgentId, dispatch]);
+  }, [
+    threadId,
+    conversationId,
+    conversationIsReal,
+    activeAgentId,
+    threadAgentId,
+    dispatch,
+  ]);
 
   // ── Arm the War Room WRITE tools on THIS conversation only ───────────────
   // The war-room agent is the same studio-assistant agent used by Scribe; the

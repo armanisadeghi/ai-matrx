@@ -57,6 +57,13 @@ import {
   resolveShortcutEditUrl,
   scopeTypeLabel,
 } from "../utils/shortcut-directory-rows";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
+import {
+  buildShortcutDirectoryBriefs,
+  shortcutDirectoryRowSummary,
+} from "../format";
 
 type SortField =
   "label" | "agent" | "scope" | "category" | "placement" | "surface" | "status";
@@ -317,31 +324,49 @@ export function ShortcutDirectory({
   const renderRow = (row: ShortcutDirectoryRow) => (
     <TableRow
       key={row.id}
-      className="cursor-pointer bg-card sm:bg-transparent sm:hover:bg-muted/50"
+      className="group/x cursor-pointer bg-card sm:bg-transparent sm:hover:bg-muted/50"
       onClick={() => navigateToShortcut(row)}
     >
       <TableCell
         className="max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:bg-inherit max-sm:whitespace-nowrap"
         onClick={(e) => e.stopPropagation()}
       >
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 gap-2 font-mono text-xs hover:bg-accent w-full justify-start"
-              onClick={(e) => handleCopyId(row.id, e)}
-            >
-              {copiedId === row.id ? (
-                <Check className="h-3 w-3 text-success flex-shrink-0" />
-              ) : (
-                <Copy className="h-3 w-3 flex-shrink-0" />
-              )}
-              <span className="truncate">{row.id}</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Copy ID</TooltipContent>
-        </Tooltip>
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 gap-2 font-mono text-xs hover:bg-accent w-full justify-start"
+                onClick={(e) => handleCopyId(row.id, e)}
+              >
+                {copiedId === row.id ? (
+                  <Check className="h-3 w-3 text-success flex-shrink-0" />
+                ) : (
+                  <Copy className="h-3 w-3 flex-shrink-0" />
+                )}
+                <span className="truncate">{row.id}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Copy ID</TooltipContent>
+          </Tooltip>
+          <CopyButtons
+            size="xs"
+            label={row.label}
+            className="opacity-0 group-hover/x:opacity-100 focus-within:opacity-100 shrink-0"
+            human={() => shortcutDirectoryRowSummary(row)}
+            json={() => row}
+            agent={() => ({
+              kind: "agent-shortcut",
+              location:
+                "AI Matrx Admin — System Agents · Shortcuts directory (/administration/agents/system-agents/shortcuts/all)",
+              description: "A single agent shortcut directory row.",
+              data: row,
+              summary: shortcutDirectoryRowSummary(row),
+              attributes: { id: row.id, scope: row.scopeType },
+            })}
+          />
+        </div>
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2 min-w-0">
@@ -438,6 +463,65 @@ export function ShortcutDirectory({
                     <X className="h-4 w-4 mr-2" />
                     Clear Filters
                   </Button>
+                )}
+                {filtered.length > 0 && (
+                  <>
+                    <CopyButtons
+                      size="icon"
+                      label="All shortcuts"
+                      human={() =>
+                        filtered.map(shortcutDirectoryRowSummary).join("\n")
+                      }
+                      json={() => filtered}
+                      agent={() => ({
+                        kind: "agent-shortcuts",
+                        location:
+                          "AI Matrx Admin — System Agents · Shortcuts directory (/administration/agents/system-agents/shortcuts/all)",
+                        description:
+                          "All agent shortcuts currently matching the directory's filters.",
+                        data: filtered,
+                        attributes: { count: filtered.length },
+                        context: {
+                          groupBy,
+                          search: searchQuery || undefined,
+                          scopeFilter,
+                          agentFilter,
+                          surfaceFilter,
+                          placementFilter,
+                          activeFilter,
+                        },
+                      })}
+                      aiVariants={[
+                        {
+                          id: "briefs",
+                          label: "Briefs",
+                          hint: "id, label, scope, agent, active — no metadata",
+                          build: () => ({
+                            kind: "agent-shortcuts-briefs",
+                            location:
+                              "AI Matrx Admin — System Agents · Shortcuts directory (/administration/agents/system-agents/shortcuts/all)",
+                            description:
+                              "Compact brief projection of all filtered shortcuts.",
+                            data: buildShortcutDirectoryBriefs(filtered),
+                            attributes: { count: filtered.length },
+                          }),
+                        },
+                      ]}
+                    />
+                    <ExportMenu
+                      label="agent-shortcuts-directory"
+                      items={[
+                        jsonExportItem(() => filtered),
+                        csvExportItem(
+                          () =>
+                            filtered as unknown as Array<
+                              Record<string, unknown>
+                            >,
+                          "CSV",
+                        ),
+                      ]}
+                    />
+                  </>
                 )}
                 <Button
                   onClick={() => void refetch()}

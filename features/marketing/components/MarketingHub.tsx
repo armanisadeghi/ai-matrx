@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 
 import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import type {
   MarketingNavEntry,
   MarketingNavPillar,
@@ -166,6 +167,21 @@ export function MarketingHub({
 }: {
   pillars: readonly MarketingNavPillar[];
 }) {
+  const hubHuman = () =>
+    pillars
+      .map((pillar) =>
+        [
+          `${pillar.label} — ${pillar.description}`,
+          ...pillar.entries.map(
+            (entry) =>
+              `- ${entry.label} (${entry.href})${
+                entry.status === "coming-soon" ? " [coming soon]" : ""
+              }: ${entry.description}`,
+          ),
+        ].join("\n"),
+      )
+      .join("\n\n");
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing"
@@ -180,6 +196,30 @@ export function MarketingHub({
         {/* Scrolls behind the transparent glass header; the first pillar clears
             it via pt-[var(--shell-header-h)] rather than a height subtraction. */}
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 p-3 pt-[calc(var(--shell-header-h)+0.75rem)]">
+          <header className="flex items-center justify-between gap-2 px-0.5">
+            <div>
+              <h1 className="text-sm font-semibold text-foreground">
+                Marketing
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                The map of every marketing surface.
+              </p>
+            </div>
+            <CopyButtons
+              size="icon"
+              label="Marketing map"
+              human={hubHuman}
+              agent={() => ({
+                kind: "marketing-hub-map",
+                location: "AI Matrx — Marketing — Hub",
+                description:
+                  "The map of every marketing surface: pillars, their entries, routes, and availability.",
+                data: marketingPillarMap(pillars),
+                summary: hubHuman(),
+                attributes: { pillars: pillars.length },
+              })}
+            />
+          </header>
           {pillars.map((pillar) => (
             <PillarSection key={pillar.key} pillar={pillar} />
           ))}

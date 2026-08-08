@@ -48,6 +48,49 @@ const sklSlice = createSlice({
       state.renderDefinitions.status = "error";
       state.renderDefinitions.error = action.payload;
     },
+    /**
+     * Merge many PARTIAL definitions WITHOUT clearing the existing set —
+     * used by fetchUnifiedMenu (context-menu hydration), whose wire rows
+     * carry only the menu-relevant fields. Existing rows keep every field
+     * the patch doesn't mention (blockType/visibility/skillId survive).
+     */
+    renderDefinitionsMerged(
+      state,
+      action: PayloadAction<(Partial<SklRenderDefinition> & { id: string })[]>,
+    ) {
+      for (const patch of action.payload) {
+        const existing = state.renderDefinitions.byId[patch.id];
+        if (existing) {
+          Object.assign(existing, patch);
+        } else {
+          state.renderDefinitions.byId[patch.id] = {
+            blockId: "",
+            label: "",
+            description: null,
+            iconName: "",
+            template: "",
+            categoryId: null,
+            skillId: null,
+            blockType: "markdown",
+            visibility: "public",
+            isActive: true,
+            isPublic: true,
+            sortOrder: 0,
+            userId: null,
+            organizationId: null,
+            projectId: null,
+            taskId: null,
+            createdAt: "",
+            updatedAt: "",
+            ...patch,
+          };
+          state.renderDefinitions.allIds.push(patch.id);
+        }
+      }
+      if (state.renderDefinitions.status === "idle") {
+        state.renderDefinitions.status = "ready";
+      }
+    },
     renderDefinitionUpserted(
       state,
       action: PayloadAction<SklRenderDefinition>,

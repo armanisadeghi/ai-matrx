@@ -121,17 +121,6 @@
     "is_active": true
   },
   {
-    "resource_type": "content_template",
-    "table_name": "content_template",
-    "id_column": "id",
-    "owner_column": "user_id",
-    "is_public_column": null,
-    "display_label": "Content Template",
-    "url_path_template": "/settings/content-templates/{id}",
-    "rls_uses_has_permission": true,
-    "is_active": true
-  },
-  {
     "resource_type": "conversation",
     "table_name": "conversation",
     "id_column": "id",
@@ -315,6 +304,17 @@
     "is_public_column": null,
     "display_label": "Study Guide",
     "url_path_template": "/education/learn/{slug}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "message_template",
+    "table_name": "message_template",
+    "id_column": "id",
+    "owner_column": "user_id",
+    "is_public_column": null,
+    "display_label": "Message Template",
+    "url_path_template": "/settings/message-templates/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },

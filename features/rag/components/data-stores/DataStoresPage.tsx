@@ -66,6 +66,7 @@ import { fileHandler } from "@/features/files/handler/handler";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { DataStorePublishPanel } from "@/features/rag/components/data-stores/DataStorePublishPanel";
+import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import { useStoreProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildRagDataStoresContextData } from "@/features/rag/agent-context/buildRagDataStoresContextData";
@@ -585,11 +586,6 @@ function StoreDetailPanel({
               archived
             </span>
           )}
-          {s.organizationId && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground font-mono">
-              org {s.organizationId.slice(0, 8)}
-            </span>
-          )}
           {readOnly && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary flex items-center gap-1">
               <Lock className="h-3 w-3" /> Shared library ·{" "}
@@ -646,6 +642,16 @@ function StoreDetailPanel({
         <div className="text-[10px] text-muted-foreground font-mono select-all">
           {s.id}
         </div>
+        {/*
+         * Access truth: replaces the raw org-uuid chip with the real answer —
+         * visibility, named organization, direct grants, and every container
+         * this store is reachable through.
+         */}
+        <AccessSummaryPanel
+          entityType="data_store"
+          entityId={storeId}
+          className="px-0 py-0"
+        />
         {editing && (
           <EditStoreForm
             initial={{

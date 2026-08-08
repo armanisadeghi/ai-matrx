@@ -51,17 +51,19 @@ export function SharedKnowledgeAdminClient({
         onValueChange={setTab}
         className="flex min-h-0 flex-1 flex-col"
       >
-        <TabsList className="w-fit">
-          <TabsTrigger value="industries">
+        {/* Mobile: taller triggers (finger-size targets) + horizontal scroll
+            so all four tabs stay reachable on narrow screens. */}
+        <TabsList className="h-auto w-fit max-w-full overflow-x-auto">
+          <TabsTrigger value="industries" className="px-3 py-2.5 sm:py-1.5">
             <Layers className="mr-1.5 h-3.5 w-3.5" /> Industries
           </TabsTrigger>
-          <TabsTrigger value="stores">
+          <TabsTrigger value="stores" className="px-3 py-2.5 sm:py-1.5">
             <Building2 className="mr-1.5 h-3.5 w-3.5" /> Stores & grants
           </TabsTrigger>
-          <TabsTrigger value="ingest">
+          <TabsTrigger value="ingest" className="px-3 py-2.5 sm:py-1.5">
             <FileUp className="mr-1.5 h-3.5 w-3.5" /> Ingest
           </TabsTrigger>
-          <TabsTrigger value="explorer">
+          <TabsTrigger value="explorer" className="px-3 py-2.5 sm:py-1.5">
             <SearchCheck className="mr-1.5 h-3.5 w-3.5" /> Access explorer
           </TabsTrigger>
         </TabsList>

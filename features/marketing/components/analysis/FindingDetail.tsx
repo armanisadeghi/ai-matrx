@@ -390,7 +390,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
             ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            <CopyButtons size="icon" {...findingCopy} />
+            <CopyButtons size="icon" {...findingCopy} json={() => data} />
             {data.page ? (
               <>
                 <Button

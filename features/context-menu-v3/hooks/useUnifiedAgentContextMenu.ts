@@ -5,10 +5,10 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fetchUnifiedMenu } from "@/features/agents/redux/agent-shortcuts/thunks";
 import { selectAllShortcutsArray } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { selectAllCategoriesArray } from "@/features/agents/redux/agent-shortcut-categories/selectors";
-import { selectAllContentBlocksArray } from "@/features/agents/redux/agent-content-blocks/selectors";
+import { selectAllContentBlocksArray } from "@/features/agent-connections/redux/skl/content-block-compat";
 import type { AgentShortcutRecord } from "@/features/agents/redux/agent-shortcuts/types";
 import type { AgentShortcutCategoryRecord } from "@/features/agents/redux/agent-shortcut-categories/types";
-import type { AgentContentBlockRecord } from "@/features/agents/redux/agent-content-blocks/types";
+import type { AgentContentBlockRecord } from "@/features/agent-connections/redux/skl/content-block-compat";
 import type { Scope } from "@/features/agents/redux/shared/scope";
 import { resolveRowScope } from "@/features/agents/redux/shared/scope";
 

@@ -1024,6 +1024,14 @@
       "new": "platform.associations",
       "since": "2026-07-12",
       "reason": "condemned agent\u2194surface junction retired to graveyard; bindings are platform.associations edges (agent\u2192surface, tier-encoded role) read via agent.menu_surface. Use bind-agent-to-surface.service.ts."
+    },
+    {
+      "relation": "content_blocks",
+      "old": "public.content_blocks",
+      "newSchema": "skill",
+      "new": "skill.render_definition",
+      "since": "2026-08-08",
+      "reason": "canonicalized onto skill.render_definition (superset: block_type, skill_id, visibility, category_id). Use .schema('skill').from('render_definition'). Table drop pending CONTRACT phase."
     }
   ]
 }

@@ -317,6 +317,13 @@ export function SitesPortfolio() {
             <span className="block text-[10px] tabular-nums text-muted-foreground">
               {formatMetric(row.pages_in_gsc)} in Google
             </span>
+            {/* Say what the count leaves out. A silently smaller number is its
+                own defect — these rows are real registry evidence. */}
+            {row.resource_count > 0 ? (
+              <span className="block text-[10px] tabular-nums text-muted-foreground">
+                +{formatMetric(row.resource_count)} resources
+              </span>
+            ) : null}
           </span>
         </PagesPeek>
       ),

@@ -35,9 +35,10 @@ import { extractErrorMessage } from "@/utils/errors";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
-import type {
-  AgentCopyGroomerConfig,
-  AgentCopyGroomerSection,
+import {
+  groomerPresetVariants,
+  type AgentCopyGroomerConfig,
+  type AgentCopyGroomerSection,
 } from "@/components/agent-copy/groomer-types";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import {
@@ -487,6 +488,7 @@ export function SiteKeywordPerformanceWorkspace() {
             human={pageHuman}
             json={pageFullData}
             agent={pageAgentPayload}
+            aiVariants={groomerPresetVariants(groomerConfig)}
           />
           <AgentCopyGroomerLauncher config={groomerConfig} />
         </div>

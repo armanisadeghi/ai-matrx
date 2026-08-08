@@ -10,6 +10,7 @@
  */
 
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
+import type { AiVariant } from "@/components/agent-copy/AiCopyMenu";
 
 /** Detail levels, largest → smallest. */
 export type GroomerLevel = "full" | "compact" | "brief";
@@ -76,6 +77,70 @@ export function applyGroomerPreset(
     else out[section.id] = section.cuttable ? "off" : "brief";
   }
   return out;
+}
+
+/**
+ * Assemble a preset's whole-page payload from a groomer config — the ONE
+ * section list feeds the Groomer window, the quick "Everything" copy, and the
+ * graded preset variants, so a page never maintains two section lists.
+ */
+export function buildGroomerPresetPayload(
+  config: AgentCopyGroomerConfig,
+  preset: GroomerPreset,
+): AgentPayloadInput {
+  const selections = applyGroomerPreset(preset, config.sections);
+  const data: Record<string, unknown> = {};
+  const dropped: string[] = [];
+  for (const section of config.sections) {
+    const selection = selections[section.id] ?? "full";
+    if (selection === "off") {
+      dropped.push(section.id);
+      continue;
+    }
+    const value = section.build(selection);
+    if (value !== null && value !== undefined) data[section.id] = value;
+  }
+  return {
+    kind: config.kind,
+    location: config.location,
+    description:
+      preset === "everything"
+        ? config.description
+        : `${config.description} (${preset} detail)`,
+    data,
+    summary: config.summary,
+    attributes: {
+      ...config.attributes,
+      detail: preset,
+      dropped_sections: dropped.length ? dropped.join(",") : undefined,
+    },
+    context: config.context,
+  };
+}
+
+/**
+ * Balanced/Minimal `aiVariants` for a page-level `CopyButtons`, derived from
+ * the page's groomer config. Pass the config as a function so sections capture
+ * the data on screen at click time. The `agent` prop stays the automatic
+ * "Everything" escape hatch.
+ */
+export function groomerPresetVariants(
+  getConfig: () => AgentCopyGroomerConfig,
+): AiVariant[] {
+  return [
+    {
+      id: "balanced",
+      label: "Balanced",
+      hint: "Compact sections — top slices, trimmed blobs",
+      build: () => buildGroomerPresetPayload(getConfig(), "balanced"),
+    },
+    {
+      id: "minimal",
+      label: "Minimal",
+      hint: "Counts + briefs only; cuttable sections dropped",
+      build: () => buildGroomerPresetPayload(getConfig(), "minimal"),
+    },
+  ];
 }
 
 /** Initial selections: each section's default, falling back to "full". */

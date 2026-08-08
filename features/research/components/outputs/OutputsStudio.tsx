@@ -37,8 +37,10 @@ import type { PodcastType } from "@/features/podcasts/generator/types";
 import { LiveProgressRail } from "@/features/podcasts/generator/components/LiveProgressRail";
 import { ProductionTeaser } from "@/features/podcasts/generator/components/ProductionTeaser";
 import { MediaOptionsGrid } from "@/features/podcasts/generator/components/MediaOptionsGrid";
-import { useRunAgent } from "@/features/agents/run/useRunAgent";
+import { useSlotRunner } from "@/features/agents/slots/useSlotRunner";
+import { SlotAgentPicker } from "@/features/agents/slots/components/SlotAgentPicker";
 import MarkdownStream from "@/components/MarkdownStream";
+import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import Slideshow from "@/components/mardown-display/blocks/presentations/Slideshow";
 import {
@@ -62,11 +64,13 @@ import {
   TITLE_LIMITS,
 } from "@/features/marketing/seo/serp/metrics";
 
-/** Research content-engine generator agents (created as data; run live via
- *  /ai/agents/{id}). Each forks the runnable config of the blog generator. */
-const BLOG_AGENT_ID = "d5a17f12-c06e-4b07-8222-3fd1dfbdd85b";
-const SLIDES_AGENT_ID = "8f0bbfc2-85d9-4913-8cea-b09a50c62be6";
-const SEO_AGENT_ID = "de3e5a62-559b-406a-a6bd-c6064b4ba3fe";
+/** Research content-engine generators run through AGENT SLOTS — the slot is the
+ *  identity, never a hardcoded agent id. The system default is managed in the
+ *  admin console; each user may bind their own agent via the SlotAgentPicker in
+ *  each card header. SoR: common-docs/systems/agent-slots/FEATURE.md. */
+const BLOG_SLOT = "research_client.output_blog";
+const SLIDES_SLOT = "research_client.output_slides";
+const SEO_SLOT = "research_client.output_seo";
 
 /** First H1 in a markdown doc, for an asset title. */
 function extractMarkdownTitle(md: string): string | null {
@@ -744,7 +748,14 @@ function PersistedEpisode({ asset }: { asset: OutputAsset }) {
       {/* Audio is always shown when present — it's the episode's core artifact. */}
       {media.audio_url && (
         <div className="px-2.5 pb-2">
-          <audio controls src={media.audio_url} className="w-full h-8" />
+          <SessionMediaElement
+            as="audio"
+            sessionSource="podcast"
+            sessionLabel={asset.title}
+            controls
+            src={media.audio_url}
+            className="w-full h-8"
+          />
         </div>
       )}
 
@@ -756,7 +767,9 @@ function PersistedEpisode({ asset }: { asset: OutputAsset }) {
                 <Film className="h-3 w-3" />
                 Composed video
               </span>
-              <video
+              <SessionMediaElement
+                sessionSource="podcast"
+                sessionLabel={`${asset.title} — video`}
                 controls
                 src={media.official_video_url}
                 poster={cover ?? undefined}
@@ -773,8 +786,10 @@ function PersistedEpisode({ asset }: { asset: OutputAsset }) {
               </span>
               <div className="grid grid-cols-2 gap-2">
                 {clips.map((url, i) => (
-                  <video
+                  <SessionMediaElement
                     key={i}
+                    sessionSource="podcast"
+                    sessionLabel={`${asset.title} — clip ${i + 1}`}
                     controls
                     src={url}
                     className="w-full rounded-md border border-border/40 bg-black/90"
@@ -829,7 +844,7 @@ function BlogOutputCard({
   existing: OutputAsset[];
   onPersisted: (asset: OutputAsset) => Promise<void>;
 }) {
-  const { run, running } = useRunAgent();
+  const { runSlot, running, unavailable, slotError } = useSlotRunner(BLOG_SLOT);
   const [streamText, setStreamText] = useState("");
   const [viewing, setViewing] = useState<OutputAsset | null>(null);
 
@@ -841,8 +856,7 @@ function BlogOutputCard({
       (toneProfile.trim() ? `Voice & Lens: ${toneProfile.trim()}\n\n` : "") +
       `Research report:\n\n${reportMarkdown}`;
     try {
-      const md = await run({
-        agentId: BLOG_AGENT_ID,
+      const md = await runSlot({
         userInput: input,
         organizationId,
         contextAnchor: {
@@ -882,37 +896,21 @@ function BlogOutputCard({
       : "";
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm overflow-hidden">
-      <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-b border-border/50">
-        <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          <FileText className="h-4 w-4 text-primary" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm font-semibold">Blog post</span>
-            <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
-              Live
-            </Badge>
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            An SEO-optimized, cited article from this research — copy or export
-            to WordPress.
-          </p>
-        </div>
-        {existing.length > 0 && (
-          <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
-            {existing.length} generated
-          </span>
-        )}
-      </div>
-
-      <div className="p-3.5 space-y-3">
+    <OutputCardShell
+      icon={<FileText className="h-4 w-4" />}
+      title="Blog post"
+      blurb="An SEO-optimized, cited article from this research — copy or export to WordPress."
+      count={existing.length}
+      slotKey={BLOG_SLOT}
+    >
+      <>
+        {slotError && <SlotUnavailableNote message={slotError} />}
         {!running && !viewing && (
           <Button
             size="sm"
             className="gap-1.5 h-8"
             onClick={handleGenerate}
-            disabled={!hasReport}
+            disabled={!hasReport || unavailable}
           >
             <FileText className="h-3.5 w-3.5" />
             Generate blog
@@ -989,8 +987,8 @@ function BlogOutputCard({
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </>
+    </OutputCardShell>
   );
 }
 
@@ -1001,12 +999,17 @@ function OutputCardShell({
   title,
   blurb,
   count,
+  slotKey,
   children,
 }: {
   icon: React.ReactNode;
   title: string;
   blurb: string;
   count: number;
+  /** The agent slot that writes this output — renders the "which agent runs
+   *  this" picker in the header, so swapping in your own agent is one click
+   *  from where the output is generated. */
+  slotKey: string;
   children: React.ReactNode;
 }) {
   return (
@@ -1029,8 +1032,25 @@ function OutputCardShell({
             {count} generated
           </span>
         )}
+        <SlotAgentPicker slotKey={slotKey} className="shrink-0" />
       </div>
       <div className="p-3.5 space-y-3">{children}</div>
+    </div>
+  );
+}
+
+/** The generator's agent could not resolve — the affordance is disabled and
+ *  says why (loud recovery: never fall back to a hardcoded agent). */
+function SlotUnavailableNote({ message }: { message: string }) {
+  return (
+    <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/[0.04] px-3 py-2.5">
+      <AlertCircle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-destructive">
+          This generator has no agent bound
+        </p>
+        <p className="text-[11px] text-muted-foreground break-words">{message}</p>
+      </div>
     </div>
   );
 }
@@ -1065,7 +1085,7 @@ function SlidesOutputCard({
   existing: OutputAsset[];
   onPersisted: (asset: OutputAsset) => Promise<void>;
 }) {
-  const { run, running } = useRunAgent();
+  const { runSlot, running, unavailable, slotError } = useSlotRunner(SLIDES_SLOT);
   const [viewing, setViewing] = useState<OutputAsset | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -1074,8 +1094,7 @@ function SlidesOutputCard({
     setViewing(null);
     setError(null);
     try {
-      const raw = await run({
-        agentId: SLIDES_AGENT_ID,
+      const raw = await runSlot({
         userInput: buildGeneratorInput(reportMarkdown, toneProfile),
         organizationId,
         contextAnchor: {
@@ -1115,13 +1134,15 @@ function SlidesOutputCard({
       title="Slide deck"
       blurb="A presentation built from this research — rendered as a live slideshow."
       count={existing.length}
+      slotKey={SLIDES_SLOT}
     >
+      {slotError && <SlotUnavailableNote message={slotError} />}
       {!running && !viewing && (
         <Button
           size="sm"
           className="gap-1.5 h-8"
           onClick={handleGenerate}
-          disabled={!hasReport}
+          disabled={!hasReport || unavailable}
         >
           <Presentation className="h-3.5 w-3.5" />
           Generate slides
@@ -1210,7 +1231,7 @@ function SeoOutputCard({
   existing: OutputAsset[];
   onPersisted: (asset: OutputAsset) => Promise<void>;
 }) {
-  const { run, running } = useRunAgent();
+  const { runSlot, running, unavailable, slotError } = useSlotRunner(SEO_SLOT);
   const [viewing, setViewing] = useState<OutputAsset | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -1219,8 +1240,7 @@ function SeoOutputCard({
     setViewing(null);
     setError(null);
     try {
-      const raw = await run({
-        agentId: SEO_AGENT_ID,
+      const raw = await runSlot({
         userInput: buildGeneratorInput(reportMarkdown, toneProfile),
         organizationId,
         contextAnchor: {
@@ -1260,13 +1280,15 @@ function SeoOutputCard({
       title="SEO package"
       blurb="Title, meta, slug, keywords, schema.org + OG — on-page SEO for the published piece."
       count={existing.length}
+      slotKey={SEO_SLOT}
     >
+      {slotError && <SlotUnavailableNote message={slotError} />}
       {!running && !viewing && (
         <Button
           size="sm"
           className="gap-1.5 h-8"
           onClick={handleGenerate}
-          disabled={!hasReport}
+          disabled={!hasReport || unavailable}
         >
           <SearchIcon className="h-3.5 w-3.5" />
           Generate SEO package

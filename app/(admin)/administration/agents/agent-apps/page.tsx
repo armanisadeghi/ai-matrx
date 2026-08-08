@@ -32,6 +32,8 @@ import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
   createAdminAgentAppsScope,
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { appBrief, humanAgentApp } from "@/features/agent-apps/format";
 
 const TILES = [
   {
@@ -69,6 +71,8 @@ export default function AgentAppsAdminDashboardPage() {
   const [apps, setApps] = useState<AgentAppAdminView[]>([]);
   const [categories, setCategories] = useState<AgentAppCategoryRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAllFeatured, setShowAllFeatured] = useState(false);
+  const [showAllRecent, setShowAllRecent] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -105,16 +109,20 @@ export default function AgentAppsAdminDashboardPage() {
   const featured = apps.filter((a) => a.is_featured).length;
   const verified = apps.filter((a) => a.is_verified).length;
 
-  const featuredApps = apps
-    .filter((a) => a.is_featured && a.status === "published")
-    .slice(0, 6);
+  const allFeaturedApps = apps.filter(
+    (a) => a.is_featured && a.status === "published",
+  );
+  const featuredApps = showAllFeatured
+    ? allFeaturedApps
+    : allFeaturedApps.slice(0, 6);
 
-  const recentlyUpdated = [...apps]
-    .sort(
-      (a, b) =>
-        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
-    )
-    .slice(0, 6);
+  const allRecentlyUpdated = [...apps].sort(
+    (a, b) =>
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+  );
+  const recentlyUpdated = showAllRecent
+    ? allRecentlyUpdated
+    : allRecentlyUpdated.slice(0, 6);
 
   const handleNavigate = (href: string) => {
     if (isPending) return;
@@ -190,13 +198,25 @@ export default function AgentAppsAdminDashboardPage() {
       <div className="flex-1 overflow-y-auto">
         <div className="p-4 space-y-4 max-w-6xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Card>
+            <Card className="group/x relative">
               <CardContent className="p-3">
                 <div className="text-2xl font-bold">{counts.apps}</div>
                 <div className="text-xs text-muted-foreground">Total Apps</div>
               </CardContent>
+              <CopyButtons
+                size="xs"
+                label="Total apps"
+                className="absolute top-2 right-2 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
+                human={() => `Total apps: ${counts.apps}`}
+                agent={() => ({
+                  kind: "agent-app-analytics-stat",
+                  location: "AI Matrx Admin — Agent Apps — Dashboard",
+                  description: "The total-apps stat card.",
+                  data: { totalApps: counts.apps },
+                })}
+              />
             </Card>
-            <Card>
+            <Card className="group/x relative">
               <CardContent className="p-3">
                 <div className="text-2xl font-bold text-success flex items-center gap-1">
                   <CheckCircle className="h-4 w-4" />
@@ -204,8 +224,20 @@ export default function AgentAppsAdminDashboardPage() {
                 </div>
                 <div className="text-xs text-muted-foreground">Published</div>
               </CardContent>
+              <CopyButtons
+                size="xs"
+                label="Published apps"
+                className="absolute top-2 right-2 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
+                human={() => `Published apps: ${published}`}
+                agent={() => ({
+                  kind: "agent-app-analytics-stat",
+                  location: "AI Matrx Admin — Agent Apps — Dashboard",
+                  description: "The published-apps stat card.",
+                  data: { published },
+                })}
+              />
             </Card>
-            <Card>
+            <Card className="group/x relative">
               <CardContent className="p-3">
                 <div className="text-2xl font-bold text-warning flex items-center gap-1">
                   <Star className="h-4 w-4" />
@@ -213,8 +245,20 @@ export default function AgentAppsAdminDashboardPage() {
                 </div>
                 <div className="text-xs text-muted-foreground">Featured</div>
               </CardContent>
+              <CopyButtons
+                size="xs"
+                label="Featured apps"
+                className="absolute top-2 right-2 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
+                human={() => `Featured apps: ${featured}`}
+                agent={() => ({
+                  kind: "agent-app-analytics-stat",
+                  location: "AI Matrx Admin — Agent Apps — Dashboard",
+                  description: "The featured-apps stat card.",
+                  data: { featured },
+                })}
+              />
             </Card>
-            <Card>
+            <Card className="group/x relative">
               <CardContent className="p-3">
                 <div className="text-2xl font-bold text-primary flex items-center gap-1">
                   <ShieldCheck className="h-4 w-4" />
@@ -222,6 +266,18 @@ export default function AgentAppsAdminDashboardPage() {
                 </div>
                 <div className="text-xs text-muted-foreground">Verified</div>
               </CardContent>
+              <CopyButtons
+                size="xs"
+                label="Verified apps"
+                className="absolute top-2 right-2 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
+                human={() => `Verified apps: ${verified}`}
+                agent={() => ({
+                  kind: "agent-app-analytics-stat",
+                  location: "AI Matrx Admin — Agent Apps — Dashboard",
+                  description: "The verified-apps stat card.",
+                  data: { verified },
+                })}
+              />
             </Card>
           </div>
 
@@ -269,22 +325,69 @@ export default function AgentAppsAdminDashboardPage() {
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
               <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                 <Star className="h-4 w-4 text-warning" />
                 Featured apps
+                <span className="text-xs font-normal text-muted-foreground">
+                  (showing {featuredApps.length} of {allFeaturedApps.length})
+                </span>
               </h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() =>
-                  handleNavigate("/administration/agents/agent-apps/apps")
-                }
-              >
-                See all
-                <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
+              <div className="flex items-center gap-1.5">
+                {allFeaturedApps.length > 6 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setShowAllFeatured((v) => !v)}
+                  >
+                    {showAllFeatured
+                      ? "Show top 6"
+                      : `Show all ${allFeaturedApps.length}`}
+                  </Button>
+                )}
+                {allFeaturedApps.length > 0 && (
+                  <CopyButtons
+                    size="icon"
+                    label={`Featured apps (${allFeaturedApps.length})`}
+                    human={() => allFeaturedApps.map(humanAgentApp).join("\n\n")}
+                    json={() => allFeaturedApps}
+                    agent={() => ({
+                      kind: "agent-apps",
+                      location: "AI Matrx Admin — Agent Apps — Dashboard",
+                      description: "Every featured, published agent app (not just the top 6 shown).",
+                      data: allFeaturedApps,
+                      attributes: { count: allFeaturedApps.length },
+                      context: { shown: featuredApps.length, total: allFeaturedApps.length },
+                    })}
+                    aiVariants={[
+                      {
+                        id: "briefs",
+                        label: "Briefs",
+                        hint: "One line per featured app",
+                        build: () => ({
+                          kind: "agent-apps-briefs",
+                          location: "AI Matrx Admin — Agent Apps — Dashboard",
+                          description: "One-line briefs for every featured app.",
+                          data: allFeaturedApps.map(appBrief),
+                          attributes: { count: allFeaturedApps.length },
+                        }),
+                      },
+                    ]}
+                  />
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() =>
+                    handleNavigate("/administration/agents/agent-apps/apps")
+                  }
+                >
+                  See all
+                  <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </div>
             </div>
             {loading ? (
               <div className="h-24 flex items-center justify-center text-xs text-muted-foreground">
@@ -313,22 +416,71 @@ export default function AgentAppsAdminDashboardPage() {
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
               <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                 <Activity className="h-4 w-4 text-primary" />
                 Recently updated
+                <span className="text-xs font-normal text-muted-foreground">
+                  (showing {recentlyUpdated.length} of {allRecentlyUpdated.length})
+                </span>
               </h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() =>
-                  handleNavigate("/administration/agents/agent-apps/apps")
-                }
-              >
-                See all
-                <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
+              <div className="flex items-center gap-1.5">
+                {allRecentlyUpdated.length > 6 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setShowAllRecent((v) => !v)}
+                  >
+                    {showAllRecent
+                      ? "Show top 6"
+                      : `Show all ${allRecentlyUpdated.length}`}
+                  </Button>
+                )}
+                {allRecentlyUpdated.length > 0 && (
+                  <CopyButtons
+                    size="icon"
+                    label={`Recently updated apps (${allRecentlyUpdated.length})`}
+                    human={() =>
+                      allRecentlyUpdated.map(humanAgentApp).join("\n\n")
+                    }
+                    json={() => allRecentlyUpdated}
+                    agent={() => ({
+                      kind: "agent-apps",
+                      location: "AI Matrx Admin — Agent Apps — Dashboard",
+                      description: "Every agent app, sorted by most recently updated (not just the top 6 shown).",
+                      data: allRecentlyUpdated,
+                      attributes: { count: allRecentlyUpdated.length },
+                      context: { shown: recentlyUpdated.length, total: allRecentlyUpdated.length },
+                    })}
+                    aiVariants={[
+                      {
+                        id: "briefs",
+                        label: "Briefs",
+                        hint: "One line per app",
+                        build: () => ({
+                          kind: "agent-apps-briefs",
+                          location: "AI Matrx Admin — Agent Apps — Dashboard",
+                          description: "One-line briefs for every app, most recently updated first.",
+                          data: allRecentlyUpdated.map(appBrief),
+                          attributes: { count: allRecentlyUpdated.length },
+                        }),
+                      },
+                    ]}
+                  />
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() =>
+                    handleNavigate("/administration/agents/agent-apps/apps")
+                  }
+                >
+                  See all
+                  <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </div>
             </div>
             {loading ? (
               <div className="h-24 flex items-center justify-center text-xs text-muted-foreground">

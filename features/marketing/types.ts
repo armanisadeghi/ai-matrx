@@ -187,8 +187,10 @@ export interface UpdateBrandInput {
 export interface SiteListRow extends MarketingSite {
   health_score: number | null;
   scored_pages: number;
-  /** Canonical live pages (`web.page`, non-deleted). */
+  /** Canonical live PAGES — excludes crawled non-HTML resources. */
   page_count: number;
+  /** Live non-HTML registry rows (image/json/xml/pdf/…), excluded from `page_count`. */
+  resource_count: number;
   /** Distinct pages Google Search Console has ever reported for the site. */
   pages_in_gsc: number;
   /** 28-day GSC click sum; null when Google has no data in the window. */
@@ -533,6 +535,20 @@ export interface ConfirmFactInput {
   item: DiscoveredItem;
   factKind: BusinessFact["kind"];
   label: string | null;
+}
+
+/**
+ * A page a generated title/description can be applied to. Carries `version`
+ * because `updatePageIntent` is optimistically locked on it.
+ */
+export interface MetaApplyTarget {
+  id: string;
+  site_id: string;
+  url: string;
+  version: number;
+  target_keyword: string | null;
+  meta_title_desired: string | null;
+  meta_description_desired: string | null;
 }
 
 export interface UpdatePageIntentInput {

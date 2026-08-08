@@ -98,6 +98,40 @@ survives.
   clutter. Skip surfaces with no meaningful record (pure tools, visualizers,
   demos).
 
+## Sized-to-data AI variants — `AiCopyMenu`
+
+A "Copy for AI" control is an **AI context source**, not a copy button — and it
+must scale to its data. There is no one-size-fits-all; for every surface ask
+*"what would someone actually hand an AI here?"*:
+
+| Data | Control | Variants |
+|---|---|---|
+| **Small / bounded** (one record, a short list) | Single icon, no chevron | Just "Everything" |
+| **Medium** (a focused list, a digestible page) | Dropdown (chevron) | A focused/short view **and** Everything |
+| **Massive / unbounded** (giant payloads, full histories) | Dropdown + custom-preview dialog | Short, Everything, **and** a tunable custom view |
+
+- **`AiCopyMenu`** (`AiCopyMenu.tsx`) is the chrome: pass `variants`
+  (pure `build()` → envelope-or-string, may be async) and optionally `custom`
+  (an options schema — toggle/preset/slider/number — plus pure `build(opts)` +
+  `wrap`). One variant + no custom renders a single icon button; anything more
+  renders the dropdown, and `custom` adds the preview dialog with live
+  char / byte / ~token counts. Shortening logic NEVER lives in the chrome —
+  write a pure per-data builder.
+- **`CopyButtons` upgrades in place**: pass `aiVariants` / `aiCustom` and its
+  AI button becomes the menu, with the existing `agent` payload auto-appended
+  as the never-lossy **Everything** escape hatch. Never render a second AI
+  icon beside the pair.
+- **`MatrxDataTable`**: `copy.aiVariants` / `copy.aiCustom` (receive
+  `(visible, all)` rows) do the same for the toolbar view copy.
+- **Derive variants from existing section lists** — the Backlinks header builds
+  Balanced/Minimal from the SAME groomer sections via `applyGroomerPreset`;
+  never maintain a parallel list. Preset payloads carry the same envelope
+  `context` as the full one — a shortened variant is lossy in DATA, never in
+  ambient context.
+- Everything-variant parity with the aidream dashboard implementation
+  (`apps/dashboard/src/components/agent-copy/AiCopyMenu.tsx`) is deliberate —
+  change one, mirror the other.
+
 ## Built-in integrations (don't rewire by hand)
 
 - **`MatrxDataTable`** — pass the `copy` config and you get per-row pairs, a

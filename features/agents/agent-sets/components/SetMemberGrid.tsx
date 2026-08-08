@@ -1,8 +1,9 @@
 // features/agents/agent-sets/components/SetMemberGrid.tsx
 //
-// The "Grid" builder view — an ordered, drag-to-reorder list of member role
-// cards. A keyboard- and touch-friendly alternative to the spatial canvas;
-// reordering persists each member's position.
+// The "Grid" builder view — a non-sortable orchestrator hub tile followed by an
+// ordered, drag-to-reorder list of member role cards. A keyboard- and
+// touch-friendly alternative to the spatial canvas; reordering persists each
+// member's position.
 
 "use client";
 
@@ -23,11 +24,93 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { Loader2, Network, PanelRight, Webhook } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { removeAgentFromSet, reorderSetMembers } from "@/features/agents/redux/agent-sets/thunks";
 import { AgentRoleCard } from "./AgentRoleCard";
+import { AgentPeekButton } from "./AgentPeekButton";
+import { useMemberRunState } from "../run/SetRunStatusContext";
+import { accentClasses } from "./accents";
 import type { SetAccent } from "../constants";
 import type { AgentSetMember } from "../types";
+
+// The hub tile — the Grid twin of the canvas OrchestratorNode. NOT a member and
+// NOT sortable: it renders above the sortable list, outside the DndContext.
+// Same affordances as the canvas hub: Quick look + open the OrchestratorInspector
+// (the whole tile is also clickable — hover toolbars don't exist on touch, and
+// Grid IS the mobile builder).
+function OrchestratorTile({
+  orchestratorId,
+  accent,
+  memberCount,
+  onOpen,
+}: {
+  orchestratorId: string;
+  accent: SetAccent;
+  memberCount: number;
+  onOpen: () => void;
+}) {
+  const agent = useAppSelector((s) => selectAgentById(s, orchestratorId));
+  const a = accentClasses(accent);
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label="Orchestrator details"
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      className={cn(
+        "group/orch relative w-full cursor-pointer rounded-2xl border-2 bg-card p-4 shadow-sm transition-shadow",
+        "border-transparent ring-2 hover:shadow-md",
+        a.ring,
+      )}
+    >
+      {/* Hover toolbar — mirrors the canvas hub node. */}
+      <div className="absolute right-1.5 top-1.5 z-10 flex items-center gap-0.5 rounded-md bg-card/85 opacity-0 backdrop-blur transition-opacity group-hover/orch:opacity-100">
+        <AgentPeekButton agentId={orchestratorId} />
+        <button
+          type="button"
+          aria-label="Orchestrator details"
+          title="Orchestrator details"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen();
+          }}
+          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <PanelRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className={cn("flex h-11 w-11 items-center justify-center rounded-xl shadow-sm", a.glyph)}>
+          <Network className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className={cn("text-[10px] font-bold uppercase tracking-wide", a.text)}>
+            Orchestrator
+          </div>
+          <div className="truncate text-sm font-semibold text-foreground" title={agent?.name}>
+            {agent?.name ?? "Orchestrator"}
+          </div>
+        </div>
+      </div>
+      <p className="mt-2 line-clamp-2 text-xs leading-snug text-muted-foreground">
+        {agent?.description ?? "Presides over this set of agents."}
+      </p>
+      <div className="mt-2.5 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+        <Webhook className="h-3 w-3" />
+        Coordinates {memberCount} {memberCount === 1 ? "agent" : "agents"}
+      </div>
+    </div>
+  );
+}
 
 function SortableRow({
   orchestratorId,
@@ -46,15 +129,33 @@ function SortableRow({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: member.agentId,
   });
+  // Cheap parity with the canvas rings — Grid is the mobile builder but is
+  // also usable on desktop, where the run panel can stream beside it.
+  const runState = useMemberRunState(member.agentId);
+  const a = accentClasses(accent);
 
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={isDragging ? "opacity-60" : undefined}
+      className={cn("relative", isDragging && "opacity-60")}
       {...attributes}
       {...listeners}
     >
+      {runState === "running" ? (
+        <span className="absolute -left-1 -top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full border border-border bg-card shadow-sm">
+          <Loader2 className={cn("h-2.5 w-2.5 animate-spin", a.text)} />
+        </span>
+      ) : runState ? (
+        <span
+          className={cn(
+            "absolute -left-1 -top-1 z-10 h-2.5 w-2.5 rounded-full border border-background shadow-sm",
+            runState === "done"
+              ? "bg-emerald-500 dark:bg-emerald-400"
+              : "bg-destructive",
+          )}
+        />
+      ) : null}
       <AgentRoleCard
         agentId={member.agentId}
         roleTitle={member.roleTitle}
@@ -75,11 +176,13 @@ export function SetMemberGrid({
   members,
   accent,
   onEdit,
+  onOpenOrchestrator,
 }: {
   orchestratorId: string;
   members: AgentSetMember[];
   accent: SetAccent;
   onEdit: (agentId: string) => void;
+  onOpenOrchestrator: () => void;
 }) {
   const dispatch = useAppDispatch();
   const sensors = useSensors(
@@ -98,7 +201,13 @@ export function SetMemberGrid({
   };
 
   return (
-    <div className="mx-auto max-w-2xl p-4">
+    <div className="mx-auto max-w-2xl space-y-3 p-4">
+      <OrchestratorTile
+        orchestratorId={orchestratorId}
+        accent={accent}
+        memberCount={members.length}
+        onOpen={onOpenOrchestrator}
+      />
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={members.map((m) => m.agentId)} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
