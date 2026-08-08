@@ -18,18 +18,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { VersionCodeCompare } from "./VersionCodeCompare";
+import { VersionRecordCopy } from "./VersionRecordCopy";
+import { formatDateTime } from "@/features/agent-apps/format";
 
 
 interface VersionPageProps {
   params: Promise<{ id: string; version: string }>;
-}
-
-function formatDateTime(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return iso;
-  }
 }
 
 export default async function AgentAppVersionPage({ params }: VersionPageProps) {
@@ -81,6 +75,12 @@ export default async function AgentAppVersionPage({ params }: VersionPageProps) 
                   {snapshot.status}
                 </Badge>
               )}
+              <VersionRecordCopy
+                appId={app.id}
+                appName={app.name}
+                snapshot={snapshot}
+                isCurrent={isCurrent}
+              />
             </div>
             <div className="text-xs text-muted-foreground flex items-center gap-1.5">
               <History className="w-3.5 h-3.5" />
