@@ -39,6 +39,7 @@ import { ProductionTeaser } from "@/features/podcasts/generator/components/Produ
 import { MediaOptionsGrid } from "@/features/podcasts/generator/components/MediaOptionsGrid";
 import { useRunAgent } from "@/features/agents/run/useRunAgent";
 import MarkdownStream from "@/components/MarkdownStream";
+import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import Slideshow from "@/components/mardown-display/blocks/presentations/Slideshow";
 import {
@@ -744,7 +745,14 @@ function PersistedEpisode({ asset }: { asset: OutputAsset }) {
       {/* Audio is always shown when present — it's the episode's core artifact. */}
       {media.audio_url && (
         <div className="px-2.5 pb-2">
-          <audio controls src={media.audio_url} className="w-full h-8" />
+          <SessionMediaElement
+            as="audio"
+            sessionSource="podcast"
+            sessionLabel={asset.title}
+            controls
+            src={media.audio_url}
+            className="w-full h-8"
+          />
         </div>
       )}
 
@@ -756,7 +764,9 @@ function PersistedEpisode({ asset }: { asset: OutputAsset }) {
                 <Film className="h-3 w-3" />
                 Composed video
               </span>
-              <video
+              <SessionMediaElement
+                sessionSource="podcast"
+                sessionLabel={`${asset.title} — video`}
                 controls
                 src={media.official_video_url}
                 poster={cover ?? undefined}
@@ -773,8 +783,10 @@ function PersistedEpisode({ asset }: { asset: OutputAsset }) {
               </span>
               <div className="grid grid-cols-2 gap-2">
                 {clips.map((url, i) => (
-                  <video
+                  <SessionMediaElement
                     key={i}
+                    sessionSource="podcast"
+                    sessionLabel={`${asset.title} — clip ${i + 1}`}
                     controls
                     src={url}
                     className="w-full rounded-md border border-border/40 bg-black/90"

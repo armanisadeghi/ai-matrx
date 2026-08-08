@@ -4,6 +4,8 @@
  * Comprehensive diagnostics and troubleshooting for microphone access
  */
 
+import { acquireMicStream, releaseMicStream } from '../micStream';
+
 export interface DiagnosticResult {
   hasMediaDevices: boolean;
   hasGetUserMedia: boolean;
@@ -126,8 +128,10 @@ export async function runMicrophoneDiagnostics(): Promise<DiagnosticResult> {
   // Test actual microphone access (non-invasive)
   if (result.permissionState === 'granted') {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop());
+      // Through the mic singleton — a direct getUserMedia here double-lights
+      // the mic beside a live recording and tears down the warm iOS grant.
+      await acquireMicStream();
+      releaseMicStream();
       result.canRequestPermission = true;
     } catch (err: any) {
       result.canRequestPermission = false;
