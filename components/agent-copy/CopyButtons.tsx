@@ -11,6 +11,12 @@ import {
   type AgentPayloadInput,
 } from "@/components/agent-copy/buildAgentPayload";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
+import { writeClipboard } from "@/components/agent-copy/clipboard";
+import {
+  AiCopyMenu,
+  type AiCustomSource,
+  type AiVariant,
+} from "@/components/agent-copy/AiCopyMenu";
 
 /**
  * CopyButtons — the reusable "copy this data" primitive.
@@ -67,19 +73,19 @@ export interface CopyButtonsProps {
   disabled?: boolean;
   /** Wrapper className. */
   className?: string;
-}
-
-async function writeClipboard(text: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textarea);
-  }
+  /**
+   * Graded AI variants (e.g. a focused/short view). When set, the single
+   * "Copy for AI" button upgrades in place to an {@link AiCopyMenu} dropdown:
+   * these variants first, then the `agent` payload as the automatic
+   * "Everything" escape hatch. Use for medium/massive data — a giant page
+   * offering only an everything-dump is useless the moment data grows.
+   */
+  aiVariants?: AiVariant[];
+  /**
+   * Custom-preview source (options + live size counts dialog). Implies the
+   * dropdown upgrade. Reserve for data with real shortening knobs.
+   */
+  aiCustom?: AiCustomSource;
 }
 
 export function CopyButtons({
@@ -91,6 +97,8 @@ export function CopyButtons({
   disabled = false,
   stopPropagation = true,
   className,
+  aiVariants,
+  aiCustom,
 }: CopyButtonsProps) {
   const [copied, setCopied] = React.useState<"human" | "agent" | "json" | null>(
     null,
@@ -177,23 +185,42 @@ export function CopyButtons({
           {isText && <span className="ml-1">JSON</span>}
         </Button>
       ) : null}
-      <Button
-        type="button"
-        variant="ghost"
-        size={isText ? "sm" : "icon"}
-        className={buttonCls}
-        disabled={disabled}
-        onClick={handleAgent}
-        aria-label={`Copy ${label} for AI agent`}
-        title={`Copy ${label} with full context, formatted for an AI agent`}
-      >
-        {copied === "agent" ? (
-          <Check className={iconCls} />
-        ) : (
-          <CopyForAiIcon className={iconCls} />
-        )}
-        {isText && <span className="ml-1">Copy for AI</span>}
-      </Button>
+      {aiVariants?.length || aiCustom ? (
+        <AiCopyMenu
+          size={size}
+          label={label}
+          disabled={disabled}
+          stopPropagation={false}
+          variants={[
+            ...(aiVariants ?? []),
+            {
+              id: "everything",
+              label: "Everything",
+              hint: "Full faithful payload — never lossy",
+              build: () => resolve(agent),
+            },
+          ]}
+          custom={aiCustom}
+        />
+      ) : (
+        <Button
+          type="button"
+          variant="ghost"
+          size={isText ? "sm" : "icon"}
+          className={buttonCls}
+          disabled={disabled}
+          onClick={handleAgent}
+          aria-label={`Copy ${label} for AI agent`}
+          title={`Copy ${label} with full context, formatted for an AI agent`}
+        >
+          {copied === "agent" ? (
+            <Check className={iconCls} />
+          ) : (
+            <CopyForAiIcon className={iconCls} />
+          )}
+          {isText && <span className="ml-1">Copy for AI</span>}
+        </Button>
+      )}
     </div>
   );
 }

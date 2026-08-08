@@ -510,6 +510,8 @@ export function MatrxDataTable<T>({
                       sort: sort ? `${sort.id}:${sort.direction}` : null,
                     })
                   }
+                  aiVariants={copy.aiVariants?.(processed, data)}
+                  aiCustom={copy.aiCustom?.(processed, data)}
                 />
                 <ExportMenu
                   label={copy.listLabel ?? `${copy.label} view`}
