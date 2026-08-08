@@ -106,6 +106,7 @@ import type {
   BulkResponse,
   CloudFile,
   CloudFileFieldSnapshot,
+  CloudFileRecord,
   CloudFilePermission,
   CloudFileVersion,
   CloudFolder,
@@ -1339,7 +1340,7 @@ export const deleteFile = createAsyncThunk<void, DeleteFileArg, ThunkApi>(
       }
     } catch (err) {
       // Rollback — reinsert the record and reattach to its parent.
-      dispatch(upsertFile(record));
+      dispatch(upsertFile(toCloudFilePartial(record)));
       dispatch(
         attachChildToFolder({
           parentFolderId,
@@ -1367,6 +1368,28 @@ export const deleteFile = createAsyncThunk<void, DeleteFileArg, ThunkApi>(
  * rows can't leak into live folder listings; the section filters in
  * PageShell/row-data pick them up by `deletedAt`.
  */
+
+/**
+ * A store record carries immer-frozen runtime bookkeeping (`_loadedFields`,
+ * `_dirtyFields`, ...). Re-dispatching it into `upsertFile` on the INSERT path
+ * would adopt those frozen objects into the new draft and crash the next
+ * merge ("object is not extensible") — strip to domain fields first. Used by
+ * every optimistic-rollback site.
+ */
+function toCloudFilePartial(record: CloudFileRecord): Partial<CloudFile> {
+  const {
+    _dirty,
+    _dirtyFields,
+    _fieldHistory,
+    _loadedFields,
+    _loading,
+    _error,
+    _pendingRequestIds,
+    ...domain
+  } = record;
+  return domain;
+}
+
 export const loadTrash = createAsyncThunk<void, { userId: string }, ThunkApi>(
   "cloudFiles/loadTrash",
   async ({ userId }, { dispatch }) => {
@@ -1434,7 +1457,7 @@ export const restoreFile = createAsyncThunk<void, { fileId: string }, ThunkApi>(
     const requestId = newRequestId();
 
     // Optimistic: back to live, back under its parent.
-    dispatch(upsertFile({ ...record, deletedAt: null }));
+    dispatch(upsertFile({ ...toCloudFilePartial(record), deletedAt: null }));
     dispatch(
       attachChildToFolder({
         parentFolderId: record.parentFolderId,
@@ -1451,7 +1474,7 @@ export const restoreFile = createAsyncThunk<void, { fileId: string }, ThunkApi>(
     try {
       await restoreFileDirect(fileId);
     } catch (err) {
-      dispatch(upsertFile(record)); // rollback to trashed
+      dispatch(upsertFile(toCloudFilePartial(record))); // rollback to trashed (clone — state objects are frozen)
       dispatch(
         detachChildFromFolder({
           parentFolderId: record.parentFolderId,
@@ -1518,7 +1541,7 @@ export const purgeFile = createAsyncThunk<void, { fileId: string }, ThunkApi>(
       if (error) throw error;
       await Files.deleteFile(fileId, { hardDelete: true }, { requestId });
     } catch (err) {
-      dispatch(upsertFile(record)); // rollback — still in trash
+      dispatch(upsertFile(toCloudFilePartial(record))); // rollback — still in trash (clone — state objects are frozen)
       throw err;
     } finally {
       releaseRequest(requestId);
