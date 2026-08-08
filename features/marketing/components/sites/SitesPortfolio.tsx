@@ -20,6 +20,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
@@ -378,6 +379,40 @@ export function SitesPortfolio() {
             {formatPosition(row.gsc_position_28d)}
           </span>
         </GscMetricPeek>
+      ),
+    },
+    {
+      // Weighted catalogue-analysis score from web.v_site_score, written by
+      // the per-page audit workers (post-crawl analysis / Analyze command).
+      // Sort is server-served via the health_score branch in listSites;
+      // filter deliberately absent (same rule as the KPI columns).
+      id: "health_score",
+      accessorKey: "health_score",
+      header: "Health",
+      filter: false,
+      align: "right",
+      cell: (row) => (
+        <span className="block text-right">
+          <span
+            className={cn(
+              "block text-sm font-medium tabular-nums",
+              row.health_score === null
+                ? "text-muted-foreground"
+                : row.health_score >= 90
+                  ? "text-success"
+                  : row.health_score >= 70
+                    ? "text-warning"
+                    : "text-destructive",
+            )}
+          >
+            {row.health_score === null ? "—" : row.health_score.toFixed(1)}
+          </span>
+          <span className="block text-[10px] tabular-nums text-muted-foreground">
+            {row.scored_pages
+              ? `${formatMetric(row.scored_pages)} scored`
+              : "not analyzed"}
+          </span>
+        </span>
       ),
     },
     {

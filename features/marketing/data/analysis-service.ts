@@ -446,3 +446,165 @@ export async function listFindingResults(
     total: result.count ?? 0,
   };
 }
+
+// ─── Catalogue-analysis overview (Audit tab) ────────────────────────────────
+//
+// The rollup the Audit workspace renders over the REAL analysis rows the
+// per-page workers write (matrx-scraper `analyze_site_pages`, commissioned
+// 2026-08-08): current site score (`web.v_site_score`), freshness, open
+// findings grouped by catalogue item, and the score-ranked worst pages
+// (`web.v_page_score`). Read-only; grouping happens client-side over a
+// bounded fetch whose truncation is surfaced, never silent.
+
+const OPEN_FINDINGS_ROLLUP_CAP = 5000;
+const WORST_PAGES_LIMIT = 8;
+
+export interface AnalysisItemRollup {
+  itemKey: string;
+  category: string;
+  subcategory: string;
+  worstSeverity: string;
+  count: number;
+}
+
+export interface AnalysisWorstPage {
+  pageId: string;
+  path: string | null;
+  url: string | null;
+  pageScore: number;
+  failCount: number;
+}
+
+export interface SiteAnalysisOverview {
+  siteScore: number | null;
+  scoredPages: number;
+  lastComputedAt: string | null;
+  openFindingsTotal: number;
+  /** True when the item rollup was computed over a capped sample. */
+  rollupTruncated: boolean;
+  openBySeverity: Record<string, number>;
+  openByItem: AnalysisItemRollup[];
+  worstPages: AnalysisWorstPage[];
+}
+
+const SEVERITY_RANK: Record<string, number> = {
+  info: 0,
+  low: 1,
+  med: 2,
+  high: 3,
+  critical: 4,
+};
+
+export async function getSiteAnalysisOverview(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<SiteAnalysisOverview> {
+  const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
+
+  const [scoreResponse, latestResponse, openResponse, worstResponse] =
+    await Promise.all([
+      db
+        .from("v_site_score")
+        .select("site_score, scored_pages")
+        .eq("site_id", siteId)
+        .abortSignal(abortSignal)
+        .maybeSingle(),
+      db
+        .from("analysis_result")
+        .select("computed_at")
+        .eq("site_id", siteId)
+        .is("deleted_at", null)
+        .order("computed_at", { ascending: false })
+        .limit(1)
+        .abortSignal(abortSignal)
+        .maybeSingle(),
+      db
+        .from("finding")
+        .select("item_key, category, subcategory, severity", {
+          count: "exact",
+        })
+        .eq("site_id", siteId)
+        .neq("status", "resolved")
+        .eq("suppressed", false)
+        .is("deleted_at", null)
+        .range(0, OPEN_FINDINGS_ROLLUP_CAP - 1)
+        .abortSignal(abortSignal),
+      db
+        .from("v_page_score")
+        .select("page_id, page_score, fail_count")
+        .eq("site_id", siteId)
+        .order("page_score", { ascending: true })
+        .limit(WORST_PAGES_LIMIT)
+        .abortSignal(abortSignal),
+    ]);
+
+  if (scoreResponse.error) throw scoreResponse.error;
+  if (latestResponse.error) throw latestResponse.error;
+  const openRows = assertData(openResponse.data, openResponse.error);
+  const worstRows = assertData(worstResponse.data, worstResponse.error);
+
+  const openBySeverity: Record<string, number> = {};
+  const byItem = new Map<string, AnalysisItemRollup>();
+  for (const row of openRows) {
+    if (!row.item_key || !row.severity) continue;
+    openBySeverity[row.severity] = (openBySeverity[row.severity] ?? 0) + 1;
+    const existing = byItem.get(row.item_key);
+    if (existing) {
+      existing.count += 1;
+      if (
+        (SEVERITY_RANK[row.severity] ?? 0) >
+        (SEVERITY_RANK[existing.worstSeverity] ?? 0)
+      ) {
+        existing.worstSeverity = row.severity;
+      }
+    } else {
+      byItem.set(row.item_key, {
+        itemKey: row.item_key,
+        category: row.category ?? "",
+        subcategory: row.subcategory ?? "",
+        worstSeverity: row.severity,
+        count: 1,
+      });
+    }
+  }
+  const openByItem = Array.from(byItem.values()).sort(
+    (a, b) =>
+      (SEVERITY_RANK[b.worstSeverity] ?? 0) -
+        (SEVERITY_RANK[a.worstSeverity] ?? 0) || b.count - a.count,
+  );
+
+  const pageRefs = await loadPageReferences(
+    siteId,
+    worstRows.map((row) => row.page_id),
+    abortSignal,
+  );
+  const worstPages: AnalysisWorstPage[] = worstRows.flatMap((row) => {
+    if (row.page_id === null || row.page_score === null) return [];
+    const ref = pageRefs.get(row.page_id);
+    return [
+      {
+        pageId: row.page_id,
+        path: ref?.path ?? null,
+        url: ref?.url ?? null,
+        pageScore: Number(row.page_score),
+        failCount: Number(row.fail_count ?? 0),
+      },
+    ];
+  });
+
+  return {
+    siteScore:
+      scoreResponse.data?.site_score === null ||
+      scoreResponse.data?.site_score === undefined
+        ? null
+        : Number(scoreResponse.data.site_score),
+    scoredPages: Number(scoreResponse.data?.scored_pages ?? 0),
+    lastComputedAt: latestResponse.data?.computed_at ?? null,
+    openFindingsTotal: openResponse.count ?? openRows.length,
+    rollupTruncated: (openResponse.count ?? 0) > openRows.length,
+    openBySeverity,
+    openByItem,
+    worstPages,
+  };
+}

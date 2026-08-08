@@ -547,6 +547,20 @@ export function checkSiteLinks(
   return streamCommand(`sites/${siteId}/links/check`, null, callbacks);
 }
 
+/**
+ * Run the deterministic page-analysis catalogue over the site's stored crawl
+ * evidence (matrx-scraper `analyze_site_pages`): writes immutable
+ * `web.analysis_result` rows and reconciles the `web.finding` register, which
+ * the score views (`v_page_score` / `v_site_score`) and the priority queue
+ * project from. Also runs automatically after every full/list crawl.
+ */
+export function analyzeSite(
+  siteId: string,
+  callbacks?: CrawlStreamCallbacks,
+): Promise<CrawlStreamResult> {
+  return streamCommand(`sites/${siteId}/analyze`, null, callbacks);
+}
+
 export async function cancelCrawl(sessionId: string): Promise<void> {
   const token = await bearerToken();
   const response = await fetch(

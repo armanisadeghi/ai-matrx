@@ -4,14 +4,17 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import {
   getFindingDetail,
+  getSiteAnalysisOverview,
   listFindingResults,
   listPageOpenFindings,
   listSiteFindings,
   listSitePriorityQueue,
 } from "@/features/marketing/data/analysis-service";
 
-const analysisKeys = {
+export const analysisKeys = {
   site: (siteId: string) => ["marketing", "site", siteId, "analysis"] as const,
+  overview: (siteId: string) =>
+    [...analysisKeys.site(siteId), "overview"] as const,
   priority: (siteId: string, state: MatrxDataTableQueryState) =>
     [...analysisKeys.site(siteId), "priority", state] as const,
   findings: (siteId: string, state: MatrxDataTableQueryState) =>
@@ -26,6 +29,15 @@ const analysisKeys = {
     state: MatrxDataTableQueryState,
   ) => [...analysisKeys.finding(siteId, findingId), "results", state] as const,
 };
+
+export function useSiteAnalysisOverview(siteId: string) {
+  return useQuery({
+    queryKey: analysisKeys.overview(siteId),
+    queryFn: ({ signal }) => getSiteAnalysisOverview(siteId, signal),
+    enabled: Boolean(siteId),
+    placeholderData: keepPreviousData,
+  });
+}
 
 export function useSitePriorityQueue(
   siteId: string,

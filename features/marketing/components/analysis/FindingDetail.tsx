@@ -392,17 +392,29 @@ export function FindingDetail({ findingId }: { findingId: string }) {
           <div className="flex shrink-0 items-center gap-1.5">
             <CopyButtons size="icon" {...findingCopy} />
             {data.page ? (
-              <Button
-                asChild
-                variant="outline"
-                size="sm"
-                className="h-8 shrink-0"
-              >
-                <a href={data.page.url} target="_blank" rel="noreferrer">
-                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-                  {data.page.path || "/"}
-                </a>
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 shrink-0"
+                  onClick={() =>
+                    navigate(`${sitePath}/pages/${data.page?.id}`)
+                  }
+                >
+                  Page workspace
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-8 shrink-0"
+                >
+                  <a href={data.page.url} target="_blank" rel="noreferrer">
+                    <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                    {data.page.path || "/"}
+                  </a>
+                </Button>
+              </>
             ) : null}
           </div>
         </div>
