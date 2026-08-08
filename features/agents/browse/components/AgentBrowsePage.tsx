@@ -112,7 +112,7 @@ export function AgentBrowsePage() {
   };
 
   const newAgentButton = (
-    <Button asChild size="sm">
+    <Button asChild size="sm" className="h-11 lg:h-7">
       <Link href="/agents/new" aria-label="New agent">
         <Plus className="h-4 w-4" />
         <span className="max-sm:sr-only">New agent</span>
@@ -140,7 +140,12 @@ export function AgentBrowsePage() {
             />
           </div>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <Button asChild variant="outline" size="sm">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="h-11 lg:h-7"
+            >
               <Link href="/agents/sets" aria-label="Agent sets">
                 <Network className="h-4 w-4" />
                 <span className="max-sm:sr-only">Sets</span>
