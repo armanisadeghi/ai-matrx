@@ -43,6 +43,13 @@ export function AgentSharePanel({
   const orgPermissions = permissions.filter((p) => p.grantedToOrganizationId);
   const publicPermission = permissions.find((p) => p.isPublic);
 
+  // Every grant mutation refreshes `permissions`; this signature makes the
+  // summary refetch in lockstep so the two can never contradict each other.
+  const grantSignature = permissions
+    .map((p) => `${p.id}:${p.permissionLevel}`)
+    .concat(resourceIsPublic ? "public" : "not-public")
+    .join("|");
+
   const subTabs: {
     id: ShareSubTab;
     label: string;
@@ -106,6 +113,7 @@ export function AgentSharePanel({
           <AccessSummaryPanel
             entityType="agent"
             entityId={agentId}
+            refreshToken={grantSignature}
             className="px-0 pt-0 border-b border-border/40 pb-3"
           />
           {activeSubTab === "users" && (
