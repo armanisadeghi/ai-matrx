@@ -110,6 +110,10 @@ export function SearchConsoleWorkspace() {
   const queryClient = useQueryClient();
   const [isNavigating, startNavigation] = useTransition();
   const [syncing, setSyncing] = useState(false);
+  // Live note shown while a history walk runs — a 3-minute silent spinner
+  // reads as "the click did nothing", which is how a working feature gets
+  // reported as broken.
+  const [historyNote, setHistoryNote] = useState<string | null>(null);
   const [visibleMetrics, setVisibleMetrics] =
     useState<readonly GscMetric[]>(DEFAULT_VISIBLE);
 
@@ -149,6 +153,16 @@ export function SearchConsoleWorkspace() {
       .filter((r) => r.dimension_profile !== "search_appearance")
       .map((r) => r.max_date);
     return dates.length > 0 ? [...dates].sort().at(-1) ?? null : null;
+  }, [freshness.data]);
+  // The OLDEST stored day (search_appearance excluded — its history is
+  // deliberately shallow). When the visible range starts before this day,
+  // the user is looking at a window we simply never fetched — say so.
+  const dataFrom = useMemo(() => {
+    const rows = freshness.data ?? [];
+    const dates = rows
+      .filter((r) => r.dimension_profile !== "search_appearance")
+      .map((r) => r.min_date);
+    return dates.length > 0 ? ([...dates].sort().at(0) ?? null) : null;
   }, [freshness.data]);
   // ONLY a SUCCESSFUL empty read means "no data". While loading, or after a
   // failed read, we know nothing — and the empty state below asserts a fact
@@ -286,6 +300,75 @@ export function SearchConsoleWorkspace() {
     }
   };
 
+  // "If I ask for a time that isn't downloaded, get it — or tell me why
+  // not." One click walks BACKWARD to Google's ~16-month horizon, looping
+  // server calls if one walk hits its window cap, refreshing every table
+  // between rounds so the chart fills in as data lands.
+  const runHistoryToHorizon = async () => {
+    if (!state.siteId || syncing) return;
+    setSyncing(true);
+    setHistoryNote("Starting history fetch…");
+    let totalCreated = 0;
+    try {
+      for (let round = 0; round < 4; round += 1) {
+        const result = await syncGscSearchPerformance(
+          dispatch,
+          state.siteId,
+          site?.organization_id ?? null,
+          { mode: "backfill" },
+          {
+            onEvent: (event) => {
+              if (event.event !== "data") return;
+              const data = event.data as {
+                kind?: unknown;
+                receipt?: unknown;
+              };
+              if (typeof data.kind === "string" && data.kind !== "seo.receipt") {
+                const stage = data.kind.replace(/^seo\./, "").replace(/_/g, " ");
+                setHistoryNote(`Fetching older history — ${stage}…`);
+              }
+            },
+          },
+        );
+        totalCreated += result.createdObservations;
+        // Let the visible tables catch up between rounds — real-time-ish.
+        await queryClient.invalidateQueries({ queryKey: ["marketing", "gsc"] });
+        if (result.reachedLatest) {
+          toast.success(
+            totalCreated > 0
+              ? `Loaded ${totalCreated.toLocaleString()} older rows back to ${result.coveredThrough}. That is Google's full ~16-month history.`
+              : "Already holding Google's full ~16-month history for this site.",
+          );
+          return;
+        }
+        if (result.createdObservations === 0 && result.existingObservations === 0) {
+          toast.info(
+            "No older data came back for that window — Google may have nothing before " +
+              (result.coveredThrough ?? "this point") +
+              ".",
+          );
+          return;
+        }
+        setHistoryNote(
+          `History loaded back to ${result.coveredThrough ?? "…"} — continuing…`,
+        );
+      }
+      toast.warning(
+        `Loaded ${totalCreated.toLocaleString()} older rows so far, but the horizon was not reached after several rounds — press Fetch older history again to continue.`,
+      );
+    } catch (error) {
+      const described = describeBackendFailure(error);
+      toast.error(described.headline, {
+        description:
+          described.cause !== described.headline ? described.cause : undefined,
+      });
+    } finally {
+      await queryClient.invalidateQueries({ queryKey: ["marketing", "gsc"] });
+      setHistoryNote(null);
+      setSyncing(false);
+    }
+  };
+
   const tabDimension = isDimensionTab(state.tab)
     ? TAB_DIMENSION[state.tab]
     : null;
@@ -386,11 +469,15 @@ export function SearchConsoleWorkspace() {
                 size="sm"
                 variant="outline"
                 className="h-7 gap-1 px-2 text-xs"
-                onClick={() => void runSync("backfill")}
+                onClick={() => void runHistoryToHorizon()}
                 disabled={syncing || !gscBound}
-                title="Fetch OLDER data — walks backward through Google's 16-month history"
+                title="Fetch OLDER data — walks backward until Google's full ~16-month history is stored"
               >
-                <History className="h-3 w-3" />
+                {syncing && historyNote ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <History className="h-3 w-3" />
+                )}
                 History
               </Button>
             </div>
@@ -413,6 +500,51 @@ export function SearchConsoleWorkspace() {
               canSync={gscBound}
               suppressed={knownEmpty}
             />
+            {/* The view asks for a window we never fetched — say so LOUDLY
+                and offer the fix in place. A truthful half-empty chart with
+                no explanation is indistinguishable from a broken one. */}
+            {freshnessKnown &&
+            hasAnyData &&
+            dataFrom &&
+            periods.current.start < dataFrom ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-warning/50 bg-warning/10 px-3 py-2">
+                <p className="text-xs text-foreground">
+                  {historyNote ? (
+                    historyNote
+                  ) : (
+                    <>
+                      This view starts {periods.current.start}, but stored
+                      Search Console data begins <b>{dataFrom}</b> —{" "}
+                      {Math.max(
+                        0,
+                        Math.round(
+                          (Date.parse(`${dataFrom}T00:00:00Z`) -
+                            Date.parse(
+                              `${periods.current.start}T00:00:00Z`,
+                            )) /
+                            86_400_000,
+                        ),
+                      )}{" "}
+                      days in this range have never been fetched from Google.
+                    </>
+                  )}
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1 px-2 text-xs"
+                  onClick={() => void runHistoryToHorizon()}
+                  disabled={syncing || !gscBound}
+                >
+                  {syncing && historyNote ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <History className="h-3 w-3" />
+                  )}
+                  Fetch older history
+                </Button>
+              </div>
+            ) : null}
             {/* Every read that can fail says so. Before 2026-08-04 these four
                 had no rendered error state at all, so a failed fetch showed
                 as an empty table, "—" tiles, a flat chart, or a disabled
