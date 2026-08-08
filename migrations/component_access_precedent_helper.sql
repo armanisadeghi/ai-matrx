@@ -94,14 +94,27 @@ begin
   v_trusted := case when v_owner_col is not null
                     then format('t.%I = $1', v_owner_col)
                     else 'false' end;
+  -- ANY level: org membership on internal+ rows (has_access_for_base's final
+  -- org lane carries no viewer gate — org members can write org-internal
+  -- content), and super-admin on global_readable system-org rows.
+  if v_has_vis and v_has_org then
+    v_trusted := v_trusted
+      || ' or (t.visibility >= ''internal'''
+      || ' and t.organization_id in (select om.organization_id from iam.organization_member om where om.user_id = $1))';
+  end if;
+  if v_has_org and public.is_super_admin_for(v_uid) then
+    v_trusted := v_trusted
+      || ' or t.organization_id in (select so.organization_id from iam.system_orgs so where so.global_readable)';
+  end if;
+  -- VIEWER only: public rows, internal+ rows in global_readable system orgs,
+  -- and org-admin's org rows regardless of visibility.
   if p_required = 'viewer' then
     if v_has_vis then
       v_trusted := v_trusted || ' or t.visibility = ''public''';
       if v_has_org then
         v_trusted := v_trusted
           || ' or (t.visibility >= ''internal'''
-          || ' and (t.organization_id in (select om.organization_id from iam.organization_member om where om.user_id = $1)'
-          || '      or t.organization_id in (select so.organization_id from iam.system_orgs so where so.global_readable)))';
+          || ' and t.organization_id in (select so.organization_id from iam.system_orgs so where so.global_readable))';
       end if;
     end if;
     if v_has_org then
