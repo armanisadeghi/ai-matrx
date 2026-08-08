@@ -42,12 +42,13 @@ export async function GET(request: Request) {
       errors: 0,
     };
 
-    // Get tasks with upcoming or past due dates that are not completed
+    // Get open tasks with upcoming or past due dates (canonical lifecycle:
+    // anything not completed/cancelled/dismissed is open).
     const { data: tasks, error } = await workspaceDb(supabase)
       .from('tasks')
       .select('id, title, created_by, due_date, assignee_id')
       .is('deleted_at', null)
-      .eq('status', 'incomplete')
+      .not('status', 'in', '(completed,cancelled,dismissed)')
       .not('due_date', 'is', null)
       .lte('due_date', dayAfterTomorrow.toISOString())
       .order('due_date', { ascending: true });
@@ -67,6 +68,22 @@ export async function GET(request: Request) {
         results,
       });
     }
+
+    // Per-user snooze/dismiss state — a snoozed or dismissed task never nags.
+    const { data: userStates } = await workspaceDb(supabase)
+      .from('task_user_state')
+      .select('task_id, user_id, snoozed_until, dismissed_at')
+      .in('task_id', tasks.map((t) => t.id));
+    const muted = new Set<string>();
+    for (const s of userStates ?? []) {
+      const snoozed = s.snoozed_until && new Date(s.snoozed_until) > now;
+      if (snoozed || s.dismissed_at) muted.add(`${s.task_id}:${s.user_id}`);
+    }
+
+    // Volume-aware: at most 3 reminder emails per user per run — a flooded
+    // inbox trains users to ignore every reminder.
+    const PER_USER_CAP = 3;
+    const perUserSent = new Map<string, number>();
 
     // Process each task
     for (const task of tasks) {
@@ -90,6 +107,14 @@ export async function GET(request: Request) {
         results.skipped++;
         continue;
       }
+      if (muted.has(`${task.id}:${notifyUserId}`)) {
+        results.skipped++;
+        continue;
+      }
+      if ((perUserSent.get(notifyUserId) ?? 0) >= PER_USER_CAP) {
+        results.skipped++;
+        continue;
+      }
 
       try {
         const result = await sendDueDateReminderEmail({
@@ -105,6 +130,10 @@ export async function GET(request: Request) {
             results.skipped++;
           } else {
             results.sent++;
+            perUserSent.set(
+              notifyUserId,
+              (perUserSent.get(notifyUserId) ?? 0) + 1,
+            );
           }
         } else {
           results.errors++;

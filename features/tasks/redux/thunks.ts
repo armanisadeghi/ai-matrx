@@ -3,6 +3,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import * as taskService from "../services/taskService";
+import * as taskUserStateService from "../services/taskUserStateService";
 import type { UpdateTaskInput } from "../services/taskService";
 import {
   createProject as createProjectSvc,
@@ -32,6 +33,9 @@ import {
   setNewTaskTitle,
   setLastCreatedTaskId,
   clearTaskEdit,
+  hydrateTaskUserState,
+  patchTaskUserState,
+  type TaskUserStateEntry,
 } from "./taskUiSlice";
 
 /**
@@ -552,4 +556,65 @@ export const saveTaskEditsThunk = createAsyncThunk<
     );
   }
   dispatch(clearTaskEdit(taskId));
+});
+
+// ─── Per-user notification/triage state (workspace.task_user_state) ─────────
+
+export const loadTaskUserStateThunk = createAsyncThunk<
+  void,
+  void,
+  { state: RootState; dispatch: AppDispatch }
+>("tasksUi/loadTaskUserState", async (_, { dispatch }) => {
+  const rows = await taskUserStateService.listMyTaskUserStates();
+  const map: Record<string, TaskUserStateEntry> = {};
+  for (const r of rows) {
+    map[r.task_id] = {
+      snoozedUntil: r.snoozed_until,
+      acknowledgedAt: r.acknowledged_at,
+      dismissedAt: r.dismissed_at,
+      pinnedAt: r.pinned_at,
+      seenAt: r.seen_at,
+    };
+  }
+  dispatch(hydrateTaskUserState(map));
+});
+
+/** Snooze (or unsnooze with `until: null`) — optimistic, server-synced. */
+export const snoozeTaskThunk = createAsyncThunk<
+  void,
+  { taskId: string; until: Date | null },
+  { state: RootState; dispatch: AppDispatch }
+>("tasksUi/snoozeTask", async ({ taskId, until }, { dispatch, getState }) => {
+  const prev = getState().tasksUi.userState[taskId]?.snoozedUntil ?? null;
+  dispatch(
+    patchTaskUserState({
+      taskId,
+      patch: { snoozedUntil: until ? until.toISOString() : null },
+    }),
+  );
+  const result = until
+    ? await taskUserStateService.snoozeTask(taskId, until)
+    : await taskUserStateService.unsnoozeTask(taskId);
+  if (!result) {
+    dispatch(patchTaskUserState({ taskId, patch: { snoozedUntil: prev } }));
+  }
+});
+
+/** Pin/unpin a task for the current user — optimistic, server-synced. */
+export const pinTaskThunk = createAsyncThunk<
+  void,
+  { taskId: string; pinned: boolean },
+  { state: RootState; dispatch: AppDispatch }
+>("tasksUi/pinTask", async ({ taskId, pinned }, { dispatch, getState }) => {
+  const prev = getState().tasksUi.userState[taskId]?.pinnedAt ?? null;
+  dispatch(
+    patchTaskUserState({
+      taskId,
+      patch: { pinnedAt: pinned ? new Date().toISOString() : null },
+    }),
+  );
+  const result = await taskUserStateService.pinTask(taskId, pinned);
+  if (!result) {
+    dispatch(patchTaskUserState({ taskId, patch: { pinnedAt: prev } }));
+  }
 });

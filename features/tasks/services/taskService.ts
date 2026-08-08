@@ -502,9 +502,24 @@ export async function updateTaskLabels(
   labels: TaskLabel[],
 ): Promise<boolean> {
   try {
+    // Merge into existing settings — a bare `{ labels }` write used to clobber
+    // every other settings key.
+    const { data: current, error: readError } = await workspaceDb(supabase)
+      .from("tasks")
+      .select("settings")
+      .eq("id", taskId)
+      .single();
+    if (readError) {
+      console.error("Error reading task settings:", readError.message);
+      return false;
+    }
+    const settings = {
+      ...((current?.settings as Record<string, unknown> | null) ?? {}),
+      labels,
+    };
     const { error } = await workspaceDb(supabase)
       .from("tasks")
-      .update({ settings: { labels } })
+      .update({ settings })
       .eq("id", taskId);
     if (error) {
       console.error("Error updating task labels:", error.message);

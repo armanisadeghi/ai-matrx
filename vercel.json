@@ -1,5 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "corepack enable && corepack prepare pnpm@10.29.2 --activate && pnpm install --frozen-lockfile",
-  "ignoreCommand": "bash scripts/vercel-ignore-build.sh"
+  "ignoreCommand": "bash scripts/vercel-ignore-build.sh",
+  "crons": [
+    {
+      "path": "/api/cron/due-date-reminders",
+      "schedule": "0 15 * * *"
+    }
+  ]
 }

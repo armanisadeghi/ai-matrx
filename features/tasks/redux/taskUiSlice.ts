@@ -54,6 +54,20 @@ export interface TaskUiState {
   // Transient "source" for widgets that are about to create or link a task
   // from some other entity (chat message, note, file, chat block, ...)
   pendingSource: PendingSource | null;
+
+  // Per-user notification/triage state (workspace.task_user_state), keyed by
+  // task id. Hydrated once by loadTaskUserStateThunk; snoozed tasks drop out
+  // of the attention views.
+  userState: Record<string, TaskUserStateEntry>;
+  userStateLoaded: boolean;
+}
+
+export interface TaskUserStateEntry {
+  snoozedUntil: string | null;
+  acknowledgedAt: string | null;
+  dismissedAt: string | null;
+  pinnedAt: string | null;
+  seenAt: string | null;
 }
 
 export interface PendingSource {
@@ -82,6 +96,9 @@ export interface TaskEditDraft {
   project_id?: string | null;
   assignee_id?: string | null;
   labels?: string[];
+  status?: import("../constants/status").TaskStatus;
+  start_date?: string | null;
+  recurrence_rule?: string | null;
 }
 
 const initialState: TaskUiState = {
@@ -117,6 +134,8 @@ const initialState: TaskUiState = {
 
   lastCreatedTaskId: null,
   pendingSource: null,
+  userState: {},
+  userStateLoaded: false,
 };
 
 const slice = createSlice({
@@ -366,6 +385,29 @@ const slice = createSlice({
     clearPendingSource(state) {
       state.pendingSource = null;
     },
+
+    // ─── Per-user notification/triage state ─────────────────────────────────
+    hydrateTaskUserState(
+      state,
+      action: PayloadAction<Record<string, TaskUserStateEntry>>,
+    ) {
+      state.userState = action.payload;
+      state.userStateLoaded = true;
+    },
+    patchTaskUserState(
+      state,
+      action: PayloadAction<{ taskId: string; patch: Partial<TaskUserStateEntry> }>,
+    ) {
+      const { taskId, patch } = action.payload;
+      const current = state.userState[taskId] ?? {
+        snoozedUntil: null,
+        acknowledgedAt: null,
+        dismissedAt: null,
+        pinnedAt: null,
+        seenAt: null,
+      };
+      state.userState[taskId] = { ...current, ...patch };
+    },
   },
 });
 
@@ -412,6 +454,8 @@ export const {
   setLastCreatedTaskId,
   setPendingSource,
   clearPendingSource,
+  hydrateTaskUserState,
+  patchTaskUserState,
 } = slice.actions;
 
 export default slice.reducer;
@@ -479,3 +523,7 @@ export const selectTaskIsDirty =
   };
 export const selectPendingSource = (s: StateWithTasksUi) =>
   s.tasksUi.pendingSource;
+export const selectTaskUserStateMap = (s: StateWithTasksUi) =>
+  s.tasksUi.userState;
+export const selectTaskUserStateLoaded = (s: StateWithTasksUi) =>
+  s.tasksUi.userStateLoaded;

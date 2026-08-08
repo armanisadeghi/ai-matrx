@@ -29,6 +29,7 @@ import {
 } from "../constants/smartViews";
 import {
   selectActiveProject,
+  selectTaskUserStateMap,
   selectShowAllProjects,
   selectShowCompleted,
   selectSearchQuery,
@@ -251,6 +252,7 @@ export const selectFilteredTasks = createSelector(
     selectTaskIdsMatchingAppContextScopes,
     selectOrganizationId,
     selectValidProjectIds,
+    selectTaskUserStateMap,
   ],
   (
     projects,
@@ -268,6 +270,7 @@ export const selectFilteredTasks = createSelector(
     appContextScopeTaskIds,
     appOrgId,
     validProjectIdsForTaskPipe,
+    userStateMap,
   ): TaskWithProject[] => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -319,6 +322,15 @@ export const selectFilteredTasks = createSelector(
     if (view.key !== "all") {
       tasks = tasks.filter((t) => view.predicate(t, viewCtx));
     }
+    // Snoozed tasks disappear from the attention views (everything except
+    // All tasks / Completed) until their snooze expires.
+    if (view.key !== "all" && view.key !== "completed") {
+      const nowIso = new Date().toISOString();
+      tasks = tasks.filter((t) => {
+        const snoozedUntil = userStateMap[t.id]?.snoozedUntil;
+        return !snoozedUntil || snoozedUntil <= nowIso;
+      });
+    }
 
     switch (filter) {
       case "incomplete":
@@ -367,7 +379,14 @@ export const selectFilteredTasks = createSelector(
       direction: "asc",
     };
     const sorted = sortTasks(tasks, sortConfig);
-    return sortOrder === "asc" ? sorted.reverse() : sorted;
+    const directed = sortOrder === "asc" ? sorted.reverse() : sorted;
+    // Pinned tasks float to the top within the current ordering.
+    const pinned: TaskWithProject[] = [];
+    const rest: TaskWithProject[] = [];
+    for (const t of directed) {
+      (userStateMap[t.id]?.pinnedAt ? pinned : rest).push(t);
+    }
+    return pinned.length ? [...pinned, ...rest] : directed;
   },
 );
 

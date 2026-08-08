@@ -8,6 +8,8 @@ import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
 import { Handle } from "@/features/resizable-panels/Handle";
 import { RegisteredPanel } from "@/features/resizable-panels/RegisteredPanel";
 import TasksContextSidebar from "@/features/tasks/components/TasksContextSidebar";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { loadTaskUserStateThunk } from "@/features/tasks/redux/thunks";
 import TaskListPane from "@/features/tasks/components/TaskListPane";
 import TaskEditor from "@/features/tasks/components/TaskEditor";
 
@@ -44,10 +46,14 @@ export function TasksDesktopShell({
 }: TasksDesktopShellProps) {
   const [hasMounted, setHasMounted] = useState(false);
   const isMobile = useIsMobile();
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     setHasMounted(true);
-  }, []);
+    // Per-user snooze/ack/pin state — one fetch per route mount; the smart
+    // views (Today/Overdue/…) respect it.
+    dispatch(loadTaskUserStateThunk());
+  }, [dispatch]);
 
   // First paint always renders desktop so SSR + initial client tree match.
   // After mount, swap to the mobile view if the viewport is below the
