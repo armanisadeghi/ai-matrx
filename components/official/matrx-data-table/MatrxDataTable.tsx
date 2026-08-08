@@ -417,7 +417,7 @@ export function MatrxDataTable<T>({
   return (
     <div
       className={cn(
-        "flex h-full min-h-0 flex-col gap-2 max-sm:[&_button]:min-h-11 max-sm:[&_button]:min-w-11 max-sm:[&_input]:min-h-11 max-sm:[&_table_a]:inline-flex max-sm:[&_table_a]:min-h-11 max-sm:[&_table_a]:items-center",
+        "flex h-full min-h-0 flex-col gap-2 max-lg:[&_button]:min-h-11 max-lg:[&_button]:min-w-11 max-lg:[&_input]:min-h-11 max-lg:[&_table_a]:inline-flex max-lg:[&_table_a]:min-h-11 max-lg:[&_table_a]:items-center",
         className,
       )}
     >
