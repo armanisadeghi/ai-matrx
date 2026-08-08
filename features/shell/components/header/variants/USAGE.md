@@ -261,6 +261,7 @@ import { GlassButton, BottomSheet, GlassDropdown } from "@/components/header-var
 | Spring physics | All interactive transitions use `--shell-ease-spring` |
 | Nav degrades in three stages | `RouteModeNav` measures and steps all icon+text → active icon+text with inactive icons → one menu; hidden measurers carry `w-max`, fit test reserves a 32px flank gutter, desktop uses a dropdown, and mobile uses a bottom sheet |
 | Selection visible in both themes | Selected nav items use `--shell-nav-selected-bg/-text/-shadow` + `--shell-nav-unselected-text` — **never** `--matrx-glass-bg-active`, which disappears on light-mode glass |
+| Icon-only items name themselves via `NavItemTooltip` | `NavTooltipProvider` + `NavItemTooltip` (`header/NavItemTooltip.tsx`): fast styled tooltip below the pill, instant when scanning siblings, zero layout shift. Never a native `title=` (slow, unstyled, doubles up), never a hover-expanding inline label (labels differ in width, so expansion always shifts the pill). Labels CSS-hidden below a breakpoint gate the tooltip with `contentClassName` (e.g. `xl:hidden`) |
 
 ---
 
