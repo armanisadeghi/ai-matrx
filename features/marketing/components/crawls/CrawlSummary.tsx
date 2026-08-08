@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Ban, Radio } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -38,16 +38,10 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
   const { site, sitePath } = useMarketingSite();
   const crawl = useCrawl(site.id, crawlId);
   const [canceling, setCanceling] = useState(false);
+  // Live refresh comes from useCrawl itself (3s refetchInterval while
+  // queued/running) plus realtime heartbeats — no second poll path here.
   const isActive =
     crawl.data?.status === "queued" || crawl.data?.status === "running";
-
-  // Realtime heartbeats already invalidate this query; polling is the
-  // fallback so a running session's detail page never freezes.
-  useEffect(() => {
-    if (!isActive) return;
-    const timer = window.setInterval(() => void crawl.refetch(), 5_000);
-    return () => window.clearInterval(timer);
-  }, [isActive, crawl]);
 
   const requestCancel = async () => {
     setCanceling(true);

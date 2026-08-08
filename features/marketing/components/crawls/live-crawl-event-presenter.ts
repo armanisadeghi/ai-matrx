@@ -141,6 +141,15 @@ export function summarizeLiveCrawlEvents(
         if (isOutOfScope(event)) skipped += 1;
         break;
       }
+      case "urls_classified": {
+        // One batch event per processed page: `total` decisions, `accepted`
+        // in scope. The remainder is what the crawler skipped.
+        skipped += Math.max(
+          0,
+          numberValue(event, "total") - numberValue(event, "accepted"),
+        );
+        break;
+      }
       case "page_fetched": {
         fetchedEvents += 1;
         break;

@@ -373,7 +373,8 @@ export function NewCrawlWorkspace() {
                       </p>
                     ) : (
                       <p className="text-[10px] leading-4 text-muted-foreground">
-                        Regex, one per line. Empty = no{" "}
+                        Regex vs the URL path (e.g. ^/blog/), one per line.
+                        Empty = no{" "}
                         {item.field === "include_patterns"
                           ? "restriction"
                           : "exclusions"}

@@ -329,7 +329,7 @@ export function SiteSettingsWorkspace() {
             <PatternSetting
               id="crawl-include-patterns"
               label="Include URL patterns"
-              detail="Regex, one per line. Empty = crawl everything in scope."
+              detail="Regex vs the URL path (e.g. ^/blog/), one per line. Empty = crawl everything in scope."
               value={includeText}
               onChange={setIncludeText}
               problems={patternProblems.filter(
@@ -339,7 +339,7 @@ export function SiteSettingsWorkspace() {
             <PatternSetting
               id="crawl-exclude-patterns"
               label="Exclude URL patterns"
-              detail="Regex, one per line. Matching URLs are never fetched."
+              detail="Regex vs the URL path, one per line. Matching URLs are never fetched."
               value={excludeText}
               onChange={setExcludeText}
               problems={patternProblems.filter(

@@ -42,6 +42,17 @@ describe("crawlOptionsFromSettings", () => {
     expect(next.crawl_defaults).toEqual(stored.crawl_defaults);
   });
 
+  it("preserves max_depth 0 (seeds only) instead of flipping to unlimited", () => {
+    const options = crawlOptionsFromSettings({
+      crawl_defaults: { max_depth: 0 },
+    });
+    expect(options.max_depth).toBe(0);
+    expect(
+      crawlOptionsFromSettings({ crawl_defaults: { max_depth: 2.5 } })
+        .max_depth,
+    ).toBe(defaultCrawlOptions.max_depth);
+  });
+
   it("keeps browser_with_screenshot instead of downgrading it", () => {
     const options = crawlOptionsFromSettings({
       crawl_defaults: { render_mode: "browser_with_screenshot" },

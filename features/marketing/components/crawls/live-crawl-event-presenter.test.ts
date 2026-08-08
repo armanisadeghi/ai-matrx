@@ -190,4 +190,12 @@ describe("summarizeLiveCrawlEvents", () => {
     ]);
     expect(counters.skipped).toBe(1);
   });
+
+  it("counts skipped URLs from batched urls_classified events", () => {
+    const counters = summarizeLiveCrawlEvents([
+      event({ event_type: "urls_classified", total: 40, accepted: 25 }),
+      event({ event_type: "urls_classified", total: 10, accepted: 10 }),
+    ]);
+    expect(counters.skipped).toBe(15);
+  });
 });

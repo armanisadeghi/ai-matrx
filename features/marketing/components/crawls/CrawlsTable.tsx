@@ -110,6 +110,10 @@ export function CrawlsTable() {
           toast.error("Could not cancel the running crawl — not deleting", {
             description: extractErrorMessage(cancelError),
           });
+          // The session may have finished or been deleted elsewhere —
+          // refresh so the row reflects reality instead of lingering.
+          void crawls.refetch();
+          crawlActivity.refresh();
           return;
         }
       }

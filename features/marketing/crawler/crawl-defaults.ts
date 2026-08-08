@@ -41,8 +41,12 @@ export function crawlOptionsFromSettings(settings: Json): CrawlStartOptions {
   const renderMode = raw.render_mode;
   return {
     max_pages: readNumber(raw.max_pages, defaultCrawlOptions.max_pages),
+    // 0 is a VALID, maximally-restrictive server value (seeds only) — never
+    // flip a stored 0 to null (unlimited), the opposite extreme.
     max_depth:
-      typeof raw.max_depth === "number" && raw.max_depth > 0
+      typeof raw.max_depth === "number" &&
+      Number.isInteger(raw.max_depth) &&
+      raw.max_depth >= 0
         ? raw.max_depth
         : defaultCrawlOptions.max_depth,
     concurrency: readNumber(raw.concurrency, defaultCrawlOptions.concurrency),
