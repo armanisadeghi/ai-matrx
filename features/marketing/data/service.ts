@@ -300,7 +300,9 @@ export async function listSites(
       .range(from, to)
       .abortSignal(abortSignal);
     const kpiRows = assertData(kpiResponse.data, kpiResponse.error);
-    const pageIds = kpiRows.flatMap((row) => (row.site_id ? [row.site_id] : []));
+    const pageIds = kpiRows.flatMap((row) =>
+      row.site_id ? [row.site_id] : [],
+    );
     if (pageIds.length === 0) return { rows: [], total };
 
     const scoreResponse = await db
@@ -323,9 +325,7 @@ export async function listSites(
 
   query = query.order(sortColumn, { ascending, nullsFirst: false });
   query = query.order("id", { ascending });
-  const response = await query
-    .range(from, to)
-    .abortSignal(abortSignal);
+  const response = await query.range(from, to).abortSignal(abortSignal);
   const sites = assertData(response.data, response.error);
 
   if (sites.length === 0) return { rows: [], total: response.count ?? 0 };
@@ -1239,7 +1239,9 @@ export async function getPageContent(
   pageId: string,
   signal?: AbortSignal,
 ): Promise<PageContent | null> {
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("page_content")
     .select("*")
     .eq("site_id", siteId)
@@ -1731,13 +1733,29 @@ const DISCOVERED_COLUMNS =
  * pagination with a true total — never a silent cap. Ordering ends in the
  * unique `id` so pages are stable while rows share a category/confidence.
  */
-export async function listDiscoveredItems(
+export function listDiscoveredItems(
+  brandId: string,
+  status: DiscoveredItemStatus | null,
+  signal?: AbortSignal,
+): Promise<DiscoveredItem[]>;
+export function listDiscoveredItems(
   brandId: string,
   status: DiscoveredItemStatus | null,
   page: number,
   pageSize: number,
   signal?: AbortSignal,
-): Promise<PagedResult<DiscoveredItem>> {
+): Promise<PagedResult<DiscoveredItem>>;
+export async function listDiscoveredItems(
+  brandId: string,
+  status: DiscoveredItemStatus | null,
+  pageOrSignal?: number | AbortSignal,
+  pageSize?: number,
+  signal?: AbortSignal,
+): Promise<DiscoveredItem[] | PagedResult<DiscoveredItem>> {
+  const paged = typeof pageOrSignal === "number";
+  const page = paged ? pageOrSignal : 1;
+  const effectivePageSize = paged ? (pageSize ?? 50) : 500;
+  const effectiveSignal = paged ? signal : pageOrSignal;
   const db = await authenticatedWebDb(supabase);
   let query = db
     .from("discovered_item")
@@ -1745,15 +1763,17 @@ export async function listDiscoveredItems(
     .eq("brand_id", brandId)
     .is("deleted_at", null);
   if (status) query = query.eq("status", status);
-  const from = (page - 1) * pageSize;
+  const from = (page - 1) * effectivePageSize;
   const response = await query
     .order("category", { ascending: true })
     .order("confidence", { ascending: false, nullsFirst: false })
     .order("id", { ascending: true })
-    .range(from, from + pageSize - 1)
-    .abortSignal(signal ?? new AbortController().signal);
+    .range(from, from + effectivePageSize - 1)
+    .abortSignal(effectiveSignal ?? new AbortController().signal);
+  const rows = assertData(response.data, response.error);
+  if (!paged) return rows;
   return {
-    rows: assertData(response.data, response.error),
+    rows,
     total: response.count ?? 0,
   };
 }
