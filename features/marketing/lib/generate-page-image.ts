@@ -86,15 +86,18 @@ function extractMatrxFileId(data: unknown): string | null {
 function findImageFileId(state: RootState, requestId: string): string | null {
   const request = state.activeRequests.byRequestId[requestId];
   if (!request) return null;
-  // Once the request is terminal, accept an image block even if its status
-  // never flipped to "complete" — a stream closed by the terminal-settlement
-  // guard (process-stream.ts) may leave the final block's status behind, and
-  // dropping a fileId the server already persisted would fail the whole run.
-  const requestIsTerminal = TERMINAL_STATUSES.has(request.status);
+  // Once the request COMPLETED successfully, accept an image block even if
+  // its status never flipped to "complete" — a stream closed by the
+  // terminal-settlement guard (process-stream.ts) may leave the final
+  // block's status behind, and dropping a fileId the server already
+  // persisted would fail the whole run. Deliberately NOT extended to
+  // error/timeout/cancelled runs: a failed image step must never be
+  // reported as success off a partial block.
+  const requestCompleted = request.status === "complete";
   for (const blockId of Object.keys(request.renderBlocks)) {
     const block = request.renderBlocks[blockId];
     if (block.type !== "image_output") continue;
-    if (block.status !== "complete" && !requestIsTerminal) continue;
+    if (block.status !== "complete" && !requestCompleted) continue;
     const fileId = extractMatrxFileId(block.data);
     if (fileId) return fileId;
   }
