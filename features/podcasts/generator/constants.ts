@@ -330,9 +330,11 @@ export const FORMAT_OPTIONS: FormatOption[] = [
 
 // ── Processing layers ───────────────────────────────────────────────────────
 //
-// Two distinct stages, both display-only today. Pre-script runs between the
-// source and the script (translate / summarize / expand / fact-check the
-// source). Post-script runs between the script and the audio.
+// Two distinct stages. Pre-script runs between the source and the script and
+// is WIRED (2026-08-08): each option maps to a `post_prep_option` value and a
+// dedicated backend agent (slots `podcast.post_prep_*` — repin from
+// /administration/agents/slots). Post-script (script → audio) is still
+// display-only.
 
 export interface ProcessingOption {
   value: string;
@@ -340,26 +342,27 @@ export interface ProcessingOption {
   helper: string;
 }
 
+/** value === the backend `post_prep_option` wire value (PodcastPostPrepOption). */
 export const PRE_SCRIPT_PROCESSING_OPTIONS: ProcessingOption[] = [
   {
-    value: "translate",
+    value: "translation",
     label: "Translate",
-    helper: "Render the source in another language first.",
+    helper: "Render the source in the episode's language first.",
   },
   {
-    value: "summarize",
+    value: "summarization",
     label: "Summarize",
     helper: "Condense a long source to its essentials.",
   },
   {
-    value: "expand",
+    value: "expansion",
     label: "Expand",
-    helper: "Enrich a thin source with researched detail.",
+    helper: "Enrich a thin source with more depth and context.",
   },
   {
-    value: "fact_check",
+    value: "fact_checking",
     label: "Fact-check",
-    helper: "Verify claims before they reach the script.",
+    helper: "Correct clearly false claims before they reach the script.",
   },
 ];
 

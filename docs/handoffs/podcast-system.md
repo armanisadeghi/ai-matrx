@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-28
+updated: 2026-08-08
 repos: [matrx-frontend, aidream]
 vision: [/Users/armanisadeghi/code/aidream/packages/matrx-ai/matrx_ai/agent_runners/PODCAST_PIPELINE.md]
 ---
@@ -37,31 +37,34 @@ adjacent podcast work: live run page + research feed →
 
 ## Remaining work
 
-1. **Chapters unwired.** `podcast_chapter_marker` agent exists server-side; the run page still
-   shows a "Chapter markers" Coming-Soon card — `StudioRunView.tsx` ~line 360 (`isDone &&
-   <ComingSoonCard title="Chapter markers">`).
-2. **Post-prep agents unbuilt.** Post-prep defaults to NONE; the 4 full post-prep agents
-   (translation / summarization / fact-checking / expansion) don't exist. (Stale claim corrected 2026-08-06: ALL 7 formats now have
-   `enabled: true` in `features/podcasts/generator/constants.ts` `FORMAT_OPTIONS` —
-   the FE no longer gates them, so the missing post-prep agents are the only gap.)
-3. **Large casts (7–20 hosts) unverified.** `scripts/podcast_e2e_matrix.py` tops out at
+1. **Large casts (7–20 hosts) unverified.** `scripts/podcast_e2e_matrix.py` tops out at
    `host_count=6`. GATE 2 is strict (N means N), so an agent producing 13 of 14 speakers fails the
    run. Test 10/14/20 before advertising reliability.
-4. **Persisted script contains the script agent's RAW output.** Confirmed: `podcast_generator.py`
+2. **Persisted script contains the script agent's RAW output.** Confirmed: `podcast_generator.py`
    sets `PodcastGenerationResult(script=script, …)` (~line 3220) with the unextracted string;
    `_extract_dialogue` (~line 2506) is used only for speaker resolution. So blog/show-notes/
    transcript can inherit reasoning text. Persist the extracted dialogue instead — small change
    around `_validated_script_stage` (~line 1407).
-5. **`SCRIPT_AGENT_REGISTRY` not built.** Named only in `PODCAST_PIPELINE.md` §4 (custom agents slot
+3. **`SCRIPT_AGENT_REGISTRY` not built.** Named only in `PODCAST_PIPELINE.md` §4 (custom agents slot
    in by `(format, language, host_min, host_max)`); no code references it. Today a custom
    format/language means editing `_create_script` / `_is_legacy_script_request`. Build when the
    custom-agent count grows.
-6. **Languages: only en-US wired** — `LANGUAGE_OPTIONS` in `features/podcasts/generator/constants.ts`
-   (~line 211): `en-US` is the sole `enabled: true` of 13+; others show "Soon". Enable per-locale
-   after verifying TTS voice quality.
+4. **Wire consumers for the four remaining built-but-unconsumed agents** — `podcast.title_optimizer`
+   (title options UI on the run/manage pages), `podcast.audience_adapter` (an audience picker beside
+   the pre-script processing options), and the live-podcast pair `podcast.relevance_gate` +
+   `podcast.live_rewrite` (needs the future live-podcast orchestrator). Slots are declared
+   (`podcast_slots.py`) and admin-repinnable; only call sites are missing.
+5. **Collapse the duplicate blog/show-notes slot pairs** — `podcast.blog_writer` /
+   `podcast.show_notes_generator` (server, still `migration_status=placeholder`) duplicate the live
+   `podcast_client.blog_writer` / `podcast_client.show_notes` slots; pick ONE slot per logical
+   output (decision flagged in both rows' metadata).
 
 ## Done
 
+- 2026-08-08 — Chapters wired: run page `EpisodeChaptersPanel` → floating `podcast.chapter_marker`
+  slot → `pc_episodes.metadata.chapters`. Post-prep live: 4 agents built + wired through
+  `_apply_post_prep` (slots `podcast.post_prep_*`); GeneratorForm pre-script layer interactive.
+  Languages: all 24 Gemini TTS locales `enabled: true` (stale "only en-US" claim removed).
 - Podcast generate/resume streams use canonical `callApi`, so active scope is
   injected; aidream applies it on generate and restores the stored run org on
   resume.

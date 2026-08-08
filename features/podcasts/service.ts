@@ -6,6 +6,7 @@ import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type {
   PcShow,
   PcEpisode,
+  PcEpisodeChapter,
   PcEpisodeWithShow,
   PcSlugLookupResult,
 } from "./types";
@@ -138,7 +139,10 @@ export const podcastService = {
   },
 
   async createEpisode(
-    payload: Omit<PcEpisode, "id" | "created_at" | "updated_at" | "user_id"> & {
+    payload: Omit<
+      PcEpisode,
+      "id" | "created_at" | "updated_at" | "user_id" | "chapters"
+    > & {
       user_id?: string | null;
     },
   ): Promise<PcEpisode> {
@@ -161,11 +165,41 @@ export const podcastService = {
 
   async updateEpisode(
     id: string,
-    payload: Partial<Omit<PcEpisode, "id" | "created_at" | "updated_at">>,
+    payload: Partial<
+      Omit<PcEpisode, "id" | "created_at" | "updated_at" | "chapters">
+    >,
   ): Promise<PcEpisode> {
     const { data, error } = await supabase
       .schema("podcast").from("pc_episodes")
       .update(payload)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return mapPcEpisodeRow(data);
+  },
+
+  /** Persist auto-generated chapter markers under metadata.chapters (not a
+   *  column — read-merge-write so unrelated metadata keys survive). */
+  async saveEpisodeChapters(
+    id: string,
+    chapters: PcEpisodeChapter[],
+  ): Promise<PcEpisode> {
+    const { data: current, error: readError } = await supabase
+      .schema("podcast").from("pc_episodes")
+      .select("metadata")
+      .eq("id", id)
+      .single();
+    if (readError) throw readError;
+    const base =
+      current?.metadata &&
+      typeof current.metadata === "object" &&
+      !Array.isArray(current.metadata)
+        ? current.metadata
+        : {};
+    const { data, error } = await supabase
+      .schema("podcast").from("pc_episodes")
+      .update({ metadata: { ...base, chapters } })
       .eq("id", id)
       .select()
       .single();

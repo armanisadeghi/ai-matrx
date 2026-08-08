@@ -13,6 +13,7 @@ import type {
   PcShow,
 } from "@/features/podcasts/types";
 import {
+  mapPcEpisodeRow,
   mapPcEpisodeWithShowRow,
   mapPcShowRow,
 } from "@/features/podcasts/types";
@@ -216,7 +217,7 @@ export default async function PodcastPage({
       />
       <PodcastShowPage
         show={result.data}
-        episodes={(episodes ?? []) as PcEpisode[]}
+        episodes={(episodes ?? []).map(mapPcEpisodeRow)}
       />
     </>
   );

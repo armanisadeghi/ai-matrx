@@ -13,7 +13,7 @@
 //        topic / rough notes / full script → text; file → URLs;
 //        website / note / YouTube / audio file → SourceResolverPanel resolves
 //        external content into editable text that's sent as input_data.
-//   2. Processing     (pre-script · post-script — both ComingSoon)
+//   2. Processing     (pre-script WIRED → post_prep_option; post-script ComingSoon)
 //   3. Language       (Gemini 2.5 TTS locales — English + Persian live, rest Soon)
 //   4. Format         (all wired via the multihost script agent) + theme
 //   5. Hosts          (1–20 wired + optional per-host names & voices)
@@ -101,6 +101,7 @@ import { usePodcastCastPreview } from "../usePodcastCastPreview";
 import { SpeakerCastEditor } from "./SpeakerCastEditor";
 import type {
   PodcastGenerateRequest,
+  PodcastPostPrepOption,
   PodcastSourceKind,
   PodcastLanguageCode,
   PodcastFormat,
@@ -250,6 +251,8 @@ export function GeneratorForm({
       .join("\n\n"),
   );
   const [firstShowInfo, setFirstShowInfo] = useState("");
+  // Optional prep→script transform (one at a time; "none" = pass-through).
+  const [postPrep, setPostPrep] = useState<PodcastPostPrepOption>("none");
 
   const activeSource = SOURCE_OPTIONS.find((o) => o.kind === sourceKind);
   if (!activeSource) {
@@ -280,7 +283,7 @@ export function GeneratorForm({
       format,
       host_count: hostCount,
       truncate_audio_for_testing: truncate,
-      post_prep_option: "none",
+      post_prep_option: postPrep,
       show_id: showId,
     };
     if (theme.trim()) body.theme = theme.trim();
@@ -529,13 +532,13 @@ export function GeneratorForm({
       </section>
 
       {/* ── 2. PROCESSING ─────────────────────────────────────────────── */}
-      {/* Two pipeline layers, both display-only. Pre-script sits between the
-          source and the script; post-script between the script and the audio. */}
+      {/* Pre-script (source → script) is WIRED: one optional transform, sent
+          as post_prep_option and run by its podcast.post_prep_* agent slot.
+          Post-script (script → audio) is still display-only. */}
       <section className="space-y-2.5">
         <Label className={cn(SECTION_LABEL, "flex items-center gap-2")}>
           <Workflow className="h-3.5 w-3.5" />
           Processing
-          <ComingSoonBadge />
         </Label>
         <div className="grid gap-2.5 sm:grid-cols-2">
           <ProcessingLayer
@@ -543,6 +546,10 @@ export function GeneratorForm({
             caption="Source"
             target="Script"
             options={PRE_SCRIPT_PROCESSING_OPTIONS}
+            value={postPrep === "none" ? null : postPrep}
+            onChange={(v) =>
+              setPostPrep(v === null ? "none" : (v as PodcastPostPrepOption))
+            }
           />
           <ProcessingLayer
             title="Post-script processing"
@@ -930,23 +937,39 @@ export function GeneratorForm({
   );
 }
 
-// A single display-only processing layer: a dashed card showing the stage it
-// sits between and the (disabled) options it will eventually offer.
+// One processing layer. With `onChange` it is INTERACTIVE: a single-select
+// option row (click again to clear → pass-through). Without it, it stays the
+// dashed display-only preview of a stage that isn't wired yet.
 function ProcessingLayer({
   title,
   caption,
   target,
   options,
+  value,
+  onChange,
 }: {
   title: string;
   caption: string;
   target: string;
   options: { value: string; label: string; helper: string }[];
+  value?: string | null;
+  onChange?: (value: string | null) => void;
 }) {
+  const interactive = !!onChange;
   return (
-    <div className="space-y-2 rounded-xl border border-dashed border-border bg-muted/20 p-3">
+    <div
+      className={cn(
+        "space-y-2 rounded-xl border p-3",
+        interactive
+          ? "border-border bg-card"
+          : "border-dashed border-border bg-muted/20",
+      )}
+    >
       <div className="space-y-1">
-        <div className="text-sm font-medium text-foreground">{title}</div>
+        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+          {title}
+          {!interactive && <ComingSoonBadge />}
+        </div>
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <span className="rounded bg-muted px-1.5 py-0.5">{caption}</span>
           <ArrowRight className="h-3 w-3" />
@@ -954,19 +977,41 @@ function ProcessingLayer({
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {options.map((o) => (
-          <Tooltip key={o.value}>
-            <TooltipTrigger asChild>
-              <Badge
-                variant="outline"
-                className="cursor-not-allowed border-dashed text-[11px] font-normal text-muted-foreground"
-              >
-                {o.label}
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>{o.helper}</TooltipContent>
-          </Tooltip>
-        ))}
+        {options.map((o) => {
+          const selected = interactive && value === o.value;
+          return (
+            <Tooltip key={o.value}>
+              <TooltipTrigger asChild>
+                {interactive ? (
+                  <button
+                    type="button"
+                    onClick={() => onChange(selected ? null : o.value)}
+                    aria-pressed={selected}
+                  >
+                    <Badge
+                      variant={selected ? "default" : "outline"}
+                      className={cn(
+                        "cursor-pointer text-[11px] font-normal transition-colors",
+                        !selected &&
+                          "text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                      )}
+                    >
+                      {o.label}
+                    </Badge>
+                  </button>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="cursor-not-allowed border-dashed text-[11px] font-normal text-muted-foreground"
+                  >
+                    {o.label}
+                  </Badge>
+                )}
+              </TooltipTrigger>
+              <TooltipContent>{o.helper}</TooltipContent>
+            </Tooltip>
+          );
+        })}
       </div>
     </div>
   );
