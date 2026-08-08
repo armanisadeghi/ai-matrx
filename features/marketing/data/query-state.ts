@@ -55,6 +55,21 @@ function readFilters(params: URLSearchParams): ColumnFiltersState {
   return filters;
 }
 
+/**
+ * Remove every URL param this hook owns (page/pageSize/q/anyOf/sort/direction
+ * + `f_*` filters). Views that swap the table under a shared URL (workspace
+ * tabs, insight lenses) call this so one slice's paging/sort/filters never
+ * leak into the next slice's server query.
+ */
+export function clearTableUrlParams(params: URLSearchParams): void {
+  for (const key of ["page", "pageSize", "q", "anyOf", "sort", "direction"]) {
+    params.delete(key);
+  }
+  for (const key of Array.from(params.keys())) {
+    if (key.startsWith("f_")) params.delete(key);
+  }
+}
+
 function writeState(
   params: URLSearchParams,
   state: MatrxDataTableQueryState,

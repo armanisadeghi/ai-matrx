@@ -26,6 +26,20 @@ describe("classifyAnchor", () => {
     expect(classifyAnchor("Example's guide", CTX)).toBe("branded");
   });
 
+  it("requires token boundaries — a core buried inside a longer word is not branded", () => {
+    // "counterexample" contains "example" as a substring but not as a token.
+    expect(classifyAnchor("counterexamples in math", CTX)).toBe("topical");
+    const marketing = { domain: "marketing.com", brandNames: [] };
+    expect(classifyAnchor("remarketing tips", marketing)).toBe("topical");
+    expect(classifyAnchor("marketing", marketing)).toBe("branded");
+  });
+
+  it("matches a multi-word brand as a consecutive token run", () => {
+    const ctx = { domain: "example.com", brandNames: ["Acme Corp"] };
+    expect(classifyAnchor("acme corp pricing", ctx)).toBe("branded");
+    expect(classifyAnchor("acme pricing corp", ctx)).toBe("topical");
+  });
+
   it("classifies anchors containing a brand name as branded (other domain)", () => {
     const ctx: AnchorClassifierContext = {
       domain: "othersite.com",

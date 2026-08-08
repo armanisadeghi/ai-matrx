@@ -246,7 +246,12 @@ export async function listLatestBacklinks(
   } else if (lens === "lost") {
     query = query.eq("state", "lost");
   } else if (lens === "broken") {
-    query = query.eq("extras->>is_broken", "true");
+    // Same definition the table's broken glyph uses: provider flag OR a
+    // failing target status. `->` (jsonb) compares 400 numerically; `->>`
+    // would compare text lexicographically.
+    query = query.or(
+      "extras->>is_broken.eq.true,extras->url_to_status_code.gte.400",
+    );
   } else if (lens === "toxic") {
     query = query.gte("spam_score", SPAM_SCORE_WARN_MIN);
   }

@@ -60,6 +60,7 @@ import {
   useBacklinkWorkspace,
   useLatestBacklinks,
 } from "@/features/marketing/data/backlinks-hooks";
+import { clearTableUrlParams } from "@/features/marketing/data/query-state";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { BacklinkKpiBand } from "@/features/marketing/components/backlinks/BacklinkKpiBand";
 import { BacklinkTrendChart } from "@/features/marketing/components/backlinks/BacklinkTrendChart";
@@ -143,7 +144,6 @@ function TopTenCard({
   title,
   anchor,
   rows,
-  total,
   viewAllHref,
   kind,
   location,
@@ -153,7 +153,6 @@ function TopTenCard({
   title: string;
   anchor: string;
   rows: BacklinkDimensionRow[];
-  total: number;
   viewAllHref: string;
   /** Stable slug for agent payloads, e.g. "backlink-referring-domain". */
   kind: string;
@@ -168,7 +167,7 @@ function TopTenCard({
       anchor={anchor}
       action={{ label: "View all", href: viewAllHref }}
       copy={{
-        label: `${title} (top ${visible.length} of ${total})`,
+        label: `${title} (top ${visible.length} shown)`,
         human: () => humanDimensionList(title, rows),
         json: () => rows,
         agent: (): AgentPayloadInput => ({
@@ -177,7 +176,7 @@ function TopTenCard({
           description: `The stored "${title}" backlink dimension rows for ${siteDomain}.`,
           data: rows,
           summary: humanDimensionList(title, rows),
-          attributes: { count: total, shown: visible.length },
+          attributes: { fetched: rows.length, shown: visible.length },
         }),
       }}
     >
@@ -250,9 +249,11 @@ function TopTenCard({
             No stored rows yet — run a Weekly core or Full bootstrap refresh to
             collect this rollup.
           </p>
-        ) : total > visible.length ? (
+        ) : rows.length > visible.length ? (
           <p className="pt-0.5 text-[11px] text-muted-foreground">
-            Showing top {visible.length} of {total.toLocaleString()} stored.
+            {/* The workspace fetch is capped at 50 rows — the tab holds the
+                true total, so never claim a "stored" count here. */}
+            Showing the top {visible.length} — open View all for the full list.
           </p>
         ) : null}
       </div>
@@ -300,14 +301,9 @@ export function BacklinksWorkspace() {
     if (next === "overview") params.delete("tab");
     else params.set("tab", next);
     // Every tab's table persists state through the same URL params
-    // (useMarketingTableState: page/q/sort/f_*). Drop them on tab switch so
-    // one tab's paging/filters never leak into another's query.
-    for (const key of ["page", "pageSize", "q", "anyOf", "sort", "direction"]) {
-      params.delete(key);
-    }
-    for (const key of Array.from(params.keys())) {
-      if (key.startsWith("f_")) params.delete(key);
-    }
+    // (useMarketingTableState). Drop them on tab switch so one tab's
+    // paging/filters never leak into another's query.
+    clearTableUrlParams(params);
     const query = params.toString();
     return query ? `${pathname}?${query}` : pathname;
   };
@@ -914,7 +910,6 @@ export function BacklinksWorkspace() {
                     title={group.title}
                     anchor={group.anchor}
                     rows={group.rows}
-                    total={group.rows.length}
                     viewAllHref={tabHref(group.tab)}
                     kind={group.kind}
                     location={pageLocation}

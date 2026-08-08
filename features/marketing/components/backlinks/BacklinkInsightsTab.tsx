@@ -24,6 +24,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
+import { clearTableUrlParams } from "@/features/marketing/data/query-state";
 import {
   BACKLINK_LENSES,
   isBacklinkLensKey,
@@ -60,10 +61,12 @@ export function BacklinkInsightsTab({ siteId }: { siteId: string }) {
 
   const selectView = (next: InsightViewKey) => {
     if (next === active) return;
-    // Preserve every other param — only `insight` moves.
     const params = new URLSearchParams(searchParams.toString());
     if (next === ANCHOR_PROFILE_KEY) params.delete("insight");
     else params.set("insight", next);
+    // Each lens seeds its own default sort/paging — a stale sort from the
+    // previous lens's table must not carry into the next lens's query.
+    clearTableUrlParams(params);
     startNavigation(() => {
       const qs = params.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });

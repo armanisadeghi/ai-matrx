@@ -87,6 +87,24 @@ function domainCore(domain: string): string {
 
 const URL_LIKE = /^(https?:\/\/|www\.)|(\.[a-z]{2,10})(\/|$)/i;
 
+/**
+ * True when `target` equals a run of consecutive anchor tokens ("all green
+ * recycling" matches "allgreenrecycling"; a single token matches itself).
+ * Token-boundary matching — a target buried inside a longer word never
+ * matches ("remarketing" is NOT branded for a "marketing" domain core).
+ */
+function hasTokenRun(tokens: string[], target: string): boolean {
+  for (let i = 0; i < tokens.length; i++) {
+    let joined = "";
+    for (let j = i; j < tokens.length; j++) {
+      joined += tokens[j];
+      if (joined === target) return true;
+      if (joined.length >= target.length) break;
+    }
+  }
+  return false;
+}
+
 export function classifyAnchor(
   anchor: string | null | undefined,
   ctx: AnchorClassifierContext,
@@ -95,12 +113,12 @@ export function classifyAnchor(
   if (!text) return "empty";
   if (URL_LIKE.test(text)) return "naked_url";
   if (GENERIC_ANCHORS.has(text)) return "generic";
-  const compact = text.replace(/[^a-z0-9]/g, "");
+  const tokens = text.split(/[^a-z0-9]+/).filter(Boolean);
   const core = domainCore(ctx.domain).replace(/[^a-z0-9]/g, "");
-  if (core.length >= 3 && compact.includes(core)) return "branded";
+  if (core.length >= 3 && hasTokenRun(tokens, core)) return "branded";
   for (const name of ctx.brandNames) {
     const brand = normalize(name).replace(/[^a-z0-9]/g, "");
-    if (brand.length >= 3 && compact.includes(brand)) return "branded";
+    if (brand.length >= 3 && hasTokenRun(tokens, brand)) return "branded";
   }
   return "topical";
 }

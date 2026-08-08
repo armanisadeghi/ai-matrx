@@ -89,7 +89,7 @@ export const BACKLINK_LENSES = [
     key: "toxic",
     label: "Toxic risk",
     description:
-      "High spam-score links to review for outreach removal or disavow.",
+      "Links with an elevated spam score (16+), worst first — review for outreach removal or disavow.",
   },
 ] as const;
 

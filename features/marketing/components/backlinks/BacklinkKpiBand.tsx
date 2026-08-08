@@ -66,9 +66,17 @@ export function BacklinkKpiBand({
     dofollow !== null && followTotal !== null && followTotal > 0
       ? (dofollow / followTotal) * 100
       : null;
+  const domainsDetailParts = [
+    extras.newReferringDomains !== null
+      ? `+${compactNumber(extras.newReferringDomains)} new`
+      : null,
+    extras.lostReferringDomains !== null
+      ? `−${compactNumber(extras.lostReferringDomains)} lost`
+      : null,
+  ].filter(Boolean);
   const domainsDetail =
-    extras.newReferringDomains !== null || extras.lostReferringDomains !== null
-      ? `+${compactNumber(extras.newReferringDomains ?? 0)} new / −${compactNumber(extras.lostReferringDomains ?? 0)} lost domains`
+    domainsDetailParts.length > 0
+      ? `${domainsDetailParts.join(" / ")} domains`
       : undefined;
   const tone = spamTone(summary.spam_score);
 
