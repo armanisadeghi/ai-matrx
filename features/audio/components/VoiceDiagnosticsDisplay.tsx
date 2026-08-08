@@ -12,6 +12,7 @@ import { AlertCircle, CheckCircle, XCircle, RefreshCw, Mic, Settings, ExternalLi
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { runMicrophoneDiagnostics, getFixInstructions, canUserFixIssue, DiagnosticResult } from '../utils/microphone-diagnostics';
+import { acquireMicStream, releaseMicStream } from '../micStream';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 export interface VoiceDiagnosticsDisplayProps {
@@ -54,8 +55,10 @@ export function VoiceDiagnosticsDisplay({
   const testMicrophone = async () => {
     setTestResult('testing');
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop());
+      // Through the mic singleton — a direct getUserMedia here double-lights
+      // the mic beside a live recording and tears down the warm iOS grant.
+      await acquireMicStream();
+      releaseMicStream();
       setTestResult('success');
       onTestSuccess?.();
       // Re-run diagnostics after successful test

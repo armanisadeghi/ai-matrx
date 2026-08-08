@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-27
+updated: 2026-08-08
 repos: [matrx-frontend]
 vision: [features/audio/FEATURE.md]
 ---
@@ -45,12 +45,10 @@ Reliability requirements he raised (both were real bugs, both fixed): the browse
 1. **Provider-pluggable AV service layer (the "ONE system, multiple APIs" half — largest remaining piece).** Today TTS/STT providers are scattered: Cartesia (`features/tts/hooks/useCartesiaStreamingSpeaker.ts`, `lib/cartesia/*`, `features/audio/playback/adapters/cartesiaAdapter.ts`), Groq (`adapters/groqAdapter.ts`, `features/audio/services/speechApi.ts` for chunk STT), legacy `hooks/tts/*`. The mounting/activation layer they all live behind is done; the unification of their APIs behind one service interface (swap provider per call, one config surface) is NOT started. Design it as adapters under the existing `playbackQueue` PlaybackAdapter pattern + a capture-side twin; do not create a parallel path.
 2. **Media panel video lane — needs Arman's decision first (see Decisions).** Once decided: `AudioControlWindow.tsx` `AudioTab` type + mobile stack; a speed control that drives `HTMLMediaElement.playbackRate` for video sessions (current `SpeedControl` is TTS-only).
 3. **Camera-capture single-homing.** Media-capture video recordings appear in BOTH the Recording tab (generic registry rows) and the Camera tab (parallel projection via `features/media-capture/runtime/mediaCaptureDiagnostics.ts:285` + a separate upload-feed history). Pick one authoritative home (Decisions), then delete the duplicate projection.
-4. **Remaining unwired video players:** `features/research/components/media/MediaGallery.tsx:979`, `features/research/components/outputs/OutputsStudio.tsx:749,766`, and (decision needed — public shell mounts no audio system) `app/(public)/s/[token]/SharedResourceView.tsx:173`. Wire with `useMediaElementPlaybackSession` exactly as done in `features/files/components/core/FilePreview/previewers/VideoPreview.tsx` (the cleanest reference).
-5. ~~**LiveCaptureButton migration**~~ — DONE (verified 2026-08-06): `features/education/notes/LiveCaptureButton.tsx` now uses the canonical `useVoiceCapture`/`useGlobalRecording` path (migration comment in-file).
-6. **Direct `getUserMedia({audio})` stragglers** (bypass the mic singleton; each briefly double-lights the mic): `features/audio/utils/microphone-diagnostics.ts:129`, `features/audio/components/VoiceDiagnosticsDisplay.tsx:57`, `hooks/useMicrophonePermission.ts:70`. Fold into `acquireMicStream`/`releaseMicStream`.
-7. **Real-device verification** (needs a human + iPhone): first-recording permission prompt timing on Safari/iOS cold cache (the gesture-tick mic warming should mask the Impl chunk load), and mic-light-off-within-~6s on mobile browsers.
-8. **Build-time regression investigation (adjacent, not audio):** compile jumped 15.1→18.7min at v0.4.116 and persists (~19.5min). Only structural candidate in that diff is the `features/window-panels/WindowPersistenceManager.tsx` → `WindowPersistenceCore.tsx` shell/core split (Arman's work; shape looks correct — sole importer, dynamic boundary). Settle it with one branch preview build reverting the split; compile time prints in the Vercel build log ("Compiled successfully in X").
-9. **Cosmetic:** cold-open of the Media panel can flash "No audio playing" for a frame while the Impl chunk and the panel chunk race; add a brief pending state if it bothers anyone.
+4. **Public share viewer video player** (`app/(public)/s/[token]/SharedResourceView.tsx:173`) — blocked on the public-share decision below; if wired, use `SessionMediaElement` (`features/audio/session/SessionMediaElement.tsx`, the one-line wrapper added 2026-08-08).
+5. **Real-device verification** (needs a human + iPhone): first-recording permission prompt timing on Safari/iOS cold cache (the gesture-tick mic warming should mask the Impl chunk load), and mic-light-off-within-~6s on mobile browsers.
+6. **Build-time regression investigation (adjacent, not audio):** compile jumped 15.1→18.7min at v0.4.116 and persists (~19.5min). Only structural candidate in that diff is the `features/window-panels/WindowPersistenceManager.tsx` → `WindowPersistenceCore.tsx` shell/core split (Arman's work; shape looks correct — sole importer, dynamic boundary). Settle it with one branch preview build reverting the split; compile time prints in the Vercel build log ("Compiled successfully in X").
+7. **Cosmetic:** cold-open of the Media panel can flash "No audio playing" for a frame while the Impl chunk and the panel chunk race; add a brief pending state if it bothers anyone.
 
 ## Done
 
@@ -62,6 +60,8 @@ Reliability requirements he raised (both were real bugs, both fixed): the browse
 - Crash recovery without gesture (localStorage boot marker) — see `features/audio/audioBootMarker.ts`.
 - ESLint ban on re-importing the heavy audio entry modules statically — `audioSystemStaticImportBan` in `eslint.config.mjs`.
 - Basic manual tests passed by Arman 2026-07-27 (panel, recording, mic light, video rows).
+- LiveCaptureButton migrated to `useVoiceCapture`/`useGlobalRecording` (verified 2026-08-06).
+- 2026-08-08: last unwired players joined (research MediaGallery + OutputsStudio, via new `SessionMediaElement` drop-in) and the three direct-gUM stragglers folded into `acquireMicStream`/`releaseMicStream` — `micStream.ts` is again the only audio gUM site.
 
 ## Decisions needed (Arman)
 
