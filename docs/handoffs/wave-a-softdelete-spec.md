@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-28
+updated: 2026-08-08
 repos: [matrx-frontend, aidream]
 vision: [see "Vision — Arman's words" below; original full spec + build history in git: `git log --oneline --grep=wave-a -i` in BOTH repos, and this file's history]
 ---
@@ -37,9 +37,12 @@ Documented deviation (V10, accepted by adversarial review): the BEFORE DELETE gu
 
 ## Remaining work (priority order)
 
-1. **Multi-sibling canonical repoint is untested end-to-end.** Still zero files in the live DB with 2+ `initial_extract`/`legacy_import` siblings, so "repoint to NEWEST live sibling" is verified only by reading `docproc.recompute_canonical_for_file`. Create a fixture file with two `initial_extract` siblings, soft-delete the canonical, assert the pointer moves to the newest LIVE sibling (not NULL), restore, assert it returns.
-2. **File-family purge path (trash-empty) does not exist.** `rag.fn_purge_library_file` is absent from the DB; family-trashed docs are restore-only today (per-doc purge correctly raises). Build it: verify the file is trashed + owned, then purge every family doc (pre-stamp is already there) + the `files.files` row + storage sweep hook, surfaced from the files trash UI (`app/(core)/files/trash/page.tsx` — note its restore UI is itself listed as unwired in `features/files/CLOUD_FILES_RPC_DISPOSITIONS.md`). Keep THE INVARIANT: reachable only for already-trashed files.
-3. **Trash has no retention/auto-purge** — deliberate for now (see Decisions). Don't add one without the decision below.
+1. **Merge + ship branch `claude/wave-a-finish`** (PR #50, this repo): the functional `/files/trash` surface (hydration + restore + delete-forever) and `rag.fn_purge_library_file` (live in DB, ledgered). Merge to `main`, run `./scripts/release.sh`.
+2. **Deploy aidream** — `origin/main` carries the purge-from-trash 404 fix (`delete_file` now resolves trashed files, commit 94510c37d); prod still serves an older SHA, so "Delete forever" on a file currently fails with an honest "File not found" toast and rolls back. After deploy, re-run the purge flow on `/files/trash` and confirm the row + S3 bytes go away.
+3. **Bulk trash ops** — BulkActionsBar is hidden in trash; multi-select Restore / Delete forever is a follow-up (see also the files-surface value-mapping chip already spawned for Arman).
+4. **Mobile `/files/trash` is the generic browser, not a trash view** — `PageShell` returns `MobileStack` before any trash logic and `MobileStack` has no section handling. Give it a trash mode consuming the same `loadTrash`/`restoreFile`/`purgeFile` thunks (chip spawned).
+5. **Realtime echo can vanish a row from an open trash view** — `realtime-middleware.ts:375-378` dispatches `removeFile` on ANY update echo carrying `deletedAt`, including while the user sits on `/files/trash` (self-heals on re-entry). Fix belongs in a `supabase-realtime`-skill pass over that middleware (chip spawned); don't patch it casually.
+6. **Trash has no retention/auto-purge** — deliberate for now (see Decisions). The old fictional "purged after 30 days" copy was removed; don't add a policy without the decision below.
 
 Known traps for whoever picks this up: (a) never clear `valid_to` on restore — that resurrects superseded chunks; (b) never add `deleted_at` filters to `processed_documents_owner_all` or any authenticated UPDATE policy (42501 class, fixed platform-wide 2026-07-04); (c) parallel agent sessions rewrite `main` constantly — rebase, don't assume; (d) the DB is already migrated — a `.sql` file edit does nothing until re-applied via Supabase MCP + ledger update.
 
@@ -55,8 +58,11 @@ Known traps for whoever picks this up: (a) never clear `valid_to` on restore —
 - Capstone — BEFORE DELETE guard live + purge pre-stamping; FE hard-delete RPCs converted (adversarial catch: Python conversion alone left the FE RPCs hard-deleting).
 - Two full adversarial passes — all findings fixed or recorded as V10.
 - Shipped to prod — both repos pushed and deployed (aidream `/health/version` serves the wave-a commits); FE API types regenerated (`LibraryDeleteResponse.skipped_canonical` is in `types/python-generated/api-types.ts`).
+- Multi-sibling canonical repoint E2E-verified (2026-08-08, rollback-only fixture: insert→D1, soft-delete canonical→D2 newest-live, restore→stays newest-live, delete both→NULL).
+- Family purge built + tested — `rag.fn_purge_library_file` (owner gate, belt-stamp, live; `migrations/wave_a_purge_library_file.sql`) + `/files/trash` made functional (it rendered "empty" forever — deleted rows never reached Redux): `loadTrash`/`restoreFile`/`restoreFolder`/`purgeFile`/`purgeFolder` thunks, trash-mode row menus, honest empty-state copy — browser-verified E2E on branch `claude/wave-a-finish`.
+- Rollback crash class killed — `toCloudFilePartial` strips immer-frozen runtime fields before re-upsert (features/files/redux/thunks.ts).
 
 ## Decisions needed (Arman)
 
 1. **Situation:** Trashed library documents currently stay in the trash forever; nothing auto-purges them, and chunks/embeddings keep their storage. **Decide:** retention policy — (a) keep forever until manual purge (current), (b) auto-purge after N days (30?), or (c) auto-purge only when storage pressure. If (b)/(c), a cron + the existing purge authority is all that's needed.
-2. **Situation:** A file deleted with "Delete file" lands in the trash as a family and can only be restored — there is no way to permanently erase it and its extraction data (the per-document purge correctly refuses family members). **Decide:** where family purge should live — (a) files trash (`/files/trash`) purges the file and its whole document family together (recommended), or (b) also allow it from the library Trash sheet on the family row.
+2. **Situation:** Family purge now lives in the files trash (`/files/trash` → row menu → "Delete forever" purges the document family + the file + S3) — implemented per the recommended option since it follows the files doctrine; noted as an assumption. **Decide (only if you disagree):** should the library Trash sheet's family rows ALSO offer purge, or stay restore-only (current)?
