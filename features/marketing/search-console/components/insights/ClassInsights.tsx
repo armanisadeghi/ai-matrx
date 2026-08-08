@@ -9,6 +9,7 @@
  */
 
 import { useState } from "react";
+import Link from "next/link";
 import { ArrowRight, Scale } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -197,6 +198,7 @@ export function QualityView({
               </th>
               <th className="px-2 py-1.5 text-right font-medium">Δ</th>
               <th className="px-2 py-1.5 text-right font-medium">Queries</th>
+              <th className="px-2 py-1.5" />
             </tr>
           </thead>
           <tbody>
@@ -238,6 +240,24 @@ export function QualityView({
                 <td className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
                   {num(row.queries)}
                 </td>
+                <td className="px-2 py-1.5 text-right">
+                  {/* The classification review queue — the legacy /sites
+                      shim resolves the brand and keeps the query intact. */}
+                  <Link
+                    href={`/marketing/sites/${siteId}/keywords?view=classification&f_traffic_class=select:${row.traffic_class}`}
+                    className="whitespace-nowrap text-[11px] text-primary hover:underline"
+                    onClick={(event) => event.stopPropagation()}
+                    title={
+                      row.traffic_class === "unclassified"
+                        ? "Open the classification queue — every unclassified keyword, biggest impressions first"
+                        : `Review and override ${row.traffic_class} keywords`
+                    }
+                  >
+                    {row.traffic_class === "unclassified"
+                      ? "Classify →"
+                      : "Review →"}
+                  </Link>
+                </td>
               </tr>
             ))}
             {summaryRows.length > 0 ? (
@@ -261,12 +281,13 @@ export function QualityView({
                 <td className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
                   {num(totals.queries)}
                 </td>
+                <td className="px-2 py-1.5" />
               </tr>
             ) : null}
             {summaryRows.length === 0 && !summary.isLoading ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="px-2 py-4 text-center text-muted-foreground"
                 >
                   No data {describeGscWindow(periods.current)}.

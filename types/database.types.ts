@@ -43270,12 +43270,14 @@ export type Database = {
           keyword_id: string
           lead_quality: string | null
           metadata: Json
+          notes: string | null
           organization_id: string
           priority_computed_at: string | null
           priority_score: number | null
           service_match: string | null
           site_id: string
           suppression_reason: string | null
+          traffic_class: string | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -43294,12 +43296,14 @@ export type Database = {
           keyword_id: string
           lead_quality?: string | null
           metadata?: Json
+          notes?: string | null
           organization_id: string
           priority_computed_at?: string | null
           priority_score?: number | null
           service_match?: string | null
           site_id: string
           suppression_reason?: string | null
+          traffic_class?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -43318,12 +43322,14 @@ export type Database = {
           keyword_id?: string
           lead_quality?: string | null
           metadata?: Json
+          notes?: string | null
           organization_id?: string
           priority_computed_at?: string | null
           priority_score?: number | null
           service_match?: string | null
           site_id?: string
           suppression_reason?: string | null
+          traffic_class?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -43666,6 +43672,14 @@ export type Database = {
           o_id: string
         }[]
       }
+      gsc_assert_site_access: {
+        Args: { p_site_id: string }
+        Returns: undefined
+      }
+      gsc_assert_site_editor: {
+        Args: { p_site_id: string }
+        Returns: undefined
+      }
       gsc_backfill_status: {
         Args: { p_site_id: string }
         Returns: {
@@ -43723,6 +43737,37 @@ export type Database = {
         Returns: {
           class_source: string
           keyword_id: string
+          traffic_class: string
+        }[]
+      }
+      gsc_keyword_class_review: {
+        Args: {
+          p_classes?: string[]
+          p_end: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_site_id: string
+          p_sort?: string
+          p_sort_dir?: string
+          p_sources?: string[]
+          p_start: string
+        }
+        Returns: {
+          class_source: string
+          clicks: number
+          content_role: string
+          ctr: number
+          impressions: number
+          intent_class: string
+          keyword_id: string
+          lead_quality: string
+          notes: string
+          override_class: string
+          query: string
+          service_match: string
+          suppression_reason: string
+          total_count: number
           traffic_class: string
         }[]
       }
@@ -44050,6 +44095,19 @@ export type Database = {
           impressions: number
           key: string
           kind: string
+        }[]
+      }
+      gsc_set_keyword_class: {
+        Args: {
+          p_class: string
+          p_keyword_ids: string[]
+          p_notes?: string
+          p_site_id: string
+        }
+        Returns: {
+          class_source: string
+          keyword_id: string
+          traffic_class: string
         }[]
       }
     }

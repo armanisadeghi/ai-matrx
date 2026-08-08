@@ -32,6 +32,10 @@ export type GscShiftRow = SeoFunctions["gsc_perf_shifts"]["Returns"][number];
 export type GscJuiceRow = SeoFunctions["gsc_perf_juice"]["Returns"][number];
 export type GscCannibalizationRow =
   SeoFunctions["gsc_perf_cannibalization"]["Returns"][number];
+export type GscClassReviewRow =
+  SeoFunctions["gsc_keyword_class_review"]["Returns"][number];
+export type GscSetKeywordClassRow =
+  SeoFunctions["gsc_set_keyword_class"]["Returns"][number];
 export type GscTrendRow = SeoFunctions["gsc_perf_trend"]["Returns"][number];
 export type GscDigRuleRow =
   Database["seo"]["Tables"]["gsc_dig_rule"]["Row"];
@@ -226,6 +230,56 @@ export const GSC_TRAFFIC_CLASSES: readonly {
     tone: "text-muted-foreground",
     description:
       "Not yet classified — the honest bucket, and the classifier agents' work queue.",
+  },
+];
+
+/**
+ * Class provenance — WHY a keyword has its class, straight from the
+ * resolver's precedence rungs. `site_value` is the human's (or an agent's)
+ * per-site ruling and beats everything; `brand_match` is the deterministic
+ * identity match; `intent_class` is the universal AI intent; `none` means
+ * unclassified. Always shown beside a class — a ruling without provenance
+ * is unreviewable.
+ */
+export type GscClassSource =
+  | "site_value"
+  | "brand_match"
+  | "intent_class"
+  | "none";
+
+export const GSC_CLASS_SOURCES: readonly {
+  key: GscClassSource;
+  label: string;
+  tone: string;
+  description: string;
+}[] = [
+  {
+    key: "site_value",
+    label: "Site value",
+    tone: "text-primary",
+    description:
+      "An explicit per-site ruling (yours or an agent's) on seo.site_keyword_value — beats every machine signal.",
+  },
+  {
+    key: "brand_match",
+    label: "Brand match",
+    tone: "text-muted-foreground",
+    description:
+      "Deterministic match against the site's own identity (domain, site name, brand name) — branded traffic is not real SEO.",
+  },
+  {
+    key: "intent_class",
+    label: "AI intent",
+    tone: "text-muted-foreground",
+    description:
+      "The universal agent-classified search intent on the keyword library row.",
+  },
+  {
+    key: "none",
+    label: "No signal",
+    tone: "text-warning",
+    description:
+      "No valuation, no brand match, no intent classification — this is the review queue.",
   },
 ];
 

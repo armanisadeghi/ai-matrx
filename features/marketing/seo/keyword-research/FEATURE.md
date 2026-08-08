@@ -5,12 +5,20 @@ Status: **live (2026-07-22).** Route: `app/(core)/marketing/keyword-research/pag
 Relationships" card). Cross-repo contract of record:
 `/Users/armanisadeghi/code/common-docs/systems/seo-keywords/seo-keyword-agent-guide.md`.
 
-The site-scoped read surface is
-`/marketing/brands/[brandId]/sites/[siteId]/keywords` →
-`SiteKeywordPerformanceWorkspace`. It combines the latest persisted 28-day GSC
-query observations with canonical keyword-market and site-workflow values through
-`seo.v_site_keyword_performance`. This route is a read surface: GSC collection and
-market enrichment remain explicit compute operations.
+The site-scoped surface is
+`/marketing/brands/[brandId]/sites/[siteId]/keywords` → `SiteKeywordsView`
+(`components/SiteKeywordsView.tsx`), two URL-selected views on one route:
+- **Performance** (default) — `SiteKeywordPerformanceWorkspace`: the latest
+  persisted 28-day GSC query observations with canonical keyword-market and
+  site-workflow values through `seo.v_site_keyword_performance`. A read
+  surface: GSC collection and market enrichment remain explicit compute
+  operations.
+- **Classification** (`?view=classification`) — the GSC traffic-class
+  truth-editing surface, owned by the search-console feature
+  (`features/marketing/search-console/components/classification/KeywordClassificationWorkspace.tsx`;
+  rules in [`features/marketing/search-console/FEATURE.md`](../../search-console/FEATURE.md)
+  § Classification UI). The Insights tab's Traffic-quality summary deep-links
+  here (`?view=classification&f_traffic_class=select:<class>`).
 
 ## Data flow — the two-lane rule, exactly
 
@@ -200,6 +208,12 @@ and the same block renders read-only in chat.
 - No barrel files; import from source.
 
 ## Change Log
+
+- 2026-08-08 — Site keywords route split into `SiteKeywordsView` (Performance |
+  Classification toggle, URL state `?view=`). Classification is the
+  search-console feature's `KeywordClassificationWorkspace` — traffic-class
+  review + override queue over the new `seo.gsc_keyword_class_review` /
+  `gsc_set_keyword_class` RPCs. Verified live on datadestruction.com.
 
 - 2026-07-29 — The marketing-page surface now PUBLISHES the `page_keywords` UI-state key (`{ target: string | null, supporting: string[] }` — primary target keyword + attached supporting phrases, from `MarketingPageWriteTargets`), so keyword blocks rendered while that page is mounted can mark already-attached phrases via `useCurrentSurfaceUiState("page_keywords")`. The page-keyword board fetch is now the shared `fetchPageKeywordBoard` in `features/marketing/data/page-keywords.ts` (one queryFn per query key).
 

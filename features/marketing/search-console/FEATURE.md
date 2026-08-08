@@ -133,7 +133,10 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   it). Every serious read decomposes by class first.** The ONE class
   resolver is `seo.gsc_keyword_class_map`
   ([`migrations/seo_gsc_class_rpcs.sql`](../../../migrations/seo_gsc_class_rpcs.sql)):
-  user site valuation (`seo.site_keyword_value` — suppression /
+  user site valuation (`seo.site_keyword_value` — explicit
+  `traffic_class` ruling verbatim when set (2026-08-08, written ONLY by
+  `seo.gsc_set_keyword_class`; it exists because no semantic column can
+  express a human "brand" ruling); otherwise suppression /
   not_offered / actively_avoided / negative_value → `mismatch`;
   content_role → `money`/`educational`) beats **BRAND MATCH**
   (`class_source='brand_match'`, 2026-08-07: deterministic zero-AI token
@@ -204,6 +207,48 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   `web.page.first_seen` is discovery-observed and must NOT be used for
   this). Page creation reuses `createManualPage`; "Track as new page"
   lives in the page context menu.
+
+## Classification UI — the manual truth-editing surface (2026-08-08)
+
+Classification is important enough for a DEDICATED UI (Arman, 2026-08-08).
+It lives on the per-site keywords route —
+`/marketing/brands/[brandId]/sites/[siteId]/keywords?view=classification`
+(`components/classification/KeywordClassificationWorkspace.tsx`, rendered by
+the keyword-research feature's `SiteKeywordsView` toggle) — NOT a new
+top-level route. Entry points: the Traffic-quality summary rows link every
+class into it (`Classify →` / `Review →`,
+`?view=classification&f_traffic_class=select:<class>`; the legacy
+`/marketing/sites/[siteId]/...` shim keeps such links brand-free).
+
+- **Read:** `seo.gsc_keyword_class_review`
+  ([`migrations/seo_keyword_classification_ui.sql`](../../../migrations/seo_keyword_classification_ui.sql))
+  — every GSC-active keyword for a 28-day window with class, class_source,
+  clicks/impressions (volume is what makes review meaningful), AI intent,
+  and the valuation row's override/notes. Winning-run dedup per THE
+  ACCURACY CONTRACT; server-paged/sorted/filtered (class + source accept
+  arrays because the table's select filters are multi-choice — a filter the
+  server can't serve must not render).
+- **Write:** `seo.gsc_set_keyword_class` is THE one human write path
+  (single + bulk share it; bulk carries ONE shared notes field). It writes
+  the explicit `traffic_class` column AND the semantic columns exactly as
+  the resolver reads them (money→content_role='money_page';
+  educational→'supporting_content'; mismatch→service_match='not_offered';
+  brand→traffic_class only), clears contradicting mismatch triggers on
+  positive rulings (resetting workflow_status 'suppressed'→'candidate' —
+  the table CHECK forbids suppressed-without-reason), and `clear` reverts
+  to machine classification. **Mismatch REQUIRES notes** — a ruling must
+  carry its case (server-enforced: `gsc_mismatch_needs_notes`). It returns
+  the RESOLVED (class, class_source) rows so the UI confirms the flip to
+  `site_value` from server truth. Gate: `seo.gsc_assert_site_editor` —
+  the SAME editor predicate as the table's RLS, once per call (direct
+  table writes are not granted to `authenticated`).
+- **Provenance always visible** — `ClassSourceChip` (vocabulary
+  `types.ts::GSC_CLASS_SOURCES`) beside every `ClassChip`; any
+  `site_value` row shows Clear, including legacy semantic-column rulings.
+- The AI interview/wizard is a SEPARATE program (aidream
+  `docs/handoffs/content-ir-agent-slots.md`); this surface is the manual
+  truth layer it will sit beside. Never fork a second write path for
+  classes — extend `gsc_set_keyword_class`.
 
 ## Brand identity — what data alone cannot see (roadmap)
 
@@ -344,6 +389,14 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-08 — **Classification UI shipped** (§ Classification UI):
+  `?view=classification` on the site keywords route; explicit
+  `seo.site_keyword_value.traffic_class` + `notes` columns; resolver reads
+  the explicit ruling at the top of the site-value rung;
+  `gsc_keyword_class_review` (review read) + `gsc_set_keyword_class` (one
+  write path, mismatch-requires-notes) + `gsc_assert_site_editor`;
+  Traffic-quality rows link into the queue. Verified live on
+  datadestruction.com (4,316 keywords; override → site_value → clear).
 - 2026-08-08 — Period strip: `GscPeriodStrip` atop Dig Here + Insights
   (plain-date "Evaluating X vs Y", auto-compare flag, embedded
   RangeCompareControl; absorbed the per-view compareAuto/period labels);

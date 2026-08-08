@@ -83,12 +83,16 @@ GRANT EXECUTE ON FUNCTION seo.gsc_assert_site_editor(uuid) TO authenticated, ser
 -- (keyword, query), joined to the ONE class resolver and the site's
 -- valuation row. Facts carry keyword_id at 100% (verified live); rows
 -- without one cannot be classified and are excluded.
+-- Earlier single-class signature (pre-release iteration) — remove so the
+-- array signature below is the only one PostgREST can resolve.
+DROP FUNCTION IF EXISTS seo.gsc_keyword_class_review(uuid, date, date, text, text, text, text, text, int, int);
+
 CREATE OR REPLACE FUNCTION seo.gsc_keyword_class_review(
   p_site_id uuid,
   p_start date,
   p_end date,
-  p_class text DEFAULT NULL,
-  p_source text DEFAULT NULL,
+  p_classes text[] DEFAULT NULL,
+  p_sources text[] DEFAULT NULL,
   p_search text DEFAULT NULL,
   p_sort text DEFAULT 'impressions',
   p_sort_dir text DEFAULT 'desc',
@@ -118,11 +122,17 @@ DECLARE
   v_search text := NULLIF(btrim(p_search), '');
 BEGIN
   PERFORM seo.gsc_assert_site_access(p_site_id);
-  IF p_class IS NOT NULL AND p_class NOT IN ('money', 'educational', 'brand', 'mismatch', 'unclassified') THEN
-    RAISE EXCEPTION 'gsc_class_unknown: %', p_class;
+  IF p_classes IS NOT NULL AND EXISTS (
+    SELECT 1 FROM unnest(p_classes) c
+    WHERE c NOT IN ('money', 'educational', 'brand', 'mismatch', 'unclassified')
+  ) THEN
+    RAISE EXCEPTION 'gsc_class_unknown: %', array_to_string(p_classes, ',');
   END IF;
-  IF p_source IS NOT NULL AND p_source NOT IN ('site_value', 'brand_match', 'intent_class', 'none') THEN
-    RAISE EXCEPTION 'gsc_class_source_unknown: %', p_source;
+  IF p_sources IS NOT NULL AND EXISTS (
+    SELECT 1 FROM unnest(p_sources) s
+    WHERE s NOT IN ('site_value', 'brand_match', 'intent_class', 'none')
+  ) THEN
+    RAISE EXCEPTION 'gsc_class_source_unknown: %', array_to_string(p_sources, ',');
   END IF;
   IF p_sort NOT IN ('impressions', 'clicks', 'ctr', 'query') THEN
     RAISE EXCEPTION 'gsc_sort_unknown: %', p_sort;
@@ -174,8 +184,8 @@ BEGIN
     LEFT JOIN seo.keyword kw ON kw.id = a.kid
     LEFT JOIN seo.site_keyword_value skv
       ON skv.keyword_id = a.kid AND skv.site_id = p_site_id AND skv.deleted_at IS NULL
-    WHERE (p_class IS NULL OR COALESCE(cm.traffic_class, 'unclassified') = p_class)
-      AND (p_source IS NULL OR COALESCE(cm.class_source, 'none') = p_source)
+    WHERE (p_classes IS NULL OR COALESCE(cm.traffic_class, 'unclassified') = ANY (p_classes))
+      AND (p_sources IS NULL OR COALESCE(cm.class_source, 'none') = ANY (p_sources))
       AND (v_search IS NULL OR a.q ILIKE '%' || seo.gsc_perf_like_escape(v_search) || '%')
   )
   SELECT c.kid,
@@ -209,8 +219,8 @@ BEGIN
 END;
 $function$;
 
-REVOKE ALL ON FUNCTION seo.gsc_keyword_class_review(uuid, date, date, text, text, text, text, text, int, int) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION seo.gsc_keyword_class_review(uuid, date, date, text, text, text, text, text, int, int) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION seo.gsc_keyword_class_review(uuid, date, date, text[], text[], text, text, text, int, int) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION seo.gsc_keyword_class_review(uuid, date, date, text[], text[], text, text, text, int, int) TO authenticated, service_role;
 
 
 -- The ONE human write path for class overrides (single AND bulk — p_notes is
@@ -238,6 +248,7 @@ CREATE OR REPLACE FUNCTION seo.gsc_set_keyword_class(
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER
 SET search_path = seo, web, pg_temp
 AS $function$
+#variable_conflict use_column
 DECLARE
   v_notes text := NULLIF(btrim(p_notes), '');
   v_org uuid;
