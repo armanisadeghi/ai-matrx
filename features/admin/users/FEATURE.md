@@ -98,5 +98,6 @@ No new table or Redux slice is owned by this feature.
 
 ## Change log
 
+- `2026-08-08` — Codex: made the shared Users & Access shell a deliberate two-row mobile header with an independently scrollable, touch-safe tab rail; added accessible navigation/back labels so child admin routes no longer inherit the prior title/tab overlap.
 - `2026-07-23` — Codex: organization projections and the directory table now include the canonical compact abbreviation alongside name and slug.
 - `2026-07-22` — Codex: added the reciprocal user ↔ organization admin directory, inline account membership visibility, guarded membership management, and audited super-admin database mutation path.
