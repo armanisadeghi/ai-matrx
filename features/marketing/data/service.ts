@@ -613,9 +613,9 @@ export async function createSite(
     p_domain: input.domain,
     p_settings: {},
     p_integrations: {},
-    // web.* is scraped public data — everything is public (Arman ruling
-    // 2026-07-21); a DB trigger coerces any other value anyway.
-    p_visibility: "internal",
+    // p_visibility deliberately omitted: web.create_site inherits
+    // platform.entity_types.default_visibility ('internal' for web_site) —
+    // hardcoding a visibility in a creation path is a defect (2026-08-08).
     // An explicit brand ALWAYS wins; name-match-or-create only when absent.
     ...(input.brandId ? { p_brand_id: input.brandId } : {}),
   });
@@ -2417,7 +2417,11 @@ export async function createBrand(
       og_image_url: input.ogImageUrl,
       notes: input.notes,
       status: input.status,
-      visibility: input.visibility,
+      // Omitted visibility inherits the web.brand column default
+      // (platform.entity_default_visibility('web_brand')).
+      ...(input.visibility !== undefined
+        ? { visibility: input.visibility }
+        : {}),
       ...(input.profile !== undefined ? { profile: input.profile } : {}),
     })
     .select(BRAND_COLUMNS)
