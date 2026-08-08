@@ -68,6 +68,7 @@ import { toast } from "@/lib/toast";
 import { buildTreeState } from "./tree-utils";
 import { isHiddenFromUserTree } from "@/features/files/utils/folder-conventions";
 import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
+import { invalidateOfficeExtraction } from "@/features/files/hooks/office-extraction-cache";
 import {
   addFilePendingRequest,
   attachChildToFolder,
@@ -1025,6 +1026,7 @@ export const uploadFiles = createAsyncThunk<
         // original version is now stale. Invalidate so the next preview
         // open re-fetches the latest bytes.
         invalidateBlobCache(data.file_id);
+        invalidateOfficeExtraction(data.file_id);
         dispatch(
           attachChildToFolder({
             parentFolderId: arg.parentFolderId ?? null,
@@ -1323,6 +1325,7 @@ export const deleteFile = createAsyncThunk<void, DeleteFileArg, ThunkApi>(
     // memory for something the user can't open anymore (and if the
     // delete is rolled back on error, the next open will re-fetch).
     invalidateBlobCache(fileId);
+    invalidateOfficeExtraction(fileId);
     registerRequest({
       requestId,
       kind: "delete",
@@ -1528,6 +1531,7 @@ export const purgeFile = createAsyncThunk<void, { fileId: string }, ThunkApi>(
     const requestId = newRequestId();
     dispatch(removeFile({ id: fileId }));
     invalidateBlobCache(fileId);
+    invalidateOfficeExtraction(fileId);
     registerRequest({
       requestId,
       kind: "delete",
@@ -1603,6 +1607,7 @@ export const restoreVersion = createAsyncThunk<
       // next preview reads the restored version, not the in-memory
       // copy of the version that was active before restore.
       invalidateBlobCache(fileId);
+    invalidateOfficeExtraction(fileId);
       // Reload version list to pick up the new synthetic version row.
       await dispatch(loadFileVersions({ fileId })).unwrap();
     } finally {
@@ -1900,6 +1905,7 @@ export const bulkDeleteFiles = createAsyncThunk<
   for (const id of arg.fileIds) {
     dispatch(removeFile({ id }));
     invalidateBlobCache(id);
+    invalidateOfficeExtraction(id);
   }
 
   try {

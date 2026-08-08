@@ -57,6 +57,7 @@ import { isOwnEcho, ledgerSize } from "./request-ledger";
 import { reconcileTree } from "./thunks";
 import { isHiddenFromUserTree } from "@/features/files/utils/folder-conventions";
 import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
+import { invalidateOfficeExtraction } from "@/features/files/hooks/office-extraction-cache";
 import {
   attachChildToFolder,
   clearSelection,
@@ -524,6 +525,7 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     // this version is the new "current" — but it's safer to drop on
     // any version-row insert than to keep showing old bytes.)
     void invalidateBlobCache(fileId);
+    invalidateOfficeExtraction(fileId);
   }
 
   function handlePermissionPayload(

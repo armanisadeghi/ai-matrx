@@ -50,9 +50,13 @@ export function useOpenFile() {
         kind === "video" ||
         kind === "audio" ||
         kind === "pdf" ||
-        // `generic` covers archives, 3D meshes, sqlite, office docs, etc.
-        // The binary viewer's runtime byte-sniff handles the "we labelled
-        // this generic but the bytes are actually text" case.
+        // Office docs are zip containers — never open them in Monaco as
+        // text. (They previously rode the `generic` arm; they now have
+        // their own previewKind.)
+        kind === "office" ||
+        // `generic` covers archives, 3D meshes, sqlite, etc. The binary
+        // viewer's runtime byte-sniff handles the "we labelled this
+        // generic but the bytes are actually text" case.
         kind === "generic";
 
       if (isBinary) {

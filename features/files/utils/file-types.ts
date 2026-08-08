@@ -1483,8 +1483,8 @@ export const FILE_TYPES: readonly FileTypeEntry[] = [
     thumbnailStrategy: "icon",
     color: "text-blue-500",
     icon: FileText,
-    // Bytes never reach the browser — the server extracts. No blob-size cap.
-    previewSizeCapOverride: null,
+    // No size cap needed: "office" is in the streamable-kind list of
+    // getFilePreviewProfile — bytes never reach the browser (server extracts).
   },
   {
     extensions: ["ppt", "pptx"],
@@ -1496,7 +1496,6 @@ export const FILE_TYPES: readonly FileTypeEntry[] = [
     thumbnailStrategy: "icon",
     color: "text-orange-600",
     icon: FileType,
-    previewSizeCapOverride: null,
   },
 
   // ────────────────────── NOTEBOOK ──────────────────────
@@ -1985,7 +1984,10 @@ export function getFilePreviewProfile(
     kind === "video" ||
     kind === "audio" ||
     kind === "pdf" ||
-    kind === "spreadsheet"
+    kind === "spreadsheet" ||
+    // Office previews are SERVER-extracted (the browser only receives
+    // markdown) — the file's own byte size is irrelevant to the client.
+    kind === "office"
       ? Number.POSITIVE_INFINITY
       : MAX_INLINE_PREVIEW_BYTES);
 

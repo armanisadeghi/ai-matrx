@@ -32,43 +32,14 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 import { guardMarkdownDelimiters } from "@/lib/markdown/delimiter-guard";
+import type { OfficeExtraction } from "@/features/files/api/office";
+// Cache lives OUTSIDE this lazy chunk so upload/restore/delete thunks and the
+// realtime middleware can invalidate it without importing this graph.
 import {
-  extractOfficeMarkdown,
-  type OfficeExtraction,
-} from "@/features/files/api/office";
+  getOfficeExtraction,
+  peekOfficeExtraction,
+} from "@/features/files/hooks/office-extraction-cache";
 import { extractErrorMessage } from "@/utils/errors";
-
-// Module-level extraction cache — survives pane close/reopen. Small payloads
-// (markdown text), so a simple insertion-capped Map is enough.
-const extractionCache = new Map<string, OfficeExtraction>();
-const CACHE_MAX_ENTRIES = 40;
-const inflight = new Map<string, Promise<OfficeExtraction>>();
-
-async function getExtraction(fileId: string): Promise<OfficeExtraction> {
-  const cached = extractionCache.get(fileId);
-  if (cached) return cached;
-  let p = inflight.get(fileId);
-  if (!p) {
-    p = extractOfficeMarkdown(fileId).then((result) => {
-      if (extractionCache.size >= CACHE_MAX_ENTRIES) {
-        const oldest = extractionCache.keys().next().value;
-        if (oldest !== undefined) extractionCache.delete(oldest);
-      }
-      extractionCache.set(fileId, result);
-      return result;
-    });
-    inflight.set(fileId, p);
-    void p.finally(() => {
-      if (inflight.get(fileId) === p) inflight.delete(fileId);
-    });
-  }
-  return p;
-}
-
-/** Drop the cached extraction (e.g. after a new version is uploaded). */
-export function invalidateOfficeExtraction(fileId: string) {
-  extractionCache.delete(fileId);
-}
 
 const KIND_LABEL: Record<string, string> = {
   docx: "Word document",
@@ -99,13 +70,13 @@ export function OfficePreview({
     error: string | null;
   }>(() => ({
     fileId,
-    extraction: extractionCache.get(fileId) ?? null,
+    extraction: peekOfficeExtraction(fileId),
     error: null,
   }));
   if (state.fileId !== fileId) {
     setState({
       fileId,
-      extraction: extractionCache.get(fileId) ?? null,
+      extraction: peekOfficeExtraction(fileId),
       error: null,
     });
   }
@@ -113,13 +84,18 @@ export function OfficePreview({
   const [retryToken, setRetryToken] = useState(0);
 
   useEffect(() => {
-    if (extractionCache.get(fileId)) return undefined;
+    // Always go through getOfficeExtraction: a cache hit resolves instantly
+    // (async .then — no sync setState), an in-flight fetch is shared, a miss
+    // fetches. This also covers the parallel-mount race where another
+    // instance fills the cache between our render and this effect.
     let cancelled = false;
-    getExtraction(fileId)
+    getOfficeExtraction(fileId)
       .then((result) => {
         if (cancelled) return;
         setState((s) =>
-          s.fileId === fileId ? { ...s, extraction: result, error: null } : s,
+          s.fileId === fileId && s.extraction !== result
+            ? { ...s, extraction: result, error: null }
+            : s,
         );
       })
       .catch((err) => {
@@ -279,7 +255,7 @@ export function OfficePreview({
             </ReactMarkdown>
           </article>
         )}
-        {extraction.markdown.trim() === "" && (
+        {(extraction.markdown ?? "").trim() === "" && (
           <p className="text-xs text-muted-foreground">
             No text content found in {fileName ?? "this document"}.
           </p>
