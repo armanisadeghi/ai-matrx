@@ -38,7 +38,7 @@ import {
 } from "@/features/marketing/lib/marketing-nav";
 
 export const metadata: Metadata = {
-  title: "SEO Tools — AI Matrx",
+  title: { absolute: "SEO Tools — AI Matrx" },
   description:
     "A complete suite of AI-powered and scraping-based SEO tools. Analyze meta tags, audit content, research keywords, check backlinks, and more.",
 };

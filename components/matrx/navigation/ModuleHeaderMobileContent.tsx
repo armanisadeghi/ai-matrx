@@ -32,24 +32,34 @@ export function ModuleHeaderMobileContent({
 
   return (
     <div className={cn("flex items-center justify-between w-full", className)}>
-      <div className="flex items-center gap-1">
-        <Link href="..">
-          <Button variant="ghost" size="icon" className="hover:bg-accent">
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
+      <div className="flex shrink-0 items-center gap-1">
+        <Link
+          href=".."
+          aria-label="Back to parent page"
+          className="flex h-10 w-10 items-center justify-center rounded-md hover:bg-accent"
+        >
+          <ChevronLeft className="h-4 w-4" />
         </Link>
 
-        <Link href="/dashboard">
-          <Button variant="ghost" size="icon" className="hover:bg-accent">
-            <Home className="h-4 w-4" />
-          </Button>
+        <Link
+          href="/dashboard"
+          aria-label="Go to dashboard"
+          className="flex h-10 w-10 items-center justify-center rounded-md hover:bg-accent"
+        >
+          <Home className="h-4 w-4" />
         </Link>
       </div>
 
       <div className="flex-1 mx-2 truncate">
         <PageSelection pages={pages} moduleHome={moduleHome} />
       </div>
-      <Button variant="ghost" size="icon" onClick={() => setMenuOpen(true)}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-10 w-10 shrink-0"
+        aria-label={`Open ${moduleName || "module"} menu`}
+        onClick={() => setMenuOpen(true)}
+      >
         <ShieldPlus className="h-4 w-4" />
       </Button>
       <MatrxDynamicPanelHost

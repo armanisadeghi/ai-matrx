@@ -32,9 +32,9 @@ export default async function CrmRoute() {
       <PageHeader>
         <div className="flex w-full min-w-0 items-center gap-2 px-1">
           <Contact className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="text-sm font-semibold text-foreground">
+          <h1 className="truncate text-sm font-semibold text-foreground">
             {getSurfaceDisplayLabel(CRM_SURFACE_NAME)}
-          </span>
+          </h1>
         </div>
       </PageHeader>
       <CrmListPage />

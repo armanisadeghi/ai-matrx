@@ -57,3 +57,26 @@ export const cleanMarkdown = (text: string): string => {
 
     return cleanedText;
 };
+
+const MARKDOWN_IMAGE = /!\[([^\]]*)\]\([^\n)]*\)/g;
+const STANDALONE_URL = /^\s*<?https?:\/\/\S+>?\s*$/gim;
+const INLINE_IMAGE_URL =
+  /https?:\/\/\S+\.(?:avif|gif|jpe?g|png|svg|webp)(?:\?\S*)?/gi;
+
+/**
+ * Produce a single-line plain-text preview from Markdown-capable content.
+ * Image alt text is retained while image destinations and URL-only paragraphs
+ * are omitted so compact list rows stay useful and bounded.
+ */
+export const cleanMarkdownPreview = (
+  text: string | null | undefined,
+): string => {
+  if (!text) return "";
+
+  const withoutPreviewNoise = text
+    .replace(MARKDOWN_IMAGE, "$1")
+    .replace(STANDALONE_URL, "")
+    .replace(INLINE_IMAGE_URL, "");
+
+  return cleanMarkdown(withoutPreviewNoise).replace(/\s+/g, " ").trim();
+};

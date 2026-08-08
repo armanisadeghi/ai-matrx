@@ -20,6 +20,7 @@
 import { Star, Archive, Building2 } from "lucide-react";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
+import { cleanMarkdownPreview } from "@/utils/markdown-processors/clean-markdown-to-text";
 import type { AgentBrowseRow } from "./types";
 
 /**
@@ -87,7 +88,7 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
     column: {
       id: "favorite",
       accessorKey: "is_favorite",
-      header: "",
+      header: <span className="sr-only">Favorite</span>,
       filter: "boolean",
       width: 40,
       align: "center",
@@ -137,14 +138,17 @@ export const BROWSE_COLUMNS: BrowseColumnSpec[] = [
       // a bound the table sizes to min-content and scrolls forever sideways.
       width: 320,
       className: "max-w-[20rem] overflow-hidden",
-      cell: (row) => (
-        <span
-          className="block truncate text-muted-foreground"
-          title={row.description ?? undefined}
-        >
-          {row.description || "—"}
-        </span>
-      ),
+      cell: (row) => {
+        const preview = cleanMarkdownPreview(row.description);
+        return (
+          <span
+            className="block truncate text-muted-foreground"
+            title={preview || undefined}
+          >
+            {preview || "—"}
+          </span>
+        );
+      },
     },
   },
   {

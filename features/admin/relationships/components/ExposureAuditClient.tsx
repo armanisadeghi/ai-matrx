@@ -423,6 +423,7 @@ export function ExposureAuditClient() {
           type="button"
           variant="outline"
           size="sm"
+          className="min-h-10 sm:min-h-8"
           disabled={isFetching}
           onClick={() => setRefreshNonce((value) => value + 1)}
         >

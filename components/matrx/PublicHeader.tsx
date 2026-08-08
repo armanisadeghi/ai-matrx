@@ -14,7 +14,7 @@ function AuthFallback() {
     <Button
       variant="ghost"
       size="sm"
-      className="h-7 gap-1.5 px-2 text-xs opacity-50 cursor-default"
+      className="h-11 gap-1.5 px-3 text-xs opacity-50 cursor-default"
       disabled
     >
       <LogIn className="h-3.5 w-3.5" />
@@ -24,7 +24,7 @@ function AuthFallback() {
 }
 
 function ThemeToggleFallback() {
-  return <div className="w-7 h-7" aria-hidden="true" />;
+  return <div className="h-11 w-11" aria-hidden="true" />;
 }
 
 export function PublicHeader() {
@@ -33,15 +33,16 @@ export function PublicHeader() {
       data-public-header
       className="sticky top-0 z-50 w-full matrx-glass-thin-border"
     >
-      <div className="w-full px-4 h-10 flex items-center justify-between">
+      <div className="flex h-12 w-full items-center justify-between px-4">
         <Link
           href="/"
-          className="flex items-center gap-2 group transition-opacity hover:opacity-80"
+          aria-label="AI Matrx home"
+          className="group -ml-3 flex h-11 w-11 items-center justify-center rounded-full transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Image
             src="/matrx/matrx-icon.svg"
-            width={18}
-            height={18}
+            width={20}
+            height={20}
             alt="AI Matrx Logo"
             className="flex-shrink-0"
             priority

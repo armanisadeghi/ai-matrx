@@ -58,7 +58,7 @@ interface Props {
 }
 
 const TAB_BASE =
-  "inline-flex items-center gap-1 rounded-md px-2 h-7 text-xs font-medium transition-colors whitespace-nowrap sm:gap-1.5 sm:px-2.5";
+  "inline-flex h-11 items-center gap-1 rounded-md px-2 text-xs font-medium transition-colors whitespace-nowrap sm:h-7 sm:gap-1.5 sm:px-2.5";
 const TAB_ACTIVE = "bg-primary text-primary-foreground";
 const TAB_IDLE = "text-muted-foreground hover:bg-muted hover:text-foreground";
 

@@ -32,6 +32,7 @@ import {
   shouldOpenInNewTab,
   openInNewTab,
 } from "@/utils/navigation/should-open-in-new-tab";
+import { cleanMarkdownPreview } from "@/utils/markdown-processors/clean-markdown-to-text";
 import type { AgentBrowseRow } from "../types";
 
 interface Props {
@@ -115,7 +116,7 @@ export function AgentBrowseCards({
               </p>
               {row.description && (
                 <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                  {row.description}
+                  {cleanMarkdownPreview(row.description)}
                 </p>
               )}
               <div className="mt-1.5 flex flex-wrap items-center gap-1">

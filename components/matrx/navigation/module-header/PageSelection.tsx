@@ -54,6 +54,8 @@ export default function PageSelection({
       onValueChange={handleNavigation}
       searchable
       searchPlaceholder="Search routes..."
+      ariaLabel="Choose administration page"
+      triggerClassName="h-10 w-10 sm:h-8 sm:w-8"
     />
   );
 }

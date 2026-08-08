@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import { Suspense, lazy } from 'react';
 import { useRouter } from 'next/navigation';
 import { LayoutDashboard, LogIn } from 'lucide-react';
 import { useSelector } from 'react-redux';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { selectUser, selectDisplayName, selectProfilePhoto, selectIsSuperAdmin } from '@/lib/redux/slices/userSlice';
 import { cn } from '@/lib/utils';
+import { useIsMounted } from '@/hooks/use-is-mounted';
 
 // Lazy load AdminMenu - only loads when user is admin
 const AdminMenu = lazy(() => import('./AdminMenu'));
@@ -36,10 +37,7 @@ export function PublicHeaderAuth() {
   // Without this gate, the server emits the Sign In <Button> and the client's
   // first render emits the authed <div>, which triggers React's hydration
   // error and unmounts the entire subtree.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useIsMounted();
 
   const isAuthenticated = mounted && !!user.id;
 
@@ -76,8 +74,9 @@ export function PublicHeaderAuth() {
         <Button
           onClick={() => router.push('/dashboard')}
           size="sm"
+          aria-label="Open dashboard"
           className={cn(
-            "h-7 gap-1.5 px-2 text-xs",
+            "h-11 w-11 gap-1.5 p-0 text-xs",
             "bg-gradient-to-r from-blue-600 to-violet-600",
             "hover:from-blue-700 hover:to-violet-700",
             "text-white border-0",
@@ -97,8 +96,9 @@ export function PublicHeaderAuth() {
     <Button
       onClick={() => router.push('/login')}
       size="sm"
+      aria-label="Sign in"
       className={cn(
-        "h-7 gap-1.5 px-2 text-xs",
+        "h-11 w-11 gap-1.5 p-0 text-xs sm:w-auto sm:px-3",
         "bg-gradient-to-r from-blue-600 to-violet-600",
         "hover:from-blue-700 hover:to-violet-700",
         "text-white border-0",

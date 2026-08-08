@@ -17,15 +17,15 @@ export function PublicFooter() {
       data-public-footer
       className="w-full shrink-0 border-t border-border bg-card"
     >
-      <div className="w-full px-4 py-2 flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
-        <span className="text-xs text-muted-foreground">
+      <div className="flex w-full flex-wrap items-center justify-center gap-x-1 px-2 py-1 sm:gap-x-2 sm:px-4">
+        <span className="px-2 text-xs text-muted-foreground">
           © {new Date().getFullYear()} AI Matrx
         </span>
         {FOOTER_LINKS.map(({ href, label }) => (
           <Link
             key={href}
             href={href}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex min-h-11 items-center rounded-md px-2 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {label}
           </Link>

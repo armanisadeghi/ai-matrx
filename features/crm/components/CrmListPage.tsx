@@ -349,12 +349,14 @@ export function CrmListPage({
           )}
         >
           <div className="flex flex-wrap items-center gap-2">
-            <BrowseScopeTabs
-              scope={list.query.scope}
-              scopes={CRM_LIST_SCOPES}
-              counts={list.counts}
-              onChange={(scope) => list.setQuery({ scope })}
-            />
+            <div className="[&_button]:h-11 [&_button]:min-w-11 sm:[&_button]:h-7 sm:[&_button]:min-w-0">
+              <BrowseScopeTabs
+                scope={list.query.scope}
+                scopes={CRM_LIST_SCOPES}
+                counts={list.counts}
+                onChange={(scope) => list.setQuery({ scope })}
+              />
+            </div>
             <div className="ml-auto flex items-center gap-1.5">
               <Button
                 size="sm"
@@ -408,7 +410,7 @@ export function CrmListPage({
             }}
             toolbar={{
               search: true,
-              searchPlaceholder: "Search name, company, domain, title…",
+              searchPlaceholder: "Search CRM records…",
               facets: [
                 {
                   type: "button-group",

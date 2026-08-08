@@ -34,6 +34,7 @@ const NavigationSelectIcon = ({
       onValueChange={handleNavigation}
       searchable
       searchPlaceholder="Search routes..."
+      ariaLabel="Choose page"
     />
   );
 };

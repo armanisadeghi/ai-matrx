@@ -1,6 +1,6 @@
 # FEATURE.md — `crm`
 
-**Status:** `db-core live · route + WindowPanels live` · **Tier:** `1` · **Last updated:** `2026-08-06`
+**Status:** `db-core live · route + WindowPanels live` · **Tier:** `1` · **Last updated:** `2026-08-08`
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/FEATURE.md` — read it before touching this feature in ANY repo.
 
@@ -180,6 +180,9 @@ attachments = `features/files` · tags/stages = `platform.categories` · the 360
 
 ## Change log
 
+- 2026-08-08 — Repaired `/crm` review feedback: specific route metadata and
+  semantic header H1, 44px mobile scope controls, concise search placeholder,
+  and an explicit mobile Open affordance in each sticky identity cell.
 - 2026-08-06 — Full assessment pass: cross-repo SoR created
   (`common-docs/systems/crm/FEATURE.md` — platform-wide integration-gap map, agent-surface
   gaps, competitive benchmark); handoff rewritten with a waved work order + three Arman

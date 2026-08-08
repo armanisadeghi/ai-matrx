@@ -84,8 +84,9 @@ drops the option you just deselected traps the user inside their own filter.
   (chips) still edit on click. Edits stay local until the floating Save pill
   commits them, then persist via one UPDATE per row. `"tags"` and
   `editTrigger: "pencil"` live on the canonical `MatrxDataTable` — extended,
-  not forked. Description column is width-capped so long text cannot stretch
-  the table horizontally.
+  not forked. Description previews use `cleanMarkdownPreview`; headings are
+  flattened, image destinations omitted, and whitespace collapsed before the
+  width-capped table or card renders them.
 - The kebab (⋮) still carries the FULL `ItemMenu` (every registry action).
   Modal and menu share the same handlers from `useAgentRowActions`.
 
@@ -202,6 +203,9 @@ hostile at 2,000.
 
 ## Change log
 
+- **2026-08-08** — Added the semantic Agents H1, named the favorite-column
+  sort control, raised mobile scope targets to 44px, and sanitized Markdown
+  description previews across table and card views.
 - **2026-07-29** — Mobile browse chrome is one scope/actions row plus one
   search/actions row: scope labels collapse accessibly to icons, Sets/New use
   icon tap targets, and view/density/reset move into one Display menu. The

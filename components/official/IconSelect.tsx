@@ -52,6 +52,8 @@ export interface IconSelectProps {
   /** When true, renders a searchable popover list instead of a plain select. */
   searchable?: boolean;
   searchPlaceholder?: string;
+  /** Accessible name for the icon-only trigger. */
+  ariaLabel?: string;
 }
 
 const triggerBaseClassName =
@@ -61,12 +63,17 @@ function IconSelectTrigger({
   icon,
   triggerClassName,
   disabled,
-}: Pick<IconSelectProps, "icon" | "triggerClassName" | "disabled">) {
+  ariaLabel,
+}: Pick<
+  IconSelectProps,
+  "icon" | "triggerClassName" | "disabled" | "ariaLabel"
+>) {
   return (
     <Button
       type="button"
       variant="ghost"
       size="icon"
+      aria-label={ariaLabel}
       disabled={disabled}
       className={cn(triggerBaseClassName, triggerClassName)}
     >
@@ -91,6 +98,7 @@ const IconSelect = ({
   disabled = false,
   searchable = false,
   searchPlaceholder = "Search...",
+  ariaLabel = "Choose an option",
 }: IconSelectProps) => {
   const [open, setOpen] = useState(false);
   // cmdk onSelect does not receive the mouse event — track modifier clicks here.
@@ -104,6 +112,7 @@ const IconSelect = ({
             icon={icon}
             triggerClassName={triggerClassName}
             disabled={disabled}
+            ariaLabel={ariaLabel}
           />
         </PopoverTrigger>
         <PopoverContent
@@ -157,6 +166,7 @@ const IconSelect = ({
   return (
     <Select value={value} onValueChange={onValueChange} disabled={disabled}>
       <SelectTrigger
+        aria-label={ariaLabel}
         className={cn(triggerBaseClassName, triggerClassName)}
         hideArrow={true}
       >

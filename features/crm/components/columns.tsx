@@ -5,7 +5,7 @@
 // render at all. Sorting is on the DB column, never the rendered cell —
 // which is why Employer (an embed) deliberately declares neither.
 
-import { Building2, Globe, PhoneOff, User } from "lucide-react";
+import { Building2, ChevronRight, Globe, PhoneOff, User } from "lucide-react";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { formatRelativeTime } from "@/utils/datetime";
 import { cn } from "@/lib/utils";
@@ -64,6 +64,13 @@ export const PARTY_COLUMNS: MatrxColumnDef<PartyListRow>[] = [
             DNC
           </span>
         )}
+        <span
+          aria-hidden="true"
+          className="ml-1 inline-flex shrink-0 items-center gap-0.5 rounded-md bg-primary/10 px-1.5 py-1 text-[11px] font-semibold text-primary sm:hidden"
+        >
+          Open
+          <ChevronRight className="h-3 w-3" />
+        </span>
       </div>
     ),
   },

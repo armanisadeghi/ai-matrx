@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useTransition } from "react";
+import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { LayoutGrid, Loader2 } from "lucide-react";
@@ -22,13 +22,9 @@ export function DatabaseAdminLayoutClient({
   const searchParams = useSearchParams();
   const currentSearch = searchParams.toString();
   const router = useRouter();
-  const [currentPath, setCurrentPath] = useState(pathname);
   const [isPending, startTransition] = useTransition();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
-
-  useEffect(() => {
-    setCurrentPath(pathname);
-  }, [pathname]);
+  const currentPath = pathname;
 
   const isHub = currentPath === DATABASE_MODULE_HOME;
 
@@ -42,7 +38,10 @@ export function DatabaseAdminLayoutClient({
     <div className="flex flex-col h-full">
       <div className="shrink-0 border-b border-border bg-card">
         {/* Row 1 — Hub + cross-module tools */}
-        <div className="flex flex-nowrap items-center gap-1 overflow-x-auto no-scrollbar px-2 py-1 border-b border-border/60">
+        <nav
+          aria-label="Database tools"
+          className="flex flex-nowrap items-center gap-1 overflow-x-auto no-scrollbar px-2 py-1 border-b border-border/60"
+        >
           <Link
             href={DATABASE_MODULE_HOME}
             onClick={(e) => {
@@ -50,7 +49,7 @@ export function DatabaseAdminLayoutClient({
               handleNavigate(DATABASE_MODULE_HOME);
             }}
             className={cn(
-              "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+              "inline-flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors sm:min-h-8",
               isHub
                 ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -67,7 +66,7 @@ export function DatabaseAdminLayoutClient({
           <span className="text-border px-1">|</span>
 
           {databaseToolPages
-            .filter((p) => p.section !== "sql")
+            .filter((p) => p.section !== "sql" && !p.isDuplicate)
             .map((page) => {
               const active = isActiveDatabaseToolPath(
                 currentPath,
@@ -85,7 +84,7 @@ export function DatabaseAdminLayoutClient({
                     handleNavigate(page.path);
                   }}
                   className={cn(
-                    "inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                    "inline-flex min-h-10 shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-medium transition-colors sm:min-h-8",
                     active
                       ? "bg-accent text-accent-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -98,11 +97,14 @@ export function DatabaseAdminLayoutClient({
                 </Link>
               );
             })}
-        </div>
+        </nav>
 
         {/* Row 2 — SQL sub-routes (only when inside /administration/database/*) */}
         {!isHub && currentPath.startsWith(DATABASE_MODULE_HOME + "/") && (
-          <div className="flex flex-nowrap overflow-x-auto no-scrollbar px-2">
+          <nav
+            aria-label="SQL and schema tools"
+            className="flex flex-nowrap overflow-x-auto no-scrollbar px-2"
+          >
             {databaseSqlSubPages.map((page) => {
               const active = isActiveDatabaseToolPath(
                 currentPath,
@@ -120,7 +122,7 @@ export function DatabaseAdminLayoutClient({
                     handleNavigate(page.path);
                   }}
                   className={cn(
-                    "inline-flex items-center gap-1 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+                    "inline-flex min-h-10 shrink-0 items-center gap-1 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors",
                     active
                       ? "border-primary text-foreground"
                       : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
@@ -131,7 +133,7 @@ export function DatabaseAdminLayoutClient({
                 </Link>
               );
             })}
-          </div>
+          </nav>
         )}
       </div>
 
