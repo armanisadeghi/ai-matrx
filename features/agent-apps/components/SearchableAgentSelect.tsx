@@ -49,7 +49,7 @@ export function SearchableAgentSelect({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={placeholder}
-          className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-[16px]"
+          className="h-11 border-0 text-[16px] focus-visible:ring-0 focus-visible:ring-offset-0 lg:h-10"
         />
       </div>
       <div className="max-h-72 overflow-auto">
@@ -66,7 +66,7 @@ export function SearchableAgentSelect({
                   <button
                     type="button"
                     onClick={() => onChange(a.id)}
-                    className="w-full flex items-center gap-2 px-3 py-2 hover:bg-accent text-left transition-colors"
+                    className="flex min-h-11 w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-accent"
                   >
                     <CircuitBoard className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                     <div className="min-w-0 flex-1">
