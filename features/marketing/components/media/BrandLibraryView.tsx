@@ -272,9 +272,7 @@ export function BrandLibraryView({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-[11px] text-muted-foreground">
-          {assets.length.toLocaleString()} confirmed asset
-          {assets.length === 1 ? "" : "s"} in this brand&apos;s library —
-          shared across every site of the brand.
+          {`${assets.length.toLocaleString()} confirmed asset${assets.length === 1 ? "" : "s"} in this brand's library — shared across every site of the brand.`}
         </p>
         <div className="ml-auto flex items-center gap-1.5">
           <input

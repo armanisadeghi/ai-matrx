@@ -61,8 +61,9 @@ await dispatch(
 ```ts
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 
-const { url } = useFileSrc({ kind: 'file_id', fileId });
-return <img src={url ?? undefined} />;
+// Returns a bare `string | null` — NOT an object.
+const src = useFileSrc({ kind: 'file_id', fileId });
+return <img src={src ?? undefined} />;
 ```
 
 ### Pick a file for "attach"

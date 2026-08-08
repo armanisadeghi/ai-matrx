@@ -102,6 +102,16 @@ export function GenerateMediaView({
     [assetsQuery.data],
   );
 
+  /**
+   * Hard ceiling on the whole order. The two-step pipeline's internal waits
+   * are bounded, but a hung stream in the execution system can leave its
+   * promise pending forever (observed 2026-08-08: server completed both runs
+   * and returned the image while the client spinner never resolved). The UI
+   * must never spin forever — after this deadline we fail LOUDLY and tell the
+   * user the image may still exist server-side.
+   */
+  const ORDER_DEADLINE_MS = 5 * 60_000;
+
   const order = async () => {
     if (!subject.trim()) {
       toast.error("Describe the subject before ordering the image.");
@@ -122,13 +132,27 @@ export function GenerateMediaView({
         },
         standardsNotes: standards.notes || undefined,
       });
-      const result: PageImageResult = await dispatch(
-        generatePageImageTwoStep({
-          spec,
-          style: styleOverride.trim() || preset.style,
-          surfaceKey: MARKETING_SITE_SURFACE_NAME,
-        }),
-      );
+      const result: PageImageResult = await Promise.race([
+        dispatch(
+          generatePageImageTwoStep({
+            spec,
+            style: styleOverride.trim() || preset.style,
+            surfaceKey: MARKETING_SITE_SURFACE_NAME,
+          }),
+        ),
+        new Promise<PageImageResult>((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                ok: false,
+                step: "image",
+                message:
+                  "The run did not report back within 5 minutes. The image may still have been generated — check the Library shortly or retry.",
+              }),
+            ORDER_DEADLINE_MS,
+          ),
+        ),
+      ]);
       if (!result.ok) {
         toast.error(
           result.step === "prompt"

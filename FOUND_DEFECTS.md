@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D130 — Headless image-gen pipeline: client promise never settles though the server run completed (2026-08-08)
+
+`generatePageImageTwoStep` (features/marketing/lib/generate-page-image.ts, also used by PageImagePlanCard) hung >8 min in the site Media Generate view while the SERVER completed both runs — chat.conversation `989ac832-0fed-4757-b0dc-694ca357081e` holds the prompt AND the assistant image message (files.files `0300f253-…`) stamped 08:44:57Z. All internal waits are ≤180s, so the non-settling promise is `launchAgentExecution`/`executeInstance` (suspects: 409 on the conversation-start stream reservation; matrx-files FileRecord `file_id`-vs-`id` contract drift on the image block). Band-aid shipped: GenerateMediaView wraps the order in a 5-minute `Promise.race` with a loud may-have-completed toast. Root-cause chip dispatched (task_d4ead8c4). Fix = a terminal server run ALWAYS settles the client promise with the fileId.
+
 ### D129 — Tasks: known small gaps from the 2026-08 lifecycle upgrade adversarial review (2026-08-07)
 
 Three verified-but-deferred findings from the tasks world-class build (branch `feat/tasks-world-class`); the 12 serious ones were fixed in the same session.
