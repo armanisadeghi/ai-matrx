@@ -55,6 +55,8 @@ describe("surfaceFromPathname — marketing tree", () => {
       [`sitemaps/${P}`, "matrx-user/marketing-sitemaps"],
       ["discovery", "matrx-user/marketing-discovery"],
       ["integrations", "matrx-user/marketing-integrations"],
+      ["keywords", "matrx-user/marketing-site-keywords"],
+      ["media", "matrx-user/marketing-site-media"],
     ];
     for (const [tail, surface] of cases) {
       expect(surfaceFromPathname(`${SITE}/${tail}`)).toBe(surface);
