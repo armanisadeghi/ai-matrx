@@ -1,11 +1,17 @@
 ---
-status: active
-updated: 2026-08-06
+status: completed
+updated: 2026-08-08
 repos: [matrx-frontend, aidream]
 vision: [/Users/armanisadeghi/code/common-docs/projects/google-oauth-verification/PLAN.md]
 ---
 
 # Google OAuth scope registry — ONE source of truth per repo, kill every parallel path
+
+> **Completed/deployed:** the canonical frontend/backend registries and drift
+> guards landed in PLAN step 4. The “Remaining work” below is historical context,
+> not an executable work order. For future Analytics or YouTube scope changes,
+> read the governing PLAN's 2026-08-08 connection-preservation section first;
+> do not disconnect the historical organization grants or risk Search Console.
 
 ## Vision — Arman's words
 
