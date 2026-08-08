@@ -243,6 +243,79 @@ describe("insertCitationMarkers / stripCitationMarkers", () => {
   });
 });
 
+describe("insertCitationMarkers — overlapping citations", () => {
+  it("stacks multiple sources at the same offset in marker order", () => {
+    const out = insertCitationMarkers("abcdef", [
+      { sourceNumber: 1, answerEnd: 4 },
+      { sourceNumber: 2, answerEnd: 4 },
+      { sourceNumber: 3, answerEnd: 2 },
+    ]);
+    expect(out).toBe(
+      'ab<matrxcite n="3" />cd<matrxcite n="1" /><matrxcite n="2" />ef',
+    );
+  });
+
+  it("mixes offset and end-append markers without corrupting either", () => {
+    const text = "Claim one and claim two. ";
+    const out = insertCitationMarkers(text, [
+      { sourceNumber: 1, answerEnd: 9 },
+      { sourceNumber: 2, answerEnd: null },
+    ]);
+    expect(out).toBe(
+      'Claim one<matrxcite n="1" /> and claim two.<matrxcite n="2" /> ',
+    );
+    expect(stripCitationMarkers(out)).toBe(text);
+  });
+});
+
+describe("insertCitationMarkers — markdown code regions", () => {
+  it("snaps an offset inside an inline code span to just after the closing backtick", () => {
+    // Offset 7 is inside `foo()` — the marker must not land inside the span.
+    const text = "Use `foo()` here";
+    const out = insertCitationMarkers(text, [{ sourceNumber: 1, answerEnd: 7 }]);
+    expect(out).toBe('Use `foo()`<matrxcite n="1" /> here');
+    expect(stripCitationMarkers(out)).toBe(text);
+  });
+
+  it("handles multi-backtick inline spans (`` … ``)", () => {
+    const text = "Run ``a ` b`` now";
+    const out = insertCitationMarkers(text, [{ sourceNumber: 1, answerEnd: 6 }]);
+    expect(out).toBe('Run ``a ` b``<matrxcite n="1" /> now');
+  });
+
+  it("snaps an offset inside a fenced block to just after the closing fence", () => {
+    const text = "Intro\n```js\nconst x = 1;\n```\nAfter";
+    // Offset 15 lands inside `const x = 1;`.
+    const out = insertCitationMarkers(text, [
+      { sourceNumber: 1, answerEnd: 15 },
+    ]);
+    expect(out).toBe(
+      'Intro\n```js\nconst x = 1;\n```<matrxcite n="1" />\nAfter',
+    );
+    expect(stripCitationMarkers(out)).toBe(text);
+  });
+
+  it("an unclosed fence snaps the marker to end-of-text", () => {
+    const text = "Intro\n```\ncode still streaming";
+    const out = insertCitationMarkers(text, [
+      { sourceNumber: 1, answerEnd: 12 },
+    ]);
+    expect(out).toBe('Intro\n```\ncode still streaming<matrxcite n="1" />');
+  });
+
+  it("does not disturb offsets at region boundaries or in plain text with stray backticks", () => {
+    // Offset exactly BEFORE the opening backtick is fine.
+    const text = "See `x` ok";
+    expect(
+      insertCitationMarkers(text, [{ sourceNumber: 1, answerEnd: 4 }]),
+    ).toBe('See <matrxcite n="1" />`x` ok');
+    // An unpaired backtick run is literal text, not a region.
+    expect(
+      insertCitationMarkers("a ` b c", [{ sourceNumber: 1, answerEnd: 3 }]),
+    ).toBe('a `<matrxcite n="1" /> b c');
+  });
+});
+
 describe("insertCitationMarkers — unicode safety", () => {
   it("never splits a surrogate pair (emoji) when a provider offset lands mid-glyph", () => {
     // "ok 🚀 done" — 🚀 is a surrogate pair at UTF-16 indices 3-4. A provider
