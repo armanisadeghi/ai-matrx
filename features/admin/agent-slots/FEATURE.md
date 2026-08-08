@@ -17,6 +17,10 @@ Route: `/administration/agents/slots` (`app/(admin)/administration/agents/slots/
 
 The list is the canonical `MatrxDataTable` (`components/official/matrx-data-table`) — every column sorts + filters, global search, Copy/Copy-for-AI (row + this view), pagination, UUID cell on `id`. Derived `SlotRow` adds a filterable **Health** column (`ok` / `version drift` / `agent archived` / `not a system agent` — worst-first). Row click → side-panel workbench (`SlotDetail`): pin editor + test bench + overrides; the WindowPanel Edit tab reuses the same body. `SlotEditor`/`SlotTestBench` seed local state from props, so `SlotDetail` keys them by slot id — dropping the key regresses to stale cross-slot state (bug found 2026-08-08).
 
+## Surface declaration
+
+The page is the `matrx-admin/agent-slots` surface (`features/surfaces/manifests/agent-slots.manifest.ts`, readiness `partial`; route mapped in `features/surfaces/utils/route-to-surface.ts`; `ui.ui_surface` + values synced live 2026-08-08). `AgentSlotsConsole` mounts `<SurfaceRuntimeProvider>` and builds the Run-time scope via `createAgentSlotsScope` — slot list summary, health roll-up, system-agent picker count, and the selected slot's id/detail/health/overrides. Test-bench state (exemplars, candidate runs) stays in `SlotTestBench` local state and is NOT in the scope yet — lifting it promotes readiness.
+
 ## Change Log
 
 - 2026-08-08 — One-value-per-column pass (Arman): Label its own column; IO kinds split into separate Input / Output columns. Never re-merge values into a compound column.

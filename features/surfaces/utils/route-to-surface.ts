@@ -150,6 +150,10 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     surface: "matrx-admin/mcp-servers",
   },
   { prefix: "/administration/agents/lookups", surface: "matrx-admin/lookups" },
+  {
+    prefix: "/administration/agents/slots",
+    surface: "matrx-admin/agent-slots",
+  },
   // users family: specific children BEFORE the /administration/users hub.
   {
     prefix: "/administration/users/feedback",

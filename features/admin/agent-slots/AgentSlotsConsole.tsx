@@ -10,7 +10,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -21,6 +21,15 @@ import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/se
 import { SearchableAgentSelect } from "@/features/agent-apps/components/SearchableAgentSelect";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  AGENT_SLOTS_SURFACE_NAME,
+  createAgentSlotsScope,
+  type AgentSlotDetail,
+  type AgentSlotOverrideSummary,
+  type AgentSlotSummary,
+  type AgentSlotsHealthSummary,
+} from "@/features/surfaces/manifests/agent-slots.manifest";
 import { SlotTestBench } from "./SlotTestBench";
 import {
   fetchAgentVersions,
@@ -318,6 +327,41 @@ function SlotDetail({
   );
 }
 
+/** SlotRow → the manifest's summary shape (surface scope + agent context). */
+function toSlotSummary(r: SlotRow): AgentSlotSummary {
+  return {
+    id: r.id,
+    slot_key: r.slotKey,
+    label: r.label,
+    agent_name: r.agentName,
+    pin: r.pinLabel,
+    drift: r.drift,
+    health: r.health,
+    input_kind: r.inputKind,
+    output_kind: r.outputKind,
+    overrides_count: r.overridesCount,
+    is_enabled: r.isEnabled,
+    is_placeholder: r.isPlaceholder,
+  };
+}
+
+/** Full workbench detail for the selected slot — pin state + agent type. */
+function toSlotDetail(row: SlotRow, data: SlotConsoleData): AgentSlotDetail {
+  const pinnedVersion = row.slot.default_agent_version_id
+    ? data.versionsById[row.slot.default_agent_version_id]
+    : undefined;
+  const agentId = row.slot.default_agent_id ?? pinnedVersion?.agentId ?? null;
+  const agent = agentId ? data.agentsById[agentId] : undefined;
+  return {
+    ...toSlotSummary(row),
+    description: row.slot.description,
+    agent_type: agent?.agentType ?? null,
+    use_latest: Boolean(row.slot.use_latest),
+    pinned_version: pinnedVersion?.versionNumber ?? null,
+    latest_version: agent?.version ?? null,
+  };
+}
+
 function humanRow(r: SlotRow): string {
   return [
     `Slot: ${r.slotKey}${r.label ? ` (${r.label})` : ""}`,
@@ -393,6 +437,60 @@ export function AgentSlotsConsole() {
     () => (data ? data.slots.map((slot) => buildRow(slot, data)) : []),
     [data],
   );
+
+  // Surface scope — built at Run time from live console state so agents
+  // launched here know every slot, the health roll-up, and the selected
+  // slot's pin state. Contract: agent-slots.manifest.ts.
+  const getSurfaceScope = () => {
+    const summaries = rows.map(toSlotSummary);
+    const health: AgentSlotsHealthSummary = {
+      ok: 0,
+      version_drift: 0,
+      agent_archived: 0,
+      not_a_system_agent: 0,
+    };
+    for (const r of rows) {
+      if (r.health === "ok") health.ok += 1;
+      else if (r.health === "version drift") health.version_drift += 1;
+      else if (r.health === "agent archived") health.agent_archived += 1;
+      else health.not_a_system_agent += 1;
+    }
+    const selectedRow = selectedId
+      ? (rows.find((r) => r.id === selectedId) ?? null)
+      : null;
+    const overrides: AgentSlotOverrideSummary[] | undefined =
+      selectedRow && data
+        ? (data.bindingsBySlotId[selectedRow.id] ?? []).map((b) => {
+            const versionAgentId = b.agent_version_id
+              ? data.versionsById[b.agent_version_id]?.agentId
+              : undefined;
+            const agentKey = b.agent_id ?? versionAgentId;
+            return {
+              principal_type: b.principal_type,
+              agent_name: agentKey
+                ? (data.agentsById[agentKey]?.name ?? null)
+                : null,
+              config_overrides: isJsonObject(b.config_overrides)
+                ? b.config_overrides
+                : null,
+              is_enabled: Boolean(b.is_enabled),
+            };
+          })
+        : undefined;
+    return createAgentSlotsScope({
+      slot_count: rows.length,
+      slots_summary: summaries,
+      health_summary: health,
+      unhealthy_slots: summaries.filter((s) => s.health !== "ok"),
+      system_agent_count: agentOptions.length,
+      selected_slot_id: selectedRow?.id,
+      selected_slot:
+        selectedRow && data ? toSlotDetail(selectedRow, data) : undefined,
+      selected_slot_health: selectedRow?.health,
+      selected_slot_overrides: overrides,
+      selection: window.getSelection()?.toString() || undefined,
+    });
+  };
 
   const columns = useMemo((): MatrxColumnDef<SlotRow>[] => {
     return [
@@ -505,8 +603,13 @@ export function AgentSlotsConsole() {
   }, [toggleEnabled]);
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={AGENT_SLOTS_SURFACE_NAME}
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1" data-surface-value="slots_summary">
         <MatrxDataTable
           data={rows}
           columns={columns}
@@ -568,5 +671,6 @@ export function AgentSlotsConsole() {
         />
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
