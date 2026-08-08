@@ -164,13 +164,26 @@ areas. Declare sections once and derive the quick payload from
   reference page).
 - Feature component: `features/ai-models` (AiModelTable rows + AiModelFilterBar
   toolbar).
+- `features/tool-registry/mcp-admin` (`McpServersAdminPage`: sidebar/detail/
+  tools/configs/connections/meta) + `mcp-tools` (McpToolsManager catalog with
+  the aiCustom export dialog, ToolViewPage record; shared
+  `mcp-tools/format.ts`, sanitized — no endpoint URLs/OAuth ids).
+- `feedback` → all four tabs of FeedbackManagementContainer + detail dialog
+  (Copy-All extracted to shared `feedback/format.ts`; CategoriesTab's
+  clickable `<button>` rows get sibling-overlay pairs).
+- `system-agents/*`: AgentViewContent (bespoke SystemAgentCopyForAiMenu
+  deleted — its modes are now `aiVariants`), roster grid, shortcuts list +
+  directory, apps table, content blocks (metadata-only variant), lineage.
+  Shared `features/agents/format.ts` + `features/agent-shortcuts/format.ts`.
+- `agent-apps/*`: user grid + cards, overview record, versions + snapshot,
+  admin table (aiCustom), executions/errors, rate-limits, analytics,
+  categories, dashboard (fixed `.slice(0,6)` truncation with show-all).
+  Shared `features/agent-apps/format.ts` (also de-duped formatNumber/
+  formatDateTime).
 
 **Remaining high-value feature components** (each its own batch — trace the
-component, wire row + toolbar, typecheck, commit):
-- `features/tool-registry/mcp-admin` (`McpServersAdminPage`) + `mcp-tools`
-- `feedback` → `FeedbackManagementContainer`
-- `system-agents/*`
-- `agent-apps/*`
+component, wire row + toolbar, typecheck, commit): none queued — pick the
+next module via the route tree and repeat the audit → classify → wire loop.
 
 ---
 
