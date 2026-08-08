@@ -13,6 +13,19 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D134 — `pnpm type-check` is red on main in three marketing files (2026-08-08)
+
+Pre-existing on `main` (30be027b), unrelated to any current branch work:
+`features/marketing/data/service.ts:1243` references undefined
+`PAGE_CONTENT_TYPE_OR_FILTER`; `features/marketing/lib/page-content-class.test.ts`
+imports `vitest`, which is not a dependency (plus an implicit-any param);
+`features/scopes/registry/entityRegistry.ts:224` uses unknown key
+`content_template` in `ENTITY_OVERLAY`. The only type gate is red, so every
+branch inherits these and real new errors can hide behind them. Fix: define or
+import the missing constant, register `content_template` as an entity token (or
+correct the key), and either add vitest or convert the test to the repo's test
+runner.
+
 ### D133 — Arman's real accounts have viewer access to ZERO marketing sites; masqueraded as "site was deleted" (2026-08-08)
 
 Both agent-review items for the backlinks copy work came back "site was deleted or is no

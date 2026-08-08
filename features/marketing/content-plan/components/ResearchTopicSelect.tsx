@@ -6,6 +6,8 @@
  * topics itself (`useAllTopics` — RLS-filtered, all of mine) and reports the
  * picked `rs_topic.id` (null = no grounding).
  */
+import { useEffect } from "react";
+
 import {
   Select,
   SelectContent,
@@ -22,13 +24,25 @@ export function ResearchTopicSelect({
   onChange,
   triggerClassName,
   ariaLabel = "Research topic",
+  refreshKey = null,
 }: {
   value: string | null;
   onChange: (topicId: string | null) => void;
   triggerClassName?: string;
   ariaLabel?: string;
+  /**
+   * Bump (any non-null change) to refetch the topic list — for callers that
+   * CREATE a topic while this picker is mounted (`useAllTopics` has no
+   * cross-component cache, so a new topic is otherwise invisible until
+   * remount; the orphan-value row keeps the selection itself working).
+   */
+  refreshKey?: string | number | null;
 }) {
   const topics = useAllTopics();
+  const refresh = topics.refresh;
+  useEffect(() => {
+    if (refreshKey != null) refresh();
+  }, [refreshKey, refresh]);
   const rows = topics.data ?? [];
   // A linked topic the list has not (or cannot) load still renders — hiding
   // it would silently show "No research selected" for a real link.

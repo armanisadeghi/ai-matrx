@@ -101,35 +101,27 @@ research linking: start with the final report (the "Document"), user picks the t
 
 ## Remaining work
 
-1. **Generalize the grounding strip: resources, not just one research topic.** Extend
-   `SetupAiBar` (and the shared variable builders in `setup/ai.ts`) so the user can point the
-   setup agents at: the linked research Document (exists), **the company's existing website
-   URL**, **one or more competitor URLs**, **pasted content/notes**, and **free-text guidance**.
-   Persist every selection in `setup_draft` (`setup/draft.ts`) — save at every step. Resolve
-   each resource to text at the call site (research-bundle pattern) and feed ONE shared
-   `reference_material` block into every `content_plan.*` slot run (shape, names, topics,
-   entities, review). URL → text needs a fetch path: prefer an existing aidream scrape/extract
-   endpoint over anything new; if none is cleanly callable, that's a small server work item, not
-   a client hand-roll. `site_context` is currently passed as an empty string to the Shape
-   Planner (`SetupView.tsx:598`) — kill that placeholder as part of this.
-2. **One-click "Draft the work order."** With a style either user-picked or agent-recommended,
-   one button runs shape → per-family names (with per-page one-liner info, see item 3) → concept
-   names → count-only topics, all staged into the existing view state + draft, ready for the
-   user to review and hit "Create N pages." Prefer composing the existing slots client-side
-   (they already exist and stage correctly); only mint a new `content_plan.work_order_builder`
-   slot if one composed agent proves materially better. Optionally arm the agent(s) with web
-   search (server-side agent definition change via `agent_author`) for the "no research yet"
-   case — Arman explicitly wants "it does web search or just some basic web searches" as a
-   fallback grounding.
-3. **Names + information, not names alone.** `family_namer` returns bare `names`; Arman wants
+1. **Generalize the grounding strip beyond research.** Research is now creatable in place
+   (Done); still missing as grounding inputs: **competitor URLs**, **pasted content/notes**,
+   and **free-text guidance**. Persist each in `setup_draft` (`setup/draft.ts`), resolve to
+   text at the call site (research-bundle pattern), and feed ONE shared `reference_material`
+   block into every `content_plan.*` slot run (shape, names, topics, entities, review).
+   URL → text needs a fetch path: prefer an existing aidream scrape/extract endpoint over
+   anything new; if none is cleanly callable, that's a small server work item, not a client
+   hand-roll.
+2. **Names + information, not names alone.** `family_namer` returns bare `names`; Arman wants
    "some information about them as well." Extend the slot's output contract to
    `{name, note}` pairs (update the agx agent + `coerceFamilyNames` + `required_output_keys` in
    `client_slots.py`), stage the note as the child node's `brief` seed in the expansion so it
    persists on commit. Keep backward-tolerant coercion (plain strings still accepted).
-4. **Make the help visible.** Arman drafted a real work order in this UI and did not find the
-   existing "AI names" buttons — discoverability is a defect. When a family has no names and a
-   grounding resource is selected, the AI path should be the prominent affordance (not a small
-   outline button), and an empty-names family should nudge toward it.
+3. **Web-search fallback grounding.** For the "no research, no website" case, arm the shape/
+   namer agents with web search (server-side agent definition change via `agent_author`) —
+   Arman explicitly wants "it does web search or just some basic web searches". See the open
+   decision below before wiring.
+4. **Harden the quick-research chain.** `useCompanyQuickResearch` drains the run stream in the
+   tab; if the user navigates away mid-run the server finishes the pipeline but Document
+   assembly never fires. Options: resume detection on return (topic linked + syntheses > 0 +
+   no document → offer "Assemble report"), or a server-side run-then-document endpoint.
 5. **Nothing downstream READS `attributes.planned_topics` / `attributes.keyword_strategy`** —
    stored authoritatively on hub nodes, consumed by no generator/writer/tool. Wiring them into
    the cms-fill / writer stage is the payoff step.
@@ -144,6 +136,13 @@ research linking: start with the final report (the "Document"), user picks the t
 
 ## Done
 
+- Research creatable FROM Setup — "Research this company" runs the whole pipeline headlessly
+  via `features/research/hooks/useCompanyQuickResearch.ts`; topic auto-selected + site-linked,
+  picker refreshes (`ResearchTopicSelect` `refreshKey`), report lands in the bar (2026-08-08).
+- One-click "Draft the work order" (shape → family names → count-only topics, staged) — new
+  primary button in `SetupAiBar`; single-step demoted to "Shape only" (2026-08-08).
+- `site_context` real (`buildSiteContext` in setup/ai.ts); "Name with AI" solid button on
+  unnamed families (2026-08-08).
 - Header Agents popover shows role-bound agents platform-wide — `SurfaceBoundAgentsList`.
 - Seven platform agents created + slot-declared (`agent_slots/client_slots.py`) + smoke-tested.
 - Setup steps have real AI (shape+counts, family names, count-only topics, keyword strategy,

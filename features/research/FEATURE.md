@@ -288,6 +288,16 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-08 — **Headless company quick-research.**
+  `hooks/useCompanyQuickResearch.ts` — one confirmed call does create topic
+  (system Company Research template) → template keywords → `runPipeline`
+  (drained to completion) → `generateDocument`, with stage state for host
+  UIs. Composes existing `createTopic`/`addKeywords`/`getTemplates` +
+  `useResearchApi` only — no new write path. First consumer: content-plan
+  Setup's "Research this company" (`features/marketing/content-plan/setup/`).
+  `ResearchTopicSelect` callers can now pass `refreshKey` to refetch
+  `useAllTopics` after an in-place create.
+
 - 2026-08-08 — **Research intent surfaced.** New `research.research_intent`
   catalog + `rs_topic.intent_key`/`intent_brief` (server-composed, written
   only through `POST /research/topics/{id}/intent`). Added

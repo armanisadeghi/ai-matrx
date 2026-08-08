@@ -1,0 +1,144 @@
+"use client";
+
+/**
+ * ONE-CALL company research — the headless version of the /research/topics/new
+ * wizard, for surfaces (e.g. content-plan Setup) that need a finished research
+ * report without leaving their screen:
+ *
+ *   create topic (system "Company Research" template) → seed its template
+ *   keywords → run the full pipeline (search → scrape → analyze → synthesize)
+ *   → assemble the final Document.
+ *
+ * Composes ONLY existing public capabilities: `createTopic` / `addKeywords` /
+ * `getTemplates` (Supabase-direct CRUD) and `useResearchApi().runPipeline` /
+ * `.generateDocument` (the paid Python pipeline). Nothing here is a second
+ * write path.
+ *
+ * MONEY: a run is a full multi-stage pipeline (tens of AI calls). Callers MUST
+ * get an explicit user confirm before calling `run` — this hook never
+ * self-triggers. The pipeline streams NDJSON; both paid steps are DRAINED to
+ * completion so "document assembled" is a fact, not an acceptance. If the user
+ * navigates away mid-run the server keeps working (a disconnect never cancels
+ * server work) but the document-assembly chain in this tab dies — the topic
+ * page in /research can finish it manually.
+ */
+import { useRef, useState } from "react";
+
+import { addKeywords, createTopic, getTemplates } from "../service";
+import type { ResearchTopic } from "../types";
+import { useResearchApi } from "./useResearchApi";
+
+/** System template "Company Research" (`research.rs_template`, `is_system`). */
+export const COMPANY_RESEARCH_TEMPLATE_ID =
+  "dd53f982-a851-4701-9368-505982260271";
+
+/** Used only if the template row carries no keyword patterns. */
+const FALLBACK_KEYWORD_PATTERNS = [
+  "${name}",
+  "${name} reviews",
+  "${name} services",
+];
+
+export type QuickResearchStage =
+  | "idle"
+  | "creating"
+  | "running"
+  | "assembling"
+  | "done"
+  | "error";
+
+export interface CompanyQuickResearchInput {
+  /** Tenancy for the topic — usually the owning record's org (e.g. the site's). */
+  organizationId: string;
+  companyName: string;
+  /** Site/root URL — becomes the description note and one search keyword. */
+  websiteUrl?: string | null;
+  /** Fires the moment the topic row exists, before any paid work. */
+  onTopicCreated?: (topic: ResearchTopic) => void;
+}
+
+export function useCompanyQuickResearch() {
+  const api = useResearchApi();
+  const [stage, setStage] = useState<QuickResearchStage>("idle");
+  const [topic, setTopic] = useState<ResearchTopic | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const busyRef = useRef(false);
+
+  /** Reject non-2xx loudly, then read the NDJSON stream to its END. */
+  async function drain(response: Response, what: string): Promise<void> {
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      throw new Error(
+        `${what} failed (${response.status})${body ? `: ${body.slice(0, 300)}` : ""}`,
+      );
+    }
+    await response.text();
+  }
+
+  /** Resolves when the final Document is assembled. Throws loudly on any step. */
+  async function run(input: CompanyQuickResearchInput): Promise<ResearchTopic> {
+    if (busyRef.current) {
+      throw new Error("A company research run is already in progress");
+    }
+    busyRef.current = true;
+    setStage("creating");
+    setTopic(null);
+    setError(null);
+    try {
+      const name = input.companyName.trim();
+      if (!name) throw new Error("Company name is required");
+      const website = input.websiteUrl?.trim() || null;
+      const { topic: created } = await createTopic(input.organizationId, {
+        name,
+        description: [
+          `Company research for ${name}.`,
+          website ? `Website: ${website}` : null,
+        ]
+          .filter(Boolean)
+          .join(" "),
+        autonomy_level: "auto",
+        template_id: COMPANY_RESEARCH_TEMPLATE_ID,
+      });
+      setTopic(created);
+      input.onTopicCreated?.(created);
+
+      // Keywords come from the template's `${name}` patterns — deterministic,
+      // instant, no extra AI spend (the wizard's template path does the same).
+      const template = (await getTemplates()).find(
+        (row) => row.id === COMPANY_RESEARCH_TEMPLATE_ID,
+      );
+      const patterns = Array.isArray(template?.keyword_templates)
+        ? template.keyword_templates.filter(
+            (item): item is string =>
+              typeof item === "string" && item.trim().length > 0,
+          )
+        : [];
+      const keywords = (
+        patterns.length > 0 ? patterns : FALLBACK_KEYWORD_PATTERNS
+      ).map((pattern) => pattern.replaceAll("${name}", name));
+      if (website) keywords.push(website);
+      await addKeywords(created.id, { keywords });
+
+      setStage("running");
+      // Org asserted from the TOPIC row — the backend reloads it as authority.
+      await drain(
+        await api.runPipeline(created.id, created.organization_id),
+        "Research run",
+      );
+
+      setStage("assembling");
+      await drain(await api.generateDocument(created.id), "Document assembly");
+
+      setStage("done");
+      return created;
+    } catch (caught) {
+      setStage("error");
+      setError(caught instanceof Error ? caught.message : String(caught));
+      throw caught;
+    } finally {
+      busyRef.current = false;
+    }
+  }
+
+  return { stage, topic, error, run };
+}
