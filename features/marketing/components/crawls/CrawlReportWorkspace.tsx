@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ExternalLink, FileSearch } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ExternalLink, FileSearch } from "lucide-react";
 import { DuplicateClustersPanel } from "@/features/marketing/components/crawls/DuplicateClustersPanel";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -16,7 +16,11 @@ import {
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
-import { useCrawlSnapshots } from "@/features/marketing/data/inspection-hooks";
+import {
+  useCrawlCanonicalMap,
+  useCrawlChainEvidence,
+  useCrawlSnapshots,
+} from "@/features/marketing/data/inspection-hooks";
 import { useCrawl, useCrawlUrls } from "@/features/marketing/data/hooks";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import type { CrawlUrl } from "@/features/marketing/types";
@@ -27,7 +31,11 @@ import {
   type CrawlReportKey,
 } from "@/features/marketing/lib/crawl-reports";
 import {
+  buildCanonicalLookup,
+  evaluateCanonicalChain,
+  summarizeRedirectChain,
   toCrawlSnapshotReportRow,
+  type CanonicalLookup,
   type CrawlSnapshotReportRow,
 } from "@/features/marketing/lib/crawl-report-row";
 import {
@@ -79,6 +87,19 @@ function urlCell(url: string, pageHref?: string) {
   );
 }
 
+/** Render a resolved URL path (A → B → C) as one compact mono line. */
+function chainPathCell(path: string[]) {
+  const text = path.join(" → ");
+  return (
+    <span
+      className="block min-w-72 max-w-3xl truncate font-mono text-[11px]"
+      title={text}
+    >
+      {text}
+    </span>
+  );
+}
+
 function baseSnapshotColumns(
   sitePath: string,
 ): MatrxColumnDef<CrawlSnapshotReportRow>[] {
@@ -110,6 +131,7 @@ function baseSnapshotColumns(
 function snapshotReportColumns(
   reportKey: CrawlReportKey,
   sitePath: string,
+  canonicalLookup: CanonicalLookup | null,
 ): MatrxColumnDef<CrawlSnapshotReportRow>[] {
   const base = baseSnapshotColumns(sitePath);
   const derived = (
@@ -278,7 +300,16 @@ function snapshotReportColumns(
           ),
         },
       ]);
-    case "canonicals":
+    case "canonicals": {
+      const chainFor = (row: CrawlSnapshotReportRow) =>
+        row.canonicalState === "canonicalized" &&
+        row.canonicalUrl &&
+        canonicalLookup
+          ? evaluateCanonicalChain(
+              { url: row.url, canonicalUrl: row.canonicalUrl },
+              canonicalLookup,
+            )
+          : null;
       return derived([
         {
           id: "canonicalState",
@@ -286,7 +317,9 @@ function snapshotReportColumns(
           header: "State",
           sortable: false,
           filter: false,
-          cell: (row) => <StatusBadge value={row.canonicalState} />,
+          cell: (row) => (
+            <StatusBadge value={chainFor(row)?.state ?? row.canonicalState} />
+          ),
         },
         {
           id: "canonicalUrl",
@@ -303,7 +336,45 @@ function snapshotReportColumns(
             </span>
           ),
         },
+        {
+          id: "canonicalTargetStatus",
+          header: "Target HTTP",
+          sortable: false,
+          filter: false,
+          align: "right",
+          cell: (row) => {
+            const chain = chainFor(row);
+            if (!chain) return "—";
+            return (
+              <span
+                className={`font-mono text-xs tabular-nums ${
+                  chain.targetStatus !== null && chain.targetStatus >= 400
+                    ? "text-destructive"
+                    : ""
+                }`}
+              >
+                {chain.targetStatus ?? "Not crawled"}
+              </span>
+            );
+          },
+        },
+        {
+          id: "canonicalChain",
+          header: "Resolved chain",
+          sortable: false,
+          filter: false,
+          cellKind: "text",
+          cell: (row) => {
+            const chain = chainFor(row);
+            // The path always holds [page, target]; only a longer walk or a
+            // loop is a CHAIN worth spelling out.
+            if (!chain || (chain.path.length <= 2 && chain.state !== "loop"))
+              return "—";
+            return chainPathCell(chain.path);
+          },
+        },
       ]);
+    }
     case "directives":
       return derived([
         {
@@ -567,6 +638,64 @@ function responseColumns(): MatrxColumnDef<CrawlUrl>[] {
       ),
     },
     {
+      id: "redirect_chain",
+      header: "Redirect chain",
+      sortable: false,
+      filter: false,
+      cellKind: "text",
+      cell: (row) => {
+        const chain = summarizeRedirectChain(row.metadata, row.http_status);
+        if (!chain.recorded) {
+          return (
+            <span
+              className="text-[11px] text-muted-foreground"
+              title="This crawl ran before hop capture existed — re-crawl to record redirect chains."
+            >
+              Not recorded
+            </span>
+          );
+        }
+        if (chain.redirectCount === 0) return "—";
+        return (
+          <div className="flex min-w-72 max-w-3xl flex-col gap-0.5 py-0.5">
+            {chain.hops.map((hop, index) => (
+              <span
+                key={`${hop.url}-${index}`}
+                className="truncate font-mono text-[11px]"
+                title={hop.url}
+              >
+                <span className="tabular-nums text-muted-foreground">
+                  {hop.status ?? "—"}
+                </span>{" "}
+                {hop.url}
+              </span>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
+      id: "chain_finding",
+      header: "Chain finding",
+      sortable: false,
+      filter: false,
+      cell: (row) => {
+        const chain = summarizeRedirectChain(row.metadata, row.http_status);
+        if (!chain.recorded || !chain.issue) return "—";
+        return (
+          <StatusBadge
+            value={
+              chain.issue === "redirect-to-missing"
+                ? "redirect-to-missing"
+                : chain.issue === "loop"
+                  ? "loop"
+                  : "chain"
+            }
+          />
+        );
+      },
+    },
+    {
       id: "depth",
       accessorKey: "depth",
       header: "Depth",
@@ -614,6 +743,7 @@ function responseColumns(): MatrxColumnDef<CrawlUrl>[] {
 function snapshotHumanLines(
   reportKey: CrawlReportKey,
   row: CrawlSnapshotReportRow,
+  canonicalLookup: CanonicalLookup | null,
 ): Array<[string, string | number | null]> {
   const common: Array<[string, string | number | null]> = [
     ["URL", row.url],
@@ -642,12 +772,29 @@ function snapshotHumanLines(
         ["H2 count", row.h2Count],
         ["Outline", row.outline],
       ];
-    case "canonicals":
+    case "canonicals": {
+      const chain =
+        row.canonicalState === "canonicalized" &&
+        row.canonicalUrl &&
+        canonicalLookup
+          ? evaluateCanonicalChain(
+              { url: row.url, canonicalUrl: row.canonicalUrl },
+              canonicalLookup,
+            )
+          : null;
       return [
         ...common,
-        ["State", row.canonicalState],
+        ["State", chain?.state ?? row.canonicalState],
         ["Canonical", row.canonicalUrl],
+        ["Target HTTP", chain?.targetStatus ?? null],
+        [
+          "Resolved chain",
+          chain && (chain.path.length > 2 || chain.state === "loop")
+            ? chain.path.join(" → ")
+            : null,
+        ],
       ];
+    }
     case "directives":
       return [
         ...common,
@@ -725,6 +872,19 @@ export function CrawlReportWorkspace({
     table.queryState,
     report.source === "snapshot",
   );
+  // Chain evidence — session-wide, report-specific. The canonical map powers
+  // canonical CHAIN resolution; the crawl_url probe distinguishes "no
+  // redirects" from "crawled before hop capture existed".
+  const canonicalMap = useCrawlCanonicalMap(
+    site.id,
+    crawlId,
+    reportKey === "canonicals",
+  );
+  const chainEvidence = useCrawlChainEvidence(
+    site.id,
+    crawlId,
+    reportKey === "response-codes",
+  );
   const reportRoot = marketingRoutes.crawlReports(
     site.brand_id,
     site.id,
@@ -747,6 +907,20 @@ export function CrawlReportWorkspace({
   const snapshotRows = (snapshots.data?.rows ?? []).map(
     toCrawlSnapshotReportRow,
   );
+  const canonicalLookup =
+    reportKey === "canonicals" && canonicalMap.data
+      ? buildCanonicalLookup(canonicalMap.data.rows)
+      : null;
+  // Honesty banners — never render an empty chain column from missing
+  // evidence without saying WHY it is missing.
+  const evidenceNotice =
+    reportKey === "response-codes" &&
+    chainEvidence.data === false &&
+    (urls.data?.total ?? 0) > 0
+      ? "This crawl ran before redirect-chain evidence existed — hop-by-hop chains were not recorded. Re-crawl the site to populate them."
+      : reportKey === "canonicals" && canonicalMap.data?.truncated
+        ? `Canonical-chain resolution covers the first ${canonicalMap.data.rows.length.toLocaleString()} of ${canonicalMap.data.total.toLocaleString()} captures — deeper targets may show as "target-not-crawled".`
+        : null;
 
   return (
     <CrawlSurfaceProvider
@@ -848,6 +1022,12 @@ export function CrawlReportWorkspace({
         </label>
         </div>
       </section>
+      {evidenceNotice ? (
+        <div className="flex shrink-0 items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <p className="text-[11px] text-foreground">{evidenceNotice}</p>
+        </div>
+      ) : null}
       <div className="min-h-0 flex-1">
         {showDuplicates ? (
           <DuplicateClustersPanel crawlId={crawlId} />
@@ -883,15 +1063,31 @@ export function CrawlReportWorkspace({
                 "One URL outcome from the crawl response-code report.",
               listDescription:
                 "The currently loaded response-code rows, respecting query state.",
-              humanRow: (row) =>
-                humanLines([
+              humanRow: (row) => {
+                const chain = summarizeRedirectChain(
+                  row.metadata,
+                  row.http_status,
+                );
+                return humanLines([
                   ["URL", row.raw_url],
                   ["HTTP", row.http_status],
                   ["Outcome", row.outcome],
                   ["Final URL", row.final_url],
+                  [
+                    "Redirect chain",
+                    !chain.recorded
+                      ? "not recorded (pre-hop-capture crawl)"
+                      : chain.redirectCount === 0
+                        ? null
+                        : chain.hops
+                            .map((hop) => `${hop.status ?? "?"} ${hop.url}`)
+                            .join(" → "),
+                  ],
+                  ["Chain finding", chain.issue],
                   ["Depth", row.depth],
                   ["Reason", row.reason],
-                ]),
+                ]);
+              },
               rowAttributes: (row) => ({
                 crawl_url_id: row.id,
                 session_id: crawlId,
@@ -919,7 +1115,7 @@ export function CrawlReportWorkspace({
         ) : (
           <MatrxDataTable<CrawlSnapshotReportRow>
             data={snapshotRows}
-            columns={snapshotReportColumns(reportKey, sitePath)}
+            columns={snapshotReportColumns(reportKey, sitePath, canonicalLookup)}
             getRowId={(row) => row.id}
             isLoading={snapshots.isLoading}
             isFetching={snapshots.isFetching}
@@ -940,7 +1136,8 @@ export function CrawlReportWorkspace({
               listKind: `web-crawl-report-${report.key}-list`,
               rowDescription: `One page in the crawl's ${report.label.toLowerCase()} report.`,
               listDescription: `The currently loaded ${report.label.toLowerCase()} rows, respecting query state.`,
-              humanRow: (row) => humanLines(snapshotHumanLines(reportKey, row)),
+              humanRow: (row) =>
+                humanLines(snapshotHumanLines(reportKey, row, canonicalLookup)),
               rowAttributes: (row) => ({
                 snapshot_id: row.id,
                 page_id: row.pageId,

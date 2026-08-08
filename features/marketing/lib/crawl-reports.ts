@@ -37,7 +37,7 @@ export const CRAWL_REPORTS: readonly CrawlReportDefinition[] = [
     shortLabel: "Responses",
     category: "Crawlability",
     description:
-      "Every encountered URL, response, redirect outcome, failure reason, scope, and crawl depth.",
+      "Every encountered URL with its full redirect hop chain, loops, redirect-to-404 findings, failure reason, scope, and crawl depth.",
     source: "crawl-url",
     badge: "Rc",
   },
@@ -77,7 +77,7 @@ export const CRAWL_REPORTS: readonly CrawlReportDefinition[] = [
     shortLabel: "Canonicals",
     category: "Crawlability",
     description:
-      "Canonical targets classified as self-referencing, canonicalized, or missing.",
+      "Canonical targets resolved across the whole session — self-referencing, chains, loops, canonical-to-error, and missing declarations.",
     source: "snapshot",
     badge: "Ca",
   },

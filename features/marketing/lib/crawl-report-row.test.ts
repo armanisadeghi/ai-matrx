@@ -1,5 +1,13 @@
-import type { InspectionSnapshotRow } from "@/features/marketing/data/inspection-types";
-import { toCrawlSnapshotReportRow } from "@/features/marketing/lib/crawl-report-row";
+import type {
+  CrawlCanonicalQueryRow,
+  InspectionSnapshotRow,
+} from "@/features/marketing/data/inspection-types";
+import {
+  buildCanonicalLookup,
+  evaluateCanonicalChain,
+  summarizeRedirectChain,
+  toCrawlSnapshotReportRow,
+} from "@/features/marketing/lib/crawl-report-row";
 
 const SNAPSHOT: InspectionSnapshotRow = {
   id: "snapshot-1",
@@ -99,5 +107,148 @@ describe("toCrawlSnapshotReportRow", () => {
     });
     expect(row.canonicalState).toBe("missing");
     expect(row.indexability).toBe("noindex");
+  });
+
+  it("matches canonicals with the parity URL normalizer (scheme/host case)", () => {
+    const row = toCrawlSnapshotReportRow({
+      ...SNAPSHOT,
+      head_tags: { canonical_url: "HTTPS://EXAMPLE.COM/about" },
+    });
+    expect(row.canonicalState).toBe("self-referencing");
+  });
+});
+
+describe("summarizeRedirectChain", () => {
+  const hops = [
+    { status: 301, url: "https://example.com/a" },
+    { status: 302, url: "https://example.com/b" },
+    { status: 200, url: "https://example.com/c" },
+  ];
+
+  it("distinguishes unrecorded evidence from an empty chain", () => {
+    expect(summarizeRedirectChain({}, 200).recorded).toBe(false);
+    expect(
+      summarizeRedirectChain({ redirect_chain: [] }, 200).recorded,
+    ).toBe(true);
+  });
+
+  it("flags chains of two or more redirects", () => {
+    const chain = summarizeRedirectChain({ redirect_chain: hops }, 200);
+    expect(chain.redirectCount).toBe(2);
+    expect(chain.issue).toBe("chain");
+  });
+
+  it("flags redirect-to-missing from the terminal status", () => {
+    const chain = summarizeRedirectChain(
+      { redirect_chain: hops.slice(0, 2) },
+      404,
+    );
+    expect(chain.issue).toBe("redirect-to-missing");
+  });
+
+  it("flags loops over redirect-to-missing", () => {
+    const chain = summarizeRedirectChain(
+      {
+        redirect_chain: [
+          { status: 301, url: "https://example.com/a" },
+          { status: 301, url: "https://example.com/b" },
+          { status: 301, url: "https://example.com/a/" },
+        ],
+      },
+      404,
+    );
+    expect(chain.issue).toBe("loop");
+  });
+
+  it("reports single redirects without an issue", () => {
+    const chain = summarizeRedirectChain(
+      { redirect_chain: hops.slice(1) },
+      200,
+    );
+    expect(chain.redirectCount).toBe(1);
+    expect(chain.issue).toBeNull();
+  });
+});
+
+describe("evaluateCanonicalChain", () => {
+  const canonicalRow = (
+    url: string,
+    canonical: string | null,
+    httpStatus = 200,
+  ): CrawlCanonicalQueryRow => ({
+    id: `snap-${url}`,
+    page_id: `page-${url}`,
+    final_url: url,
+    http_status: httpStatus,
+    canonical_url: canonical,
+    page: { url },
+  });
+
+  it("resolves a healthy canonical target", () => {
+    const lookup = buildCanonicalLookup([
+      canonicalRow("https://example.com/b", "https://example.com/b"),
+    ]);
+    const chain = evaluateCanonicalChain(
+      { url: "https://example.com/a", canonicalUrl: "https://example.com/b" },
+      lookup,
+    );
+    expect(chain.state).toBe("canonicalized");
+    expect(chain.targetStatus).toBe(200);
+  });
+
+  it("detects canonical-to-noncanonical chains (A → B → C)", () => {
+    const lookup = buildCanonicalLookup([
+      canonicalRow("https://example.com/b", "https://example.com/c"),
+      canonicalRow("https://example.com/c", "https://example.com/c"),
+    ]);
+    const chain = evaluateCanonicalChain(
+      { url: "https://example.com/a", canonicalUrl: "https://example.com/b" },
+      lookup,
+    );
+    expect(chain.state).toBe("chain");
+    expect(chain.path).toEqual([
+      "https://example.com/a",
+      "https://example.com/b",
+      "https://example.com/c",
+    ]);
+    expect(chain.targetCanonicalUrl).toBe("https://example.com/c");
+  });
+
+  it("detects canonical loops", () => {
+    const lookup = buildCanonicalLookup([
+      canonicalRow("https://example.com/b", "https://example.com/a"),
+      canonicalRow("https://example.com/a", "https://example.com/b"),
+    ]);
+    const chain = evaluateCanonicalChain(
+      { url: "https://example.com/a", canonicalUrl: "https://example.com/b" },
+      lookup,
+    );
+    expect(chain.state).toBe("loop");
+  });
+
+  it("flags canonical targets that answered with an error", () => {
+    const lookup = buildCanonicalLookup([
+      canonicalRow("https://example.com/gone", null, 404),
+    ]);
+    const chain = evaluateCanonicalChain(
+      {
+        url: "https://example.com/a",
+        canonicalUrl: "https://example.com/gone",
+      },
+      lookup,
+    );
+    expect(chain.state).toBe("canonical-to-error");
+    expect(chain.targetStatus).toBe(404);
+  });
+
+  it("says target-not-crawled honestly instead of guessing", () => {
+    const chain = evaluateCanonicalChain(
+      {
+        url: "https://example.com/a",
+        canonicalUrl: "https://example.com/uncaptured",
+      },
+      buildCanonicalLookup([]),
+    );
+    expect(chain.state).toBe("target-not-crawled");
   });
 });

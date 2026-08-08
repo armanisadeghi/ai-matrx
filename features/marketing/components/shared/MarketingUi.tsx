@@ -88,11 +88,23 @@ export function statusBadgeVariant(
       "warn",
       "warning",
       "missing",
+      "chain",
+      "target-not-crawled",
     ].includes(status)
   ) {
     return "warning";
   }
-  if (["failed", "error", "gone", "critical"].includes(status)) {
+  if (
+    [
+      "failed",
+      "error",
+      "gone",
+      "critical",
+      "loop",
+      "canonical-to-error",
+      "redirect-to-missing",
+    ].includes(status)
+  ) {
     return "destructive";
   }
   return status ? "secondary" : "outline";

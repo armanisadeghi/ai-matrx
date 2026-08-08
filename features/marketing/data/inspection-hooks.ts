@@ -54,6 +54,10 @@ export const inspectionKeys = {
     ] as const,
   crawlFingerprints: (siteId: string, crawlId: string) =>
     [...marketingKeys.crawl(siteId, crawlId), "content-fingerprints"] as const,
+  crawlCanonicalMap: (siteId: string, crawlId: string) =>
+    [...marketingKeys.crawl(siteId, crawlId), "canonical-map"] as const,
+  crawlChainEvidence: (siteId: string, crawlId: string) =>
+    [...marketingKeys.crawl(siteId, crawlId), "chain-evidence"] as const,
 };
 
 /** Direct browser-to-Supabase query for the site's selected homepage preview. */
@@ -138,6 +142,41 @@ export function useCrawlFingerprints(
   return useQuery({
     queryKey: inspectionKeys.crawlFingerprints(siteId, crawlId),
     queryFn: ({ signal }) => listCrawlFingerprints(siteId, crawlId, signal),
+    enabled: enabled && Boolean(siteId && crawlId),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Session-wide observed-canonical map for canonical-chain resolution —
+ * snapshots are immutable, so a finished crawl's canonicals never change.
+ */
+export function useCrawlCanonicalMap(
+  siteId: string,
+  crawlId: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: inspectionKeys.crawlCanonicalMap(siteId, crawlId),
+    queryFn: ({ signal }) => listCrawlCanonicalMap(siteId, crawlId, signal),
+    enabled: enabled && Boolean(siteId && crawlId),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Whether this session recorded redirect-hop evidence (`crawl_url.metadata
+ * .redirect_chain`) — false means the crawl predates hop capture and the
+ * report must say so instead of rendering empty chains.
+ */
+export function useCrawlChainEvidence(
+  siteId: string,
+  crawlId: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: inspectionKeys.crawlChainEvidence(siteId, crawlId),
+    queryFn: ({ signal }) => crawlHasChainEvidence(siteId, crawlId, signal),
     enabled: enabled && Boolean(siteId && crawlId),
     staleTime: 5 * 60 * 1000,
   });
