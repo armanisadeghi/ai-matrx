@@ -108,6 +108,7 @@ import type {
   CloudFile,
   CloudFileFieldSnapshot,
   CloudFileRecord,
+  CloudFolderRecord,
   CloudFilePermission,
   CloudFileVersion,
   CloudFolder,
@@ -681,8 +682,9 @@ export const updateFolder = createAsyncThunk<
     );
     dispatch(upsertFolder(dbRowToCloudFolder(row)));
   } catch (err) {
-    // Roll back to the pre-edit folder state and tree links.
-    dispatch(upsertFolder(folder));
+    // Roll back to the pre-edit folder state and tree links (strip frozen
+    // runtime fields — re-upserting a store record crashes the merge).
+    dispatch(upsertFolder(toCloudFolderPartial(folder)));
     if (patch.parentId !== undefined && patch.parentId !== folder.parentId) {
       dispatch(
         detachChildFromFolder({
@@ -1393,6 +1395,22 @@ function toCloudFilePartial(record: CloudFileRecord): Partial<CloudFile> {
   return domain;
 }
 
+
+/** Folder twin of `toCloudFilePartial` — same frozen-runtime-fields hazard. */
+function toCloudFolderPartial(record: CloudFolderRecord): Partial<CloudFolder> {
+  const {
+    _dirty,
+    _dirtyFields,
+    _fieldHistory,
+    _loadedFields,
+    _loading,
+    _error,
+    _pendingRequestIds,
+    ...domain
+  } = record;
+  return domain;
+}
+
 export const loadTrash = createAsyncThunk<void, { userId: string }, ThunkApi>(
   "cloudFiles/loadTrash",
   async ({ userId }, { dispatch }) => {
@@ -1506,7 +1524,7 @@ export const restoreFolder = createAsyncThunk<
   const folder = getState().cloudFiles.foldersById[folderId];
   if (!folder?.deletedAt) return;
   await restoreFolderDirect(folderId);
-  dispatch(upsertFolder({ ...folder, deletedAt: null }));
+  dispatch(upsertFolder({ ...toCloudFolderPartial(folder), deletedAt: null }));
   const userId = folder.ownerId;
   await dispatch(loadUserFileTree({ userId }));
   await dispatch(loadTrash({ userId }));
