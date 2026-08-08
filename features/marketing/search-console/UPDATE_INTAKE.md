@@ -4,7 +4,7 @@ This is the durable capture log for Arman's ongoing Google Search Console
 update campaign. It exists so rapid, conversational data dumps are not lost
 while multiple agents work on the system at the same time.
 
-This file is an **intake record**, not a second source of truth. Settled product
+This file is an **intake record**, not a second system of record. Settled product
 and engineering doctrine belongs in [`FEATURE.md`](./FEATURE.md); cross-repo
 implementation details belong in the relevant repo's feature documentation.
 An intake item stays here until its meaning, evidence, disposition, and any
