@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-29
+updated: 2026-08-08
 repos: [matrx-frontend, aidream]
 vision: []
 ---
@@ -30,25 +30,17 @@ Bug-fix policy: "For any issues like these, especially clear-cut fixes, proceed 
 
 ## Remaining work
 
-1. **Inbound/outbound link plans + anchor scoring** — in flight (agent, 2026-07-29): extend the existing accepted-anchor policy (`desired_values.accepted_anchor_texts` in PageLinksCard) into two plans (planned inbound sources + planned outbound links, organized by anchors), site-level compliance scoring on `/sites/[id]/links`, and a `LinksPlan` export the workspace mounts in the Plan lane. If the agent's work is incomplete, its report in the session log has the contract.
-2. **Re-crawl to fill media inventories** — after the aidream release, existing snapshots only carry image counts; the page/site media galleries fill on the next crawl of each site.
-3. **CMS push v2** — bump the linked plan.node status (briefed/in-production) after a successful push; `plan_node_id` already surfaced read-only. Coordinate with the CMS session.
-4. **Surface manifest for new Plan-lane values** — `media_inventory`, `push_to_cms`, and any link-plan values are rendered but not declared in `marketing-page.manifest.ts`; run the surface-authoring skill pass (COMPLETENESS LAW).
-5. **Redirect-route hardening pattern**: audit other web-schema server routes for the anon/malformed-id 42501→500 class (`/marketing/pages/[pageId]` is the fixed exemplar).
-6. **Task widget**: window sometimes opens invisible (pre-existing window-panels bug; loud "Show it" toast recovers — root-cause fix still open).
+1. **Re-crawl to fill media inventories** — existing snapshots only carry image counts; the page/site media galleries (and the `media_inventory` surface value) fill on the next crawl of each site. Operational, not code.
+2. **Redirect-route hardening pattern** — audit other web-schema server routes for the anon/malformed-id 42501→500 class (`/marketing/pages/[pageId]` is the fixed exemplar). Spun off as a chip 2026-08-08.
+3. **Task widget** — window sometimes opens invisible (pre-existing window-panels bug; loud "Show it" toast recovers). Root-cause fix spun off as a chip 2026-08-08.
 
 ## Done
 
-- Current | Plan | Studio split — see `PageWorkspace.tsx` + `WorkspaceViewToggle.tsx`; mixed cards split (`SocialCardPlan`, `IndexabilityPlan`, `HeadingsPlan`).
-- Page Media card + site `/media` route — see `cards/PageMediaCard.tsx`, `components/media/`, shared core `lib/media/categorization.ts`.
-- aidream scraper per-image inventory (capped 100, true totals) — committed in aidream, ships with its next release.
-- Keyword research persistence — window preservation fixed; artifacts were always server-saved (`content_ir.kind_instance`).
-- Keyword autosave (already existed server-side via `seo.fn_ingest_keyword_research`) + management (archive/restore RPCs, workbench bulk ops, source column, KI archive) — see keyword FEATURE.md.
-- Capture observations — `components/pages/CaptureObservations.tsx` (notes + task via canonical associations).
-- Push to CMS v1 — `lib/push-to-cms.ts` + `cards/PushToCmsCard.tsx`, drafts only, provenance in CMS activity log.
-- Desired-values layer, draft content, keyword batch, tasks, image plan, associations grid — 2026-07-27, see FEATURE.md.
-- `useFileBlob` unhandled-rejection leak fixed.
-- Crawl-file access (Arman ruling "absolutely never personal"): 12,413 snapshot/screenshot files backfilled personal→internal; `files.reject_web_artifact_file_mutation` amended to allow metadata-only updates (`migrations/mtx_web_artifact_metadata_mutable.sql`). REAL 403 root cause is matrx-files hard-denying contextual `web_crawl` artifacts before the platform-judge tier — fix + PyPI deploy in flight (see FOUND items / task list).
+- Current | Plan | Studio split with 14 paired rows (`PageWorkspace.tsx`); mixed cards split; plan notes on every unpaired row.
+- Link plans (2026-07-29): page-level `LinksPlan` (accepted anchors + planned inbound/outbound, live-scored) AND site-level compliance (`SiteLinkComplianceView` in the site Links workspace, `data/site-link-compliance.ts`).
+- CMS push v2 (2026-08-08): successful push bumps the linked plan.node to `in-production` (forward-only; `bumpPlanNodeStatusAfterPush` in `lib/push-to-cms.ts`).
+- Surface completeness (2026-08-08): `link_plan`, `media_inventory`, `cms_push` (+ `publication` group) declared, emitted in `marketing-page-scope.ts`, DB mirror synced (80 value rows).
+- Earlier waves (media cards, keyword autosave/management + research persistence, capture observations, Push to CMS v1, desired-values layer, crawl-file access backfill) — see `features/marketing/FEATURE.md` and keyword FEATURE.md.
 
 ## Decisions needed
 
