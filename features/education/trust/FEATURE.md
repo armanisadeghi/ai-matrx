@@ -113,6 +113,11 @@ marketing) and `/education/features/data-security` (the T5 posture statement).
 - Quiz/audio/notes consumers wire the envelope during their own waves (P1–P4) per the contract.
 
 ## Change log
+- **2026-08-08** — `<SourceCitations/>` chips now render through the shared presentational
+  primitive `CitationChip` (`components/official/citation-chip/CitationChip.tsx` — same chip +
+  excerpt popover the chat Sources footer uses). Behavior-identical: this file stays the
+  TrustEnvelope-aware consumer (label/icon mapping, `openCitationSource` wiring); the primitive
+  knows nothing of TrustEnvelope.
 - **2026-07-10** — **Verdict unification + verify hub-wide (final cert).** ONE grading verdict core
   (`GradeVerdict` + shared `GradeResult` + helpers; `SpokenGrade`/`GradedAnswer` are thin adapters;
   four duplicate result unions collapsed; FastFire's inline `coerceGrade` deleted). "Verify against

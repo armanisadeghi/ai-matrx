@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-28
+updated: 2026-08-08
 repos: [matrx-frontend, aidream]
 vision: []
 ---
@@ -41,6 +41,7 @@ Normalization MUST be idempotent — `is_normalized_citation` keys on `kind`+`pr
 - **Enable-by-default** — `DocumentContent.to_anthropic` stamps `citations:{enabled:true}` + `title` (filename) + `context` on all three doc shapes (`config/media_config.py` `_anthropic_citation_fields`); machine-run gate in `providers/anthropic/translator.py` strips citability loudly when `response_format` is set or `config.metadata["citations_enabled"]=False` (force-on override supported). Tool-result docs inherit via the same path with real titles (`tools/models.py`).
 - **`citation` stream event** — `EventType.CITATION` + `CitationPayload{block_index, citation}` in matrx-connect `context/events.py`, implemented on every emitter; emitted live by Anthropic (`citations_delta`) and OpenAI (`annotation.added`), at settle by Google. All three emission sites guarded: a malformed citation logs red and is skipped — it can never abort the answer stream (`58ae6c1d7`).
 - **FE, settle + live** (matrx-frontend `b0f103e28`) — ONE citation core `features/agents/redux/execution-system/messages/message-citations.ts` (boundary parse, dedupe/numbering, `insertCitationMarkers`); inline `<matrxcite>` superscript chips via `remarkMatrxCite` + `CitationMarkerInline` (popover: quote/title/open); `MessageSourcesRow` footer; click-through reuses `features/rag/components/source-inspector/useOpenCitation` (PDF at exact page). Live path: `process-stream.ts` → `liveCitations` on active-request slice → markers during streaming. Markers are render-only — stripped/never present at every persistence chokepoint; inline-edit merge carries `citations` forward (`features/cx-chat/utils/buildContentBlocksForSave.ts`). 26+ FE tests.
+- **FE UI hardening (2026-08-08, on main):** ONE shared chip primitive `CitationChip` + `CitationPopoverBody` (`components/official/citation-chip/CitationChip.tsx`) consumed by chat `MessageSourcesRow`, education `SourceCitations`, and `CitationMarkerInline`'s popover — the two-chip-UI fork is closed. `search_result` render path unit-verified (dedupe by kind+file_id+page, Source-Inspector-at-page click-through via the new pure `citation-open-request.ts`); `citationSourceDisplayKind` makes search_result always read as a document. `insertCitationMarkers` hardened: `computeCodeRegions` snaps `answer_end` offsets out of code fences / inline code spans; surrogate-pair + CJK/emoji + overlapping-citation tests added.
 - **Verified for real:** e2e probe through the actual matrx-ai stack against live Anthropic + Google APIs (wire capture shows `citations:{enabled:true}`+title; live events; typed storage round-trip; loud machine-gate strip). Settle-time UI browser-verified on seeded conversation `c17a7100-0000-4000-8000-c17a71000001` (real probe-derived data; still in the DB — reuse it). Adversarial Sonnet review findings fixed same-session.
 
 ## Gap analysis — vision vs. today
@@ -60,7 +61,7 @@ Normalization MUST be idempotent — `is_normalized_citation` keys on `kind`+`pr
 4. **`document_index` → `file_id` mapping** (unlocks PDF click-through for attached files). `normalize_anthropic_citation` (`config/citations.py`) can't see the request; thread the request's ordered document list (file_id per index) into `TextContent.from_anthropic` / the response translator, or post-process citations where request+response meet (`providers/unified_client.py`). FE already routes `file_id`+`page` → Source Inspector at page — backend-only work.
 5. **xAI live emission + OpenAI-compatible providers.** Mirror Google's `_emit_citations_from_response` in `xai_api.py`; extend annotation normalization to `generic_openai` (Groq/Moonshot/Cerebras/Together) or document per-provider why not.
 6. **Implement the ratified machine-run exclusions.** Grep aidream for voice/TTS-prep and internal-pipeline LLM entry points; set `config.metadata["citations_enabled"]=False` (loud) there instead of relying only on `response_format`.
-7. **UI hardening (small, FE):** shared chip primitive with `features/education/trust/components/SourceCitations.tsx`; tests for `answer_end` mid-markdown-token + surrogate pairs; mobile tap-target decision.
+7. **UI hardening — DONE 2026-08-08** (see the Done entry above) except the **mobile tap-target decision**, which stays in "Decisions needed" (Arman's call).
 
 ## Resources
 
