@@ -53,8 +53,8 @@ describe("presentLiveCrawlEvent", () => {
     );
 
     expect(presented).toEqual({
-      label: "Crawl notice",
-      message: "The crawler encountered a recoverable issue and continued.",
+      label: "Crawler notice",
+      message: "The crawler hit a recoverable issue and continued.",
       tone: "warning",
     });
     expect(JSON.stringify(presented)).not.toMatch(

@@ -72,22 +72,19 @@ function pageSubject(event: CrawlLiveEvent): string {
 }
 
 /**
- * The scraper's human-authored warning text, trimmed for the feed. Only the
- * plain `message` string is shown — context objects, exception classes, and
- * stacks stay in the durable logs table.
+ * The scraper's human-authored warning text, trimmed for the feed. Messages
+ * that look like stringified server errors (ANSI codes, ORM query/args dumps,
+ * tracebacks, exception-class prefixes) return null so the caller falls back
+ * to the generic notice - those details stay in the durable logs table.
  */
+// eslint-disable-next-line no-control-regex -- ANSI escape detection needs the raw control char
+const RAW_ERROR_DUMP = /\u001b|\bquery=|\bargs=|Traceback|^\s*\w*(Error|Exception)\b/;
+
 function warningText(event: CrawlLiveEvent): string | null {
   const message = event.message;
   if (typeof message !== "string") return null;
-  const trimmed = message
-    // eslint-disable-next-line no-control-regex -- ANSI color codes leak in from server-side log formatting
-    .replace(/\[[0-9;]*m/g, "")
-    // Exception dumps end up in `message` when a server layer stringifies an
-    // error; everything from the traceback on belongs in the logs table only.
-    .split(/\n\s*Traceback/i)[0]
-    .replace(/\s+/g, " ")
-    .trim();
-  if (!trimmed) return null;
+  const trimmed = message.replace(/\s+/g, " ").trim();
+  if (!trimmed || RAW_ERROR_DUMP.test(trimmed)) return null;
   return trimmed.length > 240 ? `${trimmed.slice(0, 237)}...` : trimmed;
 }
 
