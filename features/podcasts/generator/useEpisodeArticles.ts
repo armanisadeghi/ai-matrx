@@ -26,8 +26,10 @@ import type {
 const BLOG_WRITER_SLOT_KEY = "podcast_client.blog_writer";
 const SHOW_NOTES_SLOT_KEY = "podcast_client.show_notes";
 
-/** Build the episode_metadata JSON the agents consume from the episode + show. */
-function episodeMetadata(episode: PcEpisodeWithShow): Record<string, unknown> {
+/** Build the episode_metadata JSON the agents consume from the episode + show.
+ *  Shared with useEpisodeTitleOptions so every post-episode agent reads the
+ *  SAME show/episode context (one builder, no drift). */
+export function episodeMetadata(episode: PcEpisodeWithShow): Record<string, unknown> {
   const hostNames = (episode.speakers ?? []).map((s) => s.name);
   return {
     show_name: episode.show?.title ?? "",
