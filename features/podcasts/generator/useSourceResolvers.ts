@@ -21,9 +21,8 @@ import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { useRunAgent } from "@/features/agents/run/useRunAgent";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useAudioTranscription } from "@/features/audio/hooks/useAudioTranscription";
+import { resolveAgentSlot } from "@/features/agents/slots/service";
 import {
-  WEB_CONTENT_EXTRACTOR_AGENT_ID,
-  YOUTUBE_RESEARCH_AGENT_ID,
   DEFAULT_EXTRACTOR_FOCUS,
   DEFAULT_YOUTUBE_TIMESTAMP_INSTRUCTION,
   MIN_SCRAPE_CHARS,
@@ -79,9 +78,11 @@ export function useSourceResolvers(): UseSourceResolvers {
             `different URL, or paste the content directly.`,
         );
       }
+      const slot = await resolveAgentSlot("podcast_client.web_content_extractor");
       const cleaned = await run({
-        agentId: WEB_CONTENT_EXTRACTOR_AGENT_ID,
+        agentId: slot.agentId,
         userInput: raw,
+        configOverrides: slot.configOverrides ?? undefined,
         sourceApp: "matrx-frontend",
         sourceFeature: "podcasts",
         variables: {
@@ -97,9 +98,11 @@ export function useSourceResolvers(): UseSourceResolvers {
 
   const resolveYouTube = useCallback(
     async (url: string, onProgress?: (text: string) => void) => {
+      const slot = await resolveAgentSlot("podcast_client.youtube_research");
       const text = await run({
-        agentId: YOUTUBE_RESEARCH_AGENT_ID,
+        agentId: slot.agentId,
         userInput: url,
+        configOverrides: slot.configOverrides ?? undefined,
         sourceApp: "matrx-frontend",
         sourceFeature: "podcasts",
         variables: {

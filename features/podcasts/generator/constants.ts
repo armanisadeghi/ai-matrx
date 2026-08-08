@@ -159,15 +159,9 @@ export const SOURCE_OPTIONS: SourceOption[] = [
 // Run them via the platform's one-shot agent runner (`useRunAgent`):
 //   POST /ai/agents/{id} with the declared variables → streamed text.
 
-/** Web Content Extractor — turns raw scraped page text into a clean source.
- *  Variables: `scraped_content` (the scrape), `focus_area` (optional steer). */
-export const WEB_CONTENT_EXTRACTOR_AGENT_ID =
-  "bbfc9567-fe40-4624-9668-34e6d809f13e";
-
-/** YouTube Video Transcription & Research — turns a YouTube URL into a
- *  transcript + research write-up. Variables: `youtube_url`,
- *  `timestamp_instruction` (optional). */
-export const YOUTUBE_RESEARCH_AGENT_ID = "7402d782-81ea-4765-bb24-d08a639c4aa8";
+// Source-resolver agents are DB-managed slots ("podcast_client.web_content_extractor",
+// "podcast_client.youtube_research") resolved in useSourceResolvers — no
+// hardcoded agent ids here. Repin from /administration/agents/slots.
 
 export const HOST_COUNT_DEFAULT = 2;
 
@@ -188,11 +182,10 @@ export const DEFAULT_YOUTUBE_TIMESTAMP_INSTRUCTION = "";
 //
 // Source: Google Gemini 2.5 TTS supported languages (the 24 GA locales) plus
 // Persian (Preview). https://docs.cloud.google.com/text-to-speech/docs/gemini-tts
-// English and Persian are the two live languages today; the rest are
-// display-only (`enabled: false`) and render a small "Soon" chip but stay
-// selectable-looking so the full reach is visible. Persian maps behind the
-// scenes to the wired `podcast_type: "persian"` Farsi path — see
-// deriveBackendPodcastType().
+// ALL languages are enabled (2026-08-08): the generic script agents take a
+// `language` variable and both TTS providers (Gemini, ElevenLabs eleven_v3)
+// are natively multilingual. Persian maps behind the scenes to the wired
+// `podcast_type: "persian"` Farsi path — see deriveBackendPodcastType().
 
 export interface LanguageOption {
   /** BCP-47 locale code (Gemini TTS). */
@@ -200,7 +193,7 @@ export interface LanguageOption {
   label: string;
   /** Endonym shown after the English name. */
   native: string;
-  /** Only English is wired today; the rest show a "Soon" chip. */
+  /** Disabled languages render a "Soon" chip (none today). */
   enabled: boolean;
   /** Right-to-left script (Arabic, Persian). */
   rtl?: boolean;
@@ -210,22 +203,22 @@ export const DEFAULT_LANGUAGE: PodcastLanguageCode = "en-US";
 
 export const LANGUAGE_OPTIONS: LanguageOption[] = [
   { code: "en-US", label: "English", native: "English", enabled: true },
-  { code: "es-ES", label: "Spanish", native: "Español", enabled: false },
-  { code: "fr-FR", label: "French", native: "Français", enabled: false },
-  { code: "de-DE", label: "German", native: "Deutsch", enabled: false },
-  { code: "it-IT", label: "Italian", native: "Italiano", enabled: false },
-  { code: "pt-BR", label: "Portuguese", native: "Português", enabled: false },
-  { code: "nl-NL", label: "Dutch", native: "Nederlands", enabled: false },
-  { code: "pl-PL", label: "Polish", native: "Polski", enabled: false },
-  { code: "ro-RO", label: "Romanian", native: "Română", enabled: false },
-  { code: "ru-RU", label: "Russian", native: "Русский", enabled: false },
-  { code: "uk-UA", label: "Ukrainian", native: "Українська", enabled: false },
-  { code: "tr-TR", label: "Turkish", native: "Türkçe", enabled: false },
+  { code: "es-ES", label: "Spanish", native: "Español", enabled: true },
+  { code: "fr-FR", label: "French", native: "Français", enabled: true },
+  { code: "de-DE", label: "German", native: "Deutsch", enabled: true },
+  { code: "it-IT", label: "Italian", native: "Italiano", enabled: true },
+  { code: "pt-BR", label: "Portuguese", native: "Português", enabled: true },
+  { code: "nl-NL", label: "Dutch", native: "Nederlands", enabled: true },
+  { code: "pl-PL", label: "Polish", native: "Polski", enabled: true },
+  { code: "ro-RO", label: "Romanian", native: "Română", enabled: true },
+  { code: "ru-RU", label: "Russian", native: "Русский", enabled: true },
+  { code: "uk-UA", label: "Ukrainian", native: "Українська", enabled: true },
+  { code: "tr-TR", label: "Turkish", native: "Türkçe", enabled: true },
   {
     code: "ar-EG",
     label: "Arabic",
     native: "العربية",
-    enabled: false,
+    enabled: true,
     rtl: true,
   },
   {
@@ -235,16 +228,16 @@ export const LANGUAGE_OPTIONS: LanguageOption[] = [
     enabled: true,
     rtl: true,
   },
-  { code: "hi-IN", label: "Hindi", native: "हिन्दी", enabled: false },
-  { code: "bn-BD", label: "Bangla", native: "বাংলা", enabled: false },
-  { code: "mr-IN", label: "Marathi", native: "मराठी", enabled: false },
-  { code: "ta-IN", label: "Tamil", native: "தமிழ்", enabled: false },
-  { code: "te-IN", label: "Telugu", native: "తెలుగు", enabled: false },
-  { code: "id-ID", label: "Indonesian", native: "Indonesia", enabled: false },
-  { code: "vi-VN", label: "Vietnamese", native: "Tiếng Việt", enabled: false },
-  { code: "th-TH", label: "Thai", native: "ไทย", enabled: false },
-  { code: "ja-JP", label: "Japanese", native: "日本語", enabled: false },
-  { code: "ko-KR", label: "Korean", native: "한국어", enabled: false },
+  { code: "hi-IN", label: "Hindi", native: "हिन्दी", enabled: true },
+  { code: "bn-BD", label: "Bangla", native: "বাংলা", enabled: true },
+  { code: "mr-IN", label: "Marathi", native: "मराठी", enabled: true },
+  { code: "ta-IN", label: "Tamil", native: "தமிழ்", enabled: true },
+  { code: "te-IN", label: "Telugu", native: "తెలుగు", enabled: true },
+  { code: "id-ID", label: "Indonesian", native: "Indonesia", enabled: true },
+  { code: "vi-VN", label: "Vietnamese", native: "Tiếng Việt", enabled: true },
+  { code: "th-TH", label: "Thai", native: "ไทย", enabled: true },
+  { code: "ja-JP", label: "Japanese", native: "日本語", enabled: true },
+  { code: "ko-KR", label: "Korean", native: "한국어", enabled: true },
 ];
 
 /** True for languages whose script reads right-to-left. */

@@ -37,9 +37,18 @@ export interface FeatureImageStyleOption {
   blurb: string;
 }
 
-export const DEFAULT_FEATURE_IMAGE_STYLE: FeatureImageStyleValue = "infographic";
+// Default = auto (server default flipped 2026-08-08): the agent reads the
+// transcript and picks the strongest style per episode instead of shipping the
+// same infographic every time. Must stay in lockstep with aidream's
+// DEFAULT_FEATURE_IMAGE_STYLE (podcast_generator.py).
+export const DEFAULT_FEATURE_IMAGE_STYLE: FeatureImageStyleValue = "auto";
 
 export const FEATURE_IMAGE_STYLES: readonly FeatureImageStyleOption[] = [
+  {
+    value: "auto",
+    label: "Let the agent decide",
+    blurb: "Reads the transcript and picks the style that fits it best.",
+  },
   {
     value: "infographic",
     label: "Infographic",
@@ -89,11 +98,6 @@ export const FEATURE_IMAGE_STYLES: readonly FeatureImageStyleOption[] = [
     value: "isometric_3d",
     label: "Isometric 3D",
     blurb: "The subject as a small, detailed three-dimensional world.",
-  },
-  {
-    value: "auto",
-    label: "Let the agent decide",
-    blurb: "Reads the transcript and picks the style that fits it best.",
   },
 ] as const;
 

@@ -81,9 +81,10 @@ files, with a live-streaming studio, resumable runs, and public share pages.
 - `docs/LIVE_INTERACTIVE_PODCAST.md` — flagship: chunked-streamed, hot-mic,
   script-rewrites-the-unplayed-tail interactive podcast.
 - `docs/DYNAMIC_HOSTS_AND_THEMES.md` — N-host / formats / themes. **Wired
-  2026-06-10** (1–20 hosts, all formats, per-host names/voices); 1-host and
-  5–20-host paths fail loudly until their agents are built (version-id
-  constants in aidream `podcast_generator.py`).
+  2026-06-10** (1–20 hosts, all formats, per-host names/voices). Since
+  2026-08-08 every pipeline agent routes through a `podcast.*` agent slot
+  (DB-managed; admin console `/administration/agents/slots`) — adding or
+  swapping an agent is a repin, not a code change.
 - `docs/BLOG_PER_EPISODE.md` — rich SEO blog article per episode (≠ transcript).
   **Live 2026-06-11:** generate from the run page (`EpisodeContentStudio`),
   publish, public route `/podcast/[slug]/blog`. Show notes share the path
@@ -97,6 +98,24 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-08 — **Podcast agents are DB-managed slots; casts, styles, and
+  languages stopped being one-size-fits-all.** Server (aidream, same-day):
+  every pipeline agent (research, extraction, all script bands, both audio
+  bands, metadata, image/video slots, feature-image pair) resolves through a
+  `podcast.*` agent slot — repin from `/administration/agents/slots`, never a
+  code constant; default cast names + voices now ROTATE per episode
+  (gender-aware seeded draw on both the Gemini and ElevenLabs bands;
+  cast-preview draws a fresh cast per form load — kills the eternal
+  Alex/Sarah + orus/kore pair); feature image default style is `auto` (agent
+  picks per episode). Frontend: `useEpisodeArticles` + `useSourceResolvers`
+  resolve their agents via `resolveAgentSlot` (`podcast_client.blog_writer` /
+  `show_notes` / `web_content_extractor` / `youtube_research`) — the four
+  hardcoded agent-id constants are deleted; `featureImageStyles.ts` default
+  flipped to `auto` (lockstep with the server); **all 24 languages enabled**
+  in `LANGUAGE_OPTIONS` (generic script agents take `language`; Gemini +
+  eleven_v3 TTS are natively multilingual; server maps locale codes → plain
+  names). Server work committed to aidream main — **needs deploy** for the
+  new cast preview/routing to reach prod. Jest 10/10; aidream gate tests 26/26.
 - 2026-08-04 — **Podcast "failures" root-caused to a platform-wide DB write
   outage; runs can no longer be lost.** `history.row_versions` ran out of
   monthly partitions at 2026-08-01T00:00Z, so every write to a versioned table

@@ -588,8 +588,7 @@ export function GeneratorForm({
           </SelectContent>
         </Select>
         <p className="text-[11px] text-muted-foreground">
-          English and Persian are live today. Other languages preview
-          Gemini&apos;s 24 supported voices — wiring lands soon.
+          Scripts and audio are generated natively in the language you pick.
         </p>
       </section>
 

@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 import { useRunAgent } from "@/features/agents/run/useRunAgent";
+import { resolveAgentSlot } from "@/features/agents/slots/service";
 import { articleService } from "@/features/podcasts/articleService";
 import { assembleArticle } from "@/features/podcasts/generator/articleMarkdown";
 import { slugify } from "@/features/podcasts/utils";
@@ -20,9 +21,10 @@ import type {
   PcEpisodeWithShow,
 } from "@/features/podcasts/types";
 
-// Built agents (internal_agents/_generated). See the agent specs for variables.
-const BLOG_WRITER_AGENT_ID = "58204bd9-bc32-4f5a-854d-13d859ff833c";
-const SHOW_NOTES_AGENT_ID = "b1910198-a8af-4c8c-8d66-afe135e22f97";
+// DB-managed agent slots (declared in aidream client_slots.py; repin from
+// /administration/agents/slots — never a hardcoded agent id here).
+const BLOG_WRITER_SLOT_KEY = "podcast_client.blog_writer";
+const SHOW_NOTES_SLOT_KEY = "podcast_client.show_notes";
 
 /** Build the episode_metadata JSON the agents consume from the episode + show. */
 function episodeMetadata(episode: PcEpisodeWithShow): Record<string, unknown> {
@@ -123,9 +125,13 @@ export function useEpisodeArticles(
         // The agents emit a structured JSON envelope (behind a <reasoning>
         // preamble), NOT raw markdown — streaming it raw would show JSON, so we
         // assemble renderable markdown from the parsed object on completion.
+        const slot = await resolveAgentSlot(
+          kind === "blog" ? BLOG_WRITER_SLOT_KEY : SHOW_NOTES_SLOT_KEY,
+        );
         const agentText = await run({
-          agentId: kind === "blog" ? BLOG_WRITER_AGENT_ID : SHOW_NOTES_AGENT_ID,
+          agentId: slot.agentId,
           variables,
+          configOverrides: slot.configOverrides ?? undefined,
           sourceApp: "matrx-frontend",
           sourceFeature: "podcasts",
         });

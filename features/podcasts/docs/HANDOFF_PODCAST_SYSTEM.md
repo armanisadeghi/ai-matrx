@@ -129,12 +129,14 @@ Ordered by importance. These are the honest gaps.
    file extractor is `file_url`-only). The script writer handles raw notes well
    (proven), but there is no longer an intermediate cleaning agent for messy text.
 
-7. **Script-agent SELECTION is not yet a registry.** `PODCAST_PIPELINE.md` §4
-   specs a `SCRIPT_AGENT_REGISTRY` (custom agents slot in by `(format, language,
-   host_min, host_max)` table entry). It is **documented but not built** — adding
-   a custom format/language agent today means editing `_create_script` /
-   `_is_legacy_script_request`. Build the registry when the custom-agent count
-   grows; the current router works and is GATE-2-backed.
+7. ~~Script-agent SELECTION is not a registry~~ **SUPERSEDED by Agent Slots
+   (2026-08-08).** Every pipeline agent resolves through a `podcast.*` slot in
+   `agent.slot_definition` (admin console `/administration/agents/slots`;
+   declarations in `aidream/services/agent_slots/podcast_slots.py`). Swapping
+   or upgrading an agent is a DB repin. The band ROUTER (which slot runs for a
+   given host count/format/language) is still code in `_create_script` —
+   fine until a custom per-format agent actually exists; slot in a new band
+   by adding a slot + a router branch.
 
 8. **4 post-prep agents still draft** (`podcast_post_prep_{translation,
    summarization,fact_checking,expansion}`) → the create form's "Pre/Post-script
@@ -144,8 +146,11 @@ Ordered by importance. These are the honest gaps.
 9. **Chapters unwired.** `podcast_chapter_marker` exists; the run page still shows
    a "Chapter markers" Coming-Soon card.
 
-10. **Languages: only en-US + fa-IR enabled** in the FE (`generator/constants.ts`).
-    Others show "Soon". Enable per-locale after verifying TTS voice quality.
+10. ~~Languages: only en-US + fa-IR enabled~~ **ALL 24 languages enabled
+    (2026-08-08)** — generic script agents take `language` (server maps locale
+    codes → plain names), both TTS providers are natively multilingual.
+    Per-locale voice QUALITY is unverified beyond en/fa — spot-check top
+    locales with real ears.
 
 11. ~~URL-scrape ≥2000-char gate~~ **DONE.** `useSourceResolvers.resolveWebsite`
     now rejects a scrape under `MIN_SCRAPE_CHARS` (2000) with a distinct
