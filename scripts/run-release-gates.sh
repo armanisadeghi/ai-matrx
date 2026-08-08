@@ -54,6 +54,7 @@ if $STRICT; then
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts --strict"
         "Entity registry generation drift|pnpm check:entity-types"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts --strict"
+        "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts --strict"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts --strict"
     )
 else
@@ -78,6 +79,7 @@ else
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
         "Entity registry generation drift|pnpm check:entity-types"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts"
+        "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts"
         # Advisory-only for now: known Wave-5 backlog (confident-title claims,
         # stale common-docs pointers) would hard-block strict mode. Promote to
