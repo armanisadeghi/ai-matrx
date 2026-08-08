@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-30
+updated: 2026-08-07
 repos: [matrx-frontend, aidream]
 vision:
   - /Users/armanisadeghi/code/common-docs/systems/content-planning/FEATURE.md
@@ -91,14 +91,7 @@ the 'Document'"*
 
 1. ~~DEPLOY the frontend~~ — **DONE**: the stranded AI-setup work shipped in FE release
    v0.4.270 (2026-08); aidream has been live since v0.1.706.
-2. **The shell-header Agents panel can't see these agents.** `SurfaceBoundAgentsList` reads
-   `agent.menu_surface`, a view over `platform.associations` JOINed to **`agent.card`**; all four
-   agents live in `agent.definition` only (`agent.card` has 138 rows, `agent.definition` 723), so
-   a binding edge cannot be created for them. Today the on-page buttons are the only entry point.
-   Fix is a platform decision: either promote these to `agent.card`, or teach the panel to resolve
-   roles via `useSurfaceAgentRoles` (which DOES see them — all roles are bound in
-   `ui.ui_surface_agent_role`).
-3. **Nothing downstream READS the planned topics yet.** Same gap now applies to
+2. **Nothing downstream READS the planned topics yet.** Same gap now applies to
    `attributes.keyword_strategy` (page role / supports / internal links) — the writers should
    read both. They are stored authoritatively at
    `plan.node.attributes.planned_topics` (a `string[]` on the family hub; the brief marker block
@@ -122,6 +115,10 @@ the 'Document'"*
 
 ## Done
 
+- Header Agents popover shows role-bound agents platform-wide (Arman's pick 2026-08-07 over
+  card-promotion) — `SurfaceBoundAgentsList` renders a "Surface roles" section from
+  `useSurfaceAgentRoles` + the shared `features/surfaces/hooks/useAgentNames.ts`; no
+  `agent.card` row or associations edge needed. Verified live on `/marketing/content-plan`.
 - Four platform agents created + model-pinned + smoke-tested — ids in Resources above.
 - Setup steps have real AI (shape+counts, family names, count-only topics, plan review) staging
   into the view's own state — see `features/marketing/content-plan/setup/`.
@@ -147,10 +144,3 @@ the 'Document'"*
 Today the archetype remains hub-only and the user explicitly confirms “Create as pages.” Decide
 whether a future commit should promote staged titles automatically; doing so would change the
 meaning of count-only families for every site.
-
-**Should these four agents appear in the header Agents popover?**
-Situation: the popover lists agents bound to a surface through `agent.card`; these four exist only
-as `agent.definition` rows, so they cannot be listed there — they are reachable only from the
-buttons on the Setup and Entities pages. Every other surface with agents has the same split.
-Decide: promote agents like these into `agent.card` when they are bound to a surface, or change
-the popover to also show the role-bound agents it currently ignores.

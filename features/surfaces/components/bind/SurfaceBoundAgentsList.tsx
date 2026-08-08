@@ -14,6 +14,8 @@ import { Loader2, Play, Plus, Settings, Unlink } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
+import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
+import { useAgentNames } from "@/features/surfaces/hooks/useAgentNames";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfaceAgentBindWindow";
 import { useOpenAgentSettingsWindow } from "@/features/overlays/openers/agentSettingsWindow";
@@ -36,6 +38,13 @@ export interface SurfaceBoundAgentsListProps {
   /** Pass through to `useSurfaceBoundAgents`. */
   isEditable?: boolean;
   includeDefaults?: boolean;
+  /**
+   * Also list the surface's ROLE-bound agents (`ui.ui_surface_agent_role`
+   * resolved via `useSurfaceAgentRoles`) as a "Surface roles" section.
+   * Role agents are definition-tier — they need no `agent.card` row or
+   * `platform.associations` edge to appear. Default true.
+   */
+  includeRoles?: boolean;
   className?: string;
   /** Override the empty-state copy. */
   emptyMessage?: string;
@@ -50,6 +59,7 @@ export function SurfaceBoundAgentsList({
   hideWhenEmpty = false,
   isEditable = false,
   includeDefaults = true,
+  includeRoles = true,
   className,
   emptyMessage = "No agents bound yet. Add one to run it here.",
   addLabel = "Add custom agent",
@@ -61,6 +71,19 @@ export function SurfaceBoundAgentsList({
     surfaceName,
     { isEditable, includeDefaults },
   );
+
+  // Role-bound agents (ui.ui_surface_agent_role) — definition-tier agents with
+  // no agent.card row or associations edge still surface here.
+  const { roles } = useSurfaceAgentRoles(surfaceName);
+  const roleRows = includeRoles
+    ? Object.values(roles)
+        .filter((v) => v.effectiveAgentId !== null)
+        .sort((a, b) => (a.role.sortOrder ?? 0) - (b.role.sortOrder ?? 0))
+    : [];
+  const roleAgentNames = useAgentNames(
+    roleRows.map((v) => v.effectiveAgentId as string),
+  );
+  const hasRoleRows = roleRows.length > 0;
 
   const [detachTarget, setDetachTarget] =
     useState<SurfaceBoundAgentEntry | null>(null);
@@ -79,7 +102,7 @@ export function SurfaceBoundAgentsList({
     });
   };
 
-  if (hideWhenEmpty && !loading && !hasAgents) return null;
+  if (hideWhenEmpty && !loading && !hasAgents && !hasRoleRows) return null;
 
   const visibleSections = sections.filter((s) => s.agents.length > 0);
 
@@ -92,10 +115,63 @@ export function SurfaceBoundAgentsList({
         </div>
       )}
 
-      {!loading && !hasAgents && (
+      {!loading && !hasAgents && !hasRoleRows && (
         <p className="rounded-md border border-dashed border-border px-2.5 py-3 text-center text-[10px] text-muted-foreground">
           {emptyMessage}
         </p>
+      )}
+
+      {hasRoleRows && (
+        <div className="space-y-1">
+          <p className="px-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Surface roles
+          </p>
+          <div className="space-y-0.5">
+            {roleRows.map((view) => {
+              const agentId = view.effectiveAgentId as string;
+              const agentName = roleAgentNames[agentId];
+              return (
+                <div
+                  key={`role:${view.role.name}`}
+                  className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-1.5"
+                >
+                  <button
+                    type="button"
+                    title={`Run ${agentName ?? view.role.label}`}
+                    aria-label={`Run ${agentName ?? view.role.label}`}
+                    disabled={runDisabled}
+                    onClick={() => void onRunAgent(agentId)}
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-primary hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    <Play className="h-3 w-3 fill-current" />
+                  </button>
+                  <p className="min-w-0 flex-1 truncate text-xs font-medium leading-none">
+                    {view.role.label}
+                    {agentName && agentName !== view.role.label && (
+                      <span className="ml-1.5 font-normal text-muted-foreground">
+                        {agentName}
+                      </span>
+                    )}
+                  </p>
+                  <button
+                    type="button"
+                    title={`Settings for ${agentName ?? view.role.label}`}
+                    aria-label={`Settings for ${agentName ?? view.role.label}`}
+                    onClick={() =>
+                      openSettings({
+                        initialAgentId: agentId,
+                        surfaceName,
+                      })
+                    }
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                  >
+                    <Settings className="h-3 w-3" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {visibleSections.map((section) => (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronDown, Loader2, Users } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { toast } from "@/lib/toast";
@@ -11,12 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createClient } from "@/utils/supabase/client";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import {
   useSurfaceAgentRoles,
   type RoleView,
 } from "@/features/surfaces/hooks/useSurfaceConfig";
+import { useAgentNames } from "@/features/surfaces/hooks/useAgentNames";
 
 type MeAgentMode = "exclude" | "roster" | "default";
 
@@ -58,7 +58,6 @@ export function SurfaceRolesSection({
   agent: AgentDefinition;
 }) {
   const { status, roles, refresh } = useSurfaceAgentRoles(surfaceName);
-  const [agentNames, setAgentNames] = useState<Record<string, string>>({});
   const [busyRole, setBusyRole] = useState<string | null>(null);
   const [open, setOpen] = useState(true);
 
@@ -66,38 +65,16 @@ export function SurfaceRolesSection({
     (a, b) => (a.role.sortOrder ?? 0) - (b.role.sortOrder ?? 0),
   );
 
-  useEffect(() => {
-    const ids = new Set<string>();
-    for (const view of Object.values(roles)) {
-      if (view.role.defaultAgentId) ids.add(view.role.defaultAgentId);
-      if (view.effectiveAgentId) ids.add(view.effectiveAgentId);
-      if (view.userSelection?.agentId) ids.add(view.userSelection.agentId);
-      for (const o of view.orgSelections) ids.add(o.agentId);
-      for (const e of view.effective) ids.add(e.agentId);
-      for (const r of view.roster) ids.add(r.agentId);
-    }
-    ids.add(agent.id);
-    const missing = [...ids].filter((id) => !agentNames[id]);
-    if (missing.length === 0) return;
-    void (async () => {
-      const { data, error } = await createClient()
-        .schema("agent")
-        .from("definition")
-        .select("id, name")
-        .is("deleted_at", null)
-        .in("id", missing);
-      if (error || !data) return;
-      setAgentNames((prev) => ({
-        ...prev,
-        ...Object.fromEntries(
-          (data as { id: string; name: string | null }[]).map((r) => [
-            r.id,
-            r.name ?? "Unnamed agent",
-          ]),
-        ),
-      }));
-    })();
-  }, [roles, agentNames, agent.id]);
+  const nameIds = new Set<string>([agent.id]);
+  for (const view of Object.values(roles)) {
+    if (view.role.defaultAgentId) nameIds.add(view.role.defaultAgentId);
+    if (view.effectiveAgentId) nameIds.add(view.effectiveAgentId);
+    if (view.userSelection?.agentId) nameIds.add(view.userSelection.agentId);
+    for (const o of view.orgSelections) nameIds.add(o.agentId);
+    for (const e of view.effective) nameIds.add(e.agentId);
+    for (const r of view.roster) nameIds.add(r.agentId);
+  }
+  const agentNames = useAgentNames([...nameIds]);
 
   const handleMeModeChange = async (view: RoleView, mode: MeAgentMode) => {
     setBusyRole(view.role.name);
