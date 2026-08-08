@@ -37,6 +37,9 @@ import { GenericPreview } from "./previewers/GenericPreview";
 // Heavy engines — in-gate async edges (React.lazy, NOT next/dynamic).
 const PdfPreview = lazy(() => import("./previewers/PdfPreview"));
 const MarkdownPreview = lazy(() => import("./previewers/MarkdownPreview"));
+// Word / PowerPoint — server-side extract → markdown render (react-markdown
+// stack stays inside this chunk, same rationale as MarkdownPreview).
+const OfficePreview = lazy(() => import("./previewers/OfficePreview"));
 const DataPreview = lazy(() => import("./previewers/DataPreview"));
 const CodePreview = lazy(() => import("./previewers/CodePreview"));
 // Blob-backed PDF arm (code editor's already-downloaded bytes). Renders the
@@ -205,6 +208,19 @@ export function PreviewerSwitch({
     case "code":
       body = fileId ? (
         <CodePreview fileId={fileId} fileName={fileName} className={className} />
+      ) : (
+        genericCard
+      );
+      break;
+    // Server-extraction previewer — needs a fileId (the server reads the
+    // bytes); a blob source (code editor) degrades to the generic card.
+    case "office":
+      body = fileId ? (
+        <OfficePreview
+          fileId={fileId}
+          fileName={fileName}
+          className={className}
+        />
       ) : (
         genericCard
       );

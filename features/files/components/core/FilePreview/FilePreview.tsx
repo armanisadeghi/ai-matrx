@@ -12,7 +12,9 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { extractErrorMessage } from "@/utils/errors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 import { selectFileById } from "@/features/files/redux/selectors";
@@ -201,6 +203,27 @@ export function FilePreview({
       onDelete: () => void actions.delete({ hard: false }),
       onEdit: () => requestEdit(fileId),
       openInRoute,
+      // Office → PDF: server renders via LibreOffice, persists a NEW pdf
+      // asset, and we take the user straight to it.
+      onConvertToPdf:
+        capability.previewKind === "office"
+          ? async () => {
+              const toastId = toast.loading("Converting to PDF…");
+              try {
+                const { convertOfficeToPdf } = await import(
+                  "@/features/files/api/office"
+                );
+                const ref = await convertOfficeToPdf(fileId);
+                toast.success("PDF ready", { id: toastId });
+                router.push(`/files/f/${ref.file_id}`);
+              } catch (err) {
+                toast.error(
+                  extractErrorMessage(err) || "Couldn't convert to PDF",
+                  { id: toastId },
+                );
+              }
+            }
+          : undefined,
     });
     return <PreviewerActionBar actions={previewActions} />;
   }, [file, capability, actions, router, fileId, dispatch]);

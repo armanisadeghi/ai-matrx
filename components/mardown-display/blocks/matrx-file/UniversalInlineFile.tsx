@@ -154,6 +154,7 @@ export function UniversalInlineFile({
     case "markdown":
     case "data":
     case "spreadsheet":
+    case "office":
     case "code":
     case "text":
       if (!fileId) break;

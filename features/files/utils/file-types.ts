@@ -107,6 +107,7 @@ export type PreviewKind =
   | "markdown"
   | "data"
   | "spreadsheet"
+  | "office"
   | "generic";
 
 /**
@@ -1467,20 +1468,23 @@ export const FILE_TYPES: readonly FileTypeEntry[] = [
     previewSizeCapOverride: null,
   },
 
-  // ────────────────────── OFFICE — NOT YET PREVIEWABLE ──────────────────────
-  // Listed here so they get correct icons / categories. Full-text preview
-  // requires a parser dependency (mammoth.js for docx, etc.) — tracked as a
-  // follow-up. Today users see the icon and a Download button.
+  // ────────────────────── OFFICE (Word / PowerPoint) ──────────────────────
+  // Server-side extraction preview: OfficePreview calls aidream
+  // `GET /office/{file_id}/markdown` (the matrx-files Office codec) and renders
+  // the document / deck as markdown, slide-by-slide for pptx. Legacy .doc/.ppt
+  // ride the server's LibreOffice bridge. xlsx stays on the SheetJS previewer.
   {
     extensions: ["doc", "docx"],
     mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     category: "DOCUMENT",
     subCategory: "WORD",
     displayName: "Word document",
-    previewKind: "generic",
+    previewKind: "office",
     thumbnailStrategy: "icon",
     color: "text-blue-500",
     icon: FileText,
+    // Bytes never reach the browser — the server extracts. No blob-size cap.
+    previewSizeCapOverride: null,
   },
   {
     extensions: ["ppt", "pptx"],
@@ -1488,10 +1492,11 @@ export const FILE_TYPES: readonly FileTypeEntry[] = [
     category: "DOCUMENT",
     subCategory: "POWERPOINT",
     displayName: "PowerPoint",
-    previewKind: "generic",
+    previewKind: "office",
     thumbnailStrategy: "icon",
     color: "text-orange-600",
     icon: FileType,
+    previewSizeCapOverride: null,
   },
 
   // ────────────────────── NOTEBOOK ──────────────────────

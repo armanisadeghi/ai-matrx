@@ -7,9 +7,19 @@
 
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { extractErrorMessage } from "@/utils/errors";
-import { FileUp, FolderPlus, FolderUp, Plus } from "lucide-react";
+import {
+  FileSpreadsheet,
+  FileText,
+  FileUp,
+  FolderPlus,
+  FolderUp,
+  Plus,
+  Presentation,
+  Webhook,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,8 +36,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { stashChatDraftTransfer } from "@/features/agents/components/chat/chat-draft-transfer";
+import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { createFolder } from "@/features/files/redux/thunks";
@@ -41,8 +56,53 @@ export interface NewMenuProps {
   className?: string;
 }
 
+// "New → AI document" prefills — the user lands on /chat/new with an editable
+// prompt aimed at the `office` tool (generate action). The agent produces a
+// real .docx/.pptx/.xlsx FileRef that shows up right back here in Files.
+const AI_DOCUMENT_PROMPTS: ReadonlyArray<{
+  key: string;
+  label: string;
+  icon: typeof FileText;
+  prompt: string;
+}> = [
+  {
+    key: "docx",
+    label: "Word document",
+    icon: FileText,
+    prompt:
+      "Create a Word document (.docx) for me.\n\nWhat it should cover: ",
+  },
+  {
+    key: "pptx",
+    label: "PowerPoint deck",
+    icon: Presentation,
+    prompt:
+      "Create a PowerPoint deck (.pptx) for me.\n\nTopic, audience, and roughly how many slides: ",
+  },
+  {
+    key: "xlsx",
+    label: "Excel workbook",
+    icon: FileSpreadsheet,
+    prompt:
+      "Create an Excel workbook (.xlsx) for me.\n\nWhat data and columns it should contain: ",
+  },
+];
+
 export function NewMenu({ parentFolderId, className }: NewMenuProps) {
   const dispatch = useAppDispatch();
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+
+  const handleAiDocument = useCallback(
+    (prompt: string) => {
+      stashChatDraftTransfer({
+        text: prompt,
+        targetAgentId: DEFAULT_NEW_CHAT_AGENT_ID,
+      });
+      startTransition(() => router.push("/chat/new"));
+    },
+    [router],
+  );
   const { uploadMany: upload } = useFileUpload();
   const { triggerNow, setTriggerNow } = useRagUploadPreference();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -154,6 +214,25 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
             <FolderPlus className="mr-2 h-4 w-4" />
             New folder
           </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              {/* Webhook mirrors the app's Agents nav glyph (Sparkles/Bot/Wand
+                  are banned as AI-cliché icons by matrx/no-banned-lucide-icons). */}
+              <Webhook className="mr-2 h-4 w-4" />
+              AI document
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="w-52">
+              {AI_DOCUMENT_PROMPTS.map(({ key, label, icon: Icon, prompt }) => (
+                <DropdownMenuItem
+                  key={key}
+                  onSelect={() => handleAiDocument(prompt)}
+                >
+                  <Icon className="mr-2 h-4 w-4" />
+                  {label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
           <DropdownMenuSeparator />
           <DropdownMenuCheckboxItem
             checked={triggerNow}

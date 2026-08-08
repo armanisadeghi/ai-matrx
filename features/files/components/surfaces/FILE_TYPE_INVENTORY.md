@@ -514,18 +514,26 @@ The full set: `js, mjs, cjs, jsx, ts, tsx, py, rb (+ Rakefile/Gemfile/Vagrantfil
 
 ---
 
-## OFFICE — NOT PREVIEWABLE
+## OFFICE
 
-> **The "server-side render" these rows ask for now EXISTS.** aidream ships an Office codec
-> (docx/pptx/xlsx → markdown, + LibreOffice → PDF page-1 thumbnails) and an `office` agent tool.
-> Nothing here consumes it yet. Work order:
-> [`docs/handoffs/office-documents.md`](../../../../docs/handoffs/office-documents.md).
+> **Shipped 2026-08-08:** `previewKind: "office"` + `OfficePreview` — server-side extraction via
+> aidream `GET /office/{file_id}/markdown` (matrx-files Office codec; LibreOffice bridge reads
+> legacy `.doc`/`.ppt`). Decks render slide-by-slide with titled dividers; header shows kind +
+> warnings + Copy markdown. Action bar carries **Convert to PDF** (`POST /office/{file_id}/convert`
+> → new pdf asset, navigates to it). Files "New" menu has **AI document** (Word / PowerPoint /
+> Excel prompt prefill → `/chat/new`, the `office` tool generates a real file). Remaining office
+> work: [`docs/handoffs/office-documents.md`](../../../../docs/handoffs/office-documents.md).
 
 | Ext | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
 |---|---|---|---|---|---|---|---|---|
-| `doc, docx` (Word) | 🔴 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `GenericPreview` — Download only. Server-side markdown extract is now available (see note above). |
-| `ppt, pptx` (PowerPoint) | 🔴 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `GenericPreview` — Download only. Server-side slide render + page-1 thumb now available (see note above). |
+| `doc, docx` (Word) | ✅ | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `OfficePreview` — server-extracted markdown. Edit tab points at AI generation. |
+| `ppt, pptx` (PowerPoint) | ✅ | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `OfficePreview` — slide-by-slide markdown with slide numbers/titles. |
 | `epub` | 🔴 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `GenericPreview`. Needs an EPUB reader (`epub.js`). |
+
+**Gaps:**
+- No visual fidelity (fonts/layout/images) — text-extraction preview only. A LibreOffice→PDF
+  render-preview lane could reuse the convert endpoint if fidelity becomes a priority.
+- Existing Office files still show mime-icon thumbnails until the aidream backfill re-renders them.
 
 ---
 
@@ -608,7 +616,7 @@ Ordered by user impact:
 2. ~~**Image previewer overhaul**~~ ✅ **Shipped on `/files/f/{id}`.** Zoom (slider + ±, 10–800%), rotate (left/right), fit/actual toggle, transparency grid via the left rail. Click-and-drag pan still TODO (overflow scroll handles wheel/trackpad pan). Side panel kept passive — promoting controls into the side panel is a separate decision.
 3. **Editor language map parity** — extend `CloudFileInlineEditor.LANGUAGE_BY_EXT` to cover every `previewKind: "code"` extension. Trivial change, large UX win.
 4. **CSV / JSON / XML edit** — either add `data` to `EDITABLE_KINDS` for a quick text-edit win, or ship grid editors for CSV/XLSX.
-5. **Office (`docx, pptx`) preview** — pick `mammoth.js` for docx text body, accept "no full fidelity" for now.
+5. ~~**Office (`docx, pptx`) preview**~~ ✅ **Shipped 2026-08-08.** `OfficePreview` renders server-extracted markdown (aidream Office codec — no client parser dependency; legacy `.doc`/`.ppt` via LibreOffice). Plus Convert-to-PDF action + "New → AI document" entry.
 6. **Jupyter notebook renderer** — cells + outputs renderer for `.ipynb` (image / DataFrame HTML / base64).
 7. **PDF Edit tab** — wire the PDF Extractor's edit surface into the Edit tab so users don't have to bounce to a separate route.
 8. **Video previewer polish** — playback rate, AB-loop, caption track wiring, "format not supported" branch.

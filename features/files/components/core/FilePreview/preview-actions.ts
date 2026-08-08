@@ -14,6 +14,7 @@ import {
   Download,
   Edit3,
   ExternalLink,
+  FileOutput,
   Maximize2,
   Trash2,
 } from "lucide-react";
@@ -40,6 +41,9 @@ export interface BuildPreviewActionsArgs {
    *  virtual-source adapter's `openInRoute(node)`. Surfaces as a primary
    *  "Open in <feature>" button when provided. */
   openInRoute?: { label: string; onClick: () => void };
+  /** Office (docx/pptx) only — server-side LibreOffice render to a new PDF
+   *  asset. Surfaced when provided and the kind is `office`. */
+  onConvertToPdf?: () => void | Promise<void>;
 }
 
 // Which preview kinds should surface an "Edit" handoff in the action bar?
@@ -72,6 +76,7 @@ export function buildPreviewActions(
     onDelete,
     onEdit,
     openInRoute,
+    onConvertToPdf,
   } = args;
 
   const isVirtual = file.source.kind === "virtual";
@@ -101,6 +106,18 @@ export function buildPreviewActions(
       primary: true,
       disabled: !onEdit,
       disabledHint: !onEdit ? "Edit handoff not wired yet" : undefined,
+    });
+  }
+
+  // Office documents: server-side LibreOffice render → a NEW pdf asset the
+  // host navigates to. Real cloud files only (the server reads the bytes).
+  if (!isVirtual && previewKind === "office" && onConvertToPdf) {
+    actions.push({
+      id: "convert-to-pdf",
+      label: "Convert to PDF",
+      icon: FileOutput,
+      onClick: onConvertToPdf,
+      primary: false,
     });
   }
 

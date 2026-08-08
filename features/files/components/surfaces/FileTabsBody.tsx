@@ -449,6 +449,14 @@ function EditTabContent({ fileId }: EditTabContentProps) {
         />
       );
 
+    case "office":
+      return (
+        <ComingSoon
+          title="Office editing — not available here"
+          description="The Preview tab shows the extracted text, and the action bar can convert to PDF. To produce a new version, ask an agent in chat — it can generate a fresh .docx or .pptx from your instructions."
+        />
+      );
+
     case "generic":
     default:
       return (
