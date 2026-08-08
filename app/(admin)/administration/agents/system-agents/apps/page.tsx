@@ -50,6 +50,9 @@ import {
   type AgentAppAdminView,
   type UpdateAgentAppAdminInput,
 } from "@/lib/services/agent-apps-admin-service";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 
 const STATUS_VARIANT: Record<
   AgentAppAdminView["status"],
@@ -67,6 +70,24 @@ const STATUS_OPTIONS: AgentAppAdminView["status"][] = [
   "archived",
   "suspended",
 ];
+
+/**
+ * Human-readable one-liner for a system app row — the "Copy" flavor for this
+ * page only (per-row + copy-all). This page owns `AgentAppAdminView`
+ * formatting since `features/agent-apps/**` is out of scope here; don't
+ * duplicate this summary elsewhere.
+ */
+function agentAppAdminSummary(a: AgentAppAdminView): string {
+  return [
+    `${a.name} (/${a.slug})`,
+    `[${a.status}]`,
+    a.is_public ? "public" : "private",
+    a.category ? `category:${a.category}` : null,
+    `runs:${a.total_executions ?? 0}`,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
 
 export default function AdminSystemAppsListPage() {
   const router = useRouter();
@@ -237,6 +258,37 @@ export default function AdminSystemAppsListPage() {
             <span className="text-xs text-muted-foreground shrink-0 px-1">
               {filtered.length} app{filtered.length !== 1 ? "s" : ""}
             </span>
+            {filtered.length > 0 && (
+              <>
+                <CopyButtons
+                  size="icon"
+                  label="All system apps"
+                  human={() => filtered.map(agentAppAdminSummary).join("\n")}
+                  json={() => filtered}
+                  agent={() => ({
+                    kind: "agent-apps",
+                    location:
+                      "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
+                    description:
+                      "All global-scope system agent apps currently matching the search.",
+                    data: filtered,
+                    attributes: { count: filtered.length },
+                    context: { search: search || undefined, total: apps.length },
+                  })}
+                />
+                <ExportMenu
+                  label="system-agent-apps"
+                  items={[
+                    jsonExportItem(() => filtered),
+                    csvExportItem(
+                      () =>
+                        filtered as unknown as Array<Record<string, unknown>>,
+                      "CSV",
+                    ),
+                  ]}
+                />
+              </>
+            )}
           </div>
 
           {loading ? (
@@ -379,6 +431,21 @@ export default function AdminSystemAppsListPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-0.5">
+                              <CopyButtons
+                                size="xs"
+                                label={a.name}
+                                human={() => agentAppAdminSummary(a)}
+                                json={() => a}
+                                agent={() => ({
+                                  kind: "agent-app",
+                                  location:
+                                    "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
+                                  description: "A single system agent app.",
+                                  data: a,
+                                  summary: agentAppAdminSummary(a),
+                                  attributes: { id: a.id, slug: a.slug },
+                                })}
+                              />
                               {a.status === "published" && (
                                 <Button
                                   asChild
