@@ -15,7 +15,11 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import {
+  humanLines,
+  webCopy,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
@@ -93,27 +97,19 @@ export function BrandsPortfolio() {
     }
   };
 
-  const brandRowCopy = (row: BrandListRow) =>
-    webCopy({
-      kind: "web-brand",
-      label: `Brand ${row.name}`,
-      description: "One brand row from the Marketing brand portfolio.",
-      surface: `Brands portfolio — ${row.name}`,
-      data: row,
-      lines: [
-        ["Brand", row.name],
-        ["Industry", row.industry],
-        ["Description", row.description],
-        ["Status", row.status],
-        ["Websites", row.sites.map((site) => site.domain).join(", ") || "none"],
-        ["Social profiles", row.social_count],
-        ["Brand assets", row.asset_count],
-        ["Business facts", row.fact_count],
-        ["Pending review", row.pending_discovered],
-        ["Updated", formatCompactDate(row.updated_at)],
-      ],
-      attributes: { brand_id: row.id, status: row.status },
-    });
+  const humanBrandRow = (row: BrandListRow): string =>
+    humanLines([
+      ["Brand", row.name],
+      ["Industry", row.industry],
+      ["Description", row.description],
+      ["Status", row.status],
+      ["Websites", row.sites.map((site) => site.domain).join(", ") || "none"],
+      ["Social profiles", row.social_count],
+      ["Brand assets", row.asset_count],
+      ["Business facts", row.fact_count],
+      ["Pending review", row.pending_discovered],
+      ["Updated", formatCompactDate(row.updated_at)],
+    ]);
 
   const listRows = brands.data?.rows ?? [];
 
@@ -352,13 +348,30 @@ export function BrandsPortfolio() {
                   </Button>
                 ),
               }}
+              copy={{
+                label: "Brand",
+                listLabel: "Brand portfolio view",
+                location: webLocation("Brands portfolio"),
+                rowKind: "web-brand",
+                listKind: "web-brands-list",
+                rowDescription:
+                  "One brand row from the Marketing brand portfolio.",
+                listDescription:
+                  "The brand portfolio rows currently loaded (respecting search, filters, sort, and pagination).",
+                humanRow: humanBrandRow,
+                rowAttributes: (row) => ({
+                  brand_id: row.id,
+                  status: row.status,
+                }),
+                listAttributes: (visible) => ({
+                  loaded_brands: visible.length,
+                  total_matching: brands.data?.total ?? visible.length,
+                }),
+              }}
               detail={{ enabled: false }}
               onRowOpen={(row) => router.push(marketingRoutes.brand(row.id))}
               rowActions={(row) => (
                 <div className="flex items-center gap-0.5">
-                  <span onClick={(event) => event.stopPropagation()}>
-                    <CopyButtons size="icon" {...brandRowCopy(row)} />
-                  </span>
                   <button
                     type="button"
                     className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
