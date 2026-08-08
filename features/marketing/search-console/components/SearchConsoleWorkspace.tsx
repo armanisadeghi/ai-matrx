@@ -36,6 +36,7 @@ import {
   buildSearchConsoleUrl,
   parseSearchConsoleUrl,
   pruneFiltersForTab,
+  resolveGscDataThrough,
   resolvePeriods,
   type SearchConsoleUrlState,
 } from "@/features/marketing/search-console/lib/url-state";
@@ -161,13 +162,10 @@ export function SearchConsoleWorkspace() {
     // "history begins" date live instead of frozen at page-load.
     refetchIntervalMs: serverFetchActive || historyRunning ? 30_000 : false,
   });
-  const dataThrough = useMemo(() => {
-    const rows = freshness.data ?? [];
-    const dates = rows
-      .filter((r) => r.dimension_profile !== "search_appearance")
-      .map((r) => r.max_date);
-    return dates.length > 0 ? [...dates].sort().at(-1) ?? null : null;
-  }, [freshness.data]);
+  const dataThrough = useMemo(
+    () => resolveGscDataThrough(freshness.data),
+    [freshness.data],
+  );
   // The OLDEST stored day (search_appearance excluded — its history is
   // deliberately shallow). When the visible range starts before this day,
   // the user is looking at a window we simply never fetched — say so.

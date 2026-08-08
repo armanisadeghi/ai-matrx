@@ -297,7 +297,9 @@ async function fetchDbGather(): Promise<DbGather> {
       // The nesting graph — feeds the doctor's nested-only-child `n/a` classing.
       gather<GatherEdgeRow>("edges", "content_ir.kind_edge"),
       gather<GatherSkillRow>("render_block_skills", "skill.definition"),
-      gather<GatherBlockRow>("content_blocks", "public.content_blocks"),
+      // Dataset key "content_blocks" is the RPC's stable label; it reads the
+      // canonical skill.render_definition (public.content_blocks retired).
+      gather<GatherBlockRow>("content_blocks", "skill.render_definition"),
     ]);
 
   return {

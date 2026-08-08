@@ -1,22 +1,23 @@
 /**
  * Kind content-block persistence — the client seam for storing a DERIVED
  * teaching block (from `kind-content-block-generator.ts`) into
- * `public.content_blocks`.
+ * `skill.render_definition` (the canonical content/render-block table;
+ * `public.content_blocks` is retired — see scripts/dead-relations.json).
  *
  * Two authorization worlds, ONE generator feeding both:
  *   - admin (platform kinds): the block lives in the system org, which no user
  *     can write via RLS, so it goes through the `is_super_admin()`-gated
  *     `content_ir.admin_upsert_kind_content_block` RPC (upsert by the globally
- *     unique block_id — create AND regenerate in one call).
+ *     unique block_id — create AND regenerate in one call; writes
+ *     skill.render_definition with block_type 'render_kind').
  *   - owner (user shapes on /shapes): RLS already permits the owner to write
- *     their own block, so those surfaces use the canonical
- *     agent-content-blocks redux thunks directly (no RPC).
- *
- * This module owns only the admin RPC path; the owner path stays on the
- * canonical thunks it already shares with the rest of the shortcuts system.
+ *     their own block, so that path is a direct supabase upsert-by-block_id
+ *     below (same table, same block_type).
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { supabase as browserSupabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
 import type { GeneratedContentBlock } from "@/features/content-ir/registry/kind-content-block-generator";
 
@@ -63,23 +64,30 @@ export async function adminUpsertKindContentBlock(
 }
 
 /**
- * Store (or update in place) a content block for a USER-OWNED shape via the
- * canonical agent-content-blocks API at user scope — RLS already lets the owner
- * write their own block, so no RPC. Upserts by the deterministic block_id
- * (unique per user because kind slugs are globally unique) so regenerate never
- * duplicates.
+ * Store (or update in place) a content block for a USER-OWNED shape — a
+ * direct supabase upsert into `skill.render_definition`. RLS already lets the
+ * owner write their own block, so no RPC. Upserts by the deterministic
+ * block_id (globally unique among live rows because kind slugs are globally
+ * unique) so regenerate never duplicates.
  */
 export async function ownerUpsertKindContentBlock(
   block: GeneratedContentBlock,
 ): Promise<void> {
-  const listRes = await fetch("/api/agent-content-blocks?scope=user", {
-    method: "GET",
-  });
-  if (!listRes.ok) {
-    throw new Error(`Failed to load your content blocks (${listRes.status}).`);
+  const { data: userData } = await browserSupabase.auth.getUser();
+  const userId = userData?.user?.id ?? null;
+
+  const { data: existing, error: findError } = await browserSupabase
+    .schema("skill")
+    .from("render_definition")
+    .select("id")
+    .eq("block_id", block.blockId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (findError) {
+    throw new Error(
+      `Failed to look up your content block: ${findError.message}`,
+    );
   }
-  const list = (await listRes.json()) as { data?: Array<{ id: string; block_id: string }> };
-  const existing = (list.data ?? []).find((r) => r.block_id === block.blockId);
 
   const fields = {
     block_id: block.blockId,
@@ -87,26 +95,27 @@ export async function ownerUpsertKindContentBlock(
     description: block.description,
     icon_name: block.iconName,
     template: block.template,
+    block_type: "render_kind",
     is_active: true,
+    metadata: { tier: block.tier, generated: true },
   };
 
-  const res = existing
-    ? await fetch(`/api/agent-content-blocks/${existing.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(fields),
-      })
-    : await fetch("/api/agent-content-blocks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scope: "user", ...fields }),
-      });
-  if (!res.ok) {
-    const detail = await res.json().catch(() => ({}));
-    throw new Error(
-      (detail as { details?: string; error?: string }).details ??
-        (detail as { error?: string }).error ??
-        `Failed to store the content block (${res.status}).`,
-    );
+  const { error } = existing
+    ? await browserSupabase
+        .schema("skill")
+        .from("render_definition")
+        .update(fields)
+        .eq("id", existing.id)
+    : await browserSupabase
+        .schema("skill")
+        .from("render_definition")
+        .insert({
+          ...fields,
+          organization_id: await ensureOrgId(undefined),
+          created_by: userId,
+          visibility: "personal",
+        });
+  if (error) {
+    throw new Error(`Failed to store the content block: ${error.message}`);
   }
 }

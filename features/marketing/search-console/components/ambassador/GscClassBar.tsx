@@ -149,7 +149,7 @@ export function GscClassBar({
       siteName: siteName ?? null,
       dimension: "query",
       range,
-      compare: "previous",
+      compare: "prev",
       title: `${entry.label} queries${siteName ? ` — ${siteName}` : ""}`,
     });
   };
@@ -160,7 +160,7 @@ export function GscClassBar({
     range,
     customFrom: null,
     customTo: null,
-    compare: "previous",
+    compare: "prev",
     filters: {},
     ruleId: null,
     insight: "quality",

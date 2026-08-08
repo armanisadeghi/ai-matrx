@@ -28,6 +28,7 @@ import {
   useGscFreshness,
 } from "@/features/marketing/search-console/hooks/useGscQuery";
 import {
+  resolveGscDataThrough,
   resolvePeriods,
   withPrevCompare,
 } from "@/features/marketing/search-console/lib/url-state";
@@ -88,7 +89,7 @@ export function useGscClassRollup(
   // Clamp to the site's freshest day so the label never promises data that
   // GSC has not delivered yet (their pipeline runs ~2 days behind).
   const freshness = useGscFreshness(siteId);
-  const dataEnd = freshness.data?.last_date ?? null;
+  const dataEnd = resolveGscDataThrough(freshness.data);
 
   const periods = useMemo(
     () =>
