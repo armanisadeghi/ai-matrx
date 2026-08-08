@@ -1,183 +1,154 @@
-// app/(authenticated)/(admin-auth)/administration/automation/scheduling/tasks/page.tsx
+// Scheduling admin › All tasks — canonical MatrxDataTable over sch.task rows.
 
 "use client";
 
-import { useEffect, useState } from "react";
-import { RefreshCw, Search } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { toast } from "@/lib/toast";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import {
   fetchAllTasksAdmin,
   type AdminTaskRow,
 } from "@/lib/services/scheduling-admin-service";
 import { humanizeRelative, humanizeTrigger } from "@/features/scheduling/utils/triggerHumanize";
 
-export default function AdminTasksPage() {
-  const [rows, setRows] = useState<AdminTaskRow[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [enabledFilter, setEnabledFilter] = useState<"any" | "enabled" | "disabled">("any");
-  const [loading, setLoading] = useState(false);
+function triggerText(r: AdminTaskRow): string {
+  return r.trigger
+    ? humanizeTrigger(r.trigger.type, r.trigger.config as Record<string, unknown>)
+    : "—";
+}
 
-  const load = async () => {
-    setLoading(true);
-    setError(null);
+export default function AdminTasksPage() {
+  const [rows, setRows] = useState<AdminTaskRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(false);
+
+  const load = useCallback(async () => {
+    setFetching(true);
     try {
-      const data = await fetchAllTasksAdmin({
-        search: search.trim() || undefined,
-        enabled:
-          enabledFilter === "any"
-            ? null
-            : enabledFilter === "enabled"
-              ? true
-              : false,
-        limit: 200,
-      });
-      setRows(data);
+      setRows(await fetchAllTasksAdmin({ limit: 200 }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
+      setFetching(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [load]);
+
+  const columns = useMemo((): MatrxColumnDef<AdminTaskRow>[] => {
+    return [
+      {
+        id: "title",
+        accessorKey: "title",
+        header: "Title",
+        width: 260,
+        cell: (r) => (
+          <div>
+            <div className="font-medium">{r.title}</div>
+            {r.description && (
+              <div className="text-xs text-muted-foreground line-clamp-1">
+                {r.description}
+              </div>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: "owner",
+        header: "Owner",
+        accessorFn: (r) => r.user_email ?? r.user_id,
+        cell: (r) => (
+          <span className="font-mono text-xs">{r.user_email ?? r.user_id.slice(0, 8)}</span>
+        ),
+        width: 200,
+      },
+      {
+        id: "trigger",
+        header: "Trigger",
+        accessorFn: triggerText,
+        cell: (r) => <span className="text-xs">{triggerText(r)}</span>,
+        width: 200,
+      },
+      {
+        id: "next_due_at",
+        accessorKey: "next_due_at",
+        header: "Next",
+        cell: (r) => <span className="text-xs">{humanizeRelative(r.next_due_at)}</span>,
+        width: 120,
+      },
+      {
+        id: "updated_at",
+        accessorKey: "updated_at",
+        header: "Updated",
+        cell: (r) => <span className="text-xs">{humanizeRelative(r.updated_at)}</span>,
+        width: 120,
+      },
+      {
+        id: "state",
+        header: "State",
+        accessorFn: (r) => (r.enabled ? "Enabled" : "Paused"),
+        filter: "select",
+        width: 100,
+        cell: (r) => (
+          <Badge variant={r.enabled ? "secondary" : "outline"} className="text-[10px]">
+            {r.enabled ? "Enabled" : "Paused"}
+          </Badge>
+        ),
+      },
+      { id: "id", accessorKey: "id", header: "ID", cellKind: "uuid", width: 110 },
+    ];
   }, []);
 
   return (
-    <div className="h-full overflow-y-auto px-4 sm:px-6 py-4 space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold">All tasks</h1>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => load()}
-          disabled={loading}
-        >
-          <RefreshCw
-            className={loading ? "h-3.5 w-3.5 mr-1.5 animate-spin" : "h-3.5 w-3.5 mr-1.5"}
-          />
-          Refresh
-        </Button>
+    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+      <div className="min-h-0 flex-1">
+        <MatrxDataTable
+          data={rows}
+          columns={columns}
+          getRowId={(r) => r.id}
+          isLoading={loading}
+          isFetching={fetching}
+          pageSize={50}
+          emptyState={{ title: "No tasks match" }}
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Search title, owner, trigger…",
+            actions: (
+              <Button size="sm" variant="outline" onClick={() => void load()} disabled={fetching}>
+                {fetching ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+              </Button>
+            ),
+          }}
+          copy={{
+            label: "Scheduled task",
+            listLabel: "Scheduled tasks (this view)",
+            location: "/administration/automation/scheduling/tasks",
+            rowKind: "scheduled-task",
+            listKind: "scheduled-tasks",
+            humanRow: (r) =>
+              [
+                `Title: ${r.title}`,
+                `Owner: ${r.user_email ?? r.user_id}`,
+                `Trigger: ${triggerText(r)}`,
+                `Next: ${humanizeRelative(r.next_due_at)}`,
+                `State: ${r.enabled ? "enabled" : "paused"}`,
+              ].join("\n"),
+            rowAttributes: (r) => ({ id: r.id, enabled: r.enabled }),
+          }}
+          detail={{ title: (r) => r.title, description: (r) => r.description ?? undefined }}
+        />
       </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative">
-          <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && load()}
-            placeholder="Search title…"
-            className="pl-7 h-8 w-64"
-          />
-        </div>
-        <Select
-          value={enabledFilter}
-          onValueChange={(v) =>
-            setEnabledFilter(v as "any" | "enabled" | "disabled")
-          }
-        >
-          <SelectTrigger className="w-36 h-8">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="any">Any state</SelectItem>
-            <SelectItem value="enabled">Enabled</SelectItem>
-            <SelectItem value="disabled">Disabled</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button size="sm" variant="outline" onClick={() => load()}>
-          Apply
-        </Button>
-      </div>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {!rows ? (
-        <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full rounded-md" />
-          ))}
-        </div>
-      ) : rows.length === 0 ? (
-        <div className="text-sm text-muted-foreground py-8 text-center">
-          No tasks match.
-        </div>
-      ) : (
-        <div className="rounded-md border border-border overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="text-left px-3 py-2">Title</th>
-                <th className="text-left px-3 py-2">Owner</th>
-                <th className="text-left px-3 py-2">Trigger</th>
-                <th className="text-left px-3 py-2">Next</th>
-                <th className="text-left px-3 py-2">Updated</th>
-                <th className="text-left px-3 py-2">State</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr
-                  key={r.id}
-                  className="border-t border-border hover:bg-accent/20"
-                >
-                  <td className="px-3 py-2">
-                    <div className="font-medium">{r.title}</div>
-                    {r.description && (
-                      <div className="text-xs text-muted-foreground line-clamp-1">
-                        {r.description}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs">
-                    {r.user_email ?? r.user_id.slice(0, 8)}
-                  </td>
-                  <td className="px-3 py-2 text-xs">
-                    {r.trigger
-                      ? humanizeTrigger(
-                          r.trigger.type,
-                          r.trigger.config as Record<string, unknown>,
-                        )
-                      : "—"}
-                  </td>
-                  <td className="px-3 py-2 text-xs">
-                    {humanizeRelative(r.next_due_at)}
-                  </td>
-                  <td className="px-3 py-2 text-xs">
-                    {humanizeRelative(r.updated_at)}
-                  </td>
-                  <td className="px-3 py-2">
-                    <Badge
-                      variant={r.enabled ? "secondary" : "outline"}
-                      className="text-[10px]"
-                    >
-                      {r.enabled ? "Enabled" : "Paused"}
-                    </Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 }

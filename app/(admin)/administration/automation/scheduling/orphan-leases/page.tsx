@@ -1,14 +1,15 @@
-// app/(authenticated)/(admin-auth)/administration/automation/scheduling/orphan-leases/page.tsx
+// Scheduling admin › Orphan leases — canonical MatrxDataTable over expired
+// claimed/running sch.run rows, with the force-fail action per row.
 
 "use client";
 
-import { useEffect, useState } from "react";
-import { AlertTriangle, RefreshCw, XCircle } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AlertTriangle, Loader2, RefreshCw, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { StatusPill } from "@/features/scheduling/components/shared/StatusPill";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
 import {
@@ -18,127 +19,153 @@ import {
 import type { SchRunRow } from "@/features/scheduling/types";
 
 export default function OrphanLeasesPage() {
-  const [rows, setRows] = useState<SchRunRow[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [rows, setRows] = useState<SchRunRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const load = async () => {
-    setError(null);
+  const load = useCallback(async () => {
+    setFetching(true);
     try {
-      const data = await fetchOrphanLeases();
-      setRows(data);
+      setRows(await fetchOrphanLeases());
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+      setFetching(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  const handleKill = useCallback(
+    async (run: SchRunRow) => {
+      const ok = await confirm({
+        title: "Mark run as failed",
+        description: `Force-fail run ${run.id.slice(0, 8)}… for task ${run.task_id.slice(0, 8)}…? The scanner will re-enqueue on the next tick for recurring triggers.`,
+        confirmLabel: "Mark failed",
+        variant: "destructive",
+      });
+      if (!ok) return;
+      setBusyId(run.id);
+      try {
+        await markRunFailedAdmin(run.id, "Marked failed by admin (orphan lease)");
+        toast.success("Run marked failed");
+        await load();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed");
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [load],
+  );
+
+  const columns = useMemo((): MatrxColumnDef<SchRunRow>[] => {
+    return [
+      {
+        id: "status",
+        accessorKey: "status",
+        header: "Status",
+        filter: "select",
+        width: 110,
+        cell: (r) => <StatusPill status={r.status} />,
+      },
+      { id: "task_id", accessorKey: "task_id", header: "Task", cellKind: "uuid", width: 110 },
+      {
+        id: "surface",
+        accessorKey: "surface",
+        header: "Surface",
+        filter: "select",
+        width: 130,
+        cell: (r) => <span className="text-xs">{r.surface ?? "—"}</span>,
+      },
+      {
+        id: "claimed_at",
+        accessorKey: "claimed_at",
+        header: "Claimed",
+        cell: (r) => <span className="text-xs">{humanizeRelative(r.claimed_at)}</span>,
+        width: 120,
+      },
+      {
+        id: "claim_expires_at",
+        accessorKey: "claim_expires_at",
+        header: "Expired",
+        cell: (r) => <span className="text-xs">{humanizeRelative(r.claim_expires_at)}</span>,
+        width: 120,
+      },
+      { id: "id", accessorKey: "id", header: "ID", cellKind: "uuid", width: 110 },
+    ];
   }, []);
 
-  const handleKill = async (run: SchRunRow) => {
-    const ok = await confirm({
-      title: "Mark run as failed",
-      description: `Force-fail run ${run.id.slice(0, 8)}… for task ${run.task_id.slice(0, 8)}…? The scanner will re-enqueue on the next tick for recurring triggers.`,
-      confirmLabel: "Mark failed",
-      variant: "destructive",
-    });
-    if (!ok) return;
-    setBusyId(run.id);
-    try {
-      await markRunFailedAdmin(run.id, "Marked failed by admin (orphan lease)");
-      toast.success("Run marked failed");
-      await load();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed");
-    } finally {
-      setBusyId(null);
-    }
-  };
-
   return (
-    <div className="h-full overflow-y-auto px-4 sm:px-6 py-4 space-y-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
-            Orphan leases
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1 max-w-2xl">
-            Runs in <code>claimed</code> or <code>running</code> state whose
-            <code> claim_expires_at</code> is in the past. The scanner
-            normally re-claims these on the next tick — if a row stays here
-            for more than a few minutes, something's wrong upstream.
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => load()}>
-          <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-          Refresh
-        </Button>
+    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+      <p className="flex items-start gap-2 text-xs text-muted-foreground">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+        <span>
+          Runs in <code>claimed</code> or <code>running</code> state whose{" "}
+          <code>claim_expires_at</code> is in the past. The scanner normally re-claims these
+          on the next tick — if a row stays here for more than a few minutes, something's
+          wrong upstream.
+        </span>
+      </p>
+      <div className="min-h-0 flex-1">
+        <MatrxDataTable
+          data={rows}
+          columns={columns}
+          getRowId={(r) => r.id}
+          isLoading={loading}
+          isFetching={fetching}
+          pageSize={50}
+          emptyState={{ title: "No orphan leases", description: "System is healthy." }}
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Search orphan leases…",
+            actions: (
+              <Button size="sm" variant="outline" onClick={() => void load()} disabled={fetching}>
+                {fetching ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+              </Button>
+            ),
+          }}
+          copy={{
+            label: "Orphan lease",
+            listLabel: "Orphan leases (this view)",
+            location: "/administration/automation/scheduling/orphan-leases",
+            rowKind: "orphan-lease",
+            listKind: "orphan-leases",
+            humanRow: (r) =>
+              [
+                `Run: ${r.id}`,
+                `Task: ${r.task_id}`,
+                `Status: ${r.status}`,
+                `Claimed: ${humanizeRelative(r.claimed_at)}`,
+                `Expired: ${humanizeRelative(r.claim_expires_at)}`,
+              ].join("\n"),
+            rowAttributes: (r) => ({ id: r.id, status: r.status }),
+          }}
+          detail={{ title: (r) => `Run ${r.id.slice(0, 8)}…` }}
+          rowActions={(r) => (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                void handleKill(r);
+              }}
+              disabled={busyId === r.id}
+              className="text-destructive"
+            >
+              <XCircle className="mr-1.5 h-3.5 w-3.5" /> Mark failed
+            </Button>
+          )}
+        />
       </div>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {!rows ? (
-        <div className="space-y-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full rounded-md" />
-          ))}
-        </div>
-      ) : rows.length === 0 ? (
-        <div className="text-sm text-muted-foreground py-8 text-center">
-          No orphan leases. System is healthy.
-        </div>
-      ) : (
-        <div className="rounded-md border border-border overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="text-left px-3 py-2">Status</th>
-                <th className="text-left px-3 py-2">Task</th>
-                <th className="text-left px-3 py-2">Surface</th>
-                <th className="text-left px-3 py-2">Claimed</th>
-                <th className="text-left px-3 py-2">Expired</th>
-                <th className="text-right px-3 py-2">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="border-t border-border">
-                  <td className="px-3 py-2">
-                    <StatusPill status={r.status} />
-                  </td>
-                  <td className="px-3 py-2 font-mono text-[11px]">
-                    {r.task_id.slice(0, 8)}…
-                  </td>
-                  <td className="px-3 py-2 text-xs">{r.surface ?? "—"}</td>
-                  <td className="px-3 py-2 text-xs">
-                    {humanizeRelative(r.claimed_at)}
-                  </td>
-                  <td className="px-3 py-2 text-xs">
-                    {humanizeRelative(r.claim_expires_at)}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleKill(r)}
-                      disabled={busyId === r.id}
-                      className="text-destructive"
-                    >
-                      <XCircle className="h-3.5 w-3.5 mr-1.5" /> Mark failed
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 }
