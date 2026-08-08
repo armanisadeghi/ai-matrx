@@ -106,6 +106,33 @@ describe("buildSiteAuditRollup", () => {
     expect(rollup.worstPages.some((page) => page.pageId === "p3")).toBe(false);
   });
 
+  it("aggregates completely — no top-issue or worst-page caps", () => {
+    // 20 pages, each with a distinct over-long title (distinct char counts →
+    // distinct SERP issue messages), so distinct issues > 14 and finding
+    // pages > 10 — the old in-aggregation caps would truncate both.
+    const rollup = buildSiteAuditRollup(
+      Array.from({ length: 20 }, (_, i) => ({
+        id: `p${i}`,
+        url: `https://example.com/page-${i}`,
+        path: `/page-${i}`,
+        contentTypeLast: "html",
+        seo_metrics: buildStoredSeoMetrics(
+          "t".repeat(80 + i),
+          "Learn how the platform works, what it costs, and how teams use it to ship real work every single day.",
+          "client",
+        ),
+        audit_metrics: null,
+      })),
+    );
+
+    expect(rollup.worstPages).toHaveLength(20);
+    expect(rollup.topIssues.length).toBeGreaterThan(14);
+    // Ranking is preserved: counts never increase down the list within a
+    // severity band (all warnings here).
+    const counts = rollup.topIssues.map((issue) => issue.count);
+    expect([...counts].sort((a, b) => b - a)).toEqual(counts);
+  });
+
   it("handles an empty site", () => {
     const rollup = buildSiteAuditRollup([]);
     expect(rollup.totalPages).toBe(0);
