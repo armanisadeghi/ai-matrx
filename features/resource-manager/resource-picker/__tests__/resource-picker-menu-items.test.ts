@@ -8,10 +8,10 @@ describe("getVisibleResourcePickerCategories", () => {
 
     expect(
       categories.flatMap((category) => category.items.map((item) => item.id)),
-    ).toEqual(["storage", "notes", "upload"]);
+    ).toEqual(["upload", "storage", "notes"]);
     expect(categories.map((category) => category.category)).toEqual([
+      "Files",
       "MATRX",
-      "From the web",
     ]);
   });
 });

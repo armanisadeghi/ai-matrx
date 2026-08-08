@@ -9,7 +9,6 @@ import {
   Lightbulb,
   Mic,
   Notebook,
-  Settings2,
   StickyNote,
   Table2,
   Upload,
@@ -33,7 +32,6 @@ export type ResourcePickerViewId =
   | "context_values"
   | "tools"
   | "skills"
-  | "run_settings"
   | null;
 
 export type ResourcePickerMenuItem = {
@@ -57,11 +55,22 @@ export type ResourcePickerMenuCategory = {
   items: ResourcePickerMenuItem[];
 };
 
-/** Canonical attach-menu order — MATRX, web ingress, then this-run controls. */
+/**
+ * Canonical attach-menu order — Files first (both file paths adjacent at the
+ * top, Arman's 2026-08-08 ruling), then MATRX records, URL ingress, and
+ * this-run controls.
+ */
 export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
   {
-    category: "MATRX",
+    category: "Files",
     items: [
+      {
+        id: "upload",
+        label: "Upload Files",
+        icon: Upload,
+        iconClassName: "text-primary",
+        requiresCapability: null,
+      },
       {
         id: "storage",
         label: "Stored Files",
@@ -69,6 +78,19 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
         iconClassName: "text-blue-600 dark:text-blue-400",
         requiresCapability: null,
       },
+      {
+        id: "audio",
+        label: "Voice Pad",
+        icon: Mic,
+        iconClassName: "text-pink-600 dark:text-pink-400",
+        requiresCapability: "supportsAudio",
+        requiresConversation: true,
+      },
+    ],
+  },
+  {
+    category: "MATRX",
+    items: [
       {
         id: "tables",
         label: "Tables",
@@ -114,15 +136,8 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
     ],
   },
   {
-    category: "From the web",
+    category: "From a URL",
     items: [
-      {
-        id: "upload",
-        label: "Upload Files",
-        icon: Upload,
-        iconClassName: "text-primary",
-        requiresCapability: null,
-      },
       {
         id: "webpage",
         label: "Webpage",
@@ -151,14 +166,6 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
         iconClassName: "text-red-600 dark:text-red-400",
         requiresCapability: "supportsYoutubeVideos",
       },
-      {
-        id: "audio",
-        label: "Voice Pad",
-        icon: Mic,
-        iconClassName: "text-pink-600 dark:text-pink-400",
-        requiresCapability: "supportsAudio",
-        requiresConversation: true,
-      },
     ],
   },
   {
@@ -177,14 +184,6 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
         label: "Skills",
         icon: Lightbulb,
         iconClassName: "text-yellow-600 dark:text-yellow-400",
-        requiresCapability: null,
-        requiresConversation: true,
-      },
-      {
-        id: "run_settings",
-        label: "Settings",
-        icon: Settings2,
-        iconClassName: "text-muted-foreground",
         requiresCapability: null,
         requiresConversation: true,
       },

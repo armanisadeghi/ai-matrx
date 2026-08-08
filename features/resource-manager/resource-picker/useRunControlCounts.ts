@@ -2,13 +2,13 @@
 
 /**
  * useRunControlCounts — the at-a-glance numbers for the attach menu's
- * "This run" rows (Tools / Skills / Settings).
+ * "This run" rows (Tools / Skills).
  *
- * These three rows describe RUN STATE — what is actually on for the next
- * message — so a count is real information, not decoration. The MATRX and
- * "From the web" rows are browse-into pickers over the user's libraries; a
- * library size tells the user nothing about this run and would cost a fetch
- * per row on every menu open, so those rows carry no count.
+ * These rows describe RUN STATE — what is actually on for the next message —
+ * so a count is real information, not decoration. The Files / MATRX / URL
+ * rows are browse-into pickers over the user's libraries; a library size
+ * tells the user nothing about this run and would cost a fetch per row on
+ * every menu open, so those rows carry no count.
  *
  * The numbers mirror exactly what ships with the request:
  *   Tools    — the agent's configured tools (built-in + custom + MCP) plus the
@@ -17,8 +17,6 @@
  *              active) plus `addedSkills`, deduped, matching
  *              `buildSkillConfigForRequest`. A disabled skill config counts
  *              only the explicit per-run adds, which re-enable it.
- *   Settings — the number of settings that differ from the agent's defaults,
- *              i.e. the exact `config_overrides` payload.
  *
  * Tools/Skills counts are withheld until the agent definition has loaded, so
  * the menu never shows a confident "0" that jumps to "12" a moment later.
@@ -36,7 +34,6 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
 import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectSettingsOverridesForApi } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
 import type { ResourcePickerViewId } from "./resource-picker-menu-items";
 
@@ -70,11 +67,6 @@ export function useRunControlCounts(
   const settings = useAppSelector((s) =>
     conversationId
       ? selectBuilderAdvancedSettings(conversationId)(s)
-      : undefined,
-  );
-  const overrides = useAppSelector((s) =>
-    conversationId
-      ? selectSettingsOverridesForApi(conversationId)(s)
       : undefined,
   );
 
@@ -111,9 +103,6 @@ export function useRunControlCounts(
     }
     counts.skills = activeSkills.size;
   }
-
-  const changedSettings = overrides ? Object.keys(overrides).length : 0;
-  if (changedSettings > 0) counts.run_settings = changedSettings;
 
   return counts;
 }
