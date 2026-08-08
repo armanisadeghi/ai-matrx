@@ -611,6 +611,9 @@ export function BacklinksWorkspace() {
       description: `The backlink intelligence workspace for ${site.domain} (${preset} detail).`,
       data,
       summary: humanSummarySnapshot(summary, site.domain),
+      // Same envelope context as the Groomer window — a preset must never
+      // silently carry less ambient context than the custom path.
+      context: { seo_environment: seoTarget?.environment ?? undefined },
       attributes: {
         site_id: site.id,
         domain: site.domain,
@@ -626,6 +629,7 @@ export function BacklinksWorkspace() {
     description: `The full backlink intelligence workspace for ${site.domain}.`,
     data: pageFullData(),
     summary: humanSummarySnapshot(summary, site.domain),
+    context: { seo_environment: seoTarget?.environment ?? undefined },
     attributes: { site_id: site.id, domain: site.domain },
   });
 

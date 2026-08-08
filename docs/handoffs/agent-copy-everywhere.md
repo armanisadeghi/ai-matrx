@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-27
+updated: 2026-08-08
 repos: [matrx-frontend]
 vision: [.claude/skills/agent-copy/SKILL.md, components/agent-copy/README.md]
 ---
@@ -44,22 +44,21 @@ Refinements he added along the way — each is now doctrine, with the why:
 
 ## Remaining work
 
-1. **Final skill rewrite** (`.claude/skills/agent-copy/SKILL.md`) once Arman's review-queue feedback lands: fold in his verdicts + add the **module-audit protocol** he originally asked for — a sweep procedure that enumerates a feature's surfaces (routes/panels/overlays), classifies each rendered data element (list / record / field group / non-record tool), and emits a coverage gap list before wiring. Keep it Sonnet-executable.
+1. **Roll `AiCopyMenu` variants onto existing heavy surfaces.** The multi-variant Copy-for-AI (menu + custom-preview dialog, `components/agent-copy/AiCopyMenu.tsx`) shipped 2026-08-08 (PR #59); the Backlinks header is the only consumer of graded variants so far. Sweep the 11 fleet-wired marketing tabs and upgrade the medium/massive ones per the sized-to-data table in the skill (small/bounded pages correctly keep the plain pair).
 2. **Finish marketing:** site tabs overview / integrations / access / settings; brand-level pages (brands list, brand cockpit); `/marketing` root; content-plan. The Pages tab and `CrawlSubnav` sub-routes (URLs/Reports/Snapshots/Links/Logs — no copy layer yet) were owned by parallel sessions — verify current state before touching.
 3. **Audit rollup rearchitect:** `features/marketing/lib/audit-rollup.ts#buildSiteAuditRollup` hard-caps `topIssues` (14) and `worstPages` (10) *inside aggregation* — data is discarded, so no show-all is possible. Restructure to aggregate fully and truncate only at render (shared with score-trend computation — tread carefully).
-4. **App-wide rollout** beyond marketing, Sonnet fleets reading the skill: SKILL.md's remaining list (`tool-registry/mcp-admin`, `feedback`, `system-agents/*`, `agent-apps/*`) and onward.
+4. **App-wide rollout** beyond marketing, Sonnet fleets reading the skill: SKILL.md's remaining list (`tool-registry/mcp-admin`, `feedback`, `system-agents/*`, `agent-apps/*`) and onward. The skill now carries the module-audit protocol — fleets emit the coverage table before wiring.
 5. **Roadmap (design-gated, don't start without Arman):** `buildAgentPayload` auto-folding the active surface manifest's values into `<context>`; screenshot attach (`hooks/useScreenCapture.ts`); Copy-for-AI flipping from clipboard to live agent handoff (keep `kind` slugs stable — they become the tool vocabulary).
-6. **Release:** all work sits on `main` unreleased — ship via `./scripts/release.sh` when Arman approves the review items.
+6. **Release:** work sits on `main` + branch `claude/agent-copy-everywhere-on4c3x` (PR #59) unreleased — ship via `./scripts/release.sh` when Arman approves the review items.
 
 ## Done
 
 - Primitives + integrations built and browser-verified — see `components/agent-copy/` and the reference page above.
-- Backlinks page fully wired (all granularities, groomer, export, show-all) + its surface manifest enriched and live in `ui.ui_surface_value`.
-- Keyword + ranks surface manifests exist and are verified (`keyword-research`, `marketing-site-keywords`, `marketing-ranks` — built by the surface-canonical-fleet campaign).
-- Sonnet fleet shipped 11 marketing site tabs (keywords, ranks, coverage, findings, analysis, audit, links, crawls + detail, sitemaps, discovery, cost) — audit page browser-verified.
-- Skill + README updated with every doctrine refinement above.
+- **`AiCopyMenu` (2026-08-08, PR #59):** sized-to-data Copy-for-AI — graded variants dropdown (chevron iff multi) + custom-preview dialog with live char/byte/~token counts; `CopyButtons.aiVariants/aiCustom` upgrade-in-place (agent payload = auto "Everything"); `MatrxDataTable copy.aiVariants/aiCustom`; shared `clipboard.ts`. Ported from + kept in step with aidream `apps/dashboard/src/components/agent-copy/AiCopyMenu.tsx`. Backlinks header derives Balanced/Minimal from the one groomer section list.
+- **Skill rewrite done** (module-audit protocol + sized-to-data doctrine folded in) — Arman's 2026-08-08 review feedback was fixture-access-only, no convention changes requested.
+- Backlinks page fully wired (all granularities, groomer, export, show-all); 11 fleet-shipped marketing site tabs; surface manifests verified (`keyword-research`, `marketing-site-keywords`, `marketing-ranks`).
 
 ## Decisions needed
 
-- **Situation:** Two `agent.review_queue` items ask for your verdict on the backlinks reference page and the Sonnet fleet's 11 pages; the final skill rewrite is deliberately waiting on your preferences (placement, hover-reveal vs always-visible, groomer section granularity). **Decide:** review at `/administration/users/agent-review` and leave feedback, or tell the next agent to proceed with current conventions as final.
-- **Situation:** Parallel sessions on `main` clobbered each other's in-flight files three times during this build; recovery worked but it is luck-dependent. **Decide:** should rollout fleets run in isolated git worktrees from now on?
+- **Org membership for your real accounts (FOUND_DEFECTS D133).** The review items failed with "site was deleted" but nothing was deleted — `arman@allgreenrecycling.com` has viewer access to ZERO marketing sites (member of none of the brand orgs), and RLS-invisible masquerades as deleted. Items repointed at datadestruction.com + resubmitted (visible to `admin@admin.com`). **Decide:** which of your accounts join which orgs (one INSERT each once ruled), and whether the "deleted or no longer accessible" wording should split deleted vs no-access.
+- **Worktree isolation for fleets** (carried): parallel sessions on `main` clobbered each other three times during the original build. **Decide:** should rollout fleets run in isolated git worktrees from now on?
