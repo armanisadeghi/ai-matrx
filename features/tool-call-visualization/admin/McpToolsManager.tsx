@@ -76,11 +76,19 @@ import {
 import { ExternalLink } from "lucide-react";
 
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import type { AiOptionValues } from "@/components/agent-copy/AiCopyMenu";
+import { toolBrief, toolSummary, toolsListSummary } from "./mcp-tools/format";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_TOOL_REGISTRY_SURFACE_NAME,
   createAdminToolRegistryScope,
 } from "@/features/surfaces/manifests/admin-tool-registry.manifest";
+
+const PAGE_LOCATION =
+  "AI Matrx Admin — Tool Registry · MCP Tools (/administration/agents/mcp-tools)";
 
 type Tool = Omit<
   DatabaseTool,
@@ -1038,6 +1046,21 @@ export function McpToolsManager() {
     });
   };
 
+  // Catalog rows for the custom Copy-for-AI export — same sanitized posture
+  // as the surface emitter below.
+  const buildCatalogRows = (opts: AiOptionValues) => {
+    const source = opts.only_visible ? filteredTools : tools;
+    return source.map((t) => {
+      const row: Record<string, unknown> = { ...toolBrief(t) };
+      if (!opts.include_descriptions) delete row.description;
+      if (opts.include_schemas) {
+        row.parameters = t.parameters;
+        if (hasOutputSchema(t)) row.output_schema = t.output_schema;
+      }
+      return row;
+    });
+  };
+
   // Surface emitter — catalogue half of `matrx-admin/tool-registry`. Built at
   // trigger time from live state. SECURITY: tool definition metadata only; no
   // MCP endpoint URLs, auth strategies, OAuth ids, or vault credentials are
@@ -1113,6 +1136,107 @@ export function McpToolsManager() {
                 <X className="h-3.5 w-3.5" />
                 Clear ({activeFilterCount})
               </Button>
+            )}
+            {tools.length > 0 && (
+              <>
+                <CopyButtons
+                  size="icon"
+                  label="Tool catalog"
+                  human={() => toolsListSummary(filteredTools)}
+                  json={() => filteredTools}
+                  agent={() => ({
+                    kind: "mcp-tools-catalog",
+                    location: PAGE_LOCATION,
+                    description:
+                      "Full tool registry catalog with parameter schemas (definition metadata only).",
+                    data: tools,
+                    attributes: { count: tools.length },
+                    context: {
+                      visible: filteredTools.length,
+                      search: searchQuery || undefined,
+                      category:
+                        selectedCategory !== "all"
+                          ? selectedCategory
+                          : undefined,
+                      source_kind:
+                        selectedSourceKind !== "all"
+                          ? selectedSourceKind
+                          : undefined,
+                      status: selectedStatus,
+                    },
+                  })}
+                  aiVariants={[
+                    {
+                      id: "summary",
+                      label: "Catalog summary",
+                      hint: "Name, category, tier, tags, param counts — no schemas",
+                      build: () => ({
+                        kind: "mcp-tools-catalog",
+                        location: PAGE_LOCATION,
+                        description:
+                          "Compact digest of the tool registry catalog (no parameter schemas).",
+                        data: tools.map(toolBrief),
+                        attributes: { count: tools.length },
+                      }),
+                    },
+                  ]}
+                  aiCustom={{
+                    label: "Custom catalog export…",
+                    hint: "Pick scope, schemas, descriptions; live size preview",
+                    dialogTitle: "Tool catalog — custom export",
+                    options: [
+                      {
+                        kind: "toggle",
+                        key: "only_visible",
+                        label: "Only the filtered view",
+                        hint: "Off = all tools regardless of filters",
+                        default: false,
+                      },
+                      {
+                        kind: "toggle",
+                        key: "include_schemas",
+                        label: "Parameter schemas",
+                        hint: "The bulk of the payload",
+                        default: false,
+                      },
+                      {
+                        kind: "toggle",
+                        key: "include_descriptions",
+                        label: "Descriptions",
+                        default: true,
+                      },
+                    ],
+                    build: (opts: AiOptionValues) => {
+                      const rows = buildCatalogRows(opts);
+                      return {
+                        text: JSON.stringify(rows, null, 2),
+                        meta: { tools: rows.length },
+                      };
+                    },
+                    wrap: (_text, opts, meta) => ({
+                      kind: "mcp-tools-catalog",
+                      location: PAGE_LOCATION,
+                      description:
+                        "Custom-groomed tool registry catalog export.",
+                      data: buildCatalogRows(opts),
+                      attributes: { count: Number(meta?.tools ?? 0) },
+                    }),
+                  }}
+                />
+                <ExportMenu
+                  label="mcp-tools"
+                  items={[
+                    jsonExportItem(() => tools, "JSON (all tools)"),
+                    csvExportItem(
+                      () =>
+                        filteredTools.map(toolBrief) as unknown as Array<
+                          Record<string, unknown>
+                        >,
+                      "CSV (current view)",
+                    ),
+                  ]}
+                />
+              </>
             )}
             <Button
               variant="outline"
@@ -1529,6 +1653,25 @@ export function McpToolsManager() {
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex items-center gap-0.5">
+                          <CopyButtons
+                            size="xs"
+                            label={`Tool ${tool.name}`}
+                            human={() => toolSummary(tool)}
+                            json={() => tool}
+                            agent={() => ({
+                              kind: "mcp-tool",
+                              location: PAGE_LOCATION,
+                              description:
+                                "One tool definition row from the registry catalog.",
+                              data: tool,
+                              summary: toolSummary(tool),
+                              attributes: {
+                                id: tool.id,
+                                name: tool.name,
+                                active: tool.is_active ?? false,
+                              },
+                            })}
+                          />
                           <Switch
                             checked={tool.is_active ?? false}
                             onCheckedChange={(v) =>
