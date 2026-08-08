@@ -869,6 +869,8 @@ export function SetupView() {
       if (!report && researchTopicId) {
         const existing = await getLatestSuccessfulDocument(researchTopicId);
         report = existing?.content?.trim() || null;
+        // Sync the hook copy so the bar + every aiReady control light up too.
+        if (report) researchDoc.refresh();
       }
       if (!report) {
         const topic = await quickResearch.run({
