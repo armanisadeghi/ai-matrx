@@ -24,6 +24,12 @@ export type GscPageFirstDatesRow =
 export type GscIngestionHealthRow =
   SeoFunctions["gsc_ingestion_health"]["Returns"][number];
 export type GscCtrGapRow = SeoFunctions["gsc_perf_ctr_gap"]["Returns"][number];
+export type GscClassSummaryRow =
+  SeoFunctions["gsc_perf_class_summary"]["Returns"][number];
+export type GscClassMoverRow =
+  SeoFunctions["gsc_perf_class_movers"]["Returns"][number];
+export type GscShiftRow = SeoFunctions["gsc_perf_shifts"]["Returns"][number];
+export type GscJuiceRow = SeoFunctions["gsc_perf_juice"]["Returns"][number];
 export type GscCannibalizationRow =
   SeoFunctions["gsc_perf_cannibalization"]["Returns"][number];
 export type GscTrendRow = SeoFunctions["gsc_perf_trend"]["Returns"][number];
@@ -168,17 +174,99 @@ export const GSC_TABS: readonly { key: GscTab; label: string }[] = [
 ];
 
 /**
+ * Traffic classes — the "not all traffic is created equal" vocabulary.
+ * Resolved server-side by `seo.gsc_keyword_class_map` (user site valuation
+ * beats universal intent_class beats nothing). `unclassified` is a
+ * first-class bucket AND the classification work queue — never hide it.
+ */
+export type GscTrafficClass =
+  | "money"
+  | "educational"
+  | "brand"
+  | "mismatch"
+  | "unclassified";
+
+export const GSC_TRAFFIC_CLASSES: readonly {
+  key: GscTrafficClass;
+  label: string;
+  /** Semantic text class for chips/cells. */
+  tone: string;
+  description: string;
+}[] = [
+  {
+    key: "money",
+    label: "Money",
+    tone: "text-success",
+    description:
+      "Transactional and commercial-investigation intent — the traffic the business exists for.",
+  },
+  {
+    key: "educational",
+    label: "Educational",
+    tone: "text-primary",
+    description:
+      "Informational intent — valuable as SEO juice feeding money pages, not as an end in itself.",
+  },
+  {
+    key: "brand",
+    label: "Brand",
+    tone: "text-muted-foreground",
+    description: "Navigational searches for the business itself.",
+  },
+  {
+    key: "mismatch",
+    label: "Mismatch",
+    tone: "text-destructive",
+    description:
+      "Traffic that can never serve this business — not-offered or avoided services, negative-value leads.",
+  },
+  {
+    key: "unclassified",
+    label: "Unclassified",
+    tone: "text-muted-foreground",
+    description:
+      "Not yet classified — the honest bucket, and the classifier agents' work queue.",
+  },
+];
+
+/**
  * Insight algorithm views (insights tab) — each backed by its own
  * `seo.gsc_perf_*` algorithm RPC. `decay`/`growth` share `gsc_perf_trend`
- * with opposite `p_direction`.
+ * with opposite `p_direction`; `quality`/`shifts`/`juice` are the
+ * traffic-class layer (`seo_gsc_class_rpcs.sql`).
  */
-export type GscInsightKind = "ctr-gap" | "cannibalization" | "decay" | "growth";
+export type GscInsightKind =
+  | "quality"
+  | "shifts"
+  | "juice"
+  | "ctr-gap"
+  | "cannibalization"
+  | "decay"
+  | "growth";
 
 export const GSC_INSIGHTS: readonly {
   key: GscInsightKind;
   label: string;
   description: string;
 }[] = [
+  {
+    key: "quality",
+    label: "Traffic quality",
+    description:
+      "Clicks and impressions decomposed by traffic class (money / educational / brand / mismatch / unclassified) vs the prior period — a site can be up 25% while money traffic quietly falls. The movers below show which queries or pages are gaining and losing WITHIN each class.",
+  },
+  {
+    key: "shifts",
+    label: "Shifts",
+    description:
+      "Queries whose landing-page mix moved between periods. A shift toward a better-fitting page that grows clicks is good; traffic drifting off a money page without growth is a loss wearing a disguise.",
+  },
+  {
+    key: "juice",
+    label: "SEO Juice",
+    description:
+      "Pages with months of sustained educational strength, beside their money return. Strong educational rankings with zero money clicks means giving content away for free — the credibility exists, the funnel doesn't.",
+  },
   {
     key: "ctr-gap",
     label: "CTR gaps",

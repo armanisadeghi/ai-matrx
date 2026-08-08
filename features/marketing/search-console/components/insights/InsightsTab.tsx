@@ -36,6 +36,12 @@ import {
   useGscTrend,
 } from "@/features/marketing/search-console/hooks/useGscQuery";
 import { useRowWatch } from "@/features/marketing/search-console/hooks/useWatchState";
+import {
+  JuiceView,
+  QualityView,
+  ShiftsView,
+} from "@/features/marketing/search-console/components/insights/ClassInsights";
+import { withPrevCompare } from "@/features/marketing/search-console/lib/url-state";
 import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
 import type {
   GscCannibalizationRow,
@@ -102,11 +108,13 @@ export function InsightsTab({
   onSelectInsight: (insight: GscInsightKind) => void;
   onDrill: (dimension: InsightDimension, key: string) => void;
 }) {
-  const active = insight ?? "ctr-gap";
+  const active = insight ?? "quality";
   const [dimension, setDimension] = useState<InsightDimension>("query");
   const [minImpressions, setMinImpressions] = useState(DEFAULT_MIN_IMPRESSIONS);
   const [minClicks, setMinClicks] = useState(DEFAULT_MIN_CLICKS);
   const activeMeta = GSC_INSIGHTS.find((i) => i.key === active);
+  const compareAuto = periods.compare === null;
+  const classPeriods = compareAuto ? withPrevCompare(periods) : periods;
 
   const rangeDays =
     (Date.parse(`${periods.current.end}T00:00:00Z`) -
@@ -115,8 +123,11 @@ export function InsightsTab({
     1;
   const trendTooShort = rangeDays < TREND_MIN_DAYS;
 
-  const showsDimensionToggle = active === "ctr-gap" || active === "decay" || active === "growth";
-  const usesClicksThreshold = active === "decay" || active === "growth";
+  const showsDimensionToggle =
+    active === "ctr-gap" || active === "decay" || active === "growth";
+  const usesClicksThreshold =
+    active === "decay" || active === "growth" || active === "shifts" || active === "juice";
+  const showsThreshold = active !== "quality";
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
@@ -157,8 +168,13 @@ export function InsightsTab({
             ))}
           </div>
         ) : null}
+        {showsThreshold ? (
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          {usesClicksThreshold ? "Min clicks" : "Min impressions"}
+          {active === "juice"
+            ? "Min clicks/month"
+            : usesClicksThreshold
+              ? "Min clicks"
+              : "Min impressions"}
           <Input
             type="number"
             min={1}
@@ -172,12 +188,38 @@ export function InsightsTab({
             }}
           />
         </label>
+        ) : null}
       </div>
       {activeMeta ? (
         <p className="text-xs text-muted-foreground">{activeMeta.description}</p>
       ) : null}
       <div className="min-h-0 flex-1">
-        {active === "ctr-gap" ? (
+        {active === "quality" ? (
+          <QualityView
+            siteId={siteId}
+            siteName={siteName}
+            periods={classPeriods}
+            compareAuto={compareAuto}
+            onDrill={onDrill}
+          />
+        ) : active === "shifts" ? (
+          <ShiftsView
+            siteId={siteId}
+            siteName={siteName}
+            periods={classPeriods}
+            compareAuto={compareAuto}
+            minClicks={minClicks}
+            onDrill={onDrill}
+          />
+        ) : active === "juice" ? (
+          <JuiceView
+            siteId={siteId}
+            siteName={siteName}
+            periods={periods}
+            monthMinClicks={minClicks}
+            onDrill={onDrill}
+          />
+        ) : active === "ctr-gap" ? (
           <CtrGapTable
             siteId={siteId}
             siteName={siteName}
