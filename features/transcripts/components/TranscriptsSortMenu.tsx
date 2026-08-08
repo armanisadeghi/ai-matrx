@@ -1,7 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
-import { ArrowDownUpTapButton } from "@/components/icons/tap-buttons";
+import { ArrowDownUp, Check } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,11 +38,14 @@ export function TranscriptsSortMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <ArrowDownUpTapButton
-          variant="transparent"
-          ariaLabel={`Sort: ${activeLabel}`}
-          tooltip={`Sort: ${activeLabel}`}
-        />
+        <button
+          type="button"
+          aria-label={`Sort: ${activeLabel}`}
+          title={`Sort: ${activeLabel}`}
+          className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground lg:h-8 lg:w-8"
+        >
+          <ArrowDownUp className="h-3.5 w-3.5" />
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[10rem]">
         {SORT_OPTIONS.map((opt) => (

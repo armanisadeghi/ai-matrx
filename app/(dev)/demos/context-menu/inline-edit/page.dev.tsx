@@ -24,6 +24,7 @@
 import { useRef, useState } from "react";
 import { PenLine } from "lucide-react";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { createScratchpadScope } from "@/features/surfaces/manifests/scratchpad.manifest";
 
 const INITIAL = `Teh context menu is teh fastest path to everything teh system can do.
 
@@ -71,6 +72,14 @@ export default function InlineEditDemoPage() {
             logged below. Zero wiring beyond the callbacks this surface already
             passes the menu.
           </p>
+          <p className="text-xs text-muted-foreground">
+            This harness identifies itself as the production{" "}
+            <code className="rounded bg-muted px-1 py-0.5">
+              matrx-user/scratchpad
+            </code>{" "}
+            surface. Select text before opening the menu to enable Cut; Paste
+            remains available at the caret when nothing is selected.
+          </p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -85,13 +94,44 @@ export default function InlineEditDemoPage() {
                 onChange below. onTextReplace covers full-content ops
                 (replace / prepend / append / patch). */}
             <EditableContextMenu
-              sourceFeature="code-editor"
+              sourceFeature="scratchpad"
+              surfaceName="matrx-user/scratchpad"
               getTextarea={() => textareaRef.current}
               onTextReplace={(next) => {
                 setValue(next);
                 record("replace (full content)", next);
               }}
-              contextData={{ content: value }}
+              getApplicationScope={() => {
+                const textarea = textareaRef.current;
+                const start = textarea?.selectionStart ?? 0;
+                const end = textarea?.selectionEnd ?? start;
+                const selection = value.slice(start, end);
+                return createScratchpadScope({
+                  active_scope_kind: selection
+                    ? "selection"
+                    : value
+                      ? "document"
+                      : "empty",
+                  document_kind: "scratch",
+                  conversation_id: "context-menu-inline-edit-demo",
+                  is_saving: false,
+                  is_materialized: false,
+                  document_version: 0,
+                  has_conflict: false,
+                  editor_mode: "plain-text-demo",
+                  selection,
+                  text_before: value.slice(0, start),
+                  text_after: value.slice(end),
+                  content: value,
+                  context: { source: "context-menu-inline-edit-demo" },
+                  active_text: selection || value,
+                  cursor_offset: start,
+                  document_title: "Inline agent editing demo",
+                  binding_kind: "none",
+                  is_dirty: value !== INITIAL,
+                  char_count: value.length,
+                });
+              }}
             >
               <textarea
                 ref={textareaRef}
@@ -146,9 +186,9 @@ export default function InlineEditDemoPage() {
               )}
             </div>
             <p className="text-[11px] text-muted-foreground/80">
-              Whole-content operations (prepend / append / patch) arrive here
-              as a full replace — the handle computes the new content and
-              writes it through <code>onTextReplace</code>.
+              Whole-content operations (prepend / append / patch) arrive here as
+              a full replace — the handle computes the new content and writes it
+              through <code>onTextReplace</code>.
             </p>
           </div>
         </div>

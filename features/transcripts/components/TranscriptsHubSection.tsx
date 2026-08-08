@@ -57,7 +57,7 @@ export function TranscriptsHubSection({
             size="sm"
             onClick={onLoadMore}
             disabled={loading}
-            className="h-8 text-xs"
+            className="min-h-11 text-xs lg:min-h-8"
           >
             {loading ? (
               <>

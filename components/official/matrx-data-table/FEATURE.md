@@ -143,6 +143,10 @@ Do not drop these when replacing `AiModelTable`:
 
 ## Change Log
 
+- `2026-08-08` — Mobile interaction baseline: every table-owned button, input,
+  and row link now keeps a 44px touch target below `sm`; desktop density is
+  unchanged. This applies once at the primitive root, so toolbars, filters,
+  actions, and pagination cannot independently regress to micro targets.
 - `2026-08-08` — Mobile scroll surface completed: right-edge fade + chevron scroll affordance, `mobile="scroll"|"plain"` opt-out, frozen-column decision documented. Accessible-name audit: `aria-label` on every icon-only control (header filter trigger with column name, clear Xs, panel-icon, UUID open/copy, editor Save/Cancel, Copy/Export), `aria-sort` on sorted `<th>`. Consumer aria-label rule added.
 - `2026-07-19` — Sticky header uses `bg-muted/90` + backdrop blur so column labels contrast with `bg-card` body rows.
 - `2026-07-19` — Filter overhaul: multi-select (OR `values` set, back-compat with single `value`), automatic (empty)/(not empty) select sentinels, text filter Contains/(empty)/(not empty) modes, explicit-select options uncapped, empties sort last both directions.

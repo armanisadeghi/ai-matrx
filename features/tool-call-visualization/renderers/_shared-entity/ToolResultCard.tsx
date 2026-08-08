@@ -105,8 +105,8 @@ export function ToolResultCard({
       >
         <Icon className={cn("size-[18px] shrink-0", iconClassName)} strokeWidth={2.25} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-foreground">{title}</span>
-          {sub && <span className="block truncate text-xs text-muted-foreground">{sub}</span>}
+          <span className="block break-words text-sm font-medium text-foreground sm:truncate">{title}</span>
+          {sub && <span className="block break-words text-xs text-muted-foreground sm:truncate">{sub}</span>}
         </span>
 
         {hasMenu && (
@@ -117,7 +117,7 @@ export function ToolResultCard({
                 tabIndex={0}
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={(e) => e.stopPropagation()}
-                className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-border/70 bg-background/60 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+                className="flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-border/70 bg-background/60 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground sm:min-h-0"
                 aria-label="Open options"
               >
                 <PanelRightOpen className="size-3.5" />

@@ -4,8 +4,7 @@ import { getNavPages } from "./_registry";
 
 export const metadata: Metadata = {
   title: "Context Menu — Testing Suite",
-  description:
-    "Unified diagnostic + scenario suite for the v2 UnifiedAgentContextMenu.",
+  description: "Unified diagnostic + scenario suite for the v3 context menu.",
 };
 
 /**
@@ -26,7 +25,7 @@ export default function ContextMenuLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden bg-textured">
+    <div className="flex h-full flex-col overflow-hidden bg-textured pt-[var(--header-height)]">
       <ContextMenuNav pages={getNavPages()} />
       <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
     </div>

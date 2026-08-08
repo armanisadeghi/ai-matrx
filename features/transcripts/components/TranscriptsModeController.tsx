@@ -46,12 +46,9 @@ export function TranscriptsModeController() {
                 }}
                 aria-label={label}
                 className={cn(
-                  "flex cursor-pointer items-center justify-center gap-1 rounded-full py-0.5 text-[0.6875rem] font-medium transition-colors",
-                  "px-2.5",
-                  "[&_svg]:h-3.5 [&_svg]:w-3.5",
-                  isActive
-                    ? NAV_ITEM_SELECTED
-                    : NAV_ITEM_UNSELECTED,
+                  "flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1 rounded-full px-2.5 text-[0.6875rem] font-medium transition-colors lg:min-h-8 lg:min-w-0",
+                  "[&_svg]:h-4 [&_svg]:w-4 lg:[&_svg]:h-3.5 lg:[&_svg]:w-3.5",
+                  isActive ? NAV_ITEM_SELECTED : NAV_ITEM_UNSELECTED,
                 )}
               >
                 <Icon />

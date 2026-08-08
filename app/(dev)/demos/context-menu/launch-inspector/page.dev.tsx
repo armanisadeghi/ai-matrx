@@ -28,12 +28,14 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CircleSlash,
+  Loader2,
   Play,
   RefreshCw,
   Rocket,
   Search,
   Trash2,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import {
@@ -43,6 +45,7 @@ import {
 import {
   selectAllShortcutsArray,
   selectShortcutsInitialLoaded,
+  selectShortcutsSliceError,
   selectShortcutsSliceStatus,
 } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
@@ -119,6 +122,7 @@ export default function LaunchInspectorDemoPage() {
   const shortcuts = useAppSelector(selectAllShortcutsArray);
   const initialLoaded = useAppSelector(selectShortcutsInitialLoaded);
   const sliceStatus = useAppSelector(selectShortcutsSliceStatus);
+  const shortcutLoadError = useAppSelector(selectShortcutsSliceError);
   const [shortcutSearch, setShortcutSearch] = useState("");
   const [shortcutId, setShortcutId] = useState<string | null>(null);
 
@@ -139,6 +143,8 @@ export default function LaunchInspectorDemoPage() {
       : shortcuts;
     return [...rows].sort((a, b) => a.label.localeCompare(b.label));
   }, [shortcuts, shortcutSearch]);
+  const shortcutListLoading =
+    !initialLoaded && (sliceStatus === "idle" || sliceStatus === "loading");
 
   const selectedShortcut = useMemo(
     () => shortcuts.find((s) => s.id === shortcutId) ?? null,
@@ -221,7 +227,11 @@ export default function LaunchInspectorDemoPage() {
         onConversationCreated: (conversationId) => {
           // Fires BEFORE the stream runs — panels populate immediately.
           setRuns((prev) => [
-            { conversationId, shortcutLabel: label, launchedAt: new Date().toLocaleTimeString() },
+            {
+              conversationId,
+              shortcutLabel: label,
+              launchedAt: new Date().toLocaleTimeString(),
+            },
             ...prev,
           ]);
           setSelectedConversationId(conversationId);
@@ -237,9 +247,7 @@ export default function LaunchInspectorDemoPage() {
   const destroyRun = (conversationId: string) => {
     dispatch(destroyInstanceIfAllowed(conversationId));
     setRuns((prev) => prev.filter((r) => r.conversationId !== conversationId));
-    setSelectedConversationId((cur) =>
-      cur === conversationId ? null : cur,
-    );
+    setSelectedConversationId((cur) => (cur === conversationId ? null : cur));
   };
 
   // ── Inspector selectors (existing factories, memoized per conversation) ──
@@ -289,10 +297,10 @@ export default function LaunchInspectorDemoPage() {
             <code className="text-[11px] bg-muted px-1 py-0.5 rounded">
               launchShortcut → launchAgentExecution
             </code>{" "}
-            pipeline and mirrors the resulting instance out of Redux: shell,
-            UI state, assembled request body, variable values, context
-            entries, resources, and active-request state. autoRun is never
-            overridden — the shortcut row decides whether execution starts.
+            pipeline and mirrors the resulting instance out of Redux: shell, UI
+            state, assembled request body, variable values, context entries,
+            resources, and active-request state. autoRun is never overridden —
+            the shortcut row decides whether execution starts.
           </p>
         </header>
 
@@ -307,14 +315,48 @@ export default function LaunchInspectorDemoPage() {
                 value={shortcutSearch}
                 onChange={(e) => setShortcutSearch(e.target.value)}
                 placeholder="Search shortcuts…"
-                className="w-full rounded border border-border bg-background pl-7 pr-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-primary"
+                className="h-11 w-full rounded border border-border bg-background pl-7 pr-2 text-[16px] outline-none focus:ring-1 focus:ring-primary sm:h-9 sm:text-sm"
               />
             </div>
             <div className="h-44 overflow-auto rounded border border-border/60 bg-background/50">
-              {!initialLoaded && sliceStatus === "loading" ? (
-                <p className="p-2 text-xs text-muted-foreground">
-                  Loading the unified shortcut menu…
-                </p>
+              {shortcutListLoading ? (
+                <div
+                  role="status"
+                  className="space-y-2 p-3 text-xs text-muted-foreground"
+                >
+                  <div className="flex items-center gap-2 font-medium text-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    Loading the unified shortcut menu…
+                  </div>
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-5/6" />
+                  <Skeleton className="h-8 w-11/12" />
+                </div>
+              ) : sliceStatus === "failed" && !initialLoaded ? (
+                <div role="alert" className="space-y-2 p-3">
+                  <p className="text-sm font-medium text-destructive">
+                    Shortcuts could not be loaded.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {shortcutLoadError ?? "The unified menu request failed."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void dispatch(
+                        fetchUnifiedMenu({
+                          scope: "global",
+                          scopeId: null,
+                          force: true,
+                        }),
+                      )
+                    }
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium text-primary hover:bg-muted"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Retry shortcut load
+                  </button>
+                </div>
               ) : shortcutList.length === 0 ? (
                 <p className="p-2 text-xs text-muted-foreground">
                   No shortcuts match.
@@ -325,7 +367,7 @@ export default function LaunchInspectorDemoPage() {
                     key={s.id}
                     type="button"
                     onClick={() => setShortcutId(s.id)}
-                    className={`w-full text-left px-2 py-1 text-sm truncate ${
+                    className={`min-h-11 w-full truncate px-2 py-1 text-left text-sm ${
                       shortcutId === s.id
                         ? "bg-accent text-foreground"
                         : "text-muted-foreground hover:bg-muted/50"
@@ -345,13 +387,13 @@ export default function LaunchInspectorDemoPage() {
                 value={idInput}
                 onChange={(e) => setIdInput(e.target.value)}
                 placeholder="…or paste a shortcut id"
-                className="flex-1 rounded border border-border bg-background px-2 py-1 font-mono text-[11px] outline-none focus:ring-1 focus:ring-primary"
+                className="h-11 min-w-0 flex-1 rounded border border-border bg-background px-2 font-mono text-[16px] outline-none focus:ring-1 focus:ring-primary sm:h-8 sm:text-xs"
               />
               <button
                 type="button"
                 disabled={!idInput.trim() || idLoading}
                 onClick={() => void loadById()}
-                className="rounded border border-border px-2 py-1 text-[11px] text-primary disabled:opacity-50 hover:bg-muted/50"
+                className="min-h-11 rounded border border-border px-3 text-sm text-primary hover:bg-muted/50 disabled:opacity-50 sm:min-h-8 sm:text-xs"
               >
                 {idLoading ? "Loading…" : "Load"}
               </button>
@@ -379,7 +421,7 @@ export default function LaunchInspectorDemoPage() {
                 onClick={() =>
                   setScopeJson(JSON.stringify(buildSampleScope(), null, 2))
                 }
-                className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                className="inline-flex min-h-11 items-center gap-1 text-xs text-primary hover:underline sm:min-h-8"
               >
                 <RefreshCw className="h-3 w-3" /> Reseed baselines
               </button>
@@ -388,7 +430,7 @@ export default function LaunchInspectorDemoPage() {
               value={scopeJson}
               onChange={(e) => setScopeJson(e.target.value)}
               spellCheck={false}
-              className={`h-48 w-full resize-none rounded border bg-background p-2 font-mono text-[11px] leading-relaxed outline-none focus:ring-1 focus:ring-primary ${
+              className={`h-48 w-full resize-none rounded border bg-background p-2 font-mono text-[16px] leading-relaxed outline-none focus:ring-1 focus:ring-primary sm:text-xs ${
                 scopeJsonError ? "border-destructive" : "border-border"
               }`}
             />
@@ -417,7 +459,7 @@ export default function LaunchInspectorDemoPage() {
                     e.target.value as ResultDisplayMode | "",
                   )
                 }
-                className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary"
+                className="mt-1 h-11 w-full rounded border border-border bg-background px-2 text-[16px] text-foreground outline-none focus:ring-1 focus:ring-primary sm:h-9 sm:text-sm"
               >
                 <option value="">(shortcut default)</option>
                 {DISPLAY_MODE_CHOICES.map((m) => (
@@ -434,7 +476,7 @@ export default function LaunchInspectorDemoPage() {
                 value={surfaceNameInput}
                 onChange={(e) => setSurfaceNameInput(e.target.value)}
                 placeholder="e.g. matrx-user/notes"
-                className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 font-mono text-[11px] outline-none focus:ring-1 focus:ring-primary"
+                className="mt-1 h-11 w-full rounded border border-border bg-background px-2 font-mono text-[16px] outline-none focus:ring-1 focus:ring-primary sm:h-9 sm:text-xs"
               />
             </label>
             <p className="text-[11px] text-muted-foreground">
@@ -447,7 +489,7 @@ export default function LaunchInspectorDemoPage() {
                 type="button"
                 disabled={!canLaunch}
                 onClick={() => void runLaunch()}
-                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50 sm:min-h-9"
               >
                 <Play className="h-3.5 w-3.5" />
                 {launching ? "Launching…" : "Launch (inspect)"}
@@ -489,10 +531,8 @@ export default function LaunchInspectorDemoPage() {
               >
                 <button
                   type="button"
-                  onClick={() =>
-                    setSelectedConversationId(run.conversationId)
-                  }
-                  className="flex-1 text-left"
+                  onClick={() => setSelectedConversationId(run.conversationId)}
+                  className="min-h-11 flex-1 text-left"
                 >
                   <span className="text-sm text-foreground">
                     {run.shortcutLabel}
@@ -507,7 +547,7 @@ export default function LaunchInspectorDemoPage() {
                 <button
                   type="button"
                   onClick={() => destroyRun(run.conversationId)}
-                  className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-[11px] text-destructive hover:bg-destructive/10"
+                  className="inline-flex min-h-11 items-center gap-1 rounded border border-border px-3 text-xs text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="h-3 w-3" /> Destroy
                 </button>
@@ -608,8 +648,8 @@ export default function LaunchInspectorDemoPage() {
                 </h2>
                 {Object.keys(resolvedVariables).length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No variables on this instance — the agent declares none,
-                    or nothing resolved.
+                    No variables on this instance — the agent declares none, or
+                    nothing resolved.
                   </p>
                 ) : (
                   Object.entries(resolvedVariables).map(([name, value]) => (
@@ -695,9 +735,9 @@ export default function LaunchInspectorDemoPage() {
               </h2>
               {requests.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No requests yet. With autoRun=false the instance waits in
-                  its overlay for the user to trigger execution — submit
-                  there and this panel updates live.
+                  No requests yet. With autoRun=false the instance waits in its
+                  overlay for the user to trigger execution — submit there and
+                  this panel updates live.
                 </p>
               ) : (
                 <>

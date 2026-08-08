@@ -276,9 +276,21 @@ Persisted/rehydrated agentDefinition records predate live edits, `isReady` short
 
 Frontend cutover DONE (project-optional `createTopic`, association-backed filtering, no path writes `project_id`); Phase-0 migration live. Remaining: aidream Phase-3 cutover + deploy, Phase-4 column drop/scope migration, the aidream release guard, live acceptance matrix. System of record: `common-docs/projects/research-project-decoupling/FEATURE.md`. Keep until then.
 
+**Transcript focused repair 2026-08-08:** while adding explicit Mine / org
+scope to the transcript hub, the required live trigger/FK inspection found
+`transcripts.transcripts_project_id_fkey`. All 1,024 rows had a null
+`project_id`, and the transcript feature had no project/task column consumer.
+`migrations/transcripts_remove_forbidden_relationship_dependencies.sql`
+therefore drops only the project FK (the nullable compatibility column stays).
+
 ### D78 — CRITICAL: legacy `platform._mirror_fk_to_assoc` triggers remain live (2026-07-21)
 
 Research's `_mirror_proj` trigger dropped. Live trigger count re-verified 2026-08-06: **26** remain platform-wide (down from the 32 baseline at filing — ratchet moving the right way). FE alarm layer shipped (`lib/diagnostics/errorTierRules.ts` pins any firing as permanent critical). Remaining: the aidream release guard (strict tier + 32-ratchet) and live verification of the induced-failure inspector flow.
+
+**Transcript focused repair 2026-08-08:** live inspection found `_mirror_proj`
+and `_mirror_task` on `transcripts.transcripts`; both called the forbidden
+function. `migrations/transcripts_remove_forbidden_relationship_dependencies.sql`
+drops both triggers, taking the expected live remainder from 26 to 24.
 
 ### D74 — `web.link_edge.http_status` is NEVER populated: no broken-link detection exists (2026-07-20)
 

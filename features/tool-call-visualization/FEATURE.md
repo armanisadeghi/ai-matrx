@@ -208,6 +208,8 @@ Historical planning and analysis docs from the pre-consolidation era have been a
 
 ## Change log
 
+- `2026-08-08` — The MCP tool UI review surface now has a real H1/H2 hierarchy, touch-safe mobile tabs and test actions, fully readable wrapping sample labels, and named icon-only controls. The canonical `ToolResultCard` also wraps its title/subtitle and keeps its Open menu at a 44px mobile target, so renderer operation identity stays readable without a one-off SEO override.
+
 - `2026-07-29` — The SEO tool overlay now reads its display width from the
   canonical SERP limits; mobile/desktop use the same current allowance.
 - `2026-07-26` — Removed `renderers/news-api/index.ts` and `renderers/random-wheel/index.ts` barrels; `registry.tsx` imports components directly.

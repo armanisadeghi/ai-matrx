@@ -38,7 +38,8 @@ import type { GeneratedContentBlock } from "@/features/content-ir/registry/kind-
 // Where each part type is edited today. Content blocks and skills have real
 // admin surfaces; components/surfaces are authored by the agent (DB rows) and
 // have no dedicated editor yet, so those link to the agent path only.
-const CONTENT_BLOCKS_ADMIN = "/administration/agents/system-agents/content-blocks";
+const CONTENT_BLOCKS_ADMIN =
+  "/administration/agents/system-agents/content-blocks";
 const SKILLS_ADMIN = "/administration/agents/skills";
 
 const COLUMN_HEADING: Record<AssetColumn, string> = {
@@ -93,14 +94,18 @@ function ListSection({
 }) {
   return (
     <section className="rounded-md border border-border bg-card">
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
+      <div className="flex flex-wrap items-start gap-2 border-b border-border px-3 py-2 sm:items-center">
         <span className="text-sm font-semibold text-foreground">
           {title}{" "}
           <span className="text-xs font-normal text-muted-foreground">
             ({count})
           </span>
         </span>
-        {actions && <div className="ml-auto flex items-center gap-1.5">{actions}</div>}
+        {actions && (
+          <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
+            {actions}
+          </div>
+        )}
       </div>
       {children}
     </section>
@@ -145,12 +150,15 @@ export default function KindAssetsTab({
           {ASSET_COLUMNS.map((col) => {
             const cell = detail.doctorRow.assets[col];
             return (
-              <div key={col} className="flex items-start gap-3 px-3 py-1.5">
-                <span className="w-32 shrink-0 text-xs font-medium text-foreground">
+              <div
+                key={col}
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 px-3 py-2.5 sm:grid-cols-[8rem_auto_minmax(0,1fr)] sm:py-1.5"
+              >
+                <span className="min-w-0 text-xs font-medium text-foreground">
                   {COLUMN_HEADING[col]}
                 </span>
                 <StatusBadge status={cell.status} />
-                <span className="min-w-0 flex-1 text-xs text-muted-foreground">
+                <span className="col-span-2 min-w-0 break-words text-xs text-muted-foreground [overflow-wrap:anywhere] sm:col-span-1">
                   {cell.detail ?? "—"}
                 </span>
               </div>
@@ -167,7 +175,7 @@ export default function KindAssetsTab({
           <button
             type="button"
             onClick={onOpenExamples}
-            className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+            className="inline-flex min-h-10 items-center gap-1 rounded border border-border px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent"
           >
             <Pencil className="h-3.5 w-3.5" /> Manage examples
           </button>
@@ -188,7 +196,7 @@ export default function KindAssetsTab({
             <Link
               href={SKILLS_ADMIN}
               target="_blank"
-              className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+              className="inline-flex min-h-10 items-center gap-1 rounded border border-border px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent"
             >
               <ExternalLink className="h-3.5 w-3.5" /> Skills admin
             </Link>
@@ -197,6 +205,7 @@ export default function KindAssetsTab({
               label={detail.label}
               part="skill"
               emittedJsonSchema={detail.emittedJsonSchema}
+              className="min-h-10"
             >
               Create with agent
             </KindAgentButton>
@@ -205,16 +214,17 @@ export default function KindAssetsTab({
       >
         {detail.skills.length === 0 ? (
           <p className="px-3 py-2.5 text-xs text-muted-foreground">
-            No render_block skill teaches this kind (R9: one per kind per syntax).
+            No render_block skill teaches this kind (R9: one per kind per
+            syntax).
           </p>
         ) : (
           <ul className="space-y-1 p-2">
             {detail.skills.map((s) => (
               <li
                 key={`${s.skillId}-${s.syntax}`}
-                className="flex items-center gap-2"
+                className="flex flex-wrap items-center gap-2"
               >
-                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+                <code className="min-w-0 break-all rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
                   {s.skillId}
                 </code>
                 <span className="rounded bg-sky-500/10 px-1.5 py-0.5 text-[11px] font-medium text-sky-700 dark:text-sky-300">
@@ -236,6 +246,7 @@ export default function KindAssetsTab({
             label={detail.label}
             part="content_block"
             emittedJsonSchema={detail.emittedJsonSchema}
+            className="min-h-10"
           >
             Create with agent
           </KindAgentButton>
@@ -245,21 +256,26 @@ export default function KindAssetsTab({
           {detail.contentBlocks.length === 0 ? (
             <p className="px-1 py-1 text-xs text-muted-foreground">
               No content block references{" "}
-              <code className="font-mono">&quot;__kind&quot;: &quot;{detail.kind}&quot;</code>
+              <code className="font-mono">
+                &quot;__kind&quot;: &quot;{detail.kind}&quot;
+              </code>
               . Generate one below.
             </p>
           ) : (
             <ul className="space-y-1">
               {detail.contentBlocks.map((b) => (
-                <li key={b.id} className="flex items-center gap-2 text-xs">
+                <li
+                  key={b.id}
+                  className="flex flex-col items-start gap-1 text-xs sm:flex-row sm:items-center sm:gap-2"
+                >
                   <span className="text-foreground">{b.label}</span>
-                  <code className="font-mono text-[11px] text-muted-foreground">
+                  <code className="break-all font-mono text-[11px] text-muted-foreground">
                     {b.id}
                   </code>
                   <Link
                     href={CONTENT_BLOCKS_ADMIN}
                     target="_blank"
-                    className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                    className="inline-flex min-h-10 min-w-10 items-center justify-center gap-1 text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline sm:ml-auto"
                   >
                     <ExternalLink className="h-3 w-3" /> Edit
                   </Link>
@@ -287,6 +303,7 @@ export default function KindAssetsTab({
             label={detail.label}
             part="component"
             emittedJsonSchema={detail.emittedJsonSchema}
+            className="min-h-10"
           >
             Create with agent
           </KindAgentButton>
@@ -298,36 +315,45 @@ export default function KindAssetsTab({
             noted in the doctor cell above.
           </p>
         ) : (
-          <table className="w-full p-2 text-xs">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                <th className="px-2 py-1 font-medium">Platform</th>
-                <th className="px-2 py-1 font-medium">Role</th>
-                <th className="px-2 py-1 font-medium">Component key</th>
-                <th className="px-2 py-1 font-medium">Source</th>
-                <th className="px-2 py-1 font-medium">Active</th>
-                <th className="px-2 py-1 font-medium">Default</th>
-              </tr>
-            </thead>
-            <tbody>
-              {detail.components.map((c) => (
-                <tr key={c.id} className="border-t border-border/60">
-                  <td className="px-2 py-1 text-foreground">{c.platform}</td>
-                  <td className="px-2 py-1 text-foreground">{c.role}</td>
-                  <td className="px-2 py-1 font-mono text-foreground">
-                    {c.componentKey}
-                  </td>
-                  <td className="px-2 py-1 text-muted-foreground">{c.source}</td>
-                  <td className="px-2 py-1 text-muted-foreground">
-                    {c.isActive ? "yes" : "no"}
-                  </td>
-                  <td className="px-2 py-1 text-muted-foreground">
-                    {c.isDefault ? "yes" : "no"}
-                  </td>
+          <div
+            className="overflow-x-auto overscroll-x-contain"
+            role="region"
+            aria-label="Kind component rows"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[42rem] p-2 text-xs">
+              <thead>
+                <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <th className="px-2 py-1 font-medium">Platform</th>
+                  <th className="px-2 py-1 font-medium">Role</th>
+                  <th className="px-2 py-1 font-medium">Component key</th>
+                  <th className="px-2 py-1 font-medium">Source</th>
+                  <th className="px-2 py-1 font-medium">Active</th>
+                  <th className="px-2 py-1 font-medium">Default</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {detail.components.map((c) => (
+                  <tr key={c.id} className="border-t border-border/60">
+                    <td className="px-2 py-1 text-foreground">{c.platform}</td>
+                    <td className="px-2 py-1 text-foreground">{c.role}</td>
+                    <td className="px-2 py-1 font-mono text-foreground">
+                      {c.componentKey}
+                    </td>
+                    <td className="px-2 py-1 text-muted-foreground">
+                      {c.source}
+                    </td>
+                    <td className="px-2 py-1 text-muted-foreground">
+                      {c.isActive ? "yes" : "no"}
+                    </td>
+                    <td className="px-2 py-1 text-muted-foreground">
+                      {c.isDefault ? "yes" : "no"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </ListSection>
 
@@ -341,6 +367,7 @@ export default function KindAssetsTab({
             label={detail.label}
             part="surface"
             emittedJsonSchema={detail.emittedJsonSchema}
+            className="min-h-10"
           >
             Create with agent
           </KindAgentButton>
@@ -352,34 +379,45 @@ export default function KindAssetsTab({
             <code className="font-mono">__kind</code> JSON payload needs none).
           </p>
         ) : (
-          <table className="w-full p-2 text-xs">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                <th className="px-2 py-1 font-medium">Surface type</th>
-                <th className="px-2 py-1 font-medium">Token</th>
-                <th className="px-2 py-1 font-medium">Parser strategy</th>
-                <th className="px-2 py-1 font-medium">Streaming</th>
-                <th className="px-2 py-1 font-medium">Active</th>
-              </tr>
-            </thead>
-            <tbody>
-              {detail.surfaces.map((s) => (
-                <tr key={s.id} className="border-t border-border/60">
-                  <td className="px-2 py-1 text-foreground">{s.surfaceType}</td>
-                  <td className="px-2 py-1 font-mono text-foreground">{s.token}</td>
-                  <td className="px-2 py-1 text-muted-foreground">
-                    {s.parserStrategy}
-                  </td>
-                  <td className="px-2 py-1 text-muted-foreground">
-                    {s.streaming ? "yes" : "no"}
-                  </td>
-                  <td className="px-2 py-1 text-muted-foreground">
-                    {s.isActive ? "yes" : "no"}
-                  </td>
+          <div
+            className="overflow-x-auto overscroll-x-contain"
+            role="region"
+            aria-label="Kind detection surface rows"
+            tabIndex={0}
+          >
+            <table className="w-full min-w-[38rem] p-2 text-xs">
+              <thead>
+                <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <th className="px-2 py-1 font-medium">Surface type</th>
+                  <th className="px-2 py-1 font-medium">Token</th>
+                  <th className="px-2 py-1 font-medium">Parser strategy</th>
+                  <th className="px-2 py-1 font-medium">Streaming</th>
+                  <th className="px-2 py-1 font-medium">Active</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {detail.surfaces.map((s) => (
+                  <tr key={s.id} className="border-t border-border/60">
+                    <td className="px-2 py-1 text-foreground">
+                      {s.surfaceType}
+                    </td>
+                    <td className="px-2 py-1 font-mono text-foreground">
+                      {s.token}
+                    </td>
+                    <td className="px-2 py-1 text-muted-foreground">
+                      {s.parserStrategy}
+                    </td>
+                    <td className="px-2 py-1 text-muted-foreground">
+                      {s.streaming ? "yes" : "no"}
+                    </td>
+                    <td className="px-2 py-1 text-muted-foreground">
+                      {s.isActive ? "yes" : "no"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </ListSection>
     </div>
