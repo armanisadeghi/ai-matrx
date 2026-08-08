@@ -58,11 +58,6 @@ export function useEntityList<TRow>({
   const generation = useRef(0);
   const hasLoadedOnce = useRef(false);
 
-  // The service is config — static per surface. A ref keeps a (mistakenly)
-  // unstable service object from re-firing every effect.
-  const serviceRef = useRef(service);
-  serviceRef.current = service;
-
   // Debounce only the text; every other query field applies immediately.
   useEffect(() => {
     const id = setTimeout(
@@ -89,7 +84,7 @@ export function useEntityList<TRow>({
 
     void (async () => {
       try {
-        const page = await serviceRef.current.fetchPage(effectiveQuery, {
+        const page = await service.fetchPage(effectiveQuery, {
           sort: view.sort,
           direction: view.direction,
           favoritesFirst: view.favoritesFirst,
@@ -123,20 +118,24 @@ export function useEntityList<TRow>({
   }, [queryKey]);
 
   // Counts depend on every filter EXCEPT the scope and the page, so they don't
-  // re-fetch when the user just switches tabs or pages.
-  const countsKey = JSON.stringify({
+  // re-fetch when the user just switches tabs or pages. The query handed to
+  // the service carries ONLY those fields (scope pinned to the default, page
+  // 1): counts are scope-independent by contract, and passing the live scope
+  // here would hand the service a stale value from the last key change.
+  const countsQuery: EntityListQuery = {
+    ...DEFAULT_ENTITY_LIST_QUERY,
     search: debouncedSearch,
     deep: query.deep,
     archived: query.archived,
     filters: query.filters,
-    refreshToken,
-  });
+  };
+  const countsKey = JSON.stringify({ q: countsQuery, refreshToken });
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const next = await serviceRef.current.fetchCounts(effectiveQuery);
+        const next = await service.fetchCounts(countsQuery);
         if (!cancelled) setCounts(next);
       } catch (err) {
         // Counts are an adornment; a failure must not blank the list. Still
@@ -151,21 +150,23 @@ export function useEntityList<TRow>({
   }, [countsKey]);
 
   // Facets depend on scope + search + archived only. They deliberately ignore
-  // the category/tag selection: a facet list that drops the option you just
-  // deselected traps the user inside their own filter.
-  const facetsKey = JSON.stringify({
+  // the category/tag selection (a facet list that drops the option you just
+  // deselected traps the user inside their own filter) — so the query handed
+  // to the service carries an EMPTY filter bag, never a stale one.
+  const facetsQuery: EntityListQuery = {
+    ...DEFAULT_ENTITY_LIST_QUERY,
     scope: query.scope,
     search: debouncedSearch,
     deep: query.deep,
     archived: query.archived,
-    refreshToken,
-  });
+  };
+  const facetsKey = JSON.stringify({ q: facetsQuery, refreshToken });
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const next = await serviceRef.current.fetchFacets(effectiveQuery);
+        const next = await service.fetchFacets(facetsQuery);
         if (!cancelled) setFacets(next);
       } catch (err) {
         console.error(`[entity-list] facets failed`, err);

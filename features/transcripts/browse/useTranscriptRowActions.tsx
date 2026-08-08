@@ -8,7 +8,6 @@
 // Studio / Cleanup / Scribe), with the same secondary destinations the old
 // hub cards carried.
 
-import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -42,8 +41,8 @@ export function useTranscriptRowActions(
 ): EntityRowActionsResult<TranscriptListRow> {
   const router = useRouter();
 
-  const menuFor = useCallback(
-    (row: TranscriptListRow) => (): ItemMenuConfig => {
+  // No manual memoization — the React Compiler owns it (CLAUDE.md).
+  const menuFor = (row: TranscriptListRow) => (): ItemMenuConfig => {
       const href = primaryRowHref(row);
       const open: ItemMenuEntry[] = [];
       if (row.kind === "transcript") {
@@ -119,18 +118,13 @@ export function useTranscriptRowActions(
           },
         ],
       };
-    },
-    [],
-  );
+  };
 
-  const onOpenRow = useCallback(
-    (row: TranscriptListRow) => router.push(primaryRowHref(row)),
-    [router],
-  );
+  const onOpenRow = (row: TranscriptListRow) =>
+    router.push(primaryRowHref(row));
 
-  const actions = useMemo(() => ({ menuFor, onOpenRow }), [menuFor, onOpenRow]);
   // The list controller is unused today (no mutating actions yet — delete /
   // move land with the row-actions expansion tracked in the handoff).
   void list;
-  return { actions };
+  return { actions: { menuFor, onOpenRow } };
 }

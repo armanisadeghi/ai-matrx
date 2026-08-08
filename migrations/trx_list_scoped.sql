@@ -158,9 +158,9 @@ BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'trx_list_scoped: not authenticated'; END IF;
   IF v_scope NOT IN ('mine','orgs','shared','public') THEN
     RAISE EXCEPTION 'trx_list_scoped: unknown scope %', v_scope; END IF;
-  IF v_sort NOT IN ('updated','created','title','kind','status','folder_name',
-                    'tags','duration','word_count','organization_name',
-                    'owner_email','visibility','draft') THEN
+  IF v_sort NOT IN ('updated','created','title','description','kind','status',
+                    'folder_name','tags','duration','word_count',
+                    'organization_name','owner_email','visibility','draft') THEN
     v_sort := 'updated';
   END IF;
 
@@ -181,8 +181,12 @@ BEGIN
       CASE WHEN t.is_draft THEN 'draft' ELSE 'final' END AS u_status,
       coalesce(nullif(t.folder_name,''),'Transcripts') AS u_folder,
       coalesce(t.tags, ARRAY[]::text[]) AS u_tags,
-      nullif(t.metadata->>'duration','')::numeric AS u_duration,
-      nullif(t.metadata->>'wordCount','')::integer AS u_words,
+      -- Guarded casts: metadata is client-written jsonb, so one "1:23" or
+      -- "12,500" string must NEVER 22P02 the whole list for every user.
+      CASE WHEN t.metadata->>'duration' ~ '^[0-9]+\.?[0-9]*$'
+           THEN (t.metadata->>'duration')::numeric END AS u_duration,
+      CASE WHEN t.metadata->>'wordCount' ~ '^[0-9]+$'
+           THEN (t.metadata->>'wordCount')::integer END AS u_words,
       coalesce(t.is_draft,false) AS u_draft,
       NULL::uuid AS u_session_id, NULL::uuid AS u_transcript_id,
       NULL::integer AS u_segment_index,
@@ -240,17 +244,23 @@ BEGIN
       AND perm.granted_to_user_id = v_uid
     WHERE v_scope='shared' AND u.u_user_id IS DISTINCT FROM v_uid
     UNION ALL
-    SELECT DISTINCT ON (u.u_id) u.*, false, perm.permission_level::text FROM unified u
-    JOIN iam.permissions perm
-      ON perm.resource_type = CASE WHEN u.u_kind='transcript' THEN 'transcript' ELSE 'studio_session' END
-      AND perm.resource_id = CASE WHEN u.u_kind='unsorted' THEN u.u_session_id ELSE u.u_id END
-      AND perm.granted_to_organization_id IN (
-        SELECT om.organization_id FROM iam.organization_member om WHERE om.user_id=v_uid)
-    WHERE v_scope='shared' AND u.u_user_id IS DISTINCT FROM v_uid
-      AND NOT EXISTS (SELECT 1 FROM iam.permissions p2
-        WHERE p2.resource_type = CASE WHEN u.u_kind='transcript' THEN 'transcript' ELSE 'studio_session' END
-          AND p2.resource_id = CASE WHEN u.u_kind='unsorted' THEN u.u_session_id ELSE u.u_id END
-          AND p2.granted_to_user_id=v_uid)
+    -- DISTINCT ON needs its own ORDER BY (deterministic access_level when
+    -- several org grants exist) — hence the subquery wrapper.
+    SELECT * FROM (
+      SELECT DISTINCT ON (u.u_id) u.*, false AS s_is_owner2, perm.permission_level::text AS s_access2
+      FROM unified u
+      JOIN iam.permissions perm
+        ON perm.resource_type = CASE WHEN u.u_kind='transcript' THEN 'transcript' ELSE 'studio_session' END
+        AND perm.resource_id = CASE WHEN u.u_kind='unsorted' THEN u.u_session_id ELSE u.u_id END
+        AND perm.granted_to_organization_id IN (
+          SELECT om.organization_id FROM iam.organization_member om WHERE om.user_id=v_uid)
+      WHERE v_scope='shared' AND u.u_user_id IS DISTINCT FROM v_uid
+        AND NOT EXISTS (SELECT 1 FROM iam.permissions p2
+          WHERE p2.resource_type = CASE WHEN u.u_kind='transcript' THEN 'transcript' ELSE 'studio_session' END
+            AND p2.resource_id = CASE WHEN u.u_kind='unsorted' THEN u.u_session_id ELSE u.u_id END
+            AND p2.granted_to_user_id=v_uid)
+      ORDER BY u.u_id, perm.permission_level::text
+    ) org_shared
     UNION ALL
     SELECT u.*, false, 'public'::text FROM unified u
     WHERE v_scope='public' AND u.u_user_id IS DISTINCT FROM v_uid AND u.u_visibility='public'
@@ -278,15 +288,20 @@ BEGIN
       AND (NOT v_f ? 'status'
            OR coalesce(nullif(j.u_status,''),'__none__') IN (
                 SELECT jsonb_array_elements_text(v_f->'status'->'values')))
+      -- Folder / tags are TRANSCRIPT attributes; the facets are computed over
+      -- kind='transcript' only, so the filter constrains to that kind too —
+      -- otherwise "'No folder' (3)" would flood in every session/recording.
       AND (NOT v_f ? 'folder_name'
-           OR coalesce(nullif(j.u_folder,''),'__none__') IN (
-                SELECT jsonb_array_elements_text(v_f->'folder_name'->'values')))
+           OR (j.u_kind = 'transcript'
+               AND coalesce(nullif(j.u_folder,''),'__none__') IN (
+                     SELECT jsonb_array_elements_text(v_f->'folder_name'->'values'))))
       AND (NOT v_f ? 'visibility'
            OR j.u_visibility IN (SELECT jsonb_array_elements_text(v_f->'visibility'->'values')))
       AND (NOT v_f ? 'tags'
-           OR (j.u_tags && ARRAY(SELECT jsonb_array_elements_text(v_f->'tags'->'values')))
-           OR ('__none__' IN (SELECT jsonb_array_elements_text(v_f->'tags'->'values'))
-               AND coalesce(array_length(j.u_tags,1),0) = 0))
+           OR (j.u_kind = 'transcript'
+               AND ((j.u_tags && ARRAY(SELECT jsonb_array_elements_text(v_f->'tags'->'values')))
+                    OR ('__none__' IN (SELECT jsonb_array_elements_text(v_f->'tags'->'values'))
+                        AND coalesce(array_length(j.u_tags,1),0) = 0))))
       AND (NOT v_f ? 'duration'
            OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(v_f->'duration'->'values') b
                       WHERE public.trx_duration_matches(j.u_duration, b)))
@@ -301,10 +316,13 @@ BEGIN
            OR j.u_draft IS NOT DISTINCT FROM (v_f->'draft'->>'value')::boolean)
   ),
   scored AS (
-    SELECT f.*, public.trx_search_score(
-      v_search, f.u_id, f.u_title, f.u_description, f.u_kind, f.u_folder,
-      f.u_tags, f.s_owner_email, f.u_deep_hit
-    ) AS s_score
+    -- Score only when a real page is being fetched: counts/facets call with
+    -- LIMIT 1 / no-order intent and must not pay per-row plpgsql scoring.
+    SELECT f.*, CASE WHEN v_search IS NOT NULL AND coalesce(p_limit, 25) > 1
+      THEN public.trx_search_score(
+        v_search, f.u_id, f.u_title, f.u_description, f.u_kind, f.u_folder,
+        f.u_tags, f.s_owner_email, f.u_deep_hit)
+      ELSE 0 END AS s_score
     FROM filtered f
   ),
   counted AS (SELECT s.*, count(*) OVER () AS s_total FROM scored s)
@@ -323,6 +341,8 @@ BEGIN
     CASE WHEN v_sort='created' AND v_dir='asc' THEN c.u_created END ASC,
     CASE WHEN v_sort='title' AND v_dir='desc' THEN lower(c.u_title) END DESC,
     CASE WHEN v_sort='title' AND v_dir='asc' THEN lower(c.u_title) END ASC,
+    CASE WHEN v_sort='description' AND v_dir='desc' THEN lower(coalesce(c.u_description,'')) END DESC,
+    CASE WHEN v_sort='description' AND v_dir='asc' THEN lower(coalesce(c.u_description,'')) END ASC,
     CASE WHEN v_sort='kind' AND v_dir='desc' THEN c.u_kind END DESC,
     CASE WHEN v_sort='kind' AND v_dir='asc' THEN c.u_kind END ASC,
     CASE WHEN v_sort='status' AND v_dir='desc' THEN lower(coalesce(c.u_status,'')) END DESC,

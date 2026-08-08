@@ -108,6 +108,8 @@ export interface EntityFacetSection {
   minOptions?: number;
   /** Append the option count to the section label. Default true. */
   countInLabel?: boolean;
+  /** Chip-search placeholder. Default derives from the label. */
+  searchPlaceholder?: string;
 }
 
 export interface EntityListConfig<TRow> {
