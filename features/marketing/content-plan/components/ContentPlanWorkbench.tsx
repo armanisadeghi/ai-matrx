@@ -38,12 +38,18 @@ import {
   useReparentPlanNode,
 } from "../data/hooks";
 import { updatePlanNode } from "../data/service";
-import { usePlanDeepen, usePlanGenerate } from "../hooks/useContentPlanAi";
+import {
+  usePlanBulkDeepen,
+  usePlanDeepen,
+  usePlanGenerate,
+} from "../hooks/useContentPlanAi";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   readSiteResearchTopicId,
   recordSiteResearchTopic,
 } from "../setup/draft";
 import { liveMatchesById, usePlanReality } from "../hooks/usePlanReality";
+import { useCmsPageMap } from "../hooks/useCmsPageMap";
 import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
 import { PlanGenerateBar } from "./PlanGenerateBar";
 import { PlanRealityBar } from "./PlanRealityBar";
@@ -104,12 +110,17 @@ export function ContentPlanWorkbench({
   // Owned here (not in NodePanel) so an in-flight deepen survives the
   // panel's per-node remount when the user selects another node.
   const deepen = usePlanDeepen(siteId);
+  // Bulk deepen: the SAME deepen fanned over every empty-brief page.
+  const bulkDeepen = usePlanBulkDeepen(siteId);
+  const [bulkDeepenConfirm, setBulkDeepenConfirm] = useState(false);
   // Reality report (run from the header button — shared query cache).
   const reality = usePlanReality(siteId);
   const liveById = useMemo(
     () => liveMatchesById(reality.report),
     [reality.report],
   );
+  // WF-11: what each node became on the paired CMS site (null = unpaired).
+  const cmsPages = useCmsPageMap(siteId);
 
   const statusCategories = useCategories({
     dimension: CATEGORY_DIMENSIONS.planStatus,
@@ -123,6 +134,19 @@ export function ContentPlanWorkbench({
   }, [statusCategories.categories]);
 
   const nodeRows = useMemo(() => nodes.data ?? [], [nodes.data]);
+  // Bulk-deepen candidates: pages whose brief is empty (route order, so the
+  // run walks the site top-down like a reader would).
+  const emptyBriefNodes = useMemo(
+    () =>
+      nodeRows
+        .filter((node) => !node.brief || node.brief.length === 0)
+        .map((node) => ({
+          id: node.id,
+          route: node.route ?? node.label,
+        }))
+        .sort((a, b) => a.route.localeCompare(b.route)),
+    [nodeRows],
+  );
   const nodeById = useMemo(() => {
     const map = new Map<string, PlanNodeRow>();
     for (const node of nodeRows) map.set(node.id, node);
@@ -317,6 +341,11 @@ export function ContentPlanWorkbench({
             onDismiss={generate.reset}
             researchTopicId={generateTopicId}
             onResearchTopicChange={handleGenerateTopicChange}
+            bulkDeepen={bulkDeepen.run}
+            emptyBriefCount={emptyBriefNodes.length}
+            onBulkDeepen={() => setBulkDeepenConfirm(true)}
+            onBulkDeepenCancel={bulkDeepen.cancel}
+            onBulkDeepenDismiss={bulkDeepen.reset}
           />
         ) : null}
 
@@ -352,6 +381,7 @@ export function ContentPlanWorkbench({
               isLoading={nodes.isLoading}
               isFetching={nodes.isFetching}
               selectedId={selectedNodeId}
+              cmsPageById={cmsPages.pagesByNodeId}
               onSelect={setSelectedNodeId}
             />
           ) : view === "map" ? (
@@ -371,6 +401,7 @@ export function ContentPlanWorkbench({
               selectedId={selectedNodeId}
               statusSlugById={statusSlugById}
               liveById={liveById}
+              cmsPageById={cmsPages.pagesByNodeId}
               onSelect={setSelectedNodeId}
               onReparent={handleReparent}
               onAddChild={openNewNode}
@@ -390,6 +421,7 @@ export function ContentPlanWorkbench({
                     selectedId={selectedNodeId}
                     statusSlugById={statusSlugById}
                     liveById={liveById}
+                    cmsPageById={cmsPages.pagesByNodeId}
                     onSelect={setSelectedNodeId}
                     onReparent={handleReparent}
                     onAddChild={openNewNode}
@@ -409,6 +441,8 @@ export function ContentPlanWorkbench({
                       profiles={profiles.data ?? []}
                       onDeleted={() => setSelectedNodeId(null)}
                       deepen={deepen}
+                      cmsPage={cmsPages.pagesByNodeId.get(selectedNode.id) ?? null}
+                      cmsSiteId={cmsPages.map?.cmsSiteId ?? null}
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center p-6">
@@ -456,6 +490,8 @@ export function ContentPlanWorkbench({
                   profiles={profiles.data ?? []}
                   onDeleted={() => setSelectedNodeId(null)}
                   deepen={deepen}
+                  cmsPage={cmsPages.pagesByNodeId.get(selectedNode.id) ?? null}
+                  cmsSiteId={cmsPages.map?.cmsSiteId ?? null}
                 />
               ) : null}
             </SheetContent>
@@ -475,6 +511,18 @@ export function ContentPlanWorkbench({
             onCreated={(node) => setSelectedNodeId(node.id)}
           />
         ) : null}
+
+        <ConfirmDialog
+          open={bulkDeepenConfirm}
+          onOpenChange={setBulkDeepenConfirm}
+          title={`Deepen ${emptyBriefNodes.length} page(s)?`}
+          description="Runs the research-grounded deepen over every page with an empty brief — each gets brief bullets and cited sources written onto the node. Runs one page at a time; you can stop between pages. Pages that already have a brief are untouched."
+          confirmLabel="Run bulk deepen"
+          onConfirm={() => {
+            setBulkDeepenConfirm(false);
+            void bulkDeepen.start(emptyBriefNodes);
+          }}
+        />
       </div>
     </SurfaceRuntimeProvider>
   );

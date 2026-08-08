@@ -44,7 +44,7 @@ import type { PlanNodeRow, PlanNodeType } from "../types";
 
 /** Bump `version` when a column is added/removed (lib/list-views backfill contract). */
 const SURFACE_PREFS: Partial<ListViewPrefs> = {
-  version: 1,
+  version: 2,
   sort: "route",
   direction: "asc",
   hiddenColumns: ["reviewer"],
@@ -57,6 +57,7 @@ const COLUMN_LABELS: Record<string, string> = {
   status: "Status",
   priority: "Priority",
   keyword: "Keyword",
+  page: "Page",
   pillar: "Pillar",
   cluster: "Cluster",
   depth: "Depth",
@@ -72,6 +73,8 @@ export interface PlanNodesTableProps {
   isLoading: boolean;
   isFetching: boolean;
   selectedId: string | null;
+  /** node_id → its realized CMS page (WF-11 overlay; absent = no pairing). */
+  cmsPageById?: Map<string, { isPublished: boolean; route: string | null }>;
   onSelect: (id: string) => void;
 }
 
@@ -80,6 +83,7 @@ export function PlanNodesTable({
   isLoading,
   isFetching,
   selectedId,
+  cmsPageById,
   onSelect,
 }: PlanNodesTableProps) {
   const { prefs, setPrefs } = useListViewPrefs(
@@ -127,6 +131,10 @@ export function PlanNodesTable({
     );
     const pillarCounts = countBy(nodes, (row) => row.pillar_label ?? "");
     const clusterCounts = countBy(nodes, (row) => row.cluster_label ?? "");
+    const pageCounts = countBy(nodes, (row) => {
+      const page = cmsPageById?.get(row.id);
+      return page ? (page.isPublished ? "Published" : "Draft") : "None";
+    });
 
     return [
       {
@@ -252,6 +260,41 @@ export function PlanNodesTable({
         width: 90,
       },
       {
+        id: "page",
+        header: "Page",
+        accessorFn: (row) => {
+          const page = cmsPageById?.get(row.id);
+          return page ? (page.isPublished ? "Published" : "Draft") : "None";
+        },
+        filter: "select",
+        filterOptions: withCounts(
+          [
+            { value: "Published", label: "Published" },
+            { value: "Draft", label: "Draft" },
+            { value: "None", label: "None" },
+          ],
+          pageCounts,
+        ),
+        cell: (row) => {
+          const page = cmsPageById?.get(row.id);
+          if (!page) return <span className="text-sm text-muted-foreground">—</span>;
+          return (
+            <Badge
+              variant="secondary"
+              className={cn(
+                "px-1.5 text-[11px]",
+                page.isPublished
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                  : "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+              )}
+            >
+              {page.isPublished ? "Published" : "Draft"}
+            </Badge>
+          );
+        },
+        width: 100,
+      },
+      {
         id: "pillar",
         accessorKey: "pillar_label",
         header: "Pillar",
@@ -318,7 +361,7 @@ export function PlanNodesTable({
         width: 100,
       },
     ];
-  }, [nodes, statusCategories.categories, statusMetaById]);
+  }, [nodes, statusCategories.categories, statusMetaById, cmsPageById]);
 
   const hiddenColumns = prefs.hiddenColumns ?? [];
   const visibleColumns = useMemo(

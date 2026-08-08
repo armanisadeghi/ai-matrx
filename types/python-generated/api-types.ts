@@ -4642,6 +4642,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/content-plan/sites/{site_id}/cms-pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cms Page Map Route
+         * @description The paired CMS site's pages (summary rows, keyed by plan_node_id on the
+         *     FE) so the plan workspace can show what each node became — linked page,
+         *     published state, live/preview URLs. Read-only; never writes the pairing.
+         */
+        get: operations["cms_page_map_route_content_plan_sites__site_id__cms_pages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/content-plan/sites/{site_id}/cms-redirects": {
         parameters: {
             query?: never;
@@ -6777,30 +6799,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -21509,6 +21507,94 @@ export interface components {
             /** Problems */
             problems?: components["schemas"]["CmsFillItemOut"][];
         };
+        /**
+         * CmsPageMapResult
+         * @description The paired CMS site's pages, for the plan workspace's node↔page overlay.
+         *
+         *     Full page summary rows (no content bodies) — the FE keys them by
+         *     ``plan_node_id`` to badge tree/table nodes and link the NodePanel to the
+         *     realized page (WF-11). Read-only; never pairs.
+         */
+        CmsPageMapResult: {
+            /** Web Site Id */
+            web_site_id: string;
+            /** Cms Site Id */
+            cms_site_id: string;
+            /** Cms Site Slug */
+            cms_site_slug: string;
+            /** Pages */
+            pages?: components["schemas"]["CmsPageSummary"][];
+            /**
+             * Count
+             * @default 0
+             */
+            count?: number;
+            /** Warnings */
+            warnings?: string[];
+        };
+        /**
+         * CmsPageSummary
+         * @description OpenAPI-name alias: the document router already exports a ``PageSummary``
+         *     schema, and two same-named models make FastAPI qualify BOTH into
+         *     ``aidream__…__PageSummary`` — breaking every generated-type consumer of the
+         *     plain name. Same fields, distinct schema name.
+         */
+        CmsPageSummary: {
+            /** Id */
+            id: string;
+            /** Client Id */
+            client_id: string;
+            /** Slug */
+            slug: string;
+            /** Title */
+            title: string;
+            /** Route */
+            route?: string | null;
+            /** Category */
+            category?: string | null;
+            /** Page Type */
+            page_type?: string | null;
+            /** Is Published */
+            is_published?: boolean | null;
+            /** Has Draft */
+            has_draft?: boolean | null;
+            /** Is Home Page */
+            is_home_page?: boolean | null;
+            /** Show In Nav */
+            show_in_nav?: boolean | null;
+            /** Sort Order */
+            sort_order?: number | null;
+            /** Version */
+            version?: number | null;
+            /** Excerpt */
+            excerpt?: string | null;
+            /** Featured Image */
+            featured_image?: string | null;
+            /** Author */
+            author?: string | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Meta Title */
+            meta_title?: string | null;
+            /** Meta Description */
+            meta_description?: string | null;
+            /** Publish Date */
+            publish_date?: string | null;
+            /** Last Published At */
+            last_published_at?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+            /** Live Url */
+            live_url: string;
+            /** Preview Url */
+            preview_url: string;
+            /** Plan Node Id */
+            plan_node_id?: string | null;
+            /** Plan Excluded At */
+            plan_excluded_at?: string | null;
+        };
         /** CmsPublishBody */
         CmsPublishBody: {
             /** Organization Id */
@@ -23852,33 +23938,6 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -49299,6 +49358,39 @@ export interface operations {
             };
         };
     };
+    cms_page_map_route_content_plan_sites__site_id__cms_pages_get: {
+        parameters: {
+            query?: {
+                cms_site?: string | null;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsPageMapResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     cms_redirects_route_content_plan_sites__site_id__cms_redirects_get: {
         parameters: {
             query?: {
@@ -53190,41 +53282,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

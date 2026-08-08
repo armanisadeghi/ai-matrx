@@ -89,11 +89,8 @@ the 'Document'"*
 
 ## Remaining work
 
-1. **DEPLOY the frontend.** aidream is **LIVE** (v0.1.706, `/health/version` = `6694767`,
-   which contains the research-grounding commit) — so the server already accepts
-   `research_topic_id` and the old deploy-order trap is gone. The FE half still sits on
-   `claude/practical-euler-x4kjjc`: merge to `main` and run `./scripts/release.sh` (a plain
-   push builds NOTHING).
+1. ~~DEPLOY the frontend~~ — **DONE**: the stranded AI-setup work shipped in FE release
+   v0.4.270 (2026-08); aidream has been live since v0.1.706.
 2. **The shell-header Agents panel can't see these agents.** `SurfaceBoundAgentsList` reads
    `agent.menu_surface`, a view over `platform.associations` JOINed to **`agent.card`**; all four
    agents live in `agent.definition` only (`agent.card` has 138 rows, `agent.definition` 723), so
@@ -121,8 +118,11 @@ the 'Document'"*
    summary naming six missing pages and returns ONE finding (measured, not guessed). If the
    agent's stored prompt is ever fixed at the source, delete the constant — do not silently keep
    both. Note `agent_author update` with `goals` did NOT change the stored prompt.
-7. **Bulk deepen** — the one approved item not built: fan out the existing research-grounded
-   deepen over many pages with progress + per-page results (not a new agent).
+7. ~~Bulk deepen~~ — **DONE 2026-08-07**: `usePlanBulkDeepen` (useContentPlanAi.ts) fans the
+   existing deepen over every empty-brief page, sequential with live progress in the
+   PlanGenerateBar strip ("Deepen briefs (N)" button, confirm first), per-page failure
+   isolation, Stop between pages. Pages with an existing brief are never touched (Deepen's
+   server-side replace made that unsafe).
 8. **Re-review after research changes** — "what changed in the research since we planned?"
 
 ## Done

@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
-import { Save, Loader2, Trash2 } from "lucide-react";
+import { Save, Loader2, Trash2, ExternalLink } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { normalizeDomainInput } from "@/features/cms/utils/pageUrls";
 import { SiteAdvancedSettings } from "@/features/cms/components/settings/SiteAdvancedSettings";
@@ -230,6 +230,42 @@ export default function SiteSettingsPage() {
           </div>
 
           <div className="space-y-6">
+            {/* Plan pairing (WF-12): the web.site this CMS site realizes. */}
+            <div className="rounded-lg border border-border bg-card p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">
+                Content Plan
+              </h3>
+              {site.web_site_id ? (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    This site is paired with a content plan — pages realized
+                    from the plan carry their node link, and publishing flows
+                    back into plan statuses.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs"
+                    onClick={() =>
+                      window.open(
+                        `/marketing/content-plan/${site.web_site_id}`,
+                        "_blank",
+                      )
+                    }
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Open content plan
+                  </Button>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Not paired with a content plan. Pair from the plan
+                  workspace&apos;s Setup view (Make it real → create/link CMS
+                  site) — the first reconcile records the pairing.
+                </p>
+              )}
+            </div>
+
             {/* Danger zone */}
             <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 space-y-3">
               <h3 className="text-sm font-semibold text-destructive">

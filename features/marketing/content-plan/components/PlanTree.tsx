@@ -83,6 +83,12 @@ export interface PlanTreeProps {
   /** node_id → crawl reconciler match — rows with an entry are LIVE on the
    * real site (Reality overlay; empty/absent = overlay off). */
   liveById?: Map<string, { url: string }>;
+  /** node_id → the CMS page realizing it (WF-11 overlay; absent = no pairing
+   * or no page yet). */
+  cmsPageById?: Map<
+    string,
+    { route: string | null; isPublished: boolean; liveUrl: string | null }
+  >;
   onSelect: (id: string) => void;
   onReparent: (id: string, parentId: string | null) => void;
   onAddChild: (parentId: string | null) => void;
@@ -93,6 +99,7 @@ export function PlanTree({
   selectedId,
   statusSlugById,
   liveById,
+  cmsPageById,
   onSelect,
   onReparent,
   onAddChild,
@@ -278,6 +285,7 @@ export function PlanTree({
                 descendantCount={descendantCounts.get(row.node.id) ?? 0}
                 statusSlug={statusSlugById.get(row.node.status_id ?? "")}
                 liveMatch={liveById?.get(row.node.id) ?? null}
+                cmsPage={cmsPageById?.get(row.node.id) ?? null}
                 dragging={row.node.id === activeId}
                 onSelect={() => onSelect(row.node.id)}
                 onToggle={() => toggleCollapse(row.node.id)}
@@ -331,6 +339,7 @@ function TreeRow({
   descendantCount,
   statusSlug,
   liveMatch,
+  cmsPage,
   dragging,
   onSelect,
   onToggle,
@@ -344,6 +353,8 @@ function TreeRow({
   statusSlug: string | undefined;
   /** Present when the Reality overlay says this route is live on the site. */
   liveMatch: { url: string } | null;
+  /** Present when a CMS page realizes this node (WF-11 overlay). */
+  cmsPage: { route: string | null; isPublished: boolean; liveUrl: string | null } | null;
   dragging: boolean;
   onSelect: () => void;
   onToggle: () => void;
@@ -437,6 +448,23 @@ function TreeRow({
                   className="ml-1.5 inline-block h-2 w-2 rounded-full bg-emerald-500 align-middle ring-2 ring-emerald-500/25"
                   title={`Live on the site: ${liveMatch.url}`}
                 />
+              ) : null}
+              {cmsPage ? (
+                <span
+                  className={cn(
+                    "ml-1.5 inline-block rounded px-1 align-middle text-[10px] font-medium leading-4",
+                    cmsPage.isPublished
+                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                      : "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+                  )}
+                  title={
+                    cmsPage.isPublished
+                      ? `Published CMS page: ${cmsPage.liveUrl ?? cmsPage.route ?? ""}`
+                      : `Draft CMS page: ${cmsPage.route ?? ""}`
+                  }
+                >
+                  {cmsPage.isPublished ? "published" : "page"}
+                </span>
               ) : null}
             </span>
             <span className="mt-px shrink-0 rounded bg-muted px-1 py-px text-[10px] font-medium uppercase tracking-wide text-muted-foreground">

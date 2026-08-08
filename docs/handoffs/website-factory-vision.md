@@ -120,7 +120,7 @@ node-level "has page / is live" flag, and the plan UI shows none of the CMS link
 3. **Design the per-node content record (P4)** — where drafts, revisions, research artifacts, and per-step status live. This unblocks P1/P2/P3/P5. Needs a schema decision (see Decisions).
 4. **Decompose `cms_fill` into explicit pipeline steps** behind the SAME button: persisted step records per node, each step independently re-runnable; initial step implementations may be thin (even the current single prompt split apart), but the steps must exist in data, not prose. Reuse the durable-queue pattern.
 5. **Site design system (S3) + page templates (S4)**: template/block entities in the CMS DB, starter kit installs a default set, `page_type` binds node → template, per-site "templates required vs theme-only" setting. Page build step consumes them.
-6. **Plan UI shows the pipeline**: per-node step status + linked CMS page (route, published state, open/edit) + per-node "run step / generate this page" actions in `NodePanel`, tree/table badges.
+6. **Plan UI shows the pipeline**: the linked-CMS-page half is DONE (2026-08-07, WF-11 — `GET /content-plan/sites/{id}/cms-pages` + tree/table Draft/Published badges + NodePanel "CMS Page" card with edit/live links). Remaining: per-node STEP status (researched/written/reviewed/built axis) and per-node "run step / generate this page" actions.
 7. **First specialist agents on the rails**: writer, reviewer/fact-checker, page-builder as saved agents; orchestrate per-page via AgentPlan; `cms_fill`'s inline prompt becomes the page-builder's starting prompt.
 8. Wire per-node keyword/content research (P1/P2) to store artifacts on the content record; connect `features/research/` pipeline as the P2 engine.
 

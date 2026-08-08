@@ -38,6 +38,13 @@ export interface ClientSite {
    * rotatable from the Collections tab (`rotate_key`).
    */
   data_api_key: string | null;
+  /**
+   * Plan↔CMS pairing (CMS migration 0027): the MAIN-project `web.site` this
+   * site realizes (cross-project id, no FK). Written only by aidream's bridge
+   * (`site_service.set_web_site_link`, first cms-reconcile) — the FE reads it
+   * for cross-links, never writes it.
+   */
+  web_site_id: string | null;
   created_at: string;
   updated_at: string;
 }

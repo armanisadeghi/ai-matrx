@@ -510,6 +510,76 @@ export async function bridgeStarterKit(
   };
 }
 
+// ── node→page map (WF-11: the plan workspace's CMS-page overlay) ────────────
+
+export interface CmsPageMapEntry {
+  pageId: string;
+  planNodeId: string | null;
+  route: string | null;
+  title: string;
+  isPublished: boolean;
+  hasDraft: boolean;
+  isHomePage: boolean;
+  liveUrl: string | null;
+  previewUrl: string | null;
+}
+
+export interface CmsPageMap {
+  cmsSiteId: string;
+  cmsSiteSlug: string;
+  pages: CmsPageMapEntry[];
+  warnings: string[];
+}
+
+/**
+ * The paired CMS site's pages (summary rows) so the plan UI can show what
+ * each node became. Returns null when the plan site has no paired CMS site —
+ * a normal state for a plan that hasn't reached the "Make it real" rungs,
+ * never an error.
+ */
+export async function bridgeCmsPages(
+  dispatch: AppDispatch,
+  siteId: string,
+): Promise<CmsPageMap | null> {
+  const result = await dispatch(
+    callApi({
+      path: "/content-plan/sites/{site_id}/cms-pages",
+      method: "GET",
+      pathParams: { site_id: siteId },
+    }),
+  );
+  if (result.error) {
+    const message = result.error.message || "";
+    if (/unpaired|no cms site/i.test(message)) return null;
+    throw new Error(message || "The cms-pages call failed.");
+  }
+  const data = requireBody(result, "cms-pages");
+  const pages: CmsPageMapEntry[] = [];
+  for (const row of Array.isArray(data.pages) ? data.pages : []) {
+    if (!row || typeof row !== "object") continue;
+    const record = row as Record<string, unknown>;
+    const pageId = str(record.id);
+    if (!pageId) continue;
+    pages.push({
+      pageId,
+      planNodeId: str(record.plan_node_id) || null,
+      route: str(record.route) || null,
+      title: str(record.title),
+      isPublished: record.is_published === true,
+      hasDraft: record.has_draft === true,
+      isHomePage: record.is_home_page === true,
+      liveUrl: str(record.live_url) || null,
+      previewUrl: str(record.preview_url) || null,
+    });
+  }
+  return {
+    cmsSiteId: str(data.cms_site_id),
+    cmsSiteSlug: str(data.cms_site_slug),
+    pages,
+    warnings: Array.isArray(data.warnings) ? data.warnings.map(String) : [],
+  };
+}
+
 // ── the plan-side half of "link": web.site.settings.cms ─────────────────────
 
 /**

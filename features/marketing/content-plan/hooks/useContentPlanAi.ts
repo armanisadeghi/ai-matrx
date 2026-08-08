@@ -202,3 +202,139 @@ export function usePlanDeepen(siteId: string | null) {
 
   return { run, nodeId, start, reset: () => setRun(IDLE) };
 }
+
+// ── bulk deepen (handoff item: fan the SAME deepen over many pages) ─────────
+
+export interface BulkDeepenFailure {
+  nodeId: string;
+  route: string;
+  error: string;
+}
+
+export interface BulkDeepenState {
+  status: "idle" | "running" | "done" | "error";
+  total: number;
+  done: number;
+  /** The node currently being deepened (route or label). */
+  current?: string;
+  /** Live server phase line for the current node. */
+  stage?: string;
+  failures: BulkDeepenFailure[];
+  cancelled: boolean;
+}
+
+const BULK_IDLE: BulkDeepenState = {
+  status: "idle",
+  total: 0,
+  done: 0,
+  failures: [],
+  cancelled: false,
+};
+
+export type PlanBulkDeepenController = ReturnType<typeof usePlanBulkDeepen>;
+
+/**
+ * Run the EXISTING research-grounded deepen over many nodes — sequential
+ * (each run is a real server research pass; parallel fan-out would hammer the
+ * brain for no wall-clock win), per-node failure isolation, cancellable
+ * between nodes. Not a new agent — the same POST /nodes/{id}/deepen per node.
+ */
+export function usePlanBulkDeepen(siteId: string | null) {
+  const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
+  const [run, setRun] = useState<BulkDeepenState>(BULK_IDLE);
+  const inFlight = useRef(false);
+  const cancelRef = useRef(false);
+
+  const start = useCallback(
+    async (targets: Array<{ id: string; route: string }>) => {
+      if (!siteId || inFlight.current || targets.length === 0) return;
+      inFlight.current = true;
+      cancelRef.current = false;
+      setRun({
+        status: "running",
+        total: targets.length,
+        done: 0,
+        failures: [],
+        cancelled: false,
+        current: targets[0].route,
+      });
+
+      const failures: BulkDeepenFailure[] = [];
+      let done = 0;
+
+      for (const target of targets) {
+        if (cancelRef.current) break;
+        setRun((current) => ({
+          ...current,
+          current: target.route,
+          stage: undefined,
+        }));
+        let streamFailure: string | null = null;
+        const result = await dispatch(
+          callApi({
+            path: "/content-plan/nodes/{node_id}/deepen",
+            method: "POST",
+            pathParams: { node_id: target.id },
+            stream: true,
+            onStreamEvent: (event) => {
+              const stage = readPhaseMessage(event);
+              if (stage) setRun((current) => ({ ...current, stage }));
+              if (event.event === "error") {
+                streamFailure = describeBackendFailure(
+                  parseStreamError(event.data),
+                ).headline;
+              }
+            },
+          }),
+        );
+        const error = result.error
+          ? describeBackendFailure(parseCallApiError(result.error)).headline
+          : streamFailure;
+        if (error) {
+          failures.push({ nodeId: target.id, route: target.route, error });
+        }
+        done += 1;
+        setRun((current) => ({
+          ...current,
+          done,
+          failures: [...failures],
+        }));
+        // Each deepen writes brief + sources — keep the tree live per node.
+        void queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
+        void queryClient.invalidateQueries({
+          queryKey: planKeys.nodeEdges(target.id),
+        });
+      }
+
+      inFlight.current = false;
+      const cancelled = cancelRef.current;
+      setRun((current) => ({
+        ...current,
+        status: failures.length > 0 ? "error" : "done",
+        cancelled,
+        current: undefined,
+        stage: undefined,
+      }));
+      if (cancelled) {
+        toast.info(`Bulk deepen stopped — ${done} of ${targets.length} done.`);
+      } else if (failures.length > 0) {
+        toast.error(
+          `Bulk deepen finished with ${failures.length} failure(s) of ${targets.length}.`,
+        );
+      } else {
+        toast.success(`Deepened ${done} page(s) — briefs and sources updated.`);
+      }
+    },
+    [dispatch, queryClient, siteId],
+  );
+
+  return {
+    run,
+    start,
+    cancel: () => {
+      cancelRef.current = true;
+    },
+    reset: () => setRun(BULK_IDLE),
+  };
+}

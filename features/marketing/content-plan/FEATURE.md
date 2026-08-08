@@ -340,6 +340,21 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-08-07 — Claude: **bulk deepen.** `usePlanBulkDeepen` runs the existing
+  research-grounded deepen over every EMPTY-brief page (deepen replaces briefs
+  server-side, so non-empty pages are excluded by design): sequential,
+  cancellable between pages, per-page failure isolation, live progress in the
+  PlanGenerateBar strip ("Deepen briefs (N)" behind a confirm). Closes the
+  last approved item in `docs/handoffs/content-plan-ai-steps.md`.
+- 2026-08-07 — Claude: **plan⇄CMS visibility (WF-11).** New aidream read
+  `GET /content-plan/sites/{id}/cms-pages` (paired site's PageSummary rows,
+  read-only, never pairs) consumed by `setup/bridge.ts#bridgeCmsPages` +
+  `hooks/useCmsPageMap.ts` (auto-fetch, `planKeys.cmsPages`; unpaired = null,
+  never an error; invalidated by the bridge rungs). Tree rows and the table
+  (new sortable/filterable "Page" column, prefs version 2) badge each node
+  Draft/Published; NodePanel gained a "CMS Page" card (route, publish state,
+  Edit in CMS, Open live/Preview). Brand-site Quick work links Content plan +
+  the paired CMS site (WF-12).
 - 2026-07-30 — Claude (round 6): **every step now has an agent; keyword
   strategy is TOP-DOWN.** Three more platform agents (six total):
   **Keyword Strategist** (`e063ded1-…`) — Arman's ruling that keywords are

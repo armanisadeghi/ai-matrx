@@ -15,12 +15,14 @@ import {
   ExternalLink,
   FileText,
   Gauge,
+  Globe,
   Globe2,
   Grid3x3,
   KeyRound,
   Link2,
   Loader2,
   Map,
+  Network,
   Pencil,
   Play,
   Plug,
@@ -548,7 +550,11 @@ export function SiteOverview() {
                 statuses={statuses}
                 sitePath={sitePath}
               />
-              <QuickWorkCard sitePath={sitePath} />
+              <QuickWorkCard
+                sitePath={sitePath}
+                webSiteId={site.id}
+                siteSettings={site.settings}
+              />
             </div>
 
             <WorkspaceDirectory metrics={metrics} sitePath={sitePath} />
@@ -980,7 +986,29 @@ function AttentionCard({
   );
 }
 
-function QuickWorkCard({ sitePath }: { sitePath: string }) {
+/** The paired CMS site recorded by the plan↔CMS bridge (`settings.cms`). */
+function readCmsPairing(
+  settings: unknown,
+): { siteId: string; slug: string } | null {
+  if (!settings || typeof settings !== "object") return null;
+  const cms = (settings as Record<string, unknown>).cms;
+  if (!cms || typeof cms !== "object") return null;
+  const record = cms as Record<string, unknown>;
+  const siteId = typeof record.site_id === "string" ? record.site_id : "";
+  if (!siteId) return null;
+  return { siteId, slug: typeof record.slug === "string" ? record.slug : "" };
+}
+
+function QuickWorkCard({
+  sitePath,
+  webSiteId,
+  siteSettings,
+}: {
+  sitePath: string;
+  webSiteId: string;
+  siteSettings: unknown;
+}) {
+  const cmsPairing = readCmsPairing(siteSettings);
   return (
     <SectionCard title="Quick work">
       <div className="grid gap-2 p-3 sm:grid-cols-2">
@@ -1008,6 +1036,27 @@ function QuickWorkCard({ sitePath }: { sitePath: string }) {
             Manage integrations
           </Link>
         </Button>
+        <Button asChild variant="outline" className="h-9 justify-start gap-2">
+          <Link href={`/marketing/content-plan/${webSiteId}`}>
+            <Network className="h-4 w-4" />
+            Content plan
+          </Link>
+        </Button>
+        {cmsPairing ? (
+          <Button asChild variant="outline" className="h-9 justify-start gap-2">
+            <Link
+              href={`/cms/${cmsPairing.siteId}`}
+              title={
+                cmsPairing.slug
+                  ? `Paired CMS site: ${cmsPairing.slug}`
+                  : "Paired CMS site"
+              }
+            >
+              <Globe className="h-4 w-4" />
+              CMS site
+            </Link>
+          </Button>
+        ) : null}
       </div>
     </SectionCard>
   );

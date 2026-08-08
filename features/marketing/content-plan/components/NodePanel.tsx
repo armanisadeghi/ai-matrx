@@ -8,7 +8,7 @@
  * site…) — shown verbatim inside a friendly toast, never masked.
  */
 import { useMemo, useState } from "react";
-import { Loader2, PenLine, Sparkles, Trash2 } from "lucide-react";
+import { ExternalLink, Loader2, PenLine, Sparkles, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -53,6 +53,7 @@ import {
 } from "../types";
 import { CategorySelect } from "@/features/scopes/components/CategorySelect";
 import { useBriefWriter } from "../hooks/useBriefWriter";
+import type { CmsPageMapEntry } from "../setup/bridge";
 import { KeywordPicker } from "./KeywordPicker";
 import { NodeAssociations } from "./NodeAssociations";
 import { AttributesEditor } from "./AttributesEditor";
@@ -65,6 +66,8 @@ export function NodePanel({
   onDeleted,
   deepen,
   allNodes,
+  cmsPage,
+  cmsSiteId,
 }: {
   node: PlanNodeRow;
   siteId: string;
@@ -76,6 +79,10 @@ export function NodePanel({
   /** Workbench-owned so an in-flight run survives node switches (the panel
    * remounts per node via key={node.id}). */
   deepen: PlanDeepenController;
+  /** WF-11: the CMS page realizing this node (null = none / unpaired). */
+  cmsPage?: CmsPageMapEntry | null;
+  /** The paired CMS site id — the "Edit in CMS" link target. */
+  cmsSiteId?: string | null;
 }) {
   const update = useUpdatePlanNode(siteId);
   const remove = useDeletePlanNode(siteId);
@@ -479,6 +486,67 @@ export function NodePanel({
         <PanelSection title="Placement">
           <MoveNodeControl node={node} siteId={siteId} />
         </PanelSection>
+
+        {cmsPage ? (
+          <PanelSection title="CMS Page">
+            <div className="rounded-md border border-border bg-muted/20 p-2.5 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="min-w-0 break-all font-mono text-xs text-foreground">
+                  {cmsPage.route ?? cmsPage.title}
+                </span>
+                <span
+                  className={
+                    cmsPage.isPublished
+                      ? "shrink-0 rounded bg-emerald-500/15 px-1.5 py-px text-[10px] font-medium text-emerald-600 dark:text-emerald-400"
+                      : "shrink-0 rounded bg-sky-500/15 px-1.5 py-px text-[10px] font-medium text-sky-600 dark:text-sky-400"
+                  }
+                >
+                  {cmsPage.isPublished
+                    ? cmsPage.hasDraft
+                      ? "published + draft"
+                      : "published"
+                    : "draft"}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {cmsSiteId ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1 text-xs"
+                    onClick={() =>
+                      window.open(
+                        `/cms/${cmsSiteId}/pages/${cmsPage.pageId}`,
+                        "_blank",
+                      )
+                    }
+                  >
+                    <PenLine className="h-3 w-3" />
+                    Edit in CMS
+                  </Button>
+                ) : null}
+                {(cmsPage.isPublished ? cmsPage.liveUrl : cmsPage.previewUrl) ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1 text-xs"
+                    onClick={() =>
+                      window.open(
+                        (cmsPage.isPublished
+                          ? cmsPage.liveUrl
+                          : cmsPage.previewUrl) as string,
+                        "_blank",
+                      )
+                    }
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    {cmsPage.isPublished ? "Open live" : "Preview"}
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          </PanelSection>
+        ) : null}
 
         <PanelSection title="Targeting">
           <div>

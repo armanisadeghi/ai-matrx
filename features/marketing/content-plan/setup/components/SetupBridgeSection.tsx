@@ -165,6 +165,8 @@ export function SetupBridgeSection({
     Promise.all([
       queryClient.invalidateQueries({ queryKey: setupKeys.cms(site.id) }),
       queryClient.invalidateQueries({ queryKey: marketingKeys.siteOptions() }),
+      // WF-11 overlay: realized/published/filled pages change the node→page map.
+      queryClient.invalidateQueries({ queryKey: planKeys.cmsPages(site.id) }),
     ]);
 
   // Announce the run's end exactly once and refresh the CMS facts the other

@@ -57,7 +57,7 @@ plus a clear error path in `aidream/services/cms/components.py` and the FE compo
 
 ## WF-5 — `use_client_header` / `use_client_footer` exposed nowhere in the UI
 
-**Status:** UNASSIGNED · **Repo:** matrx-frontend · **Severity:** MEDIUM
+**Status:** DONE (2026-08-07 — PageEditor Settings toggles) · **Repo:** matrx-frontend · **Severity:** MEDIUM
 
 Per-page opt-out of the shared header/footer exists as columns (default true) and in the API
 (`app/api/cms/pages/route.ts:199-200`) but no UI reads or writes it — humans can't see or change
@@ -66,7 +66,7 @@ what agents can. **Fix:** add both toggles to the PageEditor Settings tab
 
 ## WF-6 — Site settings page: theme, navigation, footer are read-only JSON
 
-**Status:** UNASSIGNED · **Repo:** matrx-frontend · **Severity:** MEDIUM
+**Status:** DONE (2026-08-07 — SiteAdvancedSettings editors; theme RENDERING still gated on WF-1) · **Repo:** matrx-frontend · **Severity:** MEDIUM
 
 `/cms/[siteId]/settings` (`app/(core)/cms/[siteId]/settings/page.tsx:236-256`) shows
 `theme_config`, `navigation`, `footer_config` as a read-only preview labeled "editable here in a
@@ -100,7 +100,7 @@ the chaos test — kill the process mid-fill, assert the job resumes on boot
 
 ## WF-9 — Doc drift: FE CMS FEATURE.md denies `client_content_exceptions` exists
 
-**Status:** UNASSIGNED · **Repo:** matrx-frontend · **Severity:** LOW
+**Status:** DONE (2026-08-07 — FEATURE.md corrected) · **Repo:** matrx-frontend · **Severity:** LOW
 
 `features/cms/FEATURE.md` (~line 147) claims the exceptions table doesn't exist; it shipped in
 CMS migration 0011 and the approvals queue UI reads it
@@ -120,7 +120,7 @@ existing settings values, update `aidream/services/content_plan/` readers and th
 
 ## WF-11 — Plan UI never shows the CMS page a node became
 
-**Status:** UNASSIGNED · **Repo:** matrx-frontend · **Severity:** MEDIUM
+**Status:** DONE (2026-08-07 — cms-pages read + tree/table badges + NodePanel card) · **Repo:** matrx-frontend · **Severity:** MEDIUM
 
 `client_pages.plan_node_id` links 28 live pages to nodes, but `NodePanel`, `PlanNodesTable`,
 `PlanTree`, and `PillarMap` show nothing — no "has page / published / open it" affordance
@@ -131,7 +131,7 @@ badge/column in tree + table and a linked-page card with open/edit links in `Nod
 
 ## WF-12 — Brand cockpit and CMS don't know about each other
 
-**Status:** UNASSIGNED · **Repo:** matrx-frontend · **Severity:** LOW
+**Status:** DONE (2026-08-07 — Quick work links + CMS settings pairing card) · **Repo:** matrx-frontend · **Severity:** LOW
 
 The pairing `client_sites.web_site_id` is written only by `bridgeReconcile({cmsSite})` from the
 content-plan Setup view; `/marketing/brands/[brandId]` and `/cms/[siteId]` show no cross-link in

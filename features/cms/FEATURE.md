@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-07-10`
+**Last updated:** `2026-08-07`
 
 ---
 
@@ -49,7 +49,7 @@ build plan this feature is part of (project P5).
 - `POST /api/cms/pages` — `list/get/create/promote/update/save-draft/publish/discard-draft/rollback/delete` (owner-scoped) + `admin_list` (requireSuperAdmin). `promote` (W2-A) copies an owned `html_pages` row onto an owned site as a NEW draft page: converter split per the my-matrx `/p/[id]` renderer via `features/html-pages/utils/promoteConvert.ts` (TS twin of aidream `services/cms/convert.py`; both test byte-identically against the shared `promote-convert-fixtures.json` — change semantics ⇒ change both), content lands ONLY in `_draft` twins (never auto-published), provenance both directions (`client_pages.source_*` cols, CMS migration 0008 / `html_pages.context_metadata.promotions[]`), idempotent per `(client_id, source_html_page_id)` unless `forceNew`.
 - `POST /api/cms/components` — `list/get/create/update/delete` (owner-scoped)
 - `POST /api/cms/versions` — `list/get` (read-only, owner-scoped)
-- `POST /api/cms/approvals` — `list/approve/reject` (requireSuperAdmin) — F3 exception queue, degrades gracefully until P1's store table exists
+- `POST /api/cms/approvals` — `list/approve/reject` (requireSuperAdmin) — F3 exception queue over `client_content_exceptions` (CMS migration 0011; approve flow live-verified 2026-07-14)
 - `POST /api/cms/assets` — `list/get/create/update/usage/delete` (owner-scoped) + `admin_list` (requireSuperAdmin). W2-B asset library over `client_assets`. **Bytes never pass through this route** — the client uploads through the canonical `fileHandler.upload({preset:'web', visibility:'public'})` → aidream `POST /assets` (durable public CDN URL), then `create` registers the metadata row. `create` re-enforces the durability doctrine (second layer): refuses a `file_path` that isn't absolute https or that carries a signed/expiring-link signature (`isSignedExpiringUrl`, mirrors aidream's validator). `delete` LIVE-scans pages+components (live + draft columns) and returns 409 `asset_in_use` with the exact reference list unless `force`; `usage` returns the same scan and re-syncs `used_in_pages`. aidream twin: `services/cms_assets/`.
 - `POST /api/cms/collections` — W2-C collections (CMS migration 0015): `list` (per site, with live item/unread counts) / `get` / `create` / `update` / `archive` / `delete` (soft) / `rotate_key` (owner-scoped) + item ops `items_list` (filters + search + pagination) / `items_get` / `items_set_flags` (seen/spam/archive, row or bulk) / `items_delete` (soft) / `items_create` + `items_update` (ADMIN AUTHORING — see below) / `items_export` (rows for client-side CSV; stops on EITHER cap — 10,000 rows or ~3.5 MB serialized, returning `{truncated, reason}` because a row cap alone never bounded unbounded jsonb under Vercel's 4.5 MB response limit) + `admin_list` (requireSuperAdmin). Server rules mirrored in-route: slug `^[a-z0-9][a-z0-9_-]{0,62}$`; a field_schema containing `richtext` is REJECTED while `public_write` is true (checked on the MERGED result on update). First collection create mints `client_sites.data_api_key` (`'mk_' + 32 hex`); `rotate_key` re-mints it (old key dies immediately, published pages pick the new one up at next SSR render). Search on non-searchable collections is a capped in-route scan (2,000 newest; `searchTruncated` flag) — PostgREST cannot ilike a jsonb column; searchable collections use `textSearch` on `search_vector`.
   Flipping `searchable` false→true calls `backfill_collection_search_vectors` (CMS migration 0019) — the tsvector trigger only fires on insert/`UPDATE OF data`, so existing rows were silently unfindable; the row count rides back on `searchBackfill` and screams at the cap.
@@ -144,7 +144,7 @@ Supabase MCP at the wrong project for this feature.
   `field_schema` is validator DATA, never DDL. `client_sites.data_api_key` (dedicated column, NOT in
   the settings jsonb) is the public write key — ships in page HTML, not a secret; rotation is the
   kill-switch. Turnstile/CAPTCHA was CUT from v1 — no UI, no settings seam.
-- `client_content_exceptions` — **does not exist yet.** P1 owns creating it (schema shape: P3's `matrx_content_guard.models.ContentException` + `Violation`, `packages/matrx-content-guard/matrx_content_guard/models.py`). `/api/cms/approvals` and `ApprovalsQueuePanel` are built against that shape and self-report `available: false` until the table lands.
+- `client_content_exceptions` — the F3 exception store (aidream CMS migration `0011`; shape: `matrx_content_guard.models.ContentException` + `Violation`, `packages/matrx-content-guard/matrx_content_guard/models.py`). `/api/cms/approvals` + `ApprovalsQueuePanel` read/write it; the route still degrades gracefully (`available: false`) if the table is ever missing.
 
 **Version RPCs (aidream CMS migrations `0003` + `0006`).** `history` and `platform` are not exposed
 to PostgREST, so the routes reach the version system through a `public` façade that mirrors the main
@@ -304,8 +304,6 @@ logged. **This route only edits the setting — enforcement is P1's service-laye
   `requireSuperAdmin()` — never reachable by a normal owner, even for their own sites.
 - **Activity log `actor` lives inside `changes` jsonb**, not a column — filter/read via
   `row.changes?.actor`, never add an `actor` column.
-- **`client_content_exceptions` does not exist.** `/api/cms/approvals` will 42P01 gracefully
-  (`available: false`) until P1 creates it — this is expected, not a bug, until Convergence A.
 - **Polling, not Realtime, for the activity feed** — deliberate (browser has no Supabase client for
   this project; Realtime needs one). Do not "upgrade" this to Postgres Changes without first solving
   the anon-key/RLS story for this project.
@@ -346,6 +344,20 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-07` — **Human parity + plan cross-links (WF-5/6/9/12).** PageEditor
+  Settings gained `use_client_header`/`use_client_footer` toggles (agents could
+  set them; humans couldn't). `/cms/[siteId]/settings` read-only JSON stubs
+  replaced by real per-field editors — theme tokens (`--color-*` contract, live
+  swatches; the render-time safety allowlist stays the ONLY validator — no TS
+  twin was created), navigation, footer layout (columns/flags/copyright/legal;
+  contact + social CONTENT stays on their own editors — one source of truth per
+  fact), contact info, social links — via
+  `features/cms/components/settings/SiteAdvancedSettings.tsx`, each section
+  saving only its own field through the one `/api/cms/sites` update path.
+  `ClientSite` gained `web_site_id` (read-only pairing) and settings shows a
+  Content Plan pairing card linking `/marketing/content-plan/{web_site_id}`.
+  Stale `client_content_exceptions` doc claims corrected (the table shipped in
+  CMS migration 0011).
 - `2026-07-29` — CMS page metadata counters now consume the canonical SERP
   code-point counter and limits; no CMS-local SEO thresholds remain.
 - `2026-07-29` — **Marketing "Push to CMS" support.** `CmsPageService.createPage` gained `parentId`

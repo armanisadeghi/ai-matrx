@@ -20,7 +20,10 @@ import {
 } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 
-import type { PlanAiRunState } from "../hooks/useContentPlanAi";
+import type {
+  BulkDeepenState,
+  PlanAiRunState,
+} from "../hooks/useContentPlanAi";
 import { ResearchTopicSelect } from "./ResearchTopicSelect";
 
 export function PlanGenerateBar({
@@ -30,6 +33,11 @@ export function PlanGenerateBar({
   onDismiss,
   researchTopicId,
   onResearchTopicChange,
+  bulkDeepen,
+  emptyBriefCount,
+  onBulkDeepen,
+  onBulkDeepenCancel,
+  onBulkDeepenDismiss,
 }: {
   nodeCount: number;
   run: PlanAiRunState;
@@ -38,10 +46,61 @@ export function PlanGenerateBar({
   /** The research topic grounding the generator (the site's recorded link). */
   researchTopicId: string | null;
   onResearchTopicChange: (topicId: string | null) => void;
+  /** Bulk deepen (research-grounded brief writer over every empty brief). */
+  bulkDeepen?: BulkDeepenState;
+  emptyBriefCount?: number;
+  onBulkDeepen?: () => void;
+  onBulkDeepenCancel?: () => void;
+  onBulkDeepenDismiss?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [maxNodes, setMaxNodes] = useState(40);
   const [guidance, setGuidance] = useState("");
+
+  if (bulkDeepen && bulkDeepen.status === "running") {
+    return (
+      <div className="flex items-center gap-2 border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-foreground">
+        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+        <span className="min-w-0 flex-1 truncate">
+          Deepening {bulkDeepen.done + 1}/{bulkDeepen.total}
+          {bulkDeepen.current ? ` — ${bulkDeepen.current}` : ""}
+          {bulkDeepen.stage ? ` · ${bulkDeepen.stage}` : ""}
+          {bulkDeepen.failures.length > 0
+            ? ` · ${bulkDeepen.failures.length} failed`
+            : ""}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 shrink-0 px-2 text-xs"
+          onClick={onBulkDeepenCancel}
+        >
+          Stop
+        </Button>
+      </div>
+    );
+  }
+
+  if (bulkDeepen && bulkDeepen.status === "error") {
+    return (
+      <div className="flex items-center gap-2 border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+        <span className="min-w-0 flex-1 truncate">
+          Bulk deepen: {bulkDeepen.failures.length} of {bulkDeepen.total}{" "}
+          failed — {bulkDeepen.failures[0]?.route}:{" "}
+          {bulkDeepen.failures[0]?.error}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 shrink-0 p-0"
+          aria-label="Dismiss"
+          onClick={onBulkDeepenDismiss}
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    );
+  }
 
   if (run.status === "running") {
     return (
@@ -81,6 +140,18 @@ export function PlanGenerateBar({
           ? "No plan yet — let three research agents draft one, then correct it."
           : "Agents can extend this plan — existing pages are never overwritten."}
       </span>
+      {onBulkDeepen && (emptyBriefCount ?? 0) > 0 ? (
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 shrink-0 gap-1.5 px-2.5 text-xs"
+          title="Run the research-grounded deepen over every page with an empty brief — brief bullets + sources land on each node."
+          onClick={onBulkDeepen}
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          Deepen briefs ({emptyBriefCount})
+        </Button>
+      ) : null}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
