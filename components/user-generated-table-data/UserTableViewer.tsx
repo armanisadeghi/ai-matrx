@@ -220,7 +220,10 @@ const UserTableViewer = ({
 
   // Ownership state
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [isReadOnly, setIsReadOnly] = useState(false);
+  // Sharing gate: owner ALWAYS edits; a non-owner edits when has_permission
+  // grants editor on the dataset (same pattern as /workbooks/[id]). Derived,
+  // not stored — only the async shared-editor lookup is state.
+  const [sharedEditor, setSharedEditor] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -303,13 +306,32 @@ const UserTableViewer = ({
     fetchCurrentUser();
   }, []);
 
-  // Update isReadOnly when tableInfo or currentUserId changes
+  // has_permission is the source of truth for sharing, so the UI matches
+  // what the RLS-protected RPCs will actually accept — previously shared
+  // EDITORS were wrongly shown the read-only UI.
+  const isOwner =
+    tableInfo !== null &&
+    currentUserId !== null &&
+    tableInfo.user_id === currentUserId;
+  const isReadOnly =
+    tableInfo !== null && currentUserId !== null && !isOwner && !sharedEditor;
+
   useEffect(() => {
-    if (tableInfo && currentUserId !== null) {
-      const tableOwnerId = tableInfo.user_id;
-      setIsReadOnly(tableOwnerId !== currentUserId);
-    }
-  }, [tableInfo, currentUserId]);
+    if (!tableInfo || currentUserId === null || isOwner) return;
+    let cancelled = false;
+    supabase
+      .rpc("has_permission", {
+        p_resource_type: "dataset",
+        p_resource_id: tableId,
+        p_required_permission: "editor",
+      })
+      .then(({ data: perm }) => {
+        if (!cancelled) setSharedEditor(perm === true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tableInfo, currentUserId, isOwner, tableId]);
 
   // Show toast when trying to edit in read-only mode
   const showReadOnlyToast = () => {
