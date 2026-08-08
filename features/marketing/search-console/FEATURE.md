@@ -13,10 +13,17 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   nightly + `POST /seo/sites/{site_id}/gsc/search-performance/sync`
   on-demand — see aidream `services/seo/FEATURE.md`). Six dimension
   profiles per site per day; ~16-month backfill; append-only.
-- **Read layer:** four `SECURITY INVOKER` RPCs applied live and recorded in
+- **Read layer:** four RPCs applied live and recorded in
   [`migrations/seo_gsc_perf_rpcs.sql`](../../../migrations/seo_gsc_perf_rpcs.sql):
   `seo.gsc_perf_summary` / `gsc_perf_timeseries` / `gsc_perf_breakdown` /
-  `gsc_perf_freshness`. **THE ACCURACY CONTRACT lives in that migration's
+  `gsc_perf_freshness`. **ALL top-level `seo.gsc_perf_*` read RPCs are
+  `SECURITY DEFINER` with `seo.gsc_assert_site_access(p_site_id)` as their
+  FIRST statement** ([`migrations/seo_gsc_rpc_security_definer.sql`](../../../migrations/seo_gsc_rpc_security_definer.sql),
+  2026-08-07): as INVOKER, the row policy ran `iam.has_org_access()` per
+  fact row (~500k calls, 12.8s measured vs 0.3s) and PostgREST's statement
+  timeout turned whole tabs into 500s that rendered as "No data". Any NEW
+  site-scoped GSC read RPC MUST follow this pattern — DEFINER + the assert
+  guard — never bare INVOKER, and never DEFINER without the guard. **THE ACCURACY CONTRACT lives in that migration's
   header — read it before touching any of this feature's numbers**:
   narrowest-profile resolution (property = truth for totals; bare
   query/page profiles avoid `query_page` sampling loss), CTR =
@@ -328,6 +335,12 @@ its dismiss-layer race — the input "flashed and disappeared").
   reads that had no error state, empty state now requires a successful read,
   success toast keys on `reachedLatest` alone, invalidation moved to
   `finally`, portfolio marks stale sites.
+- 2026-08-07 — GSC RPC timeout class fix + Insights clarity: all top-level
+  `seo.gsc_perf_*` RPCs converted SECURITY INVOKER → SECURITY DEFINER with
+  one-shot `gsc_assert_site_access` guard (per-row RLS `has_org_access` was
+  12.8s/call → statement-timeout 500s → Insights silently showed "No data";
+  now ~0.4s, 31x). Traffic quality view now prints the exact resolved
+  current-vs-compare dates and a Total row (clicks/Δ/impressions/Δ/queries).
 - 2026-08-04 — Short ranges (1d/7d/14d) + the "it never updates" fixes:
   named `GSC_DEFAULT_RANGE` replaces the positional preset fallback,
   header prints the resolved window, KPI band shows a refetch state,
