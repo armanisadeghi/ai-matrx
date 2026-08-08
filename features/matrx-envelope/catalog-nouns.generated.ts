@@ -153,10 +153,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "contact_submissions",
   "title_column": "name"
  },
- "content_block": {
-  "table": "content_blocks",
-  "title_column": "label"
- },
  "content_ir_kind": {
   "table": "content_ir.kind_definition",
   "title_column": "label"
@@ -164,10 +160,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  "content_ir_kind_instance": {
   "table": "content_ir.kind_instance",
   "title_column": "title"
- },
- "content_template": {
-  "table": "content_template",
-  "title_column": "label"
  },
  "context_item": {
   "table": "context.context_items",
@@ -244,6 +236,10 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  "message": {
   "table": "chat.message",
   "title_column": null
+ },
+ "message_template": {
+  "table": "message_template",
+  "title_column": "label"
  },
  "note_folder": {
   "table": "workbench.note_folders",
