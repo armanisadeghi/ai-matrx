@@ -6,8 +6,8 @@
  * Minimal, focused UX:
  *   • Multi-line prompt, size selector, count, optional style.
  *   • Result tiles with click-through to Edit, Annotate, Avatar, or download.
- *   • While the Python endpoint is unimplemented, surfaces a friendly
- *     "coming soon" instead of a network error.
+ *   • Streams NDJSON from aidream POST /images/generate (execute_ai_request
+ *     over an image-modality model); every result is a persisted cld_files row.
  */
 
 import { useState } from "react";
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import {
   generateImage,
-  type ImageResult,
+  type GeneratedImageFile,
 } from "@/features/image-studio/api/python";
 import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "@/features/image-studio/constants/backend-capabilities";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
@@ -37,7 +37,7 @@ export default function GenerateShellClient() {
   const [size, setSize] = useState<Size>("square");
   const [count, setCount] = useState(1);
   const [busy, setBusy] = useState(false);
-  const [results, setResults] = useState<ImageResult[]>([]);
+  const [results, setResults] = useState<GeneratedImageFile[]>([]);
 
   const handleGenerate = async () => {
     if (!IMAGE_STUDIO_BACKEND_CAPABILITIES.generate) {

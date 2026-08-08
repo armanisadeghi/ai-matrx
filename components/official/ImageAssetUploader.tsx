@@ -68,7 +68,7 @@ import {
 } from "@/components/ui/select";
 import {
   generateImage,
-  type ImageResult,
+  type GeneratedImageFile,
 } from "@/features/image-studio/api/python";
 import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "@/features/image-studio/constants/backend-capabilities";
 
@@ -620,7 +620,7 @@ function GenerateTabContent({
   const [genState, setGenState] = useState<
     "idle" | "generating" | "picking" | "attaching" | "error"
   >("idle");
-  const [results, setResults] = useState<ImageResult[]>([]);
+  const [results, setResults] = useState<GeneratedImageFile[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleGenerate = useCallback(async () => {
@@ -656,7 +656,7 @@ function GenerateTabContent({
   }, [prompt, size, style, onError]);
 
   const handlePick = useCallback(
-    async (result: ImageResult) => {
+    async (result: GeneratedImageFile) => {
       setGenState("attaching");
       setErrorMsg(null);
       try {

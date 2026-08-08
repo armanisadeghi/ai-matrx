@@ -15,7 +15,7 @@ Four modes, one feature: **Convert** (resize to platform presets), **Edit** (ful
 | `/images/edit`        | Interactive tool                | Full-featured editor (Filerobot 5.0). Crop, rotate, resize, filters, fine-tune, shapes, text, freehand pen, watermark. Layered AI toolbar adds Suggest edits, Remove BG, Upscale 2×/4×, AI edit by prompt. |
 | `/images/annotate`    | Interactive tool                | Screenshot markup (marker.js 2). Arrows, callouts, boxes, freehand, text, frames, blur/redact regions. AI toolbar: Suggest annotations, Redact PII, Detect faces.                                          |
 | `/images/avatar`      | Interactive tool                | Dedicated circular-crop UX (react-easy-crop with `cropShape="round"`). 1:1 lock, zoom + rotation, Smart Crop button. Outputs canonical 512² PNG into `Images/Avatars/`.                                    |
-| `/images/generate`    | Gated interactive tool          | Prompt UI is retained, but submission stays disabled until the Python `/images/generate` contract is deployed.                                                                                             |
+| `/images/generate`    | Interactive tool                | Text → image via the aidream `POST /images/generate` NDJSON stream (live 2026-08-08). Result tiles deep-link into Edit / Annotate / Avatar.                                                                 |
 | `/images/presets`     | Cached catalog                  | Browsable reference for every preset (pure server-rendered).                                                                                                                                               |
 | `/images/library`     | Per-user Supabase data          | Variants the user has saved — grouped by session, public URLs.                                                                                                                                             |
 | `/images/from-base64` | Interactive tool                | Paste a base64 string (raw or `data:` URL) → preview + metadata + save to cloud. Pure browser decode (no API hop), uploads via the cloud-files share-link primitive.                                       |
@@ -220,11 +220,15 @@ the 400/128/48 variants.
 
 ### Generate mode
 
-Text → image is planned through the Python `/images/generate` endpoint. The
-prompt surface and typed client are retained, but the submit path is gated by
-`IMAGE_STUDIO_BACKEND_CAPABILITIES.generate` until that endpoint is verified
-deployed. Once enabled, result tiles deep-link into Edit / Annotate / Avatar
-via `?cloudFileId=` query params.
+Text → image runs through the aidream `POST /images/generate` endpoint
+(live since 2026-08-08 — a thin streaming wrapper over `execute_ai_request`
+with an image-modality catalog model, default `gpt-image-2`).
+`generateImage()` in `api/python.ts` drains the NDJSON stream and resolves
+on the terminal `image_generate_complete` event; every result is a
+persisted `cld_files` row with `metadata.generation` provenance
+(`IMAGE_STUDIO_BACKEND_CAPABILITIES.generate = true`). Result tiles
+deep-link into Edit / Annotate / Avatar via `?cloudFileId=` query params.
+Same wire consumer in `ImageAssetUploader`'s Generate tab.
 
 ## How to extend
 
@@ -259,6 +263,8 @@ via `?cloudFileId=` query params.
 - Notes integration: image blocks that open Edit mode in a modal, plus `prompt-from-article` / `caption-context` / `suggest-image-spots` agents (see AI-AGENTS.md).
 
 ## Change Log
+
+- **2026-08-08** — **Generate mode is LIVE.** aidream shipped `POST /images/generate` (NDJSON stream over `execute_ai_request`, terminal `image_generate_complete`). `generateImage()` now drains the stream (drainEditStream pattern), `IMAGE_STUDIO_BACKEND_CAPABILITIES.generate` flipped to `true`, and the legacy `ImageResult` interface was replaced by the generated `GeneratedImageFileItem` (re-exported as `GeneratedImageFile`) in `GenerateShellClient` + `ImageAssetUploader`.
 
 - **2026-07-29** — Metadata description guidance now imports the canonical
   SEO 70–160 character window instead of embedding another copy.

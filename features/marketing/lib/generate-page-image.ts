@@ -16,6 +16,14 @@
  *    steps internally. Available, never the default.
  * 3. `generatePageImage` — the surface's `image_producer` role binding
  *    (role-agnostic: caller resolves the agentId via useSurfaceAgentRoles).
+ *
+ * NOTE (2026-08-08): a direct non-agent render path now exists —
+ * `generateImage()` (features/image-studio/api/python.ts → aidream
+ * POST /images/generate, streaming over execute_ai_request). It is a
+ * candidate replacement for the Matrx Image Ultra render step when a
+ * caller already holds a finished prompt and needs no agent behavior;
+ * the two-step default here stays because the prompt-generator step is
+ * the product value. Consolidate deliberately, not by drift.
  */
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";

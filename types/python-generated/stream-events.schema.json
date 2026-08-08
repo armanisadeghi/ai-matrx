@@ -1036,7 +1036,7 @@
                 "type": "null"
               }
             ],
-            "default": 0,
+            "default": 0.0,
             "title": "Cost"
           }
         },
@@ -1226,7 +1226,7 @@
             "title": "Total Cost"
           },
           "known_cost_subtotal": {
-            "default": 0,
+            "default": 0.0,
             "title": "Known Cost Subtotal",
             "type": "number"
           },
@@ -1394,7 +1394,7 @@
             "type": "null"
           }
         ],
-        "default": 0,
+        "default": 0.0,
         "title": "Cost"
       }
     },
@@ -1584,7 +1584,7 @@
         "title": "Total Cost"
       },
       "known_cost_subtotal": {
-        "default": 0,
+        "default": 0.0,
         "title": "Known Cost Subtotal",
         "type": "number"
       },
@@ -1957,7 +1957,7 @@
         "type": "integer"
       },
       "progress": {
-        "default": 0,
+        "default": 0.0,
         "title": "Progress",
         "type": "number"
       },
@@ -4274,7 +4274,7 @@
         "type": "string"
       },
       "elapsed_seconds": {
-        "default": 0,
+        "default": 0.0,
         "title": "Elapsed Seconds",
         "type": "number"
       },
@@ -5386,7 +5386,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0,
+        "default": 0.0,
         "title": "Cost",
         "type": "number"
       },
@@ -5446,7 +5446,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0,
+        "default": 0.0,
         "title": "Cost",
         "type": "number"
       },
@@ -6414,7 +6414,7 @@
         "title": "Bottom Left"
       },
       "confidence": {
-        "default": 0,
+        "default": 0.0,
         "title": "Confidence",
         "type": "number"
       },
@@ -6471,6 +6471,109 @@
       "op"
     ],
     "title": "ImageEditCompleteData",
+    "type": "object"
+  },
+  "ImageGenerateCompleteData": {
+    "$defs": {
+      "GeneratedImageFileItem": {
+        "additionalProperties": false,
+        "description": "One generated image persisted to cld_files — same fields as the\nlegacy ``ImageResult`` shape the image-studio FE client consumes\n(``cloud_file_id`` + ``public_url``). ``public_url`` is the always-\nrenderable ``url`` flavour from the persist envelope (CDN when public,\nsigned-inline otherwise); clients should identify by ``cloud_file_id``\nand re-mint on expiry.",
+        "properties": {
+          "cloud_file_id": {
+            "title": "Cloud File Id",
+            "type": "string"
+          },
+          "public_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Public Url"
+          },
+          "mime": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mime"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Height"
+          }
+        },
+        "required": [
+          "cloud_file_id"
+        ],
+        "title": "GeneratedImageFileItem",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal result of POST /images/generate — ``files`` carries one\nentry per persisted image (the legacy blocking GenerateImageResponse\nbody); a migrating client reads this one event as the old response.",
+    "properties": {
+      "type": {
+        "const": "image_generate_complete",
+        "default": "image_generate_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "prompt": {
+        "default": "",
+        "title": "Prompt",
+        "type": "string"
+      },
+      "model": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Model"
+      },
+      "files": {
+        "items": {
+          "$ref": "#/$defs/GeneratedImageFileItem"
+        },
+        "title": "Files",
+        "type": "array"
+      }
+    },
+    "title": "ImageGenerateCompleteData",
     "type": "object"
   },
   "ImageStudioVariantData": {
