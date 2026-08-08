@@ -13,6 +13,11 @@
  * true hints only); primary accents mark the live/interactive bits; the
  * injected block and values AUTO-GROW (the panel scrolls — no nested scroll
  * areas); everything copyable gets a hover `InlineCopyButton`.
+ *
+ * Registered surface: `matrx-user/context-preview` (overlay
+ * `contextPreviewPanel`) — the panel mounts `<SurfaceRuntimeProvider>` and
+ * emits its full declared scope via `createContextPreviewScope`; while open,
+ * its (deeper) provider wins over the page's.
  */
 
 import { useMemo, useState } from "react";
@@ -21,9 +26,26 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { InlineCopyButton } from "@/components/matrx/buttons/InlineCopyButton";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  CONTEXT_PREVIEW_SURFACE_NAME,
+  createContextPreviewScope,
+  type AttachedContextEntrySummary,
+} from "@/features/surfaces/manifests/context-preview.manifest";
+import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
+import { selectInstanceClientTools } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.selectors";
+import {
+  selectIsMemoryEnabledForConversation,
+  selectMemoryModelForConversation,
+  selectMemoryScopeForConversation,
+} from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
+import { useActiveContextLayerItems } from "@/features/agents/components/context-items/useActiveContextLayerItems";
+import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
 import {
   useContextPreview,
   type ContextPreviewResponse,
+  type ContextPreviewState,
 } from "./useContextPreview";
 import { AttachedContextSection } from "./AttachedContextSection";
 
@@ -133,13 +155,13 @@ function buildCopyAllText(data: ContextPreviewResponse): string {
 }
 
 function ResolvedView({
-  conversationId,
+  preview,
   agentId,
 }: {
-  conversationId?: string;
+  /** Panel-level preview state — lifted so the surface scope reads the same data. */
+  preview: ContextPreviewState;
   agentId?: string;
 }) {
-  const preview = useContextPreview({ conversationId, agentId, enabled: true });
   const { status, data, error, refresh } = preview;
   const copyAllText = useMemo(
     () => (data ? buildCopyAllText(data) : ""),
@@ -329,13 +351,106 @@ function ResolvedBody({
   );
 }
 
+/** Stringified length of any attached-entry value, mirroring the wire size. */
+function entryChars(value: unknown): number {
+  if (value == null) return 0;
+  if (typeof value === "string") return value.length;
+  if (typeof value === "object") {
+    const content = (value as Record<string, unknown>).content;
+    if (typeof content === "string") return content.length;
+    try {
+      return JSON.stringify(value).length;
+    } catch {
+      return String(value).length;
+    }
+  }
+  return String(value).length;
+}
+
 export function ContextPreviewPanel({
   conversationId,
   agentId,
 }: ContextPreviewPanelProps) {
   const [view, setView] = useState<View>("resolved");
 
+  // Lifted to the panel so (a) the surface scope reads the same server truth
+  // the Resolved view renders, and (b) data survives tab switches.
+  const preview = useContextPreview({ conversationId, agentId, enabled: true });
+
+  // Attached-context mirrors for the surface scope. All selectors are
+  // null-safe for the no-conversation case (they return empty defaults).
+  const cid = conversationId ?? "";
+  const selectEntries = useMemo(() => selectInstanceContextEntries(cid), [cid]);
+  const entries = useAppSelector(selectEntries);
+  const clientTools = useAppSelector(selectInstanceClientTools(cid));
+  const memoryOn = useAppSelector(selectIsMemoryEnabledForConversation(cid));
+  const memoryModel = useAppSelector(selectMemoryModelForConversation(cid));
+  const memoryScope = useAppSelector(selectMemoryScopeForConversation(cid));
+  const layers = useActiveContextLayerItems(cid);
+
+  // Fresh on every render; SurfaceRuntimeProvider holds it in a ref and only
+  // calls it when the user hits Run.
+  const getScope = () => {
+    const data = preview.data;
+    const asRecord = (v: unknown): Record<string, unknown> | undefined =>
+      v && typeof v === "object" ? (v as Record<string, unknown>) : undefined;
+    const scopeLabels = asRecord(data?.scope_labels);
+    return createContextPreviewScope({
+      active_view: view,
+      preview_status: preview.status,
+      preview_error: preview.error ?? undefined,
+      injected_block: data?.injected_block ?? undefined,
+      block_byte_length:
+        typeof data?.block_byte_length === "number"
+          ? data.block_byte_length
+          : undefined,
+      block_producer: data?.block_producer ?? undefined,
+      scope_labels: scopeLabels
+        ? Object.values(scopeLabels).filter(
+            (v): v is string => typeof v === "string",
+          )
+        : undefined,
+      resolved_preview: asRecord(data),
+      variables_direct: asRecord(data?.variables?.direct),
+      variables_tool_accessible: asRecord(data?.variables?.tool_accessible),
+      variables_searchable: asRecord(data?.variables?.searchable),
+      binding_variables: asRecord(data?.bindings?.variables),
+      binding_context_slots: asRecord(data?.bindings?.context),
+      attached_entries: entries.map((e): AttachedContextEntrySummary => {
+        const docKind = docKindForContextKey(e.key);
+        return {
+          key: e.key,
+          label: e.label?.trim() || e.key,
+          kind:
+            docKind === "working"
+              ? "working_document"
+              : docKind === "scratch"
+                ? "scratchpad"
+                : e.slotMatched
+                  ? "slot"
+                  : "extra",
+          chars: entryChars(e.value),
+        };
+      }),
+      attached_client_tools: clientTools.length > 0 ? [...clientTools] : [],
+      observational_memory: conversationId
+        ? { enabled: memoryOn, model: memoryModel, scope: memoryScope }
+        : undefined,
+      active_context_layers: layers.items.map((l) => ({
+        id: l.id,
+        title: l.title,
+        type: l.typeLabel ?? "",
+      })),
+      conversation_id: conversationId,
+      conversation_agent_id: agentId,
+    });
+  };
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={CONTEXT_PREVIEW_SURFACE_NAME}
+      getScope={getScope}
+    >
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center gap-1 border-b border-border px-3 py-1.5">
         {(
@@ -360,7 +475,7 @@ export function ContextPreviewPanel({
         ))}
       </div>
       {view === "resolved" ? (
-        <ResolvedView conversationId={conversationId} agentId={agentId} />
+        <ResolvedView preview={preview} agentId={agentId} />
       ) : conversationId ? (
         <AttachedContextSection conversationId={conversationId} />
       ) : (
@@ -369,5 +484,6 @@ export function ContextPreviewPanel({
         </div>
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
