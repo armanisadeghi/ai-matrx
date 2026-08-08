@@ -110,11 +110,12 @@ is easy to fill in.
   voices) and follow a roster-first + count-check protocol; slots repinned
   (roundtable v4, multihost v6, solo v4); e2e matrix gained
   `roundtable_10/14/20`. Live prod runs hit the exact GATE 2 count at all
-  three sizes with matching declarations. KNOWN BLOCKER: a same-day
-  typed-LLMParams regression breaks ALL 3–20 host audio until the
-  `TtsDialogueTurn` fix on `claude/large-cast-podcast-hardening-2sdo9w`
-  deploys — details + resume plan in
-  `docs/HANDOFF_PODCAST_SYSTEM.md` §5.1/§5.2.
+  three sizes with matching declarations. The same-day typed-LLMParams
+  regression (broke all 3–20 host audio) is fixed AND deployed — 10-host
+  verified green end-to-end on prod. REMAINING: ElevenLabs caps a dialogue
+  request at 10 DISTINCT voices, so 11–20 hosts share gender-matched voices —
+  fix committed (aidream `9977828`), awaiting the next aidream release.
+  Details + verification plan: `docs/HANDOFF_PODCAST_SYSTEM.md` §5.1/§5.2.
 
 - 2026-08-08 — **Chapter markers + pre-script processing went live (Coming
   Soon retired on both).** Run page: the Chapter markers ComingSoonCard is now

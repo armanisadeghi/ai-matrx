@@ -22,8 +22,9 @@ leaking into TTS, and the "speaker name mismatch" error — is now **structurall
 impossible**: nothing reaches TTS that isn't a validated `<podcast_dialogue>`
 script with exactly the requested number of speakers and names that match.
 The same-day typed-params regression that broke the 3–20 host audio stage is
-fixed in this release; production verification for 10/14/20-host audio remains
-pending (§5.2).
+fixed and deployed; **10-host audio is verified green end-to-end on prod**
+(run `afd2d558`, eleven_v3). 11–20 hosts hit ElevenLabs' hard 10-distinct-voice
+cap — a voice-sharing fix is committed and awaits the next aidream release (§5.2).
 
 ---
 
@@ -50,6 +51,7 @@ uv run python scripts/podcast_gate_tests.py                 # deterministic, fre
 uv run python -u scripts/podcast_e2e_matrix.py <scenario…>  # real agents/$$, truncated audio
 # scenarios: topic full_content partial_content pasted_script file_url file_url_real
 #            two_host_custom_names solo three_host six_host_roundtable
+#            roundtable_10 roundtable_14 roundtable_20   (large-cast, 2026-08-08)
 ```
 
 ---
@@ -86,8 +88,10 @@ Full detail in `PODCAST_PIPELINE.md` §3. Summary:
 **`<speaker_settings>` contract (optional, the robustness path):** a script agent
 MAY append after the dialogue block:
 `<speaker_settings>{"speakers":[{"name":"Alex","voice":"orus"}]}</speaker_settings>`.
-The pipeline prefers it for voice assignment; GATE 2 cross-checks it. **No agent
-emits it yet** — the prompt snippet to add is in `PODCAST_PIPELINE.md` §4.1.
+The pipeline prefers it for voice assignment; GATE 2 cross-checks it. **All three
+generic script agents REQUIRE and emit it as of 2026-08-08** (name + gender,
+never voice — the server owns voice selection); verified in persisted prod
+scripts at 1/10/14/20 hosts.
 
 **DB:** `pc_episodes.{script,host_count,speakers}`, `pc_articles` (kind blog|show_notes, unique `(episode_id,kind)`).
 
@@ -115,8 +119,17 @@ Ordered by importance. These are the honest gaps.
    matching the dialogue labels exactly (verified in `chat.agent_run_stage`
    output; GATE 2 passed at all three sizes, ~40–50s per script on Gemini 3.6
    Flash). `scripts/podcast_e2e_matrix.py` gained `roundtable_10/14/20`
-   scenarios. Audio for these sizes remains unverified end to end; resume the
-   runs above (or re-run the matrix) after deployment to close the loop.
+   scenarios. **Audio results (post-deploy re-run, 2026-08-08):** 10-host
+   rendered end-to-end (run `afd2d558`, eleven_v3, ~$0.55 truncated). 14/20
+   failed on a hard PROVIDER limit — ElevenLabs `text_to_dialogue` allows at
+   most **10 distinct voice_ids per request** (`max_voices_exceeded "N/10"`).
+   Fix committed to aidream (`9977828`, awaiting release):
+   `_ELEVENLABS_MAX_DISTINCT_VOICES` caps assignment and SHARES gender-matched
+   voices beyond 10 (labels stay distinct; loud warning), plus a pre-flight
+   guard when explicit pins force past the cap. After it deploys, re-run
+   `roundtable_14`/`roundtable_20` to confirm; if all-distinct voices at 11–20
+   matter as a product bar, the alternative is multi-request render + stitch
+   (Arman's call — tracked in aidream FOUND_DEFECTS.md).
 
 3. **`<speaker_settings>` is now REQUIRED and emitted (2026-08-08).** All three
    generic script agents demand the declaration (name + gender, never voice —
