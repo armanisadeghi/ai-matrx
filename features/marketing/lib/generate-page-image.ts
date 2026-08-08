@@ -27,7 +27,6 @@ import {
   selectAnswerText,
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import type { ImageBlock } from "@/features/files/blocks/types";
 
 /**
  * System agent "GPT Image Prompt Generator" — permanent latest-version
@@ -53,18 +52,43 @@ export const MATRX_IMAGE_ULTRA_AGENT_ID =
 export const IMAGE_ALL_IN_ONE_AGENT_ID =
   "6bc1d330-40b5-49f8-8895-e5b55ec95ae9";
 
-const TERMINAL_STATUSES = new Set(["complete", "completed", "error", "failed"]);
+// The REAL RequestStatus terminal values (features/agents/types/request.types
+// RequestStatus). The old set carried "completed"/"failed" — statuses that do
+// not exist — and missed "timeout"/"cancelled", so those runs burned the full
+// wait timeout instead of settling the moment the request went terminal.
+const TERMINAL_STATUSES = new Set(["complete", "error", "timeout", "cancelled"]);
+
+/**
+ * Pull a matrx file id out of a render block's data bag, tolerating the
+ * shapes that actually reach Redux: the canonical UnifiedImageBlock
+ * (`fileId`, camelCase) AND the wire/matrx-files spelling (`file_id`) that
+ * the FileRecord contract drift (D130 console evidence) can leak through.
+ * External blocks never carry a file id, so its presence is the signal;
+ * an explicit `origin: "external"` is still rejected.
+ */
+function extractMatrxFileId(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const d = data as Record<string, unknown>;
+  if (d.origin === "external") return null;
+  if (typeof d.fileId === "string" && d.fileId) return d.fileId;
+  if (typeof d.file_id === "string" && d.file_id) return d.file_id;
+  return null;
+}
 
 function findImageFileId(state: RootState, requestId: string): string | null {
   const request = state.activeRequests.byRequestId[requestId];
   if (!request) return null;
+  // Once the request is terminal, accept an image block even if its status
+  // never flipped to "complete" — a stream closed by the terminal-settlement
+  // guard (process-stream.ts) may leave the final block's status behind, and
+  // dropping a fileId the server already persisted would fail the whole run.
+  const requestIsTerminal = TERMINAL_STATUSES.has(request.status);
   for (const blockId of Object.keys(request.renderBlocks)) {
     const block = request.renderBlocks[blockId];
-    if (block.type !== "image_output" || block.status !== "complete") continue;
-    const data = block.data as unknown as Partial<ImageBlock> | null;
-    if (data && data.origin === "matrx" && typeof data.fileId === "string") {
-      return data.fileId;
-    }
+    if (block.type !== "image_output") continue;
+    if (block.status !== "complete" && !requestIsTerminal) continue;
+    const fileId = extractMatrxFileId(block.data);
+    if (fileId) return fileId;
   }
   return null;
 }

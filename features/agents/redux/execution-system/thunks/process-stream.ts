@@ -536,6 +536,42 @@ export async function processStream({
   // the commit so runAiStream's canonical error path runs unchanged.
   let streamFailure: Error | null = null;
 
+  // ── Terminal-settlement guard (D130) ───────────────────────────────────────
+  // The read loop below exits only when the TRANSPORT closes. A healthy server
+  // closes the response right after `end` — but a wedged post-terminal server
+  // (run fully persisted, terminal events delivered, socket held open by its
+  // heartbeat task) used to hang this await FOREVER: heartbeats keep the
+  // liveness monitor happy and the lifetime ceiling is 24h, so every caller
+  // awaiting the thunk (headless pipelines, launchAgentExecution consumers)
+  // never settled even though the run was done. Once the server declares the
+  // request terminal — `completion(user_request)`, a fatal `error` event, or
+  // `end` — nothing but the close may follow, so we arm ONE bounded grace
+  // window and end the stream locally if the close never comes. The abort
+  // makes the background reader push its normal end-of-stream sentinel, so
+  // the loop exits CLEANLY through the commit path below — indistinguishable
+  // from a natural close. Firing is a server defect and screams accordingly.
+  const POST_TERMINAL_GRACE_MS = 30_000;
+  let postTerminalGraceTimer: ReturnType<typeof setTimeout> | null = null;
+  const armPostTerminalGrace = (terminalSignal: string) => {
+    if (!abortController || postTerminalGraceTimer !== null) return;
+    postTerminalGraceTimer = setTimeout(() => {
+      console.error(
+        `[stream:${requestId.slice(0, 8)}] server declared the request terminal (${terminalSignal}) but never closed the stream within ${POST_TERMINAL_GRACE_MS}ms — ending it locally so the client promise settles. SERVER DEFECT: the response was held open after terminal.`,
+        { requestId, conversationId },
+      );
+      captureError({
+        source: "agent-stream-terminal-guard",
+        message:
+          `Stream stayed open ${POST_TERMINAL_GRACE_MS}ms after terminal signal ` +
+          `"${terminalSignal}" — closed locally so the awaited request settles ` +
+          `(D130: headless pipeline hung forever on a completed run).`,
+        requestId,
+        conversationId,
+      });
+      abortController.abort("post-terminal-grace");
+    }, POST_TERMINAL_GRACE_MS);
+  };
+
   try {
     for await (const event of events) {
       totalEvents++;
@@ -798,6 +834,10 @@ export async function processStream({
             };
           }
           finishReason = completionStats.finish_reason ?? undefined;
+
+          // The whole user request is terminal — only receipts (directives,
+          // labeling, memory) and `end` may still follow, then the close.
+          armPostTerminalGrace(`completion user_request ${d.status}`);
         }
 
         dispatch(
@@ -2136,6 +2176,10 @@ export async function processStream({
             message: event.data.user_message ?? event.data.message,
           });
         }
+
+        // Error events are fatal by definition — the server kills the stream.
+        // If the close never arrives, settle locally.
+        armPostTerminalGrace("fatal error event");
       } else if (isEndEvent(event)) {
         otherEvents++;
         const currentState = getState();
@@ -2189,6 +2233,11 @@ export async function processStream({
             },
           }),
         );
+
+        // `send_end` is the last event of the stream contract — the only
+        // thing left is the transport close. No-op if completion already
+        // armed the window.
+        armPostTerminalGrace("end event");
       } else if (isBrokerEvent(event)) {
         otherEvents++;
         dispatch(
@@ -2369,6 +2418,13 @@ export async function processStream({
     // Stream died mid-flight. Capture and fall through to the commit path —
     // partial content preservation is non-negotiable. Re-thrown below.
     streamFailure = err instanceof Error ? err : new Error(String(err));
+  }
+
+  // The stream is over (naturally, by failure, or via the terminal guard's
+  // local close) — the grace window must never outlive it.
+  if (postTerminalGraceTimer !== null) {
+    clearTimeout(postTerminalGraceTimer);
+    postTerminalGraceTimer = null;
   }
 
   if (unknownEvents > 0) {

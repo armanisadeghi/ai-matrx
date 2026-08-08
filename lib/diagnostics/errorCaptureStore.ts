@@ -70,6 +70,15 @@ export type CapturedErrorSource =
   | "agent-stream-transport"
   /** Client-side stream death (heartbeat loss, total-timeout, fetch failure). */
   | "agent-stream-client-error"
+  /**
+   * The server declared the request terminal (user_request completion, fatal
+   * error event, or `end`) but never closed the response socket within the
+   * grace window — the client closed it locally so the awaited request could
+   * settle (D130: the headless image pipeline hung >8 min on a run the server
+   * had fully completed). Firing means a SERVER defect: the streaming
+   * response was held open (e.g. its heartbeat task outliving send_end).
+   */
+  | "agent-stream-terminal-guard"
   // ── Domain ────────────────────────────────────────────────────────────────
   /** An expiring/private media URL reached a render/store path (durability defect). */
   | "media-durability"
