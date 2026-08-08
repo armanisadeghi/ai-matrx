@@ -862,6 +862,14 @@ export function SetupView() {
     setDraftingWorkOrder(true);
     try {
       let report = researchReport;
+      // A topic can be SELECTED while its document query is still loading (or
+      // this hook's copy is stale) — check the DB directly before ever paying
+      // for a new pipeline. New research runs ONLY when the selected topic
+      // truly has no successful report, or no topic is selected at all.
+      if (!report && researchTopicId) {
+        const existing = await getLatestSuccessfulDocument(researchTopicId);
+        report = existing?.content?.trim() || null;
+      }
       if (!report) {
         const topic = await quickResearch.run({
           organizationId: site.organization_id,
@@ -1708,6 +1716,7 @@ export function SetupView() {
           onOpenChange={setBuildDialogOpen}
           siteName={site.name}
           reportReady={Boolean(researchReport)}
+          reportPending={Boolean(researchTopicId) && !researchReport}
           busy={draftingWorkOrder}
           onSubmit={(hints) => void handleBuildWithAi(hints)}
         />

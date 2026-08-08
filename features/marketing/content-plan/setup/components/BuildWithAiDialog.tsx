@@ -95,6 +95,7 @@ export function BuildWithAiDialog({
   onOpenChange,
   siteName,
   reportReady,
+  reportPending = false,
   busy,
   onSubmit,
 }: {
@@ -103,6 +104,12 @@ export function BuildWithAiDialog({
   siteName: string;
   /** A research report is already loaded — no pipeline run needed. */
   reportReady: boolean;
+  /**
+   * A topic IS selected but no report is in memory (still loading, or the
+   * topic may genuinely have none). The build checks the DB first and only
+   * runs new research if no finished report exists.
+   */
+  reportPending?: boolean;
   busy: boolean;
   onSubmit: (guidance: SetupGuidance) => void;
 }) {
@@ -175,9 +182,9 @@ export function BuildWithAiDialog({
           </div>
           {!reportReady ? (
             <p className="rounded-md border border-warning/40 bg-warning/10 px-2.5 py-2 text-xs text-foreground">
-              No research report is loaded, so this will FIRST research the
-              company (full pipeline — several minutes, real AI credits), then
-              build the work order from the report. Keep this tab open.
+              {reportPending
+                ? "A research topic is selected — the build uses its finished report if one exists, and only runs NEW research (several minutes, real AI credits) if none does. Keep this tab open."
+                : "No research is linked, so this will FIRST research the company (full pipeline — several minutes, real AI credits), then build the work order from the report. Keep this tab open."}
             </p>
           ) : null}
         </div>
@@ -193,7 +200,7 @@ export function BuildWithAiDialog({
           </Button>
           <Button size="sm" disabled={busy} onClick={() => onSubmit(guidance)}>
             {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-            {reportReady ? "Build it" : "Research + build it"}
+            {reportReady || reportPending ? "Build it" : "Research + build it"}
           </Button>
         </DialogFooter>
       </DialogContent>
