@@ -67,10 +67,18 @@ export function LiveCrawlFeed({
       event: PresentedCrawlEvent;
     }[] = [];
     // Newest first; per-URL bookkeeping presents as null and never renders.
+    // Consecutive progress checkpoints collapse to the newest one — the
+    // header counters already carry those numbers, so a run of near-identical
+    // "Progress" rows is noise between the rows that matter.
+    let lastRenderedWasProgress = false;
     for (let index = events.length - 1; index >= 0; index -= 1) {
       const event = events[index];
+      if (event.event_type === "crawl_progress" && lastRenderedWasProgress) {
+        continue;
+      }
       const display = presentLiveCrawlEvent(event);
       if (!display) continue;
+      lastRenderedWasProgress = event.event_type === "crawl_progress";
       presented.push({
         key: `${event.sequence ?? "stream"}-${event.event_type}-${index}`,
         sequence: typeof event.sequence === "number" ? event.sequence : null,

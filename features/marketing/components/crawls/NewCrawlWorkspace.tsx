@@ -221,7 +221,7 @@ export function NewCrawlWorkspace() {
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label htmlFor="crawl-max-pages" className="text-[11px]">
-                    Maximum pages
+                    Page limit
                   </Label>
                   <ClampedNumberInput
                     id="crawl-max-pages"
@@ -231,10 +231,14 @@ export function NewCrawlWorkspace() {
                     disabled={controlsDisabled}
                     onChange={(value) => update("max_pages", value)}
                   />
+                  <p className="text-[10px] leading-4 text-muted-foreground">
+                    Safety stop, not a target — the crawl ends when the site
+                    runs out of pages.
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="crawl-concurrency" className="text-[11px]">
-                    Concurrency
+                    Parallel fetches
                   </Label>
                   <ClampedNumberInput
                     id="crawl-concurrency"
@@ -244,6 +248,10 @@ export function NewCrawlWorkspace() {
                     disabled={controlsDisabled}
                     onChange={(value) => update("concurrency", value)}
                   />
+                  <p className="text-[10px] leading-4 text-muted-foreground">
+                    Higher is faster but hits the site harder — 8 suits most
+                    sites.
+                  </p>
                 </div>
               </div>
 

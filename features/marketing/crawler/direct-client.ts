@@ -252,7 +252,12 @@ export interface CrawlStreamResult {
 }
 
 export const defaultCrawlOptions: CrawlStartOptions = {
-  max_pages: 500,
+  // Effectively "the whole site" for almost every customer. A low default
+  // (was 500) silently truncated real crawls; the backend hard cap is 50,000
+  // (aidream schemas.py max_pages le=50_000) and the launch UI input allows
+  // up to that. Arman's ruling 2026-08-08: users should never have to think
+  // about this number.
+  max_pages: 9_999,
   max_depth: null,
   concurrency: 8,
   follow_subdomains: false,

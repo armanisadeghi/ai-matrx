@@ -71,6 +71,19 @@ function pageSubject(event: CrawlLiveEvent): string {
   return eventUrl(event) ?? "A page";
 }
 
+/**
+ * The scraper's human-authored warning text, trimmed for the feed. Only the
+ * plain `message` string is shown — context objects, exception classes, and
+ * stacks stay in the durable logs table.
+ */
+function warningText(event: CrawlLiveEvent): string | null {
+  const message = event.message;
+  if (typeof message !== "string") return null;
+  const trimmed = message.trim();
+  if (!trimmed) return null;
+  return trimmed.length > 240 ? `${trimmed.slice(0, 237)}...` : trimmed;
+}
+
 /** True when a url_classified event marks the URL out of crawl scope. */
 function isOutOfScope(event: CrawlLiveEvent): boolean {
   for (const key of ["in_scope", "is_in_scope", "accepted", "allowed"]) {
@@ -219,24 +232,33 @@ export function presentLiveCrawlEvent(
             : `${pageSubject(event)} could not be fetched.`,
         tone: event.will_retry === true ? "warning" : "destructive",
       };
-    case "crawl_progress":
+    case "crawl_progress": {
+      const fetched = numberValue(event, "pages_fetched");
+      const queued = numberValue(event, "queue_depth");
+      const failed = numberValue(event, "pages_failed");
       return {
-        label: "Checkpoint",
-        message: `${numberValue(event, "pages_fetched")} fetched · ${numberValue(event, "queue_depth")} queued · ${numberValue(event, "pages_failed")} failed`,
+        label: "Progress",
+        message: `${fetched.toLocaleString()} page${fetched === 1 ? "" : "s"} scraped · ${queued.toLocaleString()} waiting${failed ? ` · ${failed.toLocaleString()} failed` : ""}`,
         tone: "default",
       };
+    }
     case "issue_detected":
       return {
         label: "Page issue found",
         message: `${pageSubject(event)} needs review.`,
         tone: "warning",
       };
-    case "crawl_warning":
+    case "crawl_warning": {
+      // The scraper's own human-authored message (CrawlWarningEvent.message).
+      // Discarding it for a fixed string made every notice meaningless — the
+      // whole point of a warning row is saying WHAT happened.
+      const detail = warningText(event);
       return {
-        label: "Crawl notice",
-        message: "The crawler encountered a recoverable issue and continued.",
+        label: "Crawler notice",
+        message: detail ?? "The crawler hit a recoverable issue and continued.",
         tone: "warning",
       };
+    }
     case "crawl_completed": {
       const status = event.status;
       const label =
