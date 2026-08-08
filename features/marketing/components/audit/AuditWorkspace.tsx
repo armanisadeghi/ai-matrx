@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -28,6 +29,11 @@ import {
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import {
+  csvExportItem,
+  jsonExportItem,
+} from "@/components/agent-copy/export";
 import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
 import type {
   AgentCopyGroomerConfig,
@@ -56,6 +62,37 @@ import { cn } from "@/lib/utils";
  * per-page workspace and the scraper, by construction — this view only
  * aggregates, never re-derives.
  */
+
+/**
+ * Render-only preview sizes. The rollup itself is complete — truncating here
+ * (never in aggregation) is what keeps show-all, copy, and export honest.
+ */
+const TOP_ISSUE_PREVIEW = 14;
+const WORST_PAGE_PREVIEW = 10;
+
+/** Ranks-style header toggle between the ranked preview and the full list. */
+function ShowAllToggle({
+  total,
+  preview,
+  showingAll,
+  onToggle,
+}: {
+  total: number;
+  preview: number;
+  showingAll: boolean;
+  onToggle: () => void;
+}) {
+  if (total <= preview) return null;
+  return (
+    <button
+      type="button"
+      className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+      onClick={onToggle}
+    >
+      {showingAll ? `top ${preview}` : `all ${total.toLocaleString()}`}
+    </button>
+  );
+}
 
 const SECTION_META: Record<
   AuditSection,
@@ -241,6 +278,34 @@ function AuditBody({
 }) {
   const pagePath = (pageId: string) => `${sitePath}/pages/${pageId}`;
   const pageLocation = webLocation(`Site audit — ${siteDomain}`);
+  const [showAllIssues, setShowAllIssues] = useState(false);
+  const [showAllWorstPages, setShowAllWorstPages] = useState(false);
+  const visibleIssues = showAllIssues
+    ? rollup.topIssues
+    : rollup.topIssues.slice(0, TOP_ISSUE_PREVIEW);
+  const visibleWorstPages = showAllWorstPages
+    ? rollup.worstPages
+    : rollup.worstPages.slice(0, WORST_PAGE_PREVIEW);
+
+  // Flat rows for CSV export — always ALL rows, never the visible slice.
+  const issueCsvRows = () =>
+    rollup.topIssues.map((issue) => ({
+      section: issue.section,
+      severity: issue.severity,
+      message: issue.message,
+      pages_affected: issue.count,
+      sample_paths: issue.samples.map((sample) => sample.path).join(" "),
+    }));
+  const worstPageCsvRows = () =>
+    rollup.worstPages.map((page) => ({
+      path: page.path,
+      url: page.url,
+      errors: page.errorCount,
+      warnings: page.warningCount,
+      indexability: page.indexabilityVerdict ?? "",
+      page_id: page.pageId,
+    }));
+
   const copy = webCopy({
     kind: "web-site-audit-rollup",
     label: "Site audit",
@@ -255,10 +320,20 @@ function AuditBody({
       ["Indexable", rollup.verdicts.indexable],
       ["Needs review", rollup.verdicts.check],
       ["Blocked", rollup.verdicts.blocked],
-      ...rollup.topIssues.map((issue): [string, string] => [
-        `${SECTION_META[issue.section].label} ×${issue.count}`,
-        issue.message,
-      ]),
+      ...rollup.topIssues
+        .slice(0, TOP_ISSUE_PREVIEW)
+        .map((issue): [string, string] => [
+          `${SECTION_META[issue.section].label} ×${issue.count}`,
+          issue.message,
+        ]),
+      ...(rollup.topIssues.length > TOP_ISSUE_PREVIEW
+        ? ([
+            [
+              "More issues",
+              `+${rollup.topIssues.length - TOP_ISSUE_PREVIEW} more distinct issues (full list in the data payload)`,
+            ],
+          ] as [string, string][])
+        : []),
     ],
   });
 
@@ -284,9 +359,12 @@ function AuditBody({
     agent: () => ({
       kind: "web-audit-issues",
       location: pageLocation,
-      description: `The top ${rollup.topIssues.length} rolled-up audit issues for ${siteDomain}, ranked by severity then page count.`,
+      description: `All ${rollup.topIssues.length} distinct rolled-up audit issues for ${siteDomain}, ranked by severity then page count.`,
       data: rollup.topIssues,
-      attributes: { count: rollup.topIssues.length },
+      attributes: {
+        count: rollup.topIssues.length,
+        shown: visibleIssues.length,
+      },
     }),
   };
 
@@ -299,9 +377,12 @@ function AuditBody({
     agent: () => ({
       kind: "web-audit-worst-pages",
       location: pageLocation,
-      description: `The ${rollup.worstPages.length} worst-ranked pages by audit error/warning count for ${siteDomain}.`,
+      description: `All ${rollup.worstPages.length} pages with audit findings for ${siteDomain}, ranked worst first by error then warning count.`,
       data: rollup.worstPages,
-      attributes: { count: rollup.worstPages.length },
+      attributes: {
+        count: rollup.worstPages.length,
+        shown: visibleWorstPages.length,
+      },
     }),
   };
 
@@ -341,24 +422,35 @@ function AuditBody({
     {
       id: "top_issues",
       title: "Top issues",
-      description: `${rollup.topIssues.length} rolled-up issues (already capped at the top 14 by severity/count).`,
+      description: `All ${rollup.topIssues.length} distinct rolled-up issues, ranked by severity then page count.`,
       cuttable: true,
-      levelLabels: { full: "All (raw)", compact: "Top 8", brief: "Top 3" },
+      levelLabels: {
+        full: `All ${rollup.topIssues.length} (raw)`,
+        compact: `Top ${TOP_ISSUE_PREVIEW}`,
+        brief: "Top 3",
+      },
       build: (level) =>
         level === "full"
           ? rollup.topIssues
-          : rollup.topIssues.slice(0, level === "compact" ? 8 : 3),
+          : rollup.topIssues.slice(0, level === "compact" ? TOP_ISSUE_PREVIEW : 3),
     },
     {
       id: "worst_pages",
       title: "Pages needing attention",
-      description: `${rollup.worstPages.length} worst-ranked pages (already capped at the top 10).`,
+      description: `All ${rollup.worstPages.length} pages with findings, worst first.`,
       cuttable: true,
-      levelLabels: { full: "All (raw)", compact: "Top 5", brief: "Top 3" },
+      levelLabels: {
+        full: `All ${rollup.worstPages.length} (raw)`,
+        compact: `Top ${WORST_PAGE_PREVIEW}`,
+        brief: "Top 3",
+      },
       build: (level) =>
         level === "full"
           ? rollup.worstPages
-          : rollup.worstPages.slice(0, level === "compact" ? 5 : 3),
+          : rollup.worstPages.slice(
+              0,
+              level === "compact" ? WORST_PAGE_PREVIEW : 3,
+            ),
     },
   ];
 
@@ -410,6 +502,14 @@ function AuditBody({
               human={() => humanAuditSnapshot(rollup)}
               json={pageFullData}
               agent={pageAgentPayload}
+            />
+            <ExportMenu
+              label={`site-audit-${siteDomain}`}
+              items={[
+                jsonExportItem(pageFullData, "Page data (.json)"),
+                csvExportItem(issueCsvRows, "CSV (all issues)"),
+                csvExportItem(worstPageCsvRows, "CSV (pages with findings)"),
+              ]}
             />
             <AgentCopyGroomerLauncher config={groomerConfig} />
           </div>
@@ -528,6 +628,28 @@ function AuditBody({
             anchor="top_issues"
             title="Top issues"
             copy={topIssuesCopy}
+            headerExtra={
+              rollup.topIssues.length > 0 ? (
+                <>
+                  <ShowAllToggle
+                    total={rollup.topIssues.length}
+                    preview={TOP_ISSUE_PREVIEW}
+                    showingAll={showAllIssues}
+                    onToggle={() => setShowAllIssues((current) => !current)}
+                  />
+                  <ExportMenu
+                    label={`audit-issues-${siteDomain}`}
+                    items={[
+                      jsonExportItem(
+                        () => rollup.topIssues,
+                        "JSON (all issues)",
+                      ),
+                      csvExportItem(issueCsvRows, "CSV (all issues)"),
+                    ]}
+                  />
+                </>
+              ) : null
+            }
           >
             {rollup.topIssues.length === 0 ? (
               <p className="flex items-center gap-2 p-4 text-xs text-success">
@@ -535,8 +657,13 @@ function AuditBody({
                 No issues found across the audited pages.
               </p>
             ) : (
-              <div className="divide-y divide-border">
-                {rollup.topIssues.map((issue) => (
+              <div
+                className={cn(
+                  "divide-y divide-border",
+                  showAllIssues && "max-h-[28rem] overflow-y-auto",
+                )}
+              >
+                {visibleIssues.map((issue) => (
                   <IssueRow
                     key={`${issue.section}:${issue.message}`}
                     issue={issue}
@@ -552,6 +679,33 @@ function AuditBody({
             anchor="worst_pages"
             title="Pages needing attention"
             copy={worstPagesCopy}
+            headerExtra={
+              rollup.worstPages.length > 0 ? (
+                <>
+                  <ShowAllToggle
+                    total={rollup.worstPages.length}
+                    preview={WORST_PAGE_PREVIEW}
+                    showingAll={showAllWorstPages}
+                    onToggle={() =>
+                      setShowAllWorstPages((current) => !current)
+                    }
+                  />
+                  <ExportMenu
+                    label={`audit-pages-${siteDomain}`}
+                    items={[
+                      jsonExportItem(
+                        () => rollup.worstPages,
+                        "JSON (all pages with findings)",
+                      ),
+                      csvExportItem(
+                        worstPageCsvRows,
+                        "CSV (all pages with findings)",
+                      ),
+                    ]}
+                  />
+                </>
+              ) : null
+            }
           >
             {rollup.worstPages.length === 0 ? (
               <p className="flex items-center gap-2 p-4 text-xs text-success">
@@ -559,8 +713,13 @@ function AuditBody({
                 Every audited page is clean.
               </p>
             ) : (
-              <div className="divide-y divide-border">
-                {rollup.worstPages.map((page) => (
+              <div
+                className={cn(
+                  "divide-y divide-border",
+                  showAllWorstPages && "max-h-[28rem] overflow-y-auto",
+                )}
+              >
+                {visibleWorstPages.map((page) => (
                   <WorstPageRow
                     key={page.pageId}
                     page={page}

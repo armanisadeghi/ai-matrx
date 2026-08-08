@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-27
+updated: 2026-08-08
 repos: [matrx-frontend]
 vision: [.claude/skills/agent-copy/SKILL.md, components/agent-copy/README.md]
 ---
@@ -46,13 +46,13 @@ Refinements he added along the way — each is now doctrine, with the why:
 
 1. **Final skill rewrite** (`.claude/skills/agent-copy/SKILL.md`) once Arman's review-queue feedback lands: fold in his verdicts + add the **module-audit protocol** he originally asked for — a sweep procedure that enumerates a feature's surfaces (routes/panels/overlays), classifies each rendered data element (list / record / field group / non-record tool), and emits a coverage gap list before wiring. Keep it Sonnet-executable.
 2. **Finish marketing:** site tabs overview / integrations / access / settings; brand-level pages (brands list, brand cockpit); `/marketing` root; content-plan. The Pages tab and `CrawlSubnav` sub-routes (URLs/Reports/Snapshots/Links/Logs — no copy layer yet) were owned by parallel sessions — verify current state before touching.
-3. **Audit rollup rearchitect:** `features/marketing/lib/audit-rollup.ts#buildSiteAuditRollup` hard-caps `topIssues` (14) and `worstPages` (10) *inside aggregation* — data is discarded, so no show-all is possible. Restructure to aggregate fully and truncate only at render (shared with score-trend computation — tread carefully).
-4. **App-wide rollout** beyond marketing, Sonnet fleets reading the skill: SKILL.md's remaining list (`tool-registry/mcp-admin`, `feedback`, `system-agents/*`, `agent-apps/*`) and onward.
-5. **Roadmap (design-gated, don't start without Arman):** `buildAgentPayload` auto-folding the active surface manifest's values into `<context>`; screenshot attach (`hooks/useScreenCapture.ts`); Copy-for-AI flipping from clipboard to live agent handoff (keep `kind` slugs stable — they become the tool vocabulary).
-6. **Release:** all work sits on `main` unreleased — ship via `./scripts/release.sh` when Arman approves the review items.
+3. **App-wide rollout** beyond marketing, Sonnet fleets reading the skill: SKILL.md's remaining list (`tool-registry/mcp-admin`, `feedback`, `system-agents/*`, `agent-apps/*`) and onward.
+4. **Roadmap (design-gated, don't start without Arman):** `buildAgentPayload` auto-folding the active surface manifest's values into `<context>`; screenshot attach (`hooks/useScreenCapture.ts`); Copy-for-AI flipping from clipboard to live agent handoff (keep `kind` slugs stable — they become the tool vocabulary).
+5. **Release:** all work sits on `main` unreleased — ship via `./scripts/release.sh` when Arman approves the review items.
 
 ## Done
 
+- **Audit rollup rearchitected** (2026-08-08): `buildSiteAuditRollup` now aggregates completely — `topIssues`/`worstPages` carry EVERY ranked entry; truncation happens only at render in `AuditWorkspace` (top 14 / top 10 previews with show-all toggles). Score-trend computation untouched (it reads only counts/passes). Audit tab gained card-level JSON+CSV exports over ALL rows plus a page-level ExportMenu; card copies now cover the full lists; manifest descriptions updated.
 - Primitives + integrations built and browser-verified — see `components/agent-copy/` and the reference page above.
 - Backlinks page fully wired (all granularities, groomer, export, show-all) + its surface manifest enriched and live in `ui.ui_surface_value`.
 - Keyword + ranks surface manifests exist and are verified (`keyword-research`, `marketing-site-keywords`, `marketing-ranks` — built by the surface-canonical-fleet campaign).
