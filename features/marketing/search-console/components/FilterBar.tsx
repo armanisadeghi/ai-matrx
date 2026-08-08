@@ -35,13 +35,19 @@ import {
 
 const FILTER_LABELS: Record<GscFilterKey, string> = {
   query_contains: "Query contains",
-  query_eq: "Query is",
-  query_neq: "Query is not",
+  query_eq: "Exact query",
+  query_neq: "Query excludes",
   page_contains: "Page contains",
-  page_eq: "Page is",
+  page_eq: "Exact page",
   country: "Country",
   device: "Device",
   search_appearance: "Appearance",
+};
+
+const FILTER_CHIP_LABELS: Record<GscFilterKey, string> = {
+  ...FILTER_LABELS,
+  query_eq: "Query",
+  page_eq: "Page",
 };
 
 const QUERY_PAGE_KEYS: GscFilterKey[] = [
@@ -61,7 +67,8 @@ function activeGroup(
     .map(([k]) => k as GscFilterKey);
   if (keys.length === 0) return null;
   if (keys.some((k) => QUERY_PAGE_KEYS.includes(k))) return "query_page";
-  if (keys.some((k) => COUNTRY_DEVICE_KEYS.includes(k))) return "country_device";
+  if (keys.some((k) => COUNTRY_DEVICE_KEYS.includes(k)))
+    return "country_device";
   return "appearance";
 }
 
@@ -122,14 +129,18 @@ export function FilterBar({
       {active.map(([key, value]) => (
         <span
           key={key}
-          className="inline-flex max-w-72 items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-xs text-foreground"
+          className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-xs text-foreground sm:max-w-72"
         >
-          <span className="text-muted-foreground">{FILTER_LABELS[key]}:</span>
-          <span className="truncate font-medium">{chipValue(key, value)}</span>
+          <span className="shrink-0 whitespace-nowrap text-muted-foreground">
+            {FILTER_CHIP_LABELS[key]}:
+          </span>
+          <span className="min-w-0 truncate whitespace-nowrap font-medium">
+            {chipValue(key, value)}
+          </span>
           <button
             type="button"
-            aria-label={`Remove ${FILTER_LABELS[key]} filter`}
-            className="ml-0.5 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label={`Remove ${FILTER_CHIP_LABELS[key]} filter`}
+            className="ml-0.5 shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
             onClick={() => removeFilter(key)}
           >
             <X className="h-3 w-3" />

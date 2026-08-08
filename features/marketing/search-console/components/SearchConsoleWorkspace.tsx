@@ -422,24 +422,26 @@ export function SearchConsoleWorkspace() {
               Search Console
             </h1>
             {siteOptions.data ? (
-              <SiteSwitcher
-                sites={siteOptions.data}
-                selectedSiteId={state.siteId}
-                onSelect={(siteId) =>
-                  applyState({ ...state, siteId, filters: {} })
-                }
-              />
+              <div className="hidden lg:block">
+                <SiteSwitcher
+                  sites={siteOptions.data}
+                  selectedSiteId={state.siteId}
+                  onSelect={(siteId) =>
+                    applyState({ ...state, siteId, filters: {} })
+                  }
+                />
+              </div>
             ) : null}
           </div>
         }
         center={<MarketingWorkspaceNav />}
         right={
           state.siteId ? (
-            <div className="flex items-center gap-1.5">
+            <div className="hidden items-center gap-1.5 lg:flex">
               {/* The RESOLVED window, always — preset windows clamp to the
                   freshest data day, so without this a range change can look
                   like nothing happened when it merely ended on the same day. */}
-              <span className="hidden whitespace-nowrap text-[11px] text-muted-foreground md:inline">
+              <span className="hidden whitespace-nowrap text-[11px] text-muted-foreground min-[1920px]:inline">
                 {/* formatGscWindow, never formatCompactDate: GSC days are
                     date-only ISO strings, and the local-tz datetime formatter
                     rendered them a day early with a bogus time of day. */}
@@ -515,6 +517,73 @@ export function SearchConsoleWorkspace() {
           />
         ) : (
           <div className="flex h-full min-h-0 flex-col gap-2">
+            <div className="flex shrink-0 flex-col gap-1 lg:hidden">
+              <div className="flex min-w-0 items-center gap-1.5">
+                {siteOptions.data ? (
+                  <div className="min-w-0 flex-1">
+                    <SiteSwitcher
+                      sites={siteOptions.data}
+                      selectedSiteId={state.siteId}
+                      onSelect={(siteId) =>
+                        applyState({ ...state, siteId, filters: {} })
+                      }
+                    />
+                  </div>
+                ) : null}
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-7 w-7 shrink-0"
+                  onClick={() => void runSync()}
+                  disabled={syncing || historyRunning || !gscBound}
+                  aria-label="Sync Search Console data"
+                  title="Sync Search Console data"
+                >
+                  {syncing ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3 w-3" />
+                  )}
+                </Button>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-7 w-7 shrink-0"
+                  onClick={() => void runHistoryToHorizon()}
+                  disabled={
+                    syncing || historyRunning || serverFetchActive || !gscBound
+                  }
+                  aria-label="Import Search Console history"
+                  title="Import older Search Console history"
+                >
+                  {historyRunning ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <History className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
+              <div className="max-w-full overflow-x-auto pb-0.5">
+                <RangeCompareControl
+                  value={{
+                    range: state.range,
+                    customFrom: state.customFrom,
+                    customTo: state.customTo,
+                    compare: state.compare,
+                  }}
+                  onChange={(next) => applyState({ ...state, ...next })}
+                  disabled={isNavigating}
+                />
+              </div>
+            </div>
+            <p className="shrink-0 truncate text-[11px] text-muted-foreground min-[1920px]:hidden">
+              {formatGscWindow(periods.current)}
+              {dataThrough
+                ? ` · data through ${formatGscDate(dataThrough)}`
+                : knownEmpty
+                  ? " · never synced"
+                  : null}
+            </p>
             <IngestionHealthBanner
               siteId={state.siteId}
               onSync={() => void runSync()}
@@ -629,29 +698,31 @@ export function SearchConsoleWorkspace() {
                 onRetry={() => void timeseries.refetch()}
               />
             ) : null}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
-                {GSC_TABS.map((tab) => (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    className={cn(
-                      "rounded px-2 py-1 text-xs transition-colors",
-                      state.tab === tab.key
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                    )}
-                    onClick={() =>
-                      applyState({
-                        ...state,
-                        tab: tab.key,
-                        filters: pruneFiltersForTab(tab.key, filters),
-                      })
-                    }
-                  >
-                    {tab.label}
-                  </button>
-                ))}
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <div className="w-full min-w-0 overflow-x-auto sm:w-auto">
+                <div className="flex w-max items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
+                  {GSC_TABS.map((tab) => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      className={cn(
+                        "shrink-0 whitespace-nowrap rounded px-2 py-1 text-xs transition-colors",
+                        state.tab === tab.key
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                      )}
+                      onClick={() =>
+                        applyState({
+                          ...state,
+                          tab: tab.key,
+                          filters: pruneFiltersForTab(tab.key, filters),
+                        })
+                      }
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               {allowedFilterKeysForTab(state.tab).length > 0 ? (
                 <FilterBar

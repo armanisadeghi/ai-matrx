@@ -55,9 +55,9 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   moment a preset is added at the front, which adding the short windows
   did). Preset windows CLAMP to the site's freshest data day
   (`gsc_perf_freshness`) so a lagging sync never fakes a traffic collapse
-  — the header therefore always prints the RESOLVED window beside "data
-  through", because otherwise a clamped range change looks like nothing
-  happened. **Dig Here and Insights additionally render `GscPeriodStrip`
+  — the RESOLVED window always renders beside "data through" (in the header
+  when there is room, directly below it on compact widths), because otherwise
+  a clamped range change looks like nothing happened. **Dig Here and Insights additionally render `GscPeriodStrip`
   (`components/PeriodStrip.tsx`) at the top of the tab** — "Evaluating
   <current> vs <compare>" in plain dates, flagging an auto-derived compare,
   and embedding the SAME `RangeCompareControl` the header uses (both write
