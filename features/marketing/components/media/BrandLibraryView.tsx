@@ -48,9 +48,21 @@ import {
   type BrandAssetKind,
 } from "@/features/marketing/types";
 
+/** Image CDNs whose URLs carry no file extension (e.g. Unsplash CDN saves). */
+const IMAGE_CDN_HOSTS = new Set(["images.unsplash.com", "plus.unsplash.com"]);
+
+function isImageCdnUrl(url: string): boolean {
+  try {
+    return IMAGE_CDN_HOSTS.has(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
 function assetPreviewUrl(asset: BrandAsset): string | null {
-  return asset.source_url &&
-    /\.(png|jpe?g|webp|gif|svg|ico)(\?|$)/i.test(asset.source_url)
+  if (!asset.source_url) return null;
+  return /\.(png|jpe?g|webp|gif|svg|ico)(\?|$)/i.test(asset.source_url) ||
+    isImageCdnUrl(asset.source_url)
     ? secureImageUrl(asset.source_url)
     : null;
 }
