@@ -8,6 +8,11 @@
 -- mapping from a keyword to a class for a site. Precedence (user beats
 -- machine, machine beats nothing):
 --   1. seo.site_keyword_value (the user's/agents' PER-SITE valuation):
+--      traffic_class set -> that class VERBATIM (the human's explicit
+--      ruling, written by seo.gsc_set_keyword_class — the classification
+--      UI's one write path; it exists because no semantic column can
+--      express a human "brand" ruling, and a ruling should read as one);
+--      otherwise the semantic columns derive it:
 --      suppression_reason set, service_match in
 --      ('not_offered','actively_avoided'), or lead_quality='negative_value'
 --      -> 'mismatch' (traffic that can never serve this business — the
@@ -147,6 +152,7 @@ AS $$
   )
   SELECT kw.id,
          CASE
+           WHEN skv.traffic_class IS NOT NULL THEN skv.traffic_class
            WHEN skv.keyword_id IS NOT NULL AND (
                   skv.suppression_reason IS NOT NULL
                   OR skv.service_match IN ('not_offered', 'actively_avoided')
@@ -161,6 +167,7 @@ AS $$
            ELSE 'unclassified'
          END,
          CASE
+           WHEN skv.traffic_class IS NOT NULL THEN 'site_value'
            WHEN skv.keyword_id IS NOT NULL AND (
                   skv.suppression_reason IS NOT NULL
                   OR skv.service_match IN ('not_offered', 'actively_avoided')

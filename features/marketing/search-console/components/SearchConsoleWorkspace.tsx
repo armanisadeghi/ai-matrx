@@ -22,10 +22,11 @@ import { History, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
+import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import {
-  formatCompactDate,
-  InlineQueryError,
-} from "@/features/marketing/components/shared/MarketingUi";
+  formatGscDate,
+  formatGscWindow,
+} from "@/features/marketing/search-console/lib/format";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import {
@@ -439,11 +440,12 @@ export function SearchConsoleWorkspace() {
                   freshest data day, so without this a range change can look
                   like nothing happened when it merely ended on the same day. */}
               <span className="hidden whitespace-nowrap text-[11px] text-muted-foreground md:inline">
-                {periods.current.start === periods.current.end
-                  ? formatCompactDate(periods.current.start)
-                  : `${formatCompactDate(periods.current.start)} – ${formatCompactDate(periods.current.end)}`}
+                {/* formatGscWindow, never formatCompactDate: GSC days are
+                    date-only ISO strings, and the local-tz datetime formatter
+                    rendered them a day early with a bogus time of day. */}
+                {formatGscWindow(periods.current)}
                 {dataThrough
-                  ? ` · data through ${formatCompactDate(dataThrough)}`
+                  ? ` · data through ${formatGscDate(dataThrough)}`
                   : knownEmpty
                     ? " · never synced"
                     : null}
@@ -756,6 +758,8 @@ export function SearchConsoleWorkspace() {
                   organizationId={site?.organization_id ?? null}
                   periods={periods}
                   panelRange={panelRange}
+                  onRangeChange={(next) => applyState({ ...state, ...next })}
+                  rangeDisabled={isNavigating}
                   ruleId={state.ruleId}
                   onSelectRule={(ruleId) => applyState({ ...state, ruleId })}
                   onDrill={(dimension: "query" | "page", row: GscDigResultRow) =>
@@ -776,6 +780,9 @@ export function SearchConsoleWorkspace() {
                   siteId={state.siteId}
                   siteName={siteName}
                   periods={periods}
+                  panelRange={panelRange}
+                  onRangeChange={(next) => applyState({ ...state, ...next })}
+                  rangeDisabled={isNavigating}
                   insight={state.insight}
                   onSelectInsight={(insight) =>
                     applyState({ ...state, insight })

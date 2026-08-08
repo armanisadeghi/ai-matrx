@@ -37,6 +37,8 @@ import {
   type DigRuleDraft,
 } from "@/features/marketing/search-console/components/dig/DigRuleEditor";
 import { DigRuleList } from "@/features/marketing/search-console/components/dig/DigRuleList";
+import { GscPeriodStrip } from "@/features/marketing/search-console/components/PeriodStrip";
+import type { RangeCompareValue } from "@/features/marketing/search-console/components/RangeCompareControl";
 import { LoadingSurface, QueryError } from "@/features/marketing/components/shared/MarketingUi";
 import type {
   GscCompareMode,
@@ -104,6 +106,8 @@ export function DigTab({
   organizationId,
   periods,
   panelRange,
+  onRangeChange,
+  rangeDisabled,
   ruleId,
   onSelectRule,
   onDrill,
@@ -118,6 +122,9 @@ export function DigTab({
     customTo: string | null;
     compare: GscCompareMode;
   };
+  /** Writes range/compare back to URL state — same sink as the header. */
+  onRangeChange: (next: RangeCompareValue) => void;
+  rangeDisabled?: boolean;
   ruleId: string | null;
   onSelectRule: (ruleId: string | null) => void;
   onDrill: (dimension: "query" | "page", row: GscDigResultRow) => void;
@@ -257,7 +264,18 @@ export function DigTab({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-2 lg:flex-row">
+    <div className="flex h-full min-h-0 flex-col gap-2">
+      {/* WHAT window these results cover — with the same control the header
+          uses, so it can be changed from where the user is looking. Both
+          write URL state; they cannot disagree. */}
+      <GscPeriodStrip
+        periods={effectivePeriods}
+        compareAuto={needsForcedCompare && !!effectivePeriods.compare}
+        value={panelRange}
+        onChange={onRangeChange}
+        disabled={rangeDisabled}
+      />
+      <div className="flex min-h-0 flex-1 flex-col gap-2 lg:flex-row">
       <div className="w-full shrink-0 space-y-2 overflow-y-auto lg:w-72">
         <Button
           variant="outline"
@@ -311,12 +329,6 @@ export function DigTab({
             <p className="text-[11px] text-muted-foreground">
               {digRuleSummary(selectedContent.conditions)}
             </p>
-            {needsForcedCompare && effectivePeriods.compare ? (
-              <p className="text-[11px] text-muted-foreground">
-                · compared vs {effectivePeriods.compare.start} →{" "}
-                {effectivePeriods.compare.end} (auto)
-              </p>
-            ) : null}
           </div>
         ) : selectedRule && !selectedContent ? (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-1.5">
@@ -356,6 +368,7 @@ export function DigTab({
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

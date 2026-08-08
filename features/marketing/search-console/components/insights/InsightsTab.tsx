@@ -42,6 +42,9 @@ import {
   ShiftsView,
 } from "@/features/marketing/search-console/components/insights/ClassInsights";
 import { withPrevCompare } from "@/features/marketing/search-console/lib/url-state";
+import { describeGscWindow } from "@/features/marketing/search-console/lib/format";
+import { GscPeriodStrip } from "@/features/marketing/search-console/components/PeriodStrip";
+import type { RangeCompareValue } from "@/features/marketing/search-console/components/RangeCompareControl";
 import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
 import type {
   GscCannibalizationRow,
@@ -97,6 +100,9 @@ export function InsightsTab({
   siteId,
   siteName,
   periods,
+  panelRange,
+  onRangeChange,
+  rangeDisabled,
   insight,
   onSelectInsight,
   onDrill,
@@ -104,6 +110,10 @@ export function InsightsTab({
   siteId: string;
   siteName: string | null;
   periods: GscResolvedPeriods;
+  panelRange: RangeCompareValue;
+  /** Writes range/compare back to URL state — same sink as the header. */
+  onRangeChange: (next: RangeCompareValue) => void;
+  rangeDisabled?: boolean;
   insight: GscInsightKind | null;
   onSelectInsight: (insight: GscInsightKind) => void;
   onDrill: (dimension: InsightDimension, key: string) => void;
@@ -129,8 +139,32 @@ export function InsightsTab({
     active === "decay" || active === "growth" || active === "shifts" || active === "juice";
   const showsThreshold = active !== "quality";
 
+  // What the strip states depends on which window the ACTIVE view actually
+  // evaluates: class views compare (auto-deriving under compare=none), the
+  // algorithm views run over the single current window regardless of the
+  // compare setting, and Juice uses a fixed 6-month window of its own.
+  const usesCompare = active === "quality" || active === "shifts";
+  const stripPeriods = usesCompare
+    ? classPeriods
+    : { current: periods.current, compare: null };
+  const stripNote =
+    active === "juice"
+      ? "Evaluating the last 6 calendar months — this view uses a fixed monthly window, so the selected date range does not apply."
+      : undefined;
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
+      {/* WHAT window the results below cover — with the same control the
+          header uses, so it can be changed from where the user is looking.
+          Both write URL state; they cannot disagree. */}
+      <GscPeriodStrip
+        periods={stripPeriods}
+        compareAuto={usesCompare && compareAuto}
+        note={stripNote}
+        value={panelRange}
+        onChange={onRangeChange}
+        disabled={rangeDisabled}
+      />
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
           {GSC_INSIGHTS.map((item) => (
@@ -199,7 +233,6 @@ export function InsightsTab({
             siteId={siteId}
             siteName={siteName}
             periods={classPeriods}
-            compareAuto={compareAuto}
             onDrill={onDrill}
           />
         ) : active === "shifts" ? (
@@ -207,7 +240,6 @@ export function InsightsTab({
             siteId={siteId}
             siteName={siteName}
             periods={classPeriods}
-            compareAuto={compareAuto}
             minClicks={minClicks}
             onDrill={onDrill}
           />
@@ -430,8 +462,7 @@ function CtrGapTable({
       emptyState={{
         icon: <Lightbulb className="h-8 w-8 text-muted-foreground" />,
         title: "No CTR gaps found",
-        description:
-          "Nothing with enough impressions sits below this site's expected CTR curve for the period. Lower the impressions threshold or widen the range.",
+        description: `Nothing with enough impressions sits below this site's expected CTR curve ${describeGscWindow(periods.current)}. Lower the impressions threshold or widen the range.`,
       }}
       className="min-h-0 flex-1"
     />
@@ -636,8 +667,7 @@ function CannibalizationTable({
       emptyState={{
         icon: <Lightbulb className="h-8 w-8 text-muted-foreground" />,
         title: "No cannibalization detected",
-        description:
-          "No query has two or more pages each holding a meaningful share of its impressions in this period.",
+        description: `No query has two or more pages each holding a meaningful share of its impressions ${describeGscWindow(periods.current)}.`,
       }}
       className="min-h-0 flex-1"
     />
@@ -869,8 +899,7 @@ function TrendTable({
           direction === "decay"
             ? "Nothing is declining"
             : "Nothing is rising yet",
-        description:
-          "No row with enough clicks moved meaningfully between the two halves of this period. Lower the clicks threshold or widen the range.",
+        description: `No row with enough clicks moved meaningfully between the two halves of the period ${describeGscWindow(periods.current)}. Lower the clicks threshold or widen the range.`,
       }}
       className="min-h-0 flex-1"
     />

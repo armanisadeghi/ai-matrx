@@ -20,6 +20,7 @@ import {
   gscDeltaCell,
 } from "@/features/marketing/search-console/lib/columns";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
+import { describeGscWindow } from "@/features/marketing/search-console/lib/format";
 import {
   useGscClassMovers,
   useGscClassSummary,
@@ -82,14 +83,11 @@ export function QualityView({
   siteId,
   siteName,
   periods,
-  compareAuto,
   onDrill,
 }: {
   siteId: string;
   siteName: string | null;
   periods: GscResolvedPeriods;
-  /** True when the compare period was auto-derived (no compare selected). */
-  compareAuto: boolean;
   onDrill: (dimension: "query" | "page", key: string) => void;
 }) {
   const [dimension, setDimension] = useState<"query" | "page">("query");
@@ -184,18 +182,8 @@ export function QualityView({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto pr-0.5">
-      <p className="shrink-0 text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">
-          {periods.current.start} → {periods.current.end}
-        </span>{" "}
-        vs{" "}
-        {periods.compare ? (
-          <span>
-            {periods.compare.start} → {periods.compare.end}
-          </span>
-        ) : null}
-        {compareAuto ? " (previous period of the same length, auto)" : ""}
-      </p>
+      {/* The evaluated windows live in the tab-level GscPeriodStrip — ONE
+          place, never a second period label here. */}
       <div className="shrink-0 overflow-hidden rounded-md border border-border">
         <table className="w-full text-xs">
           <thead className="bg-muted/60 text-left">
@@ -281,7 +269,7 @@ export function QualityView({
                   colSpan={7}
                   className="px-2 py-4 text-center text-muted-foreground"
                 >
-                  No data in this period.
+                  No data {describeGscWindow(periods.current)}.
                 </td>
               </tr>
             ) : null}
@@ -396,8 +384,7 @@ export function QualityView({
                 direction === "loss"
                   ? "Nothing is losing ground"
                   : "Nothing is gaining ground",
-              description:
-                "No row moved in this direction for the selected class and period.",
+              description: `No ${trafficClass ? `${trafficClass} ` : ""}row moved in this direction ${describeGscWindow(periods.current)} vs the compare period.`,
             }}
             className="h-full"
           />
@@ -412,14 +399,12 @@ export function ShiftsView({
   siteId,
   siteName,
   periods,
-  compareAuto,
   minClicks,
   onDrill,
 }: {
   siteId: string;
   siteName: string | null;
   periods: GscResolvedPeriods;
-  compareAuto: boolean;
   minClicks: number;
   onDrill: (dimension: "query" | "page", key: string) => void;
 }) {
@@ -504,12 +489,8 @@ export function ShiftsView({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-1">
-      {compareAuto ? (
-        <p className="shrink-0 text-xs text-muted-foreground">
-          No compare period selected — comparing against the previous period
-          of the same length.
-        </p>
-      ) : null}
+      {/* The evaluated windows (and any auto-derived compare) live in the
+          tab-level GscPeriodStrip — ONE place. */}
       {total > rows.length ? (
         <p className="shrink-0 text-xs text-muted-foreground">
           Showing the top {rows.length} of {formatCount(total)} shifted
@@ -608,8 +589,7 @@ export function ShiftsView({
         emptyState={{
           icon: <Scale className="h-8 w-8 text-muted-foreground" />,
           title: "No meaningful shifts",
-          description:
-            "No query with enough clicks moved a meaningful share of its impressions between pages in this period.",
+          description: `No query with enough clicks moved a meaningful share of its impressions between pages ${describeGscWindow(periods.current)} vs the compare period.`,
         }}
         className="min-h-0 flex-1"
       />
@@ -768,7 +748,7 @@ export function JuiceView({
           icon: <Scale className="h-8 w-8 text-muted-foreground" />,
           title: "No sustained educational pages yet",
           description:
-            "No page has held meaningful educational traffic for 3+ of the last 6 months — or the site's keywords are not classified yet (see the Unclassified bucket under Traffic quality).",
+            "No page has held meaningful educational traffic for 3+ of the last 6 calendar months (this view's fixed window) — or the site's keywords are not classified yet (see the Unclassified bucket under Traffic quality).",
         }}
         className="min-h-0 flex-1"
       />

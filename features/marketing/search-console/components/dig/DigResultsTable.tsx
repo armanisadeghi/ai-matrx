@@ -28,6 +28,7 @@ import {
   gscMetricCopyLines,
 } from "@/features/marketing/search-console/lib/columns";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
+import { describeGscWindow } from "@/features/marketing/search-console/lib/format";
 import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
 import { useRowWatch } from "@/features/marketing/search-console/hooks/useWatchState";
 import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassInsights";
@@ -328,8 +329,7 @@ export function DigResultsTable({
           emptyState={{
             icon: <Pickaxe className="h-8 w-8 text-muted-foreground" />,
             title: "Nothing matches this rule",
-            description:
-              "No rows pass every condition for this period. Loosen a threshold, widen the range, or try another rule.",
+            description: `No rows pass every condition ${describeGscWindow(periods.current)}. Loosen a threshold, widen the range, or try another rule.`,
           }}
           className="flex-1"
         />
