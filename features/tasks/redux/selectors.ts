@@ -531,13 +531,22 @@ export const selectGroupedFilteredTasks = createSelector(
  * you'd see if you clicked it").
  */
 export const selectSmartViewCounts = createSelector(
-  [selectAllTasksFlat, selectUserId],
-  (tasks, currentUserId): Record<SmartViewKey, number> => {
+  [selectAllTasksFlat, selectAllTasks, selectUserId, selectOrganizationId],
+  (tasks, allTaskRecords, currentUserId, appOrgId): Record<SmartViewKey, number> => {
     const ctx = buildSmartViewContext(currentUserId);
+    // Respect the active org context so counts always agree with the list.
+    let scoped = tasks;
+    if (appOrgId) {
+      const byId = new Map(allTaskRecords.map((r) => [r.id, r] as const));
+      scoped = tasks.filter((t) => {
+        const rec = byId.get(t.id);
+        return rec ? rec.organization_id === appOrgId : true;
+      });
+    }
     const counts = {} as Record<SmartViewKey, number>;
     for (const view of SMART_VIEWS) {
       let n = 0;
-      for (const t of tasks) {
+      for (const t of scoped) {
         if (!view.includesClosed && isClosedStatus(t.status)) continue;
         if (view.key !== "all" && !view.predicate(t, ctx)) continue;
         n += 1;
