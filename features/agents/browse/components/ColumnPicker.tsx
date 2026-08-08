@@ -49,7 +49,7 @@ export function ColumnPicker({
           type="button"
           aria-label="Choose columns"
           title="Choose columns"
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className="inline-flex h-11 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground lg:h-9"
         >
           <Columns3 className="h-3.5 w-3.5" />
           <span className="hidden tabular-nums lg:inline">{visibleCount}</span>

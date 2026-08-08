@@ -272,7 +272,7 @@ export function CrmListPage({
       <Button
         size="sm"
         variant="outline"
-        className="h-7 gap-1 px-2 text-xs"
+        className="h-11 gap-1 px-2 text-xs lg:h-7"
         onClick={() => {
           openCreateParty({
             initialKind: "organization",
@@ -289,7 +289,7 @@ export function CrmListPage({
       </Button>
       <Button
         size="sm"
-        className="h-7 gap-1 px-2 text-xs"
+        className="h-11 gap-1 px-2 text-xs lg:h-7"
         onClick={() => {
           openCreateParty({
             initialKind: "person",
@@ -349,7 +349,7 @@ export function CrmListPage({
           )}
         >
           <div className="flex flex-wrap items-center gap-2">
-            <div className="[&_button]:h-11 [&_button]:min-w-11 sm:[&_button]:h-7 sm:[&_button]:min-w-0">
+            <div className="[&_button]:h-11 [&_button]:min-w-11 lg:[&_button]:h-7 lg:[&_button]:min-w-0">
               <BrowseScopeTabs
                 scope={list.query.scope}
                 scopes={CRM_LIST_SCOPES}
@@ -361,7 +361,7 @@ export function CrmListPage({
               <Button
                 size="sm"
                 variant={inTrash ? "secondary" : "ghost"}
-                className="h-7 gap-1 px-2 text-xs"
+                className="h-11 gap-1 px-2 text-xs lg:h-7"
                 onClick={() =>
                   list.setQuery({ view: inTrash ? "active" : "trash" })
                 }

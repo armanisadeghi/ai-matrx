@@ -77,7 +77,7 @@ function IconToggle({
           aria-label={label}
           onClick={onClick}
           className={cn(
-            "inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+            "inline-flex h-11 w-11 items-center justify-center rounded-md transition-colors lg:h-7 lg:w-7",
             active
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -105,7 +105,7 @@ export function BrowseToolbar({
 }: Props) {
   return (
     <div className="flex min-w-0 items-center gap-1.5 sm:flex-wrap sm:gap-2">
-      <div className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-2.5 sm:min-w-56">
+      <div className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-2.5 lg:h-9 lg:min-w-56">
         {isFetching ? (
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
         ) : (
@@ -117,7 +117,7 @@ export function BrowseToolbar({
           onChange={(e) => onSearch(e.target.value)}
           placeholder="Search agents…"
           // 16px minimum prevents iOS zoom-on-focus.
-          className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground sm:text-sm"
+          className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground lg:text-sm"
         />
         {query.search && (
           <>
@@ -132,7 +132,7 @@ export function BrowseToolbar({
               type="button"
               aria-label="Clear search"
               onClick={() => onSearch("")}
-              className="rounded p-0.5 text-muted-foreground hover:text-foreground"
+              className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:text-foreground lg:h-7 lg:w-7"
             >
               <X className="h-4 w-4" />
             </button>
@@ -140,19 +140,21 @@ export function BrowseToolbar({
         )}
       </div>
 
-      <BrowseFilterPanel
-        query={query}
-        facets={facets}
-        sort={prefs.sort}
-        direction={prefs.direction}
-        favoritesFirst={prefs.favoritesFirst}
-        onPatchQuery={onPatchQuery}
-        onSortChange={(sort, direction) => onPatchPrefs({ sort, direction })}
-        onFavoritesFirstChange={(favoritesFirst) =>
-          onPatchPrefs({ favoritesFirst })
-        }
-        onResetFilters={onResetFilters}
-      />
+      <div className="[&_button]:h-11 lg:[&_button]:h-9">
+        <BrowseFilterPanel
+          query={query}
+          facets={facets}
+          sort={prefs.sort}
+          direction={prefs.direction}
+          favoritesFirst={prefs.favoritesFirst}
+          onPatchQuery={onPatchQuery}
+          onSortChange={(sort, direction) => onPatchPrefs({ sort, direction })}
+          onFavoritesFirstChange={(favoritesFirst) =>
+            onPatchPrefs({ favoritesFirst })
+          }
+          onResetFilters={onResetFilters}
+        />
+      </div>
 
       {prefs.view === "table" && (
         <ColumnPicker
@@ -168,7 +170,7 @@ export function BrowseToolbar({
             type="button"
             aria-label="Display options"
             title="Display options"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-foreground sm:hidden"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-foreground sm:hidden"
           >
             <Settings2 className="h-3.5 w-3.5" />
           </button>
