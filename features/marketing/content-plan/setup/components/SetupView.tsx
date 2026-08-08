@@ -755,6 +755,11 @@ export function SetupView() {
         draftExpansion.expanded.families,
         nodeRows,
       );
+      // The draft NEVER overwrites staged user work: a family the user already
+      // named/pasted (or a prior run named), and count-only topics already
+      // staged, are left alone — the per-family buttons re-run explicitly.
+      const stagedNames = namesByArchetype[plan.archetypeKey] ?? {};
+      const stagedTopics = topicsByArchetype[plan.archetypeKey] ?? {};
       let namedFamilies = 0;
       for (const family of draftExpansion.expanded.families) {
         const target = recommendedCounts[family.key] ?? family.count;
@@ -768,6 +773,7 @@ export function SetupView() {
           target_count: String(target),
         };
         if (family.materialize === "pages") {
+          if ((stagedNames[family.key]?.length ?? 0) > 0) continue;
           if ((planDerivedNames[family.key]?.length ?? 0) >= target) continue;
           setLastAiRun({
             kind: "names",
@@ -794,6 +800,7 @@ export function SetupView() {
           });
           namedFamilies += 1;
         } else {
+          if ((stagedTopics[family.key]?.length ?? 0) > 0) continue;
           setLastAiRun({
             kind: "names",
             headline: `Drafting — planning the ${family.label.toLowerCase()} topics…`,
