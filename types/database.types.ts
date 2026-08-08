@@ -34520,6 +34520,91 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      trx_duration_matches: {
+        Args: { p_bucket: string; p_seconds: number }
+        Returns: boolean
+      }
+      trx_list_facets: {
+        Args: {
+          p_deep?: boolean
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+        }
+        Returns: {
+          kind: string
+          total: number
+          value: string
+        }[]
+      }
+      trx_list_scope_counts: {
+        Args: {
+          p_deep?: boolean
+          p_filters?: Json
+          p_search?: string
+        }
+        Returns: {
+          label: string
+          narrow_id: string
+          scope: string
+          total: number
+        }[]
+      }
+      trx_list_scoped: {
+        Args: {
+          p_deep?: boolean
+          p_dir?: string
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: {
+          created_at: string
+          description: string
+          duration_seconds: number
+          folder_name: string
+          id: string
+          is_draft: boolean
+          is_owner: boolean
+          kind: string
+          organization_id: string
+          organization_name: string
+          owner_email: string
+          segment_index: number
+          session_id: string
+          status: string
+          tags: string[]
+          title: string
+          total_count: number
+          transcript_id: string
+          updated_at: string
+          user_id: string
+          visibility: string
+          word_count: number
+        }[]
+      }
+      trx_search_score: {
+        Args: {
+          p_deep_hit?: boolean
+          p_description: string
+          p_folder: string
+          p_id: string
+          p_kind: string
+          p_owner_email: string
+          p_query: string
+          p_tags: string[]
+          p_title: string
+        }
+        Returns: number
+      }
+      trx_words_matches: {
+        Args: { p_bucket: string; p_words: number }
+        Returns: boolean
+      }
       udt_bulk_write: {
         Args: { p_operations: Json; p_table_id: string }
         Returns: Json

@@ -56,6 +56,7 @@ interface Props<TRow> {
   defaultHidden: string[];
   facetSections: EntityFacetSection[];
   hasFavorites: boolean;
+  hasArchived: boolean;
   /** "Search agents…" */
   searchPlaceholder: string;
   /** Label for the deep-search toggle. Absent → no toggle offered. */
@@ -114,6 +115,7 @@ export function EntityListToolbar<TRow>({
   defaultHidden,
   facetSections,
   hasFavorites,
+  hasArchived,
   searchPlaceholder,
   deepSearchLabel,
   hasCards,
@@ -171,6 +173,7 @@ export function EntityListToolbar<TRow>({
           columns={columns}
           facetSections={facetSections}
           hasFavorites={hasFavorites}
+          hasArchived={hasArchived}
           sort={prefs.sort}
           direction={prefs.direction}
           favoritesFirst={prefs.favoritesFirst}
