@@ -330,6 +330,40 @@ sadeghi", "datastruction". Open items:
   `seo.keyword.brand_presence` once classifier coverage exists;
   product-semantics call is Arman's.
 
+## The ambassador — classes leave this route (2026-08-08)
+
+Rung 6 of the canvas doctrine: once a feature is rich, its best data belongs on
+every surface that benefits. Class decomposition used to live ONLY here, so the
+sites list, site overview, brands, and PageWorkspace all showed undecomposed
+clicks — the doctrine's named failure ("raw totals lie").
+
+`components/ambassador/` is the embed layer. Hosts pass a `siteId`; the layer
+owns the period/compare machinery so no host has to learn it.
+
+| Export | Use |
+|---|---|
+| `useGscClassRollup(siteId, range)` | One site. Clamps the window to that site's freshest day, forces the prev-period compare `gsc_perf_class_summary` requires, zero-fills to canonical class order. |
+| `shapeGscClassRollup(rows, periods)` | Pure core of the above — unit-tested arithmetic. |
+| `GscClassBar` | The embeddable strip (`bar` \| `tiles`). Segments drill into `GscDrilldownWindow`; header links back here. |
+| `useGscPortfolioRollup(siteIds, range)` | Many sites, via `seo.gsc_perf_class_summary_multi`. |
+| `GscPortfolioClassBar` | Brand/portfolio strip; states how many sites contributed. |
+
+Mounted on: `SiteOverview` (under the KPI grid), `SiteKpiPeeks` (inside the
+lazy hovercard, so a 22-row table costs nothing until hovered), and
+`BrandWorkspace` (above Websites — brands previously carried no search data).
+
+**`gsc_perf_class_summary_multi` delegates** to the per-site function rather
+than re-implementing the dedup + class-resolver join: one accuracy contract,
+and each site keeps its own access assert. Denied sites are skipped, not
+raised, so one inaccessible site cannot blank a portfolio. It deliberately
+returns NO distinct query count — summing per-site DISTINCTs double-counts a
+phrase ranking on two sites, and a subtly wrong number is worse than none.
+
+**Known**: the single-site strip clamps to that site's freshest day while the
+portfolio strip uses wall-clock minus GSC lag, so a brand and its only site can
+show windows one day apart. Both label their own window; aligning them needs a
+multi-site freshness read.
+
 ## Doctrine
 
 - Never bypass the `gsc_perf_*` RPCs with raw table aggregates in the FE —
@@ -437,6 +471,11 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-08 — Ambassador layer: traffic classes now render on site
+  overview, the sites-list hovercard, and brand pages via
+  `components/ambassador/` + the new `gsc_perf_class_summary_multi` RPC.
+  Consolidated the freshest-day reduction into `resolveGscDataThrough`
+  (workspace + drilldown + rollup each had their own copy).
 - 2026-08-08 — Brand identity integration round: shared server
   primitives (gsc_brand_aliases/gsc_brand_hits, threshold fn), the
   gsc_brand_identity narrator + gsc_set_brand_aliases writer RPCs, and
