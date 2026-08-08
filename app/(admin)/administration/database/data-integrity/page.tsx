@@ -2,30 +2,29 @@
 
 // app/(admin)/administration/database/data-integrity/page.tsx
 //
-// Super-admin data-integrity dashboard. Runs the registry of integrity checks
-// (lib/integrity) on demand and surfaces findings grouped by severity/category.
-// Read-only — checks never mutate data. The /administration layout already
-// gates the whole tree to super admins.
+// Super-admin data-integrity dashboard on the canonical MatrxDataTable. Runs
+// the registry of integrity checks (lib/integrity) on demand; every registered
+// check is a row (category/severity/kind/status all sort + filter), the
+// per-row action runs one check, and row click opens the side-panel detail
+// with the findings sample. Read-only — checks never mutate data. The
+// /administration layout already gates the whole tree to super admins.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
   Copy,
   Info,
   Loader2,
   Play,
   RefreshCw,
   ShieldAlert,
-  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/lib/toast";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 
 type Severity = "error" | "warning" | "info";
 
@@ -71,6 +70,30 @@ interface Report {
   };
 }
 
+/** One table row per registered check, with its latest result when run. */
+interface IntegrityRow extends CheckMeta {
+  result: CheckResult | null;
+}
+
+type RowStatus =
+  | "not run"
+  | "on-demand"
+  | "skipped"
+  | "check failed"
+  | "issues"
+  | "clean";
+
+function rowStatus(row: IntegrityRow): RowStatus {
+  const r = row.result;
+  if (!r) return row.kind === "script" ? "on-demand" : "not run";
+  // A skipped script gate is not a problem — it's an on-demand run affordance.
+  if (r.skipped && r.kind === "script") return "on-demand";
+  if (r.skipped) return "skipped";
+  if (r.error) return "check failed";
+  if (r.count > 0) return "issues";
+  return "clean";
+}
+
 const SEVERITY_STYLES: Record<Severity, string> = {
   error: "bg-destructive/10 text-destructive border-destructive/30",
   warning:
@@ -80,10 +103,48 @@ const SEVERITY_STYLES: Record<Severity, string> = {
 
 function SeverityIcon({ severity }: { severity: Severity }) {
   if (severity === "error")
-    return <ShieldAlert className="h-4 w-4 text-destructive" />;
+    return <ShieldAlert className="h-3.5 w-3.5 text-destructive" />;
   if (severity === "warning")
-    return <AlertTriangle className="h-4 w-4 text-amber-500" />;
-  return <Info className="h-4 w-4 text-blue-500" />;
+    return <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />;
+  return <Info className="h-3.5 w-3.5 text-blue-500" />;
+}
+
+function StatusBadge({ row }: { row: IntegrityRow }) {
+  const status = rowStatus(row);
+  if (status === "on-demand" || status === "skipped" || status === "not run")
+    return (
+      <Badge variant="outline" className="text-muted-foreground">
+        {status === "on-demand" ? "On-demand" : status === "skipped" ? "Skipped" : "Not run"}
+      </Badge>
+    );
+  if (status === "check failed")
+    return (
+      <Badge variant="outline" className="border-destructive/40 text-destructive">
+        Check failed
+      </Badge>
+    );
+  if (status === "issues") {
+    const count = row.result?.count ?? 0;
+    return (
+      <Badge variant="outline" className={SEVERITY_STYLES[row.severity]}>
+        {count} {count === 1 ? "issue" : "issues"}
+      </Badge>
+    );
+  }
+  return (
+    <Badge
+      variant="outline"
+      className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+    >
+      Clean
+    </Badge>
+  );
+}
+
+function fmt(v: unknown): string {
+  if (v === null || v === undefined) return "—";
+  if (typeof v === "object") return JSON.stringify(v);
+  return String(v);
 }
 
 function FindingsTable({ rows }: { rows: Record<string, unknown>[] }) {
@@ -127,136 +188,56 @@ function FindingsTable({ rows }: { rows: Record<string, unknown>[] }) {
   );
 }
 
-function fmt(v: unknown): string {
-  if (v === null || v === undefined) return "—";
-  if (typeof v === "object") return JSON.stringify(v);
-  return String(v);
-}
-
-function ResultRow({
-  result,
-  running,
-  onRun,
-}: {
-  result: CheckResult;
-  running: boolean;
-  onRun: (id: string) => void;
-}) {
-  const [open, setOpen] = useState(
-    result.count > 0 || (!!result.error && !result.skipped),
-  );
-
-  // A skipped script gate is not a problem — it's an on-demand run affordance.
-  const onDemandStub = !!result.skipped && result.kind === "script";
-
-  const statusBadge = onDemandStub ? (
-    <Badge variant="outline" className="text-muted-foreground">
-      On-demand
-    </Badge>
-  ) : result.skipped ? (
-    <Badge variant="outline" className="text-muted-foreground">
-      Skipped
-    </Badge>
-  ) : result.error ? (
-    <Badge variant="outline" className="border-destructive/40 text-destructive">
-      Check failed
-    </Badge>
-  ) : result.count > 0 ? (
-    <Badge variant="outline" className={SEVERITY_STYLES[result.severity]}>
-      {result.count} {result.count === 1 ? "issue" : "issues"}
-    </Badge>
-  ) : (
-    <Badge
-      variant="outline"
-      className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-    >
-      Clean
-    </Badge>
-  );
-
-  const expandable = result.count > 0 || !!result.error || onDemandStub;
-
+function CheckDetail({ row }: { row: IntegrityRow }) {
+  const r = row.result;
   return (
-    <div className="rounded-md border border-border bg-card">
-      <div className="flex items-center gap-2 px-3 py-2">
-        <button
-          type="button"
-          onClick={() => expandable && setOpen((o) => !o)}
-          className="flex items-center gap-2 flex-1 min-w-0 text-left"
-          disabled={!expandable}
-        >
-          {expandable ? (
-            open ? (
-              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-            )
-          ) : result.count === 0 && !result.skipped ? (
-            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-          ) : (
-            <SeverityIcon severity={result.severity} />
-          )}
-          <span className="font-medium text-sm truncate">{result.title}</span>
-          <code className="text-[10px] text-muted-foreground/70 truncate hidden sm:inline">
-            {result.id}
-          </code>
-        </button>
-        {statusBadge}
-        <span className="text-[10px] text-muted-foreground tabular-nums w-12 text-right">
-          {result.durationMs}ms
-        </span>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={() => onRun(result.id)}
-          disabled={running}
-          title={onDemandStub ? "Run this gate now" : "Re-run this check"}
-        >
-          {running ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : onDemandStub ? (
-            <Play className="h-3.5 w-3.5" />
-          ) : (
-            <RefreshCw className="h-3.5 w-3.5" />
-          )}
-        </Button>
+    <div className="space-y-3 text-sm">
+      <p className="text-xs text-muted-foreground">{row.description}</p>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge variant="outline" className={SEVERITY_STYLES[row.severity]}>
+          {row.severity}
+        </Badge>
+        <Badge variant="outline" className="text-muted-foreground">
+          {row.category}
+        </Badge>
+        <Badge variant="outline" className="text-muted-foreground">
+          {row.kind}
+        </Badge>
+        <StatusBadge row={row} />
+        {r && (
+          <span className="text-[11px] tabular-nums text-muted-foreground">
+            {r.durationMs}ms
+          </span>
+        )}
       </div>
-
-      {open && expandable && (
-        <div className="px-3 pb-3 pt-1 space-y-2 border-t border-border">
-          <p className="text-xs text-muted-foreground">{result.description}</p>
-          {result.error && result.skipped ? (
-            <p className="text-xs text-muted-foreground italic">
-              {result.error}
-            </p>
-          ) : result.error ? (
-            <Alert variant="destructive" className="py-2">
-              <AlertDescription className="text-xs font-mono">
-                {result.error}
-              </AlertDescription>
-            </Alert>
-          ) : null}
-          {result.remediation && result.count > 0 && (
-            <div className="text-xs">
-              <span className="font-medium text-foreground">Fix: </span>
-              <span className="text-muted-foreground">
-                {result.remediation}
-              </span>
-            </div>
-          )}
-          {result.sample.length > 0 && (
-            <>
-              <FindingsTable rows={result.sample} />
-              {result.count > result.sample.length && (
-                <p className="text-[11px] text-muted-foreground">
-                  Showing {result.sample.length} of {result.count} — re-run the
-                  CLI (`pnpm check:data-integrity`) for the full set.
-                </p>
-              )}
-            </>
-          )}
+      {!r && (
+        <p className="text-xs italic text-muted-foreground">
+          Not run yet — use the row&apos;s run button or “Run all checks”.
+        </p>
+      )}
+      {r?.error && r.skipped ? (
+        <p className="text-xs italic text-muted-foreground">{r.error}</p>
+      ) : r?.error ? (
+        <Alert variant="destructive" className="py-2">
+          <AlertDescription className="text-xs font-mono">{r.error}</AlertDescription>
+        </Alert>
+      ) : null}
+      {row.remediation && (r?.count ?? 0) > 0 && (
+        <div className="text-xs">
+          <span className="font-medium text-foreground">Fix: </span>
+          <span className="text-muted-foreground">{row.remediation}</span>
         </div>
+      )}
+      {r && r.sample.length > 0 && (
+        <>
+          <FindingsTable rows={r.sample} />
+          {r.count > r.sample.length && (
+            <p className="text-[11px] text-muted-foreground">
+              Showing {r.sample.length} of {r.count} — re-run the CLI
+              (`pnpm check:data-integrity`) for the full set.
+            </p>
+          )}
+        </>
       )}
     </div>
   );
@@ -353,21 +334,99 @@ export default function DataIntegrityPage() {
     toast.success("Report copied as JSON");
   }, [report]);
 
-  const grouped = useMemo(() => {
-    if (!report) return null;
-    const byCat = new Map<string, CheckResult[]>();
-    for (const r of report.results) {
-      const arr = byCat.get(r.category) ?? [];
-      arr.push(r);
-      byCat.set(r.category, arr);
-    }
-    return Array.from(byCat.entries());
-  }, [report]);
+  const rows = useMemo((): IntegrityRow[] => {
+    if (!checks) return [];
+    const byId = new Map(report?.results.map((r) => [r.id, r]) ?? []);
+    return checks.map((c) => ({ ...c, result: byId.get(c.id) ?? null }));
+  }, [checks, report]);
+
+  const columns = useMemo((): MatrxColumnDef<IntegrityRow>[] => {
+    return [
+      {
+        id: "title",
+        accessorKey: "title",
+        header: "Check",
+        cell: (r) => <span className="text-sm font-medium">{r.title}</span>,
+      },
+      {
+        id: "id",
+        accessorKey: "id",
+        header: "ID",
+        cellKind: "text",
+        width: 180,
+        cell: (r) => (
+          <code className="text-[11px] text-muted-foreground">{r.id}</code>
+        ),
+      },
+      {
+        id: "category",
+        accessorKey: "category",
+        header: "Category",
+        filter: "select",
+        width: 140,
+      },
+      {
+        id: "severity",
+        accessorKey: "severity",
+        header: "Severity",
+        filter: "select",
+        width: 110,
+        cell: (r) => (
+          <span className="flex items-center gap-1.5 text-xs">
+            <SeverityIcon severity={r.severity} />
+            {r.severity}
+          </span>
+        ),
+      },
+      {
+        id: "kind",
+        accessorKey: "kind",
+        header: "Kind",
+        filter: "select",
+        width: 90,
+        cell: (r) => <span className="text-xs">{r.kind}</span>,
+      },
+      {
+        id: "status",
+        header: "Status",
+        accessorFn: (r) => rowStatus(r),
+        filter: "select",
+        width: 130,
+        cell: (r) => <StatusBadge row={r} />,
+      },
+      {
+        id: "count",
+        header: "Findings",
+        accessorFn: (r) => r.result?.count,
+        filter: "number",
+        width: 90,
+        align: "right",
+        cell: (r) => (
+          <span className="text-xs tabular-nums">
+            {r.result ? r.result.count : "—"}
+          </span>
+        ),
+      },
+      {
+        id: "duration",
+        header: "Duration",
+        accessorFn: (r) => r.result?.durationMs,
+        filter: "number",
+        width: 90,
+        align: "right",
+        cell: (r) => (
+          <span className="text-[11px] tabular-nums text-muted-foreground">
+            {r.result ? `${r.result.durationMs}ms` : "—"}
+          </span>
+        ),
+      },
+    ];
+  }, []);
 
   const t = report?.totals;
 
   return (
-    <div className="h-full overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
+    <div className="flex h-full min-h-0 flex-col gap-3 px-4 py-4 sm:px-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold flex items-center gap-2">
@@ -449,35 +508,78 @@ export default function DataIntegrityPage() {
         </div>
       )}
 
-      {!checks ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full rounded-md" />
-          ))}
-        </div>
-      ) : !report || !grouped ? (
-        <EmptyState checks={checks} />
-      ) : (
-        <div className="space-y-5">
-          {grouped.map(([category, results]) => (
-            <section key={category} className="space-y-2">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {category}
-              </h2>
-              <div className="space-y-2">
-                {results.map((r) => (
-                  <ResultRow
-                    key={r.id}
-                    result={r}
-                    running={runningId === r.id || runningAll}
-                    onRun={runOne}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
+      <div className="min-h-0 flex-1">
+        <MatrxDataTable
+          data={rows}
+          columns={columns}
+          getRowId={(r) => r.id}
+          isLoading={!checks && !error}
+          isFetching={runningAll}
+          pageSize={50}
+          emptyState={{
+            title: "No integrity checks registered",
+            description: "Checks live in lib/integrity.",
+          }}
+          toolbar={{ search: true, searchPlaceholder: "Search checks…" }}
+          rowActions={(r) => {
+            const running = runningId === r.id || runningAll;
+            const onDemand = rowStatus(r) === "on-demand";
+            return (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => void runOne(r.id)}
+                disabled={running}
+                title={onDemand ? "Run this gate now" : "Re-run this check"}
+              >
+                {running ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : onDemand ? (
+                  <Play className="h-3.5 w-3.5" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            );
+          }}
+          copy={{
+            label: "Integrity check",
+            listLabel: "Integrity checks (this view)",
+            location: "/administration/database/data-integrity",
+            rowKind: "integrity-check",
+            listKind: "integrity-checks",
+            humanRow: (r) =>
+              [
+                `Check: ${r.title} (${r.id})`,
+                `Category: ${r.category} · Severity: ${r.severity} · Kind: ${r.kind}`,
+                `Status: ${rowStatus(r)}`,
+                r.result
+                  ? `Findings: ${r.result.count} · Duration: ${r.result.durationMs}ms`
+                  : "Findings: not run",
+                r.result?.error ? `Error: ${r.result.error}` : null,
+              ]
+                .filter(Boolean)
+                .join("\n"),
+            rowAttributes: (r) => ({
+              id: r.id,
+              severity: r.severity,
+              status: rowStatus(r),
+              count: r.result?.count ?? null,
+            }),
+            listAttributes: (visible, all) => ({
+              visible: visible.length,
+              total: all.length,
+              generatedAt: report?.generatedAt ?? null,
+            }),
+          }}
+          detail={{
+            title: (r) => r.title,
+            description: (r) => <code className="text-[11px]">{r.id}</code>,
+            render: (r) => <CheckDetail row={r} />,
+          }}
+        />
+      </div>
     </div>
   );
 }
@@ -505,29 +607,5 @@ function SummaryChip({
       <span className="tabular-nums">{value}</span>
       {label}
     </span>
-  );
-}
-
-function EmptyState({ checks }: { checks: CheckMeta[] }) {
-  const byCat = new Map<string, CheckMeta[]>();
-  for (const c of checks) {
-    const arr = byCat.get(c.category) ?? [];
-    arr.push(c);
-    byCat.set(c.category, arr);
-  }
-  return (
-    <div className="rounded-md border border-dashed border-border p-6 text-center space-y-3">
-      <p className="text-sm text-muted-foreground">
-        {checks.length} checks registered across {byCat.size} categories. Run
-        them to see the current state.
-      </p>
-      <div className="flex flex-wrap justify-center gap-1.5">
-        {Array.from(byCat.entries()).map(([cat, items]) => (
-          <Badge key={cat} variant="outline" className="text-muted-foreground">
-            {cat} · {items.length}
-          </Badge>
-        ))}
-      </div>
-    </div>
   );
 }

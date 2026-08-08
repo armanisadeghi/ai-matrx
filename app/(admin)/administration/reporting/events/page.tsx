@@ -2,20 +2,25 @@
 
 // Events — Super Admin only.
 //
-// A live window into platform.activity_log (the event spine). Every
-// run.completed / run.failed (run-lifecycle producers), file.*/share_link.*/
-// permission.* (audit), and webhook.test event lands here. Use it to confirm
-// the spine is firing and to watch events arrive while you test a feature.
+// A live window into platform.activity_log (the event spine), on the canonical
+// MatrxDataTable (per-column sort+filter, global search, Copy for AI, UUID
+// cells, side-panel detail). Every run.completed / run.failed (run-lifecycle
+// producers), file.*/share_link.*/permission.* (audit), and webhook.test event
+// lands here. The action-prefix narrowing stays server-side (RPC arg) as a
+// toolbar facet; everything fetched sorts + filters locally.
 // The (admin) layout requires Super Admin; the admin_recent_activity RPC
 // re-checks is_super_admin() server-side.
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { RefreshCw, Activity, Webhook, FileText, Cog } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Activity, Cog, FileText, Loader2, RefreshCw, Webhook } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 
 interface ActivityRow {
   id: number;
@@ -29,10 +34,10 @@ interface ActivityRow {
 }
 
 const FILTERS = [
-  { label: "All", prefix: null, icon: Activity },
-  { label: "Jobs (run.*)", prefix: "run.", icon: Cog },
-  { label: "Webhooks", prefix: "webhook.", icon: Webhook },
-  { label: "Files", prefix: "file.", icon: FileText },
+  { label: "All", value: "all", prefix: null, icon: Activity },
+  { label: "Jobs (run.*)", value: "run.", prefix: "run.", icon: Cog },
+  { label: "Webhooks", value: "webhook.", prefix: "webhook.", icon: Webhook },
+  { label: "Files", value: "file.", prefix: "file.", icon: FileText },
 ] as const;
 
 function actionColor(action: string): string {
@@ -43,13 +48,15 @@ function actionColor(action: string): string {
 }
 
 export default function AdminEventsPage() {
-  const [rows, setRows] = useState<ActivityRow[] | null>(null);
+  const [rows, setRows] = useState<ActivityRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prefix, setPrefix] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
+    setFetching(true);
     try {
       const supabase = createClient();
       const { data, error: rpcError } = await supabase.rpc("admin_recent_activity", {
@@ -62,6 +69,9 @@ export default function AdminEventsPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load events");
       setRows([]);
+    } finally {
+      setLoading(false);
+      setFetching(false);
     }
   }, [prefix]);
 
@@ -71,101 +81,205 @@ export default function AdminEventsPage() {
 
   useEffect(() => {
     if (!autoRefresh) return undefined;
-    timerRef.current = setInterval(() => void load(), 5000);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    const timer = setInterval(() => void load(), 5000);
+    return () => clearInterval(timer);
   }, [autoRefresh, load]);
 
+  const columns = useMemo((): MatrxColumnDef<ActivityRow>[] => {
+    return [
+      {
+        id: "occurred_at",
+        accessorKey: "occurred_at",
+        header: "When",
+        width: 150,
+        cell: (r) => (
+          <span
+            className="whitespace-nowrap text-xs text-muted-foreground"
+            title={new Date(r.occurred_at).toLocaleString()}
+          >
+            {formatDistanceToNow(new Date(r.occurred_at), { addSuffix: true })}
+          </span>
+        ),
+      },
+      {
+        id: "action",
+        accessorKey: "action",
+        header: "Action",
+        filter: "select",
+        cell: (r) => (
+          <span className={`whitespace-nowrap font-medium ${actionColor(r.action)}`}>
+            {r.action}
+          </span>
+        ),
+      },
+      {
+        id: "entity_type",
+        accessorKey: "entity_type",
+        header: "Entity",
+        filter: "select",
+        width: 140,
+        cell: (r) =>
+          r.entity_type ? (
+            <Badge variant="outline" className="text-xs">
+              {r.entity_type}
+            </Badge>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+      {
+        id: "entity_id",
+        accessorKey: "entity_id",
+        header: "Entity ID",
+        cellKind: "uuid",
+        width: 120,
+      },
+      {
+        id: "actor_id",
+        accessorKey: "actor_id",
+        header: "Actor",
+        cellKind: "uuid",
+        width: 120,
+      },
+      {
+        id: "organization_id",
+        accessorKey: "organization_id",
+        header: "Org",
+        cellKind: "uuid",
+        width: 120,
+      },
+      {
+        id: "metadata",
+        header: "Metadata",
+        accessorFn: (r) => JSON.stringify(r.metadata),
+        cell: (r) => (
+          <span className="block max-w-xs truncate font-mono text-xs text-muted-foreground">
+            {JSON.stringify(r.metadata)}
+          </span>
+        ),
+      },
+    ];
+  }, []);
+
   return (
-    <div className="h-[calc(100dvh-2.5rem)] overflow-y-auto bg-textured p-4">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Activity className="size-5 text-primary" />
-            <h1 className="text-lg font-semibold text-foreground">Events</h1>
-            <span className="text-sm text-muted-foreground">platform.activity_log — the event spine</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Switch id="auto" checked={autoRefresh} onCheckedChange={setAutoRefresh} />
-              <Label htmlFor="auto" className="text-xs text-muted-foreground">Auto-refresh (5s)</Label>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => void load()}>
-              <RefreshCw className="size-4" /> Refresh
-            </Button>
-          </div>
+    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+      <div className="flex items-center gap-2">
+        <Activity className="size-5 text-primary" />
+        <h1 className="text-lg font-semibold text-foreground">Events</h1>
+        <span className="text-sm text-muted-foreground">
+          platform.activity_log — the event spine
+        </span>
+      </div>
+
+      {error && (
+        <div className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-500">
+          {error}
         </div>
+      )}
 
-        <div className="mb-3 flex flex-wrap gap-1.5">
-          {FILTERS.map((f) => (
-            <Button
-              key={f.label}
-              size="sm"
-              variant={prefix === f.prefix ? "default" : "outline"}
-              onClick={() => setPrefix(f.prefix)}
-            >
-              <f.icon className="size-3.5" /> {f.label}
-            </Button>
-          ))}
-        </div>
-
-        {error && (
-          <div className="mb-3 rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-500">
-            {error}
-          </div>
-        )}
-
-        {rows === null ? (
-          <div className="space-y-2">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-10 animate-pulse rounded bg-muted/40" />
-            ))}
-          </div>
-        ) : rows.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            No events yet. Trigger one (finish a job, or send a webhook test) and Refresh.
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-lg border border-border">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2 font-medium">When</th>
-                  <th className="px-3 py-2 font-medium">Action</th>
-                  <th className="px-3 py-2 font-medium">Entity</th>
-                  <th className="px-3 py-2 font-medium">Actor</th>
-                  <th className="px-3 py-2 font-medium">Metadata</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.id} className="border-t border-border">
-                    <td className="whitespace-nowrap px-3 py-1.5 text-xs text-muted-foreground">
-                      {new Date(r.occurred_at).toLocaleString()}
-                    </td>
-                    <td className={`whitespace-nowrap px-3 py-1.5 font-medium ${actionColor(r.action)}`}>
-                      {r.action}
-                    </td>
-                    <td className="px-3 py-1.5 text-xs text-muted-foreground">
-                      {r.entity_type ? (
-                        <Badge variant="outline" className="text-xs">{r.entity_type}</Badge>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="px-3 py-1.5 font-mono text-xs text-muted-foreground">
-                      {r.actor_id ? r.actor_id.slice(0, 8) : "—"}
-                    </td>
-                    <td className="max-w-xs truncate px-3 py-1.5 font-mono text-xs text-muted-foreground">
-                      {JSON.stringify(r.metadata)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <div className="min-h-0 flex-1">
+        <MatrxDataTable
+          data={rows}
+          columns={columns}
+          getRowId={(r) => String(r.id)}
+          isLoading={loading}
+          isFetching={fetching}
+          pageSize={50}
+          emptyState={{
+            title: "No events yet",
+            description:
+              "Trigger one (finish a job, or send a webhook test) and Refresh.",
+          }}
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Search events…",
+            facets: [
+              {
+                type: "button-group",
+                id: "action-prefix",
+                value: prefix ?? "all",
+                defaultValue: "all",
+                options: FILTERS.map((f) => ({
+                  value: f.value,
+                  label: f.label,
+                  icon: <f.icon className="size-3.5" />,
+                })),
+                onChange: (value) =>
+                  setPrefix(FILTERS.find((f) => f.value === value)?.prefix ?? null),
+              },
+            ],
+            actions: (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Switch id="auto" checked={autoRefresh} onCheckedChange={setAutoRefresh} />
+                  <Label htmlFor="auto" className="text-xs text-muted-foreground">
+                    Auto-refresh (5s)
+                  </Label>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void load()}
+                  disabled={fetching}
+                >
+                  {fetching ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="size-4" />
+                  )}
+                  Refresh
+                </Button>
+              </div>
+            ),
+          }}
+          copy={{
+            label: "Activity event",
+            listLabel: "Activity events (this view)",
+            location: "/administration/reporting/events",
+            rowKind: "activity-event",
+            listKind: "activity-events",
+            humanRow: (r) =>
+              [
+                `Event #${r.id} — ${r.action}`,
+                `Occurred: ${r.occurred_at}`,
+                `Entity: ${r.entity_type ?? "—"} ${r.entity_id ?? ""}`.trim(),
+                `Actor: ${r.actor_id ?? "—"}`,
+                `Org: ${r.organization_id ?? "—"}`,
+                `Metadata: ${JSON.stringify(r.metadata)}`,
+              ].join("\n"),
+            rowAttributes: (r) => ({ id: r.id, action: r.action }),
+          }}
+          detail={{
+            title: (r) => r.action,
+            description: (r) => new Date(r.occurred_at).toLocaleString(),
+            render: (r) => (
+              <div className="space-y-3 text-sm">
+                <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
+                  <span className="text-muted-foreground">Event ID</span>
+                  <span className="font-mono">{r.id}</span>
+                  <span className="text-muted-foreground">Action</span>
+                  <span className={`font-medium ${actionColor(r.action)}`}>{r.action}</span>
+                  <span className="text-muted-foreground">Occurred</span>
+                  <span>{new Date(r.occurred_at).toLocaleString()}</span>
+                  <span className="text-muted-foreground">Entity type</span>
+                  <span>{r.entity_type ?? "—"}</span>
+                  <span className="text-muted-foreground">Entity ID</span>
+                  <span className="break-all font-mono">{r.entity_id ?? "—"}</span>
+                  <span className="text-muted-foreground">Actor</span>
+                  <span className="break-all font-mono">{r.actor_id ?? "—"}</span>
+                  <span className="text-muted-foreground">Organization</span>
+                  <span className="break-all font-mono">{r.organization_id ?? "—"}</span>
+                </div>
+                <div>
+                  <div className="mb-1 text-xs font-medium text-muted-foreground">Metadata</div>
+                  <pre className="max-h-96 overflow-auto rounded-md border border-border bg-muted/30 p-2 font-mono text-xs">
+                    {JSON.stringify(r.metadata, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            ),
+          }}
+        />
       </div>
     </div>
   );
