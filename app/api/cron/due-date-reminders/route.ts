@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { sendDueDateReminderEmail } from "@/lib/email/notificationService";
+import { sendDm } from "@/lib/services/system-dm";
 
 /**
  * GET /api/cron/due-date-reminders
@@ -50,7 +51,13 @@ export async function GET(request: Request) {
     const dayAfterTomorrow = new Date(today);
     dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
 
-    const results = {
+    const results: {
+      processed: number;
+      sent: number;
+      skipped: number;
+      errors: number;
+      dmsSent?: number;
+    } = {
       processed: 0,
       sent: 0,
       skipped: 0,
@@ -120,6 +127,12 @@ export async function GET(request: Request) {
     const PER_USER_CAP = 3;
     const perUserSent = new Map<string, number>();
 
+    // Collect each user's due/overdue tasks for the in-app DM digest.
+    type ReminderTask = (typeof tasks)[number] & {
+      urgency: 'upcoming' | 'due_today' | 'overdue';
+    };
+    const perUserTasks = new Map<string, ReminderTask[]>();
+
     // Process each task
     for (const task of tasks) {
       results.processed++;
@@ -146,6 +159,11 @@ export async function GET(request: Request) {
         results.skipped++;
         continue;
       }
+
+      const bucket = perUserTasks.get(notifyUserId) ?? [];
+      bucket.push({ ...task, urgency });
+      perUserTasks.set(notifyUserId, bucket);
+
       if ((perUserSent.get(notifyUserId) ?? 0) >= PER_USER_CAP) {
         results.skipped++;
         continue;
@@ -177,6 +195,53 @@ export async function GET(request: Request) {
       } catch (err) {
         results.errors++;
         console.error(`Exception sending reminder for task ${task.id}:`, err);
+      }
+    }
+
+    // In-app DM from the Matrx System bot — ONE message per user per run,
+    // volume-aware: a single task gets actionable Open/Complete/Snooze chips;
+    // several tasks collapse to a digest with a deep link into /tasks.
+    const urgencyLabel = { overdue: 'overdue', due_today: 'due today', upcoming: 'due tomorrow' } as const;
+    for (const [userId, userTasks] of perUserTasks) {
+      try {
+        const dm =
+          userTasks.length === 1
+            ? sendDm({
+                senderId: null,
+                recipientId: userId,
+                content: `Task reminder — "${userTasks[0].title}" is ${urgencyLabel[userTasks[0].urgency]}.`,
+                actionData: {
+                  kind: 'task_reminder',
+                  payload: {
+                    task_id: userTasks[0].id,
+                    title: userTasks[0].title,
+                    due_date: userTasks[0].due_date,
+                  },
+                },
+              })
+            : sendDm({
+                senderId: null,
+                recipientId: userId,
+                content: [
+                  `You have ${userTasks.length} tasks needing attention:`,
+                  ...userTasks
+                    .slice(0, 2)
+                    .map((t) => `• ${t.title} (${urgencyLabel[t.urgency]})`),
+                  ...(userTasks.length > 2 ? [`…and ${userTasks.length - 2} more`] : []),
+                ].join('\n'),
+                actionData: {
+                  kind: 'open_link',
+                  payload: { href: '/tasks', label: 'Open tasks' },
+                },
+              });
+        const dmResult = await dm;
+        if (dmResult.ok) {
+          results.dmsSent = (results.dmsSent ?? 0) + 1;
+        } else if (dmResult.error !== 'self') {
+          console.error(`[due-date-reminders] DM to ${userId} failed:`, dmResult.error);
+        }
+      } catch (err) {
+        console.error(`[due-date-reminders] DM exception for ${userId}:`, err);
       }
     }
 

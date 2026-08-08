@@ -121,8 +121,19 @@ Org-scoped project management. Projects group work within an organization; tasks
 
 ## Related features
 
+## Notifications — channels and placement (deliberate decision)
+
+Three channels, all frontend-side because ALL delivery infra (Resend email in `lib/email/`, DM inserts, preference tables) lives here; aidream has no notification service. Revisit (move firing onto aidream's `sch_*` spine) only if that changes or reminders need sub-daily granularity.
+
+1. **Email** — `lib/email/notificationService.ts`, preference-gated (`users.user_email_preferences.task_notifications`).
+2. **In-app DM** (canonical in-app channel) — `lib/services/system-dm.ts` `sendDm()` (sender = user or the Matrx System bot `system@aimatrx.com`); action chips via `features/messaging/actions/messageActionRegistry.tsx` `task_reminder` kind (Open / Complete — recurrence-aware / Snooze 1d, all inline). Senders: task assignment (`app/api/notifications/task-assigned`), the reminder cron (ONE volume-aware DM per user per run: single task → actionable chips; several → digest + `open_link` to /tasks).
+3. **Reminder cron** — `app/api/cron/due-date-reminders/route.ts`, `vercel.json` daily 15:00 UTC, main deployment only, fail-closed on missing `CRON_SECRET` (set on Vercel prod 2026-08-07), snooze/dismiss-aware (`task_user_state`), 3-emails-per-user cap.
+
+Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tasks-world-class.md).
+
 ## Change log
 
+- `2026-08-07` — **DM notification integration**: shared `system-dm.ts` primitive (feedback notifier refactored onto it), `task_reminder` action chips verified live (Snooze writes `task_user_state`), assignment DMs, volume-aware cron digest DMs from the Matrx System bot. Placement decision documented above.
 - `2026-08-07` — **World-class task system upgrade** (branch `feat/tasks-world-class`): full lifecycle vocabulary + backfill, provenance + idempotent system-task RPCs, time controls (start/due-time/recurrence/reminders), `workspace.task_user_state` (snooze/ack/pin), smart views with live counts, editor Status/Start/Repeat rows + provenance chip + snooze, reminder cron actually scheduled (was orphaned), `updateTaskLabels` settings-clobber fixed. See "Task system (2026-08 world-class upgrade)" above.
 - `2026-07-28` — **Task descriptions are spacious and manually resizable.** The canonical full task editor now opens its description field at 240px and preserves the browser's vertical resize handle. Compact embedded task tiles retain their bounded auto-grow behavior. The shared `ProTextarea` primitive now merges caller styles with its `minHeight` / `maxHeight` contract instead of letting a caller's unrelated inline style silently erase those bounds.
 - `2026-07-21` — **Project creation follows the database-owned membership bootstrap contract.** Removed the stale post-insert `mbr_add(owner)` call from canonical `createProject`; the project insert trigger already creates the creator's `iam.memberships` owner row atomically, and the hardened RPC correctly rejects a second owner-establishment attempt. Slug availability now uses zero-or-one-row `maybeSingle()` semantics with loud, conservative error handling instead of producing `PGRST116` for an available slug.

@@ -12,14 +12,17 @@
 
 "use client";
 
-import { ExternalLink, FileChartColumn, Search } from "lucide-react";
+import { useState } from "react";
+import { AlarmClock, CircleCheck, ExternalLink, FileChartColumn, Search } from "lucide-react";
 import Link from "next/link";
+import { toast } from "@/lib/toast";
 import { useOpenAgentFindUsagesWindow } from "@/features/overlays/openers/agentFindUsagesWindow";
 import type {
   AgentDriftActionPayload,
   MessageActionData,
   OpenLinkActionPayload,
   ResourceSharedActionPayload,
+  TaskReminderActionPayload,
 } from "@/features/messaging/types";
 import { getResourceSharePath } from "@/utils/permissions/registry";
 import { getResourceIcon } from "@/features/sharing/resourceIcons";
@@ -104,10 +107,84 @@ function OpenLinkChip({ data, isOwn }: { data: MessageActionData; isOwn: boolean
   );
 }
 
+/**
+ * `task_reminder` — actionable task notification (assignment, due reminder).
+ * Open navigates; Complete and Snooze act inline through the canonical task
+ * services (recurrence-aware completion; per-user snooze state).
+ */
+function TaskReminderChips({ data, isOwn }: { data: MessageActionData; isOwn: boolean }) {
+  const p = data.payload as TaskReminderActionPayload;
+  const [done, setDone] = useState<"completed" | "snoozed" | null>(null);
+  if (!p?.task_id) return null;
+
+  const complete = async () => {
+    const { completeTask } = await import(
+      "@/features/tasks/services/taskService"
+    );
+    const result = await completeTask({
+      id: p.task_id,
+      recurrence_rule: p.recurrence_rule ?? null,
+      due_date: p.due_date ?? null,
+    });
+    if (result) {
+      setDone("completed");
+      toast.success(
+        result.status === "completed"
+          ? "Task completed"
+          : `Recurring task — next due ${result.due_date}`,
+      );
+    } else {
+      toast.error("Could not complete the task");
+    }
+  };
+
+  const snooze = async () => {
+    const { snoozeTask } = await import(
+      "@/features/tasks/services/taskUserStateService"
+    );
+    const until = new Date();
+    until.setDate(until.getDate() + 1);
+    until.setHours(9, 0, 0, 0);
+    const result = await snoozeTask(p.task_id, until);
+    if (result) {
+      setDone("snoozed");
+      toast.success("Snoozed until tomorrow 9:00");
+    } else {
+      toast.error("Could not snooze the task");
+    }
+  };
+
+  return (
+    <>
+      <Link href={`/tasks/${p.task_id}`} className={chipClass(isOwn)}>
+        <ExternalLink className="h-3 w-3" aria-hidden />
+        Open task
+      </Link>
+      {done === null ? (
+        <>
+          <button type="button" className={chipClass(isOwn)} onClick={complete}>
+            <CircleCheck className="h-3 w-3" aria-hidden />
+            Complete
+          </button>
+          <button type="button" className={chipClass(isOwn)} onClick={snooze}>
+            <AlarmClock className="h-3 w-3" aria-hidden />
+            Snooze 1d
+          </button>
+        </>
+      ) : (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] text-muted-foreground">
+          {done === "completed" ? "Completed" : "Snoozed"}
+        </span>
+      )}
+    </>
+  );
+}
+
 const RENDERERS: Record<string, ChipRenderer> = {
   agent_drift: (data, ctx) => <AgentDriftChips data={data} isOwn={ctx.isOwn} />,
   open_link: (data, ctx) => <OpenLinkChip data={data} isOwn={ctx.isOwn} />,
   resource_shared: (data) => <ResourceSharedCard data={data} />,
+  task_reminder: (data, ctx) => <TaskReminderChips data={data} isOwn={ctx.isOwn} />,
 };
 
 /** Render the chips for a message's action_data, or null if none/unknown. */

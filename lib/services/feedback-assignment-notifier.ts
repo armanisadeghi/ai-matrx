@@ -11,6 +11,7 @@
  */
 
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { sendDm } from "@/lib/services/system-dm";
 import { sendFeedbackAssignmentEmail } from "@/lib/email/notificationService";
 import type { UserFeedback } from "@/types/feedback.types";
 
@@ -63,84 +64,6 @@ Route: ${feedback.route}
 ${preview}
 
 Open: ${url}`;
-}
-
-/**
- * Find an existing direct-message conversation between two users, or create
- * one. Returns the conversation id plus its owning org (so callers can stamp
- * org-scoped child rows like messages without re-resolving it). Uses the
- * service-role client so it works regardless of which side is the caller —
- * both participants get the row.
- */
-async function findOrCreateDirectConversation(
-  userA: string,
-  userB: string,
-): Promise<{ conversationId: string; organizationId: string }> {
-  const supabase = createAdminClient();
-
-  // ONE canonical, ATOMIC get-or-create (advisory-locked). Service-role client
-  // has no auth.uid(), so the RPC's caller guard is bypassed and userA is honored
-  // as the creator. Passing NULL org lets the RPC derive userA's personal org
-  // via ensure_personal_organization — identical to the old create path — so
-  // batched system notifications to the same pair can't mint duplicate threads.
-  const { data: conversationId, error: rpcError } = await supabase.rpc(
-    "dm_get_or_create_direct_conversation",
-    { p_user1_id: userA, p_user2_id: userB },
-  );
-  if (rpcError) throw rpcError;
-  if (!conversationId) {
-    throw new Error("Failed to resolve direct conversation");
-  }
-
-  // The caller stamps org-scoped child rows (the message), so return the
-  // conversation's org (works whether it was found or just created).
-  const { data: conv, error: convError } = await supabase
-    .schema("communication").from("dm_conversations")
-    .select("organization_id")
-    .eq("id", conversationId as string)
-    .single();
-  if (convError || !conv) {
-    throw convError ?? new Error("DM conversation not found");
-  }
-
-  return {
-    conversationId: conversationId as string,
-    organizationId: conv.organization_id,
-  };
-}
-
-/**
- * Send an in-app DM to the assignee. Best-effort.
- */
-async function sendAssignmentDm(
-  assignerId: string,
-  assigneeId: string,
-  content: string,
-): Promise<{ ok: boolean; conversationId?: string; error?: string }> {
-  try {
-    const { conversationId, organizationId } =
-      await findOrCreateDirectConversation(assignerId, assigneeId);
-    const supabase = createAdminClient();
-    const { error } = await supabase
-      .schema("communication").from("dm_messages")
-      .insert({
-        conversation_id: conversationId,
-        organization_id: organizationId,
-        sender_id: assignerId,
-        content,
-        message_type: "text",
-        status: "sent",
-      });
-    if (error) {
-      return { ok: false, conversationId, error: error.message };
-    }
-    return { ok: true, conversationId };
-  } catch (err) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : String(err),
-    };
-  }
 }
 
 /**
@@ -208,7 +131,7 @@ export async function notifyFeedbackAssigned(
   // Fire DM and email in parallel — best effort.
   const dmContent = buildDmContent(feedback, assignerName, categoryName);
   const [dmResult, emailResult] = await Promise.allSettled([
-    sendAssignmentDm(assignerId, newAssigneeId, dmContent),
+    sendDm({ senderId: assignerId, recipientId: newAssigneeId, content: dmContent }),
     sendFeedbackAssignmentEmail({
       assigneeId: newAssigneeId,
       assignerName,

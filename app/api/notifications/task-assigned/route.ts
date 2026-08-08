@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { sendTaskAssignmentEmail } from "@/lib/email/notificationService";
+import { sendDm } from "@/lib/services/system-dm";
 
 /**
  * POST /api/notifications/task-assigned
@@ -56,13 +57,29 @@ export async function POST(request: Request) {
         : null) ||
       "Someone";
 
-    const result = await sendTaskAssignmentEmail({
-      assigneeId,
-      assignerName,
-      taskTitle,
-      taskId,
-      taskDescription,
-    });
+    // In-app DM (actionable: Open / Complete / Snooze) + email, in parallel.
+    // Both best-effort; the assignment itself already succeeded.
+    const [dmResult, result] = await Promise.all([
+      sendDm({
+        senderId: user.id,
+        recipientId: assigneeId,
+        content: `${assignerName} assigned you a task: ${taskTitle}`,
+        actionData: {
+          kind: "task_reminder",
+          payload: { task_id: taskId, title: taskTitle },
+        },
+      }),
+      sendTaskAssignmentEmail({
+        assigneeId,
+        assignerName,
+        taskTitle,
+        taskId,
+        taskDescription,
+      }),
+    ]);
+    if (!dmResult.ok && dmResult.error !== "self") {
+      console.error("[task-assigned] DM failed:", dmResult.error);
+    }
 
     if (result.success) {
       return NextResponse.json({

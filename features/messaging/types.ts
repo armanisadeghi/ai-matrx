@@ -78,6 +78,18 @@ export interface OpenLinkActionPayload {
   label: string;
 }
 
+/**
+ * Payload for `kind: "task_reminder"` — actionable task notification
+ * (assignment, due-date reminder). Chips: Open / Complete / Snooze.
+ */
+export interface TaskReminderActionPayload {
+  task_id: string;
+  title: string;
+  due_date?: string | null;
+  /** Carried so Complete can roll recurring tasks without a fetch. */
+  recurrence_rule?: string | null;
+}
+
 /** Payload for `kind: "resource_shared"` — "X shared a Note with you". */
 export interface ResourceSharedActionPayload {
   /** Registry entity token (e.g. "note", "agent"). */
