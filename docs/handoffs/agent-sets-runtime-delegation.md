@@ -38,10 +38,11 @@ up live as each member runs.
 
 1. **Verify the aidream half live — still nothing is verified end to end.** The server code shipped in aidream `153ad4291` + `ce852fcaa` (2026-07-15) and aidream has released ~120 times since (origin/main at v0.1.674), so it **is deployed** — the old "inert until deploy" blocker is gone and nobody has run the check. Run an orchestrator (MCP `agent_run` or the FE Run button) and confirm: members appear as tools, get called, sub-runs nest, the recursion guard holds, cost is attributed.
 2. **Live member highlight on the canvas** (the one open Phase-1 piece). Blocked on the mount-model decision below. Once decided: an `agentSetRun` selector layer (does not exist today) mapping the orchestrator run's active tool / sub-agent results → member `agentId` → an idle/running/done ring on MemberNode.
-3. **Shared-member hydration** (Phase 3, cheap win). A member shared-with-you but outside your owned slice renders the fallback `"Agent"` (`AgentRoleCard.tsx:56`). Batch-fetch missing member ids on set load — today `fetchFullAgent` is only called per-agent from the inspectors. `AGENT_SETS_ROADMAP.md` Phase 3 (all five items there are still open: dangling-member GC, this, cycle prevention, versioned runs via `member_version_id`, cross-org shared-set auth).
+(`AGENT_SETS_ROADMAP.md` Phase 3 still-open items: dangling-member GC, cycle prevention, versioned runs via `member_version_id`, cross-org shared-set auth.)
 
 ## Done
 
+- Shared-member hydration (2026-08-08): `loadAgentSet` now diffs member agentIds against the `agentDefinition` slice and parallel-`fetchFullAgent`s the missing ones (dedupe via module-level in-flight set) — shared-with-you members no longer render the fallback "Agent" (`agent-sets/thunks.ts::hydrateMissingMemberAgents`).
 - Server set reader + member-as-tool projection on BOTH the new-conversation and continue paths (turn 2+ re-injects) — `aidream/aidream/services/agent_sets/` + the two `agent_run.py` seams; deployed.
 - Supervisor prompt on generated orchestrators (`ORCHESTRATOR_SUPERVISOR_PROMPT` in `agent-sets/orchestrator/constants.ts:56` via `orchestratorService.setOrchestratorMessages`) + Run entries on builder header & set card.
 - Builder UI, canonical rail, non-blocking peek, generate-orchestrator + Sync agent listings — see `AGENT_SETS.md` and the sibling handoff.

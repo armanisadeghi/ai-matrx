@@ -41,7 +41,7 @@ Today membership is flat (`orchestrator → member`). Real orchestration needs s
 ## Phase 3 — Correctness & hardening
 
 - **Dangling members.** If a member agent is deleted/archived, the edge orphans. Confirm `_gc_entity_associations` cleans it, and render a "missing member" node instead of a blank card. (KNOWN: verify the GC trigger fires on `agent.definition` soft-delete.)
-- **Shared-member hydration.** A member shared with you (not in your owned list) won't be in the `agentDefinition` slice → cards show the fallback name. Batch-fetch missing member ids on set load (ids come from the edges; fetch via `agx_get_list` filtered or `fetchFullAgent` per id).
+- ~~**Shared-member hydration.**~~ DONE 2026-08-08 — `loadAgentSet` diffs member ids against the `agentDefinition` slice and parallel-`fetchFullAgent`s the missing ones (`redux/agent-sets/thunks.ts::hydrateMissingMemberAgents`; in-flight dedupe, fire-and-forget).
 - **Cycle prevention.** Define rules for an orchestrator that is itself a member elsewhere, or a member pointing back at its orchestrator. Reject cycles at add time (FE guard + a server check when running).
 - **Versioned runs.** Honor `member_version_id` so a set run is reproducible even as member agents evolve.
 - **Auth.** `agent_set_list()` is org-gated (`iam.has_access`). Define cross-org shared-set behavior; confirm a run can execute members the caller can access but doesn't own.
