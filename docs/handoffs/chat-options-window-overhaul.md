@@ -18,6 +18,8 @@ Standing rulings that govern any future change here:
 > - Dropdown style: match the Model dropdown — no border/background, minimal padding.
 > - Mobile: "this entire thing will need to switch to a bottom drawer that will render with an ios style concept."
 > - Default tab: Quickset "for any caller, unless they modify it." (2026-07-18)
+> - `+` menu (2026-08-08): every version of this menu is IDENTICAL — no per-variant extra rows ("Enter submits" lives ONLY in Quickset); Settings sits on the SAME row as Model, never its own full-width row.
+> - Compute (2026-08-08): bound-state must read in words — "Not attached" when empty, the word "Detach" to unbind — "without having to figure out a code language of random icons."
 > - Sandbox tab: "absolutely no question about what, if anything is bound now, and a simple way to create a new one."
 > - 2026-08-08 (general directive applied here): "If the ui has issues, let's just get them fixed" · obvious/easy fixes and focused features get spun off as chips; the core stays with the session Arman is in.
 
@@ -30,7 +32,7 @@ Standing rulings that govern any future change here:
 - **Alignment law:** quickset rows share ONE `grid-cols-[9rem_minmax(0,1fr)]` label rail, defined in THREE synced places: `QuicksetPanel.Row`, `RunSettingsEditor.SettingsRow` (quickset variant), `SurfaceSimulatorSelect` (quickset prop). Triggers are borderless `bg-transparent px-1 text-xs h-7` (the ModelListDropdown trigger). Wide content (Shapes chips) breaks out of the rail as a full-width tag flow — don't cram chips into the control column.
 - Skills: `ui-dense`, `overlay-system`, `window-panels`, `ios-mobile-first`
 - History/what+why: `features/agents/components/chat/FEATURE.md` change log (2026-07-17, 2026-08-08 entries)
-- Test: dev server → `/api/dev-login?token=<DEV_LOGIN_TOKEN>&next=/chat` → composer `+` → "Advanced Settings Window" (or the gear in a conversation). Mobile 375px must be the bottom sheet. Use element refs, not coordinate clicks (coordinates mis-hit toggles).
+- Test: dev server → `/api/dev-login?token=<DEV_LOGIN_TOKEN>&next=/chat` → composer `+` → the sliders icon on the Model row (or the gear in a conversation). Mobile 375px must be the bottom sheet. Use element refs, not coordinate clicks (coordinates mis-hit toggles).
 
 ## Remaining work
 
