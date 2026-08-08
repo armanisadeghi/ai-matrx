@@ -6,7 +6,6 @@ import {
   AlertCircle,
   ArrowLeft,
   Eye,
-  FileText,
   Folder,
   LayoutDashboard,
   Loader2,
@@ -46,11 +45,8 @@ function getNavItems(orgId: string) {
       href: `/organizations/${orgId}/shortcuts/categories`,
       icon: Folder,
     },
-    {
-      name: "Content Blocks",
-      href: `/organizations/${orgId}/shortcuts/content-blocks`,
-      icon: FileText,
-    },
+    // Content blocks are managed in the canonical render-blocks editor
+    // (/agent-connections/render-blocks — skill.render_definition).
   ];
 }
 

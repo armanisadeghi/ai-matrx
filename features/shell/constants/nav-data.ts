@@ -299,7 +299,7 @@ export const primaryNavItems: ShellNavItem[] = [
       { label: "Categories", href: "/agents/categories", iconName: "Folder" },
       {
         label: "Content Blocks",
-        href: "/agents/content-blocks",
+        href: "/agent-connections/render-blocks",
         iconName: "FileText",
       },
       {

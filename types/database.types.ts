@@ -43870,6 +43870,39 @@ export type Database = {
           status: string
         }[]
       }
+      gsc_brand_aliases: {
+        Args: { p_site_id: string }
+        Returns: {
+          alias_source: string
+          joined: string
+          probe: string
+          raw_name: string
+          toks: string[]
+        }[]
+      }
+      gsc_brand_generic_threshold: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      gsc_brand_hits: {
+        Args: { p_site_id: string }
+        Returns: {
+          joined: string
+          keyword_id: string
+          strong: boolean
+        }[]
+      }
+      gsc_brand_identity: {
+        Args: { p_site_id: string }
+        Returns: {
+          alias: string
+          alias_source: string
+          demoted: boolean
+          joined: string
+          matched_keywords: number
+          strong_matches: number
+        }[]
+      }
       gsc_confirm_keyword_class: {
         Args: { p_keyword_ids: string[]; p_site_id: string }
         Returns: number
@@ -44283,6 +44316,10 @@ export type Database = {
           key: string
           kind: string
         }[]
+      }
+      gsc_set_brand_aliases: {
+        Args: { p_aliases: string[]; p_site_id: string }
+        Returns: string[]
       }
       gsc_set_keyword_class: {
         Args: {

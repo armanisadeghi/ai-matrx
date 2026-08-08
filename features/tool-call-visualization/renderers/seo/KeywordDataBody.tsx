@@ -28,6 +28,7 @@ import type {
   SeoKeywordDataResult,
   SeoKeywordDatum,
 } from "@/features/marketing/seo/keyword-research/types";
+import { AddKeywordsToPage } from "@/features/marketing/seo/keyword-research/components/AddKeywordsToPage";
 
 const INLINE_LIMIT = 8;
 
@@ -73,6 +74,10 @@ export function KeywordDataInlineBody({
             combined monthly searches
           </span>
         </span>
+        <AddKeywordsToPage
+          className="ml-auto"
+          keywords={rows.map((row) => row.keyword)}
+        />
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-x-4 px-4 py-1.5">
@@ -100,8 +105,11 @@ export function KeywordDataInlineBody({
             {formatSearchVolume(row.search_volume)}
           </span>
           <KeywordTrendSparkline points={trendPoints(row)} className="h-5" />
-          <span className="text-right text-sm tabular-nums text-muted-foreground">
-            {formatCpc(row.cpc)}
+          <span className="flex items-center justify-end gap-2">
+            <span className="text-right text-sm tabular-nums text-muted-foreground">
+              {formatCpc(row.cpc)}
+            </span>
+            <AddKeywordsToPage keywords={[row.keyword]} />
           </span>
         </div>
       ))}
@@ -193,8 +201,11 @@ export function KeywordDataOverlayBody({ data }: { data: SeoKeywordDataResult })
                 competition={row.competition}
                 competitionIndex={row.competition_index}
               />
-              <span className="text-right text-sm tabular-nums text-muted-foreground">
-                {formatCpc(row.cpc)}
+              <span className="flex items-center justify-end gap-2">
+                <span className="text-right text-sm tabular-nums text-muted-foreground">
+                  {formatCpc(row.cpc)}
+                </span>
+                <AddKeywordsToPage keywords={[row.keyword]} />
               </span>
             </div>
           );

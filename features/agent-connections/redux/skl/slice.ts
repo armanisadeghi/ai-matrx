@@ -49,19 +49,44 @@ const sklSlice = createSlice({
       state.renderDefinitions.error = action.payload;
     },
     /**
-     * Merge-upsert many definitions WITHOUT clearing the existing set —
-     * used by fetchUnifiedMenu (context-menu hydration), which sees only the
-     * blocks visible to the requested placement/scope.
+     * Merge many PARTIAL definitions WITHOUT clearing the existing set —
+     * used by fetchUnifiedMenu (context-menu hydration), whose wire rows
+     * carry only the menu-relevant fields. Existing rows keep every field
+     * the patch doesn't mention (blockType/visibility/skillId survive).
      */
-    renderDefinitionsUpserted(
+    renderDefinitionsMerged(
       state,
-      action: PayloadAction<SklRenderDefinition[]>,
+      action: PayloadAction<(Partial<SklRenderDefinition> & { id: string })[]>,
     ) {
-      for (const def of action.payload) {
-        if (!state.renderDefinitions.byId[def.id]) {
-          state.renderDefinitions.allIds.push(def.id);
+      for (const patch of action.payload) {
+        const existing = state.renderDefinitions.byId[patch.id];
+        if (existing) {
+          Object.assign(existing, patch);
+        } else {
+          state.renderDefinitions.byId[patch.id] = {
+            id: patch.id,
+            blockId: "",
+            label: "",
+            description: null,
+            iconName: "",
+            template: "",
+            categoryId: null,
+            skillId: null,
+            blockType: "markdown",
+            visibility: "public",
+            isActive: true,
+            isPublic: true,
+            sortOrder: 0,
+            userId: null,
+            organizationId: null,
+            projectId: null,
+            taskId: null,
+            createdAt: "",
+            updatedAt: "",
+            ...patch,
+          };
+          state.renderDefinitions.allIds.push(patch.id);
         }
-        state.renderDefinitions.byId[def.id] = def;
       }
       if (state.renderDefinitions.status === "idle") {
         state.renderDefinitions.status = "ready";

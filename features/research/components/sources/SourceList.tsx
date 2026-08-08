@@ -46,7 +46,10 @@ import {
   useSourceImportance,
   useResearchTags,
   useTopicSourceTags,
+  useYouTubeVideoIndex,
 } from "../../hooks/useResearchState";
+import { VideoSourceMeta } from "../shared/VideoSourceMeta";
+import type { YouTubeVideoIdentity } from "../../service";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { useResearchStream } from "../../hooks/useResearchStream";
 import {
@@ -411,6 +414,8 @@ interface SourceRowProps {
   onAnalyze: (source: ResearchSource, e: React.MouseEvent) => void;
   onNavigate: (id: string, e?: React.MouseEvent) => void;
   topicPriorityScores: readonly number[];
+  /** Global-library identity when this source is a YouTube video. */
+  videoIdentity: YouTubeVideoIdentity | undefined;
 }
 
 /** Default table order when the user has not picked another sort axis. */
@@ -464,6 +469,7 @@ function SourceRow({
   onAnalyze,
   onNavigate,
   topicPriorityScores,
+  videoIdentity,
 }: SourceRowProps) {
   const [expanded, setExpanded] = useState(false);
   const { display: pageAgeDisplay } = formatPageAge(source.page_age);
@@ -541,9 +547,11 @@ function SourceRow({
         >
           <div className="flex items-center justify-center">
             <div className="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-              {source.thumbnail_url ? (
+              {source.thumbnail_url || videoIdentity?.thumbnail_url ? (
                 <Image
-                  src={source.thumbnail_url}
+                  src={
+                    source.thumbnail_url ?? videoIdentity!.thumbnail_url ?? ""
+                  }
                   alt=""
                   width={56}
                   height={56}
@@ -580,6 +588,9 @@ function SourceRow({
                 )}
                 <RedundancyGroupBadge group={source.redundancy_group} />
               </div>
+            )}
+            {videoIdentity && (
+              <VideoSourceMeta identity={videoIdentity} className="mt-1" />
             )}
             <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
               <SourceTagsInline
@@ -873,6 +884,8 @@ export default function SourceList() {
     topicId,
     fetchFilters,
   );
+  // One batched read of the global video library for every YouTube row.
+  const { identityFor: videoIdentityFor } = useYouTubeVideoIndex(sources ?? []);
   const stream = useResearchStream(() => {
     refetchSources();
     refresh();
@@ -1509,6 +1522,7 @@ export default function SourceList() {
                   onAnalyze={handleAnalyzeSource}
                   onNavigate={handleNavigate}
                   topicPriorityScores={topicPriorityScores}
+                  videoIdentity={videoIdentityFor(source)}
                 />
               ))}
             </tbody>
@@ -1599,6 +1613,12 @@ export default function SourceList() {
                       <div className="text-[11px] text-muted-foreground truncate mt-0.5">
                         {source.hostname}
                       </div>
+                      {videoIdentityFor(source) && (
+                        <VideoSourceMeta
+                          identity={videoIdentityFor(source)!}
+                          className="mt-0.5"
+                        />
+                      )}
                     </div>
                     <Switch
                       checked={source.is_included ?? false}

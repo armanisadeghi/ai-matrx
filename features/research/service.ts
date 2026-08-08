@@ -508,6 +508,53 @@ export async function getSource(
   return rowToResearchSource(data);
 }
 
+/**
+ * Compact identity slice of the canonical global video library
+ * (`research.youtube_video`) — everything the generic research surfaces need
+ * to render a video source AS a video (channel, duration, reach, processing
+ * state) without the aidream HTTP round-trip the dedicated YouTube surface
+ * uses. Keyed by the 11-char YouTube video id parsed from `rs_source.url`.
+ */
+export type YouTubeVideoIdentity = Pick<
+  Database["research"]["Tables"]["youtube_video"]["Row"],
+  | "id"
+  | "youtube_video_id"
+  | "channel_title"
+  | "duration"
+  | "view_count"
+  | "like_count"
+  | "channel_subscriber_count"
+  | "processing_status"
+  | "published_at"
+  | "thumbnail_url"
+>;
+
+const YOUTUBE_IDENTITY_COLUMNS =
+  "id,youtube_video_id,channel_title,duration,view_count,like_count,channel_subscriber_count,processing_status,published_at,thumbnail_url";
+
+/**
+ * Batch-fetch video identities for a set of YouTube video ids. Rows in the
+ * global library are public-visibility, so this is a plain RLS-filtered read.
+ * Returns a map keyed by `youtube_video_id`; ids with no library row are
+ * simply absent (discovered outside the canonical paths).
+ */
+export async function getYouTubeVideoIdentities(
+  videoIds: string[],
+): Promise<Map<string, YouTubeVideoIdentity>> {
+  const unique = [...new Set(videoIds.filter(Boolean))];
+  if (unique.length === 0) return new Map();
+  const { data, error } = await supabase
+    .schema("research")
+    .from("youtube_video")
+    .select(YOUTUBE_IDENTITY_COLUMNS)
+    .in("youtube_video_id", unique)
+    .is("deleted_at", null);
+  if (error) throw error;
+  const map = new Map<string, YouTubeVideoIdentity>();
+  for (const row of data ?? []) map.set(row.youtube_video_id, row);
+  return map;
+}
+
 export async function getSources(
   topicId: string,
   filters?: Partial<SourceFilters>,
