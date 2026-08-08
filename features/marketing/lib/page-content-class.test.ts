@@ -1,5 +1,3 @@
-import { describe, expect, it } from "vitest";
-
 import {
   HTML_CONTENT_TYPE,
   PAGE_CONTENT_TYPE_OR_FILTER,
@@ -21,13 +19,20 @@ describe("page content classification", () => {
     expect(isPageContentType("html")).toBe(true);
   });
 
-  it.each(["image", "json", "xml", "pdf", "txt", "md", "other"])(
-    "treats %s as a resource",
-    (contentType) => {
+  it("treats every non-html content type as a resource", () => {
+    for (const contentType of [
+      "image",
+      "json",
+      "xml",
+      "pdf",
+      "txt",
+      "md",
+      "other",
+    ]) {
       expect(isResourceContentType(contentType)).toBe(true);
       expect(isPageContentType(contentType)).toBe(false);
-    },
-  );
+    }
+  });
 
   it("keeps the PostgREST filter in step with the predicate", () => {
     expect(PAGE_CONTENT_TYPE_OR_FILTER).toBe(

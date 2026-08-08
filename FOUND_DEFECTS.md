@@ -13,7 +13,7 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D134 — soft-deleting a row HARD-deletes its association edges; "Dismiss" is therefore not reversible (2026-08-08)
+### D135 — soft-deleting a row HARD-deletes its association edges; "Dismiss" is therefore not reversible (2026-08-08)
 
 `platform._gc_entity_associations` runs on both DELETE and UPDATE and, when a row
 transitions to `deleted_at IS NOT NULL`, issues an unconditional

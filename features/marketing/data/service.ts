@@ -61,6 +61,7 @@ import { isJsonRecord, isPropertyKind } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import type { Database, Json } from "@/types/database.types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
+import { PAGE_CONTENT_TYPE_OR_FILTER } from "@/features/marketing/lib/page-content-class";
 import {
   parseSnapshotImages,
   parseSnapshotResources,
@@ -204,7 +205,7 @@ export const MARKETING_SITES_IS_DELIBERATE_ORG_BROWSE = true as const;
 
 /** Every KPI column exposed by `web.v_site_kpis` — ONE select string. */
 const SITE_KPI_COLUMNS =
-  "site_id, page_count, pages_in_gsc, gsc_clicks_28d, gsc_impressions_28d, gsc_position_28d, gsc_clicks_prev_28d, gsc_impressions_prev_28d, gsc_cur_days, gsc_prev_days, gsc_latest_date";
+  "site_id, page_count, resource_count, pages_in_gsc, gsc_clicks_28d, gsc_impressions_28d, gsc_position_28d, gsc_clicks_prev_28d, gsc_impressions_prev_28d, gsc_cur_days, gsc_prev_days, gsc_latest_date";
 
 /** Portfolio sort columns served by `web.v_site_kpis` (not `web.site`). */
 const SITE_KPI_SORT_COLUMNS = new Set([
@@ -227,6 +228,9 @@ function mergeSiteListRow(
     health_score: score?.site_score ?? null,
     scored_pages: Number(score?.scored_pages ?? 0),
     page_count: Number(kpis?.page_count ?? 0),
+    // Crawled non-HTML URLs, excluded from page_count. Carried so the list can
+    // SAY what it left out — a silently smaller number is its own defect.
+    resource_count: Number(kpis?.resource_count ?? 0),
     pages_in_gsc: Number(kpis?.pages_in_gsc ?? 0),
     gsc_clicks_28d: kpis?.gsc_clicks_28d ?? null,
     gsc_impressions_28d: kpis?.gsc_impressions_28d ?? null,
@@ -521,11 +525,15 @@ export async function getSiteOverview(
       .eq("site_id", siteId)
       .abortSignal(abortSignal)
       .maybeSingle(),
+    // The headline page count. Reads the projection, not `web.page`: crawls
+    // record every fetched URL in the registry, so the raw table also holds
+    // images/json/xml/pdf. `is_resource` is the server's classification of
+    // that (NULL content type = not yet fetched, still a page).
     db
-      .from("page")
-      .select("id", { count: "exact", head: true })
+      .from("v_page_list")
+      .select("page_id", { count: "exact", head: true })
       .eq("site_id", siteId)
-      .is("deleted_at", null)
+      .eq("is_resource", false)
       .abortSignal(abortSignal),
     db
       .from("finding")
@@ -755,10 +763,31 @@ export function isPageCoverageFilter(
   );
 }
 
+/**
+ * Which half of the anchor registry a Pages read wants.
+ *
+ * Crawls record every fetched URL, so `web.page` legitimately holds images,
+ * json, xml and pdfs alongside HTML pages (597 of 10,608 live rows). They are
+ * real evidence — a sitemap listing non-HTML URLs is an SEO finding — but they
+ * are not what "pages" means to a user, and counting them inflates every total.
+ *
+ * So resources are a deliberate DESTINATION, exactly like `?scope=dismissed`:
+ * `pages` is the default, `resources` is the opt-in view, `all` is the raw
+ * registry. Classification is the server's (`v_page_list.is_resource`).
+ */
+export type PageResourceScope = "pages" | "resources" | "all";
+
+export function isPageResourceScope(
+  value: string | null,
+): value is PageResourceScope {
+  return value === "pages" || value === "resources" || value === "all";
+}
+
 export async function listPages(
   siteId: string,
   state: MatrxDataTableQueryState,
   coverage: PageCoverageFilter | null = null,
+  resourceScope: PageResourceScope = "pages",
   signal?: AbortSignal,
 ): Promise<PagedResult<PageListRow>> {
   const db = await authenticatedWebDb(supabase);
@@ -795,6 +824,12 @@ export async function listPages(
       { count: "exact" },
     )
     .eq("site_id", siteId);
+
+  if (resourceScope === "pages") {
+    query = query.eq("is_resource", false);
+  } else if (resourceScope === "resources") {
+    query = query.eq("is_resource", true);
+  }
 
   if (coverage === "in_sitemap") {
     query = query.gt("sitemap_count", 0);

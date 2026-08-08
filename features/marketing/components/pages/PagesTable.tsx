@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   EyeOff,
+  FileBox,
   FileQuestion,
   Plus,
   RefreshCw,
@@ -42,6 +43,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import {
   PAGE_COVERAGE_FILTERS,
   isPageCoverageFilter,
+  type PageResourceScope,
 } from "@/features/marketing/data/service";
 import { COVERAGE_FILTER_COPY } from "@/features/marketing/lib/coverage";
 import type { PageListRow } from "@/features/marketing/types";
@@ -140,6 +142,7 @@ function CoverageChips() {
   const raw = searchParams.get("coverage");
   const active = isPageCoverageFilter(raw) ? raw : null;
   const dismissedActive = searchParams.get("scope") === "dismissed";
+  const resourcesActive = searchParams.get("scope") === "resources";
 
   const setCoverage = useCallback(
     (value: string | null) => {
@@ -158,11 +161,11 @@ function CoverageChips() {
     [router, pathname, searchParams],
   );
 
-  const setDismissedScope = useCallback(
-    (on: boolean) => {
+  const setScope = useCallback(
+    (scope: "dismissed" | "resources", on: boolean) => {
       const next = new URLSearchParams(searchParams.toString());
       if (on) {
-        next.set("scope", "dismissed");
+        next.set("scope", scope);
         next.delete("coverage");
       } else {
         next.delete("scope");
@@ -199,10 +202,10 @@ function CoverageChips() {
         );
       })}
       <span aria-hidden className="mx-0.5 h-4 w-px bg-border" />
-      {/* Deliberate destination, never a default view (THE VIEW LAW). */}
+      {/* Deliberate destinations, never default views (THE VIEW LAW). */}
       <button
         type="button"
-        onClick={() => setDismissedScope(!dismissedActive)}
+        onClick={() => setScope("dismissed", !dismissedActive)}
         title="Pages you dismissed from the registry. A future crawl, sitemap, or GSC observation revives them automatically, flagged as previously dismissed."
         className={cn(
           "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
@@ -214,6 +217,21 @@ function CoverageChips() {
         <EyeOff className="h-3 w-3" />
         Dismissed
         {dismissedActive ? <X className="h-3 w-3" /> : null}
+      </button>
+      <button
+        type="button"
+        onClick={() => setScope("resources", !resourcesActive)}
+        title="Non-HTML URLs the crawler, sitemap, or Search Console recorded — images, JSON, XML, PDFs. Real registry evidence, kept out of page counts because they are not pages."
+        className={cn(
+          "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+          resourcesActive
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground",
+        )}
+      >
+        <FileBox className="h-3 w-3" />
+        Resources
+        {resourcesActive ? <X className="h-3 w-3" /> : null}
       </button>
     </div>
   );
@@ -227,10 +245,14 @@ export function PagesTable() {
   const coverageRaw = searchParams.get("coverage");
   const coverage = isPageCoverageFilter(coverageRaw) ? coverageRaw : null;
   const dismissedScope = searchParams.get("scope") === "dismissed";
+  // Resources are a destination, not a filter of the page list: the default
+  // view is pages only, so counts stop being inflated by crawled assets.
+  const resourceScope: PageResourceScope =
+    searchParams.get("scope") === "resources" ? "resources" : "pages";
   const table = useMarketingTableState({
     defaultSort: { id: "gsc_clicks_28d", direction: "desc" },
   });
-  const pages = usePages(site.id, table.queryState, coverage);
+  const pages = usePages(site.id, table.queryState, coverage, resourceScope);
   const createMutation = useCreateManualPage(site.id);
   const dismissMutation = useDismissPage(site.id);
   const [adding, setAdding] = useState(false);
