@@ -375,6 +375,7 @@ BEGIN
     SELECT b.k,
            (array_agg(b.pid ORDER BY b.pid) FILTER (WHERE b.pid IS NOT NULL))[1] AS pid,
            (array_agg(b.kid ORDER BY b.kid) FILTER (WHERE b.kid IS NOT NULL))[1] AS kid,
+           -- dominant class by current-period clicks (compare clicks break ties)
            (array_agg(b.cls ORDER BY b.cur_c DESC, b.cmp_c DESC, b.cls ASC))[1] AS dom_cls,
            SUM(b.cur_c)::bigint AS cur_c,
            SUM(b.cur_i)::bigint AS cur_i,
@@ -783,9 +784,10 @@ END;
 $function$;
 
 CREATE OR REPLACE FUNCTION seo.gsc_perf_freshness(p_site_id uuid)
-RETURNS TABLE(dimension_profile text, min_date date, max_date date, row_count bigint)
-LANGUAGE plpgsql STABLE SECURITY DEFINER
-SET search_path = seo, pg_temp
+ RETURNS TABLE(dimension_profile text, min_date date, max_date date, row_count bigint)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'seo', 'pg_temp'
 AS $function$
 BEGIN
   PERFORM seo.gsc_assert_site_access(p_site_id);
@@ -828,7 +830,7 @@ BEGIN
     WHERE spd.provider = 'gsc'
       AND spd.site_id = p_site_id
       AND spd.dimension_profile = 'query_page'
-      AND spd.date BETWEEN LEAST(v_prior_start, v_months_start) AND v_end
+      AND spd.date BETWEEN LEAST(v_prior_start, v_months_start::date) AND v_end
     ORDER BY spd.date, spd.created_at DESC, spd.run_id DESC
   ),
   latest AS (
