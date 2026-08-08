@@ -80,10 +80,10 @@ export const ResultFile: React.FC<ResultFileProps> = ({ file, density = "inline"
     const fileId = file.file_id;
     const actions = useFileActions(fileId ?? "");
 
-    // Resolve a live URL for "open" — from the owned file_id (self-healing,
-    // CDN/signed/share aware) or the raw url the tool handed us.
+    // Resolve a live URL for "open" — only needed for URL-only refs; owned
+    // file_ids route to the in-app viewer instead (no signed-URL mint here).
     const source = useMemo<FileSource | null>(() => {
-        if (fileId) return { kind: "file_id", fileId };
+        if (fileId) return null;
         if (file.url) return { kind: "external_url", url: file.url };
         return null;
     }, [fileId, file.url]);
@@ -91,7 +91,13 @@ export const ResultFile: React.FC<ResultFileProps> = ({ file, density = "inline"
 
     const name = useMemo(() => deriveName(file), [file]);
     const typeLabel = useMemo(() => deriveTypeLabel(file, name), [file, name]);
-    const openHref = resolvedSrc ?? file.download_url ?? file.url ?? null;
+    // Owned files open the in-app viewer (`/files/f/{id}` — preview, Convert
+    // to PDF, share, versions) instead of a raw signed URL that just
+    // re-downloads the bytes. URL-only refs keep the direct link.
+    const openHref = fileId
+        ? `/files/f/${encodeURIComponent(fileId)}`
+        : (resolvedSrc ?? file.download_url ?? file.url ?? null);
+    const openLabel = fileId ? "View in Files" : "Open in new tab";
 
     const handleDownload = useCallback(
         async (e: React.MouseEvent) => {
@@ -141,8 +147,8 @@ export const ResultFile: React.FC<ResultFileProps> = ({ file, density = "inline"
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        aria-label="Open in new tab"
-                        title="Open in new tab"
+                        aria-label={openLabel}
+                        title={openLabel}
                         className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
                     >
                         <ExternalLink className="h-4 w-4" aria-hidden="true" />
