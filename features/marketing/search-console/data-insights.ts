@@ -11,8 +11,13 @@ import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import type {
   GscCannibalizationRow,
+  GscClassMoverRow,
+  GscClassSummaryRow,
   GscCtrGapRow,
+  GscJuiceRow,
   GscResolvedPeriods,
+  GscShiftRow,
+  GscTrafficClass,
   GscTrendRow,
 } from "@/features/marketing/search-console/types";
 
@@ -69,6 +74,105 @@ export async function getGscCannibalization(
       p_end: periods.current.end,
       p_min_impressions: minImpressions,
       p_min_share: 0.2,
+      p_limit: INSIGHT_ROW_LIMIT,
+      p_offset: 0,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertData(response.data, response.error);
+  return { rows, total: rows[0]?.total_count ?? 0 };
+}
+
+/** Compare bounds are REQUIRED for the class views — callers fall back to
+ *  the previous period via `withPrevCompare` when no compare is active. */
+function requireCompare(periods: GscResolvedPeriods): {
+  start: string;
+  end: string;
+} {
+  if (!periods.compare) {
+    throw new Error("Class insights require a compare period");
+  }
+  return periods.compare;
+}
+
+export async function getGscClassSummary(
+  siteId: string,
+  periods: GscResolvedPeriods,
+  signal?: AbortSignal,
+): Promise<GscClassSummaryRow[]> {
+  const compare = requireCompare(periods);
+  const response = await (await seoDb())
+    .rpc("gsc_perf_class_summary", {
+      p_site_id: siteId,
+      p_start: periods.current.start,
+      p_end: periods.current.end,
+      p_compare_start: compare.start,
+      p_compare_end: compare.end,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
+export async function getGscClassMovers(
+  siteId: string,
+  periods: GscResolvedPeriods,
+  dimension: "query" | "page",
+  trafficClass: GscTrafficClass | null,
+  direction: "gain" | "loss",
+  signal?: AbortSignal,
+): Promise<GscInsightResult<GscClassMoverRow>> {
+  const compare = requireCompare(periods);
+  const response = await (await seoDb())
+    .rpc("gsc_perf_class_movers", {
+      p_site_id: siteId,
+      p_dimension: dimension,
+      p_start: periods.current.start,
+      p_end: periods.current.end,
+      p_compare_start: compare.start,
+      p_compare_end: compare.end,
+      ...(trafficClass ? { p_class: trafficClass } : {}),
+      p_direction: direction,
+      p_limit: INSIGHT_ROW_LIMIT,
+      p_offset: 0,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertData(response.data, response.error);
+  return { rows, total: rows[0]?.total_count ?? 0 };
+}
+
+export async function getGscShifts(
+  siteId: string,
+  periods: GscResolvedPeriods,
+  minClicks: number,
+  signal?: AbortSignal,
+): Promise<GscInsightResult<GscShiftRow>> {
+  const compare = requireCompare(periods);
+  const response = await (await seoDb())
+    .rpc("gsc_perf_shifts", {
+      p_site_id: siteId,
+      p_start: periods.current.start,
+      p_end: periods.current.end,
+      p_compare_start: compare.start,
+      p_compare_end: compare.end,
+      p_min_clicks: minClicks,
+      p_limit: INSIGHT_ROW_LIMIT,
+      p_offset: 0,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertData(response.data, response.error);
+  return { rows, total: rows[0]?.total_count ?? 0 };
+}
+
+export async function getGscJuice(
+  siteId: string,
+  monthMinClicks: number,
+  minMonths: number,
+  signal?: AbortSignal,
+): Promise<GscInsightResult<GscJuiceRow>> {
+  const response = await (await seoDb())
+    .rpc("gsc_perf_juice", {
+      p_site_id: siteId,
+      p_month_min_clicks: monthMinClicks,
+      p_min_months: minMonths,
       p_limit: INSIGHT_ROW_LIMIT,
       p_offset: 0,
     })

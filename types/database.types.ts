@@ -43520,6 +43520,14 @@ export type Database = {
           severity: string
         }[]
       }
+      gsc_keyword_class_map: {
+        Args: { p_site_id: string }
+        Returns: {
+          class_source: string
+          keyword_id: string
+          traffic_class: string
+        }[]
+      }
       gsc_perf_breakdown: {
         Args: {
           p_compare_end?: string
@@ -43570,6 +43578,52 @@ export type Database = {
           query: string
           top_share: number
           total_count: number
+        }[]
+      }
+      gsc_perf_class_movers: {
+        Args: {
+          p_class?: string
+          p_compare_end: string
+          p_compare_start: string
+          p_dimension: string
+          p_direction?: string
+          p_end: string
+          p_limit?: number
+          p_offset?: number
+          p_site_id: string
+          p_start: string
+        }
+        Returns: {
+          class_mix: Json
+          clicks: number
+          cmp_clicks: number
+          cmp_impressions: number
+          delta_clicks: number
+          delta_impressions: number
+          impressions: number
+          key: string
+          keyword_id: string
+          page_id: string
+          total_count: number
+          traffic_class: string
+        }[]
+      }
+      gsc_perf_class_summary: {
+        Args: {
+          p_compare_end?: string
+          p_compare_start?: string
+          p_end: string
+          p_site_id: string
+          p_start: string
+        }
+        Returns: {
+          clicks: number
+          cmp_clicks: number
+          cmp_impressions: number
+          cmp_queries: number
+          impressions: number
+          queries: number
+          traffic_class: string
         }[]
       }
       gsc_perf_ctr_gap: {
@@ -43642,6 +43696,28 @@ export type Database = {
           row_count: number
         }[]
       }
+      gsc_perf_juice: {
+        Args: {
+          p_as_of?: string
+          p_limit?: number
+          p_min_months?: number
+          p_month_min_clicks?: number
+          p_offset?: number
+          p_site_id: string
+        }
+        Returns: {
+          edu_clicks: number
+          edu_clicks_prior: number
+          edu_months_active: number
+          key: string
+          money_clicks: number
+          money_clicks_prior: number
+          money_impressions: number
+          other_clicks: number
+          page_id: string
+          total_count: number
+        }[]
+      }
       gsc_perf_like_escape: { Args: { p_value: string }; Returns: string }
       gsc_perf_page_first_dates: {
         Args: { p_page_ids: string[]; p_site_id: string }
@@ -43657,6 +43733,34 @@ export type Database = {
       gsc_perf_resolve_profile: {
         Args: { p_dimension: string; p_filters: Json }
         Returns: string
+      }
+      gsc_perf_shifts: {
+        Args: {
+          p_compare_end: string
+          p_compare_start: string
+          p_end: string
+          p_limit?: number
+          p_min_clicks?: number
+          p_offset?: number
+          p_site_id: string
+          p_start: string
+        }
+        Returns: {
+          clicks: number
+          cmp_clicks: number
+          cmp_impressions: number
+          cmp_top_url: string
+          cur_top_url: string
+          delta_clicks: number
+          impressions: number
+          keyword_id: string
+          pages: Json
+          query: string
+          shift_share: number
+          top_changed: boolean
+          total_count: number
+          traffic_class: string
+        }[]
       }
       gsc_perf_summary: {
         Args: {

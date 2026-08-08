@@ -100,9 +100,32 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   together. A compare-requiring rule under `compare=none` auto-runs vs
   the previous period (`withPrevCompare`) and says so. `?rule=<id>` is
   URL state (digs tab only).
-- **Insights** (`components/insights/InsightsTab.tsx`) — the ALGORITHM layer
-  beyond threshold dig rules: four views over three server-side RPCs in
-  [`migrations/seo_gsc_insight_rpcs.sql`](../../../migrations/seo_gsc_insight_rpcs.sql).
+- **Insights** (`components/insights/InsightsTab.tsx` + `ClassInsights.tsx`)
+  — the ALGORITHM layer beyond threshold dig rules. **THE TRAFFIC-CLASS
+  DOCTRINE (Arman, 2026-08-07): not all traffic is created equal — raw
+  totals lie, and CTR is near-meaningless for SEO (good SEO often LOWERS
+  it). Every serious read decomposes by class first.** The ONE class
+  resolver is `seo.gsc_keyword_class_map`
+  ([`migrations/seo_gsc_class_rpcs.sql`](../../../migrations/seo_gsc_class_rpcs.sql)):
+  user site valuation (`seo.site_keyword_value` — suppression /
+  not_offered / actively_avoided / negative_value → `mismatch`;
+  content_role → `money`/`educational`) beats universal
+  `seo.keyword.intent_class` (transactional + commercial_investigation →
+  `money`, informational → `educational`, navigational → `brand`) beats
+  `unclassified` — which is a FIRST-CLASS bucket and the classifier work
+  queue, never hidden. Never fork a second class mapping; extend the
+  resolver. Class views (default = **Traffic quality**): `quality` =
+  `gsc_perf_class_summary` (the "site +25% but money −3%" decomposition) +
+  `gsc_perf_class_movers` (gaining/losing queries/pages within a class;
+  page rows carry a per-class `class_mix`); `shifts` = `gsc_perf_shifts`
+  (queries whose page mix moved ≥15% of impression share; verdict
+  deliberately NOT computed server-side — good-vs-bad shift is the user's
+  call); `juice` = `gsc_perf_juice` (pages with ≥3 of the last 6 months of
+  sustained educational clicks beside their money return — months of
+  strength with zero money clicks = giving content away for free). Class
+  views need compare bounds; with `compare=none` they auto-run vs the
+  previous period and say so. Algorithm views over
+  [`migrations/seo_gsc_insight_rpcs.sql`](../../../migrations/seo_gsc_insight_rpcs.sql):
   **CTR gaps** = `seo.gsc_perf_ctr_gap` (the site's OWN CTR-by-position
   curve — buckets need ≥5 keys — vs each query/page's actual CTR;
   `missed_clicks` = gap × impressions; site-relative on purpose, a global
@@ -226,6 +249,13 @@ every row Google returned, and the toast says so and points at History. Only
 
 ## Change Log
 
+- 2026-08-07 — Traffic-class layer: `gsc_keyword_class_map` resolver +
+  class_summary / class_movers / shifts / juice RPCs
+  (seo_gsc_class_rpcs.sql) + Quality/Shifts/Juice insight views
+  (ClassInsights.tsx); Insights default is now Traffic quality. Classifier
+  coverage is the known bottleneck (~1.2k of 136k keywords classified) —
+  the agent-slot system for AI classification is written up in
+  aidream/docs/handoffs/content-ir-agent-slots.md.
 - 2026-08-07 — Insights tab: ctr_gap / cannibalization / trend algorithm
   RPCs (seo_gsc_insight_rpcs.sql, applied + ledgered) + InsightsTab with
   four views, watch columns, drills, copy. Throughput: nightly backfill

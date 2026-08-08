@@ -13,13 +13,18 @@ import {
 } from "@/features/marketing/search-console/data";
 import {
   getGscCannibalization,
+  getGscClassMovers,
+  getGscClassSummary,
   getGscCtrGap,
+  getGscJuice,
+  getGscShifts,
   getGscTrend,
 } from "@/features/marketing/search-console/data-insights";
 import type {
   GscBreakdownQuery,
   GscFilters,
   GscResolvedPeriods,
+  GscTrafficClass,
 } from "@/features/marketing/search-console/types";
 
 const STALE_MS = 5 * 60 * 1000;
@@ -204,6 +209,115 @@ export function useGscTrend(
         minClicks,
         signal,
       );
+    },
+    enabled: !!siteId && (options.enabled ?? true),
+    staleTime: STALE_MS,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useGscClassSummary(
+  siteId: string | null,
+  periods: GscResolvedPeriods,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: [
+      "marketing",
+      "gsc",
+      "insight-class-summary",
+      siteId,
+      periodsKey(periods),
+    ],
+    queryFn: ({ signal }) => {
+      if (!siteId) throw new Error("No site selected");
+      return getGscClassSummary(siteId, periods, signal);
+    },
+    enabled: !!siteId && (options.enabled ?? true),
+    staleTime: STALE_MS,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useGscClassMovers(
+  siteId: string | null,
+  periods: GscResolvedPeriods,
+  dimension: "query" | "page",
+  trafficClass: GscTrafficClass | null,
+  direction: "gain" | "loss",
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: [
+      "marketing",
+      "gsc",
+      "insight-class-movers",
+      siteId,
+      periodsKey(periods),
+      dimension,
+      trafficClass,
+      direction,
+    ],
+    queryFn: ({ signal }) => {
+      if (!siteId) throw new Error("No site selected");
+      return getGscClassMovers(
+        siteId,
+        periods,
+        dimension,
+        trafficClass,
+        direction,
+        signal,
+      );
+    },
+    enabled: !!siteId && (options.enabled ?? true),
+    staleTime: STALE_MS,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useGscShifts(
+  siteId: string | null,
+  periods: GscResolvedPeriods,
+  minClicks: number,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: [
+      "marketing",
+      "gsc",
+      "insight-shifts",
+      siteId,
+      periodsKey(periods),
+      minClicks,
+    ],
+    queryFn: ({ signal }) => {
+      if (!siteId) throw new Error("No site selected");
+      return getGscShifts(siteId, periods, minClicks, signal);
+    },
+    enabled: !!siteId && (options.enabled ?? true),
+    staleTime: STALE_MS,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useGscJuice(
+  siteId: string | null,
+  monthMinClicks: number,
+  minMonths: number,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: [
+      "marketing",
+      "gsc",
+      "insight-juice",
+      siteId,
+      monthMinClicks,
+      minMonths,
+    ],
+    queryFn: ({ signal }) => {
+      if (!siteId) throw new Error("No site selected");
+      return getGscJuice(siteId, monthMinClicks, minMonths, signal);
     },
     enabled: !!siteId && (options.enabled ?? true),
     staleTime: STALE_MS,
