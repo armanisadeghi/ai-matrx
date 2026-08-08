@@ -166,11 +166,7 @@ export function ProjectWorkspace() {
   // Canonical association reads — the project's attached resources are its
   // incoming platform.associations edges (the spine conveys project-member
   // access down to each attached item). Tasks keep their own FK-based section.
-  const {
-    status: linksStatus,
-    countFor,
-    totalCount,
-  } = useContainerLinks({
+  const { status: linksStatus, countFor } = useContainerLinks({
     containerType: "project",
     containerId: project?.id ?? null,
     orgId: project?.organizationId ?? null,
@@ -181,7 +177,12 @@ export function ProjectWorkspace() {
     (t) => !EXCLUDE_FROM_RESOURCES.has(t),
   );
 
-  const totalResources = totalCount;
+  // Sum ONLY the tokens the grid shows — a raw all-edges total would count
+  // task→project edges the grid excludes and disagree with the visible cards.
+  const totalResources = resourceTokens.reduce(
+    (sum, t) => sum + countFor(t),
+    0,
+  );
 
   if (resolving) {
     return (
