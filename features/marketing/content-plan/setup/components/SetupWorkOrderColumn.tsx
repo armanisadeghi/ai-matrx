@@ -68,6 +68,7 @@ export function SetupWorkOrderColumn({
   onAiTopics,
   onClearTopics,
   onApplyTopics,
+  onPromoteTopics,
   applyingTopicsKey = null,
   plannedRoutes,
 }: {
@@ -122,6 +123,8 @@ export function SetupWorkOrderColumn({
   onClearTopics?: (familyKey: string) => void;
   /** Record this family's topics on its LIVE hub now, without a commit. */
   onApplyTopics?: (familyKey: string) => void;
+  /** Turn the staged topics into real planned pages under the live hub. */
+  onPromoteTopics?: (familyKey: string) => void;
   applyingTopicsKey?: string | null;
   /** Routes already in the plan — tells us whether the hub exists yet. */
   plannedRoutes?: Set<string>;
@@ -401,6 +404,11 @@ export function SetupWorkOrderColumn({
                           ? () => onApplyTopics(family.key)
                           : undefined
                       }
+                      onPromote={
+                        onPromoteTopics && plannedRoutes?.has(family.route)
+                          ? () => onPromoteTopics(family.key)
+                          : undefined
+                      }
                       applying={applyingTopicsKey === family.key}
                     />
                   ) : null}
@@ -661,6 +669,7 @@ function CountOnlyTopics({
   onRun,
   onClear,
   onApply,
+  onPromote,
   applying,
 }: {
   family: ExpandedArchetype["families"][number];
@@ -672,6 +681,7 @@ function CountOnlyTopics({
   onClear?: () => void;
   /** Present only when the hub page already exists in the plan. */
   onApply?: () => void;
+  onPromote?: () => void;
   applying: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -712,6 +722,17 @@ function CountOnlyTopics({
           >
             {applying ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
             Record on hub
+          </button>
+        ) : null}
+        {topics && topics.length > 0 && onPromote ? (
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={applying}
+            title={`Create these ${topics.length} titles as real planned pages under ${family.route}.`}
+            onClick={onPromote}
+          >
+            Create as pages
           </button>
         ) : null}
         <button

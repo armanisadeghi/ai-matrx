@@ -105,25 +105,20 @@ the 'Document'"*
    is a human mirror only). No aidream generator, writer, or tool parses that key today — the
    work order exists but nobody consumes it. Wiring it into the cms-fill / writer stage is the
    payoff step.
-4. **Count-only topics never become pages.** The archetype deliberately materializes only the
-   hub. Turning titles into real planned pages is a new deliberate action ("promote topics to
-   pages"), NOT a change to the expander: `setup/archetypes.ts` is a fixture-pinned twin of
-   aidream's `archetypes.py` (`pnpm check:archetype-expansion`, 62 cases) and must not diverge.
-   See the first Decision below.
-5. **Deepen has no research picker of its own** — it reads the site's recorded link only. Fine
+4. **Deepen has no research picker of its own** — it reads the site's recorded link only. Fine
    today; if per-node grounding is ever wanted, add `research_topic_id` to the deepen body the
    same way generate has it.
-6. **Reviewer needs its output contract sent by every caller.** `REVIEWER_OUTPUT_CONTRACT`
+5. **Reviewer needs its output contract sent by every caller.** `REVIEWER_OUTPUT_CONTRACT`
    (setup/ai.ts) is passed as `guidance` on every run because without it the agent writes a
    summary naming six missing pages and returns ONE finding (measured, not guessed). If the
    agent's stored prompt is ever fixed at the source, delete the constant — do not silently keep
    both. Note `agent_author update` with `goals` did NOT change the stored prompt.
-7. ~~Bulk deepen~~ — **DONE 2026-08-07**: `usePlanBulkDeepen` (useContentPlanAi.ts) fans the
+6. ~~Bulk deepen~~ — **DONE 2026-08-07**: `usePlanBulkDeepen` (useContentPlanAi.ts) fans the
    existing deepen over every empty-brief page, sequential with live progress in the
    PlanGenerateBar strip ("Deepen briefs (N)" button, confirm first), per-page failure
    isolation, Stop between pages. Pages with an existing brief are never touched (Deepen's
    server-side replace made that unsafe).
-8. **Re-review after research changes** — "what changed in the research since we planned?"
+7. **Re-review after research changes** — "what changed in the research since we planned?"
 
 ## Done
 
@@ -140,22 +135,18 @@ the 'Document'"*
 - Neighbour-aware staged brief writer — `hooks/useBriefWriter.ts`.
 - Blog/guide topic planning: researched titles recorded on the family hub
   (`attributes.planned_topics` authoritative + a human-readable brief mirror), retryable via
-  "Record on hub" without a commit.
+  "Record on hub" without a commit. A confirmed “Create as pages” action promotes those titles
+  into normal child plan nodes without changing the hub-only archetype expansion.
 - Three adversarial review rounds (20 + 12 + 21 agents); every confirmed finding fixed —
   including a cross-org research-report exfiltration hole, a `send_warning` crash on the exact
   degrade path, and a draft-clear that destroyed staged topics. See the FEATURE.md change log.
 
 ## Decisions needed
 
-**Should researched blog/guide titles become real planned pages?**
-Situation: when a site shape includes a Blog or Guides section, the shape deliberately creates
-only the section's hub page and records "12 articles" as the target — the individual titles were
-always meant to come later from research. The AI now produces those titles from the company's
-research report, and they are saved onto the hub page as its work order, but no page rows are
-created for them.
-Decide: leave them as a recorded work order for the writers (today's behavior), or add a button
-that turns the titles into real planned pages so they show up in the tree, the table, and the
-CMS pipeline like every other page.
+**Should promoting researched titles become automatic?**
+Today the archetype remains hub-only and the user explicitly confirms “Create as pages.” Decide
+whether a future commit should promote staged titles automatically; doing so would change the
+meaning of count-only families for every site.
 
 **Should these four agents appear in the header Agents popover?**
 Situation: the popover lists agents bound to a surface through `agent.card`; these four exist only

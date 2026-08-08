@@ -41,6 +41,7 @@ import {
   ARCHETYPE_MAP_KEY,
   BUILTIN_ARCHETYPE_VERTICAL,
   NODE_ATTR_KEY,
+  slugify,
   SITE_ARCHETYPE_KEY,
   SITE_SETTINGS_KEY,
   parseArchetypeMap,
@@ -546,6 +547,79 @@ export async function applyFamilyTopics(args: {
     }
   }
   return { applied, missing, failures };
+}
+
+export interface PromoteTopicsResult {
+  created: number;
+  existing: number;
+  failed: number;
+  failures: string[];
+}
+
+/** Explicitly turn a count-only family's researched titles into plan nodes. */
+export async function promoteTopicsToPages(args: {
+  siteId: string;
+  organizationId: string;
+  hubRoute: string;
+  topics: string[];
+  childNodeType: string;
+  childPageTypeId: string | null;
+  statusId: string;
+}): Promise<PromoteTopicsResult> {
+  const liveNodes = await listPlanNodes(args.siteId);
+  const hub = liveNodes.find((node) => node.route === args.hubRoute);
+  if (!hub) {
+    throw new Error(
+      `The hub page ${args.hubRoute} is not in the plan yet — create the pages first.`,
+    );
+  }
+
+  const existingSlugs = new Set(
+    liveNodes
+      .filter((node) => node.parent_id === hub.id && node.slug)
+      .map((node) => node.slug as string),
+  );
+  const usedSlugs = new Set(existingSlugs);
+  const failures: string[] = [];
+  let created = 0;
+  let existing = 0;
+
+  for (const title of args.topics) {
+    const slug = slugify(title);
+    if (usedSlugs.has(slug)) {
+      if (existingSlugs.has(slug)) existing += 1;
+      else {
+        failures.push(
+          `"${title}": its slug collides with another title in this batch — rename it.`,
+        );
+      }
+      continue;
+    }
+    usedSlugs.add(slug);
+    try {
+      await createPlanNode({
+        site_id: args.siteId,
+        organization_id: args.organizationId,
+        parent_id: hub.id,
+        node_type: args.childNodeType as PlanNodeInsert["node_type"],
+        slug,
+        label: title,
+        page_type_id: args.childPageTypeId,
+        status_id: args.statusId,
+        attributes: {
+          [NODE_ATTR_KEY]: {
+            source: "planned_topics",
+            role: "family_child",
+          },
+        } as PlanNodeInsert["attributes"],
+      });
+      created += 1;
+    } catch (error) {
+      failures.push(`"${title}": ${extractErrorMessage(error)}`);
+    }
+  }
+
+  return { created, existing, failed: failures.length, failures };
 }
 
 /** Every `plan_page_type` slug the work order needs — checked BEFORE any write. */

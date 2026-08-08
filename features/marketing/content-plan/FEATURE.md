@@ -340,6 +340,13 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-08-08 — Codex: **researched-topic promotion.** Count-only Blog/Guide
+  families remain hub-only by default, but their staged researched titles now
+  have an explicit, confirmed “Create as pages” action. It creates normal
+  child plan nodes through the canonical write path, uses the DB identity
+  `(site_id, parent_id, slug)` for idempotency, requires the planned status,
+  and reports both existing pages and same-batch slug collisions loudly.
+
 - 2026-08-07 — Claude: **bulk deepen.** `usePlanBulkDeepen` runs the existing
   research-grounded deepen over every EMPTY-brief page (deepen replaces briefs
   server-side, so non-empty pages are excluded by design): sequential,
