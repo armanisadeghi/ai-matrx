@@ -9,7 +9,7 @@ import { useTopicContext } from "../../context/ResearchContext";
 import { updateTopic } from "../../service";
 import { AGENT_CONFIG_KEYS, type AgentConfigKey } from "../../admin/types";
 import { AgentRoleCard } from "./AgentRoleCard";
-import { AGENT_ROLES } from "./constants";
+import { useResearchAgentRoles } from "./useResearchAgentRoles";
 
 /**
  * Reads the JSONB agent_config off a topic and returns the override UUID for
@@ -28,6 +28,9 @@ function readOverride(
 export default function TopicAgentsPage() {
   const { topic, refresh } = useTopicContext();
   const dispatch = useAppDispatch();
+  // DB-truth system pins from the agent-slot registry (replaces the drifted
+  // hardcoded UUID constants).
+  const { roles, loading: rolesLoading, error: rolesError } = useResearchAgentRoles();
 
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
@@ -98,7 +101,7 @@ export default function TopicAgentsPage() {
     }
   };
 
-  if (!topic) {
+  if (!topic || rolesLoading) {
     return (
       <div className="flex items-center justify-center min-h-[40dvh]">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -165,8 +168,13 @@ export default function TopicAgentsPage() {
       </header>
 
       {/* ── Role cards ─────────────────────────────────────────── */}
+      {rolesError ? (
+        <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-[13px] text-destructive">
+          Failed to load the system agent registry: {rolesError}
+        </div>
+      ) : null}
       <div className="space-y-3.5">
-        {AGENT_ROLES.map((role) => {
+        {roles.map((role) => {
           const overrideId =
             role.configKey != null ? overrides[role.configKey] : null;
           return (

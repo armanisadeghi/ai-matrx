@@ -312,19 +312,22 @@ export function AgentRoleCard({
   const handleCopyUpdate = async () => {
     setCopying(true);
     try {
-      // Fork the EXACT agent the server runs. With no override, the server runs
-      // the pinned `agx_version` (not the master) — so duplicate the VERSION, or
-      // the user edits a different/corrupted agent. With an override, that's the
-      // user's own master row, so a plain master duplicate is correct.
+      // Fork the EXACT agent the server runs. With no override, a version-pinned
+      // slot runs the pinned `agx_version` (not the master) — so duplicate the
+      // VERSION, or the user edits a different/corrupted agent. A FLOATING slot
+      // (systemVersionId null) runs the latest master, so forking the master IS
+      // forking what runs. With an override, that's the user's own master row.
       // Dispatch inside each branch so each thunk action keeps its own type
       // (a ternary between two different thunks has no single dispatch overload).
-      const newId = currentOverrideId
+      const forkMasterId = currentOverrideId
+        ?? (role.systemVersionId == null ? role.systemAgentId : null);
+      const newId = forkMasterId
         ? await dispatch(
-            duplicateAgent({ agentId: currentOverrideId, asSystem: false }),
+            duplicateAgent({ agentId: forkMasterId, asSystem: false }),
           ).unwrap()
         : await dispatch(
             duplicateAgentVersion({
-              versionId: role.systemVersionId,
+              versionId: role.systemVersionId as string,
               asSystem: false,
             }),
           ).unwrap();
