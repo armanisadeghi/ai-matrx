@@ -48,6 +48,25 @@ const sklSlice = createSlice({
       state.renderDefinitions.status = "error";
       state.renderDefinitions.error = action.payload;
     },
+    /**
+     * Merge-upsert many definitions WITHOUT clearing the existing set —
+     * used by fetchUnifiedMenu (context-menu hydration), which sees only the
+     * blocks visible to the requested placement/scope.
+     */
+    renderDefinitionsUpserted(
+      state,
+      action: PayloadAction<SklRenderDefinition[]>,
+    ) {
+      for (const def of action.payload) {
+        if (!state.renderDefinitions.byId[def.id]) {
+          state.renderDefinitions.allIds.push(def.id);
+        }
+        state.renderDefinitions.byId[def.id] = def;
+      }
+      if (state.renderDefinitions.status === "idle") {
+        state.renderDefinitions.status = "ready";
+      }
+    },
     renderDefinitionUpserted(
       state,
       action: PayloadAction<SklRenderDefinition>,
