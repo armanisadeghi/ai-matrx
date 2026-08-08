@@ -9,7 +9,7 @@ import type {
 } from "@/components/official/matrx-data-table/types";
 import type { MarketingTableStateOptions } from "@/features/marketing/types";
 
-const PAGE_SIZE_OPTIONS = new Set([10, 25, 50, 100]);
+const PAGE_SIZE_OPTIONS = new Set([10, 25, 50, 100, 250]);
 
 function positiveInt(value: string | null, fallback: number): number {
   const parsed = Number(value);

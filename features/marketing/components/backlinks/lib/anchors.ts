@@ -138,7 +138,7 @@ export const TOPICAL_SHARE_CRITICAL = 0.5;
 /** One non-branded anchor holding this share of ALL links is concentration risk. */
 export const SINGLE_ANCHOR_SHARE_WARN = 0.1;
 /** Ignore concentration math below this many total links (noise). */
-const MIN_LINKS_FOR_WARNINGS = 30;
+export const MIN_LINKS_FOR_WARNINGS = 30;
 
 export function analyzeAnchorProfile(
   rows: AnchorProfileRow[],

@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { BacklinksWorkspace } from "@/features/marketing/components/backlinks/BacklinksWorkspace";
+import { BacklinksGate } from "@/features/marketing/components/backlinks/BacklinksGate";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 
 export default function MarketingSiteBacklinksPage() {
@@ -7,7 +7,7 @@ export default function MarketingSiteBacklinksPage() {
     <Suspense
       fallback={<LoadingSurface label="Loading backlink intelligence…" />}
     >
-      <BacklinksWorkspace />
+      <BacklinksGate />
     </Suspense>
   );
 }
