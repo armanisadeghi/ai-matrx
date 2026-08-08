@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { ChevronLeft, FileText, Loader2, AlertCircle, ExternalLink, File, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 
 interface FileUrlResourcePickerProps {
     onBack: () => void;
@@ -218,21 +219,16 @@ export function FileUrlResourcePicker({ onBack, onSelect, onSwitchTo, initialUrl
     return (
         <div className="flex flex-col max-h-[min(460px,70dvh)]">
             {/* Header */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 flex-shrink-0"
-                    onClick={onBack}
-                >
-                    <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <FileText className="w-4 h-4 flex-shrink-0 text-purple-600 dark:text-purple-500" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">File URL</span>
-            </div>
+            <ResourcePickerSubViewHeader
+                title="File URL"
+                onBack={onBack}
+                icon={
+                    <FileText className="h-3.5 w-3.5 shrink-0 text-purple-600 dark:text-purple-400" />
+                }
+            />
 
             {/* Content */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
+            <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2">
                 <div className="space-y-2">
                     <div className="flex gap-2">
                         <Input
@@ -243,14 +239,14 @@ export function FileUrlResourcePicker({ onBack, onSelect, onSwitchTo, initialUrl
                             onKeyPress={handleKeyPress}
                             onPaste={handlePaste}
                             placeholder="https://example.com/document.pdf"
-                            className="flex-1 text-xs h-8"
+                            className="flex-1 text-xs h-7"
                             disabled={isValidating}
                         />
                         <Button
                             size="sm"
                             onClick={() => void handleValidate()}
                             disabled={isValidating || !url.trim()}
-                            className="h-8 w-8 p-0"
+                            className="h-7 w-7 p-0"
                             variant="ghost"
                         >
                             {isValidating ? (
@@ -260,7 +256,7 @@ export function FileUrlResourcePicker({ onBack, onSelect, onSwitchTo, initialUrl
                             )}
                         </Button>
                     </div>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                    <p className="text-[10px] text-muted-foreground">
                         Paste a direct URL to a file
                     </p>
                 </div>
@@ -268,14 +264,14 @@ export function FileUrlResourcePicker({ onBack, onSelect, onSwitchTo, initialUrl
                 {/* Error with suggestion */}
                 {error && (
                     <div className="space-y-2">
-                        <div className="flex items-start gap-2 p-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded">
-                            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                            <p className="text-xs text-red-700 dark:text-red-400">{error}</p>
+                        <div className="flex items-start gap-2 p-2 border border-destructive/20 bg-destructive/10 rounded">
+                            <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+                            <p className="text-xs text-destructive">{error}</p>
                         </div>
                         {suggestedType && onSwitchTo && (
                             <Button
                                 size="sm"
-                                className="w-full text-xs h-8 bg-purple-600 hover:bg-purple-700 text-white"
+                                className="w-full text-xs h-8"
                                 onClick={() => onSwitchTo(suggestedType, url)}
                             >
                                 <Globe className="w-3.5 h-3.5 mr-1.5" />
@@ -289,15 +285,15 @@ export function FileUrlResourcePicker({ onBack, onSelect, onSwitchTo, initialUrl
                 {previewFile && (
                     <div className="border-border rounded-lg overflow-hidden">
                         {/* File Icon/Info */}
-                        <div className="p-4 bg-gray-50 dark:bg-zinc-900 flex items-center gap-3">
-                            <div className="w-12 h-12 rounded bg-purple-100 dark:bg-purple-950/30 flex items-center justify-center flex-shrink-0">
+                        <div className="p-2.5 bg-muted/50 flex items-center gap-2.5">
+                            <div className="w-12 h-12 rounded bg-purple-500/10 flex items-center justify-center flex-shrink-0">
                                 <File className="w-6 h-6 text-purple-600 dark:text-purple-500" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                <div className="text-sm font-medium text-foreground truncate">
                                     {previewFile.filename}
                                 </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                                <div className="text-xs text-muted-foreground flex items-center gap-2">
                                     <span className="uppercase">{previewFile.extension}</span>
                                     <span>•</span>
                                     <span className="truncate">{previewFile.type}</span>
@@ -306,7 +302,7 @@ export function FileUrlResourcePicker({ onBack, onSelect, onSwitchTo, initialUrl
                         </div>
 
                         {/* URL */}
-                        <div className="p-2 border-t border-border bg-white dark:bg-zinc-900">
+                        <div className="p-2 border-t border-border bg-background">
                             <a
                                 href={previewFile.url}
                                 target="_blank"
@@ -322,8 +318,8 @@ export function FileUrlResourcePicker({ onBack, onSelect, onSwitchTo, initialUrl
 
                 {/* Help Text */}
                 {!previewFile && !error && (
-                    <div className="p-2.5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-                        <p className="text-xs text-blue-700 dark:text-blue-400">
+                    <div className="p-2.5 border border-blue-500/20 bg-blue-500/10 rounded-lg">
+                        <p className="text-xs text-blue-600 dark:text-blue-400">
                             <strong>Supported formats:</strong>
                         </p>
                         <ul className="text-xs text-blue-600 dark:text-blue-400 mt-1 space-y-0.5 ml-3">
@@ -340,7 +336,7 @@ export function FileUrlResourcePicker({ onBack, onSelect, onSwitchTo, initialUrl
 
             {/* Footer with Add Button */}
             {previewFile && (
-                <div className="border-t border-border p-3">
+                <div className="border-t border-border p-2">
                     <Button
                         onClick={handleSelect}
                         className="w-full"

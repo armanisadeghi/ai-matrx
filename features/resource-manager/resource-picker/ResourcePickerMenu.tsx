@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronLeft, ChevronRight, Settings2, Bug } from "lucide-react";
+import { ChevronRight, Settings2, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NotesResourcePicker } from "./NotesResourcePicker";
@@ -20,6 +20,7 @@ import { ContextValuesResourcePicker } from "./ContextValuesResourcePicker";
 import { ToolsResourcePicker } from "./ToolsResourcePicker";
 import { SkillsResourcePicker } from "./SkillsResourcePicker";
 import { RunSettingsResourcePicker } from "./RunSettingsResourcePicker";
+import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import {
   flattenResourcePickerItems,
   getVisibleResourcePickerCategories,
@@ -287,20 +288,11 @@ export function ResourcePickerMenu({
     const currentResource = menuItems.find((r) => r.id === activeView);
 
     return (
-      <div className="p-3">
-        <div className="mb-3 flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
-            onClick={() => setActiveView(null)}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm font-medium text-foreground">
-            {currentResource?.label}
-          </span>
-        </div>
+      <div className="flex flex-col">
+        <ResourcePickerSubViewHeader
+          title={currentResource?.label ?? "Resource"}
+          onBack={() => setActiveView(null)}
+        />
         <div className="py-8 text-center text-xs text-muted-foreground">
           Coming soon…
         </div>
@@ -363,8 +355,8 @@ export function ResourcePickerMenu({
                 onClose();
               }}
             >
-              <Settings2 className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 text-gray-600 dark:text-gray-400" />
-              <span className="text-gray-900 dark:text-gray-100 font-normal">
+              <Settings2 className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 text-muted-foreground" />
+              <span className="text-foreground font-normal">
                 Settings
               </span>
             </Button>
@@ -380,13 +372,13 @@ export function ResourcePickerMenu({
               }}
             >
               <Bug
-                className={`w-3.5 h-3.5 mr-1.5 flex-shrink-0 ${showDebugActive ? "text-red-500" : "text-gray-600 dark:text-gray-400"}`}
+                className={`w-3.5 h-3.5 mr-1.5 flex-shrink-0 ${showDebugActive ? "text-destructive" : "text-muted-foreground"}`}
               />
               <span
                 className={
                   showDebugActive
-                    ? "text-red-500 font-normal"
-                    : "text-gray-900 dark:text-gray-100 font-normal"
+                    ? "text-destructive font-normal"
+                    : "text-foreground font-normal"
                 }
               >
                 Debug

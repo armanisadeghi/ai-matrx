@@ -25,7 +25,6 @@ import React, {
 } from "react";
 import {
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   Folder,
   Grid3x3,
@@ -34,7 +33,6 @@ import {
   Search,
   SlidersHorizontal,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
@@ -71,6 +69,7 @@ import {
   usePdfStudioDocs,
 } from "@/features/pdf-extractor/studio/hooks/usePdfStudioDocs";
 import { usePickerInputFocus } from "./usePickerInputFocus";
+import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 
 /** Same cap as `buildRows` recents filter in the files list. */
 /** Two viewports worth of rows; never mount a 100-item thumbnail fan-out. */
@@ -230,7 +229,7 @@ function FileRow({ file, onSelect }: FileRowProps) {
     <button
       type="button"
       onClick={() => onSelect(file)}
-      className="flex w-full items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors text-left"
+      className="flex w-full items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/60 transition-colors text-left"
     >
       <MediaThumbnail
         file={file}
@@ -240,7 +239,7 @@ function FileRow({ file, onSelect }: FileRowProps) {
         className="h-10 w-10 shrink-0 border border-border/50"
       />
       <div className="flex-1 min-w-0">
-        <div className="text-xs truncate text-gray-900 dark:text-gray-100">
+        <div className="text-xs truncate text-foreground">
           {file.fileName}
         </div>
         <FileMeta
@@ -280,7 +279,7 @@ function FileGridTile({ file, onSelect }: FileGridTileProps) {
         />
       </div>
       <div className="px-1.5 py-1 min-w-0">
-        <div className="text-[10px] truncate text-gray-900 dark:text-gray-100">
+        <div className="text-[10px] truncate text-foreground">
           {truncateFilename(file.fileName, 16)}
         </div>
       </div>
@@ -430,7 +429,7 @@ function FolderNode({
       {folderId !== null ? (
         <button
           onClick={handleToggle}
-          className="w-full text-left px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+          className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-colors"
           style={{ paddingLeft: `${paddingLeft}rem` }}
         >
           <div className="flex items-center min-w-0 w-full">
@@ -439,14 +438,14 @@ function FolderNode({
                 {isLoadingChildren ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                 ) : open ? (
-                  <ChevronDown className="h-3.5 w-3.5 text-gray-500" />
+                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                 ) : (
-                  <ChevronRight className="h-3.5 w-3.5 text-gray-500" />
+                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 )}
               </div>
               <Folder className="h-3.5 w-3.5 mr-2 text-blue-600 dark:text-blue-500" />
             </div>
-            <span className="text-xs truncate flex-1 text-gray-900 dark:text-gray-100">
+            <span className="text-xs truncate flex-1 text-foreground">
               {label}
             </span>
           </div>
@@ -466,7 +465,7 @@ function FolderNode({
           ) : children.folderIds.length === 0 &&
             children.fileIds.length === 0 ? (
             <div
-              className="text-[10px] text-gray-500 dark:text-gray-400 py-1"
+              className="text-[10px] text-muted-foreground py-1"
               style={{ paddingLeft: `${(level + 1) * 1.25}rem` }}
             >
               Empty folder
@@ -803,60 +802,55 @@ export function FilesResourcePicker({
       )}
     >
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 p-0 flex-shrink-0"
-          onClick={onBack}
-          disabled={isProcessing}
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
-        <Folder className="w-4 h-4 flex-shrink-0 text-gray-600 dark:text-gray-400" />
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 truncate">
-          {isPdfExtractorFilter ? "PDF Extractor" : "Cloud Files"}
-        </span>
-        <div
-          role="radiogroup"
-          aria-label="View mode"
-          className="inline-flex items-center rounded-md border bg-background p-0.5 shrink-0"
-        >
-          {(
-            [
-              { mode: "list" as const, icon: List, label: "List view" },
-              { mode: "grid" as const, icon: Grid3x3, label: "Grid view" },
-            ] as const
-          ).map(({ mode, icon: Icon, label }) => {
-            const active = viewMode === mode;
-            return (
-              <button
-                key={mode}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                aria-label={label}
-                title={label}
-                disabled={isProcessing}
-                onClick={() => setViewMode(mode)}
-                className={cn(
-                  "flex h-6 w-6 items-center justify-center rounded",
-                  active
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:bg-accent/60",
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <ResourcePickerSubViewHeader
+        title={isPdfExtractorFilter ? "PDF Extractor" : "Cloud Files"}
+        onBack={onBack}
+        disabled={isProcessing}
+        icon={
+          <Folder className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
+        }
+        actions={
+          <div
+            role="radiogroup"
+            aria-label="View mode"
+            className="inline-flex shrink-0 items-center rounded-md border border-border bg-background p-0.5"
+          >
+            {(
+              [
+                { mode: "list" as const, icon: List, label: "List view" },
+                { mode: "grid" as const, icon: Grid3x3, label: "Grid view" },
+              ] as const
+            ).map(({ mode, icon: Icon, label }) => {
+              const active = viewMode === mode;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  aria-label={label}
+                  title={label}
+                  disabled={isProcessing}
+                  onClick={() => setViewMode(mode)}
+                  className={cn(
+                    "flex h-5 w-5 items-center justify-center rounded",
+                    active
+                      ? "bg-accent text-accent-foreground"
+                      : "text-muted-foreground hover:bg-accent/60",
+                  )}
+                >
+                  <Icon className="h-3 w-3" aria-hidden="true" />
+                </button>
+              );
+            })}
+          </div>
+        }
+      />
 
       {/* Search */}
-      <div className="px-2 py-2 border-b border-border">
+      <div className="px-2 py-1.5 border-b border-border">
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
             ref={searchInputRef}
             type="text"
@@ -867,7 +861,7 @@ export function FilesResourcePicker({
             }
             value={searchQuery}
             onChange={(event) => handleSearchChange(event.target.value)}
-            className="h-7 text-xs pl-7 pr-2 bg-background border-gray-300 dark:border-gray-700"
+            className="h-7 text-xs pl-7 pr-2 bg-background border-border"
           />
         </div>
       </div>
@@ -925,22 +919,22 @@ export function FilesResourcePicker({
           <div ref={listContentRef}>
         {loading ? (
           <div className="flex items-center justify-center h-full py-8">
-            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>
         ) : error ? (
-          <div className="text-xs text-red-600 dark:text-red-400 text-center py-8 px-3">
+          <div className="text-xs text-destructive text-center py-8 px-3">
             {studioDocs.error ?? "Error loading files"}
           </div>
         ) : isPdfExtractorFilter ? (
           visibleProcessedFiles.length === 0 ? (
-            <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8 px-3">
+            <div className="text-xs text-muted-foreground text-center py-8 px-3">
               {isSearching
                 ? "No processed documents match this search"
                 : "No processed documents yet — extract a file in PDF Extractor first"}
             </div>
           ) : (
             <div className="p-1">
-              <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-2 py-0.5">
+              <div className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wide px-2 py-0.5">
                 Processed documents
               </div>
               <FileListOrGrid
@@ -957,12 +951,12 @@ export function FilesResourcePicker({
               Searching all cloud files…
             </div>
           ) : visibleSearchResults.length === 0 ? (
-            <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">
+            <div className="text-xs text-muted-foreground text-center py-8">
               No files match this search
             </div>
           ) : (
             <div className="p-1">
-              <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-2 py-0.5">
+              <div className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wide px-2 py-0.5">
                 Search results
               </div>
               <FileListOrGrid
@@ -973,14 +967,14 @@ export function FilesResourcePicker({
             </div>
           )
         ) : visibleRecentFiles.length === 0 && rootFolders.length === 0 ? (
-          <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">
+          <div className="text-xs text-muted-foreground text-center py-8">
             No files yet
           </div>
         ) : (
           <div className="p-1">
             {visibleRecentFiles.length > 0 && (
               <div>
-                <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-2 py-0.5">
+                <div className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wide px-2 py-0.5">
                   Recent
                 </div>
                 <FileListOrGrid
@@ -992,7 +986,7 @@ export function FilesResourcePicker({
             )}
             {rootFolders.length > 0 && (
               <div className="mt-1">
-                <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-2 py-0.5">
+                <div className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wide px-2 py-0.5">
                   Folders
                 </div>
                 {rootFolders.map((folder) => (
@@ -1016,8 +1010,8 @@ export function FilesResourcePicker({
           </div>
 
           {isProcessing && (
-            <div className="absolute inset-0 bg-white/80 dark:bg-zinc-900/80 flex items-center justify-center">
-              <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+            <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
           )}
         </div>

@@ -53,7 +53,7 @@ export function ResourcePickerButton({
     <Button
       variant="ghost"
       size="sm"
-      className="h-7 w-7 p-0 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+      className="h-7 w-7 p-0 text-muted-foreground/70 hover:text-foreground"
       tabIndex={-1}
       title="Add resource"
       onClick={useWindowMode ? () => setIsOpen(true) : undefined}
@@ -84,7 +84,7 @@ export function ResourcePickerButton({
     <Popover open={isOpen} onOpenChange={setIsOpen} modal={false}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
-        className="w-80 p-0 border-gray-300 dark:border-gray-700 z-[200]"
+        className="w-80 p-0 border-border z-[200]"
         align="start"
         side="top"
         sideOffset={8}

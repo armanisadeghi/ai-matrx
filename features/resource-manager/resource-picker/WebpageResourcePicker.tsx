@@ -24,6 +24,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrapedContentPretty } from "@/features/scraper/parts/ScrapedContentPretty";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
+import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import { ScraperHookErrorDetails } from "@/features/scraper/parts/ScraperHookErrorDetails";
 
 interface WebpageContent {
@@ -259,8 +260,8 @@ export function WebpageResourcePickerCore({
       {/* Input area — rendered inline (no dialog wrapper) */}
       <div className="flex flex-col max-h-[min(460px,70dvh)]">
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          <div className="flex-1 min-h-0 overflow-y-auto p-3">
-            <div className="space-y-3">
+          <div className="flex-1 min-h-0 overflow-y-auto p-2">
+            <div className="space-y-2">
               {/* URL Input */}
               <div className="space-y-2">
                 <div className="flex gap-2">
@@ -273,13 +274,13 @@ export function WebpageResourcePickerCore({
                     onKeyDown={handleKeyDown}
                     onPaste={handlePaste}
                     disabled={isLoading}
-                    className="flex-1 text-xs h-8"
+                    className="flex-1 text-xs h-7"
                   />
                   <Button
                     onClick={() => handleScrape()}
                     disabled={!url.trim() || isLoading}
                     size="sm"
-                    className="h-8 w-8 p-0"
+                    className="h-7 w-7 p-0"
                     variant="ghost"
                   >
                     {isLoading ? (
@@ -289,7 +290,7 @@ export function WebpageResourcePickerCore({
                     )}
                   </Button>
                 </div>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                <p className="text-[10px] text-muted-foreground">
                   Paste a webpage URL to extract its text content
                 </p>
               </div>
@@ -297,9 +298,9 @@ export function WebpageResourcePickerCore({
               {/* Suggestion to switch type */}
               {suggestedType && onSwitchTo && (
                 <div className="space-y-2">
-                  <div className="flex items-start gap-2 p-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded">
+                  <div className="flex items-start gap-2 p-2 border border-blue-500/20 bg-blue-500/10 rounded">
                     <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-blue-700 dark:text-blue-400">
+                    <p className="text-xs text-blue-600 dark:text-blue-400">
                       This appears to be a{" "}
                       {suggestedType === "youtube"
                         ? "YouTube video"
@@ -310,7 +311,7 @@ export function WebpageResourcePickerCore({
                   </div>
                   <Button
                     size="sm"
-                    className="w-full text-xs h-8 bg-teal-600 hover:bg-teal-700 text-white"
+                    className="w-full text-xs h-7"
                     onClick={() => onSwitchTo(suggestedType, url)}
                   >
                     <Globe className="w-3.5 h-3.5 mr-1.5" />
@@ -326,10 +327,10 @@ export function WebpageResourcePickerCore({
 
               {/* Error Display */}
               {hasError && (
-                <div className="flex flex-col gap-2 p-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded">
+                <div className="flex flex-col gap-2 p-2 border border-destructive/20 bg-destructive/10 rounded">
                   <div className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-red-700 dark:text-red-400">
+                    <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-destructive">
                       {error || "Failed to scrape webpage"}
                     </p>
                   </div>
@@ -339,8 +340,8 @@ export function WebpageResourcePickerCore({
 
               {/* Help Text */}
               {!isLoading && !hasError && !suggestedType && (
-                <div className="p-2.5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-                  <p className="text-xs text-blue-700 dark:text-blue-400 mb-1">
+                <div className="p-2.5 border border-blue-500/20 bg-blue-500/10 rounded-lg">
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">
                     <strong>How it works:</strong>
                   </p>
                   <ul className="text-xs text-blue-600 dark:text-blue-400 space-y-0.5 ml-3">
@@ -356,10 +357,10 @@ export function WebpageResourcePickerCore({
             {isLoading && (
               <div className="flex-1 flex flex-col items-center justify-center mt-8">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-500 mb-3" />
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                <p className="text-sm text-muted-foreground mb-1">
                   Scraping webpage...
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   This may take a few seconds
                 </p>
               </div>
@@ -373,7 +374,7 @@ export function WebpageResourcePickerCore({
         <DialogContent className="max-w-4xl h-[90dvh] overflow-hidden flex flex-col p-0">
           <DialogHeader className="px-6 py-4 border-b border-border flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-green-600 dark:text-green-500" />
+              <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <span className="truncate">
                 {pageTitle || "Webpage Content Preview"}
               </span>
@@ -387,17 +388,17 @@ export function WebpageResourcePickerCore({
                 <div className="w-20 h-20 relative">
                   <div className="absolute inset-0 border-4 border-teal-200 dark:border-teal-800 rounded-full"></div>
                   <div className="absolute inset-0 border-4 border-transparent border-t-teal-600 dark:border-t-teal-400 rounded-full animate-spin"></div>
-                  <div className="absolute inset-3 bg-teal-100 dark:bg-teal-900 rounded-full animate-pulse flex items-center justify-center">
+                  <div className="absolute inset-3 bg-teal-500/15 rounded-full animate-pulse flex items-center justify-center">
                     <Globe className="w-6 h-6 text-teal-600 dark:text-teal-400" />
                   </div>
                 </div>
               </div>
 
               <div className="mt-8 text-center space-y-3">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                <h3 className="text-lg font-semibold text-foreground">
                   Scraping Webpage...
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 max-w-md">
+                <p className="text-sm text-muted-foreground max-w-md">
                   We're extracting the content from the webpage. This may take a
                   few moments depending on the page size and complexity.
                 </p>
@@ -453,8 +454,8 @@ export function WebpageResourcePickerCore({
                     value="edit"
                     className="flex-1 flex flex-col overflow-hidden min-h-0 mt-0 data-[state=inactive]:hidden"
                   >
-                    <div className="flex items-center justify-between px-6 py-2 bg-gray-100 dark:bg-zinc-800 border-b border-border flex-shrink-0">
-                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                    <div className="flex items-center justify-between px-6 py-2 bg-muted border-b border-border flex-shrink-0">
+                      <span className="text-xs font-medium text-foreground">
                         Content (editable — sent on confirm)
                       </span>
                       <div className="flex items-center gap-2">
@@ -473,10 +474,10 @@ export function WebpageResourcePickerCore({
                         <button
                           type="button"
                           onClick={handleCopy}
-                          className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                         >
                           {copied ? (
-                            <Check className="w-3.5 h-3.5 text-green-600 dark:text-green-500" />
+                            <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                           ) : (
                             <Copy className="w-3.5 h-3.5" />
                           )}
@@ -493,7 +494,7 @@ export function WebpageResourcePickerCore({
                         setEditedContent(e.target.value);
                         if (charLimit > 0) setCharLimit(0);
                       }}
-                      className="flex-1 px-6 py-4 bg-white dark:bg-zinc-900 text-xs text-gray-900 dark:text-gray-100 font-mono leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:focus:ring-blue-600 min-h-0"
+                      className="flex-1 px-6 py-4 bg-background text-xs text-foreground font-mono leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:focus:ring-blue-600 min-h-0"
                       placeholder="Edit the scraped content here..."
                     />
                   </TabsContent>
@@ -501,10 +502,10 @@ export function WebpageResourcePickerCore({
               </div>
 
               {/* Character limit slider */}
-              <div className="flex-shrink-0 px-6 py-3 border-t border-border bg-gray-50 dark:bg-zinc-800/50">
+              <div className="flex-shrink-0 px-6 py-3 border-t border-border bg-muted/50">
                 <div className="flex items-center gap-3">
-                  <Scissors className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0 w-16">
+                  <Scissors className="w-3.5 h-3.5 text-muted-foreground/70 flex-shrink-0" />
+                  <span className="text-[10px] text-muted-foreground flex-shrink-0 w-16">
                     Limit chars
                   </span>
                   <Slider
@@ -517,7 +518,7 @@ export function WebpageResourcePickerCore({
                     }}
                     className="flex-1"
                   />
-                  <span className="text-[10px] font-mono text-gray-600 dark:text-gray-300 flex-shrink-0 w-20 text-right">
+                  <span className="text-[10px] font-mono text-foreground flex-shrink-0 w-20 text-right">
                     {effectiveContent.length.toLocaleString()} /{" "}
                     {editedContent.length.toLocaleString()}
                   </span>
@@ -545,10 +546,10 @@ export function WebpageResourcePickerCore({
                     <ExternalLink className="w-3 h-3 flex-shrink-0" />
                     <span className="truncate">{url}</span>
                   </a>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
+                  <span className="text-[10px] text-muted-foreground flex-shrink-0">
                     {effectiveContent.length.toLocaleString()} chars
                   </span>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
+                  <span className="text-[10px] text-muted-foreground flex-shrink-0">
                     {Math.ceil(effectiveContent.length / 1000)} KB
                   </span>
                   {editedContent !== data.textContent && (
@@ -596,20 +597,13 @@ export function WebpageResourcePicker({
   return (
     <div className="flex flex-col max-h-[min(460px,70dvh)]">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 p-0 flex-shrink-0"
-          onClick={onBack}
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
-        <Globe className="w-4 h-4 flex-shrink-0 text-teal-600 dark:text-teal-500" />
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 truncate">
-          Webpage Content
-        </span>
-      </div>
+      <ResourcePickerSubViewHeader
+        title="Webpage Content"
+        onBack={onBack}
+        icon={
+          <Globe className="h-3.5 w-3.5 shrink-0 text-teal-600 dark:text-teal-400" />
+        }
+      />
       <WebpageResourcePickerCore
         onSelect={onSelect}
         onSwitchTo={onSwitchTo}

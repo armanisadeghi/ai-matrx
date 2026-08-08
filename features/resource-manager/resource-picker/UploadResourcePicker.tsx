@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { ChevronLeft, Upload, Image as ImageIcon, File as FileIcon2, Loader2, AlertCircle, CheckCircle2, X, Minimize2 } from "lucide-react";
+import { Upload, Image as ImageIcon, File as FileIcon2, Loader2, AlertCircle, CheckCircle2, X, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { composeUploadFolderPath } from "@/features/files/handler/utils/upload-folder-path";
 import { compressPdfMultipart, materializeAssetResult } from "@/features/files/api/assets";
 import { getFileDetailsByUrl, EnhancedFileDetails } from "@/utils/file-operations/constants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 
 interface UploadedFile {
     /**
@@ -292,24 +293,15 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
     return (
         <div className="flex flex-col max-h-[min(460px,70dvh)]">
             {/* Header */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 flex-shrink-0"
-                    onClick={onBack}
-                    disabled={isProcessing}
-                >
-                    <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Upload className="w-4 h-4 flex-shrink-0 text-gray-600 dark:text-gray-400" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 truncate">
-                    Upload Files
-                </span>
-            </div>
+            <ResourcePickerSubViewHeader
+                title="Upload Files"
+                onBack={onBack}
+                disabled={isProcessing}
+                icon={<Upload className="h-3.5 w-3.5 shrink-0 text-primary" />}
+            />
 
             {/* Content */}
-            <div className="flex-1 flex flex-col p-4 overflow-y-auto gap-3">
+            <div className="flex-1 flex flex-col p-2.5 overflow-y-auto gap-2.5">
                 {/* Hidden file input */}
                 <input
                     ref={fileInputRef}
@@ -346,18 +338,18 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
                                 key={i}
                                 className={`flex items-start gap-2 px-2.5 py-2 rounded-md text-xs border ${
                                     fs.status === "error"
-                                        ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
+                                        ? "border-destructive/20 bg-destructive/10"
                                         : fs.status === "done"
-                                        ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
+                                        ? "border-emerald-500/20 bg-emerald-500/10"
                                         : "bg-muted border-border"
                                 }`}
                             >
                                 <div className="flex-shrink-0 mt-0.5">
                                     {fs.status === "compressing" && <Minimize2 className="w-3.5 h-3.5 text-blue-500 animate-pulse" />}
                                     {fs.status === "uploading" && <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />}
-                                    {fs.status === "done" && <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />}
-                                    {fs.status === "error" && <AlertCircle className="w-3.5 h-3.5 text-red-600" />}
-                                    {fs.status === "pending" && <FileIcon2 className="w-3.5 h-3.5 text-gray-400" />}
+                                    {fs.status === "done" && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+                                    {fs.status === "error" && <AlertCircle className="w-3.5 h-3.5 text-destructive" />}
+                                    {fs.status === "pending" && <FileIcon2 className="w-3.5 h-3.5 text-muted-foreground" />}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between gap-2">
@@ -374,7 +366,7 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
                                         <div className="text-muted-foreground mt-0.5">{fs.compressionNote}</div>
                                     )}
                                     {fs.status === "error" && fs.errorMessage && (
-                                        <div className="text-red-700 dark:text-red-400 mt-0.5">{fs.errorMessage}</div>
+                                        <div className="text-destructive mt-0.5">{fs.errorMessage}</div>
                                     )}
                                 </div>
                             </div>
@@ -395,18 +387,18 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
                         onDragLeave={handleDragLeave}
                         className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-4 transition-colors ${
                             isDragging
-                                ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-                                : "border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600"
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover:border-muted-foreground/40"
                         }`}
                     >
-                        <div className="flex gap-4 mb-4">
-                            <ImageIcon className="w-8 h-8 text-gray-400" />
-                            <FileIcon2 className="w-8 h-8 text-gray-400" />
+                        <div className="flex gap-3 mb-3">
+                            <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                            <FileIcon2 className="w-8 h-8 text-muted-foreground" />
                         </div>
-                        <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-2">
+                        <h3 className="text-sm font-medium text-foreground mb-1">
                             Drop files here
                         </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 text-center">
+                        <p className="text-xs text-muted-foreground mb-3 text-center">
                             or click the button below to browse
                         </p>
                         <Button onClick={openFilePicker} className="h-8" disabled={isProcessing || isLoading}>
@@ -425,7 +417,7 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
                 )}
 
                 {/* Info */}
-                <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-md flex-shrink-0">
+                <div className="bg-blue-500/10 p-2.5 rounded-md flex-shrink-0">
                     <h4 className="text-xs font-medium text-blue-800 dark:text-blue-200 mb-1">
                         Supported Files
                     </h4>

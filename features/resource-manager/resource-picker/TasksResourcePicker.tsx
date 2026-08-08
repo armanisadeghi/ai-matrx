@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from "react";
 import { isOpenStatus } from "@/features/tasks/constants/status";
 import {
-  ChevronLeft,
   ChevronRight,
   Search,
   Loader2,
@@ -20,6 +19,7 @@ import { useProjectsWithTasks } from "@/features/tasks/hooks/useTaskManager";
 import type { ProjectWithTasks, DatabaseTask } from "@/features/tasks/types";
 import { filterAndSortBySearch, matchesSearch } from "@/utils/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";
+import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 
 interface TasksResourcePickerProps {
   onBack: () => void;
@@ -96,14 +96,14 @@ export function TasksResourcePicker({
   // Get priority badge color
   const getPriorityColor = (priority?: "low" | "medium" | "high" | null) => {
     if (!priority)
-      return "bg-gray-200 dark:bg-zinc-700 text-gray-600 dark:text-gray-400";
+      return "bg-muted text-muted-foreground";
     switch (priority) {
       case "high":
-        return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400";
+        return "bg-destructive/15 text-destructive";
       case "medium":
-        return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400";
+        return "bg-amber-500/15 text-amber-600 dark:text-amber-400";
       case "low":
-        return "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400";
+        return "bg-blue-500/15 text-blue-600 dark:text-blue-400";
     }
   };
 
@@ -153,93 +153,81 @@ export function TasksResourcePicker({
   return (
     <div className="flex flex-col max-h-[min(460px,70dvh)]">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 p-0 flex-shrink-0"
-          onClick={selectedProject ? () => setSelectedProject(null) : onBack}
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 truncate">
-          {selectedProject ? selectedProject.name : "Tasks"}
-          {selectedProject && selectedTaskIds.size > 0 && (
-            <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
-              ({selectedTaskIds.size} selected)
-            </span>
-          )}
-        </span>
-        {selectedProject && (
-          <>
-            <label className="flex items-center gap-1 cursor-pointer">
-              <Checkbox
-                checked={showCompleted}
-                onCheckedChange={(checked) =>
-                  setShowCompleted(checked === true)
-                }
-                className="h-3 w-3"
-              />
-              <span className="text-[10px] text-gray-600 dark:text-gray-400">
-                Completed
-              </span>
-            </label>
-            {selectedTaskIds.size > 0 ? (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2 text-[10px] text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  onClick={clearAllSelections}
-                >
-                  Clear
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2 text-[10px] text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                  onClick={addSelectedTasks}
-                >
-                  Add ({selectedTaskIds.size})
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2 text-[10px] text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  onClick={selectAllTasks}
-                >
-                  Select All
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2 text-[10px] text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                  onClick={() =>
-                    onSelect({ type: "project", data: selectedProject })
+      <ResourcePickerSubViewHeader
+        title={selectedProject ? selectedProject.name : "Tasks"}
+        onBack={selectedProject ? () => setSelectedProject(null) : onBack}
+        actions={
+          selectedProject ? (
+            <>
+              <label className="flex shrink-0 items-center gap-1 cursor-pointer">
+                <Checkbox
+                  checked={showCompleted}
+                  onCheckedChange={(checked) =>
+                    setShowCompleted(checked === true)
                   }
-                >
-                  Add Project
-                </Button>
-              </>
-            )}
-          </>
-        )}
-      </div>
+                  className="h-3 w-3"
+                />
+                <span className="text-[10px] text-muted-foreground">
+                  Completed
+                </span>
+              </label>
+              {selectedTaskIds.size > 0 ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-1.5 text-[10px] text-muted-foreground hover:bg-muted/60"
+                    onClick={clearAllSelections}
+                  >
+                    Clear
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-1.5 text-[10px] text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
+                    onClick={addSelectedTasks}
+                  >
+                    Add ({selectedTaskIds.size})
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-1.5 text-[10px] text-muted-foreground hover:bg-muted/60"
+                    onClick={selectAllTasks}
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-1.5 text-[10px] text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
+                    onClick={() =>
+                      onSelect({ type: "project", data: selectedProject })
+                    }
+                  >
+                    Add Project
+                  </Button>
+                </>
+              )}
+            </>
+          ) : undefined
+        }
+      />
 
       {/* Search */}
-      <div className="px-2 py-2 border-b border-border">
+      <div className="px-2 py-1.5 border-b border-border">
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
             ref={searchInputRef}
             type="text"
             placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-7 text-xs pl-7 pr-2 bg-background border-gray-300 dark:border-gray-700"
+            className="h-7 text-xs pl-7 pr-2 bg-background border-border"
           />
         </div>
       </div>
@@ -248,13 +236,13 @@ export function TasksResourcePicker({
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>
         ) : selectedProject ? (
           // Show tasks in project
           <div className="p-1">
             {filteredTasks.length === 0 ? (
-              <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">
+              <div className="text-xs text-muted-foreground text-center py-8">
                 {searchQuery ? "No tasks found" : "No tasks in this project"}
               </div>
             ) : (
@@ -273,11 +261,11 @@ export function TasksResourcePicker({
                       key={task.id}
                       className={`rounded overflow-hidden border transition-all ${
                         isSelected
-                          ? "border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/20"
-                          : "border-transparent hover:border-gray-200 dark:hover:border-gray-700"
+                          ? "border-primary/40 bg-primary/5"
+                          : "border-transparent hover:border-border"
                       }`}
                     >
-                      <div className="flex items-start gap-2 px-2 py-2">
+                      <div className="flex items-start gap-2 px-2 py-1.5">
                         {/* Checkbox for multi-select */}
                         <Checkbox
                           checked={isSelected}
@@ -289,30 +277,30 @@ export function TasksResourcePicker({
                         {/* Task content - clickable to immediately add */}
                         <button
                           onClick={() => onSelect({ type: "task", data: task })}
-                          className="flex-1 text-left hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors rounded px-1 py-0.5 -mx-1 -my-0.5 min-w-0"
+                          className="flex-1 text-left hover:bg-muted/60 transition-colors rounded px-1 py-0.5 -mx-1 -my-0.5 min-w-0"
                         >
                           <div className="flex items-center gap-1.5 mb-0.5">
                             <span
                               className={`text-xs font-medium truncate ${
                                 isCompleted
-                                  ? "text-gray-500 dark:text-gray-400"
-                                  : "text-gray-900 dark:text-gray-100"
+                                  ? "text-muted-foreground"
+                                  : "text-foreground"
                               }`}
                             >
                               {task.title}
                             </span>
                             <span
-                              className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${
+                              className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${
                                 isCompleted
-                                  ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                                  : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                                  : "bg-blue-500/15 text-blue-600 dark:text-blue-400"
                               }`}
                             >
                               {task.status}
                             </span>
                           </div>
                           {!isExpanded && task.description && (
-                            <div className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1 leading-tight mb-1">
+                            <div className="text-[10px] text-muted-foreground line-clamp-1 leading-tight mb-1">
                               {task.description}
                             </div>
                           )}
@@ -320,17 +308,17 @@ export function TasksResourcePicker({
                             <div className="flex gap-1 flex-wrap items-center">
                               {task.priority && (
                                 <span
-                                  className={`text-[9px] px-1.5 py-0.5 rounded-full ${getPriorityColor(task.priority)}`}
+                                  className={`text-[10px] px-1.5 py-0.5 rounded-full ${getPriorityColor(task.priority)}`}
                                 >
                                   {task.priority}
                                 </span>
                               )}
                               {task.due_date && (
                                 <span
-                                  className={`text-[9px] px-1.5 py-0.5 rounded-full ${
+                                  className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                                     isOverdue
-                                      ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
-                                      : "bg-gray-200 dark:bg-zinc-700 text-gray-600 dark:text-gray-400"
+                                      ? "bg-destructive/15 text-destructive"
+                                      : "bg-muted text-muted-foreground"
                                   }`}
                                 >
                                   {new Date(task.due_date).toLocaleDateString(
@@ -349,11 +337,11 @@ export function TasksResourcePicker({
                             e.stopPropagation();
                             setExpandedTaskId(isExpanded ? null : task.id);
                           }}
-                          className="flex-shrink-0 p-1 -mr-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-colors"
+                          className="flex-shrink-0 p-1 -mr-1 hover:bg-muted/60 rounded transition-colors"
                           title={isExpanded ? "Hide details" : "Show details"}
                         >
                           <ChevronDown
-                            className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                            className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`}
                           />
                         </button>
                       </div>
@@ -361,8 +349,8 @@ export function TasksResourcePicker({
                       {isExpanded && (
                         <div className="px-2 pb-2 pl-9 space-y-2 bg-background/50">
                           {task.description && (
-                            <div className="max-h-24 overflow-y-auto scrollbar-thin rounded bg-white dark:bg-zinc-900 p-2 border-border">
-                              <div className="text-[11px] text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                            <div className="max-h-24 overflow-y-auto scrollbar-thin rounded bg-background p-2 border-border">
+                              <div className="text-[11px] text-foreground whitespace-pre-wrap leading-relaxed">
                                 {task.description}
                               </div>
                             </div>
@@ -371,17 +359,17 @@ export function TasksResourcePicker({
                           <div className="flex gap-1 flex-wrap items-center">
                             {task.priority && (
                               <span
-                                className={`text-[9px] px-1.5 py-0.5 rounded-full ${getPriorityColor(task.priority)}`}
+                                className={`text-[10px] px-1.5 py-0.5 rounded-full ${getPriorityColor(task.priority)}`}
                               >
                                 {task.priority} priority
                               </span>
                             )}
                             {task.due_date && (
                               <span
-                                className={`text-[9px] px-1.5 py-0.5 rounded-full ${
+                                className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                                   isOverdue
-                                    ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
-                                    : "bg-gray-200 dark:bg-zinc-700 text-gray-600 dark:text-gray-400"
+                                    ? "bg-destructive/15 text-destructive"
+                                    : "bg-muted text-muted-foreground"
                                 }`}
                               >
                                 Due:{" "}
@@ -408,7 +396,7 @@ export function TasksResourcePicker({
           // Show projects
           <div className="p-1">
             {filteredProjects.length === 0 ? (
-              <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">
+              <div className="text-xs text-muted-foreground text-center py-8">
                 {searchQuery ? "No projects found" : "No projects yet"}
               </div>
             ) : (
@@ -420,21 +408,21 @@ export function TasksResourcePicker({
                     <button
                       key={project.id}
                       onClick={() => setSelectedProject(project)}
-                      className="w-full flex items-center gap-2 px-2 py-2 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors group"
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/60 transition-colors group"
                     >
                       <FolderKanban className="w-4 h-4 flex-shrink-0 text-blue-600 dark:text-blue-500" />
                       <div className="flex-1 text-left min-w-0">
-                        <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+                        <div className="text-xs font-medium text-foreground truncate">
                           {project.name}
                         </div>
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                        <div className="text-[10px] text-muted-foreground">
                           {incomplete > 0
                             ? `${incomplete} pending`
                             : "All complete"}{" "}
                           · {total} total
                         </div>
                       </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 flex-shrink-0" />
+                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/70 group-hover:text-foreground flex-shrink-0" />
                     </button>
                   );
                 })}

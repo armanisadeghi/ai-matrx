@@ -34,12 +34,13 @@ Standing rulings that govern any future change here:
 
 ## Remaining work
 
-1. **Shared-component tabs** — spun off as chips 2026-08-08 (Arman launches them as focused sessions): ResourcePickerMenu densify (Attach + `+` menu); RunToolPicker + RunSkillPicker dense pass; Chat Options surface-values/context-menu/Pro-input basics audit. If a chip was dismissed instead of run, the lane is still open: densify the shared component itself, never fork a variant.
+1. **Shared-component tabs** — spun off as chips 2026-08-08 (Arman launches them as focused sessions): RunToolPicker + RunSkillPicker dense pass; Chat Options surface-values/context-menu/Pro-input basics audit. If a chip was dismissed instead of run, the lane is still open: densify the shared component itself, never fork a variant. (ResourcePickerMenu densify: DONE — see Done.)
 2. **Document tab** — `DocumentsWorkspace` (also a standalone panel) has had no dense pass; same rule: densify the component, all consumers benefit.
 3. **Overrides rows** — `settings-management/controls/SettingControlInput.tsx` is shared with the agent builder; only touch with a global densify.
 4. **Settings tab regrouping** — content was deliberately only condensed, never reorganized ("don't move or change anything yet"). Do it WITH Arman in-session, not solo.
 
 ## Done
 
+- ResourcePickerMenu + all sub-pickers densified (2026-08-08): one shared `ResourcePickerSubViewHeader` (h-8, text-xs, icon/actions/disabled) replaced every hand-rolled `px-3 py-2 text-sm` header; all hardcoded gray/zinc/solid-brand colors → semantic tokens (works in dark mode); inputs/buttons h-8→h-7; rows py-2→py-1.5; text-[9px]→text-[10px]. Verified in `+` menu (desktop light+dark) and mobile 375px bottom-sheet Attach tab. Shared component — Attach tab, `+` menu, ResourcePickerWindow, ConversationInput, builder all benefit.
 - Dense pass phases 1–2 shipped — commits `d3b16214e`, `66684ebe8`, `c8ff0b253`; full detail in `features/agents/components/chat/FEATURE.md`. Includes: label rail + borderless triggers, Context → `ActiveContextTree`, Overrides always-expanded, Memory → `AgentMemoryInlinePanel`, Sandbox one-line bound-state strip, mobile bottom sheet, Quickset default everywhere, Preferences tab deleted (duplicate toggle), Creator dense rows, Shapes chips full-width flow.
 - Shapes chips kept (Arman's 2026-08-08 direction embraces content-IR shapes; `/shapes` is now a first-class route) — layout fixed, ownership stays with the content-IR campaign.

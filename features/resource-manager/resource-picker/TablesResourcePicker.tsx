@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import {
-  ChevronLeft,
   ChevronRight,
   Search,
   Loader2,
@@ -11,7 +10,6 @@ import {
   Eye,
   X,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/utils/supabase/client";
 import {
@@ -23,6 +21,7 @@ import {
 import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";
+import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 
 // Types
 interface UserTable {
@@ -361,33 +360,26 @@ export function TablesResourcePicker({
   return (
     <div className="flex flex-col max-h-[min(460px,70dvh)]">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 p-0 flex-shrink-0"
-          onClick={handleBackNavigation}
-          disabled={loadingDetails}
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
-        <Table2 className="w-4 h-4 flex-shrink-0 text-gray-600 dark:text-gray-400" />
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 truncate">
-          {getHeaderTitle()}
-        </span>
-      </div>
+      <ResourcePickerSubViewHeader
+        title={getHeaderTitle()}
+        onBack={handleBackNavigation}
+        disabled={loadingDetails}
+        icon={
+          <Table2 className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" />
+        }
+      />
 
       {/* Search */}
-      <div className="px-2 py-2 border-b border-border">
+      <div className="px-2 py-1.5 border-b border-border">
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
             ref={searchInputRef}
             type="text"
             placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-7 text-xs pl-7 pr-2 bg-background border-gray-300 dark:border-gray-700"
+            className="h-7 text-xs pl-7 pr-2 bg-background border-border"
             disabled={loadingDetails}
           />
         </div>
@@ -397,17 +389,17 @@ export function TablesResourcePicker({
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>
         ) : error ? (
-          <div className="text-xs text-red-600 dark:text-red-400 text-center py-8">
+          <div className="text-xs text-destructive text-center py-8">
             {error}
           </div>
         ) : viewMode === "tables" ? (
           // Show tables list
           <div className="p-1">
             {filteredTables.length === 0 ? (
-              <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">
+              <div className="text-xs text-muted-foreground text-center py-8">
                 {searchQuery ? "No tables found" : "No tables yet"}
               </div>
             ) : (
@@ -416,20 +408,20 @@ export function TablesResourcePicker({
                   <button
                     key={table.id}
                     onClick={() => handleTableSelect(table)}
-                    className="w-full flex items-center gap-2 px-2 py-2 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors group"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/60 transition-colors group"
                   >
-                    <Table2 className="w-4 h-4 flex-shrink-0 text-green-600 dark:text-green-500" />
+                    <Table2 className="w-4 h-4 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
                     <div className="flex-1 text-left min-w-0">
-                      <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+                      <div className="text-xs font-medium text-foreground truncate">
                         {table.table_name}
                       </div>
                       {table.description && (
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                        <div className="text-[10px] text-muted-foreground truncate">
                           {table.description}
                         </div>
                       )}
                     </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 flex-shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/70 group-hover:text-foreground flex-shrink-0" />
                   </button>
                 ))}
               </div>
@@ -446,7 +438,7 @@ export function TablesResourcePicker({
                     setPreviewTableId(selectedTable.id);
                     setShowPreviewModal(true);
                   }}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-950/50 hover:border-blue-300 dark:hover:border-blue-700 text-blue-700 dark:text-blue-400 transition-colors"
+                  className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md border border-blue-500/20 bg-blue-500/10 hover:bg-blue-500/15 text-blue-600 dark:text-blue-400 transition-colors"
                 >
                   <Eye className="w-4 h-4 flex-shrink-0" />
                   <span className="text-xs font-medium">
@@ -456,54 +448,54 @@ export function TablesResourcePicker({
 
                 {/* Selection type options */}
                 <div className="space-y-0.5">
-                  <div className="text-[10px] font-medium text-gray-600 dark:text-gray-400 px-1 mb-1">
+                  <div className="text-[10px] font-medium text-muted-foreground px-1 mb-1">
                     Select Reference Type:
                   </div>
                   <button
                     onClick={() => handleSelectionTypeSelect("table")}
                     disabled={loadingDetails}
-                    className="w-full text-left px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                    className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-colors disabled:opacity-50"
                   >
-                    <div className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                    <div className="text-xs font-medium text-foreground">
                       Full Table
                     </div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                    <div className="text-[10px] text-muted-foreground">
                       Reference all rows and columns
                     </div>
                   </button>
                   <button
                     onClick={() => handleSelectionTypeSelect("row")}
                     disabled={loadingDetails}
-                    className="w-full text-left px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                    className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-colors disabled:opacity-50"
                   >
-                    <div className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                    <div className="text-xs font-medium text-foreground">
                       Single Row
                     </div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                    <div className="text-[10px] text-muted-foreground">
                       Reference one specific row
                     </div>
                   </button>
                   <button
                     onClick={() => handleSelectionTypeSelect("column")}
                     disabled={loadingDetails}
-                    className="w-full text-left px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                    className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-colors disabled:opacity-50"
                   >
-                    <div className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                    <div className="text-xs font-medium text-foreground">
                       Full Column
                     </div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                    <div className="text-[10px] text-muted-foreground">
                       Reference all values in one column
                     </div>
                   </button>
                   <button
                     onClick={() => handleSelectionTypeSelect("cell")}
                     disabled={loadingDetails}
-                    className="w-full text-left px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                    className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-colors disabled:opacity-50"
                   >
-                    <div className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                    <div className="text-xs font-medium text-foreground">
                       Single Cell
                     </div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                    <div className="text-[10px] text-muted-foreground">
                       Reference one specific cell value
                     </div>
                   </button>
@@ -511,7 +503,7 @@ export function TablesResourcePicker({
 
                 {loadingDetails && (
                   <div className="flex items-center justify-center py-4">
-                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                   </div>
                 )}
               </div>
@@ -522,10 +514,10 @@ export function TablesResourcePicker({
           <div className="p-1">
             {loadingDetails ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               </div>
             ) : filteredRows.length === 0 ? (
-              <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">
+              <div className="text-xs text-muted-foreground text-center py-8">
                 {searchQuery ? "No rows found" : "No rows in table"}
               </div>
             ) : (
@@ -534,19 +526,19 @@ export function TablesResourcePicker({
                   <button
                     key={row.id}
                     onClick={() => handleRowSelect(row)}
-                    className="w-full text-left px-2 py-2 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                    className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <CheckSquare className="w-3.5 h-3.5 flex-shrink-0 text-gray-500" />
+                      <CheckSquare className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+                        <div className="text-xs font-medium text-foreground truncate">
                           {getRowDisplayValue(row)}
                         </div>
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                        <div className="text-[10px] text-muted-foreground truncate">
                           {Object.keys(row.data).length} fields
                         </div>
                       </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/70 flex-shrink-0" />
                     </div>
                   </button>
                 ))}
@@ -558,10 +550,10 @@ export function TablesResourcePicker({
           <div className="p-1">
             {loadingDetails ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               </div>
             ) : filteredColumns.length === 0 ? (
-              <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">
+              <div className="text-xs text-muted-foreground text-center py-8">
                 {searchQuery ? "No columns found" : "No columns in table"}
               </div>
             ) : (
@@ -570,20 +562,20 @@ export function TablesResourcePicker({
                   <button
                     key={field.id}
                     onClick={() => handleColumnSelect(field)}
-                    className="w-full text-left px-2 py-2 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                    className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <CheckSquare className="w-3.5 h-3.5 flex-shrink-0 text-gray-500" />
+                      <CheckSquare className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+                        <div className="text-xs font-medium text-foreground truncate">
                           {field.display_name}
                         </div>
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                        <div className="text-[10px] text-muted-foreground">
                           {field.data_type}
                           {field.is_required && " · Required"}
                         </div>
                       </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/70 flex-shrink-0" />
                     </div>
                   </button>
                 ))}

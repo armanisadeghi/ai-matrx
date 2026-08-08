@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ChevronLeft, Search, Loader2, Notebook } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search, Loader2, Notebook } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { listAccessibleWorkbooks } from "@/features/data-tables/workbook-service";
 import { isServiceFailure, type Workbook } from "@/features/data-tables/types";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";
+import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 
 interface WorkbooksResourcePickerProps {
   onBack: () => void;
@@ -54,22 +54,10 @@ export function WorkbooksResourcePicker({
   return (
     <div className="flex flex-col max-h-[min(460px,70dvh)]">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 p-0 flex-shrink-0"
-          onClick={onBack}
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
-        <span className="text-sm font-medium text-foreground flex-1 truncate">
-          Workbooks
-        </span>
-      </div>
+      <ResourcePickerSubViewHeader title="Workbooks" onBack={onBack} />
 
       {/* Search */}
-      <div className="px-2 py-2 border-b border-border">
+      <div className="px-2 py-1.5 border-b border-border">
         <div className="relative">
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input

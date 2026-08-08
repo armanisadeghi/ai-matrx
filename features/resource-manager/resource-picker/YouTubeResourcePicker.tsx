@@ -5,6 +5,7 @@ import { ChevronLeft, Loader2, AlertCircle, ExternalLink } from "lucide-react";
 import { Youtube } from "@/components/icons/brand-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 
 interface YouTubeResourcePickerProps {
     onBack: () => void;
@@ -204,21 +205,16 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
     return (
         <div className="flex flex-col max-h-[min(460px,70dvh)]">
             {/* Header */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 flex-shrink-0"
-                    onClick={onBack}
-                >
-                    <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Youtube className="w-4 h-4 flex-shrink-0 text-red-600 dark:text-red-500" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">YouTube Video</span>
-            </div>
+            <ResourcePickerSubViewHeader
+                title="YouTube Video"
+                onBack={onBack}
+                icon={
+                    <Youtube className="h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" />
+                }
+            />
 
             {/* Content */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
+            <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2">
                 <div className="space-y-2">
                     <div className="flex gap-2">
                         <Input
@@ -229,14 +225,14 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
                             onKeyPress={handleKeyPress}
                             onPaste={handlePaste}
                             placeholder="https://www.youtube.com/watch?v=..."
-                            className="flex-1 text-xs h-8"
+                            className="flex-1 text-xs h-7"
                             disabled={isValidating}
                         />
                         <Button
                             size="sm"
                             onClick={handleValidate}
                             disabled={isValidating || !url.trim()}
-                            className="h-8 w-8 p-0"
+                            className="h-7 w-7 p-0"
                             variant="ghost"
                         >
                             {isValidating ? (
@@ -246,16 +242,16 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
                             )}
                         </Button>
                     </div>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                    <p className="text-[10px] text-muted-foreground">
                         Paste a YouTube video URL or video ID
                     </p>
                 </div>
 
                 {/* Error */}
                 {error && (
-                    <div className="flex items-start gap-2 p-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded">
-                        <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                        <p className="text-xs text-red-700 dark:text-red-400">{error}</p>
+                    <div className="flex items-start gap-2 p-2 border border-destructive/20 bg-destructive/10 rounded">
+                        <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+                        <p className="text-xs text-destructive">{error}</p>
                     </div>
                 )}
 
@@ -263,7 +259,7 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
                 {videoPreview && (
                     <div className="border-border rounded-lg overflow-hidden">
                         {/* Thumbnail - Smaller */}
-                        <div className="relative h-32 bg-gray-100 dark:bg-gray-900">
+                        <div className="relative h-32 bg-muted">
                             <img
                                 src={videoPreview.thumbnail}
                                 alt={videoPreview.title}
@@ -277,12 +273,12 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
                         </div>
 
                         {/* Info - Compact */}
-                        <div className="p-2 space-y-1 bg-white dark:bg-zinc-900">
-                            <h3 className="text-xs font-medium text-gray-900 dark:text-gray-100 line-clamp-2">
+                        <div className="p-2 space-y-1 bg-background">
+                            <h3 className="text-xs font-medium text-foreground line-clamp-2">
                                 {videoPreview.title}
                             </h3>
                             {videoPreview.channelName && (
-                                <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                <p className="text-[10px] text-muted-foreground">
                                     {videoPreview.channelName}
                                 </p>
                             )}
@@ -301,8 +297,8 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
 
                 {/* Help Text */}
                 {!videoPreview && !error && (
-                    <div className="p-2.5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-                        <p className="text-xs text-blue-700 dark:text-blue-400">
+                    <div className="p-2.5 border border-blue-500/20 bg-blue-500/10 rounded-lg">
+                        <p className="text-xs text-blue-600 dark:text-blue-400">
                             <strong>Supported formats:</strong>
                         </p>
                         <ul className="text-xs text-blue-600 dark:text-blue-400 mt-1 space-y-0.5 ml-3">
@@ -317,7 +313,7 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
 
             {/* Footer with Add Button - Fixed at bottom */}
             {videoPreview && (
-                <div className="border-t border-border p-3">
+                <div className="border-t border-border p-2">
                     <Button
                         onClick={handleSelect}
                         className="w-full"
