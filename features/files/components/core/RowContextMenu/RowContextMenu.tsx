@@ -43,6 +43,13 @@ import type {
   ContextMenuExtraItem,
   ContextMenuExtraSection,
 } from "@/features/context-menu-v3/types";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { captureDomSelection } from "@/features/context-menu-v3/utils/selection-tracking";
+import {
+  buildFileRowOverrides,
+  buildFolderRowOverrides,
+} from "@/features/files/agent-context/buildFilesContextData";
+import { useFilesRowContextData } from "@/features/files/agent-context/FilesSurfaceScopeContext";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/components/ui/use-toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -103,6 +110,7 @@ export function FileRowContextMenu({
   const file = filesById[fileId];
   const actions = useFileActions(fileId);
   const router = useRouter();
+  const buildRowContextData = useFilesRowContextData();
 
   const cmd = cmdKey();
 
@@ -199,6 +207,20 @@ export function FileRowContextMenu({
     return <>{children}</>;
   }
 
+  // Full surface scope: page-level browser state (section, filters, visible
+  // rows, uploads — every declared value) with the active_file_* slots
+  // re-targeted at THIS row. Plain functions (never useCallback) — the menu
+  // calls getApplicationScope at open time so the scope is click-fresh.
+  const rowContextData = () => buildRowContextData(buildFileRowOverrides(file));
+  const getApplicationScope = () => {
+    const captured = captureDomSelection();
+    return buildApplicationScopeFromMenuContext({
+      selectedText: captured.text,
+      selectionRange: null,
+      contextData: rowContextData(),
+    });
+  };
+
   // Trash mode (Wave A lifecycle): a trashed row offers exactly two actions —
   // Restore, or the ONLY hard-delete path in the system (purge from trash).
   if (file.deletedAt) {
@@ -232,12 +254,8 @@ export function FileRowContextMenu({
       <NonEditableContextMenu
         sourceFeature="files"
         surfaceName={FILES_SURFACE}
-        contextData={{
-          content: file.fileName,
-          active_file_id: fileId,
-          active_file_name: file.fileName,
-          active_file_mime_type: file.mimeType ?? "",
-        }}
+        contextData={rowContextData()}
+        getApplicationScope={getApplicationScope}
         entity={{
           type: "file",
           id: fileId,
@@ -407,12 +425,8 @@ export function FileRowContextMenu({
     <NonEditableContextMenu
       sourceFeature="files"
       surfaceName={FILES_SURFACE}
-      contextData={{
-        content: file.fileName,
-        active_file_id: fileId,
-        active_file_name: file.fileName,
-        active_file_mime_type: file.mimeType ?? "",
-      }}
+      contextData={rowContextData()}
+      getApplicationScope={getApplicationScope}
       entity={{
         type: "file",
         id: fileId,
@@ -449,6 +463,7 @@ export function FolderRowContextMenu({
   const folder = useAppSelector((s) => selectFolderById(s, folderId));
   const folderActions = useFolderActions(folderId);
   const foldersByIdAll = useAppSelector((s) => s.cloudFiles.foldersById);
+  const buildRowContextData = useFilesRowContextData();
   const { clipboard } = useFileClipboard();
   const [shareOpen, setShareOpen] = useState(false);
 
@@ -557,6 +572,19 @@ export function FolderRowContextMenu({
     return <>{children}</>;
   }
 
+  // Full surface scope with active_folder_* re-targeted at THIS row — see the
+  // file-row twin above for the pattern rationale.
+  const rowContextData = () =>
+    buildRowContextData(buildFolderRowOverrides(folder));
+  const getApplicationScope = () => {
+    const captured = captureDomSelection();
+    return buildApplicationScopeFromMenuContext({
+      selectedText: captured.text,
+      selectionRange: null,
+      contextData: rowContextData(),
+    });
+  };
+
   // Trash mode (Wave A lifecycle) — mirror of the file trash menu.
   if (folder.deletedAt) {
     const trashItems: ContextMenuExtraItem[] = [
@@ -589,10 +617,8 @@ export function FolderRowContextMenu({
       <NonEditableContextMenu
         sourceFeature="files"
         surfaceName={FILES_SURFACE}
-        contextData={{
-          content: folder.folderName,
-          active_folder_id: folderId,
-        }}
+        contextData={rowContextData()}
+        getApplicationScope={getApplicationScope}
         extraSections={[
           {
             id: "folder-trash-actions",
@@ -732,10 +758,8 @@ export function FolderRowContextMenu({
       <NonEditableContextMenu
         sourceFeature="files"
         surfaceName={FILES_SURFACE}
-        contextData={{
-          content: folder.folderName,
-          active_folder_id: folderId,
-        }}
+        contextData={rowContextData()}
+        getApplicationScope={getApplicationScope}
         extraSections={extraSections}
         enableFloatingIcon={false}
       >

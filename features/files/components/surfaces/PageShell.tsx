@@ -122,6 +122,7 @@ import {
   buildFilesContextData,
   FILES_CONTEXT_MENU_PROPS,
 } from "@/features/files/agent-context/buildFilesContextData";
+import { FilesSurfaceScopeProvider } from "@/features/files/agent-context/FilesSurfaceScopeContext";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { captureDomSelection } from "@/features/context-menu-v3/utils/selection-tracking";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -775,6 +776,10 @@ function PageShellDesktop({
       getScope={getFilesApplicationScope}
       isEditable={false}
     >
+      {/* Share the page-level scope with the row context menus so every
+       * declared surface value reaches a right-clicked row (stable getter —
+       * rows never re-render from page-state churn). */}
+      <FilesSurfaceScopeProvider contextData={filesContextData}>
       <RouteHeader
         left={
           <span className="truncate px-1.5 text-sm font-medium text-foreground">
@@ -1077,6 +1082,7 @@ function PageShellDesktop({
           ) : null}
         </DragOverlay>
       </DndContext>
+      </FilesSurfaceScopeProvider>
     </SurfaceRuntimeProvider>
   );
 }

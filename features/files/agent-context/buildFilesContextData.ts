@@ -147,6 +147,54 @@ function toBreadcrumb(path: string | null | undefined): string[] {
 }
 
 /**
+ * Row-menu overrides: re-target the `active_file_*` slots at the file row the
+ * user right-clicked. Spread OVER the page-level scope so a row menu carries
+ * the full browser context (section, filters, visible rows, uploads) while
+ * `active_file` means "the file this menu is about". Same durable-ref guard
+ * as the page scope — never a signed URL.
+ */
+export function buildFileRowOverrides(
+  file: CloudFileRecord,
+): Record<string, unknown> {
+  const summary: FilesFileSummary = {
+    ...toFileSummary(file),
+    version: file.currentVersion,
+    created_at: file.createdAt,
+    public_url: durablePublicUrl(file) ?? null,
+  };
+  return {
+    content: file.fileName,
+    active_file_id: file.id,
+    active_file_name: file.fileName,
+    active_file_path: file.filePath,
+    active_file_mime_type: file.mimeType ?? "",
+    active_file_size: file.fileSize ?? undefined,
+    active_file_visibility: file.visibility,
+    active_file_updated_at: file.updatedAt,
+    active_file_created_at: file.createdAt,
+    active_file_version: file.currentVersion,
+    active_file_public_url: durablePublicUrl(file),
+    active_file_summary: summary,
+    focused_row_id: file.id,
+  };
+}
+
+/** Folder-row twin of `buildFileRowOverrides` — re-targets `active_folder_*`. */
+export function buildFolderRowOverrides(
+  folder: CloudFolderRecord,
+): Record<string, unknown> {
+  return {
+    content: folder.folderName,
+    active_folder_id: folder.id,
+    active_folder_name: folder.folderName,
+    active_folder_path: folder.folderPath,
+    active_folder_breadcrumb: toBreadcrumb(folder.folderPath),
+    active_folder_visibility: folder.visibility,
+    focused_row_id: folder.id,
+  };
+}
+
+/**
  * Canonical `contextData` for `matrx-user/files`.
  *
  * PURE: maps live Files-browser state → `createFilesScope(...)`. Demo and
