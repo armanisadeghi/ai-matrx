@@ -8,8 +8,8 @@
  * traffic-class system sits one route away is the exact failure this rung
  * kills." This is the fix. Drop `<GscClassBar siteId=… />` on any surface and
  * it renders the money/educational/brand/mismatch split with period-over-period
- * deltas, every segment drilling into the existing `GscDrilldownWindow`, and a
- * link back to the full dashboard.
+ * deltas, every segment opening the Quality insight (which decomposes by
+ * class) on the full dashboard.
  *
  * Rung 1 (table stakes) is non-negotiable here and is why this component owns
  * the labelling rather than its hosts:
@@ -25,9 +25,9 @@
  */
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowUpRight, Search } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
-import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { formatGscWindow } from "@/features/marketing/search-console/lib/format";
 import { buildSearchConsoleUrl } from "@/features/marketing/search-console/lib/url-state";
 import {
@@ -71,7 +71,11 @@ function DeltaText({ entry }: { entry: GscClassRollupEntry }) {
       )}
     >
       {up ? "+" : ""}
-      {(entry.deltaPct * 100).toFixed(0)}%
+      {/* -0% reads as a decline that is not there; round toward zero first. */}
+      {(Math.round(entry.deltaPct * 100) === 0
+        ? 0
+        : Math.round(entry.deltaPct * 100))}
+      %
     </span>
   );
 }
@@ -85,7 +89,7 @@ export function GscClassBar({
   className,
 }: GscClassBarProps) {
   const { rollup, isLoading, error } = useGscClassRollup(siteId, range);
-  const openDrilldown = useOpenGscDrilldownWindow();
+  const router = useRouter();
 
   if (!siteId) return null;
 
@@ -143,17 +147,6 @@ export function GscClassBar({
     );
   }
 
-  const drill = (entry: GscClassRollupEntry) => {
-    openDrilldown({
-      siteId,
-      siteName: siteName ?? null,
-      dimension: "query",
-      range,
-      compare: "prev",
-      title: `${entry.label} queries${siteName ? ` — ${siteName}` : ""}`,
-    });
-  };
-
   const dashboardHref = buildSearchConsoleUrl({
     siteId,
     tab: "insights",
@@ -166,7 +159,18 @@ export function GscClassBar({
     insight: "quality",
   });
 
-  const visible = rollup.classes.filter((c) => c.clicks > 0);
+  // The drilldown panel has NO traffic-class filter (GscFilters carries no
+  // class key), so opening it per class would show every query under a
+  // class-specific heading — and its instanceId ignores the title, so all five
+  // segments would collapse into one mislabeled window. Send the user to the
+  // Quality insight instead, which is the surface that actually decomposes by
+  // class. Claiming a filter we do not have is worse than one more click.
+  const drill = () => router.push(dashboardHref);
+
+  // Include classes that COLLAPSED to zero: a money class going 500 -> 0 is
+  // the single most important thing this component can say, and filtering on
+  // clicks > 0 alone deleted it from the legend entirely.
+  const visible = rollup.classes.filter((c) => c.clicks > 0 || c.cmpClicks > 0);
   const shown = visible.length > 0 ? visible : rollup.classes;
 
   return (
@@ -206,20 +210,22 @@ export function GscClassBar({
               .map((c) => `${c.label} ${(c.share * 100).toFixed(0)}%`)
               .join(", ")}`}
           >
-            {shown.map((c) => (
+            {shown
+              .filter((c) => c.clicks > 0)
+              .map((c) => (
               <button
                 key={c.key}
                 type="button"
-                onClick={() => drill(c)}
+                onClick={drill}
                 title={`${c.label}: ${formatCount(c.clicks)} clicks (${(
                   c.share * 100
-                ).toFixed(0)}%) — click to drill`}
+                ).toFixed(0)}%) — open Quality insight`}
                 aria-label={`Drill into ${c.label} queries`}
                 className={cn(
                   "h-full transition-opacity hover:opacity-70",
                   CLASS_BG[c.key] ?? "bg-muted-foreground",
                 )}
-                style={{ width: `${Math.max(c.share * 100, c.clicks > 0 ? 2 : 0)}%` }}
+                style={{ width: `${c.clicks > 0 ? Math.max(c.share * 100, 2) : 0}%` }}
               />
             ))}
           </div>
@@ -228,8 +234,8 @@ export function GscClassBar({
               <button
                 key={c.key}
                 type="button"
-                onClick={() => drill(c)}
-                title={`${c.description} — click to drill into ${c.label} queries`}
+                onClick={drill}
+                title={`${c.description} — open the Quality insight`}
                 className="group flex items-center gap-1.5 text-[11px] hover:underline"
               >
                 <span
@@ -255,8 +261,8 @@ export function GscClassBar({
             <button
               key={c.key}
               type="button"
-              onClick={() => drill(c)}
-              title={`${c.description} — click to drill`}
+              onClick={drill}
+              title={`${c.description} — open the Quality insight`}
               className="rounded-md border border-border bg-background p-2 text-left transition-colors hover:border-primary/50"
             >
               <div className={cn("text-[11px] font-medium", c.tone)}>

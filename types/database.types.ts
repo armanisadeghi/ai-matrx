@@ -44330,6 +44330,10 @@ export type Database = {
           row_count: number
         }[]
       }
+      gsc_perf_freshness_multi: {
+        Args: { p_site_ids: string[] }
+        Returns: string
+      }
       gsc_perf_juice: {
         Args: {
           p_as_of?: string

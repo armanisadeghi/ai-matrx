@@ -104,11 +104,31 @@ export function GscPortfolioClassBar({
     );
   }
 
-  const shown = rollup.classes.filter((c) => c.clicks > 0);
+  // Keep collapsed classes: money 500 -> 0 must still render its -100%.
+  const shown = rollup.classes.filter((c) => c.clicks > 0 || c.cmpClicks > 0);
+  const withClicks = shown.filter((c) => c.clicks > 0);
   const coverage =
     totalSites && totalSites > rollup.contributingSites
       ? `${rollup.contributingSites} of ${totalSites} sites`
       : `${rollup.contributingSites} site${rollup.contributingSites === 1 ? "" : "s"}`;
+
+  if (shown.length === 0) {
+    // Impressions but zero clicks across the whole portfolio: an empty bar with
+    // an empty legend would say nothing. Say the actual thing.
+    return (
+      <div
+        className={cn(
+          "rounded-lg border border-dashed border-border bg-muted/20 p-3",
+          className,
+        )}
+      >
+        <p className="text-xs text-muted-foreground">
+          {formatCount(rollup.totalImpressions)} impressions and no clicks
+          across {coverage} · {windowLabel}.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("rounded-lg border border-border bg-card p-3", className)}>
@@ -131,11 +151,11 @@ export function GscPortfolioClassBar({
       <div
         className="flex h-2 w-full overflow-hidden rounded-full bg-muted"
         role="img"
-        aria-label={`Traffic class share: ${shown
+        aria-label={`Traffic class share: ${withClicks
           .map((c) => `${c.label} ${(c.share * 100).toFixed(0)}%`)
           .join(", ")}`}
       >
-        {shown.map((c) => (
+        {withClicks.map((c) => (
           <div
             key={c.key}
             title={`${c.label}: ${formatCount(c.clicks)} clicks (${(
@@ -174,7 +194,10 @@ export function GscPortfolioClassBar({
                 )}
               >
                 {c.deltaClicks > 0 ? "+" : ""}
-                {(c.deltaPct * 100).toFixed(0)}%
+                {Math.round(c.deltaPct * 100) === 0
+                  ? 0
+                  : Math.round(c.deltaPct * 100)}
+                %
               </span>
             )}
           </span>

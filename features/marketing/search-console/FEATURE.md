@@ -359,10 +359,20 @@ raised, so one inaccessible site cannot blank a portfolio. It deliberately
 returns NO distinct query count — summing per-site DISTINCTs double-counts a
 phrase ranking on two sites, and a subtly wrong number is worse than none.
 
-**Known**: the single-site strip clamps to that site's freshest day while the
-portfolio strip uses wall-clock minus GSC lag, so a brand and its only site can
-show windows one day apart. Both label their own window; aligning them needs a
-multi-site freshness read.
+**Both strips clamp to the freshest QUERY-profile day** — single-site via
+`gsc_perf_freshness`, portfolio via `gsc_perf_freshness_multi` — so a brand and
+its site report the identical window and total. Two bugs adversarial review
+caught here, both fixed before anyone saw them: an unclamped portfolio window
+included empty trailing days against a settled compare period (every class read
+as a decline), and `resolveGscDataThrough` took the max across ALL profiles, so
+a fresher `page` import pushed a query-only window past the last day of query
+data. `resolveGscDataThrough` now takes the profiles the caller actually reads.
+
+**Segments open the Quality insight, they do NOT open a filtered drilldown.**
+`GscFilters` has no traffic-class key, so a per-class drilldown would list every
+query under a class-specific heading — and `instanceIdFor` ignores the title, so
+all five segments would collapse into one mislabeled window. Claiming a filter
+we do not have is worse than one more click.
 
 ## Doctrine
 

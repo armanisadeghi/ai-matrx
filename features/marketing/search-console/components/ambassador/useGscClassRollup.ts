@@ -136,7 +136,10 @@ export function useGscClassRollup(
   // Clamp to the site's freshest day so the label never promises data that
   // GSC has not delivered yet (their pipeline runs ~2 days behind).
   const freshness = useGscFreshness(siteId);
-  const dataEnd = resolveGscDataThrough(freshness.data);
+  // 'query' ONLY: gsc_perf_class_summary reads that profile, and a fresher
+  // `page` import would otherwise push the window past the last day of query
+  // data — a phantom decline on every class.
+  const dataEnd = resolveGscDataThrough(freshness.data, ["query"]);
 
   const periods = useMemo(
     () =>
