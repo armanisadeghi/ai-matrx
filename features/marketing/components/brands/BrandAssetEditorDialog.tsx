@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Loader2, Upload } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +27,8 @@ import {
   useCreateBrandAsset,
   useUpdateBrandAsset,
 } from "@/features/marketing/data/hooks";
+import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import {
   BRAND_ASSET_KIND_LABELS,
   BRAND_ASSET_KINDS,
@@ -84,6 +86,8 @@ function BrandAssetEditorDialogBody({
 }) {
   const createMutation = useCreateBrandAsset();
   const updateMutation = useUpdateBrandAsset();
+  const { upload, uploading } = useFileUpload();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [kind, setKind] = useState<BrandAssetKind>(() =>
     asset ? (asset.kind as BrandAssetKind) : "logo",
   );
@@ -91,13 +95,29 @@ function BrandAssetEditorDialogBody({
   const [title, setTitle] = useState(asset?.title ?? "");
   const [notes, setNotes] = useState(asset?.notes ?? "");
   const [isPrimary, setIsPrimary] = useState(asset?.is_primary ?? false);
-  const busy = createMutation.isPending || updateMutation.isPending;
+  /** File staged locally; uploaded through the canonical handler on save. */
+  const [stagedFile, setStagedFile] = useState<File | null>(null);
+  const stagedPreviewUrl = useMemo(
+    () =>
+      stagedFile && stagedFile.type.startsWith("image/")
+        ? URL.createObjectURL(stagedFile)
+        : null,
+    [stagedFile],
+  );
+  useEffect(
+    () => () => {
+      if (stagedPreviewUrl) URL.revokeObjectURL(stagedPreviewUrl);
+    },
+    [stagedPreviewUrl],
+  );
+  const busy =
+    createMutation.isPending || updateMutation.isPending || uploading;
   const urlOptional = URL_OPTIONAL_KINDS.includes(kind);
 
   const save = async () => {
     const trimmedUrl = sourceUrl.trim();
-    if (!trimmedUrl && !urlOptional && !asset?.file_id) {
-      toast.error("This asset kind needs a source URL.");
+    if (!trimmedUrl && !urlOptional && !asset?.file_id && !stagedFile) {
+      toast.error("This asset kind needs a source URL or an uploaded file.");
       return;
     }
     if (kind === "other" && !title.trim()) {
@@ -105,6 +125,14 @@ function BrandAssetEditorDialogBody({
       return;
     }
     try {
+      let uploadedFileId: string | null = null;
+      if (stagedFile) {
+        const uploaded = await upload(
+          { kind: "file", file: stagedFile },
+          { folderPath: "Images/Brand Library" },
+        );
+        uploadedFileId = uploaded.fileId;
+      }
       if (asset) {
         await updateMutation.mutateAsync({
           assetId: asset.id,
@@ -115,6 +143,7 @@ function BrandAssetEditorDialogBody({
             title: title.trim() || null,
             notes: notes.trim() || null,
             is_primary: isPrimary,
+            ...(uploadedFileId ? { file_id: uploadedFileId } : {}),
           },
         });
         toast.success("Asset saved");
@@ -124,9 +153,11 @@ function BrandAssetEditorDialogBody({
           brandId,
           kind,
           sourceUrl: trimmedUrl || null,
+          fileId: uploadedFileId,
           title: title.trim() || null,
           notes: notes.trim() || null,
           isPrimary,
+          source: uploadedFileId ? "uploaded" : "manual",
         });
         toast.success("Asset added");
       }
@@ -191,6 +222,58 @@ function BrandAssetEditorDialogBody({
               onChange={(event) => setSourceUrl(event.target.value)}
               placeholder="https://example.com/logo.svg"
             />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">File</Label>
+            <div className="flex items-start gap-2">
+              {stagedPreviewUrl ? (
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted/40 p-1">
+                  {/* Local staged file — not yet uploaded, no file_id to render through Files. */}
+                  <img
+                    src={stagedPreviewUrl}
+                    alt="Staged upload"
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </div>
+              ) : !stagedFile && asset?.file_id ? (
+                <CaptureThumb
+                  fileId={asset.file_id}
+                  alt={asset.title ?? asset.kind}
+                  aspectClassName="aspect-square"
+                  className="h-16 w-16 shrink-0"
+                />
+              ) : null}
+              <div className="min-w-0 flex-1 space-y-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  className="hidden"
+                  onChange={(event) => {
+                    setStagedFile(event.target.files?.[0] ?? null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="mr-1.5 h-3.5 w-3.5" />
+                  {asset?.file_id || stagedFile ? "Replace file" : "Upload file"}
+                </Button>
+                <p className="truncate text-[10px] leading-4 text-muted-foreground">
+                  {stagedFile
+                    ? `${stagedFile.name} — uploads on save`
+                    : asset?.file_id
+                      ? "Stored in Files — rendered through the canonical pipeline."
+                      : "Optional — upload our own copy instead of (or alongside) a source URL."}
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-1">

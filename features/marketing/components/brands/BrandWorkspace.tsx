@@ -40,6 +40,7 @@ import { BrandAssetEditorDialog } from "@/features/marketing/components/brands/B
 import { BusinessFactEditorDialog } from "@/features/marketing/components/brands/BusinessFactEditorDialog";
 import { PropertyEditorDialog } from "@/features/marketing/components/brands/PropertyEditorDialog";
 import { SiteEditorDialog } from "@/features/marketing/components/sites/SiteEditorDialog";
+import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -963,40 +964,54 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                       key={asset.id}
                       className="group overflow-hidden rounded-md border border-border bg-muted/20"
                     >
-                      <div
-                        className={
-                          asset.source_url
-                            ? "relative flex aspect-square cursor-pointer items-center justify-center bg-card p-2"
-                            : "relative flex aspect-square items-center justify-center bg-card p-2"
-                        }
-                        onClick={() => {
-                          if (asset.source_url) {
-                            window.open(
-                              asset.source_url,
-                              "_blank",
-                              "noreferrer",
-                            );
-                          }
-                        }}
-                      >
-                        {preview ? (
-                          // Confirmed assets reference the brand's own public URLs.
-                          <img
-                            src={preview}
+                      <div className="relative">
+                        {asset.file_id ? (
+                          // File-backed asset (uploaded / generated) — renders
+                          // through the canonical Files pipeline and opens the
+                          // platform file viewer.
+                          <CaptureThumb
+                            fileId={asset.file_id}
                             alt={asset.title ?? asset.kind}
-                            className="max-h-full max-w-full object-contain"
-                            loading="lazy"
+                            aspectClassName="aspect-square"
+                            className="rounded-none border-0"
                           />
-                        ) : color ? (
-                          <span
-                            className="h-14 w-14 rounded-full border border-border shadow-inner"
-                            style={{ backgroundColor: color }}
-                            title={color}
-                          />
-                        ) : asset.kind === "color" ? (
-                          <Palette className="h-6 w-6 text-muted-foreground/50" />
                         ) : (
-                          <Globe2 className="h-6 w-6 text-muted-foreground/50" />
+                          <div
+                            className={
+                              asset.source_url
+                                ? "flex aspect-square cursor-pointer items-center justify-center bg-card p-2"
+                                : "flex aspect-square items-center justify-center bg-card p-2"
+                            }
+                            onClick={() => {
+                              if (asset.source_url) {
+                                window.open(
+                                  asset.source_url,
+                                  "_blank",
+                                  "noreferrer",
+                                );
+                              }
+                            }}
+                          >
+                            {preview ? (
+                              // Confirmed assets reference the brand's own public URLs.
+                              <img
+                                src={preview}
+                                alt={asset.title ?? asset.kind}
+                                className="max-h-full max-w-full object-contain"
+                                loading="lazy"
+                              />
+                            ) : color ? (
+                              <span
+                                className="h-14 w-14 rounded-full border border-border shadow-inner"
+                                style={{ backgroundColor: color }}
+                                title={color}
+                              />
+                            ) : asset.kind === "color" ? (
+                              <Palette className="h-6 w-6 text-muted-foreground/50" />
+                            ) : (
+                              <Globe2 className="h-6 w-6 text-muted-foreground/50" />
+                            )}
+                          </div>
                         )}
                         {asset.is_primary ? (
                           <span

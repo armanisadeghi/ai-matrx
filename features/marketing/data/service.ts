@@ -2376,8 +2376,10 @@ export async function updateBrand(
 }
 
 /**
- * Soft-delete a brand. Refuses while live sites still point at it — deleting
- * the anchor out from under its properties would orphan them silently.
+ * Soft-delete a brand. Refuses while live sites or properties still point at
+ * it — deleting the anchor out from under its children would orphan them
+ * silently. These preflights give friendly copy; the DB trigger
+ * `web.brand_soft_delete_guard` enforces the same rule atomically.
  */
 export async function deleteBrand(brandId: string): Promise<void> {
   const db = await authenticatedWebDb(supabase);
@@ -2392,6 +2394,17 @@ export async function deleteBrand(brandId: string): Promise<void> {
       `This brand still owns ${sites.count} site${sites.count === 1 ? "" : "s"}. Delete or move its sites first.`,
     );
   }
+  const properties = await db
+    .from("property")
+    .select("id", { count: "exact", head: true })
+    .eq("brand_id", brandId)
+    .is("deleted_at", null);
+  if (properties.error) throw properties.error;
+  if (properties.count) {
+    throw new Error(
+      `This brand still owns ${properties.count} propert${properties.count === 1 ? "y" : "ies"} (social accounts or other presences). Delete them first.`,
+    );
+  }
   const response = await db
     .from("brand")
     .update({ deleted_at: new Date().toISOString() })
@@ -2401,7 +2414,12 @@ export async function deleteBrand(brandId: string): Promise<void> {
   assertMutated(response.data, response.error, "delete this brand");
 }
 
-/** Soft-delete a site (its crawl history stays; the row leaves every list). */
+/**
+ * Soft-delete a site (its crawl history stays; the row leaves every list).
+ * The DB trigger `web.site_cascade_website_property` soft-deletes the site's
+ * `property(kind='website')` row in the same statement, so the two lifecycle
+ * authorities can never drift.
+ */
 export async function deleteSite(siteId: string): Promise<void> {
   const response = await (
     await authenticatedWebDb(supabase)
