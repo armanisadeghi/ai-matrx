@@ -13,9 +13,10 @@ import {
   analysisKeys,
   useSiteAnalysisOverview,
 } from "@/features/marketing/data/analysis-hooks";
-import type {
-  AnalysisItemRollup,
-  AnalysisWorstPage,
+import {
+  OPEN_FINDINGS_ROLLUP_CAP,
+  type AnalysisItemRollup,
+  type AnalysisWorstPage,
 } from "@/features/marketing/data/analysis-service";
 import { analyzeSite } from "@/features/marketing/crawler/direct-client";
 import { SeverityBadge } from "@/features/marketing/components/analysis/AnalysisBadges";
@@ -176,17 +177,20 @@ export function CatalogueAnalysisPanel() {
             <MetricCell
               label="Computed"
               value={formatCompactDate(data.lastComputedAt)}
-              detail={
-                data.rollupTruncated
-                  ? "Finding rollup sampled (capped)"
-                  : "Latest analysis run"
-              }
+              detail="Latest analysis run"
             />
           </div>
           <div className="grid gap-0 lg:grid-cols-2 lg:divide-x lg:divide-border">
             <div className="min-w-0">
               <p className="px-4 pt-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 Open findings by check
+                {data.rollupTruncated ? (
+                  <span className="ml-2 normal-case tracking-normal text-warning">
+                    sampled from the {OPEN_FINDINGS_ROLLUP_CAP.toLocaleString()}{" "}
+                    most recently detected of{" "}
+                    {data.openFindingsTotal.toLocaleString()}
+                  </span>
+                ) : null}
               </p>
               {data.openByItem.length === 0 ? (
                 <p className="p-4 text-xs text-success">

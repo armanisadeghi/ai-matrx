@@ -456,7 +456,7 @@ export async function listFindingResults(
 // (`web.v_page_score`). Read-only; grouping happens client-side over a
 // bounded fetch whose truncation is surfaced, never silent.
 
-const OPEN_FINDINGS_ROLLUP_CAP = 5000;
+export const OPEN_FINDINGS_ROLLUP_CAP = 5000;
 const WORST_PAGES_LIMIT = 8;
 
 export interface AnalysisItemRollup {
@@ -525,9 +525,18 @@ export async function getSiteAnalysisOverview(
           count: "exact",
         })
         .eq("site_id", siteId)
+        // "Open" here deliberately matches web.v_priority_queue (status !=
+        // resolved AND not suppressed — acknowledged stays open), because the
+        // panel's tiles link into the priority queue and the findings
+        // register. listPageOpenFindings' narrower open+reopened set is a
+        // per-page affordance, not this rollup's contract.
         .neq("status", "resolved")
         .eq("suppressed", false)
         .is("deleted_at", null)
+        // Deterministic sample when capped: the most recently detected
+        // findings, never an arbitrary heap-order slice.
+        .order("last_detected_at", { ascending: false })
+        .order("id", { ascending: true })
         .range(0, OPEN_FINDINGS_ROLLUP_CAP - 1)
         .abortSignal(abortSignal),
       db
