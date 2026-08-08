@@ -1,0 +1,140 @@
+{
+  "__readme": "Allowlist for scripts/check-visibility-vocab.ts. Every entry needs a justification: WHY the claim is provable there, or the tracking id (FOUND_DEFECTS D105/D106b, docs/handoffs/access-truth-and-visibility-vocabulary.md) for its removal. Never allowlist a NEW write path that sends 'shared'/'private' to the server. Entries match by file, and by line +/-2 when line is set.",
+  "retiredSpelling": [
+    {
+      "file": "app/(dev)/demos/cloud-files-debug/CloudFilesDebugClient.tsx",
+      "line": 145,
+      "justification": "Dev-only debug surface that deliberately exercises legacy spellings to inspect server normalization; read-only, never a write path.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "features/structured-lists/StructuredListManagerV2.tsx",
+      "line": 122,
+      "justification": "D106b surface (pending D105). May mirror the structured-lists table's own enum - needs the per-entity conveyance check before rewrite (handoff item 5).",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "features/user-lists/types.ts",
+      "line": 140,
+      "justification": "Per-domain dialect on user_lists ('public|authenticated|private') - killing it requires a DB enum migration, tracked in the access-truth handoff (item 5 territory).",
+      "date": "2026-08-08"
+    }
+  ],
+  "collapsedUnion": [
+    {
+      "file": "components/image/ImageManager.tsx",
+      "justification": "saveTo is a two-option save DESTINATION (public library vs personal space) chosen at write time, not a read label claiming privacy.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "components/image/shared/SingleImageSelect.tsx",
+      "line": 78,
+      "justification": "Same saveTo destination choice as ImageManager - a write-time option, not a privacy claim.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "components/ui/file-upload/FileUploadWithStorage.tsx",
+      "line": 21,
+      "justification": "SaveToOption is a two-option save destination, not a visibility read label.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "components/ui/file-upload/PasteImageHandler.tsx",
+      "line": 22,
+      "justification": "SaveToOption is a two-option save destination, not a visibility read label.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "types/canvas-social.ts",
+      "line": 3,
+      "justification": "Canvas domain dialect (public|unlisted|personal) tied to the CanvasShareSheet D106b surface - resolve together after D105.",
+      "date": "2026-08-08"
+    }
+  ],
+  "onlyYouClaim": [
+    {
+      "file": "features/marketing/search-console/intake/SiteIntakeWizard.tsx",
+      "line": 563,
+      "justification": "Not a privacy claim - intake copy meaning 'only you know the answer to these questions'.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "features/secrets/components/VaultItemDetail.tsx",
+      "line": 1506,
+      "justification": "D106b (credentials - highest stakes). Fix owns its own conveyance check; pending D105.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "features/canvas/social/CanvasShareSheet.tsx",
+      "line": 367,
+      "justification": "D106b. Canvas uses its own visibility dialect; resolve with types/canvas-social.ts after D105.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "features/structured-lists/StructuredListManagerV2.tsx",
+      "line": 139,
+      "justification": "D106b. Same surface as its retired-spelling union above; pending D105.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "features/education/data/features.ts",
+      "line": 236,
+      "justification": "D106b - user-facing marketing copy promising 'Only you ... never a default', false wherever a table defaults to internal. Tied to the D105 decision.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "app/(dev)/demos/settings-primitives/page.dev.tsx",
+      "line": 242,
+      "justification": "Dev demo copy; pre-existing baseline, sweep with D106b.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "app/(public)/free/zip-code-heatmap/components/SaveHeatmapModal.tsx",
+      "line": 262,
+      "justification": "Pre-existing baseline. Standalone public tool whose links are auth-gated per-user; still uses retired 'private' wording - sweep with D106b.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "components/image/cloud/CloudFilesBrowserTable.tsx",
+      "line": 912,
+      "justification": "Pre-existing baseline in the legacy cloud files browser; the canonical /files list already uses the honest AccessBadge - sweep with D106b.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "components/mardown-display/chat-markdown/FullScreenMarkdownEditor.tsx",
+      "line": 696,
+      "justification": "Pre-existing baseline (duplicated at ~1630); sweep with D106b.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "components/mardown-display/chat-markdown/FullScreenMarkdownEditor.tsx",
+      "line": 1630,
+      "justification": "Pre-existing baseline (duplicate of ~696); sweep with D106b.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "features/files/components/surfaces/FileShareTab.tsx",
+      "line": 181,
+      "justification": "Describes the 'personal' visibility OPTION in the share picker ('Only you and explicit grantees') - a statement about the setting being chosen, and the Info tab beside it shows the true summary. Wording still worth softening in the D106b sweep.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "features/flashcards/components/sharing/SetVisibilityControl.tsx",
+      "line": 45,
+      "justification": "Describes the 'personal' visibility option in a picker, mostly-accurate hedged copy; soften in the D106b sweep.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "features/marketing/components/brands/BrandEditorDialog.tsx",
+      "line": 63,
+      "justification": "Pre-existing baseline; brand visibility copy - sweep with D106b.",
+      "date": "2026-08-08"
+    },
+    {
+      "file": "features/tool-registry/bundles/components/BundlesAdminPage.tsx",
+      "line": 325,
+      "justification": "Admin-only surface, hedged ('and explicit shares'); sweep with D106b.",
+      "date": "2026-08-08"
+    }
+  ]
+}
