@@ -9357,8 +9357,9 @@ export interface paths {
          * Rag Search Endpoint
          * @description Streaming search (stream-everything mandate, 2026-07-06). Identical
          *     behavior to ``POST /search/stream`` — that route stays as an alias; this
-         *     is the canonical path. Emits ``rag.citation`` events per hit as retrieval
-         *     fuses, then one consolidated ``RagSearchResult``.
+         *     is the canonical path. Emits one consolidated ``RagSearchResult``. (The
+         *     per-hit ``rag.citation`` events were deleted 2026-08-08 — zero consumers;
+         *     answer citations flow through the unified provider-native channel.)
          */
         post: operations["rag_search_endpoint_rag_search_post"];
         delete?: never;
@@ -9384,16 +9385,14 @@ export interface paths {
          *     Event sequence (ordered):
          *
          *       rag.cross_doc.retrieval.started
-         *       rag.citation                 (one per library hit, tag=library_tag)
-         *       rag.citation                 (one per case   hit, tag=case_tag)
          *       rag.cross_doc.retrieval.complete
          *       rag.cross_doc.synth.chunk    (token-streamed answer chunks)
          *       rag.cross_doc.synth.complete
          *       rag.cross_doc.verify.complete
          *       rag.cross_doc.result         (final consolidated payload)
          *
-         *     The FE renders the citations as chips, the answer as streaming text,
-         *     and the per-claim verdicts as colored highlights over the answer.
+         *     The FE renders the answer as streaming text and the per-claim verdicts
+         *     as colored highlights over the answer.
          */
         post: operations["rag_cross_doc_stream_rag_cross_doc_stream_post"];
         delete?: never;
@@ -10503,6 +10502,24 @@ export interface paths {
         /** Test Slot */
         post: operations["test_slot_agent_slots__slot_key__test_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-slots/{slot_key}/binding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Slot Binding */
+        put: operations["put_slot_binding_agent_slots__slot_key__binding_put"];
+        post?: never;
+        /** Delete Slot Binding */
+        delete: operations["delete_slot_binding_agent_slots__slot_key__binding_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -12847,6 +12864,49 @@ export interface paths {
          *     .docx / .pptx / .xlsx stored as a private asset, returned as a FileRef.
          */
         post: operations["generate_office_office_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/office/{file_id}/markdown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Extract Office Markdown
+         * @description Read an existing Office file (the caller must be able to read it) into
+         *     clean markdown + per-portion markdown (slide / sheet / section). Powers the
+         *     frontend docx/pptx previewer.
+         */
+        get: operations["extract_office_markdown_office__file_id__markdown_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/office/{file_id}/convert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Convert Office File
+         * @description Render an existing Office file to PDF (LibreOffice lane) and persist the
+         *     PDF as a new asset owned by the caller. Returns the new file's FileRef.
+         */
+        post: operations["convert_office_file_office__file_id__convert_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -19685,6 +19745,36 @@ export interface components {
              * @default true
              */
             post_process_mask?: boolean;
+        };
+        /** BindingResult */
+        BindingResult: {
+            /** Id */
+            id: string;
+            /** Slot Key */
+            slot_key: string;
+            /**
+             * Principal Type
+             * @enum {string}
+             */
+            principal_type: "user" | "org";
+            /** Subject User Id */
+            subject_user_id?: string | null;
+            /** Organization Id */
+            organization_id: string;
+            /** Agent Id */
+            agent_id?: string | null;
+            /** Agent Version Id */
+            agent_version_id?: string | null;
+            /** Use Latest */
+            use_latest: boolean;
+            /** Config Overrides */
+            config_overrides?: {
+                [key: string]: unknown;
+            } | null;
+            /** Is Enabled */
+            is_enabled: boolean;
+            /** Created */
+            created: boolean;
         };
         /** BingApiKeyConnectionRequest */
         BingApiKeyConnectionRequest: {
@@ -31590,6 +31680,42 @@ export interface components {
             };
         };
         /**
+         * OfficeConvertRequest
+         * @description Conversion options. `target` exists for forward-compat; only "pdf".
+         */
+        OfficeConvertRequest: {
+            /**
+             * Target
+             * @default pdf
+             */
+            target?: string;
+            /** Visibility */
+            visibility?: string | null;
+        };
+        /**
+         * OfficeExtractionResponse
+         * @description AI-facing markdown view of an existing Office file.
+         */
+        OfficeExtractionResponse: {
+            /** File Id */
+            file_id: string;
+            /** Office Kind */
+            office_kind: string;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** File Name */
+            file_name?: string | null;
+            /**
+             * Markdown
+             * @default
+             */
+            markdown?: string;
+            /** Portions */
+            portions?: components["schemas"]["OfficePortionOut"][];
+            /** Warnings */
+            warnings?: string[];
+        };
+        /**
          * OfficeGenerationRequest
          * @description One of the three specs plus how to store the result. Exactly one of
          *     ``document`` / ``presentation`` / ``spreadsheet`` must be set.
@@ -31631,6 +31757,25 @@ export interface components {
              * @default personal
              */
             visibility?: string;
+        };
+        /**
+         * OfficePortionOut
+         * @description One slide / sheet / section of an extracted document (FE-facing).
+         */
+        OfficePortionOut: {
+            /** Index */
+            index: number;
+            /** Number */
+            number: number;
+            /** Kind */
+            kind: string;
+            /** Title */
+            title?: string | null;
+            /**
+             * Markdown
+             * @default
+             */
+            markdown?: string;
         };
         /**
          * OnSignInResponse
@@ -31733,7 +31878,7 @@ export interface components {
             /** Description */
             description?: string | null;
             /** Category */
-            category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
+            category?: ("anthropic" | "aws" | "custom" | "github" | "google" | "linear" | "notion" | "openai" | "slack" | "stripe" | "supabase" | "vercel") | null;
             /** Inject Into Sandbox */
             inject_into_sandbox?: boolean | null;
         };
@@ -31761,7 +31906,7 @@ export interface components {
             /** Description */
             description?: string | null;
             /** Category */
-            category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
+            category?: ("anthropic" | "aws" | "custom" | "github" | "google" | "linear" | "notion" | "openai" | "slack" | "stripe" | "supabase" | "vercel") | null;
             /**
              * Inject Into Sandbox
              * @default true
@@ -31871,7 +32016,7 @@ export interface components {
             /** Description */
             description?: string | null;
             /** Category */
-            category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
+            category?: ("anthropic" | "aws" | "custom" | "github" | "google" | "linear" | "notion" | "openai" | "slack" | "stripe" | "supabase" | "vercel") | null;
             /** Inject Into Sandbox */
             inject_into_sandbox?: boolean | null;
             /** Is Active */
@@ -33026,6 +33171,18 @@ export interface components {
              * @default none
              */
             post_prep_option?: components["schemas"]["PostPrepOption"];
+            /**
+             * Target Audience
+             * @description Optional target audience the prepared content is re-pitched for before scripting; empty skips the adaptation stage.
+             * @default
+             */
+            target_audience?: string;
+            /**
+             * Audience Guidance
+             * @description Optional extra steering (tone, length, emphasis) for the audience adaptation stage.
+             * @default
+             */
+            audience_guidance?: string;
             /**
              * Number Of Speakers
              * @description Deprecated host-count alias used only when host_count is omitted.
@@ -37544,6 +37701,55 @@ export interface components {
              * @enum {string}
              */
             layout?: "title" | "title_content" | "section" | "blank";
+        };
+        /** SlotBindingDeleteRequest */
+        SlotBindingDeleteRequest: {
+            /**
+             * Principal Type
+             * @default user
+             * @enum {string}
+             */
+            principal_type?: "user" | "org";
+            /** Organization Id */
+            organization_id?: string | null;
+        };
+        /** SlotBindingDeleteResponse */
+        SlotBindingDeleteResponse: {
+            /** Slot Key */
+            slot_key: string;
+            /**
+             * Principal Type
+             * @enum {string}
+             */
+            principal_type: "user" | "org";
+            /** Removed */
+            removed: boolean;
+        };
+        /** SlotBindingRequest */
+        SlotBindingRequest: {
+            /**
+             * Principal Type
+             * @default user
+             * @enum {string}
+             */
+            principal_type?: "user" | "org";
+            /** Agent Id */
+            agent_id?: string | null;
+            /** Agent Version Id */
+            agent_version_id?: string | null;
+            /** Use Latest */
+            use_latest?: boolean | null;
+            /** Config Overrides */
+            config_overrides?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Is Enabled
+             * @default true
+             */
+            is_enabled?: boolean;
+            /** Organization Id */
+            organization_id?: string | null;
         };
         /**
          * SlotCandidate
@@ -62157,6 +62363,76 @@ export interface operations {
             };
         };
     };
+    put_slot_binding_agent_slots__slot_key__binding_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slot_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SlotBindingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BindingResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_slot_binding_agent_slots__slot_key__binding_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slot_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SlotBindingDeleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlotBindingDeleteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     sync_registered_usages_endpoint_agent_usage_sync_post: {
         parameters: {
             query?: never;
@@ -65739,6 +66015,72 @@ export interface operations {
             };
         };
     };
+    extract_office_markdown_office__file_id__markdown_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfficeExtractionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    convert_office_file_office__file_id__convert_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["OfficeConvertRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfficeGenerationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     upload_vision_master_media_upload_post: {
         parameters: {
             query?: never;
@@ -66711,7 +67053,9 @@ export interface operations {
     };
     delete_folder_folders__folder_id__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                hard_delete?: boolean;
+            };
             header?: never;
             path: {
                 folder_id: string;

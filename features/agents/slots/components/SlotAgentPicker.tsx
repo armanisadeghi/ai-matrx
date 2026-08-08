@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import { isJsonObject } from "@/types/json";
+import { isJsonObject, toJsonRecord } from "@/types/json";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -150,7 +150,7 @@ export function SlotAgentPicker({
         { principalType: "user" },
         {
           agentId: candidateId,
-          configOverrides: isJsonObject(existing) ? { ...existing } : null,
+          configOverrides: isJsonObject(existing) ? toJsonRecord(existing) : null,
         },
       );
       toast.success("This step now runs your agent.");
