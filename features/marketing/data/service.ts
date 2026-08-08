@@ -1726,26 +1726,36 @@ export async function getSiteHeroScreenshot(
 const DISCOVERED_COLUMNS =
   "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, brand_id, site_id, snapshot_id, source, category, guessed_kind, url, value, value_hash, context, confidence, status, resolved_asset_id, resolved_fact_id, resolved_property_id, reviewed_by, reviewed_at";
 
-/** Discovery inbox for a brand, optionally narrowed by status. Bounded. */
+/**
+ * Discovery inbox for a brand, optionally narrowed by status. Controlled
+ * pagination with a true total — never a silent cap. Ordering ends in the
+ * unique `id` so pages are stable while rows share a category/confidence.
+ */
 export async function listDiscoveredItems(
   brandId: string,
   status: DiscoveredItemStatus | null,
+  page: number,
+  pageSize: number,
   signal?: AbortSignal,
-): Promise<DiscoveredItem[]> {
+): Promise<PagedResult<DiscoveredItem>> {
   const db = await authenticatedWebDb(supabase);
   let query = db
     .from("discovered_item")
-    .select(DISCOVERED_COLUMNS)
+    .select(DISCOVERED_COLUMNS, { count: "exact" })
     .eq("brand_id", brandId)
     .is("deleted_at", null);
   if (status) query = query.eq("status", status);
+  const from = (page - 1) * pageSize;
   const response = await query
     .order("category", { ascending: true })
     .order("confidence", { ascending: false, nullsFirst: false })
     .order("id", { ascending: true })
-    .limit(500)
+    .range(from, from + pageSize - 1)
     .abortSignal(signal ?? new AbortController().signal);
-  return assertData(response.data, response.error);
+  return {
+    rows: assertData(response.data, response.error),
+    total: response.count ?? 0,
+  };
 }
 
 export async function countPendingDiscovered(
