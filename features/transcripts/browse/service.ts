@@ -109,8 +109,9 @@ export async function fetchTranscriptFacets(
 
 /**
  * Persist an inline title edit, routed to the row's source table by kind.
- * Unsorted recordings have no user-facing title — the column is not editable
- * for them (enforced here as well, loudly).
+ * Unsorted recordings have no user-facing title — the column's `editableIf`
+ * hides the pencil for them; this throw is the backstop if a write arrives
+ * anyway.
  */
 export async function saveTranscriptRowEdit(
   row: TranscriptListRow,

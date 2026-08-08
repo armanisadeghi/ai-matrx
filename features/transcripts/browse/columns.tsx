@@ -50,6 +50,8 @@ export const TRANSCRIPT_COLUMNS: EntityColumnSpec<TranscriptListRow>[] = [
       header: "Title",
       filter: "text",
       editable: "string",
+      // Unsorted recordings have no user-facing title — no pencil for them.
+      editableIf: (row) => row.kind !== "unsorted",
       editTrigger: "pencil",
       cell: (row) => (
         <div className="flex min-w-0 items-center gap-2">
