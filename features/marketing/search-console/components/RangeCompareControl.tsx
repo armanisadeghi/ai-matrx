@@ -2,12 +2,18 @@
 
 /**
  * Date-range presets + compare-mode picker for the Search Console workspace.
- * Compact header control: a preset select, a custom-range popover, and a
- * compare toggle (none / previous period / year over year).
+ * Compact header control: a preset select, an inline custom-range editor,
+ * and a compare toggle (none / previous period / year over year).
+ *
+ * The custom editor is PLAIN conditional rendering — deliberately not a
+ * Popover. Opening a popover from inside a closing Radix Select races its
+ * dismiss layer (the closing pointer events land "outside" the popover and
+ * shut it instantly), which shipped as "the date input flashes and
+ * disappears". Inline state can't lose that race.
  */
 
 import { useState } from "react";
-import { CalendarRange } from "lucide-react";
+import { CalendarRange, Check, X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -15,11 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type {
@@ -54,15 +55,22 @@ export function RangeCompareControl({
       : (GSC_RANGE_PRESETS.find((r) => r.key === value.range)?.label ??
         value.range);
 
+  const openCustomEditor = () => {
+    setDraftFrom(value.customFrom ?? "");
+    setDraftTo(value.customTo ?? "");
+    setCustomOpen(true);
+  };
+
   return (
     <div className="flex items-center gap-1.5">
       <Select
         value={value.range === "custom" ? "custom" : value.range}
         onValueChange={(next) => {
           if (next === "custom") {
-            setCustomOpen(true);
+            openCustomEditor();
             return;
           }
+          setCustomOpen(false);
           onChange({
             ...value,
             range: next as GscRangeKey,
@@ -92,75 +100,68 @@ export function RangeCompareControl({
         </SelectContent>
       </Select>
 
-      <Popover open={customOpen} onOpenChange={setCustomOpen}>
-        <PopoverTrigger asChild>
-          {value.range === "custom" ? (
-            // Radix's Select won't re-fire onValueChange for the already
-            // selected "custom" item, so an applied custom range needs its
-            // own edit affordance.
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 gap-1 px-2 text-xs"
-              aria-label="Edit custom range"
-              onClick={() => {
-                setDraftFrom(value.customFrom ?? "");
-                setDraftTo(value.customTo ?? "");
-              }}
-            >
-              <CalendarRange className="h-3 w-3" />
-              Edit
-            </Button>
-          ) : (
-            <span aria-hidden className="sr-only" />
-          )}
-        </PopoverTrigger>
-        <PopoverContent align="end" className="w-64 space-y-2 p-3">
-          <p className="text-xs font-medium text-foreground">Custom range</p>
-          <div className="space-y-1.5">
-            <Input
-              type="date"
-              value={draftFrom}
-              onChange={(e) => setDraftFrom(e.target.value)}
-              className="h-8 text-xs"
-              aria-label="Start date"
-            />
-            <Input
-              type="date"
-              value={draftTo}
-              onChange={(e) => setDraftTo(e.target.value)}
-              className="h-8 text-xs"
-              aria-label="End date"
-            />
-          </div>
-          <div className="flex justify-end gap-1.5">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => setCustomOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              className="h-7 text-xs"
-              disabled={!draftFrom || !draftTo || draftFrom > draftTo}
-              onClick={() => {
-                onChange({
-                  ...value,
-                  range: "custom",
-                  customFrom: draftFrom,
-                  customTo: draftTo,
-                });
-                setCustomOpen(false);
-              }}
-            >
-              Apply
-            </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
+      {value.range === "custom" && !customOpen ? (
+        // Radix's Select won't re-fire onValueChange for the already
+        // selected "custom" item, so an applied custom range needs its own
+        // edit affordance.
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 gap-1 px-2 text-xs"
+          aria-label="Edit custom range"
+          onClick={openCustomEditor}
+        >
+          <CalendarRange className="h-3 w-3" />
+          Edit
+        </Button>
+      ) : null}
+
+      {customOpen ? (
+        <div className="flex items-center gap-1 rounded-md border border-border bg-card p-0.5">
+          <Input
+            type="date"
+            value={draftFrom}
+            onChange={(e) => setDraftFrom(e.target.value)}
+            className="h-6 w-32 border-0 bg-transparent px-1 text-xs"
+            aria-label="Start date"
+          />
+          <span className="text-xs text-muted-foreground">→</span>
+          <Input
+            type="date"
+            value={draftTo}
+            onChange={(e) => setDraftTo(e.target.value)}
+            className="h-6 w-32 border-0 bg-transparent px-1 text-xs"
+            aria-label="End date"
+          />
+          <Button
+            size="sm"
+            className="h-6 gap-1 px-1.5 text-xs"
+            disabled={!draftFrom || !draftTo || draftFrom > draftTo}
+            aria-label="Apply custom range"
+            onClick={() => {
+              onChange({
+                ...value,
+                range: "custom",
+                customFrom: draftFrom,
+                customTo: draftTo,
+              });
+              setCustomOpen(false);
+            }}
+          >
+            <Check className="h-3 w-3" />
+            Apply
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-1 text-xs"
+            aria-label="Cancel custom range"
+            onClick={() => setCustomOpen(false)}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      ) : null}
 
       <Select
         value={value.compare}

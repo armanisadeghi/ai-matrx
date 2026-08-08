@@ -247,8 +247,32 @@ broken connection**: `created === 0` with `existing > 0` means we already had
 every row Google returned, and the toast says so and points at History. Only
 `created === 0 && existing === 0` is a real "Google returned nothing".
 
+## The import narrator (2026-08-08)
+
+**If the system is doing something — or NOT doing something the user
+expects — the UI says so, persistently, from SERVER state.** Client state
+dies on refresh; whether a history import is running is a server fact.
+`seo.gsc_backfill_status`
+([`migrations/seo_gsc_backfill_status.sql`](../../../migrations/seo_gsc_backfill_status.sql),
+SECURITY DEFINER over `collection_run`, 30-min activity window so a dead
+run can't read as forever-in-progress) feeds a three-state banner in
+`SearchConsoleWorkspace`: (1) import RUNNING (any trigger, any tab) →
+narrate the window being retrieved + where stored history begins + "one-time
+import, kept after Google deletes its copy", polling freshness so the date
+moves live; (2) visible range predates stored history and nothing runs →
+say exactly how many days were never imported + one-click "Import history
+now"; (3) otherwise nothing. Sync (`syncing`) and History (`historyRunning`)
+have SEPARATE spinner state — one shared flag once put three spinners on
+screen at once. The custom-range editor is INLINE conditional rendering,
+deliberately not a Popover (opening one from a closing Radix Select loses
+its dismiss-layer race — the input "flashed and disappeared").
+
 ## Change Log
 
+- 2026-08-08 — Import narrator banner (server-aware via
+  seo.gsc_backfill_status, survives refresh), split Sync/History spinner
+  state, history-to-horizon loop, inline custom-range editor (popover
+  dismiss-race fix), overview tables 25 rows/full height.
 - 2026-08-07 — Traffic-class layer: `gsc_keyword_class_map` resolver +
   class_summary / class_movers / shifts / juice RPCs
   (seo_gsc_class_rpcs.sql) + Quality/Shifts/Juice insight views

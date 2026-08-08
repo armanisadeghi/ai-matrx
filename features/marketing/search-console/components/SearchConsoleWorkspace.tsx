@@ -37,6 +37,7 @@ import {
   type SearchConsoleUrlState,
 } from "@/features/marketing/search-console/lib/url-state";
 import {
+  useGscBackfillStatus,
   useGscFreshness,
   useGscSummary,
   useGscTimeseries,
@@ -110,9 +111,10 @@ export function SearchConsoleWorkspace() {
   const queryClient = useQueryClient();
   const [isNavigating, startNavigation] = useTransition();
   const [syncing, setSyncing] = useState(false);
-  // Live note shown while a history walk runs — a 3-minute silent spinner
-  // reads as "the click did nothing", which is how a working feature gets
-  // reported as broken.
+  // History walk state is SEPARATE from syncing — one shared flag put a
+  // spinner on three buttons at once, which reads as broken. The live note
+  // narrates progress; the banner is where it renders.
+  const [historyRunning, setHistoryRunning] = useState(false);
   const [historyNote, setHistoryNote] = useState<string | null>(null);
   const [visibleMetrics, setVisibleMetrics] =
     useState<readonly GscMetric[]>(DEFAULT_VISIBLE);
@@ -146,7 +148,16 @@ export function SearchConsoleWorkspace() {
   const bindingUnknown = site === null && siteOptions.isError;
   const gscBound = site ? siteHasGscBinding(site) : bindingUnknown;
 
-  const freshness = useGscFreshness(state.siteId);
+  // SERVER truth for "is a history import running right now?" — the nightly
+  // scheduler, another tab, or an on-demand walk all show here, and it
+  // survives page refresh (client state does not).
+  const backfill = useGscBackfillStatus(state.siteId);
+  const serverFetchActive = backfill.data?.active === true;
+  const freshness = useGscFreshness(state.siteId, {
+    // While an import runs, coverage moves minute to minute — keep the
+    // "history begins" date live instead of frozen at page-load.
+    refetchIntervalMs: serverFetchActive || historyRunning ? 30_000 : false,
+  });
   const dataThrough = useMemo(() => {
     const rows = freshness.data ?? [];
     const dates = rows
@@ -305,9 +316,18 @@ export function SearchConsoleWorkspace() {
   // server calls if one walk hits its window cap, refreshing every table
   // between rounds so the chart fills in as data lands.
   const runHistoryToHorizon = async () => {
-    if (!state.siteId || syncing) return;
-    setSyncing(true);
-    setHistoryNote("Starting history fetch…");
+    if (!state.siteId || syncing || historyRunning) return;
+    if (serverFetchActive) {
+      // The system is ALREADY importing (nightly scheduler or another
+      // session) — starting a second walk would collide with the same
+      // frontier. The banner is narrating it; say so and stop.
+      toast.info(
+        "A history import is already running for this site — progress is shown in the banner above.",
+      );
+      return;
+    }
+    setHistoryRunning(true);
+    setHistoryNote("Starting history import…");
     let totalCreated = 0;
     try {
       for (let round = 0; round < 4; round += 1) {
@@ -365,7 +385,7 @@ export function SearchConsoleWorkspace() {
     } finally {
       await queryClient.invalidateQueries({ queryKey: ["marketing", "gsc"] });
       setHistoryNote(null);
-      setSyncing(false);
+      setHistoryRunning(false);
     }
   };
 
@@ -443,7 +463,7 @@ export function SearchConsoleWorkspace() {
                 variant="outline"
                 className="h-7 gap-1 px-2 text-xs"
                 onClick={() => void runSync()}
-                disabled={syncing || !gscBound}
+                disabled={syncing || historyRunning || !gscBound}
                 title={
                   siteMissing
                     ? "This site is not in your site list — the link may be stale"
@@ -470,10 +490,10 @@ export function SearchConsoleWorkspace() {
                 variant="outline"
                 className="h-7 gap-1 px-2 text-xs"
                 onClick={() => void runHistoryToHorizon()}
-                disabled={syncing || !gscBound}
+                disabled={syncing || historyRunning || serverFetchActive || !gscBound}
                 title="Fetch OLDER data — walks backward until Google's full ~16-month history is stored"
               >
-                {syncing && historyNote ? (
+                {historyRunning ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
                 ) : (
                   <History className="h-3 w-3" />
@@ -500,48 +520,67 @@ export function SearchConsoleWorkspace() {
               canSync={gscBound}
               suppressed={knownEmpty}
             />
-            {/* The view asks for a window we never fetched — say so LOUDLY
-                and offer the fix in place. A truthful half-empty chart with
-                no explanation is indistinguishable from a broken one. */}
-            {freshnessKnown &&
-            hasAnyData &&
-            dataFrom &&
-            periods.current.start < dataFrom ? (
+            {/* THE IMPORT NARRATOR. Three states, all server-aware so a page
+                refresh never loses the story:
+                1. An import is RUNNING (nightly scheduler, this tab, any tab)
+                   -> narrate it: what window is being retrieved, where
+                   stored history currently begins, that it happens once.
+                2. History is missing for the visible range and nothing runs
+                   -> say exactly what's missing + the one-click fix.
+                3. Otherwise -> nothing.
+                A truthful half-empty chart with no explanation is
+                indistinguishable from a broken one. */}
+            {serverFetchActive || historyRunning ? (
+              <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/40 bg-primary/5 px-3 py-2">
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+                <p className="text-xs text-foreground">
+                  {historyNote ??
+                    (backfill.data?.active_window_start
+                      ? `Importing historical Search Console data — currently retrieving ${backfill.data.active_window_start} to ${backfill.data.active_window_end}.`
+                      : "Importing historical Search Console data…")}{" "}
+                  {dataFrom ? (
+                    <>
+                      Stored history currently begins <b>{dataFrom}</b>
+                      {backfill.data?.horizon
+                        ? ` and is extending back toward ${backfill.data.horizon} (Google keeps ~16 months)`
+                        : null}
+                      .{" "}
+                    </>
+                  ) : null}
+                  <span className="text-muted-foreground">
+                    This is a one-time import — once retrieved, the data is
+                    stored permanently and stays even after Google deletes
+                    its copy.
+                  </span>
+                </p>
+              </div>
+            ) : freshnessKnown &&
+              hasAnyData &&
+              dataFrom &&
+              periods.current.start < dataFrom ? (
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-warning/50 bg-warning/10 px-3 py-2">
                 <p className="text-xs text-foreground">
-                  {historyNote ? (
-                    historyNote
-                  ) : (
-                    <>
-                      This view starts {periods.current.start}, but stored
-                      Search Console data begins <b>{dataFrom}</b> —{" "}
-                      {Math.max(
-                        0,
-                        Math.round(
-                          (Date.parse(`${dataFrom}T00:00:00Z`) -
-                            Date.parse(
-                              `${periods.current.start}T00:00:00Z`,
-                            )) /
-                            86_400_000,
-                        ),
-                      )}{" "}
-                      days in this range have never been fetched from Google.
-                    </>
-                  )}
+                  Stored history begins <b>{dataFrom}</b> —{" "}
+                  {Math.max(
+                    0,
+                    Math.round(
+                      (Date.parse(`${dataFrom}T00:00:00Z`) -
+                        Date.parse(`${periods.current.start}T00:00:00Z`)) /
+                        86_400_000,
+                    ),
+                  )}{" "}
+                  earlier days in this view have not been imported from
+                  Google yet. History also imports automatically overnight.
                 </p>
                 <Button
                   size="sm"
                   variant="outline"
                   className="h-7 gap-1 px-2 text-xs"
                   onClick={() => void runHistoryToHorizon()}
-                  disabled={syncing || !gscBound}
+                  disabled={syncing || historyRunning || !gscBound}
                 >
-                  {syncing && historyNote ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <History className="h-3 w-3" />
-                  )}
-                  Fetch older history
+                  <History className="h-3 w-3" />
+                  Import history now
                 </Button>
               </div>
             ) : null}
@@ -676,8 +715,8 @@ export function SearchConsoleWorkspace() {
                   rows={timeseries.data ?? []}
                   visibleMetrics={visibleMetrics}
                 />
-                <div className="grid min-h-[22rem] grid-cols-1 gap-2 xl:grid-cols-2">
-                  <div className="flex min-h-[22rem] flex-col overflow-hidden rounded-md">
+                <div className="grid min-h-[30rem] flex-1 grid-cols-1 gap-2 xl:grid-cols-2">
+                  <div className="flex min-h-[30rem] flex-col overflow-hidden rounded-md">
                     <GscDimensionTable
                       key={`q|${state.siteId}|${sliceKey}`}
                       siteId={state.siteId}
@@ -689,11 +728,10 @@ export function SearchConsoleWorkspace() {
                       onDrill={onDrill("query")}
                       panelRange={panelRange}
                       watch
-                      pageSize={10}
-                      compactHeight
+                      pageSize={25}
                     />
                   </div>
-                  <div className="flex min-h-[22rem] flex-col overflow-hidden rounded-md">
+                  <div className="flex min-h-[30rem] flex-col overflow-hidden rounded-md">
                     <GscDimensionTable
                       key={`p|${state.siteId}|${sliceKey}`}
                       siteId={state.siteId}
@@ -705,8 +743,7 @@ export function SearchConsoleWorkspace() {
                       onDrill={onDrill("page")}
                       panelRange={panelRange}
                       watch
-                      pageSize={10}
-                      compactHeight
+                      pageSize={25}
                     />
                   </div>
                 </div>

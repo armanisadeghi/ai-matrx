@@ -43480,6 +43480,18 @@ export type Database = {
           o_id: string
         }[]
       }
+      gsc_backfill_status: {
+        Args: { p_site_id: string }
+        Returns: {
+          active: boolean
+          active_started_at: string
+          active_trigger: string
+          active_window_end: string
+          active_window_start: string
+          horizon: string
+          last_backfill_at: string
+        }[]
+      }
       gsc_dig_condition_passes: {
         Args: { p_op: string; p_threshold: number; p_value: number }
         Returns: boolean

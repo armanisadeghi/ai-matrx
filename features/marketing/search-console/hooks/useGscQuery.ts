@@ -6,6 +6,7 @@
 
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import {
+  getGscBackfillStatus,
   getGscBreakdown,
   getGscFreshness,
   getGscSummary,
@@ -325,7 +326,10 @@ export function useGscJuice(
   });
 }
 
-export function useGscFreshness(siteId: string | null) {
+export function useGscFreshness(
+  siteId: string | null,
+  options: { refetchIntervalMs?: number | false } = {},
+) {
   return useQuery({
     queryKey: ["marketing", "gsc", "freshness", siteId],
     queryFn: ({ signal }) => {
@@ -334,5 +338,23 @@ export function useGscFreshness(siteId: string | null) {
     },
     enabled: !!siteId,
     staleTime: STALE_MS,
+    // While a history import runs, coverage genuinely changes minute to
+    // minute — poll so the banner's "history begins" date moves live.
+    refetchInterval: options.refetchIntervalMs ?? false,
+  });
+}
+
+/** Server truth for "is a history import running right now?" — polls while
+ *  one is active so the banner narrates real progress across refreshes. */
+export function useGscBackfillStatus(siteId: string | null) {
+  return useQuery({
+    queryKey: ["marketing", "gsc", "backfill-status", siteId],
+    queryFn: ({ signal }) => {
+      if (!siteId) throw new Error("No site selected");
+      return getGscBackfillStatus(siteId, signal);
+    },
+    enabled: !!siteId,
+    staleTime: 15_000,
+    refetchInterval: (query) => (query.state.data?.active ? 20_000 : 60_000),
   });
 }

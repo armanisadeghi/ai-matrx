@@ -137,6 +137,26 @@ export async function getGscFreshness(
   return assertData(response.data, response.error);
 }
 
+export type GscBackfillStatusRow =
+  import("@/types/database.types").Database["seo"]["Functions"]["gsc_backfill_status"]["Returns"][number];
+
+/**
+ * Live backfill status — the SERVER truth for "is a history import running
+ * right now?". Client state dies on refresh; this doesn't.
+ */
+export async function getGscBackfillStatus(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<GscBackfillStatusRow | null> {
+  const response = await (
+    await seoDb()
+  )
+    .rpc("gsc_backfill_status", { p_site_id: siteId })
+    .abortSignal(signal ?? new AbortController().signal);
+  if (response.error) throw new Error(response.error.message);
+  return response.data?.[0] ?? null;
+}
+
 /**
  * Ingestion health for one site — the SURFACING read behind the dashboard's
  * warning banner. Answers "is this site's data actually being kept current,
