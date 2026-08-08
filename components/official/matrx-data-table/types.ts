@@ -47,6 +47,13 @@ export interface MatrxColumnDef<T> {
    */
   editable?: CellEditType;
   /**
+   * Per-row edit gate for an `editable` column. Return false to render the
+   * plain cell (no pencil, no click-to-edit) for that row — for heterogeneous
+   * lists where some kinds cannot take the write (e.g. a transcripts row of
+   * kind "unsorted" has no user-facing title). Default: every row editable.
+   */
+  editableIf?: (row: T) => boolean;
+  /**
    * How inline edit starts. Default `"click"` (click the cell body). `"pencil"`
    * shows a hover/focus pencil; the cell body no longer starts edit — so a
    * whole-row click can own that gesture. Forced to `"pencil"` when `href` is

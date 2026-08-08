@@ -143,6 +143,9 @@ Do not drop these when replacing `AiModelTable`:
 
 ## Change Log
 
+- `2026-08-08` — `MatrxColumnDef.editableIf?: (row) => boolean` — per-row edit
+  gate for editable columns, for heterogeneous lists where some row kinds can't
+  take the write (first consumer: /transcripts title column, kind "unsorted").
 - `2026-08-08` — Phone/tablet interaction baseline: every table-owned button,
   input, and row link now keeps a 44px touch target below `lg`; desktop density is
   unchanged. This applies once at the primitive root, so toolbars, filters,
