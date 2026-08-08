@@ -1,6 +1,6 @@
 ---
 name: protected-resources
-description: Single-path-of-resistance pattern for tables/operations that must NOT be modifiable by anyone except Super Admins — even contributors with full codebase access. Mandatory reading whenever a task touches `admin.admins`, `admin.admin_audit_log`, the `is_super_admin()` / `requireSuperAdmin()` / `selectIsSuperAdmin` gates, anything in `app/api/admin/admins/**`, `app/(authenticated)/(admin-auth)/administration/admins/**`, the SECURITY DEFINER admin RPCs (`admin_promote`, `admin_update`, `admin_revoke`, `admin_list`, `admin_list_audit`, `admin_find_user_by_email`), or when adding a new table/feature you intend to lock down to Super Admin only (billing, feature flags, secrets, audit data, anything sensitive). Use this skill before writing any new RLS policy, SECURITY DEFINER RPC, `createAdminClient()` call, or admin-gated API route.
+description: Single-path-of-resistance pattern for tables/operations that must NOT be modifiable by anyone except Super Admins — even contributors with full codebase access. Mandatory reading whenever a task touches `admin.admins`, `admin.admin_audit_log`, the `is_super_admin()` / `requireSuperAdmin()` / `selectIsSuperAdmin` gates, anything in `app/api/admin/admins/**`, `app/(admin)/administration/users/admins/**`, the SECURITY DEFINER admin RPCs (`admin_promote`, `admin_update`, `admin_revoke`, `admin_list`, `admin_list_audit`, `admin_find_user_by_email`), or when adding a new table/feature you intend to lock down to Super Admin only (billing, feature flags, secrets, audit data, anything sensitive). Use this skill before writing any new RLS policy, SECURITY DEFINER RPC, `createAdminClient()` call, or admin-gated API route.
 ---
 
 # Protected Resources — Single Path of Resistance
@@ -81,7 +81,7 @@ API routes (all check `requireSuperAdmin()` first, then call the RPC):
 - `app/api/admin/admins/audit/route.ts` — GET (audit log)
 - `app/api/admin/admins/lookup/route.ts` — GET (find user by email)
 
-UI: `app/(authenticated)/(admin-auth)/administration/admins/page.tsx`
+UI: `app/(admin)/administration/users/admins/page.tsx` (list views on the canonical MatrxDataTable)
 
 Bricking guards inside the RPCs (worth knowing — they raise `42501`):
 - Cannot demote yourself out of `super_admin`.
@@ -129,14 +129,14 @@ Mirror [`app/api/admin/admins/`](../../../app/api/admin/admins/):
 
 ### 4. UI
 
-Place under `app/(authenticated)/(admin-auth)/administration/<resource>/`. The `(admin-auth)` layout already redirects non-super-admins to `/dashboard`. Nothing else to do for the route guard.
+Place under `app/(admin)/administration/<resource>/`. The `(admin)` layout requires an admin (`checkIsUserAdmin`) — it does NOT require Super Admin. For Super-only surfaces the real gate is the API route (`requireSuperAdmin()`) + the RPC (`is_super_admin()`); optionally hide the page/nav with `selectIsSuperAdmin` for UX.
 
 For per-action confirmation, use the imperative `confirm()` from `@/components/dialogs/confirm/ConfirmDialogHost` (or `<ConfirmDialog />` inline). **Never** `window.confirm` — see CLAUDE.md.
 
 ### 5. Register in `categories.tsx` and `navigation-links.tsx`
 
 Add an entry to:
-- [`app/(authenticated)/(admin-auth)/administration/categories.tsx`](../../../app/(authenticated)/(admin-auth)/administration/categories.tsx) — appears on the admin landing page.
+- [`app/(admin)/administration/categories.tsx`](../../../app/(admin)/administration/categories.tsx) — appears on the admin landing page.
 - [`constants/navigation-links.tsx`](../../../constants/navigation-links.tsx) — appears in the admin sidebar.
 
 ### 6. Verify
@@ -174,7 +174,7 @@ After running the migration:
 
 The audit log is the single source. Two ways to read it:
 
-1. **UI:** [/administration/admins](../../../app/(authenticated)/(admin-auth)/administration/admins) — bottom of the page, last 50 entries.
+1. **UI:** [/administration/users/admins](../../../app/(admin)/administration/users/admins) — bottom of the page, last 50 entries.
 2. **SQL:** `SELECT * FROM public.admin_list_audit(p_limit := 500);` (or query `admin_audit_log` directly with super-admin SQL access).
 
 Things to look for periodically:

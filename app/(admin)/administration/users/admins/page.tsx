@@ -2,10 +2,9 @@
 
 // Admin management — Super Admin only.
 //
-// The (admin-auth) layout already requires Super Admin (it calls
-// checkIsSuperAdmin and redirects otherwise), so this page only renders
-// for Super Admins. Every API route below also requires Super Admin
-// server-side, and the underlying RPCs gate again at the DB layer.
+// The (admin) layout requires an admin (checkIsUserAdmin); Super Admin is
+// enforced server-side: every API route below requires Super Admin, and
+// the underlying SECURITY DEFINER RPCs gate again at the DB layer.
 //
 // Presentation only: list views are the canonical MatrxDataTable; all
 // mutations still go through the SECURITY DEFINER admin RPCs via
