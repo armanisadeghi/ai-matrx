@@ -36,7 +36,7 @@ One page that tells any agent (or Arman) what this program is, what's in motion,
 
 ## Up next (in order)
 
-1. Component-RLS performance decision (Arman) — the platform-level fix for the per-row `has_access` cost; full context in the handoff's Decisions section. **GSC is UNBLOCKED and synced** (70,945 `gsc_page_stat` rows across 7 sites through 2026-07-26, verified in DB 2026-07-28) — the old GSC-unblock lines here are done.
+1. Component-RLS: RULED 2026-08-08 (THE COMPONENT-ACCESS PRECEDENT, `common-docs/systems/access-architecture/FEATURE.md`) — once-per-query parent membrane via `iam.apply_rls`; implementation chip dispatched. **GSC is UNBLOCKED and synced** (70,945 `gsc_page_stat` rows across 7 sites through 2026-07-26, verified in DB 2026-07-28) — the old GSC-unblock lines here are done.
 2. Social routes (`brands/[id]/socials/...`) — property rows already created by discovery promotion.
 3. Soft-delete restore-on-upsert sweep server-side (handoff item; the class rule is written there).
 4. `/marketing/campaigns` — the highest-leverage reserved surface (schema design needs Arman; see marketing-module handoff).
@@ -50,7 +50,7 @@ Small, delegatable, not worth stopping the main line. Move to "In motion" when y
 - **Brand-move human click-through:** SiteEditorDialog's Brand dropdown (`web.move_site_brand`) needs one human test — automation can't drive that Radix Select.
 - **Duplicate test brands/sites** ("Titanium Success" ×2, "AI Matrx" ×2) now visible to everyone via public view — Arman deletes via UI, or an agent with his go-ahead.
 - **Repo-wide sonner→`@/lib/toast` migration** — separate task chip exists; recipe in `lib/toast.ts` header.
-- **Decisions waiting on Arman** (full context in the handoff's Decisions section): (a) captured-HTML retention — recommend content-hash dedupe; (b) public-view boundary — do GSC stats / cost / connections stay org-only?
+- ~~Decisions waiting on Arman~~ — all RULED 2026-08-08 (see the handoff's Decisions section): component-RLS precedent set · org-scoped visibility IS the end state (the "everyone views scraped data" line was a retracted misreading) · content-hash dedupe approved (in flight) · analysis workers commissioned (chip).
 
 - **Fetch-now on a redirecting page:** the snapshot lands on the FINAL URL's page row (crawl semantics), so the clicked page shows no new capture while the toast says success. Consider resolving the redirect and toasting/navigating to the landing page row. (`persistence.py` keys on `final_url`; `FetchPageButton` invalidates only the clicked pageId.)
 - **Latent RSC trap:** `SectionCard`'s `copy` prop takes functions — the first SERVER component to pass it will hit a serialization error (`MarketingUi.tsx` has no "use client"). Fine today; worth a guard comment or client-only split if server usage grows.
