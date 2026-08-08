@@ -47,7 +47,6 @@ import {
   Braces,
   Server,
   FileJson,
-  Lock,
   Globe,
   Archive,
   Folder,
@@ -62,6 +61,7 @@ import type { ContentSource } from "@/features/rich-document/types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import MarkdownStream from "@/components/MarkdownStream";
 import { SystemAgentCopyForAiMenu } from "@/features/agents/route/SystemAgentCopyForAiMenu";
+import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 
 function extractTextContent(msg: AgentDefinitionMessage): string {
   if (!msg.content || !Array.isArray(msg.content)) return "";
@@ -516,14 +516,6 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                         <Globe className="w-3 h-3" /> Public
                       </Badge>
                     )}
-                    {!agent.isVersion && !agent.isPublic && (
-                      <Badge
-                        variant="outline"
-                        className="gap-1 text-muted-foreground"
-                      >
-                        <Lock className="w-3 h-3" /> Private
-                      </Badge>
-                    )}
                   </div>
                 )}
               </div>
@@ -550,17 +542,6 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                       <Globe className="w-3 h-3" /> Public
                     </Badge>
                   )}
-                {!categoryLabel &&
-                  !category &&
-                  !agent.isVersion &&
-                  !agent.isPublic && (
-                    <Badge
-                      variant="outline"
-                      className="gap-1 text-muted-foreground"
-                    >
-                      <Lock className="w-3 h-3" /> Private
-                    </Badge>
-                  )}
                 {agent.isArchived && (
                   <Badge
                     variant="outline"
@@ -573,6 +554,21 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                   <Badge variant="destructive">Inactive</Badge>
                 )}
               </div>
+
+              {/*
+               * Access truth: who can actually see this agent, and why —
+               * replaces the old "Private" badge, which read one flag and
+               * ignored org visibility, direct shares, and container reach.
+               * Version rows are agent_definition_version, not `agent`, so
+               * only the live agent gets the panel.
+               */}
+              {!agent.isVersion && (
+                <AccessSummaryPanel
+                  entityType="agent"
+                  entityId={liveAgentId}
+                  className="px-0"
+                />
+              )}
 
               {tags && tags.length > 0 && (
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">

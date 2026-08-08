@@ -9,6 +9,7 @@ import { PermissionsList } from "@/features/sharing/components/PermissionsList";
 import { ShareWithUserTab } from "@/features/sharing/components/tabs/ShareWithUserTab";
 import { ShareWithOrgTab } from "@/features/sharing/components/tabs/ShareWithOrgTab";
 import { PublicAccessTab } from "@/features/sharing/components/tabs/PublicAccessTab";
+import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 
 type ShareSubTab = "users" | "organizations" | "public";
 
@@ -98,6 +99,15 @@ export function AgentSharePanel({
 
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-3">
+          {/*
+           * The truthful summary — direct grants below are only ONE of the
+           * ways this agent is reachable; this lists all of them.
+           */}
+          <AccessSummaryPanel
+            entityType="agent"
+            entityId={agentId}
+            className="px-0 pt-0 border-b border-border/40 pb-3"
+          />
           {activeSubTab === "users" && (
             <>
               <div>
