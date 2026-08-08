@@ -35,9 +35,10 @@ import {
   jsonExportItem,
 } from "@/components/agent-copy/export";
 import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
-import type {
-  AgentCopyGroomerConfig,
-  AgentCopyGroomerSection,
+import {
+  groomerPresetVariants,
+  type AgentCopyGroomerConfig,
+  type AgentCopyGroomerSection,
 } from "@/components/agent-copy/groomer-types";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { webCopy, webLocation } from "@/features/marketing/lib/copy-payloads";
@@ -502,6 +503,11 @@ function AuditBody({
               human={() => humanAuditSnapshot(rollup)}
               json={pageFullData}
               agent={pageAgentPayload}
+              aiVariants={groomerPresetVariants(groomerConfig)}
+            />
+            <ExportMenu
+              label={`site-audit-${siteDomain}`}
+              items={[jsonExportItem(pageFullData, "Page data (.json)")]}
             />
             <ExportMenu
               label={`site-audit-${siteDomain}`}
