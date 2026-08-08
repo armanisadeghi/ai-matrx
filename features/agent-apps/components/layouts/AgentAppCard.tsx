@@ -4,6 +4,8 @@ import React from "react";
 import Link from "next/link";
 import { ArrowRight, Gem } from "lucide-react";
 import type { AgentApp, AgentAppSummary, PublicAgentApp } from "../../types";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { humanAgentApp } from "../../format";
 
 type CardApp = AgentApp | PublicAgentApp | AgentAppSummary;
 
@@ -49,20 +51,40 @@ export function AgentAppCard({ app, href, onClick }: AgentAppCardProps) {
     </div>
   );
 
-  if (href) {
-    return (
-      <Link href={href} className="block h-full">
-        {body}
-      </Link>
-    );
-  }
+  // The card body is wrapped in a <Link>/<button> below, so the copy pair is
+  // a sibling overlay in a relative wrapper — never nested inside the
+  // clickable element (a nested interactive element is invalid HTML and
+  // would also double-fire the card's navigation on copy clicks).
   return (
-    <button
-      type="button"
-      onClick={() => onClick?.(app)}
-      className="block h-full w-full text-left"
-    >
-      {body}
-    </button>
+    <div className="group/x relative h-full">
+      {href ? (
+        <Link href={href} className="block h-full">
+          {body}
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={() => onClick?.(app)}
+          className="block h-full w-full text-left"
+        >
+          {body}
+        </button>
+      )}
+      <CopyButtons
+        size="xs"
+        label={app.name}
+        className="absolute top-2 right-2 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
+        human={() => humanAgentApp(app)}
+        json={() => app}
+        agent={() => ({
+          kind: "agent-app",
+          location: "AI Matrx — Agent Apps",
+          description: "A single agent-app card.",
+          data: app,
+          summary: humanAgentApp(app),
+          attributes: { id: app.id, status: "status" in app ? app.status : undefined },
+        })}
+      />
+    </div>
   );
 }
