@@ -1,11 +1,16 @@
 ---
 status: active
-updated: 2026-08-06
+updated: 2026-08-08
 repos: [matrx-frontend, aidream]
 vision: [/Users/armanisadeghi/code/common-docs/projects/google-oauth-verification/PLAN.md]
 ---
 
 # First-party Google product build — Connected Accounts, Picker + drive.file tools, reviewed gmail.send
+
+> **Historical build handoff:** PLAN steps 5–10 are deployed and the Google
+> submission is under review. Do not execute the old “Remaining work” list as a
+> fresh build plan. The governing PLAN and the preservation reminder below are
+> the current authority for any follow-up campaign.
 
 The build that makes Google verification submittable: PLAN execution steps 5–9. First-party
 only — Arman's ruling 2026-08-06: no Composio/aggregator ("it takes away my drive to get
@@ -27,6 +32,25 @@ of recipient/subject/body (sensitive, ordinary verification); NO restricted scop
 these same tools, not part of this build (Google's Workspace MCP servers are Developer
 Preview and still require our own verified OAuth client — they change nothing about
 verification).
+
+## Stop before any future Analytics or YouTube reconnect
+
+Credential cleanup on 2026-08-08 changed account state even though Search
+Console stayed healthy. The personal connection was reconnected on the current
+narrow scope set: it still discovers 33 Search Console properties, but its old
+31 Analytics properties and one YouTube channel were not re-granted. The broad
+organization connection was intentionally preserved and still has 33 Search
+Console properties, 31 Analytics properties, and one YouTube channel.
+
+An agent resuming this work days or weeks later must first read the
+**Mandatory connection-preservation state** section in the governing PLAN.
+Do not disconnect either organization connection, do not add Analytics or
+YouTube to the currently submitted campaign, and do not trade working Search
+Console access for a convenient reconnect. After Google approval is stable,
+restore personal Analytics and YouTube as separate implemented and demonstrated
+scope campaigns. For each owner, record the Search Console/Analytics/YouTube
+resource counts before reconnect, change one account at a time, and re-test
+Search Console immediately afterward.
 
 ## Resources
 
@@ -88,6 +112,9 @@ verification).
   the connection.
 - Old connections hold legacy broad grants — never rely on them; the feature must work
   from a fresh minimal-scope connect.
+- Old organization connections also hold historical Analytics/YouTube grants that cannot
+  currently be recreated without changing the submitted campaign. Display them faithfully
+  and do not disconnect them during verification.
 - Do not build a second token path, a second connection table, or a Next.js proxy hop —
   browser ↔ aidream directly, per both repos' data-flow doctrine.
 

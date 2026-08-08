@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D131 — Component tables still outside the COMPONENT-ACCESS membrane + two stale entity_types rows (2026-08-08)
+
+The precedent sweep regenerated 96 component tables onto `iam.apply_rls`'s membrane, but these `is_component` tables carry BESPOKE policy families whose extra lanes (public_read, curator, grant_read, read-only runtime) the component variant would drop, so they were deliberately not clobbered — each needs its own canonicalization pass onto the membrane (db-canonicalize-table): `files.analysis/entities/overrides/page_annotations/pages`, `docproc.processed_document_pages`, `transcripts.studio_documents/studio_recording_segments/studio_session_settings`, `workbench.udt_dataset_fields/udt_dataset_rows/udt_structured_list_items`, `pdf.redaction_mapping`, `workflow.node_data_slot`, `legal.wc_impairment_definition`, `runtime.global_execution*/work_item` (their std_select still calls `iam.has_access` per row). Also found: `platform.entity_types` rows `component_group` (`public.component_groups`) and `field_component` (`public.field_components`) point at tables that no longer exist (delete or repoint the registry rows), and `agent.card` is a VIEW flagged `is_component` (no RLS possible — fine, but the flag is misleading).
+
 ### D130 — Headless image-gen pipeline: client promise never settles though the server run completed (2026-08-08)
 
 `generatePageImageTwoStep` (features/marketing/lib/generate-page-image.ts, also used by PageImagePlanCard) hung >8 min in the site Media Generate view while the SERVER completed both runs — chat.conversation `989ac832-0fed-4757-b0dc-694ca357081e` holds the prompt AND the assistant image message (files.files `0300f253-…`) stamped 08:44:57Z. All internal waits are ≤180s, so the non-settling promise is `launchAgentExecution`/`executeInstance` (suspects: 409 on the conversation-start stream reservation; matrx-files FileRecord `file_id`-vs-`id` contract drift on the image block). Band-aid shipped: GenerateMediaView wraps the order in a 5-minute `Promise.race` with a loud may-have-completed toast. Root-cause chip dispatched (task_d4ead8c4). Fix = a terminal server run ALWAYS settles the client promise with the fileId.
@@ -276,9 +280,21 @@ Persisted/rehydrated agentDefinition records predate live edits, `isReady` short
 
 Frontend cutover DONE (project-optional `createTopic`, association-backed filtering, no path writes `project_id`); Phase-0 migration live. Remaining: aidream Phase-3 cutover + deploy, Phase-4 column drop/scope migration, the aidream release guard, live acceptance matrix. System of record: `common-docs/projects/research-project-decoupling/FEATURE.md`. Keep until then.
 
+**Transcript focused repair 2026-08-08:** while adding explicit Mine / org
+scope to the transcript hub, the required live trigger/FK inspection found
+`transcripts.transcripts_project_id_fkey`. All 1,024 rows had a null
+`project_id`, and the transcript feature had no project/task column consumer.
+`migrations/transcripts_remove_forbidden_relationship_dependencies.sql`
+therefore drops only the project FK (the nullable compatibility column stays).
+
 ### D78 — CRITICAL: legacy `platform._mirror_fk_to_assoc` triggers remain live (2026-07-21)
 
 Research's `_mirror_proj` trigger dropped. Live trigger count re-verified 2026-08-06: **26** remain platform-wide (down from the 32 baseline at filing — ratchet moving the right way). FE alarm layer shipped (`lib/diagnostics/errorTierRules.ts` pins any firing as permanent critical). Remaining: the aidream release guard (strict tier + 32-ratchet) and live verification of the induced-failure inspector flow.
+
+**Transcript focused repair 2026-08-08:** live inspection found `_mirror_proj`
+and `_mirror_task` on `transcripts.transcripts`; both called the forbidden
+function. `migrations/transcripts_remove_forbidden_relationship_dependencies.sql`
+drops both triggers, taking the expected live remainder from 26 to 24.
 
 ### D74 — `web.link_edge.http_status` is NEVER populated: no broken-link detection exists (2026-07-20)
 

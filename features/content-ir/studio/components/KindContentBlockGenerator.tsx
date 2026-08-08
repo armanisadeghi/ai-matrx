@@ -38,15 +38,18 @@ interface KindContentBlockGeneratorProps {
   storeLabel?: string;
 }
 
-const TIERS: ReadonlyArray<{ id: ContentBlockTier; label: string; hint: string }> =
-  [
-    { id: "basic", label: "Simple", hint: "Core shape + one __kind sample" },
-    {
-      id: "detailed",
-      label: "Detailed",
-      hint: "Every field, enum, and nested shape annotated",
-    },
-  ];
+const TIERS: ReadonlyArray<{
+  id: ContentBlockTier;
+  label: string;
+  hint: string;
+}> = [
+  { id: "basic", label: "Simple", hint: "Core shape + one __kind sample" },
+  {
+    id: "detailed",
+    label: "Detailed",
+    hint: "Every field, enum, and nested shape annotated",
+  },
+];
 
 export default function KindContentBlockGenerator({
   kind,
@@ -109,19 +112,19 @@ export default function KindContentBlockGenerator({
 
   return (
     <div className="space-y-3 rounded-md border border-primary/25 bg-background p-3">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-start gap-2 sm:items-center">
         <Braces className="h-4 w-4 text-primary" />
         <span className="text-sm font-semibold text-foreground">
           Generate a teaching content block
         </span>
-        <div className="ml-auto inline-flex overflow-hidden rounded-md border border-border">
+        <div className="inline-flex w-full overflow-hidden rounded-md border border-border sm:ml-auto sm:w-auto">
           {TIERS.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setTier(t.id)}
               title={t.hint}
-              className={`px-2.5 py-1 text-xs transition-colors ${
+              className={`min-h-10 flex-1 px-3 py-2 text-xs transition-colors sm:min-h-8 sm:flex-none sm:py-1 ${
                 tier === t.id
                   ? "bg-primary text-primary-foreground"
                   : "bg-card text-muted-foreground hover:text-foreground"
@@ -135,7 +138,8 @@ export default function KindContentBlockGenerator({
 
       <p className="text-[11px] text-muted-foreground">
         Derived from this kind&apos;s schema
-        {canonicalExample != null ? " and its canonical example" : ""}. Stored as{" "}
+        {canonicalExample != null ? " and its canonical example" : ""}. Stored
+        as{" "}
         <code className="rounded bg-muted px-1 py-0.5 font-mono">
           {block.blockId}
         </code>{" "}
@@ -155,7 +159,7 @@ export default function KindContentBlockGenerator({
           <button
             type="button"
             onClick={() => void copyTemplate()}
-            className="ml-auto inline-flex items-center gap-1 rounded border border-border px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="ml-auto inline-flex min-h-10 items-center gap-1 rounded border border-border px-3 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:min-h-7"
           >
             {copied ? (
               <Check className="h-3 w-3 text-emerald-500" />
@@ -171,7 +175,12 @@ export default function KindContentBlockGenerator({
       </div>
 
       <div className="flex justify-end">
-        <Button type="button" disabled={saving} onClick={() => void persist()}>
+        <Button
+          type="button"
+          disabled={saving}
+          onClick={() => void persist()}
+          className="min-h-11 w-full sm:w-auto"
+        >
           {saving ? (
             <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
           ) : (

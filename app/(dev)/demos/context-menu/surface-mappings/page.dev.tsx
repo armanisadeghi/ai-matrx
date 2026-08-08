@@ -27,21 +27,19 @@ import {
   AlertTriangle,
   CircleSlash,
   Layers,
+  Loader2,
   Play,
   RefreshCw,
-  Search,
 } from "lucide-react";
-import {
-  useAppDispatch,
-  useAppSelector,
-  useAppStore,
-} from "@/lib/redux/hooks";
+import { SearchableAgentSelect } from "@/features/agent-apps/components/SearchableAgentSelect";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   fetchAgentsListFull,
   fetchAgentExecutionFull,
 } from "@/features/agents/redux/agent-definition/thunks";
 import {
   selectAllAgents,
+  selectAgentsSliceError,
   selectAgentsSliceStatus,
   selectAgentCustomExecutionPayload,
 } from "@/features/agents/redux/agent-definition/selectors";
@@ -132,7 +130,7 @@ export default function SurfaceMappingsDemoPage() {
   // ── Agent picker (real user agents via the canonical list thunk) ────────
   const agents = useAppSelector(selectAllAgents);
   const agentsStatus = useAppSelector(selectAgentsSliceStatus);
-  const [agentSearch, setAgentSearch] = useState("");
+  const agentsError = useAppSelector(selectAgentsSliceError);
   const [agentId, setAgentId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -141,16 +139,21 @@ export default function SurfaceMappingsDemoPage() {
     }
   }, [agentsStatus, dispatch]);
 
-  const agentList = useMemo(() => {
-    const rows = Object.values(agents).filter(
-      (a) => a.name && !a.isVersion && a.isActive !== false,
-    );
-    const q = agentSearch.trim().toLowerCase();
-    const filtered = q
-      ? rows.filter((a) => a.name.toLowerCase().includes(q))
-      : rows;
-    return filtered.sort((a, b) => a.name.localeCompare(b.name));
-  }, [agents, agentSearch]);
+  const agentOptions = useMemo(
+    () =>
+      Object.values(agents)
+        .filter(
+          (agent) => agent.name && !agent.isVersion && agent.isActive !== false,
+        )
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((agent) => ({
+          id: agent.id,
+          name: agent.name,
+          description: agent.description,
+          category: agent.category,
+        })),
+    [agents],
+  );
 
   // ── Surface picker (manifests registry) ─────────────────────────────────
   const surfaceNames = useMemo(
@@ -161,6 +164,13 @@ export default function SurfaceMappingsDemoPage() {
     [],
   );
   const [surfaceName, setSurfaceName] = useState<string>("matrx-user/notes");
+  const selectedManifest = getManifest(surfaceName);
+  const manifestGroups = (selectedManifest?.groups ?? []).map((group) => ({
+    ...group,
+    values: (selectedManifest?.values ?? []).filter(
+      (value) => value.groupKey === group.key,
+    ),
+  }));
 
   // ── Sample applicationScope JSON ─────────────────────────────────────────
   const [scopeJson, setScopeJson] = useState<string>(() =>
@@ -169,7 +179,11 @@ export default function SurfaceMappingsDemoPage() {
   const scopeJsonError = useMemo(() => {
     try {
       const parsed: unknown = JSON.parse(scopeJson);
-      if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      if (
+        parsed === null ||
+        typeof parsed !== "object" ||
+        Array.isArray(parsed)
+      ) {
         return "applicationScope must be a JSON object";
       }
       return null;
@@ -187,7 +201,8 @@ export default function SurfaceMappingsDemoPage() {
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [output, setOutput] = useState<ResolveOutput | null>(null);
 
-  const canResolve = !!agentId && !!surfaceName && !scopeJsonError && !resolving;
+  const canResolve =
+    !!agentId && !!surfaceName && !scopeJsonError && !resolving;
 
   const runResolve = async () => {
     if (!agentId || !surfaceName || scopeJsonError) return;
@@ -195,7 +210,10 @@ export default function SurfaceMappingsDemoPage() {
     setResolveError(null);
     try {
       // 1. Agent execution payload — same pre-fetch the launch thunk does.
-      let payload = selectAgentCustomExecutionPayload(store.getState(), agentId);
+      let payload = selectAgentCustomExecutionPayload(
+        store.getState(),
+        agentId,
+      );
       if (!payload.isReady) {
         await dispatch(fetchAgentExecutionFull(agentId)).unwrap();
         payload = selectAgentCustomExecutionPayload(store.getState(), agentId);
@@ -226,7 +244,9 @@ export default function SurfaceMappingsDemoPage() {
       setOutput({
         agentName,
         surfaceName,
-        variableDefNames: (payload.variableDefinitions ?? []).map((v) => v.name),
+        variableDefNames: (payload.variableDefinitions ?? []).map(
+          (v) => v.name,
+        ),
         contextSlotKeys: (payload.contextSlots ?? []).map((s) => s.key),
         layers,
         merged,
@@ -280,49 +300,63 @@ export default function SurfaceMappingsDemoPage() {
           {/* Agent picker */}
           <section className={`${PANEL} p-2.5 flex flex-col gap-2`}>
             <h2 className={PANEL_TITLE}>1 · Agent</h2>
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <input
-                value={agentSearch}
-                onChange={(e) => setAgentSearch(e.target.value)}
-                placeholder="Search agents…"
-                className="w-full rounded border border-border bg-background pl-7 pr-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-            <div className="h-48 overflow-auto rounded border border-border/60 bg-background/50">
-              {agentsStatus === "loading" && agentList.length === 0 ? (
-                <p className="p-2 text-xs text-muted-foreground">
-                  Loading agents…
+            {agentsStatus === "loading" && agentOptions.length === 0 ? (
+              <div
+                role="status"
+                className="flex h-40 items-center justify-center gap-2 rounded-md border border-border bg-background/50 text-sm text-muted-foreground"
+              >
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                Loading agents…
+              </div>
+            ) : agentsStatus === "failed" && agentOptions.length === 0 ? (
+              <div
+                role="alert"
+                className="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-3"
+              >
+                <p className="text-sm font-medium text-destructive">
+                  Agents could not be loaded.
                 </p>
-              ) : agentList.length === 0 ? (
-                <p className="p-2 text-xs text-muted-foreground">
-                  No agents match.
+                <p className="text-xs text-muted-foreground">
+                  {agentsError ?? "The agent list request failed."}
                 </p>
-              ) : (
-                agentList.map((a) => (
-                  <button
-                    key={a.id}
-                    type="button"
-                    onClick={() => setAgentId(a.id)}
-                    className={`w-full text-left px-2 py-1 text-sm truncate ${
-                      agentId === a.id
-                        ? "bg-accent text-foreground"
-                        : "text-muted-foreground hover:bg-muted/50"
-                    }`}
-                  >
-                    {a.name}
-                    {a.agentType === "builtin" ? (
-                      <span className="ml-1.5 text-[10px] text-primary">
-                        builtin
-                      </span>
-                    ) : null}
-                  </button>
-                ))
+                <button
+                  type="button"
+                  onClick={() => void dispatch(fetchAgentsListFull())}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium text-primary hover:bg-muted"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <div className="[&_button]:min-h-11">
+                <SearchableAgentSelect
+                  agents={agentOptions}
+                  value={agentId}
+                  onChange={setAgentId}
+                  emptyLabel="No agents match this search."
+                />
+              </div>
+            )}
+            <div
+              className={`rounded-md border px-2.5 py-2 text-xs ${
+                agentId
+                  ? "border-primary/40 bg-primary/5 text-foreground"
+                  : "border-border bg-muted/30 text-muted-foreground"
+              }`}
+            >
+              <span className="font-semibold">
+                {agentId
+                  ? (agentOptions.find((agent) => agent.id === agentId)?.name ??
+                    "Selected agent")
+                  : "No agent selected"}
+              </span>
+              {agentId && (
+                <span className="mt-0.5 block break-all font-mono text-[11px] text-muted-foreground">
+                  {agentId}
+                </span>
               )}
             </div>
-            <p className="text-[11px] text-muted-foreground truncate">
-              {agentId ? `id: ${agentId}` : "No agent selected"}
-            </p>
           </section>
 
           {/* Surface picker */}
@@ -334,7 +368,7 @@ export default function SurfaceMappingsDemoPage() {
                 setSurfaceName(e.target.value);
                 reseedScope(e.target.value);
               }}
-              className="w-full rounded border border-border bg-background px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-primary"
+              className="h-11 w-full rounded border border-border bg-background px-2 text-[16px] outline-none focus:ring-1 focus:ring-primary sm:h-9 sm:text-sm"
             >
               {surfaceNames.map((n) => (
                 <option key={n} value={n}>
@@ -342,19 +376,61 @@ export default function SurfaceMappingsDemoPage() {
                 </option>
               ))}
             </select>
-            <div className="text-[11px] text-muted-foreground space-y-1">
+            <div className="space-y-1 text-xs text-muted-foreground">
               <p>
                 Inheritance chain:{" "}
                 {ancestry.length > 0
                   ? `${ancestry.join(" → ")} → ${surfaceName}`
                   : "(none — root surface)"}
               </p>
-              <p>
-                Manifest values:{" "}
-                {(getManifest(surfaceName)?.values ?? [])
-                  .map((v) => v.name)
-                  .join(", ") || "(no manifest)"}
-              </p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+              {manifestGroups.map((group) => (
+                <div
+                  key={group.key}
+                  className="rounded-md border border-border/60 bg-muted/20 p-2"
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h3 className="text-xs font-semibold text-foreground">
+                      {group.label}
+                    </h3>
+                    <span className="text-[10px] text-muted-foreground">
+                      {group.values.length} value
+                      {group.values.length === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                  {group.description && (
+                    <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                      {group.description}
+                    </p>
+                  )}
+                  <ul className="mt-1.5 space-y-1">
+                    {group.values.map((value) => (
+                      <li
+                        key={value.name}
+                        className="flex min-w-0 items-center gap-1.5 rounded border border-border/40 bg-background/60 px-2 py-1.5"
+                        title={value.description}
+                      >
+                        <code className="min-w-0 flex-1 break-all text-[11px] text-foreground">
+                          {value.name}
+                        </code>
+                        <span className="shrink-0 text-[10px] text-muted-foreground">
+                          {value.valueType}
+                        </span>
+                        <span
+                          className={`shrink-0 rounded px-1 py-0.5 text-[9px] font-medium uppercase tracking-wide ${
+                            value.alwaysAvailable
+                              ? "bg-primary/15 text-primary"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {value.alwaysAvailable ? "Always" : "Sometimes"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
           </section>
 
@@ -365,7 +441,7 @@ export default function SurfaceMappingsDemoPage() {
               <button
                 type="button"
                 onClick={() => reseedScope(surfaceName)}
-                className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                className="inline-flex min-h-11 items-center gap-1 text-xs text-primary hover:underline sm:min-h-8"
               >
                 <RefreshCw className="h-3 w-3" /> Reseed for surface
               </button>
@@ -374,7 +450,7 @@ export default function SurfaceMappingsDemoPage() {
               value={scopeJson}
               onChange={(e) => setScopeJson(e.target.value)}
               spellCheck={false}
-              className={`h-44 w-full resize-none rounded border bg-background p-2 font-mono text-[11px] leading-relaxed outline-none focus:ring-1 focus:ring-primary ${
+              className={`h-44 w-full resize-none rounded border bg-background p-2 font-mono text-[16px] leading-relaxed outline-none focus:ring-1 focus:ring-primary sm:text-xs ${
                 scopeJsonError ? "border-destructive" : "border-border"
               }`}
             />
@@ -398,7 +474,7 @@ export default function SurfaceMappingsDemoPage() {
             type="button"
             disabled={!canResolve}
             onClick={() => void runResolve()}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50 sm:min-h-9"
           >
             <Play className="h-3.5 w-3.5" />
             {resolving ? "Resolving…" : "Resolve"}
@@ -419,8 +495,9 @@ export default function SurfaceMappingsDemoPage() {
         {output && (
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Resolved <span className="text-foreground">{output.agentName}</span>{" "}
-              × <span className="text-foreground">{output.surfaceName}</span> —
+              Resolved{" "}
+              <span className="text-foreground">{output.agentName}</span> ×{" "}
+              <span className="text-foreground">{output.surfaceName}</span> —
               agent declares {output.variableDefNames.length} variable(s) [
               {output.variableDefNames.join(", ") || "none"}] and{" "}
               {output.contextSlotKeys.length} context slot(s) [
@@ -467,18 +544,27 @@ export default function SurfaceMappingsDemoPage() {
                         <table className="w-full text-left text-[11px]">
                           <thead className="text-muted-foreground">
                             <tr className="border-b border-border">
-                              <th className="py-1 pr-3 font-medium">Target key</th>
+                              <th className="py-1 pr-3 font-medium">
+                                Target key
+                              </th>
                               <th className="py-1 pr-3 font-medium">mapType</th>
                               <th className="py-1 pr-3 font-medium">Mapping</th>
-                              <th className="py-1 font-medium">Won by (tier)</th>
+                              <th className="py-1 font-medium">
+                                Won by (tier)
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
                             {Object.entries(output.merged.merged).map(
                               ([key, mapping]) => (
-                                <tr key={key} className="border-b border-border/40">
+                                <tr
+                                  key={key}
+                                  className="border-b border-border/40"
+                                >
                                   <td className="py-1 pr-3 font-mono">{key}</td>
-                                  <td className="py-1 pr-3">{mapping.mapType}</td>
+                                  <td className="py-1 pr-3">
+                                    {mapping.mapType}
+                                  </td>
                                   <td className="py-1 pr-3 font-mono text-muted-foreground">
                                     {previewValue(mapping, 80)}
                                   </td>
@@ -594,7 +680,10 @@ export default function SurfaceMappingsDemoPage() {
                   </p>
                 ))}
                 {output.mapping.pendingPrompts.map((p) => (
-                  <p key={p.targetName} className="text-[11px] text-muted-foreground">
+                  <p
+                    key={p.targetName}
+                    className="text-[11px] text-muted-foreground"
+                  >
                     prompt_user pending: <code>{p.targetName}</code> — at a real
                     launch this drains through the pre-launch value-prompts
                     dialog before the instance is created.

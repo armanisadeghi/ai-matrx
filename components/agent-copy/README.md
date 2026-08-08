@@ -6,7 +6,8 @@ legacy `execCommand` fallback), success toasts, and the AI payload envelope so
 no page reimplements them.
 
 **Pieces:**
-- `CopyButtons` — the button pair/triple. `size`: `"xs"` (h-5, dense list items /
+- `CopyButtons` — the button pair/triple. Every size keeps a 44px phone/tablet
+  tap target and collapses to its dense visual size at `lg+`. `size`: `"xs"` (h-5, dense list items /
   metric cards / per-field), `"icon"` (h-7, rows/cards), `"sm"` (icon + text,
   headers). Stops click propagation by default (`stopPropagation={false}` to opt out).
   **Pass `json`** (raw record/rows) wherever the data is structured — it adds a

@@ -124,7 +124,11 @@ export function CopyButtons({
 
   const isText = size === "sm";
   const buttonCls =
-    size === "xs" ? "h-5 w-5" : size === "icon" ? "h-7 w-7" : undefined;
+    size === "xs"
+      ? "h-11 w-11 lg:h-5 lg:w-5"
+      : size === "icon"
+        ? "h-11 w-11 lg:h-7 lg:w-7"
+        : "min-h-11 lg:min-h-8";
   const iconCls =
     size === "xs" ? "h-3 w-3" : size === "icon" ? "h-3.5 w-3.5" : "h-4 w-4";
 

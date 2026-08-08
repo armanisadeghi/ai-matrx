@@ -7,7 +7,8 @@
 ### Option 1: Restrict Current Key (Quick)
 
 1. ✅ Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-2. ✅ Click your API key: `AIzaSyDIuel7EPDt5pXBvnPNX3kpzEITLLIcZZo`
+2. ✅ Click the API key used by this demo. The previously embedded value was
+   removed from this checklist on 2026-08-08.
 3. ✅ Under "API restrictions":
    - Select "Restrict key"
    - Enable ONLY: ☑️ PageSpeed Insights API
@@ -44,7 +45,8 @@
 ### After Setting Restrictions
 
 Delete or regenerate the exposed key from chat:
-- `AIzaSyDIuel7EPDt5pXBvnPNX3kpzEITLLIcZZo` ← Rotate this!
+- The previously embedded key (fingerprint `3f6c5e3d9598`) must be rotated if
+  its owning Google project is recovered; never put a key value in this file.
 
 ## Production Deployment
 
@@ -85,4 +87,3 @@ Test your setup:
 ## Need Help?
 
 See `SECURITY.md` for detailed security guide.
-

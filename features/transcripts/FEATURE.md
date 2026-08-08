@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-06-17`
+**Last updated:** `2026-08-08`
 
 ---
 
@@ -16,20 +16,20 @@ The canonical store for finished transcripts (one row, one JSONB `segments` blob
 
 Every route under `app/(core)/transcripts/` stores through exactly **two record stores and one audio store**. No third store, ever.
 
-| Store | What lives there | Single access path |
-|---|---|---|
-| `transcripts` table | Finished, one-shot transcripts (JSONB `segments` blob per row) | `features/transcripts/service/transcriptsService.ts` |
-| `studio_*` tables | Live session data — per-segment rows, recordings, cleaned passes, documents, settings | `features/transcript-studio/service/studioService.ts` |
-| `cld_files` (universal file handler) | ALL audio/video bytes | `features/transcripts/service/audioStorageService.ts` → `fileHandler` |
+| Store                                | What lives there                                                                      | Single access path                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `transcripts` table                  | Finished, one-shot transcripts (JSONB `segments` blob per row)                        | `features/transcripts/service/transcriptsService.ts`                  |
+| `studio_*` tables                    | Live session data — per-segment rows, recordings, cleaned passes, documents, settings | `features/transcript-studio/service/studioService.ts`                 |
+| `cld_files` (universal file handler) | ALL audio/video bytes                                                                 | `features/transcripts/service/audioStorageService.ts` → `fileHandler` |
 
 **Route → store map:**
 
-| Route | Record store |
-|---|---|
-| `/transcripts` (list), `/transcripts/processor` | `transcripts` |
-| `/transcripts/studio` | `studio_sessions` (`source <> 'cleanup'` by default) |
-| `/transcripts/scribe`, `/transcripts/scribe/[sessionId]`, `/transcripts/scribe/unsorted` | `studio_sessions` |
-| `/transcripts/cleanup` | `studio_sessions` with `source='cleanup'` |
+| Route                                                                                    | Record store                                         |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `/transcripts` (list), `/transcripts/processor`                                          | `transcripts`                                        |
+| `/transcripts/studio`                                                                    | `studio_sessions` (`source <> 'cleanup'` by default) |
+| `/transcripts/scribe`, `/transcripts/scribe/[sessionId]`, `/transcripts/scribe/unsorted` | `studio_sessions`                                    |
+| `/transcripts/cleanup`                                                                   | `studio_sessions` with `source='cleanup'`            |
 
 **Rules:**
 
@@ -44,20 +44,24 @@ Every route under `app/(core)/transcripts/` stores through exactly **two record 
 ## Entry points
 
 **Routes**
+
 - `app/(core)/transcripts/page.tsx` — list "savior" entry. Server-fetches `transcripts` summaries (no `segments` blob), renders `TranscriptsListPage`; guests get `TranscriptsLanding`.
 - `app/(core)/transcripts/processor/page.tsx` — the processor workspace (`TranscriptsLayout`): record / upload / browse / edit a single transcript.
 - `app/(core)/transcripts/new/page.tsx` — server-rendered "how do you want to create one?" picker; hands off to processor / studio / cleanup.
 - Studio / scribe / cleanup routes are owned by `features/transcript-studio/` and `features/transcription-cleanup/` — see their FEATURE.md files.
 
 **Services**
+
 - `service/transcriptsService.ts` — ALL `transcripts` CRUD: fetch (list / paginated / by-id / search / folder / tag), create, update, soft + hard delete, drafts (`saveDraftTranscript` / `finalizeDraft` / `getDraftTranscripts`), copy, `getSignedUrl` (mints playback URL from a `cld_files` UUID via the handler).
 - `service/audioStorageService.ts` — audio bytes in/out of `cld_files`: `saveAudioToStorage` (retrying upload → `Transcripts/Recordings`), `getAudioUrl`, `downloadAudioBlob`, `deleteAudioFromStorage` (hard delete via `fileHandler.remove`).
 
 **Context / hooks**
+
 - `context/TranscriptsContext.tsx` — provider with optimistic updates + realtime; wraps the processor.
 - `hooks/useTranscriptsSurfaceScope.ts` — runtime surface-scope builder; reads live playback/selection at call time and delegates the shape to the pure `agent-context/buildTranscriptsContextData.ts`.
 
 **Agent context (`matrx-user/transcripts` surface)**
+
 - `agent-context/buildTranscriptsContextData.ts` — pure live-state → `createTranscriptsScope(...)` mapper (baselines + every sourceable custom value) plus `TRANSCRIPTS_CONTEXT_MENU_PROPS`. Demo + runtime share this one shape.
 - `agent-context/transcriptsExtraSections.ts` — surface-specific right-click items (Copy transcript), wired to real behavior.
 - `TranscriptViewer.tsx` mounts the v3 menu on both the presentational rendered transcript (`NonEditableContextMenu`) and the inline body editor (`EditableContextMenu`, `surfaceName` + `getApplicationScope` on its `ProTextarea`). Manifest: `features/surfaces/manifests/transcripts.manifest.ts`.
@@ -120,6 +124,15 @@ The whole transcription ecosystem is catalogued at **`/transcripts/admin`** (`ap
 
 ## Change log
 
+- `2026-08-08` — **Transcript hub review repair.** `/transcripts` now exposes
+  an explicit Mine / organization scope control (Mine by default) and applies
+  that scope to processor, studio, cleanup, detached-recording, active-recording,
+  and parent-hydration reads. Phone and tablet list/nested views reuse the
+  canonical hub card instead of clipping desktop table columns; the route has
+  one semantic H1 and 44px navigation/action targets below desktop. The
+  required live relationship inspection also removed the forbidden
+  `_mirror_proj` / `_mirror_task` triggers and `transcripts_project_id_fkey`
+  through `transcripts_remove_forbidden_relationship_dependencies.sql`.
 - 2026-07-28 — D75 fixed: TranscriptsSidebar row wrapper is a role=button div (keyboard Enter/Space), killing the nested-button DOM violation.
 
 - `2026-07-26` — **TranscriptsContext DELETED → Redux.** The app-root `TranscriptsProvider` (wrapped every authenticated route to serve this one route family) is gone: list state lives in `features/transcripts/redux/transcriptsSlice.ts` (+ thunks owning the realtime channel, refetch-on-change now debounced 500ms), consumed via `features/transcripts/hooks/useTranscripts.ts` — identical API surface, so components changed one import line. Nothing transcripts-related mounts globally anymore.

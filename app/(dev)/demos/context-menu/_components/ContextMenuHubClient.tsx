@@ -47,9 +47,9 @@ export function ContextMenuHubClient({ pages }: ContextMenuHubClientProps) {
         </header>
 
         <section className="rounded-lg border border-border bg-card p-4 space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             What every surface gets free vs. what a surface adds
-          </h3>
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[12px] text-muted-foreground">
             <div className="space-y-1">
               <p className="font-semibold text-foreground">
@@ -202,9 +202,9 @@ export function ContextMenuHubClient({ pages }: ContextMenuHubClientProps) {
         </div>
 
         <section className="border-t border-border pt-4 space-y-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Where things live
-          </h3>
+          </h2>
           <ul className="text-[12px] text-muted-foreground space-y-1 list-disc ml-5">
             <li>
               Menu wrappers:{" "}
@@ -255,9 +255,9 @@ export function ContextMenuHubClient({ pages }: ContextMenuHubClientProps) {
         </section>
 
         <section className="space-y-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Common admin entry points
-          </h3>
+          </h2>
           <ul className="text-[12px] text-muted-foreground space-y-1 list-disc ml-5">
             <li>
               Personal shortcuts:{" "}
@@ -306,7 +306,7 @@ function PageLink({
   return (
     <Link
       href={href}
-      className="text-primary hover:underline font-mono text-[11px]"
+      className="inline-flex min-h-11 items-center font-mono text-[11px] text-primary hover:underline sm:min-h-8"
     >
       {children}
     </Link>

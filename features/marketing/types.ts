@@ -153,7 +153,12 @@ export interface CreateBrandInput {
   ogImageUrl: string | null;
   notes: string | null;
   status: string;
-  visibility: MarketingBrand["visibility"];
+  /**
+   * Omit to inherit the registry default
+   * (`platform.entity_types.default_visibility` for `web_brand`, applied by
+   * the DB column default). Pass only a deliberate user choice.
+   */
+  visibility?: MarketingBrand["visibility"];
   /** Serialized `BrandProfile` (via `brandProfileToJson`); omit for `{}`. */
   profile?: Json;
 }

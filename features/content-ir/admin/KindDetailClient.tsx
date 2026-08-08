@@ -101,7 +101,9 @@ export default function KindDetailClient({
   detail,
   initialTab,
 }: KindDetailClientProps) {
-  const [tab, setTab] = useState<TabId>(isTabId(initialTab) ? initialTab : "preview");
+  const [tab, setTab] = useState<TabId>(
+    isTabId(initialTab) ? initialTab : "preview",
+  );
   // Bumped after any example write so the shared fetch re-runs (admin edits
   // examples in place on the Examples tab).
   const [refreshKey, setRefreshKey] = useState(0);
@@ -112,7 +114,8 @@ export default function KindDetailClient({
   // The concrete sample the content-block generator teaches from — canonical
   // first, else the newest, else nothing (schema-synthesized downstream).
   const canonicalExampleData = useMemo(() => {
-    if (examples.status !== "ready" || examples.rows.length === 0) return undefined;
+    if (examples.status !== "ready" || examples.rows.length === 0)
+      return undefined;
     const canonical = examples.rows.find((row) => row.isCanonical);
     return (canonical ?? examples.rows[0]).data;
   }, [examples]);
@@ -127,17 +130,22 @@ export default function KindDetailClient({
     <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden bg-textured">
       {/* Header */}
       <header className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-2 pr-14">
-        <nav className="flex items-center gap-1 text-sm">
+        <nav
+          aria-label="Breadcrumb"
+          className="flex w-full min-w-0 flex-wrap items-center gap-1 text-sm sm:w-auto"
+        >
           <Link
             href="/administration/utilities/kind-registry"
-            className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            className="inline-flex min-h-10 items-center text-muted-foreground underline-offset-2 hover:text-foreground hover:underline sm:min-h-0"
           >
             Kind Registry
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="font-semibold text-foreground">{detail.label}</span>
+          <h1 className="min-w-0 break-words font-semibold text-foreground">
+            {detail.label}
+          </h1>
         </nav>
-        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+        <code className="max-w-full break-all rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
           {detail.kind}
         </code>
         <span
@@ -159,6 +167,7 @@ export default function KindDetailClient({
             label={detail.label}
             part="edit"
             emittedJsonSchema={detail.emittedJsonSchema}
+            className="min-h-10"
           >
             Edit with agent
           </KindAgentButton>
@@ -166,13 +175,37 @@ export default function KindDetailClient({
       </header>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-border bg-card px-4">
+      <div className="border-b border-border bg-card px-3 py-2 sm:hidden">
+        <label
+          htmlFor="kind-detail-section"
+          className="mb-1 block text-xs font-medium text-muted-foreground"
+        >
+          Kind detail section
+        </label>
+        <select
+          id="kind-detail-section"
+          value={tab}
+          onChange={(event) => selectTab(event.target.value as TabId)}
+          className="min-h-11 w-full rounded-md border border-border bg-background px-3 text-base text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {TABS.map((id) => (
+            <option key={id} value={id}>
+              {TAB_LABELS[id]}
+            </option>
+          ))}
+        </select>
+      </div>
+      <nav
+        aria-label="Kind detail sections"
+        className="hidden items-center gap-1 overflow-x-auto border-b border-border bg-card px-4 sm:flex"
+      >
         {TABS.map((id) => (
           <button
             key={id}
             type="button"
             onClick={() => selectTab(id)}
-            className={`border-b-2 px-3 py-1.5 text-sm transition-colors ${
+            aria-current={tab === id ? "page" : undefined}
+            className={`min-h-10 shrink-0 border-b-2 px-3 py-1.5 text-sm transition-colors ${
               tab === id
                 ? "border-primary font-medium text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -181,10 +214,10 @@ export default function KindDetailClient({
             {TAB_LABELS[id]}
           </button>
         ))}
-      </div>
+      </nav>
 
       {/* Content */}
-      <main className="min-h-0 flex-1 overflow-y-auto p-4">
+      <main className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
         {tab === "preview" && (
           <KindPreviewTab kind={detail.kind} examples={examples} />
         )}

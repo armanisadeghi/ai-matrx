@@ -415,7 +415,12 @@ export function MatrxDataTable<T>({
     : toolbar?.facets;
 
   return (
-    <div className={cn("flex h-full min-h-0 flex-col gap-2", className)}>
+    <div
+      className={cn(
+        "flex h-full min-h-0 flex-col gap-2 max-lg:[&_button]:min-h-11 max-lg:[&_button]:min-w-11 max-lg:[&_input]:min-h-11 max-lg:[&_table_a]:inline-flex max-lg:[&_table_a]:min-h-11 max-lg:[&_table_a]:items-center",
+        className,
+      )}
+    >
       {/* Toolbar */}
       {(showSearch ||
         toolbar?.anyOf ||

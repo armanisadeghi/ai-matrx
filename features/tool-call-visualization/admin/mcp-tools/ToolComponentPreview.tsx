@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -201,15 +201,15 @@ function LivePreviewRenderer({
 
   useEffect(() => {
     if (!simulateStream) {
-      setVisibleEventCount(totalEvents);
+      void Promise.resolve().then(() => setVisibleEventCount(totalEvents));
       return undefined;
     }
-    setVisibleEventCount(1);
+    void Promise.resolve().then(() => setVisibleEventCount(1));
     const intervalMs = totalEvents > 1 ? 5000 / (totalEvents - 1) : 1000;
     timerRef.current = setInterval(() => {
       setVisibleEventCount((prev) => {
         if (prev >= totalEvents) {
-          clearInterval(timerRef.current!);
+          if (timerRef.current) clearInterval(timerRef.current);
           return totalEvents;
         }
         return prev + 1;
@@ -297,7 +297,7 @@ export function ToolComponentPreview({
   }, [tool.id, tool.name, toast]);
 
   useEffect(() => {
-    loadSamples();
+    void Promise.resolve().then(loadSamples);
   }, [loadSamples]);
 
   // ── Revision generation ───────────────────────────────────────────────────
@@ -485,7 +485,7 @@ export function ToolComponentPreview({
       </Dialog>
 
       {/* Sample selector */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <div className="flex items-center gap-2 flex-shrink-0">
           <FlaskConical className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">Sample</span>
@@ -509,25 +509,27 @@ export function ToolComponentPreview({
             first.
           </div>
         ) : (
-          <div className="flex items-center gap-2 flex-1">
+          <div className="flex min-w-0 flex-1 items-start gap-2">
             <Select
               value={selectedSampleId}
               onValueChange={setSelectedSampleId}
             >
-              <SelectTrigger className="flex-1 max-w-xs h-8 text-xs">
+              <SelectTrigger
+                aria-label="Sample fixture"
+                className="h-auto min-h-11 min-w-0 flex-1 py-2 text-left text-xs [&>span]:line-clamp-none [&>span]:whitespace-normal sm:h-8 sm:min-h-0 sm:max-w-md sm:py-1 sm:[&>span]:line-clamp-1 sm:[&>span]:whitespace-nowrap"
+              >
                 <SelectValue placeholder="Select a sample…" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
                 {samples.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
-                    <span className="text-xs">
+                    <span className="whitespace-normal break-words text-xs">
                       {formatDistanceToNow(new Date(s.created_at), {
                         addSuffix: true,
                       })}
                       {s.use_for_component && " · Tagged"}
                       {s.is_success === true && " · Pass"}
-                      {s.admin_comments &&
-                        ` · "${s.admin_comments.slice(0, 40)}"`}
+                      {s.admin_comments && ` · "${s.admin_comments}"`}
                     </span>
                   </SelectItem>
                 ))}
@@ -537,7 +539,9 @@ export function ToolComponentPreview({
               variant="ghost"
               size="sm"
               onClick={loadSamples}
-              className="h-8 w-8 p-0"
+              aria-label="Reload samples"
+              title="Reload samples"
+              className="h-11 w-11 shrink-0 p-0 sm:h-8 sm:w-8"
             >
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
@@ -548,20 +552,22 @@ export function ToolComponentPreview({
       {/* Live Preview */}
       {selectedSample && (
         <Card>
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Eye className="h-4 w-4" />
-              Live Preview
-              <Badge variant="secondary" className="text-[10px] font-normal">
-                {formatDistanceToNow(new Date(selectedSample.created_at), {
-                  addSuffix: true,
-                })}
-              </Badge>
-              <div className="ml-auto flex items-center gap-1.5">
+          <CardHeader className="px-4 pb-2 pt-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold leading-none tracking-tight">
+                <Eye className="h-4 w-4 shrink-0" />
+                Live Preview
+                <Badge variant="secondary" className="text-[10px] font-normal">
+                  {formatDistanceToNow(new Date(selectedSample.created_at), {
+                    addSuffix: true,
+                  })}
+                </Badge>
+              </h2>
+              <div className="flex flex-wrap items-center gap-1.5 sm:ml-auto">
                 <Button
                   variant={simulateStream ? "default" : "outline"}
                   size="sm"
-                  className="h-7 gap-1 text-[11px]"
+                  className="min-h-11 gap-1 text-[11px] sm:min-h-0 sm:h-7"
                   onClick={() => {
                     setSimulateStream((s) => !s);
                     setStreamKey((k) => k + 1);
@@ -575,7 +581,7 @@ export function ToolComponentPreview({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 gap-1 text-[11px]"
+                    className="min-h-11 gap-1 text-[11px] sm:min-h-0 sm:h-7"
                     onClick={() => setStreamKey((k) => k + 1)}
                     title="Replay simulation"
                   >
@@ -584,7 +590,7 @@ export function ToolComponentPreview({
                   </Button>
                 )}
               </div>
-            </CardTitle>
+            </div>
           </CardHeader>
           <CardContent className="pt-0 px-4 pb-4">
             <LivePreviewRenderer
@@ -600,11 +606,11 @@ export function ToolComponentPreview({
 
       {/* AI Revision panel */}
       <Card>
-        <CardHeader className="pb-2 pt-3 px-4">
-          <CardTitle className="text-sm flex items-center gap-2">
+        <CardHeader className="px-4 pb-2 pt-3">
+          <h2 className="flex items-center gap-2 text-sm font-semibold leading-none tracking-tight">
             <Rainbow className="h-4 w-4" />
             Request AI Revision
-          </CardTitle>
+          </h2>
         </CardHeader>
         <CardContent className="px-4 pb-4 space-y-3">
           <Textarea
@@ -616,7 +622,7 @@ export function ToolComponentPreview({
             disabled={agent.isStreaming}
           />
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
               onClick={handleRevise}
@@ -625,7 +631,7 @@ export function ToolComponentPreview({
                 !selectedSampleId ||
                 !revisionInstructions.trim()
               }
-              className="gap-1.5"
+              className="min-h-11 gap-1.5 sm:min-h-0"
             >
               {agent.isStreaming ? (
                 <>
@@ -642,7 +648,7 @@ export function ToolComponentPreview({
                 variant="ghost"
                 size="sm"
                 onClick={agent.cancel}
-                className="gap-1 text-xs h-8"
+                className="h-11 gap-1 text-xs sm:h-8"
               >
                 <X className="h-3 w-3" /> Cancel
               </Button>
@@ -653,7 +659,7 @@ export function ToolComponentPreview({
                 variant="default"
                 onClick={handleSaveRevision}
                 disabled={isSavingRevision}
-                className="gap-1.5 ml-auto"
+                className="ml-auto min-h-11 gap-1.5 sm:min-h-0"
               >
                 {isSavingRevision ? (
                   <>

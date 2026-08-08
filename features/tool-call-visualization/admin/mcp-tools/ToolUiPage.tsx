@@ -118,21 +118,24 @@ export function ToolUiPage({ tool }: Props) {
   return (
     <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 flex items-center gap-3 px-6 py-3 border-b border-border flex-wrap">
+      <div className="flex-shrink-0 flex items-center gap-2 border-b border-border px-4 py-2 sm:gap-3 sm:px-6 sm:py-3">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigateTo(`/administration/agents/mcp-tools/${tool.id}`)}
           disabled={isPending}
-          className="gap-1.5 h-8"
+          aria-label={`Back to ${tool.name}`}
+          className="h-11 w-11 shrink-0 gap-1.5 p-0 sm:h-8 sm:w-auto sm:px-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          {tool.name}
+          <span className="hidden sm:inline">{tool.name}</span>
         </Button>
-        <span className="text-sm font-medium text-muted-foreground">/</span>
-        <span className="text-sm font-medium">UI Component</span>
+        <span className="hidden text-sm font-medium text-muted-foreground sm:inline">/</span>
+        <h1 className="min-w-0 text-base font-semibold leading-tight text-foreground sm:text-sm">
+          <span className="font-mono">{tool.name}</span> UI Component
+        </h1>
         {tool.category && (
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="ml-auto shrink-0 text-[10px]">
             {formatText(tool.category)}
           </Badge>
         )}
@@ -144,17 +147,17 @@ export function ToolUiPage({ tool }: Props) {
           defaultValue="preview"
           className="flex-1 flex flex-col overflow-hidden"
         >
-          <div className="flex-shrink-0 px-6 pt-2 border-b border-border">
-            <TabsList className="h-9">
-              <TabsTrigger value="preview" className="text-xs gap-1.5">
+          <div className="flex-shrink-0 border-b border-border px-4 pt-2 sm:px-6">
+            <TabsList className="grid h-auto w-full grid-cols-3 sm:inline-flex sm:h-9 sm:w-auto">
+              <TabsTrigger value="preview" className="min-h-11 gap-1.5 px-2 text-xs sm:min-h-0 sm:px-3">
                 <Eye className="h-3.5 w-3.5" />
                 Preview &amp; Test
               </TabsTrigger>
-              <TabsTrigger value="generate" className="text-xs gap-1.5">
+              <TabsTrigger value="generate" className="min-h-11 gap-1.5 px-2 text-xs sm:min-h-0 sm:px-3">
                 <Zap className="h-3.5 w-3.5" />
                 Generate
               </TabsTrigger>
-              <TabsTrigger value="editor" className="text-xs gap-1.5">
+              <TabsTrigger value="editor" className="min-h-11 gap-1.5 px-2 text-xs sm:min-h-0 sm:px-3">
                 <Paintbrush className="h-3.5 w-3.5" />
                 Edit Code
               </TabsTrigger>
@@ -163,7 +166,7 @@ export function ToolUiPage({ tool }: Props) {
 
           <div className="flex-1 overflow-y-auto">
             {/* Preview + AI revision tab */}
-            <TabsContent value="preview" className="p-6 m-0">
+            <TabsContent value="preview" className="m-0 p-4 sm:p-6">
               <ToolComponentPreview
                 key={previewKey}
                 tool={tool}
@@ -172,7 +175,7 @@ export function ToolUiPage({ tool }: Props) {
             </TabsContent>
 
             {/* Generator wizard tab */}
-            <TabsContent value="generate" className="p-6 m-0">
+            <TabsContent value="generate" className="m-0 p-4 sm:p-6">
               <ToolUiComponentGenerator
                 tools={[tool]}
                 preselectedToolName={tool.name}

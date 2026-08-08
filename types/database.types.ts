@@ -21253,6 +21253,14 @@ export type Database = {
         Args: { p_id: string; p_org: string; p_owner: string; p_type: string }
         Returns: Database["public"]["Enums"]["permission_level"]
       }
+      accessible_entity_ids: {
+        Args: {
+          p_depth?: number
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_type: string
+        }
+        Returns: string[]
+      }
       apply_config_rls: {
         Args: { p_schema: string; p_table: string }
         Returns: undefined
@@ -23855,6 +23863,10 @@ export type Database = {
           item_type: string
           max_level: Database["public"]["Enums"]["permission_level"]
         }[]
+      }
+      entity_default_visibility: {
+        Args: { p_token: string }
+        Returns: Database["platform"]["Enums"]["visibility"]
       }
       entity_row_access_attrs: {
         Args: { p_id: string; p_schema: string; p_table: string }
@@ -51126,6 +51138,15 @@ export type Database = {
           p_mime_prefix: string
           p_organization_id: string
           p_session_id: string
+          p_site_id: string
+        }
+        Returns: undefined
+      }
+      assert_crawl_artifact_file_reused: {
+        Args: {
+          p_file_id: string
+          p_mime_prefix: string
+          p_organization_id: string
           p_site_id: string
         }
         Returns: undefined
