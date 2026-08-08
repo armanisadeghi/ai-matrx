@@ -5,20 +5,22 @@
 // opens the exact passage it was grounded in. Nothing renders when there are no
 // citations — a grounded item with an empty citation list simply shows nothing.
 //
-// This is deliberately presentational + self-contained: it reads the envelope's
-// `citations[]` and shows title / locator / excerpt. Resolving a citation to a
-// live, navigable source view (open the PDF at the page) is a consumer concern —
-// pass `onOpenSource` to wire it; without it, the excerpt popover is the resolve.
+// Chips render through the ONE shared presentational primitive
+// (`CitationChip`, components/official/citation-chip/). This file stays the
+// TrustEnvelope-aware consumer: it maps `SourceCitation` to chip props and
+// wires `openCitationSource`. The primitive itself knows nothing of
+// TrustEnvelope — that boundary keeps chat/education decoupled while sharing
+// the chip.
+//
+// Resolving a citation to a live, navigable source view (open the PDF at the
+// page) is a consumer concern — pass `onOpenSource` to wire it; without it,
+// the excerpt popover is the resolve.
 
 "use client";
 
-import { Quote, FileText, Link as LinkIcon, ExternalLink } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { FileText, Link as LinkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import CitationChip from "@/components/official/citation-chip/CitationChip";
 import type { SourceCitation, TrustEnvelope } from "../types";
 import { citationIsOpenable, openCitationSource } from "../open-source";
 
@@ -68,57 +70,22 @@ export function SourceCitations({
         </span>
       )}
       <div className="flex flex-wrap gap-1">
-        {citations.map((c, i) => {
-          const Icon =
-            (KIND_ICON as Record<string, typeof FileText>)[c.sourceKind] ??
-            FileText;
-          return (
-            <Popover key={`${c.sourceId}-${i}`}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex max-w-[16rem] items-center gap-1 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 text-xs text-foreground transition-colors hover:bg-accent"
-                >
-                  <Icon className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
-                  <span className="truncate">{citationLabel(c, i)}</span>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="start" className="w-80 p-3">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-start gap-2">
-                    <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {citationLabel(c, i)}
-                      </p>
-                      {c.locator && (
-                        <p className="text-xs text-muted-foreground">
-                          {c.locator}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  {c.excerpt && (
-                    <blockquote className="flex gap-2 rounded-md bg-muted/60 p-2 text-xs italic text-muted-foreground">
-                      <Quote className="h-3 w-3 shrink-0" aria-hidden />
-                      <span className="not-italic">{c.excerpt}</span>
-                    </blockquote>
-                  )}
-                  {(onOpenSource || citationIsOpenable(c)) && (
-                    <button
-                      type="button"
-                      onClick={() => open(c)}
-                      className="inline-flex items-center gap-1 self-start text-xs font-medium text-primary hover:underline"
-                    >
-                      <ExternalLink className="h-3 w-3" aria-hidden />
-                      {c.url ? "Open web source" : "Open full source"}
-                    </button>
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
-          );
-        })}
+        {citations.map((c, i) => (
+          <CitationChip
+            key={`${c.sourceId}-${i}`}
+            icon={
+              (KIND_ICON as Record<string, typeof FileText>)[c.sourceKind] ??
+              FileText
+            }
+            label={citationLabel(c, i)}
+            locator={c.locator}
+            excerpt={c.excerpt}
+            onOpen={
+              onOpenSource || citationIsOpenable(c) ? () => open(c) : undefined
+            }
+            openLabel={c.url ? "Open web source" : "Open full source"}
+          />
+        ))}
       </div>
     </div>
   );

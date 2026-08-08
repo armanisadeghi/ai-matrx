@@ -13,13 +13,14 @@
  * with a tooltip and warns once.
  */
 
-import { ExternalLink, FileText, Globe, Quote } from "lucide-react";
+import { FileText, Globe } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { CitationPopoverBody } from "@/components/official/citation-chip/CitationChip";
 import {
   citationSourceDisplayKind,
   type MessageCitationSource,
@@ -118,40 +119,15 @@ export function CitationMarkerInline(props: CitationMarkerInlineProps) {
         </sup>
       </PopoverTrigger>
       <PopoverContent align="start" side="top" sideOffset={6} className="w-80 p-3">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-start gap-2">
-            <Icon
-              className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
-              aria-hidden
-            />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-foreground">
-                {label}
-              </p>
-              {locator && (
-                <p className="text-xs text-muted-foreground">{locator}</p>
-              )}
-            </div>
-          </div>
-          {source.citedText && (
-            <blockquote className="flex gap-2 rounded-md bg-muted/60 p-2 text-xs italic text-muted-foreground">
-              <Quote className="h-3 w-3 shrink-0" aria-hidden />
-              <span className="not-italic line-clamp-6">
-                {source.citedText}
-              </span>
-            </blockquote>
-          )}
-          {openable && (
-            <button
-              type="button"
-              onClick={() => openSource(source)}
-              className="inline-flex items-center gap-1 self-start text-xs font-medium text-primary hover:underline"
-            >
-              <ExternalLink className="h-3 w-3" aria-hidden />
-              {source.fileId ? "Open source" : "Open web source"}
-            </button>
-          )}
-        </div>
+        <CitationPopoverBody
+          icon={Icon}
+          label={label}
+          locator={locator}
+          excerpt={source.citedText}
+          clampExcerpt
+          onOpen={openable ? () => openSource(source) : undefined}
+          openLabel={source.fileId ? "Open source" : "Open web source"}
+        />
       </PopoverContent>
     </Popover>
   );

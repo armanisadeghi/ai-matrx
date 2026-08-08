@@ -150,6 +150,23 @@ export const categoryIcons: Record<ComponentCategory, React.ReactNode> = {
 
 export const componentList: ComponentEntry[] = [
   {
+    id: "citation-chip",
+    name: "Citation Chip",
+    path: "components/official/citation-chip/CitationChip.tsx",
+    description:
+      "The shared citation source chip + excerpt popover (number, icon, title, locator, quote, open action). Chat Sources footer, education trust chips, and the inline superscript marker all render through it.",
+    categories: ["data-display", "interactive", "text"],
+    tags: [
+      "citation",
+      "source",
+      "chip",
+      "popover",
+      "excerpt",
+      "trust",
+      "sources",
+    ],
+  },
+  {
     id: "miller-columns-context-picker",
     name: "Miller Columns Context Picker",
     path: "features/scopes/components/active-context/miller-columns/MillerColumns.tsx",
