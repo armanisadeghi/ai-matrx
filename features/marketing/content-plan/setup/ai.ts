@@ -21,6 +21,7 @@
 import { useRef, useState } from "react";
 
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import { resolveAgentSlot } from "@/features/agents/slots/service";
 import {
   selectFirstExtractedObject,
   selectJsonExtractionComplete,
@@ -41,7 +42,7 @@ import type { CommittedArchetype } from "./service";
  * current_plan_summary, target_page_count, guidance. Structured output:
  * {archetype_key, rationale, family_counts[], concept_names[]}.
  */
-export const SHAPE_PLANNER_AGENT_ID = "b600975c-fc8f-4f1d-ab36-670be436a038";
+export const SHAPE_PLANNER_SLOT = "content_plan.shape_planner";
 
 /**
  * Platform agent "Content Plan Family Namer" — permanent latest-version
@@ -50,7 +51,7 @@ export const SHAPE_PLANNER_AGENT_ID = "b600975c-fc8f-4f1d-ab36-670be436a038";
  * target_count, existing_names, guidance. Structured output:
  * {names: [{label, reason}], notes}.
  */
-export const FAMILY_NAMER_AGENT_ID = "7a16db8c-48eb-4997-a8d0-dc4a8892d7c5";
+export const FAMILY_NAMER_SLOT = "content_plan.family_namer";
 
 /**
  * Platform agent "Content Plan Entity Curator" — permanent latest-version
@@ -58,7 +59,7 @@ export const FAMILY_NAMER_AGENT_ID = "7a16db8c-48eb-4997-a8d0-dc4a8892d7c5";
  * research_report, site_domain, existing_entities, guidance. Structured
  * output: {entities: [{label, entity_type, description, reason}], notes}.
  */
-export const ENTITY_CURATOR_AGENT_ID = "c43e4497-3093-4b18-a906-b088127d8b9c";
+export const ENTITY_CURATOR_SLOT = "content_plan.entity_curator";
 
 /**
  * Platform agent "Content Plan Reviewer" — permanent latest-version pointer
@@ -67,7 +68,7 @@ export const ENTITY_CURATOR_AGENT_ID = "c43e4497-3093-4b18-a906-b088127d8b9c";
  * {summary, findings: [{severity, title, detail, suggested_route,
  * suggested_label}]}.
  */
-export const PLAN_REVIEWER_AGENT_ID = "2a7f0dc8-5525-437a-8f2e-35f12a45cb27";
+export const PLAN_REVIEWER_SLOT = "content_plan.plan_reviewer";
 
 /**
  * BINDING contract sent as the reviewer's `guidance` on every run.
@@ -112,7 +113,7 @@ export interface FamilyNamesResult {
  * authority there. A per-page keyword agent cannot do that — which is
  * exactly why this one takes the whole tree.
  */
-export const KEYWORD_STRATEGIST_AGENT_ID = "e063ded1-38b2-4721-a526-aad01d26e2ef";
+export const KEYWORD_STRATEGIST_SLOT = "content_plan.keyword_strategist";
 
 /** Whole-plan reasoning over a long report — well past the default poll. */
 const STRATEGY_TIMEOUT_MS = 420_000;
@@ -145,7 +146,7 @@ export interface KeywordStrategyResult {
  * current_plan, entity_roster, research_report, guidance. Chooses ONLY from
  * the roster by label; gaps come back as `missing_entities`, never invented.
  */
-export const ENTITY_ATTACHER_AGENT_ID = "a1a7784c-538b-44e5-b09d-40d215b79aa6";
+export const ENTITY_ATTACHER_SLOT = "content_plan.entity_attacher";
 
 /**
  * Platform agent "Content Plan Brief Writer" — permanent latest-version
@@ -153,7 +154,7 @@ export const ENTITY_ATTACHER_AGENT_ID = "a1a7784c-538b-44e5-b09d-40d215b79aa6";
  * keyword_assignment, neighbours, research_report, guidance. Neighbour-aware
  * by design: a brief written without the siblings duplicates them.
  */
-export const BRIEF_WRITER_AGENT_ID = "711d29b5-0afc-494c-a665-6011e529efce";
+export const BRIEF_WRITER_SLOT = "content_plan.brief_writer";
 
 export interface EntityAttachment {
   route: string;
@@ -657,15 +658,20 @@ export function useSetupAgents(siteId: string | null) {
   const inFlight = useRef(false);
 
   async function run<T>(
-    agentId: string,
+    slotKey: string,
     variables: Record<string, string>,
     coerce: (value: unknown) => T,
     timeoutMs?: number,
   ): Promise<T> {
+    // Which agent runs this step is a SLOT, never a hardcoded id: the system
+    // default is managed in the admin console and any user may bind their own
+    // agent at /agents/slots. Resolution is loud — an unresolvable slot throws
+    // here rather than silently running the wrong agent.
+    const { agentId } = await resolveAgentSlot(slotKey);
     const { requestId } = await dispatch(
       launchAgentExecution({
         agentId,
-        surfaceKey: `content-plan-setup:${siteId ?? "none"}:${agentId}`,
+        surfaceKey: `content-plan-setup:${siteId ?? "none"}:${slotKey}`,
         sourceFeature: "marketing",
         jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
         runtime: { variables },
@@ -683,7 +689,7 @@ export function useSetupAgents(siteId: string | null) {
     inFlight.current = true;
     setShapeBusy(true);
     try {
-      return await run(SHAPE_PLANNER_AGENT_ID, variables, coerceShapePlan);
+      return await run(SHAPE_PLANNER_SLOT, variables, coerceShapePlan);
     } finally {
       inFlight.current = false;
       setShapeBusy(false);
@@ -698,7 +704,7 @@ export function useSetupAgents(siteId: string | null) {
     inFlight.current = true;
     setNamingFamilyKey(familyKey);
     try {
-      return await run(FAMILY_NAMER_AGENT_ID, variables, coerceFamilyNames);
+      return await run(FAMILY_NAMER_SLOT, variables, coerceFamilyNames);
     } finally {
       inFlight.current = false;
       setNamingFamilyKey(null);
@@ -713,7 +719,7 @@ export function useSetupAgents(siteId: string | null) {
     setKeywordsBusy(true);
     try {
       return await run(
-        KEYWORD_STRATEGIST_AGENT_ID,
+        KEYWORD_STRATEGIST_SLOT,
         variables,
         coerceKeywordStrategy,
         STRATEGY_TIMEOUT_MS,
@@ -732,7 +738,7 @@ export function useSetupAgents(siteId: string | null) {
     setAttachBusy(true);
     try {
       return await run(
-        ENTITY_ATTACHER_AGENT_ID,
+        ENTITY_ATTACHER_SLOT,
         variables,
         coerceEntityAttachPlan,
         STRATEGY_TIMEOUT_MS,
@@ -751,7 +757,7 @@ export function useSetupAgents(siteId: string | null) {
     inFlight.current = true;
     setBriefBusy(true);
     try {
-      return await run(BRIEF_WRITER_AGENT_ID, variables, coercePageBrief);
+      return await run(BRIEF_WRITER_SLOT, variables, coercePageBrief);
     } finally {
       inFlight.current = false;
       setBriefBusy(false);
@@ -765,7 +771,7 @@ export function useSetupAgents(siteId: string | null) {
     inFlight.current = true;
     setReviewBusy(true);
     try {
-      return await run(PLAN_REVIEWER_AGENT_ID, variables, coercePlanReview);
+      return await run(PLAN_REVIEWER_SLOT, variables, coercePlanReview);
     } finally {
       inFlight.current = false;
       setReviewBusy(false);
@@ -779,7 +785,7 @@ export function useSetupAgents(siteId: string | null) {
     inFlight.current = true;
     setEntitiesBusy(true);
     try {
-      return await run(ENTITY_CURATOR_AGENT_ID, variables, coerceEntityCuration);
+      return await run(ENTITY_CURATOR_SLOT, variables, coerceEntityCuration);
     } finally {
       inFlight.current = false;
       setEntitiesBusy(false);
