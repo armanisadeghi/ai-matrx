@@ -9,11 +9,10 @@
  * by `agent.review_queue` (read/written via supabase-js, no server route).
  * See `features/admin/agent-review/FEATURE.md`.
  *
- * Rows are grouped into three visible sections (pending / changes_requested /
- * approved) plus a collapsed archived section. Each row has a title, a
- * target URL, agent-written instructions for what to check, and an optional
- * human feedback note the admin writes back for the originating agent to
- * read.
+ * The repair board groups rows by status and exposes structured triage from
+ * metadata: a primary lane, required tools, workstreams, priority, claim
+ * state, and verification requirements. The table remains deliberately small;
+ * routing and coordination evolve inside the versioned metadata envelope.
  *
  * What an agent bound here may safely do: read the queue (counts, and a
  * sample of rows with their instructions/feedback) and help the admin triage
@@ -34,6 +33,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@/features/surfaces/types";
+import type { ReviewTriage } from "@/features/admin/agent-review/triage";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const ADMIN_AGENT_REVIEW_SURFACE_NAME = "matrx-admin/agent-review";
@@ -116,6 +116,39 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "queue",
   },
   {
+    name: "unclassified_count",
+    label: "Unclassified count",
+    description:
+      "Number of loaded rows whose metadata.triage envelope is missing or invalid. These rows cannot be routed safely until classified.",
+    valueType: "number",
+    alwaysAvailable: true,
+    typicalCharCount: 3,
+    sortOrder: 155,
+    group: "queue",
+  },
+  {
+    name: "repair_lane_counts",
+    label: "Repair counts by lane",
+    description:
+      "Changes-requested row counts keyed by primary lane: browser_ui, code_only, database_data, backend_api, deployment, cross_system, and human_required.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 180,
+    sortOrder: 156,
+    group: "queue",
+  },
+  {
+    name: "repair_tool_counts",
+    label: "Repair counts by required tool",
+    description:
+      "Changes-requested row counts keyed by required tool. Counts overlap because one repair may require browser, code, database, deployment, or external-service access together.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 220,
+    sortOrder: 157,
+    group: "queue",
+  },
+  {
     name: "queue_load_error",
     label: "Queue load error",
     description:
@@ -130,7 +163,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "queue_sample",
     label: "Queue sample",
     description:
-      "The first several loaded rows, each with { id, title, url, status, source, instructions, feedback, created_at }, newest first. Bindable, not auto-context — instructions/feedback text adds up fast. Empty array before the first successful load.",
+      "The first several loaded rows, each with { id, title, url, status, source, instructions, feedback, created_at, triage }, newest first. Bindable, not auto-context — instructions/feedback text adds up fast. Empty array before the first successful load.",
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 4000,
@@ -150,7 +183,7 @@ export const adminAgentReviewManifest: SurfaceManifest = {
   intro: `<surface_intro>
 This is an ADMIN surface: Arman's Agent Review Queue at /administration/users/agent-review, backed directly by agent.review_queue. Any agent that builds a reviewable demo, route, or UI surface inserts a row here for him to check.
 
-Rows are grouped by status: pending (needs a first look), changes_requested (Arman left feedback, waiting on the agent), approved (signed off), and archived (fully handled, collapsed by default — see show_archived). queue_row_count / pending_count / changes_requested_count / approved_count / archived_count give the shape of the queue at a glance; queue_sample carries a handful of actual rows (title, url, instructions, feedback) for detail.
+Rows are grouped by status: pending (needs a first look), changes_requested (repair backlog), approved (signed off), and archived (fully handled). Structured metadata routes repair work by primary lane, required tools, priority, ownership, and verification state. repair_lane_counts and repair_tool_counts summarize that routing; tool counts deliberately overlap because real tasks often need more than one capability. queue_sample includes each row's triage envelope for detail.
 
 What you may safely do: help Arman triage — summarize what's pending, draft feedback text for a row, flag stale items. You never change a row's status or save feedback yourself; every state transition (Save feedback / Request changes / Approve / Archive / Restore) is Arman's explicit button press.
 </surface_intro>`,
@@ -171,6 +204,7 @@ export interface AdminAgentReviewSampleEntry {
   instructions: string;
   feedback: string | null;
   created_at: string;
+  triage: ReviewTriage | null;
 }
 
 /**
@@ -184,6 +218,9 @@ export function createAdminAgentReviewScope(values: {
   changes_requested_count: number;
   approved_count: number;
   archived_count: number;
+  unclassified_count: number;
+  repair_lane_counts: Record<string, number>;
+  repair_tool_counts: Record<string, number>;
   show_archived: boolean;
   queue_sample: AdminAgentReviewSampleEntry[];
   // alwaysAvailable: false → optional

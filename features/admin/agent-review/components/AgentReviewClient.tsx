@@ -1,43 +1,88 @@
 "use client";
 
-// Agent Review Queue — the ONE place agents drop anything they built that
-// Arman must go see/test. Reads/writes agent.review_queue directly via
-// supabase-js (super-admin RLS). Agents insert rows via the Supabase MCP and
-// read feedback back the same way. See ../FEATURE.md.
-
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  RefreshCw,
-  ExternalLink,
+  AlertTriangle,
   Archive,
   CheckCircle2,
-  Undo2,
-  MessageSquareWarning,
   ClipboardCheck,
+  ExternalLink,
+  MessageSquareWarning,
+  RefreshCw,
+  Undo2,
 } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
-import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/lib/toast";
+import { SearchInput } from "@/components/official/SearchInput";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { toast } from "@/lib/toast";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_AGENT_REVIEW_SURFACE_NAME,
   createAdminAgentReviewScope,
 } from "@/features/surfaces/manifests/admin-agent-review.manifest";
 import {
+  loadReviewQueue,
+  updateReviewQueueRow,
+} from "@/features/admin/agent-review/service";
+import {
+  REVIEW_LANES,
+  REVIEW_LANE_LABELS,
+  REVIEW_TOOLS,
+  REVIEW_TOOL_LABELS,
+  metadataWithReviewTriage,
+  parseReviewMetadata,
+  suggestReviewTriage,
+  type ReviewLane,
+  type ReviewTool,
+} from "@/features/admin/agent-review/triage";
+import {
   REVIEW_STATUS_LABELS,
+  isReviewStatus,
   type ReviewQueueRow,
+  type ReviewQueueUpdate,
   type ReviewStatus,
 } from "@/features/admin/agent-review/types";
 
+type LaneFilter = "all" | "unclassified" | ReviewLane;
+type ToolFilter = "all" | ReviewTool;
+
 const STATUS_BADGE_CLASS: Record<ReviewStatus, string> = {
-  pending: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-  changes_requested: "bg-red-500/15 text-red-600 dark:text-red-400",
-  approved: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  pending: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  changes_requested: "bg-red-500/15 text-red-700 dark:text-red-300",
+  approved: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
   archived: "bg-muted text-muted-foreground",
 };
+
+const LANE_BADGE_CLASS: Record<ReviewLane, string> = {
+  browser_ui: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+  code_only: "bg-slate-500/15 text-slate-700 dark:text-slate-300",
+  database_data: "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+  backend_api: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300",
+  deployment: "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  cross_system: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300",
+  human_required: "bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300",
+};
+
+const SECTION_ORDER: { status: ReviewStatus; heading: string }[] = [
+  { status: "pending", heading: "Needs review" },
+  { status: "changes_requested", heading: "Repair backlog" },
+  { status: "approved", heading: "Approved — waiting for wrap-up" },
+];
 
 function ageLabel(iso: string): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
@@ -46,16 +91,39 @@ function ageLabel(iso: string): string {
   return `${days} days ago`;
 }
 
-function rowHumanText(row: ReviewQueueRow): string {
+function isLaneFilter(value: string): value is LaneFilter {
+  return (
+    value === "all" ||
+    value === "unclassified" ||
+    REVIEW_LANES.some((lane) => lane === value)
+  );
+}
+
+function isToolFilter(value: string): value is ToolFilter {
+  return value === "all" || REVIEW_TOOLS.some((tool) => tool === value);
+}
+
+function rowHumanText(row: ReviewQueueRow, feedback: string): string {
+  const metadata = parseReviewMetadata(row.metadata);
+  const triage = metadata.state === "ready" ? metadata.triage : null;
   return [
     `Review item: ${row.title}`,
     `URL: ${row.url}`,
-    `Status: ${REVIEW_STATUS_LABELS[row.status as ReviewStatus] ?? row.status}`,
+    `Status: ${isReviewStatus(row.status) ? REVIEW_STATUS_LABELS[row.status] : row.status}`,
     `Source: ${row.source}`,
+    triage
+      ? `Primary lane: ${REVIEW_LANE_LABELS[triage.lane]}`
+      : "Primary lane: Unclassified",
+    triage
+      ? `Required tools: ${triage.required_tools.map((tool) => REVIEW_TOOL_LABELS[tool]).join(", ")}`
+      : null,
+    triage
+      ? `Assignment: ${triage.assignment.state} (${triage.assignment.mode})`
+      : null,
     `Instructions: ${row.instructions}`,
-    row.feedback ? `Feedback: ${row.feedback}` : null,
+    feedback ? `Feedback: ${feedback}` : null,
   ]
-    .filter(Boolean)
+    .filter((value): value is string => Boolean(value))
     .join("\n");
 }
 
@@ -64,318 +132,626 @@ function ReviewItemCard({
   onChanged,
 }: {
   row: ReviewQueueRow;
-  onChanged: () => void;
+  onChanged: () => Promise<void>;
 }) {
   const [feedback, setFeedback] = useState(row.feedback ?? "");
   const [saving, setSaving] = useState(false);
+  const metadata = parseReviewMetadata(row.metadata);
+  const triage = metadata.state === "ready" ? metadata.triage : null;
+  const status = isReviewStatus(row.status) ? row.status : null;
+  const isArchived = status === "archived";
 
-  const update = useCallback(
-    async (patch: Partial<ReviewQueueRow>, successMessage: string) => {
-      setSaving(true);
-      try {
-        const supabase = createClient();
-        const { error } = await supabase
-          .schema("agent")
-          .from("review_queue")
-          .update(patch)
-          .eq("id", row.id);
-        if (error) throw new Error(error.message);
-        toast.success(successMessage);
-        onChanged();
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Update failed");
-      } finally {
-        setSaving(false);
-      }
-    },
-    [row.id, onChanged],
-  );
+  async function update(patch: ReviewQueueUpdate, successMessage: string) {
+    setSaving(true);
+    try {
+      await updateReviewQueueRow(row.id, patch);
+      toast.success(successMessage);
+      await onChanged();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Update failed");
+    } finally {
+      setSaving(false);
+    }
+  }
 
-  const saveFeedback = (status?: ReviewStatus) => {
+  function saveFeedback(nextStatus?: ReviewStatus) {
     const trimmed = feedback.trim();
     void update(
       {
         feedback: trimmed || null,
         feedback_at: trimmed ? new Date().toISOString() : null,
-        ...(status ? { status } : {}),
+        ...(nextStatus ? { status: nextStatus } : {}),
       },
-      status
-        ? `Saved — ${REVIEW_STATUS_LABELS[status]}`
+      nextStatus
+        ? `Saved — ${REVIEW_STATUS_LABELS[nextStatus]}`
         : "Feedback saved",
     );
-  };
+  }
 
-  const status = row.status as ReviewStatus;
-  const isArchived = status === "archived";
+  function applySuggestedTriage() {
+    try {
+      const nextMetadata = metadataWithReviewTriage(
+        row.metadata,
+        suggestReviewTriage(row),
+      );
+      void update(
+        { metadata: nextMetadata },
+        metadata.state === "invalid" ? "Triage repaired" : "Triage applied",
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Triage failed");
+    }
+  }
+
+  const currentFeedback = feedback.trim() || row.feedback || "";
 
   return (
-    <div className="rounded-lg border border-border bg-card p-3 space-y-2">
-      <div className="flex items-center gap-2 min-w-0">
-        <Badge className={STATUS_BADGE_CLASS[status] ?? ""}>
-          {REVIEW_STATUS_LABELS[status] ?? status}
-        </Badge>
-        <span className="font-medium text-sm text-foreground truncate">{row.title}</span>
-        <span className="text-xs text-muted-foreground shrink-0">
-          {row.source} · {ageLabel(row.created_at)}
-        </span>
-        <div className="ml-auto flex items-center gap-1 shrink-0">
-          <CopyButtons
+    <Accordion
+      type="single"
+      collapsible
+      className="rounded-lg border border-border bg-card"
+    >
+      <AccordionItem value={row.id} className="border-0">
+        <div className="flex min-w-0 items-start gap-1 pr-1.5">
+          <AccordionTrigger className="min-w-0 flex-1 gap-2 px-3 py-2.5 text-left hover:no-underline">
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                <Badge
+                  className={
+                    status
+                      ? STATUS_BADGE_CLASS[status]
+                      : "bg-red-500/15 text-red-700"
+                  }
+                >
+                  {status
+                    ? REVIEW_STATUS_LABELS[status]
+                    : `Invalid status: ${row.status}`}
+                </Badge>
+                {triage ? (
+                  <Badge className={LANE_BADGE_CLASS[triage.lane]}>
+                    {REVIEW_LANE_LABELS[triage.lane]}
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="border-amber-500/50 text-amber-700 dark:text-amber-300"
+                  >
+                    {metadata.state === "invalid"
+                      ? "Invalid triage"
+                      : "Unclassified"}
+                  </Badge>
+                )}
+                {triage?.priority === "high" ||
+                triage?.priority === "critical" ? (
+                  <Badge
+                    variant="outline"
+                    className="border-red-500/40 text-red-700 dark:text-red-300"
+                  >
+                    {triage.priority}
+                  </Badge>
+                ) : null}
+                <span className="text-xs font-normal text-muted-foreground">
+                  {row.source} · {ageLabel(row.created_at)}
+                </span>
+              </div>
+              <span className="block line-clamp-2 text-sm font-medium text-foreground">
+                {row.title}
+              </span>
+              {triage ? (
+                <span className="block truncate text-xs font-normal text-muted-foreground">
+                  {triage.required_tools
+                    .map((tool) => REVIEW_TOOL_LABELS[tool])
+                    .join(" · ")}
+                  {triage.assignment.owner
+                    ? ` · ${triage.assignment.owner}`
+                    : ` · ${triage.assignment.state}`}
+                </span>
+              ) : null}
+            </div>
+          </AccordionTrigger>
+          <Button
+            asChild
+            variant="ghost"
             size="icon"
-            label={`Review item ${row.title}`}
-            human={() => rowHumanText({ ...row, feedback: feedback.trim() || row.feedback })}
-            agent={() => ({
-              kind: "agent-review-item",
-              location: "Admin — Agent Review Queue",
-              description:
-                "One item from agent.review_queue awaiting/holding human review feedback. Act on the feedback, then UPDATE the row (set status back to 'pending' for re-review, or 'archived' once fully handled).",
-              data: { ...row, feedback: feedback.trim() || row.feedback },
-            })}
-          />
-          <Button asChild variant="outline" size="sm" className="h-7 gap-1">
-            <a href={row.url} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-3.5 w-3.5" />
-              Open
+            className="mt-1.5 h-10 w-10 shrink-0"
+          >
+            <a
+              href={row.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Open ${row.title} in a new tab`}
+            >
+              <ExternalLink className="h-4 w-4" />
             </a>
           </Button>
         </div>
-      </div>
 
-      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{row.instructions}</p>
+        <AccordionContent className="px-3 pb-3">
+          <div className="space-y-3 border-t border-border pt-3">
+            {metadata.state !== "ready" ? (
+              <div className="flex flex-col gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5 text-sm sm:flex-row sm:items-center">
+                <div className="flex min-w-0 items-start gap-2 text-amber-800 dark:text-amber-200">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    {metadata.state === "invalid"
+                      ? `Stored triage is invalid: ${metadata.issue}`
+                      : "This legacy row has no routing metadata."}
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="min-h-9 shrink-0 sm:ml-auto"
+                  disabled={saving}
+                  onClick={applySuggestedTriage}
+                >
+                  {metadata.state === "invalid"
+                    ? "Repair triage"
+                    : "Apply suggested triage"}
+                </Button>
+              </div>
+            ) : null}
 
-      {!isArchived && (
-        <div className="space-y-1.5">
-          <Textarea
-            value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
-            placeholder="Your feedback for the agent…"
-            className="min-h-16 text-sm"
-          />
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Button
-              size="sm"
-              variant="secondary"
-              className="h-7"
-              disabled={saving}
-              onClick={() => saveFeedback()}
-            >
-              Save feedback
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 gap-1 text-red-600 dark:text-red-400"
-              disabled={saving}
-              onClick={() => saveFeedback("changes_requested")}
-            >
-              <MessageSquareWarning className="h-3.5 w-3.5" />
-              Request changes
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 gap-1 text-emerald-600 dark:text-emerald-400"
-              disabled={saving}
-              onClick={() => saveFeedback("approved")}
-            >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Approve
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 gap-1 text-muted-foreground"
-              disabled={saving}
-              onClick={() => void update({ status: "archived" }, "Archived")}
-            >
-              <Archive className="h-3.5 w-3.5" />
-              Archive
-            </Button>
-            {row.feedback_at && (
-              <span className="text-xs text-muted-foreground ml-auto">
-                feedback {ageLabel(row.feedback_at)}
-              </span>
+            <div>
+              <h3 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Review instructions
+              </h3>
+              <p className="whitespace-pre-wrap text-sm text-foreground">
+                {row.instructions}
+              </p>
+            </div>
+
+            {row.feedback && isArchived ? (
+              <div>
+                <h3 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Feedback
+                </h3>
+                <p className="whitespace-pre-wrap text-sm text-foreground">
+                  {row.feedback}
+                </p>
+              </div>
+            ) : null}
+
+            {!isArchived ? (
+              <div className="space-y-2">
+                <Textarea
+                  value={feedback}
+                  onChange={(event) => setFeedback(event.target.value)}
+                  placeholder="Feedback for the repair agent…"
+                  aria-label={`Feedback for ${row.title}`}
+                  className="min-h-24 text-sm"
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="min-h-9"
+                    disabled={saving}
+                    onClick={() => saveFeedback()}
+                  >
+                    Save feedback
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="min-h-9 gap-1 text-red-700 dark:text-red-300"
+                    disabled={saving}
+                    onClick={() => saveFeedback("changes_requested")}
+                  >
+                    <MessageSquareWarning className="h-3.5 w-3.5" />
+                    Request changes
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="min-h-9 gap-1 text-emerald-700 dark:text-emerald-300"
+                    disabled={saving}
+                    onClick={() => saveFeedback("approved")}
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="min-h-9 gap-1 text-muted-foreground"
+                    disabled={saving}
+                    onClick={() =>
+                      void update({ status: "archived" }, "Archived")
+                    }
+                  >
+                    <Archive className="h-3.5 w-3.5" />
+                    Archive
+                  </Button>
+                  {row.feedback_at ? (
+                    <span className="text-xs text-muted-foreground sm:ml-auto">
+                      feedback {ageLabel(row.feedback_at)}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="min-h-9 gap-1"
+                disabled={saving}
+                onClick={() =>
+                  void update({ status: "pending" }, "Restored to queue")
+                }
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+                Restore to queue
+              </Button>
             )}
-          </div>
-        </div>
-      )}
 
-      {isArchived && (
-        <div className="flex items-center gap-2">
-          {row.feedback && (
-            <p className="text-xs text-muted-foreground truncate">“{row.feedback}”</p>
-          )}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1 ml-auto"
-            disabled={saving}
-            onClick={() => void update({ status: "pending" }, "Restored to queue")}
-          >
-            <Undo2 className="h-3.5 w-3.5" />
-            Restore
-          </Button>
-        </div>
-      )}
-    </div>
+            <CopyButtons
+              label={`Review item ${row.title}`}
+              human={() => rowHumanText(row, currentFeedback)}
+              agent={() => ({
+                kind: "agent-review-item",
+                location: "Admin — Agent Repair Board",
+                description:
+                  "Act on the feedback using metadata.triage for routing and verification. Claim the row before work, then set it back to pending for re-review or archive it after approval.",
+                data: { ...row, feedback: currentFeedback || row.feedback },
+              })}
+            />
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }
-
-const SECTION_ORDER: { status: ReviewStatus; heading: string }[] = [
-  { status: "pending", heading: "Needs your review" },
-  { status: "changes_requested", heading: "Waiting on agents — changes requested" },
-  { status: "approved", heading: "Approved — waiting on agents to wrap up" },
-];
 
 export default function AgentReviewClient() {
   const [rows, setRows] = useState<ReviewQueueRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [search, setSearch] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const [laneFilter, setLaneFilter] = useState<LaneFilter>("all");
+  const [toolFilter, setToolFilter] = useState<ToolFilter>("all");
 
-  const load = useCallback(async () => {
+  async function refresh() {
     try {
-      const supabase = createClient();
-      const { data, error: qError } = await supabase
-        .schema("agent")
-        .from("review_queue")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(500);
-      if (qError) throw new Error(qError.message);
-      setRows(data ?? []);
+      setRows(await loadReviewQueue());
       setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load review queue");
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Failed to load review queue",
+      );
       setRows([]);
     }
-  }, []);
+  }
 
   useEffect(() => {
-    void load();
-  }, [load]);
-
-  const grouped = useMemo(() => {
-    const byStatus = new Map<string, ReviewQueueRow[]>();
-    for (const row of rows ?? []) {
-      const list = byStatus.get(row.status) ?? [];
-      list.push(row);
-      byStatus.set(row.status, list);
+    let active = true;
+    async function initialLoad() {
+      try {
+        const data = await loadReviewQueue();
+        if (!active) return;
+        setRows(data);
+        setError(null);
+      } catch (loadError) {
+        if (!active) return;
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Failed to load review queue",
+        );
+        setRows([]);
+      }
     }
-    return byStatus;
-  }, [rows]);
+    void initialLoad();
+    return () => {
+      active = false;
+    };
+  }, []);
 
+  const allRows = rows ?? [];
+  const sources = Array.from(new Set(allRows.map((row) => row.source))).sort();
+  const repairRows = allRows.filter(
+    (row) => row.status === "changes_requested",
+  );
+  const unclassifiedRepairCount = repairRows.filter(
+    (row) => parseReviewMetadata(row.metadata).state !== "ready",
+  ).length;
+  const laneCounts = new Map<ReviewLane, number>();
+  for (const lane of REVIEW_LANES) laneCounts.set(lane, 0);
+  const toolCounts = new Map<ReviewTool, number>();
+  for (const tool of REVIEW_TOOLS) toolCounts.set(tool, 0);
+  for (const row of repairRows) {
+    const metadata = parseReviewMetadata(row.metadata);
+    if (metadata.state === "ready") {
+      const { triage } = metadata;
+      laneCounts.set(triage.lane, (laneCounts.get(triage.lane) ?? 0) + 1);
+      for (const tool of triage.required_tools) {
+        toolCounts.set(tool, (toolCounts.get(tool) ?? 0) + 1);
+      }
+    }
+  }
+  const repairLaneCounts = Object.fromEntries(
+    REVIEW_LANES.map((lane) => [lane, laneCounts.get(lane) ?? 0]),
+  );
+  const repairToolCounts = Object.fromEntries(
+    REVIEW_TOOLS.map((tool) => [tool, toolCounts.get(tool) ?? 0]),
+  );
+
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredRows = allRows.filter((row) => {
+    const metadata = parseReviewMetadata(row.metadata);
+    const triage = metadata.state === "ready" ? metadata.triage : null;
+    if (sourceFilter !== "all" && row.source !== sourceFilter) return false;
+    if (laneFilter === "unclassified" && triage) return false;
+    if (
+      laneFilter !== "all" &&
+      laneFilter !== "unclassified" &&
+      triage?.lane !== laneFilter
+    ) {
+      return false;
+    }
+    if (toolFilter !== "all" && !triage?.required_tools.includes(toolFilter))
+      return false;
+    if (!normalizedSearch) return true;
+    return [row.title, row.url, row.instructions, row.feedback, row.source]
+      .filter((value): value is string => Boolean(value))
+      .some((value) => value.toLowerCase().includes(normalizedSearch));
+  });
+
+  const grouped = new Map<ReviewStatus, ReviewQueueRow[]>();
+  for (const row of filteredRows) {
+    if (!isReviewStatus(row.status)) continue;
+    const list = grouped.get(row.status) ?? [];
+    list.push(row);
+    grouped.set(row.status, list);
+  }
   const archived = grouped.get("archived") ?? [];
 
-  // Surface emitter — matrx-admin/agent-review. Built at trigger time from
-  // live queue state (counts per status + a row sample). No status change or
-  // feedback save is ever implied here; those stay explicit button presses.
   const getSurfaceScope = () =>
     createAdminAgentReviewScope({
-      queue_row_count: rows?.length ?? 0,
-      pending_count: grouped.get("pending")?.length ?? 0,
-      changes_requested_count: grouped.get("changes_requested")?.length ?? 0,
-      approved_count: grouped.get("approved")?.length ?? 0,
-      archived_count: archived.length,
+      queue_row_count: allRows.length,
+      pending_count: allRows.filter((row) => row.status === "pending").length,
+      changes_requested_count: repairRows.length,
+      approved_count: allRows.filter((row) => row.status === "approved").length,
+      archived_count: allRows.filter((row) => row.status === "archived").length,
+      unclassified_count: allRows.filter(
+        (row) => parseReviewMetadata(row.metadata).state !== "ready",
+      ).length,
+      repair_lane_counts: repairLaneCounts,
+      repair_tool_counts: repairToolCounts,
       show_archived: showArchived,
-      queue_sample: (rows ?? []).slice(0, 20).map((row) => ({
-        id: row.id,
-        title: row.title,
-        url: row.url,
-        status: row.status as ReviewStatus,
-        source: row.source,
-        instructions: row.instructions,
-        feedback: row.feedback,
-        created_at: row.created_at,
-      })),
+      queue_sample: allRows.slice(0, 20).flatMap((row) => {
+        if (!isReviewStatus(row.status)) return [];
+        const metadata = parseReviewMetadata(row.metadata);
+        return [
+          {
+            id: row.id,
+            title: row.title,
+            url: row.url,
+            status: row.status,
+            source: row.source,
+            instructions: row.instructions,
+            feedback: row.feedback,
+            created_at: row.created_at,
+            triage: metadata.state === "ready" ? metadata.triage : null,
+          },
+        ];
+      }),
       queue_load_error: error ?? undefined,
     });
 
-  // The queue grows without bound, so the page MUST own a scroll container:
-  // `.shell-main` is a fixed-height, overflow-hidden box, so a plain
-  // `max-w-4xl` page simply clipped everything below the fold and no amount of
-  // scrolling reached it. Same shape as the other admin clients (header
-  // pinned, list scrolls) — see SharedKnowledgeAdminClient.
   return (
     <SurfaceRuntimeProvider
       surfaceName={ADMIN_AGENT_REVIEW_SURFACE_NAME}
       getScope={getSurfaceScope}
       isEditable={false}
     >
-    <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden">
-      <div className="mx-auto flex w-full max-w-4xl items-center gap-2 px-4 pt-4 pb-3">
-        <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
-        <h1 className="text-lg font-semibold text-foreground">Agent Review Queue</h1>
-        <span className="text-xs text-muted-foreground">
-          Everything agents built that needs your eyes
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="ml-auto h-7 gap-1"
-          onClick={() => void load()}
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Refresh
-        </Button>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-4xl space-y-5 px-4 pb-8">
-
-      {error && (
-        <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">
-          {error}
-        </div>
-      )}
-
-      {rows === null && (
-        <div className="space-y-2">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-24 rounded-lg bg-muted animate-pulse" />
-          ))}
-        </div>
-      )}
-
-      {rows !== null &&
-        SECTION_ORDER.map(({ status, heading }) => {
-          const items = grouped.get(status) ?? [];
-          if (items.length === 0) return null;
-          return (
-            <section key={status} className="space-y-2">
-              <h2 className="text-sm font-medium text-muted-foreground">
-                {heading} ({items.length})
-              </h2>
-              {items.map((row) => (
-                <ReviewItemCard key={row.id} row={row} onChanged={() => void load()} />
-              ))}
-            </section>
-          );
-        })}
-
-      {rows !== null &&
-        rows.filter((r) => r.status !== "archived").length === 0 && (
-          <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            Queue is clear — nothing waiting for review.
+      <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden">
+        <header className="shrink-0 border-b border-border bg-background/95 px-3 py-3 backdrop-blur sm:px-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <ClipboardCheck className="h-5 w-5 shrink-0 text-muted-foreground" />
+            <div className="min-w-0">
+              <h1 className="text-base font-semibold text-foreground sm:text-lg">
+                Agent Repair Board
+              </h1>
+              <p className="hidden text-xs text-muted-foreground sm:block">
+                Route reviewed work by specialty, tool access, ownership, and
+                verification state.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto min-h-10 gap-1 sm:min-h-9"
+              onClick={() => void refresh()}
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Refresh</span>
+            </Button>
           </div>
-        )}
 
-      {rows !== null && archived.length > 0 && (
-        <section className="space-y-2">
-          <button
-            type="button"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
-            onClick={() => setShowArchived((v) => !v)}
-          >
-            {showArchived ? "Hide" : "Show"} archived ({archived.length})
-          </button>
-          {showArchived &&
-            archived.map((row) => (
-              <ReviewItemCard key={row.id} row={row} onChanged={() => void load()} />
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            <button
+              type="button"
+              className="min-h-14 min-w-28 rounded-md border border-border bg-card px-2.5 py-2 text-left transition-colors hover:bg-accent"
+              onClick={() => setLaneFilter("all")}
+            >
+              <span className="block text-lg font-semibold text-foreground">
+                {repairRows.length}
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                All repairs
+              </span>
+            </button>
+            {REVIEW_LANES.map((lane) => (
+              <button
+                key={lane}
+                type="button"
+                className="min-h-14 min-w-28 rounded-md border border-border bg-card px-2.5 py-2 text-left transition-colors hover:bg-accent"
+                onClick={() => setLaneFilter(lane)}
+              >
+                <span className="block text-lg font-semibold text-foreground">
+                  {laneCounts.get(lane) ?? 0}
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {REVIEW_LANE_LABELS[lane]}
+                </span>
+              </button>
             ))}
-        </section>
-      )}
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-[minmax(14rem,1fr)_12rem_12rem_12rem]">
+            <SearchInput
+              value={search}
+              onValueChange={setSearch}
+              placeholder="Search title, route, instructions, or feedback"
+              aria-label="Search repair board"
+              className="col-span-2 md:col-span-1"
+            />
+            <Select value={sourceFilter} onValueChange={setSourceFilter}>
+              <SelectTrigger aria-label="Filter by source" className="h-9">
+                <SelectValue placeholder="All repositories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All repositories</SelectItem>
+                {sources.map((source) => (
+                  <SelectItem key={source} value={source}>
+                    {source}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={laneFilter}
+              onValueChange={(value) => {
+                if (isLaneFilter(value)) setLaneFilter(value);
+              }}
+            >
+              <SelectTrigger
+                aria-label="Filter by primary lane"
+                className="h-9"
+              >
+                <SelectValue placeholder="All lanes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All lanes</SelectItem>
+                <SelectItem value="unclassified">
+                  Unclassified ({unclassifiedRepairCount})
+                </SelectItem>
+                {REVIEW_LANES.map((lane) => (
+                  <SelectItem key={lane} value={lane}>
+                    {REVIEW_LANE_LABELS[lane]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={toolFilter}
+              onValueChange={(value) => {
+                if (isToolFilter(value)) setToolFilter(value);
+              }}
+            >
+              <SelectTrigger
+                aria-label="Filter by required tool"
+                className="col-span-2 h-9 md:col-span-1"
+              >
+                <SelectValue placeholder="All tools" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All tools</SelectItem>
+                {REVIEW_TOOLS.map((tool) => (
+                  <SelectItem key={tool} value={tool}>
+                    {REVIEW_TOOL_LABELS[tool]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-4">
+          <div className="space-y-5">
+            {error ? (
+              <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">
+                {error}
+              </div>
+            ) : null}
+
+            {rows === null ? (
+              <div className="space-y-2">
+                {[0, 1, 2].map((index) => (
+                  <div
+                    key={index}
+                    className="h-20 animate-pulse rounded-lg bg-muted"
+                  />
+                ))}
+              </div>
+            ) : null}
+
+            {rows !== null
+              ? SECTION_ORDER.map(({ status, heading }) => {
+                  const items = grouped.get(status) ?? [];
+                  if (items.length === 0) return null;
+                  return (
+                    <section
+                      key={status}
+                      className="space-y-2"
+                      aria-labelledby={`review-${status}`}
+                    >
+                      <h2
+                        id={`review-${status}`}
+                        className="text-sm font-medium text-muted-foreground"
+                      >
+                        {heading} ({items.length})
+                      </h2>
+                      {items.map((row) => (
+                        <ReviewItemCard
+                          key={row.id}
+                          row={row}
+                          onChanged={refresh}
+                        />
+                      ))}
+                    </section>
+                  );
+                })
+              : null}
+
+            {rows !== null &&
+            filteredRows.filter((row) => row.status !== "archived").length ===
+              0 ? (
+              <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                No active items match these filters.
+              </div>
+            ) : null}
+
+            {rows !== null && archived.length > 0 ? (
+              <section className="space-y-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="min-h-9"
+                  onClick={() => setShowArchived((visible) => !visible)}
+                >
+                  {showArchived ? "Hide" : "Show"} archived ({archived.length})
+                </Button>
+                {showArchived
+                  ? archived.map((row) => (
+                      <ReviewItemCard
+                        key={row.id}
+                        row={row}
+                        onChanged={refresh}
+                      />
+                    ))
+                  : null}
+              </section>
+            ) : null}
+          </div>
         </div>
       </div>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }
