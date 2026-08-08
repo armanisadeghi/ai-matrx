@@ -18095,6 +18095,66 @@
         }
       }
     },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -28359,7 +28419,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MentionsPage"
+                  "$ref": "#/components/schemas/aidream__api__routers__kg_inspector__MentionsPage"
                 }
               }
             }
@@ -28962,7 +29022,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MentionsPage"
+                  "$ref": "#/components/schemas/aidream__services__knowledge_graph__graph__MentionsPage"
                 }
               }
             }
@@ -37809,6 +37869,46 @@
               }
             }
           }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/images/generate": {
+      "post": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Generate Image",
+        "description": "Generate images from a text prompt — streamed.\n\nThin wrapper over ``execute_ai_request`` with an image-modality model;\nthe funnel owns provider routing, per-asset persistence (cld_files +\n``metadata.generation``), cost tracking, and guest-tier fallback.",
+        "operationId": "generate_image_images_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateImageRequest"
+              }
+            }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -46738,7 +46838,8 @@
       "AgentAssignmentRunRequest": {
         "properties": {
           "agent": {
-            "$ref": "#/components/schemas/AgentStartStrictInput"
+            "$ref": "#/components/schemas/AgentStartStrictInput",
+            "description": "Saved-agent invocation template applied once to every resolved assignment."
           },
           "plan": {
             "oneOf": [
@@ -46753,6 +46854,7 @@
               }
             ],
             "title": "Plan",
+            "description": "Coordinated rows, random options, or Cartesian values to materialize once.",
             "discriminator": {
               "propertyName": "strategy",
               "mapping": {
@@ -46781,6 +46883,7 @@
             "maximum": 20,
             "minimum": 1,
             "title": "Max Attempts",
+            "description": "Maximum execution attempts allowed for each item.",
             "default": 3
           },
           "lease_seconds": {
@@ -46788,6 +46891,7 @@
             "maximum": 86400,
             "minimum": 30,
             "title": "Lease Seconds",
+            "description": "Seconds an item claim remains valid without renewal.",
             "default": 900
           },
           "max_concurrency": {
@@ -46795,6 +46899,7 @@
             "maximum": 100,
             "minimum": 1,
             "title": "Max Concurrency",
+            "description": "Maximum assignment items executed concurrently by this run.",
             "default": 5
           },
           "retry_delay_seconds": {
@@ -46802,6 +46907,7 @@
             "maximum": 86400,
             "minimum": 0,
             "title": "Retry Delay Seconds",
+            "description": "Delay before a retryable item becomes claimable again.",
             "default": 0
           },
           "metadata": {
@@ -46809,7 +46915,8 @@
               "$ref": "#/components/schemas/JsonValue"
             },
             "type": "object",
-            "title": "Metadata"
+            "title": "Metadata",
+            "description": "Caller metadata preserved on the durable assignment session."
           },
           "organization_id": {
             "anyOf": [
@@ -46820,7 +46927,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -46831,7 +46939,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -46842,7 +46951,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           }
         },
         "additionalProperties": false,
@@ -46865,7 +46975,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -46876,7 +46987,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -46887,7 +46999,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "scope_ids": {
             "anyOf": [
@@ -46901,7 +47014,8 @@
                 "type": "null"
               }
             ],
-            "title": "Scope Ids"
+            "title": "Scope Ids",
+            "description": "Active context-scope ids selected by the caller and membership-validated server-side."
           },
           "context_anchor": {
             "anyOf": [
@@ -46911,7 +47025,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Durable resource identity from which authoritative organization and task context is reloaded."
           },
           "source_app": {
             "anyOf": [
@@ -46922,7 +47037,8 @@
                 "type": "null"
               }
             ],
-            "title": "Source App"
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
           },
           "source_feature": {
             "anyOf": [
@@ -46933,7 +47049,8 @@
                 "type": "null"
               }
             ],
-            "title": "Source Feature"
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
           },
           "store": {
             "type": "boolean",
@@ -46948,7 +47065,8 @@
                 "type": "null"
               }
             ],
-            "title": "Target Instance Id"
+            "title": "Target Instance Id",
+            "description": "Specific connected desktop instance allowed to claim delegated local tools."
           },
           "conversation_id": {
             "type": "string",
@@ -47611,7 +47729,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -47622,7 +47741,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -47633,7 +47753,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "scope_ids": {
             "anyOf": [
@@ -47647,7 +47768,8 @@
                 "type": "null"
               }
             ],
-            "title": "Scope Ids"
+            "title": "Scope Ids",
+            "description": "Active context-scope ids selected by the caller and membership-validated server-side."
           },
           "context_anchor": {
             "anyOf": [
@@ -47657,7 +47779,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Durable resource identity from which authoritative organization and task context is reloaded."
           },
           "source_app": {
             "anyOf": [
@@ -47668,7 +47791,8 @@
                 "type": "null"
               }
             ],
-            "title": "Source App"
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
           },
           "source_feature": {
             "anyOf": [
@@ -47679,7 +47803,8 @@
                 "type": "null"
               }
             ],
-            "title": "Source Feature"
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
           },
           "store": {
             "type": "boolean",
@@ -47694,7 +47819,8 @@
                 "type": "null"
               }
             ],
-            "title": "Target Instance Id"
+            "title": "Target Instance Id",
+            "description": "Specific connected desktop instance allowed to claim delegated local tools."
           },
           "conversation_id": {
             "type": "string",
@@ -48148,7 +48274,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization scope applied to every item execution."
           },
           "project_id": {
             "anyOf": [
@@ -48159,7 +48286,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional project context applied to every item execution."
           },
           "task_id": {
             "anyOf": [
@@ -48170,7 +48298,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional task context applied to every item execution."
           },
           "source_app": {
             "anyOf": [
@@ -48181,7 +48310,8 @@
                 "type": "null"
               }
             ],
-            "title": "Source App"
+            "title": "Source App",
+            "description": "Stable application slug that initiated the agent run."
           },
           "source_feature": {
             "anyOf": [
@@ -48192,26 +48322,31 @@
                 "type": "null"
               }
             ],
-            "title": "Source Feature"
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
           },
           "store": {
             "type": "boolean",
             "title": "Store",
+            "description": "Persist each item's conversation and messages when true.",
             "default": true
           },
           "debug": {
             "type": "boolean",
             "title": "Debug",
+            "description": "Enable verbose execution diagnostics for the agent run.",
             "default": false
           },
           "block_mode": {
             "type": "boolean",
             "title": "Block Mode",
+            "description": "Return block-oriented output events when supported by the agent.",
             "default": false
           },
           "snapshot": {
             "type": "boolean",
             "title": "Snapshot",
+            "description": "Capture the agent definition snapshot used for this run.",
             "default": false
           },
           "memory": {
@@ -48235,11 +48370,13 @@
                 "type": "null"
               }
             ],
-            "title": "Memory Model"
+            "title": "Memory Model",
+            "description": "Optional model override for observational-memory processing."
           },
           "memory_scope": {
             "type": "string",
             "title": "Memory Scope",
+            "description": "Observational-memory scope, normally the current thread.",
             "default": "thread"
           },
           "cache_bypass": {
@@ -48263,6 +48400,7 @@
             "maximum": 500,
             "minimum": 1,
             "title": "Max Iterations",
+            "description": "Maximum agent reasoning/tool-loop iterations.",
             "default": 100
           },
           "max_retries_per_iteration": {
@@ -48270,6 +48408,7 @@
             "maximum": 10,
             "minimum": 0,
             "title": "Max Retries Per Iteration",
+            "description": "Maximum provider retries allowed within one agent iteration.",
             "default": 2
           }
         },
@@ -49997,7 +50136,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -50008,7 +50148,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -50019,7 +50160,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "window_days": {
             "type": "integer",
@@ -50977,7 +51119,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -50988,7 +51131,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -50999,7 +51143,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "reason": {
             "type": "string",
@@ -51066,11 +51211,13 @@
               "public"
             ],
             "title": "Visibility",
+            "description": "Canonical access level of the asset master and its variants.",
             "default": "personal"
           },
           "folder": {
             "type": "string",
-            "title": "Folder"
+            "title": "Folder",
+            "description": "Logical folder containing the asset master."
           },
           "preset": {
             "anyOf": [
@@ -51081,11 +51228,13 @@
                 "type": "null"
               }
             ],
-            "title": "Preset"
+            "title": "Preset",
+            "description": "Variant preset used when the asset was rendered."
           },
           "primary_key": {
             "type": "string",
             "title": "Primary Key",
+            "description": "Variant key selected as the asset's canonical representation.",
             "default": "original"
           },
           "primary_url": {
@@ -51097,21 +51246,24 @@
                 "type": "null"
               }
             ],
-            "title": "Primary Url"
+            "title": "Primary Url",
+            "description": "Always-usable URL for the primary variant."
           },
           "variants": {
             "additionalProperties": {
               "$ref": "#/components/schemas/AssetVariant"
             },
             "type": "object",
-            "title": "Variants"
+            "title": "Variants",
+            "description": "Rendered variants keyed by their stable variant identifier."
           },
           "metadata": {
             "additionalProperties": {
               "$ref": "#/components/schemas/JsonValue"
             },
             "type": "object",
-            "title": "Metadata"
+            "title": "Metadata",
+            "description": "Sanitized JSON metadata copied from the asset master row."
           }
         },
         "type": "object",
@@ -51763,14 +51915,16 @@
       "AssignmentBatchResult": {
         "properties": {
           "session": {
-            "$ref": "#/components/schemas/AssignmentSessionSummary"
+            "$ref": "#/components/schemas/AssignmentSessionSummary",
+            "description": "Aggregate state and counters for the durable session."
           },
           "items": {
             "items": {
               "$ref": "#/components/schemas/AssignmentItemResult"
             },
             "type": "array",
-            "title": "Items"
+            "title": "Items",
+            "description": "Materialized item results in stable ordinal order."
           }
         },
         "additionalProperties": false,
@@ -51787,23 +51941,27 @@
             "type": "string",
             "maxLength": 160,
             "minLength": 1,
-            "title": "Code"
+            "title": "Code",
+            "description": "Stable machine-readable failure code."
           },
           "message": {
             "type": "string",
             "minLength": 1,
-            "title": "Message"
+            "title": "Message",
+            "description": "Human-readable explanation of the assignment failure."
           },
           "retryable": {
             "type": "boolean",
-            "title": "Retryable"
+            "title": "Retryable",
+            "description": "Whether another execution attempt may succeed."
           },
           "details": {
             "additionalProperties": {
               "$ref": "#/components/schemas/JsonValue"
             },
             "type": "object",
-            "title": "Details"
+            "title": "Details",
+            "description": "Structured diagnostic details supplied by the executor."
           }
         },
         "additionalProperties": false,
@@ -51819,28 +51977,34 @@
         "properties": {
           "id": {
             "type": "string",
-            "title": "Id"
+            "title": "Id",
+            "description": "Durable assignment-item identifier."
           },
           "ordinal": {
             "type": "integer",
-            "title": "Ordinal"
+            "title": "Ordinal",
+            "description": "Zero-based position in the once-materialized plan."
           },
           "key": {
             "type": "string",
-            "title": "Key"
+            "title": "Key",
+            "description": "Stable caller-facing key for this assignment item."
           },
           "status": {
-            "$ref": "#/components/schemas/AssignmentItemStatus"
+            "$ref": "#/components/schemas/AssignmentItemStatus",
+            "description": "Terminal or current lifecycle state of the item."
           },
           "values": {
             "additionalProperties": {
               "$ref": "#/components/schemas/JsonValue"
             },
             "type": "object",
-            "title": "Values"
+            "title": "Values",
+            "description": "Resolved variable map passed to the executor."
           },
           "output": {
-            "$ref": "#/components/schemas/JsonValue"
+            "$ref": "#/components/schemas/JsonValue",
+            "description": "Executor result value, or null when no result was produced."
           },
           "output_kind": {
             "anyOf": [
@@ -51851,7 +52015,8 @@
                 "type": "null"
               }
             ],
-            "title": "Output Kind"
+            "title": "Output Kind",
+            "description": "Content-kind slug describing the output value."
           },
           "output_kind_version": {
             "anyOf": [
@@ -51862,7 +52027,8 @@
                 "type": "null"
               }
             ],
-            "title": "Output Kind Version"
+            "title": "Output Kind Version",
+            "description": "Version of the declared output kind."
           },
           "conversation_id": {
             "anyOf": [
@@ -51873,7 +52039,8 @@
                 "type": "null"
               }
             ],
-            "title": "Conversation Id"
+            "title": "Conversation Id",
+            "description": "Durable conversation created for this item, when applicable."
           },
           "runtime_execution_id": {
             "anyOf": [
@@ -51884,7 +52051,8 @@
                 "type": "null"
               }
             ],
-            "title": "Runtime Execution Id"
+            "title": "Runtime Execution Id",
+            "description": "Request-runtime execution associated with this item."
           },
           "error": {
             "anyOf": [
@@ -51894,7 +52062,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Structured terminal failure, or null on success."
           }
         },
         "additionalProperties": false,
@@ -51935,7 +52104,8 @@
             "type": "string",
             "maxLength": 240,
             "minLength": 1,
-            "title": "Key"
+            "title": "Key",
+            "description": "Stable caller key for this coordinated row."
           },
           "values": {
             "additionalProperties": {
@@ -51943,14 +52113,16 @@
             },
             "type": "object",
             "minProperties": 1,
-            "title": "Values"
+            "title": "Values",
+            "description": "Variable names mapped to the values assigned together in this row."
           },
           "metadata": {
             "additionalProperties": {
               "$ref": "#/components/schemas/JsonValue"
             },
             "type": "object",
-            "title": "Metadata"
+            "title": "Metadata",
+            "description": "Caller metadata preserved on the materialized assignment item."
           }
         },
         "additionalProperties": false,
@@ -51977,58 +52149,70 @@
         "properties": {
           "id": {
             "type": "string",
-            "title": "Id"
+            "title": "Id",
+            "description": "Durable assignment-session identifier."
           },
           "idempotency_key": {
             "type": "string",
-            "title": "Idempotency Key"
+            "title": "Idempotency Key",
+            "description": "Caller key that makes retries resume this session."
           },
           "plan_fingerprint": {
             "type": "string",
-            "title": "Plan Fingerprint"
+            "title": "Plan Fingerprint",
+            "description": "SHA-256 fingerprint of the plan materialized for this session."
           },
           "status": {
-            "$ref": "#/components/schemas/AssignmentSessionStatus"
+            "$ref": "#/components/schemas/AssignmentSessionStatus",
+            "description": "Aggregate lifecycle state of the assignment session."
           },
           "total_items": {
             "type": "integer",
             "minimum": 0,
-            "title": "Total Items"
+            "title": "Total Items",
+            "description": "Total materialized items in the session."
           },
           "pending_items": {
             "type": "integer",
             "minimum": 0,
-            "title": "Pending Items"
+            "title": "Pending Items",
+            "description": "Items still waiting to be claimed."
           },
           "running_items": {
             "type": "integer",
             "minimum": 0,
-            "title": "Running Items"
+            "title": "Running Items",
+            "description": "Items currently leased or executing."
           },
           "completed_items": {
             "type": "integer",
             "minimum": 0,
-            "title": "Completed Items"
+            "title": "Completed Items",
+            "description": "Items that completed successfully."
           },
           "failed_items": {
             "type": "integer",
             "minimum": 0,
-            "title": "Failed Items"
+            "title": "Failed Items",
+            "description": "Items that reached terminal failure."
           },
           "cancelled_items": {
             "type": "integer",
             "minimum": 0,
-            "title": "Cancelled Items"
+            "title": "Cancelled Items",
+            "description": "Items cancelled without execution completion."
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "description": "UTC timestamp when the session was created."
           },
           "updated_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Updated At"
+            "title": "Updated At",
+            "description": "UTC timestamp of the latest session state change."
           },
           "completed_at": {
             "anyOf": [
@@ -52040,7 +52224,8 @@
                 "type": "null"
               }
             ],
-            "title": "Completed At"
+            "title": "Completed At",
+            "description": "UTC terminal timestamp, or null while the session is active."
           }
         },
         "additionalProperties": false,
@@ -52339,7 +52524,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -52350,7 +52536,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -52361,7 +52548,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "profile": {
             "type": "string",
@@ -52418,7 +52606,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -52429,7 +52618,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -52440,7 +52630,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "selector": {
             "$ref": "#/components/schemas/MessageSelector"
@@ -53248,7 +53439,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -53259,7 +53451,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -53270,7 +53463,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "window_days": {
             "type": "integer",
@@ -54442,7 +54636,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -54453,7 +54648,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -54464,7 +54660,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "page_url": {
             "type": "string",
@@ -54511,7 +54708,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -54522,7 +54720,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -54533,7 +54732,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "page_url": {
             "type": "string",
@@ -54615,7 +54815,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -54626,7 +54827,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -54637,7 +54839,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "status": {
             "type": "string",
@@ -54951,7 +55154,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -54962,7 +55166,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -54973,7 +55178,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "ids": {
             "anyOf": [
@@ -55741,6 +55947,7 @@
             "type": "string",
             "const": "cartesian",
             "title": "Strategy",
+            "description": "Materialize the Cartesian product of all variable option lists.",
             "default": "cartesian"
           },
           "variables": {
@@ -55752,10 +55959,12 @@
             },
             "type": "object",
             "minProperties": 1,
-            "title": "Variables"
+            "title": "Variables",
+            "description": "Variable names mapped to the options used in the Cartesian product."
           },
           "order": {
             "$ref": "#/components/schemas/AssignmentOrder",
+            "description": "Whether combinations keep product order or are securely shuffled once.",
             "default": "declared"
           },
           "limit": {
@@ -55769,7 +55978,8 @@
                 "type": "null"
               }
             ],
-            "title": "Limit"
+            "title": "Limit",
+            "description": "Optional cap on materialized Cartesian combinations."
           }
         },
         "additionalProperties": false,
@@ -56096,7 +56306,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -56107,7 +56318,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -56118,7 +56330,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "category_key": {
             "type": "string",
@@ -56229,7 +56442,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -56240,7 +56454,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -56251,7 +56466,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "category_key": {
             "anyOf": [
@@ -57030,6 +57246,12 @@
                 "type": "array"
               },
               {
+                "items": {
+                  "$ref": "#/components/schemas/TtsDialogueTurn"
+                },
+                "type": "array"
+              },
+              {
                 "type": "null"
               }
             ],
@@ -57406,7 +57628,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -57417,7 +57640,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -57428,7 +57652,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "scope_ids": {
             "anyOf": [
@@ -57442,7 +57667,8 @@
                 "type": "null"
               }
             ],
-            "title": "Scope Ids"
+            "title": "Scope Ids",
+            "description": "Active context-scope ids selected by the caller and membership-validated server-side."
           },
           "context_anchor": {
             "anyOf": [
@@ -57452,7 +57678,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Durable resource identity from which authoritative organization and task context is reloaded."
           },
           "source_app": {
             "anyOf": [
@@ -57463,7 +57690,8 @@
                 "type": "null"
               }
             ],
-            "title": "Source App"
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
           },
           "source_feature": {
             "anyOf": [
@@ -57474,7 +57702,8 @@
                 "type": "null"
               }
             ],
-            "title": "Source Feature"
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
           },
           "target_instance_id": {
             "anyOf": [
@@ -57485,7 +57714,8 @@
                 "type": "null"
               }
             ],
-            "title": "Target Instance Id"
+            "title": "Target Instance Id",
+            "description": "Specific connected desktop instance allowed to claim delegated local tools."
           },
           "conversation_id": {
             "type": "string",
@@ -58845,7 +59075,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -58856,7 +59087,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -58867,7 +59099,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "intent": {
             "type": "string",
@@ -61229,7 +61462,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -61240,7 +61474,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -61251,7 +61486,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "range": {
             "$ref": "#/components/schemas/TurnRange"
@@ -61882,7 +62118,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -61893,7 +62130,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -61904,7 +62142,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "kind": {
             "type": "string",
@@ -62117,12 +62356,14 @@
         "properties": {
           "resource_type": {
             "type": "string",
-            "title": "Resource Type"
+            "title": "Resource Type",
+            "description": "Canonical entity type whose durable row owns the request context."
           },
           "resource_id": {
             "type": "string",
             "format": "uuid",
-            "title": "Resource Id"
+            "title": "Resource Id",
+            "description": "UUID of the durable context-owning entity."
           }
         },
         "additionalProperties": false,
@@ -62261,7 +62502,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -62272,7 +62514,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -62283,7 +62526,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "scope_ids": {
             "anyOf": [
@@ -62297,7 +62541,8 @@
                 "type": "null"
               }
             ],
-            "title": "Scope Ids"
+            "title": "Scope Ids",
+            "description": "Active context-scope ids selected by the caller and membership-validated server-side."
           },
           "context_anchor": {
             "anyOf": [
@@ -62307,7 +62552,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Durable resource identity from which authoritative organization and task context is reloaded."
           },
           "source_app": {
             "anyOf": [
@@ -62318,7 +62564,8 @@
                 "type": "null"
               }
             ],
-            "title": "Source App"
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
           },
           "source_feature": {
             "anyOf": [
@@ -62329,11 +62576,13 @@
                 "type": "null"
               }
             ],
-            "title": "Source Feature"
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
           },
           "store": {
             "type": "boolean",
             "title": "Store",
+            "description": "Persist request outputs when true; run ephemerally when false.",
             "default": true
           },
           "target_instance_id": {
@@ -62345,7 +62594,8 @@
                 "type": "null"
               }
             ],
-            "title": "Target Instance Id"
+            "title": "Target Instance Id",
+            "description": "Specific connected desktop instance allowed to claim delegated local tools."
           },
           "conversation_id": {
             "anyOf": [
@@ -62755,7 +63005,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -62766,7 +63017,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -62777,7 +63029,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "scope_ids": {
             "anyOf": [
@@ -62791,7 +63044,8 @@
                 "type": "null"
               }
             ],
-            "title": "Scope Ids"
+            "title": "Scope Ids",
+            "description": "Active context-scope ids selected by the caller and membership-validated server-side."
           },
           "context_anchor": {
             "anyOf": [
@@ -62801,7 +63055,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Durable resource identity from which authoritative organization and task context is reloaded."
           },
           "source_app": {
             "anyOf": [
@@ -62812,7 +63067,8 @@
                 "type": "null"
               }
             ],
-            "title": "Source App"
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
           },
           "source_feature": {
             "anyOf": [
@@ -62823,11 +63079,13 @@
                 "type": "null"
               }
             ],
-            "title": "Source Feature"
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
           },
           "store": {
             "type": "boolean",
             "title": "Store",
+            "description": "Persist request outputs when true; run ephemerally when false.",
             "default": true
           },
           "target_instance_id": {
@@ -62839,7 +63097,8 @@
                 "type": "null"
               }
             ],
-            "title": "Target Instance Id"
+            "title": "Target Instance Id",
+            "description": "Specific connected desktop instance allowed to claim delegated local tools."
           },
           "user_input": {
             "anyOf": [
@@ -63164,6 +63423,7 @@
             "type": "string",
             "const": "coordinated_rows",
             "title": "Strategy",
+            "description": "Use caller-supplied rows whose values stay paired.",
             "default": "coordinated_rows"
           },
           "rows": {
@@ -63172,10 +63432,12 @@
             },
             "type": "array",
             "minItems": 1,
-            "title": "Rows"
+            "title": "Rows",
+            "description": "Paired value rows to materialize as assignment items."
           },
           "order": {
             "$ref": "#/components/schemas/AssignmentOrder",
+            "description": "Whether rows keep declared order or are securely shuffled once.",
             "default": "declared"
           },
           "limit": {
@@ -63188,7 +63450,8 @@
                 "type": "null"
               }
             ],
-            "title": "Limit"
+            "title": "Limit",
+            "description": "Optional maximum number of coordinated rows to materialize."
           }
         },
         "additionalProperties": false,
@@ -63782,7 +64045,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -63793,7 +64057,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -63804,7 +64069,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "definition_id": {
             "type": "string",
@@ -65061,7 +65327,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -65072,7 +65339,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -65083,7 +65351,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "source_kind": {
             "type": "string",
@@ -65126,7 +65395,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -65137,7 +65407,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -65148,7 +65419,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "name": {
             "anyOf": [
@@ -65336,22 +65608,32 @@
           "created_at": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonValue"
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Created At"
           },
           "updated_at": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonValue"
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Updated At"
           },
           "fields": {
             "items": {
@@ -65377,22 +65659,32 @@
           "created_at": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonValue"
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Created At"
           },
           "updated_at": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonValue"
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Updated At"
           }
         },
         "additionalProperties": true,
@@ -65466,22 +65758,32 @@
           "created_at": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonValue"
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Created At"
           },
           "updated_at": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/JsonValue"
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Updated At"
           }
         },
         "additionalProperties": true,
@@ -66120,7 +66422,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -66131,7 +66434,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -66142,7 +66446,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "intent": {
             "type": "string",
@@ -66257,7 +66562,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -66268,7 +66574,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -66279,7 +66586,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "rebuild_confirmation_token": {
             "anyOf": [
@@ -66365,7 +66673,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -66376,7 +66685,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -66387,11 +66697,13 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "source_id": {
             "type": "string",
-            "title": "Source Id"
+            "title": "Source Id",
+            "description": "cld_files id of the image to analyze."
           },
           "mode": {
             "type": "string",
@@ -66400,6 +66712,7 @@
               "relaxed"
             ],
             "title": "Mode",
+            "description": "Detection sensitivity: standard is conservative; relaxed retries with higher recall.",
             "default": "standard"
           }
         },
@@ -66534,6 +66847,61 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -67071,7 +67439,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -67082,7 +67451,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -67093,7 +67463,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "matrx_version": {
             "type": "integer",
@@ -67313,7 +67684,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -67324,7 +67696,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -67335,7 +67708,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "ids": {
             "anyOf": [
@@ -73072,7 +73446,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -73083,7 +73458,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -73094,7 +73470,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "run_enrich": {
             "type": "boolean",
@@ -73807,7 +74184,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -73818,7 +74196,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -73829,7 +74208,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "scope_ids": {
             "anyOf": [
@@ -73843,7 +74223,8 @@
                 "type": "null"
               }
             ],
-            "title": "Scope Ids"
+            "title": "Scope Ids",
+            "description": "Active context-scope ids selected by the caller and membership-validated server-side."
           },
           "context_anchor": {
             "anyOf": [
@@ -73853,7 +74234,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Durable resource identity from which authoritative organization and task context is reloaded."
           },
           "source_app": {
             "anyOf": [
@@ -73864,7 +74246,8 @@
                 "type": "null"
               }
             ],
-            "title": "Source App"
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
           },
           "source_feature": {
             "anyOf": [
@@ -73875,11 +74258,13 @@
                 "type": "null"
               }
             ],
-            "title": "Source Feature"
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
           },
           "store": {
             "type": "boolean",
             "title": "Store",
+            "description": "Persist request outputs when true; run ephemerally when false.",
             "default": true
           },
           "target_instance_id": {
@@ -73891,7 +74276,8 @@
                 "type": "null"
               }
             ],
-            "title": "Target Instance Id"
+            "title": "Target Instance Id",
+            "description": "Specific connected desktop instance allowed to claim delegated local tools."
           },
           "user_input": {
             "anyOf": [
@@ -74321,6 +74707,104 @@
         "title": "FunctionEntry",
         "description": "One Plane-2 function (or a deprecated legacy named directive)."
       },
+      "GenerateImageRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Prompt",
+            "description": "Natural-language description of the image to generate."
+          },
+          "size": {
+            "type": "string",
+            "enum": [
+              "square",
+              "portrait",
+              "landscape",
+              "wide",
+              "tall"
+            ],
+            "title": "Size",
+            "description": "Aspect-ratio intent; mapped per provider.",
+            "default": "square"
+          },
+          "style": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Style",
+            "description": "Optional style hint (e.g. 'editorial illustration'); folded into the prompt."
+          },
+          "count": {
+            "type": "integer",
+            "maximum": 4,
+            "minimum": 1,
+            "title": "Count",
+            "description": "Number of images to generate.",
+            "default": 1
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Catalog model name; defaults to the platform's primary image model."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "prompt"
+        ],
+        "title": "GenerateImageRequest",
+        "description": "Wire shape of POST /images/generate (matches the FE client's\n``GenerateImageBody``)."
+      },
       "GeneratePlanBody": {
         "properties": {
           "organization_id": {
@@ -74673,19 +75157,23 @@
         "properties": {
           "id": {
             "type": "string",
-            "title": "Id"
+            "title": "Id",
+            "description": "Knowledge-graph edge id."
           },
           "kind": {
             "type": "string",
-            "title": "Kind"
+            "title": "Kind",
+            "description": "Canonical relationship kind represented by the edge."
           },
           "source": {
             "type": "string",
-            "title": "Source"
+            "title": "Source",
+            "description": "Source entity id for the directed edge."
           },
           "target": {
             "type": "string",
-            "title": "Target"
+            "title": "Target",
+            "description": "Target entity id for the directed edge."
           },
           "weight": {
             "anyOf": [
@@ -74696,7 +75184,8 @@
                 "type": "null"
               }
             ],
-            "title": "Weight"
+            "title": "Weight",
+            "description": "Optional relationship strength or confidence."
           }
         },
         "additionalProperties": false,
@@ -74714,23 +75203,28 @@
         "properties": {
           "id": {
             "type": "string",
-            "title": "Id"
+            "title": "Id",
+            "description": "Knowledge-graph entity id."
           },
           "kind": {
             "type": "string",
-            "title": "Kind"
+            "title": "Kind",
+            "description": "Canonical entity kind, such as person, organization, or topic."
           },
           "name": {
             "type": "string",
-            "title": "Name"
+            "title": "Name",
+            "description": "Display name of the entity."
           },
           "mention_count": {
             "type": "integer",
-            "title": "Mention Count"
+            "title": "Mention Count",
+            "description": "Number of visible chunk mentions linked to the entity."
           },
           "source_count": {
             "type": "integer",
-            "title": "Source Count"
+            "title": "Source Count",
+            "description": "Number of distinct visible sources that mention the entity."
           },
           "confidence_avg": {
             "anyOf": [
@@ -74741,7 +75235,8 @@
                 "type": "null"
               }
             ],
-            "title": "Confidence Avg"
+            "title": "Confidence Avg",
+            "description": "Average extraction confidence across visible mentions."
           }
         },
         "additionalProperties": false,
@@ -74842,7 +75337,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -74853,7 +75349,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -74864,7 +75361,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "window_days": {
             "anyOf": [
@@ -74962,7 +75460,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -74973,7 +75472,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -74984,7 +75484,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "selector": {
             "$ref": "#/components/schemas/MessageSelector"
@@ -75187,7 +75688,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -75198,7 +75700,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -75209,7 +75712,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "source_id": {
             "type": "string",
@@ -75257,6 +75761,7 @@
               "shared"
             ],
             "title": "Visibility",
+            "description": "Access level for the newly written edited image.",
             "default": "personal"
           },
           "folder": {
@@ -75268,7 +75773,8 @@
                 "type": "null"
               }
             ],
-            "title": "Folder"
+            "title": "Folder",
+            "description": "Logical destination folder; defaults beside the source image."
           },
           "format": {
             "type": "string",
@@ -75279,6 +75785,7 @@
               "avif"
             ],
             "title": "Format",
+            "description": "Encoded image format for the result master.",
             "default": "png"
           },
           "quality": {
@@ -75286,6 +75793,7 @@
             "maximum": 100,
             "minimum": 1,
             "title": "Quality",
+            "description": "Encoder quality from 1 to 100 for lossy output formats.",
             "default": 90
           },
           "preset": {
@@ -75297,7 +75805,8 @@
                 "type": "null"
               }
             ],
-            "title": "Preset"
+            "title": "Preset",
+            "description": "Optional asset preset used to render additional variants."
           },
           "filename": {
             "anyOf": [
@@ -75308,7 +75817,8 @@
                 "type": "null"
               }
             ],
-            "title": "Filename"
+            "title": "Filename",
+            "description": "Optional output filename; the selected format controls its extension."
           }
         },
         "additionalProperties": false,
@@ -75326,7 +75836,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -75337,7 +75848,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -75348,11 +75860,13 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "source_id": {
             "type": "string",
-            "title": "Source Id"
+            "title": "Source Id",
+            "description": "cld_files id of the source image to edit."
           },
           "mask_id": {
             "anyOf": [
@@ -75363,21 +75877,25 @@
                 "type": "null"
               }
             ],
-            "title": "Mask Id"
+            "title": "Mask Id",
+            "description": "Optional cld_files id of the mask image required by masked operations."
           },
           "op": {
             "type": "string",
-            "title": "Op"
+            "title": "Op",
+            "description": "Registered image-operation name advertised by GET /images/ops."
           },
           "params": {
             "additionalProperties": {
               "$ref": "#/components/schemas/JsonValue"
             },
             "type": "object",
-            "title": "Params"
+            "title": "Params",
+            "description": "Operation-specific parameters validated against the selected op's schema."
           },
           "output": {
-            "$ref": "#/components/schemas/ImageEditOutput"
+            "$ref": "#/components/schemas/ImageEditOutput",
+            "description": "Encoding, visibility, folder, and variant options for the new image."
           }
         },
         "additionalProperties": false,
@@ -75400,7 +75918,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -75411,7 +75930,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -75422,7 +75942,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "source_id": {
             "type": "string",
@@ -75668,7 +76189,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -75679,7 +76201,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -75690,7 +76213,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "text": {
             "type": "string",
@@ -75716,7 +76240,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -75727,7 +76252,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -75738,7 +76264,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "kind": {
             "type": "string",
@@ -75902,6 +76429,7 @@
             "type": "string",
             "const": "independent_random",
             "title": "Strategy",
+            "description": "Draw each variable independently from its option list.",
             "default": "independent_random"
           },
           "variables": {
@@ -75913,16 +76441,19 @@
             },
             "type": "object",
             "minProperties": 1,
-            "title": "Variables"
+            "title": "Variables",
+            "description": "Variable names mapped to their non-empty candidate value lists."
           },
           "count": {
             "type": "integer",
             "maximum": 100000,
             "minimum": 1,
-            "title": "Count"
+            "title": "Count",
+            "description": "Number of random assignments to materialize."
           },
           "uniqueness": {
             "$ref": "#/components/schemas/AssignmentUniqueness",
+            "description": "Whether the materialized combinations may repeat.",
             "default": "allow_repeats"
           }
         },
@@ -76846,7 +77377,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -76857,7 +77389,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -76868,7 +77401,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "ids": {
             "items": {
@@ -77787,7 +78321,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -77798,7 +78333,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -77809,7 +78345,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "keyword_ids": {
             "anyOf": [
@@ -77958,7 +78495,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -77969,7 +78507,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -77980,7 +78519,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "primary_keyword": {
             "type": "string",
@@ -78202,7 +78742,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -78213,7 +78754,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -78224,7 +78766,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "phrases": {
             "items": {
@@ -79124,6 +79667,12 @@
               {
                 "items": {
                   "$ref": "#/components/schemas/TtsVoiceSpeaker"
+                },
+                "type": "array"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TtsDialogueTurn"
                 },
                 "type": "array"
               },
@@ -80875,7 +81424,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -80886,7 +81436,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -80897,7 +81448,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "name": {
             "anyOf": [
@@ -81061,7 +81613,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -81072,7 +81625,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -81083,7 +81637,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "query": {
             "type": "string",
@@ -82372,7 +82927,8 @@
                 "type": "null"
               }
             ],
-            "title": "File Size"
+            "title": "File Size",
+            "description": "Resolved byte size from the canonical file row or downloaded content."
           },
           "owner_id": {
             "anyOf": [
@@ -82383,7 +82939,8 @@
                 "type": "null"
               }
             ],
-            "title": "Owner Id"
+            "title": "Owner Id",
+            "description": "Owner user id loaded from the canonical file row during resolution."
           },
           "is_ours": {
             "type": "boolean",
@@ -82444,7 +83001,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -82455,7 +83013,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -82466,7 +83025,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "members": {
             "items": {
@@ -82587,117 +83147,6 @@
           "by_event_type"
         ],
         "title": "MemoryCostSummary"
-      },
-      "MentionRow": {
-        "properties": {
-          "chunk_id": {
-            "type": "string",
-            "title": "Chunk Id"
-          },
-          "source_kind": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Kind"
-          },
-          "source_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Id"
-          },
-          "snippet": {
-            "type": "string",
-            "title": "Snippet"
-          },
-          "span_start": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Span Start"
-          },
-          "span_end": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Span End"
-          },
-          "confidence": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Confidence"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "chunk_id",
-          "source_kind",
-          "source_id",
-          "snippet",
-          "span_start",
-          "span_end",
-          "confidence"
-        ],
-        "title": "MentionRow"
-      },
-      "MentionsPage": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/MentionRow"
-            },
-            "type": "array",
-            "title": "Items"
-          },
-          "total": {
-            "type": "integer",
-            "title": "Total"
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit"
-          },
-          "offset": {
-            "type": "integer",
-            "title": "Offset"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "items",
-          "total",
-          "limit",
-          "offset"
-        ],
-        "title": "MentionsPage"
       },
       "MergePdfSource": {
         "properties": {
@@ -83467,7 +83916,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -83478,7 +83928,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -83489,7 +83940,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "signature": {
             "anyOf": [
@@ -84418,7 +84870,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -84429,7 +84882,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -84440,7 +84894,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "match": {
             "type": "string",
@@ -85086,7 +85541,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -85097,7 +85553,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -85108,7 +85565,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "user_secret_id": {
             "type": "string",
@@ -85195,7 +85653,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -85206,7 +85665,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -85217,7 +85677,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "key": {
             "type": "string",
@@ -85309,7 +85770,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -85320,7 +85782,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -85331,7 +85794,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "access_mode": {
             "type": "string",
@@ -85538,7 +86002,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -85549,7 +86014,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -85560,7 +86026,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "value": {
             "anyOf": [
@@ -85840,7 +86307,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -85851,7 +86319,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -85862,7 +86331,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "page_id": {
             "type": "string",
@@ -85893,7 +86363,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -85904,7 +86375,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -85915,7 +86387,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "url": {
             "type": "string",
@@ -86185,7 +86658,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -86196,7 +86670,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -86207,7 +86682,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "site_id": {
             "type": "string",
@@ -86399,7 +86875,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -86410,7 +86887,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -86421,7 +86899,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "strategy": {
             "type": "string",
@@ -88293,7 +88772,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -88304,7 +88784,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -88315,7 +88796,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "scope_ids": {
             "anyOf": [
@@ -88329,7 +88811,8 @@
                 "type": "null"
               }
             ],
-            "title": "Scope Ids"
+            "title": "Scope Ids",
+            "description": "Active context-scope ids selected by the caller and membership-validated server-side."
           },
           "context_anchor": {
             "anyOf": [
@@ -88339,7 +88822,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Durable resource identity from which authoritative organization and task context is reloaded."
           },
           "source_app": {
             "anyOf": [
@@ -88350,7 +88834,8 @@
                 "type": "null"
               }
             ],
-            "title": "Source App"
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
           },
           "source_feature": {
             "anyOf": [
@@ -88361,11 +88846,13 @@
                 "type": "null"
               }
             ],
-            "title": "Source Feature"
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
           },
           "store": {
             "type": "boolean",
             "title": "Store",
+            "description": "Persist request outputs when true; run ephemerally when false.",
             "default": true
           },
           "target_instance_id": {
@@ -88377,7 +88864,8 @@
                 "type": "null"
               }
             ],
-            "title": "Target Instance Id"
+            "title": "Target Instance Id",
+            "description": "Specific connected desktop instance allowed to claim delegated local tools."
           },
           "show_id": {
             "anyOf": [
@@ -88388,14 +88876,17 @@
                 "type": "null"
               }
             ],
-            "title": "Show Id"
+            "title": "Show Id",
+            "description": "Podcast show id; omitted or invalid values use the Matrx Mix default show."
           },
           "input_data_type": {
-            "$ref": "#/components/schemas/InputDataType"
+            "$ref": "#/components/schemas/InputDataType",
+            "description": "How input_data and file_urls should be prepared before script generation."
           },
           "input_data": {
             "type": "string",
             "title": "Input Data",
+            "description": "Topic, partial content, full content, or a single file URL according to input_data_type.",
             "default": ""
           },
           "file_urls": {
@@ -88404,18 +88895,21 @@
             },
             "type": "array",
             "title": "File Urls",
-            "default": []
+            "description": "Publicly accessible source URLs; takes precedence for file-based input."
           },
           "podcast_type": {
-            "$ref": "#/components/schemas/PodcastType"
+            "$ref": "#/components/schemas/PodcastType",
+            "description": "Editorial podcast mode, such as educational, news, or Persian."
           },
           "post_prep_option": {
             "$ref": "#/components/schemas/PostPrepOption",
+            "description": "Optional transformation applied after source preparation.",
             "default": "none"
           },
           "number_of_speakers": {
             "type": "integer",
             "title": "Number Of Speakers",
+            "description": "Deprecated host-count alias used only when host_count is omitted.",
             "default": 2
           },
           "host_count": {
@@ -88429,21 +88923,25 @@
                 "type": "null"
               }
             ],
-            "title": "Host Count"
+            "title": "Host Count",
+            "description": "Number of hosts, from one solo speaker through a 20-person roundtable."
           },
           "format": {
             "type": "string",
             "title": "Format",
+            "description": "Conversation format such as interview, debate, panel, or storytelling.",
             "default": ""
           },
           "theme": {
             "type": "string",
             "title": "Theme",
+            "description": "Optional freeform framing or editorial angle for the episode.",
             "default": ""
           },
           "language": {
             "type": "string",
             "title": "Language",
+            "description": "Human-readable script language; empty derives it from podcast_type.",
             "default": ""
           },
           "speakers": {
@@ -88452,7 +88950,7 @@
             },
             "type": "array",
             "title": "Speakers",
-            "default": []
+            "description": "Ordered cast; missing names or voices are filled by the server palette."
           },
           "first_show_info_text": {
             "anyOf": [
@@ -88463,7 +88961,8 @@
                 "type": "null"
               }
             ],
-            "title": "First Show Info Text"
+            "title": "First Show Info Text",
+            "description": "Optional background information supplied for a show's first episode."
           },
           "audio_style": {
             "anyOf": [
@@ -88473,7 +88972,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Delivery style sent to the selected text-to-speech path."
           },
           "prep_user_message": {
             "anyOf": [
@@ -88484,7 +88984,8 @@
                 "type": "null"
               }
             ],
-            "title": "Prep User Message"
+            "title": "Prep User Message",
+            "description": "Additional instruction forwarded to the source preparation agent."
           },
           "extraction_unit": {
             "anyOf": [
@@ -88495,11 +88996,13 @@
                 "type": "null"
               }
             ],
-            "title": "Extraction Unit"
+            "title": "Extraction Unit",
+            "description": "Override for how a file is divided and labeled during content extraction."
           },
           "truncate_audio_for_testing": {
             "type": "boolean",
             "title": "Truncate Audio For Testing",
+            "description": "Development-only cost control that truncates the script before TTS.",
             "default": false
           },
           "max_images": {
@@ -88512,7 +89015,8 @@
                 "type": "null"
               }
             ],
-            "title": "Max Images"
+            "title": "Max Images",
+            "description": "Maximum generated supporting images; zero skips image generation."
           },
           "max_videos": {
             "anyOf": [
@@ -88524,7 +89028,8 @@
                 "type": "null"
               }
             ],
-            "title": "Max Videos"
+            "title": "Max Videos",
+            "description": "Maximum generated supporting videos; zero skips video generation."
           },
           "feature_image_style": {
             "anyOf": [
@@ -88535,24 +89040,29 @@
                 "type": "null"
               }
             ],
-            "title": "Feature Image Style"
+            "title": "Feature Image Style",
+            "description": "Visual-style token for the transcript-derived feature image; empty uses automatic selection."
           },
           "include_feature_image": {
             "type": "boolean",
             "title": "Include Feature Image",
+            "description": "Generate the transcript-derived feature image when true.",
             "default": true
           },
           "dictionary": {
             "anyOf": [
               {
-                "additionalProperties": true,
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
                 "type": "object"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Dictionary"
+            "title": "Dictionary",
+            "description": "Resolved custom dictionary forwarded to script and audio agents for spelling and pronunciation."
           },
           "tts_quality": {
             "anyOf": [
@@ -88563,7 +89073,8 @@
                 "type": "null"
               }
             ],
-            "title": "Tts Quality"
+            "title": "Tts Quality",
+            "description": "Text-to-speech quality tier: high_quality or fast; empty uses the pinned agent default."
           }
         },
         "type": "object",
@@ -89223,7 +89734,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -89234,7 +89746,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -89245,7 +89758,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "content_type": {
             "type": "string",
@@ -89424,7 +89938,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -89435,7 +89950,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -89446,7 +89962,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "scope_ids": {
             "anyOf": [
@@ -89460,7 +89977,8 @@
                 "type": "null"
               }
             ],
-            "title": "Scope Ids"
+            "title": "Scope Ids",
+            "description": "Active context-scope ids selected by the caller and membership-validated server-side."
           },
           "context_anchor": {
             "anyOf": [
@@ -89470,7 +89988,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Durable resource identity from which authoritative organization and task context is reloaded."
           },
           "source_app": {
             "anyOf": [
@@ -89481,7 +90000,8 @@
                 "type": "null"
               }
             ],
-            "title": "Source App"
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
           },
           "source_feature": {
             "anyOf": [
@@ -89492,7 +90012,8 @@
                 "type": "null"
               }
             ],
-            "title": "Source Feature"
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
           },
           "store": {
             "type": "boolean",
@@ -89507,7 +90028,8 @@
                 "type": "null"
               }
             ],
-            "title": "Target Instance Id"
+            "title": "Target Instance Id",
+            "description": "Specific connected desktop instance allowed to claim delegated local tools."
           },
           "conversation_id": {
             "type": "string",
@@ -90688,7 +91210,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -90699,7 +91222,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -90710,7 +91234,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "keyword": {
             "type": "string",
@@ -90906,7 +91431,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -90917,7 +91443,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -90928,7 +91455,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "is_active": {
             "anyOf": [
@@ -91362,7 +91890,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -91373,7 +91902,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -91384,7 +91914,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "audit_id": {
             "type": "string",
@@ -91420,7 +91951,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -91431,7 +91963,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -91442,7 +91975,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "envelope_xml": {
             "type": "string",
@@ -93083,7 +93617,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -93094,7 +93629,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -93105,7 +93641,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "selector": {
             "$ref": "#/components/schemas/MessageSelector"
@@ -93186,7 +93723,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -93197,7 +93735,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -93208,7 +93747,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "ids": {
             "anyOf": [
@@ -93620,7 +94160,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -93631,7 +94172,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -93642,7 +94184,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "ids": {
             "anyOf": [
@@ -94069,7 +94612,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -94080,7 +94624,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -94091,7 +94636,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "compaction_group_id": {
             "anyOf": [
@@ -94159,7 +94705,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -94170,7 +94717,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -94181,7 +94729,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "scope_ids": {
             "anyOf": [
@@ -94195,7 +94744,8 @@
                 "type": "null"
               }
             ],
-            "title": "Scope Ids"
+            "title": "Scope Ids",
+            "description": "Active context-scope ids selected by the caller and membership-validated server-side."
           },
           "context_anchor": {
             "anyOf": [
@@ -94205,7 +94755,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Durable resource identity from which authoritative organization and task context is reloaded."
           },
           "source_app": {
             "anyOf": [
@@ -94216,7 +94767,8 @@
                 "type": "null"
               }
             ],
-            "title": "Source App"
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
           },
           "source_feature": {
             "anyOf": [
@@ -94227,11 +94779,13 @@
                 "type": "null"
               }
             ],
-            "title": "Source Feature"
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
           },
           "store": {
             "type": "boolean",
             "title": "Store",
+            "description": "Persist request outputs when true; run ephemerally when false.",
             "default": true
           },
           "target_instance_id": {
@@ -94243,7 +94797,8 @@
                 "type": "null"
               }
             ],
-            "title": "Target Instance Id"
+            "title": "Target Instance Id",
+            "description": "Specific connected desktop instance allowed to claim delegated local tools."
           },
           "user_request_id": {
             "anyOf": [
@@ -94794,7 +95349,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -94805,7 +95361,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -94816,7 +95373,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "url": {
             "type": "string",
@@ -95170,7 +95728,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -95181,7 +95740,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -95192,7 +95752,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "run_ids": {
             "items": {
@@ -96447,7 +97008,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -96458,7 +97020,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -96469,7 +97032,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "sandbox_instance_id": {
             "type": "string",
@@ -96638,7 +97202,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -96649,7 +97214,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -96660,7 +97226,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "name": {
             "type": "string",
@@ -98137,7 +98704,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -98148,7 +98716,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -98159,7 +98728,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "clean_id": {
             "type": "string",
@@ -98190,7 +98760,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -98201,7 +98772,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -98212,7 +98784,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "processed_document_id": {
             "type": "string",
@@ -98663,7 +99236,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -98674,7 +99248,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -98685,7 +99260,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "site_ids": {
             "items": {
@@ -98718,7 +99294,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -98729,7 +99306,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -98740,7 +99318,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "site_ids": {
             "items": {
@@ -98841,7 +99420,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -98852,7 +99432,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -98863,7 +99444,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "confirmed_summary": {
             "type": "string",
@@ -98923,7 +99505,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -98934,7 +99517,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -98945,7 +99529,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "force_refresh": {
             "type": "boolean",
@@ -99106,7 +99691,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -99117,7 +99703,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -99128,7 +99715,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "site_id": {
             "type": "string",
@@ -99186,7 +99774,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -99197,7 +99786,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -99208,7 +99798,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "skill_id": {
             "type": "string",
@@ -99391,7 +99982,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -99402,7 +99994,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -99413,7 +100006,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "label": {
             "anyOf": [
@@ -100365,16 +100959,19 @@
         "properties": {
           "name": {
             "type": "string",
-            "title": "Name"
+            "title": "Name",
+            "description": "Speaker display name used in the script and episode metadata."
           },
           "voice": {
             "type": "string",
             "title": "Voice",
+            "description": "Provider voice id; empty lets the server select a gender-matched voice.",
             "default": ""
           },
           "gender": {
             "type": "string",
             "title": "Gender",
+            "description": "Speaker gender used for voice matching: male, female, neutral, or empty.",
             "default": ""
           }
         },
@@ -100396,7 +100993,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -100407,7 +101005,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -100418,7 +101017,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "text": {
             "type": "string",
@@ -101731,7 +102331,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -101742,7 +102343,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -101753,7 +102355,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "url": {
             "type": "string",
@@ -103928,7 +104531,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -103939,7 +104543,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -103950,7 +104555,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "scope_ids": {
             "anyOf": [
@@ -103964,7 +104570,8 @@
                 "type": "null"
               }
             ],
-            "title": "Scope Ids"
+            "title": "Scope Ids",
+            "description": "Active context-scope ids selected by the caller and membership-validated server-side."
           },
           "context_anchor": {
             "anyOf": [
@@ -103974,7 +104581,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Durable resource identity from which authoritative organization and task context is reloaded."
           },
           "source_app": {
             "anyOf": [
@@ -103985,7 +104593,8 @@
                 "type": "null"
               }
             ],
-            "title": "Source App"
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
           },
           "source_feature": {
             "anyOf": [
@@ -103996,11 +104605,13 @@
                 "type": "null"
               }
             ],
-            "title": "Source Feature"
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
           },
           "store": {
             "type": "boolean",
             "title": "Store",
+            "description": "Persist request outputs when true; run ephemerally when false.",
             "default": true
           },
           "target_instance_id": {
@@ -104012,7 +104623,8 @@
                 "type": "null"
               }
             ],
-            "title": "Target Instance Id"
+            "title": "Target Instance Id",
+            "description": "Specific connected desktop instance allowed to claim delegated local tools."
           },
           "agent_id": {
             "type": "string",
@@ -104763,7 +105375,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -104774,7 +105387,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -104785,7 +105399,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "is_active": {
             "anyOf": [
@@ -105024,7 +105639,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -105035,7 +105651,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -105046,7 +105663,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "territory": {
             "type": "string",
@@ -106059,7 +106677,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -106070,7 +106689,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -106081,7 +106701,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "file_id": {
             "type": "string",
@@ -106306,7 +106927,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -106317,7 +106939,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -106328,7 +106951,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "url": {
             "type": "string",
@@ -107109,6 +107733,28 @@
         ],
         "title": "TriggerResponse"
       },
+      "TtsDialogueTurn": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "Spoken text for this turn."
+          },
+          "voice_id": {
+            "type": "string",
+            "title": "Voice Id",
+            "description": "Provider-native voice id speaking this turn."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text",
+          "voice_id"
+        ],
+        "title": "TtsDialogueTurn",
+        "description": "One pre-rendered dialogue turn for ElevenLabs ``text_to_dialogue`` — the\npodcast pipeline's ``[{text, voice_id}]`` shape (built per run by\n``_dialogue_to_elevenlabs_turns``). Omitting this from the union broke every\n3+-host podcast audio stage the day LLMParams became typed (2026-08-08)."
+      },
       "TtsVoiceSpeaker": {
         "properties": {
           "name": {
@@ -107836,7 +108482,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -107847,7 +108494,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -107858,7 +108506,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "source_kind": {
             "type": "string",
@@ -107968,7 +108617,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -107979,7 +108629,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -107990,7 +108641,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "name": {
             "anyOf": [
@@ -108089,7 +108741,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -108100,7 +108753,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -108111,7 +108765,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "env_text": {
             "type": "string",
@@ -108188,7 +108843,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -108199,7 +108855,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -108210,7 +108867,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "key": {
             "type": "string",
@@ -108389,7 +109047,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -108400,7 +109059,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -108411,7 +109071,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "value": {
             "anyOf": [
@@ -108976,7 +109637,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -108987,7 +109649,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -108998,7 +109661,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "recipient_email": {
             "type": "string",
@@ -109244,7 +109908,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -109255,7 +109920,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -109266,7 +109932,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "inject_into_sandbox": {
             "anyOf": [
@@ -109448,7 +110115,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -109459,7 +110127,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -109470,7 +110139,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "value": {
             "type": "string",
@@ -109495,7 +110165,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -109506,7 +110177,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -109517,7 +110189,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "to_principal": {
             "$ref": "#/components/schemas/PrincipalIn"
@@ -109541,7 +110214,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -109552,7 +110226,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -109563,7 +110238,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "recipient_email": {
             "type": "string",
@@ -109671,7 +110347,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -109682,7 +110359,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -109693,7 +110371,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "can_use": {
             "anyOf": [
@@ -109733,7 +110412,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -109744,7 +110424,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -109755,7 +110436,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "principal": {
             "$ref": "#/components/schemas/PrincipalIn"
@@ -109854,7 +110536,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -109865,7 +110548,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -109876,7 +110560,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "principal": {
             "$ref": "#/components/schemas/PrincipalIn"
@@ -110204,7 +110889,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -110215,7 +110901,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -110226,7 +110913,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "display_name": {
             "anyOf": [
@@ -110346,7 +111034,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -110357,7 +111046,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -110368,7 +111058,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "refs": {
             "items": {
@@ -110414,7 +111105,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -110425,7 +111117,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -110436,7 +111129,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "field_key": {
             "type": "string",
@@ -110485,7 +111179,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -110496,7 +111191,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -110507,7 +111203,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "values": {
             "additionalProperties": {
@@ -110536,7 +111233,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -110547,7 +111245,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -110558,7 +111257,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "access_mode": {
             "type": "string",
@@ -110594,7 +111294,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -110605,7 +111306,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -110616,7 +111318,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "to_principal": {
             "anyOf": [
@@ -111245,7 +111948,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -111256,7 +111960,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -111267,7 +111972,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "is_public": {
             "type": "boolean",
@@ -113601,6 +114307,117 @@
         ],
         "title": "SearchRequest"
       },
+      "aidream__api__routers__kg_inspector__MentionRow": {
+        "properties": {
+          "chunk_id": {
+            "type": "string",
+            "title": "Chunk Id"
+          },
+          "source_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "snippet": {
+            "type": "string",
+            "title": "Snippet"
+          },
+          "span_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Span Start"
+          },
+          "span_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Span End"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "chunk_id",
+          "source_kind",
+          "source_id",
+          "snippet",
+          "span_start",
+          "span_end",
+          "confidence"
+        ],
+        "title": "MentionRow"
+      },
+      "aidream__api__routers__kg_inspector__MentionsPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/aidream__api__routers__kg_inspector__MentionRow"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "MentionsPage"
+      },
       "aidream__api__routers__rag__SearchRequest": {
         "properties": {
           "query": {
@@ -113819,7 +114636,8 @@
                 "type": "null"
               }
             ],
-            "title": "Organization Id"
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
           },
           "project_id": {
             "anyOf": [
@@ -113830,7 +114648,8 @@
                 "type": "null"
               }
             ],
-            "title": "Project Id"
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
           },
           "task_id": {
             "anyOf": [
@@ -113841,7 +114660,8 @@
                 "type": "null"
               }
             ],
-            "title": "Task Id"
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
           },
           "roots": {
             "items": {
@@ -113947,6 +114767,124 @@
           "compaction_group_id"
         ],
         "title": "RestoreResponse"
+      },
+      "aidream__services__knowledge_graph__graph__MentionRow": {
+        "properties": {
+          "chunk_id": {
+            "type": "string",
+            "title": "Chunk Id",
+            "description": "RAG chunk id containing the entity mention."
+          },
+          "source_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kind",
+            "description": "Canonical type of the source that owns the chunk."
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id",
+            "description": "Id of the source that owns the chunk."
+          },
+          "snippet": {
+            "type": "string",
+            "title": "Snippet",
+            "description": "Bounded text excerpt surrounding the entity mention."
+          },
+          "span_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Span Start",
+            "description": "Mention start offset within the chunk text."
+          },
+          "span_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Span End",
+            "description": "Mention end offset within the chunk text."
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence",
+            "description": "Extraction confidence for this mention."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "chunk_id",
+          "source_kind",
+          "source_id",
+          "snippet",
+          "span_start",
+          "span_end",
+          "confidence"
+        ],
+        "title": "MentionRow"
+      },
+      "aidream__services__knowledge_graph__graph__MentionsPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/aidream__services__knowledge_graph__graph__MentionRow"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "MentionsPage"
       },
       "aidream__services__knowledge_graph__wire__DailySpendPoint": {
         "properties": {

@@ -35,9 +35,11 @@ export interface GraphQueryParams {
 }
 
 /** One mention of an entity in a source the caller can access. */
-export type MentionRow = components["schemas"]["MentionRow"];
+export type MentionRow =
+  components["schemas"]["aidream__api__routers__kg_inspector__MentionRow"];
 
 /** GET /kg/graph/entity/{id}/mentions response. */
-export type MentionsPage = components["schemas"]["MentionsPage"];
+export type MentionsPage =
+  components["schemas"]["aidream__api__routers__kg_inspector__MentionsPage"];
 
 export type KgGraphMode = "org" | "scope";

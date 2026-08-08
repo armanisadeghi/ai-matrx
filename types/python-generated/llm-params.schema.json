@@ -572,6 +572,7 @@
             }
           ],
           "default": null,
+          "description": "Resolved byte size from the canonical file row or downloaded content.",
           "title": "File Size"
         },
         "owner_id": {
@@ -584,6 +585,7 @@
             }
           ],
           "default": null,
+          "description": "Owner user id loaded from the canonical file row during resolution.",
           "title": "Owner Id"
         },
         "is_ours": {
@@ -748,6 +750,28 @@
         "type"
       ],
       "title": "ResponseFormatText",
+      "type": "object"
+    },
+    "TtsDialogueTurn": {
+      "additionalProperties": false,
+      "description": "One pre-rendered dialogue turn for ElevenLabs ``text_to_dialogue`` — the\npodcast pipeline's ``[{text, voice_id}]`` shape (built per run by\n``_dialogue_to_elevenlabs_turns``). Omitting this from the union broke every\n3+-host podcast audio stage the day LLMParams became typed (2026-08-08).",
+      "properties": {
+        "text": {
+          "description": "Spoken text for this turn.",
+          "title": "Text",
+          "type": "string"
+        },
+        "voice_id": {
+          "description": "Provider-native voice id speaking this turn.",
+          "title": "Voice Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text",
+        "voice_id"
+      ],
+      "title": "TtsDialogueTurn",
       "type": "object"
     },
     "TtsVoiceSpeaker": {
@@ -1291,6 +1315,12 @@
         {
           "items": {
             "$ref": "#/$defs/TtsVoiceSpeaker"
+          },
+          "type": "array"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/TtsDialogueTurn"
           },
           "type": "array"
         },

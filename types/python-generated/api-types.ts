@@ -6881,6 +6881,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -14039,6 +14063,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/images/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Image
+         * @description Generate images from a text prompt — streamed.
+         *
+         *     Thin wrapper over ``execute_ai_request`` with an image-modality model;
+         *     the funnel owns provider routing, per-asset persistence (cld_files +
+         *     ``metadata.generation``), cost tracking, and guest-tier fallback.
+         */
+        post: operations["generate_image_images_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/virtual": {
         parameters: {
             query?: never;
@@ -16943,8 +16991,12 @@ export interface components {
          * @description HTTP form of the workflow batch input with client-injected scope support.
          */
         AgentAssignmentRunRequest: {
+            /** @description Saved-agent invocation template applied once to every resolved assignment. */
             agent: components["schemas"]["AgentStartStrictInput"];
-            /** Plan */
+            /**
+             * Plan
+             * @description Coordinated rows, random options, or Cartesian values to materialize once.
+             */
             plan: components["schemas"]["CoordinatedRowsPlan"] | components["schemas"]["IndependentRandomPlan"] | components["schemas"]["CartesianPlan"];
             /**
              * Session Key
@@ -16953,53 +17005,91 @@ export interface components {
             session_key?: string | null;
             /**
              * Max Attempts
+             * @description Maximum execution attempts allowed for each item.
              * @default 3
              */
             max_attempts?: number;
             /**
              * Lease Seconds
+             * @description Seconds an item claim remains valid without renewal.
              * @default 900
              */
             lease_seconds?: number;
             /**
              * Max Concurrency
+             * @description Maximum assignment items executed concurrently by this run.
              * @default 5
              */
             max_concurrency?: number;
             /**
              * Retry Delay Seconds
+             * @description Delay before a retryable item becomes claimable again.
              * @default 0
              */
             retry_delay_seconds?: number;
-            /** Metadata */
+            /**
+             * Metadata
+             * @description Caller metadata preserved on the durable assignment session.
+             */
             metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
         };
         /** AgentBlocksStartRequest */
         AgentBlocksStartRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
-            /** Scope Ids */
+            /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller and membership-validated server-side.
+             */
             scope_ids?: string[] | null;
+            /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
-            /** Source App */
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
             source_app?: string | null;
-            /** Source Feature */
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
             source_feature?: string | null;
             /** Store */
             store: boolean;
-            /** Target Instance Id */
+            /**
+             * Target Instance Id
+             * @description Specific connected desktop instance allowed to claim delegated local tools.
+             */
             target_instance_id?: string | null;
             /** Conversation Id */
             conversation_id: string;
@@ -17298,22 +17388,44 @@ export interface components {
         };
         /** AgentStartRequest */
         AgentStartRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
-            /** Scope Ids */
+            /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller and membership-validated server-side.
+             */
             scope_ids?: string[] | null;
+            /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
-            /** Source App */
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
             source_app?: string | null;
-            /** Source Feature */
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
             source_feature?: string | null;
             /** Store */
             store: boolean;
-            /** Target Instance Id */
+            /**
+             * Target Instance Id
+             * @description Specific connected desktop instance allowed to claim delegated local tools.
+             */
             target_instance_id?: string | null;
             /** Conversation Id */
             conversation_id: string;
@@ -17512,33 +17624,52 @@ export interface components {
             tools_replace?: {
                 [key: string]: components["schemas"]["JsonValue"];
             }[] | null;
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization scope applied to every item execution.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional project context applied to every item execution.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional task context applied to every item execution.
+             */
             task_id?: string | null;
-            /** Source App */
+            /**
+             * Source App
+             * @description Stable application slug that initiated the agent run.
+             */
             source_app?: string | null;
-            /** Source Feature */
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
             source_feature?: string | null;
             /**
              * Store
+             * @description Persist each item's conversation and messages when true.
              * @default true
              */
             store?: boolean;
             /**
              * Debug
+             * @description Enable verbose execution diagnostics for the agent run.
              * @default false
              */
             debug?: boolean;
             /**
              * Block Mode
+             * @description Return block-oriented output events when supported by the agent.
              * @default false
              */
             block_mode?: boolean;
             /**
              * Snapshot
+             * @description Capture the agent definition snapshot used for this run.
              * @default false
              */
             snapshot?: boolean;
@@ -17547,10 +17678,14 @@ export interface components {
              * @description True = enable OM and persist on conversation; False = disable and persist; None = inherit persisted state.
              */
             memory?: boolean | null;
-            /** Memory Model */
+            /**
+             * Memory Model
+             * @description Optional model override for observational-memory processing.
+             */
             memory_model?: string | null;
             /**
              * Memory Scope
+             * @description Observational-memory scope, normally the current thread.
              * @default thread
              */
             memory_scope?: string;
@@ -17563,11 +17698,13 @@ export interface components {
             } | null;
             /**
              * Max Iterations
+             * @description Maximum agent reasoning/tool-loop iterations.
              * @default 100
              */
             max_iterations?: number;
             /**
              * Max Retries Per Iteration
+             * @description Maximum provider retries allowed within one agent iteration.
              * @default 2
              */
             max_retries_per_iteration?: number;
@@ -18262,11 +18399,20 @@ export interface components {
         };
         /** AnalyticsSyncBody */
         AnalyticsSyncBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Window Days
@@ -18593,11 +18739,20 @@ export interface components {
         };
         /** ArchiveRequest */
         ArchiveRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Reason */
             reason: string;
@@ -18625,26 +18780,43 @@ export interface components {
             file_id: string;
             /**
              * Visibility
+             * @description Canonical access level of the asset master and its variants.
              * @default personal
              * @enum {string}
              */
             visibility?: "personal" | "internal" | "link" | "public";
-            /** Folder */
+            /**
+             * Folder
+             * @description Logical folder containing the asset master.
+             */
             folder: string;
-            /** Preset */
+            /**
+             * Preset
+             * @description Variant preset used when the asset was rendered.
+             */
             preset?: string | null;
             /**
              * Primary Key
+             * @description Variant key selected as the asset's canonical representation.
              * @default original
              */
             primary_key?: string;
-            /** Primary Url */
+            /**
+             * Primary Url
+             * @description Always-usable URL for the primary variant.
+             */
             primary_url?: string | null;
-            /** Variants */
+            /**
+             * Variants
+             * @description Rendered variants keyed by their stable variant identifier.
+             */
             variants?: {
                 [key: string]: components["schemas"]["AssetVariant"];
             };
-            /** Metadata */
+            /**
+             * Metadata
+             * @description Sanitized JSON metadata copied from the asset master row.
+             */
             metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
@@ -18911,45 +19083,88 @@ export interface components {
         };
         /** AssignmentBatchResult */
         AssignmentBatchResult: {
+            /** @description Aggregate state and counters for the durable session. */
             session: components["schemas"]["AssignmentSessionSummary"];
-            /** Items */
+            /**
+             * Items
+             * @description Materialized item results in stable ordinal order.
+             */
             items: components["schemas"]["AssignmentItemResult"][];
         };
         /** AssignmentError */
         AssignmentError: {
-            /** Code */
+            /**
+             * Code
+             * @description Stable machine-readable failure code.
+             */
             code: string;
-            /** Message */
+            /**
+             * Message
+             * @description Human-readable explanation of the assignment failure.
+             */
             message: string;
-            /** Retryable */
+            /**
+             * Retryable
+             * @description Whether another execution attempt may succeed.
+             */
             retryable: boolean;
-            /** Details */
+            /**
+             * Details
+             * @description Structured diagnostic details supplied by the executor.
+             */
             details?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /** AssignmentItemResult */
         AssignmentItemResult: {
-            /** Id */
+            /**
+             * Id
+             * @description Durable assignment-item identifier.
+             */
             id: string;
-            /** Ordinal */
+            /**
+             * Ordinal
+             * @description Zero-based position in the once-materialized plan.
+             */
             ordinal: number;
-            /** Key */
+            /**
+             * Key
+             * @description Stable caller-facing key for this assignment item.
+             */
             key: string;
+            /** @description Terminal or current lifecycle state of the item. */
             status: components["schemas"]["AssignmentItemStatus"];
-            /** Values */
+            /**
+             * Values
+             * @description Resolved variable map passed to the executor.
+             */
             values: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+            /** @description Executor result value, or null when no result was produced. */
             output?: components["schemas"]["JsonValue"];
-            /** Output Kind */
+            /**
+             * Output Kind
+             * @description Content-kind slug describing the output value.
+             */
             output_kind?: string | null;
-            /** Output Kind Version */
+            /**
+             * Output Kind Version
+             * @description Version of the declared output kind.
+             */
             output_kind_version?: number | null;
-            /** Conversation Id */
+            /**
+             * Conversation Id
+             * @description Durable conversation created for this item, when applicable.
+             */
             conversation_id?: string | null;
-            /** Runtime Execution Id */
+            /**
+             * Runtime Execution Id
+             * @description Request-runtime execution associated with this item.
+             */
             runtime_execution_id?: string | null;
+            /** @description Structured terminal failure, or null on success. */
             error?: components["schemas"]["AssignmentError"] | null;
         };
         /**
@@ -18964,13 +19179,22 @@ export interface components {
         AssignmentOrder: "declared" | "random";
         /** AssignmentRow */
         AssignmentRow: {
-            /** Key */
+            /**
+             * Key
+             * @description Stable caller key for this coordinated row.
+             */
             key: string;
-            /** Values */
+            /**
+             * Values
+             * @description Variable names mapped to the values assigned together in this row.
+             */
             values: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
-            /** Metadata */
+            /**
+             * Metadata
+             * @description Caller metadata preserved on the materialized assignment item.
+             */
             metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
@@ -18982,36 +19206,69 @@ export interface components {
         AssignmentSessionStatus: "pending" | "running" | "completed" | "partially_failed" | "failed" | "cancelled";
         /** AssignmentSessionSummary */
         AssignmentSessionSummary: {
-            /** Id */
+            /**
+             * Id
+             * @description Durable assignment-session identifier.
+             */
             id: string;
-            /** Idempotency Key */
+            /**
+             * Idempotency Key
+             * @description Caller key that makes retries resume this session.
+             */
             idempotency_key: string;
-            /** Plan Fingerprint */
+            /**
+             * Plan Fingerprint
+             * @description SHA-256 fingerprint of the plan materialized for this session.
+             */
             plan_fingerprint: string;
+            /** @description Aggregate lifecycle state of the assignment session. */
             status: components["schemas"]["AssignmentSessionStatus"];
-            /** Total Items */
+            /**
+             * Total Items
+             * @description Total materialized items in the session.
+             */
             total_items: number;
-            /** Pending Items */
+            /**
+             * Pending Items
+             * @description Items still waiting to be claimed.
+             */
             pending_items: number;
-            /** Running Items */
+            /**
+             * Running Items
+             * @description Items currently leased or executing.
+             */
             running_items: number;
-            /** Completed Items */
+            /**
+             * Completed Items
+             * @description Items that completed successfully.
+             */
             completed_items: number;
-            /** Failed Items */
+            /**
+             * Failed Items
+             * @description Items that reached terminal failure.
+             */
             failed_items: number;
-            /** Cancelled Items */
+            /**
+             * Cancelled Items
+             * @description Items cancelled without execution completion.
+             */
             cancelled_items: number;
             /**
              * Created At
              * Format: date-time
+             * @description UTC timestamp when the session was created.
              */
             created_at: string;
             /**
              * Updated At
              * Format: date-time
+             * @description UTC timestamp of the latest session state change.
              */
             updated_at: string;
-            /** Completed At */
+            /**
+             * Completed At
+             * @description UTC terminal timestamp, or null while the session is active.
+             */
             completed_at?: string | null;
         };
         /**
@@ -19143,11 +19400,20 @@ export interface components {
         };
         /** BacklinkRefreshBody */
         BacklinkRefreshBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Profile
@@ -19171,11 +19437,20 @@ export interface components {
         };
         /** BatchDeleteRequest */
         BatchDeleteRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             selector: components["schemas"]["MessageSelector"];
             /**
@@ -19462,11 +19737,20 @@ export interface components {
         };
         /** BingSearchPerformanceSyncBody */
         BingSearchPerformanceSyncBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Window Days
@@ -19990,11 +20274,20 @@ export interface components {
          *     agent-supplied URL.
          */
         BrowserLoginMatchesRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Page Url */
             page_url: string;
@@ -20010,11 +20303,20 @@ export interface components {
         };
         /** BrowserLoginMaterializeRequest */
         BrowserLoginMaterializeRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Page Url */
             page_url: string;
@@ -20046,11 +20348,20 @@ export interface components {
          * @description What the fill achieved. The safe status enum only — never a value.
          */
         BrowserLoginResultRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Status
@@ -20163,11 +20474,20 @@ export interface components {
         };
         /** BulkDeleteRequest */
         BulkDeleteRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Ids
@@ -20462,17 +20782,26 @@ export interface components {
         /** CartesianPlan */
         CartesianPlan: {
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Materialize the Cartesian product of all variable option lists. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             strategy: "cartesian";
-            /** Variables */
+            /**
+             * Variables
+             * @description Variable names mapped to the options used in the Cartesian product.
+             */
             variables: {
                 [key: string]: components["schemas"]["JsonValue"][];
             };
-            /** @default declared */
+            /**
+             * @description Whether combinations keep product order or are securely shuffled once.
+             * @default declared
+             */
             order?: components["schemas"]["AssignmentOrder"];
-            /** Limit */
+            /**
+             * Limit
+             * @description Optional cap on materialized Cartesian combinations.
+             */
             limit?: number | null;
         };
         /** CatalogEntryResponse */
@@ -20585,11 +20914,20 @@ export interface components {
          *     user_id. Only admins can create system rows.
          */
         CategoryCreate: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Category Key */
             category_key: string;
@@ -20626,11 +20964,20 @@ export interface components {
          * @description PATCH /skills/categories/{id} body. All fields optional.
          */
         CategoryPatch: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Category Key */
             category_key?: string | null;
@@ -20798,7 +21145,7 @@ export interface components {
             /** Reference Strength */
             reference_strength?: number | null;
             /** Tts Voice */
-            tts_voice?: string | components["schemas"]["TtsVoiceSpeaker"][] | null;
+            tts_voice?: string | components["schemas"]["TtsVoiceSpeaker"][] | components["schemas"]["TtsDialogueTurn"][] | null;
             /** Audio Format */
             audio_format?: ("mp3" | "wav" | "ogg" | "opus" | "aac" | "flac" | "pcm" | "mulaw" | "alaw") | null;
             /** Duration Seconds */
@@ -20851,20 +21198,42 @@ export interface components {
             dictionary?: components["schemas"]["DictionaryConfig"] | null;
             /** Tts Quality */
             tts_quality?: ("high_quality" | "fast") | null;
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
-            /** Scope Ids */
+            /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller and membership-validated server-side.
+             */
             scope_ids?: string[] | null;
+            /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
-            /** Source App */
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
             source_app?: string | null;
-            /** Source Feature */
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
             source_feature?: string | null;
-            /** Target Instance Id */
+            /**
+             * Target Instance Id
+             * @description Specific connected desktop instance allowed to claim delegated local tools.
+             */
             target_instance_id?: string | null;
             /** Conversation Id */
             conversation_id: string;
@@ -21250,11 +21619,20 @@ export interface components {
         };
         /** CleanRequest */
         CleanRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Intent
@@ -22131,11 +22509,20 @@ export interface components {
         };
         /** CompactTurnsRequest */
         CompactTurnsRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             range: components["schemas"]["TurnRange"];
             /** Summary Content */
@@ -22330,11 +22717,20 @@ export interface components {
          *     resolved server-side from this ref.
          */
         ComputeTargetRef: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Kind
@@ -22419,11 +22815,15 @@ export interface components {
          * @description Stable identity of the durable entity whose saved context owns a run.
          */
         ContextAnchor: {
-            /** Resource Type */
+            /**
+             * Resource Type
+             * @description Canonical entity type whose durable row owns the request context.
+             */
             resource_type: string;
             /**
              * Resource Id
              * Format: uuid
+             * @description UUID of the durable context-owning entity.
              */
             resource_id: string;
         };
@@ -22494,25 +22894,48 @@ export interface components {
         };
         /** ContextPreviewRequest */
         ContextPreviewRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
-            /** Scope Ids */
+            /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller and membership-validated server-side.
+             */
             scope_ids?: string[] | null;
+            /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
-            /** Source App */
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
             source_app?: string | null;
-            /** Source Feature */
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
             source_feature?: string | null;
             /**
              * Store
+             * @description Persist request outputs when true; run ephemerally when false.
              * @default true
              */
             store?: boolean;
-            /** Target Instance Id */
+            /**
+             * Target Instance Id
+             * @description Specific connected desktop instance allowed to claim delegated local tools.
+             */
             target_instance_id?: string | null;
             /** Conversation Id */
             conversation_id?: string | null;
@@ -22671,25 +23094,48 @@ export interface components {
         };
         /** ConversationContinueRequest */
         ConversationContinueRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
-            /** Scope Ids */
+            /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller and membership-validated server-side.
+             */
             scope_ids?: string[] | null;
+            /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
-            /** Source App */
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
             source_app?: string | null;
-            /** Source Feature */
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
             source_feature?: string | null;
             /**
              * Store
+             * @description Persist request outputs when true; run ephemerally when false.
              * @default true
              */
             store?: boolean;
-            /** Target Instance Id */
+            /**
+             * Target Instance Id
+             * @description Specific connected desktop instance allowed to claim delegated local tools.
+             */
             target_instance_id?: string | null;
             /** User Input */
             user_input?: string | {
@@ -22809,15 +23255,24 @@ export interface components {
         /** CoordinatedRowsPlan */
         CoordinatedRowsPlan: {
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Use caller-supplied rows whose values stay paired. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             strategy: "coordinated_rows";
-            /** Rows */
+            /**
+             * Rows
+             * @description Paired value rows to materialize as assignment items.
+             */
             rows: components["schemas"]["AssignmentRow"][];
-            /** @default declared */
+            /**
+             * @description Whether rows keep declared order or are securely shuffled once.
+             * @default declared
+             */
             order?: components["schemas"]["AssignmentOrder"];
-            /** Limit */
+            /**
+             * Limit
+             * @description Optional maximum number of coordinated rows to materialize.
+             */
             limit?: number | null;
         };
         /** CopyFileRequest */
@@ -23110,11 +23565,20 @@ export interface components {
         };
         /** CreateTriggerRequest */
         CreateTriggerRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Definition Id */
             definition_id: string;
@@ -23551,11 +24015,20 @@ export interface components {
         };
         /** DataStoreMemberCreate */
         DataStoreMemberCreate: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Source Kind */
             source_kind: string;
@@ -23566,11 +24039,20 @@ export interface components {
         };
         /** DataStorePatch */
         DataStorePatch: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Name */
             name?: string | null;
@@ -23634,8 +24116,10 @@ export interface components {
              * @default 0
              */
             field_count?: number;
-            created_at?: components["schemas"]["JsonValue"] | null;
-            updated_at?: components["schemas"]["JsonValue"] | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
             /** Fields */
             fields?: components["schemas"]["FieldRecord"][];
         } & {
@@ -23652,8 +24136,10 @@ export interface components {
         DatasetRow: {
             /** Id */
             id: string;
-            created_at?: components["schemas"]["JsonValue"] | null;
-            updated_at?: components["schemas"]["JsonValue"] | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -23685,8 +24171,10 @@ export interface components {
              * @default 0
              */
             field_count?: number;
-            created_at?: components["schemas"]["JsonValue"] | null;
-            updated_at?: components["schemas"]["JsonValue"] | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -23910,11 +24398,20 @@ export interface components {
         };
         /** DerivativeRequest */
         DerivativeRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Intent
@@ -23954,11 +24451,20 @@ export interface components {
         };
         /** DeriveRequest */
         DeriveRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Rebuild Confirmation Token */
             rebuild_confirmation_token?: string | null;
@@ -23982,16 +24488,29 @@ export interface components {
         };
         /** DetectDocumentRequest */
         DetectDocumentRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
-            /** Source Id */
+            /**
+             * Source Id
+             * @description cld_files id of the image to analyze.
+             */
             source_id: string;
             /**
              * Mode
+             * @description Detection sensitivity: standard is conservative; relaxed retries with higher recall.
              * @default standard
              * @enum {string}
              */
@@ -24031,6 +24550,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -24224,11 +24770,20 @@ export interface components {
         };
         /** DirectiveConfirmRequest */
         DirectiveConfirmRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Matrx Version
@@ -24323,11 +24878,20 @@ export interface components {
          * @description Filter for batch dismiss. Empty body = dismiss every unrecovered row.
          */
         DismissBatchRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Ids
@@ -26466,11 +27030,20 @@ export interface components {
          * @description Reserved for the later ``suggestions_only`` option; empty body for v1.
          */
         FileRefreshRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Run Enrich
@@ -26760,25 +27333,48 @@ export interface components {
          *     title on the new conversation.
          */
         ForkAndRunRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
-            /** Scope Ids */
+            /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller and membership-validated server-side.
+             */
             scope_ids?: string[] | null;
+            /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
-            /** Source App */
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
             source_app?: string | null;
-            /** Source Feature */
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
             source_feature?: string | null;
             /**
              * Store
+             * @description Persist request outputs when true; run ephemerally when false.
              * @default true
              */
             store?: boolean;
-            /** Target Instance Id */
+            /**
+             * Target Instance Id
+             * @description Specific connected desktop instance allowed to claim delegated local tools.
+             */
             target_instance_id?: string | null;
             /** User Input */
             user_input?: string | {
@@ -26953,6 +27549,56 @@ export interface components {
              */
             deprecated?: boolean;
         };
+        /**
+         * GenerateImageRequest
+         * @description Wire shape of POST /images/generate (matches the FE client's
+         *     ``GenerateImageBody``).
+         */
+        GenerateImageRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Prompt
+             * @description Natural-language description of the image to generate.
+             */
+            prompt: string;
+            /**
+             * Size
+             * @description Aspect-ratio intent; mapped per provider.
+             * @default square
+             * @enum {string}
+             */
+            size?: "square" | "portrait" | "landscape" | "wide" | "tall";
+            /**
+             * Style
+             * @description Optional style hint (e.g. 'editorial illustration'); folded into the prompt.
+             */
+            style?: string | null;
+            /**
+             * Count
+             * @description Number of images to generate.
+             * @default 1
+             */
+            count?: number;
+            /**
+             * Model
+             * @description Catalog model name; defaults to the platform's primary image model.
+             */
+            model?: string | null;
+        };
         /** GeneratePlanBody */
         GeneratePlanBody: {
             /** Organization Id */
@@ -27091,30 +27737,63 @@ export interface components {
         };
         /** GraphEdge */
         GraphEdge: {
-            /** Id */
+            /**
+             * Id
+             * @description Knowledge-graph edge id.
+             */
             id: string;
-            /** Kind */
+            /**
+             * Kind
+             * @description Canonical relationship kind represented by the edge.
+             */
             kind: string;
-            /** Source */
+            /**
+             * Source
+             * @description Source entity id for the directed edge.
+             */
             source: string;
-            /** Target */
+            /**
+             * Target
+             * @description Target entity id for the directed edge.
+             */
             target: string;
-            /** Weight */
+            /**
+             * Weight
+             * @description Optional relationship strength or confidence.
+             */
             weight: number | null;
         };
         /** GraphNode */
         GraphNode: {
-            /** Id */
+            /**
+             * Id
+             * @description Knowledge-graph entity id.
+             */
             id: string;
-            /** Kind */
+            /**
+             * Kind
+             * @description Canonical entity kind, such as person, organization, or topic.
+             */
             kind: string;
-            /** Name */
+            /**
+             * Name
+             * @description Display name of the entity.
+             */
             name: string;
-            /** Mention Count */
+            /**
+             * Mention Count
+             * @description Number of visible chunk mentions linked to the entity.
+             */
             mention_count: number;
-            /** Source Count */
+            /**
+             * Source Count
+             * @description Number of distinct visible sources that mention the entity.
+             */
             source_count: number;
-            /** Confidence Avg */
+            /**
+             * Confidence Avg
+             * @description Average extraction confidence across visible mentions.
+             */
             confidence_avg: number | null;
         };
         /** GraphPayload */
@@ -27144,11 +27823,20 @@ export interface components {
         };
         /** GscSearchPerformanceSyncBody */
         GscSearchPerformanceSyncBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Window Days */
             window_days?: number | null;
@@ -27184,11 +27872,20 @@ export interface components {
         };
         /** HideRequest */
         HideRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             selector: components["schemas"]["MessageSelector"];
             /**
@@ -27264,11 +27961,20 @@ export interface components {
         };
         /** ImageBgRemoveRequest */
         ImageBgRemoveRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Source Id */
             source_id: string;
@@ -27281,26 +27987,38 @@ export interface components {
         ImageEditOutput: {
             /**
              * Visibility
+             * @description Access level for the newly written edited image.
              * @default personal
              * @enum {string}
              */
             visibility?: "personal" | "public" | "shared";
-            /** Folder */
+            /**
+             * Folder
+             * @description Logical destination folder; defaults beside the source image.
+             */
             folder?: string | null;
             /**
              * Format
+             * @description Encoded image format for the result master.
              * @default png
              * @enum {string}
              */
             format?: "png" | "jpeg" | "webp" | "avif";
             /**
              * Quality
+             * @description Encoder quality from 1 to 100 for lossy output formats.
              * @default 90
              */
             quality?: number;
-            /** Preset */
+            /**
+             * Preset
+             * @description Optional asset preset used to render additional variants.
+             */
             preset?: string | null;
-            /** Filename */
+            /**
+             * Filename
+             * @description Optional output filename; the selected format controls its extension.
+             */
             filename?: string | null;
         };
         /**
@@ -27309,31 +28027,62 @@ export interface components {
          *     ``params`` is the op-specific Pydantic body (validated by the dispatcher).
          */
         ImageEditRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
-            /** Source Id */
+            /**
+             * Source Id
+             * @description cld_files id of the source image to edit.
+             */
             source_id: string;
-            /** Mask Id */
+            /**
+             * Mask Id
+             * @description Optional cld_files id of the mask image required by masked operations.
+             */
             mask_id?: string | null;
-            /** Op */
+            /**
+             * Op
+             * @description Registered image-operation name advertised by GET /images/ops.
+             */
             op: string;
-            /** Params */
+            /**
+             * Params
+             * @description Operation-specific parameters validated against the selected op's schema.
+             */
             params?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+            /** @description Encoding, visibility, folder, and variant options for the new image. */
             output?: components["schemas"]["ImageEditOutput"];
         };
         /** ImageInpaintRequest */
         ImageInpaintRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Source Id */
             source_id: string;
@@ -27446,11 +28195,20 @@ export interface components {
         };
         /** InboxEditRequest */
         InboxEditRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Text */
             text: string;
@@ -27460,11 +28218,20 @@ export interface components {
          * @description Enqueue an item into a conversation's Turn-Boundary Inbox.
          */
         InboxEnqueueRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Kind
@@ -27549,17 +28316,26 @@ export interface components {
         /** IndependentRandomPlan */
         IndependentRandomPlan: {
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Draw each variable independently from its option list. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             strategy: "independent_random";
-            /** Variables */
+            /**
+             * Variables
+             * @description Variable names mapped to their non-empty candidate value lists.
+             */
             variables: {
                 [key: string]: components["schemas"]["JsonValue"][];
             };
-            /** Count */
+            /**
+             * Count
+             * @description Number of random assignments to materialize.
+             */
             count: number;
-            /** @default allow_repeats */
+            /**
+             * @description Whether the materialized combinations may repeat.
+             * @default allow_repeats
+             */
             uniqueness?: components["schemas"]["AssignmentUniqueness"];
         };
         /** IndexRepositoryResponse */
@@ -27904,11 +28680,20 @@ export interface components {
          *     POST (not PATCH) so the path can't collide with PATCH /issue-classes/{class_id}.
          */
         IssueClassBatchUpdate: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Ids */
             ids: string[];
@@ -28213,11 +28998,20 @@ export interface components {
         };
         /** KeywordClassifyBody */
         KeywordClassifyBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Keyword Ids */
             keyword_ids?: string[] | null;
@@ -28297,11 +29091,20 @@ export interface components {
         };
         /** KeywordResearchBody */
         KeywordResearchBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Primary Keyword */
             primary_keyword: string;
@@ -28425,11 +29228,20 @@ export interface components {
         };
         /** KeywordVolumeRefreshBody */
         KeywordVolumeRefreshBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Phrases */
             phrases: string[];
@@ -28700,7 +29512,7 @@ export interface components {
             /** Reference Strength */
             reference_strength?: number | null;
             /** Tts Voice */
-            tts_voice?: string | components["schemas"]["TtsVoiceSpeaker"][] | null;
+            tts_voice?: string | components["schemas"]["TtsVoiceSpeaker"][] | components["schemas"]["TtsDialogueTurn"][] | null;
             /** Audio Format */
             audio_format?: ("mp3" | "wav" | "ogg" | "opus" | "aac" | "flac" | "pcm" | "mulaw" | "alaw") | null;
             /** Duration Seconds */
@@ -29184,11 +29996,20 @@ export interface components {
         };
         /** LibraryPatchRequest */
         LibraryPatchRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Name */
             name?: string | null;
@@ -29238,11 +30059,20 @@ export interface components {
         };
         /** LibraryTestSearchRequest */
         LibraryTestSearchRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Query */
             query: string;
@@ -29802,9 +30632,15 @@ export interface components {
              * @description Fresh presigned URL the resolver minted (provider-fetchable).
              */
             resolved_url?: string | null;
-            /** File Size */
+            /**
+             * File Size
+             * @description Resolved byte size from the canonical file row or downloaded content.
+             */
             file_size?: number | null;
-            /** Owner Id */
+            /**
+             * Owner Id
+             * @description Owner user id loaded from the canonical file row during resolution.
+             */
             owner_id?: string | null;
             /**
              * Is Ours
@@ -29833,11 +30669,20 @@ export interface components {
         };
         /** MemberBatchRemoveRequest */
         MemberBatchRemoveRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Members */
             members: components["schemas"]["MemberRef"][];
@@ -29895,34 +30740,6 @@ export interface components {
             by_event_type: {
                 [key: string]: components["schemas"]["MemoryCostByEventType"];
             };
-        };
-        /** MentionRow */
-        MentionRow: {
-            /** Chunk Id */
-            chunk_id: string;
-            /** Source Kind */
-            source_kind: string | null;
-            /** Source Id */
-            source_id: string | null;
-            /** Snippet */
-            snippet: string;
-            /** Span Start */
-            span_start: number | null;
-            /** Span End */
-            span_end: number | null;
-            /** Confidence */
-            confidence: number | null;
-        };
-        /** MentionsPage */
-        MentionsPage: {
-            /** Items */
-            items: components["schemas"]["MentionRow"][];
-            /** Total */
-            total: number;
-            /** Limit */
-            limit: number;
-            /** Offset */
-            offset: number;
         };
         /** MergePdfSource */
         MergePdfSource: {
@@ -30272,11 +31089,20 @@ export interface components {
          *     Pattern row) OR a raw ``message`` (from a log row) to be normalized.
          */
         MuteRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Signature */
             signature?: string | null;
@@ -30639,11 +31465,20 @@ export interface components {
         };
         /** NormExceptionRequest */
         NormExceptionRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Match */
             match: string;
@@ -30876,11 +31711,20 @@ export interface components {
         };
         /** OrganizationSecretContributeRequest */
         OrganizationSecretContributeRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** User Secret Id */
             user_secret_id: string;
@@ -30895,11 +31739,20 @@ export interface components {
         };
         /** OrganizationSecretCreateRequest */
         OrganizationSecretCreateRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Key */
             key: string;
@@ -30922,11 +31775,20 @@ export interface components {
         };
         /** OrganizationSecretPermissionsRequest */
         OrganizationSecretPermissionsRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Access Mode
@@ -30989,11 +31851,20 @@ export interface components {
         };
         /** OrganizationSecretUpdateRequest */
         OrganizationSecretUpdateRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Value */
             value?: string | null;
@@ -31090,11 +31961,20 @@ export interface components {
         };
         /** PageAnalyzeBody */
         PageAnalyzeBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Page Id */
             page_id: string;
@@ -31106,11 +31986,20 @@ export interface components {
         };
         /** PageAuditBody */
         PageAuditBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Url */
             url: string;
@@ -31209,11 +32098,20 @@ export interface components {
         };
         /** PageKeywordMapBody */
         PageKeywordMapBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Site Id */
             site_id: string;
@@ -31293,11 +32191,20 @@ export interface components {
         };
         /** PagespeedSyncBody */
         PagespeedSyncBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Strategy
@@ -32051,97 +32958,163 @@ export interface components {
         };
         /** PodcastGenerateRequest */
         PodcastGenerateRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
-            /** Scope Ids */
+            /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller and membership-validated server-side.
+             */
             scope_ids?: string[] | null;
+            /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
-            /** Source App */
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
             source_app?: string | null;
-            /** Source Feature */
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
             source_feature?: string | null;
             /**
              * Store
+             * @description Persist request outputs when true; run ephemerally when false.
              * @default true
              */
             store?: boolean;
-            /** Target Instance Id */
+            /**
+             * Target Instance Id
+             * @description Specific connected desktop instance allowed to claim delegated local tools.
+             */
             target_instance_id?: string | null;
-            /** Show Id */
+            /**
+             * Show Id
+             * @description Podcast show id; omitted or invalid values use the Matrx Mix default show.
+             */
             show_id?: string | null;
+            /** @description How input_data and file_urls should be prepared before script generation. */
             input_data_type: components["schemas"]["InputDataType"];
             /**
              * Input Data
+             * @description Topic, partial content, full content, or a single file URL according to input_data_type.
              * @default
              */
             input_data?: string;
             /**
              * File Urls
-             * @default []
+             * @description Publicly accessible source URLs; takes precedence for file-based input.
              */
             file_urls?: string[];
+            /** @description Editorial podcast mode, such as educational, news, or Persian. */
             podcast_type: components["schemas"]["PodcastType"];
-            /** @default none */
+            /**
+             * @description Optional transformation applied after source preparation.
+             * @default none
+             */
             post_prep_option?: components["schemas"]["PostPrepOption"];
             /**
              * Number Of Speakers
+             * @description Deprecated host-count alias used only when host_count is omitted.
              * @default 2
              */
             number_of_speakers?: number;
-            /** Host Count */
+            /**
+             * Host Count
+             * @description Number of hosts, from one solo speaker through a 20-person roundtable.
+             */
             host_count?: number | null;
             /**
              * Format
+             * @description Conversation format such as interview, debate, panel, or storytelling.
              * @default
              */
             format?: string;
             /**
              * Theme
+             * @description Optional freeform framing or editorial angle for the episode.
              * @default
              */
             theme?: string;
             /**
              * Language
+             * @description Human-readable script language; empty derives it from podcast_type.
              * @default
              */
             language?: string;
             /**
              * Speakers
-             * @default []
+             * @description Ordered cast; missing names or voices are filled by the server palette.
              */
             speakers?: components["schemas"]["SpeakerSpec"][];
-            /** First Show Info Text */
+            /**
+             * First Show Info Text
+             * @description Optional background information supplied for a show's first episode.
+             */
             first_show_info_text?: string | null;
+            /** @description Delivery style sent to the selected text-to-speech path. */
             audio_style?: components["schemas"]["AudioStyle"] | null;
-            /** Prep User Message */
+            /**
+             * Prep User Message
+             * @description Additional instruction forwarded to the source preparation agent.
+             */
             prep_user_message?: string | null;
-            /** Extraction Unit */
+            /**
+             * Extraction Unit
+             * @description Override for how a file is divided and labeled during content extraction.
+             */
             extraction_unit?: string | null;
             /**
              * Truncate Audio For Testing
+             * @description Development-only cost control that truncates the script before TTS.
              * @default false
              */
             truncate_audio_for_testing?: boolean;
-            /** Max Images */
+            /**
+             * Max Images
+             * @description Maximum generated supporting images; zero skips image generation.
+             */
             max_images?: number | null;
-            /** Max Videos */
+            /**
+             * Max Videos
+             * @description Maximum generated supporting videos; zero skips video generation.
+             */
             max_videos?: number | null;
-            /** Feature Image Style */
+            /**
+             * Feature Image Style
+             * @description Visual-style token for the transcript-derived feature image; empty uses automatic selection.
+             */
             feature_image_style?: string | null;
             /**
              * Include Feature Image
+             * @description Generate the transcript-derived feature image when true.
              * @default true
              */
             include_feature_image?: boolean;
-            /** Dictionary */
+            /**
+             * Dictionary
+             * @description Resolved custom dictionary forwarded to script and audio agents for spelling and pronunciation.
+             */
             dictionary?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
-            /** Tts Quality */
+            /**
+             * Tts Quality
+             * @description Text-to-speech quality tier: high_quality or fast; empty uses the pinned agent default.
+             */
             tts_quality?: string | null;
         };
         /**
@@ -32425,11 +33398,20 @@ export interface components {
         };
         /** ProcessContentBody */
         ProcessContentBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Content Type
@@ -32520,22 +33502,44 @@ export interface components {
         };
         /** PromptStartRequest */
         PromptStartRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
-            /** Scope Ids */
+            /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller and membership-validated server-side.
+             */
             scope_ids?: string[] | null;
+            /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
-            /** Source App */
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
             source_app?: string | null;
-            /** Source Feature */
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
             source_feature?: string | null;
             /** Store */
             store: boolean;
-            /** Target Instance Id */
+            /**
+             * Target Instance Id
+             * @description Specific connected desktop instance allowed to claim delegated local tools.
+             */
             target_instance_id?: string | null;
             /** Conversation Id */
             conversation_id: string;
@@ -32927,11 +33931,20 @@ export interface components {
         };
         /** RankTargetAddBody */
         RankTargetAddBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Keyword */
             keyword: string;
@@ -32998,11 +34011,20 @@ export interface components {
         };
         /** RankTargetPatchBody */
         RankTargetPatchBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Is Active */
             is_active?: boolean | null;
@@ -33177,11 +34199,20 @@ export interface components {
          *     the proposal). Updates was_applied / was_overridden on the audit row.
          */
         RecoveryApplyAck: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Audit Id */
             audit_id: string;
@@ -33195,11 +34226,20 @@ export interface components {
          * @description Body for POST /api/recovery/handle.
          */
         RecoveryRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Envelope Xml
@@ -33811,11 +34851,20 @@ export interface components {
         };
         /** ReplaceRequest */
         ReplaceRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             selector: components["schemas"]["MessageSelector"];
             /** Summary Content */
@@ -33848,11 +34897,20 @@ export interface components {
          * @description Filter for batch replay. Empty body = retry every unrecovered row.
          */
         ReplayBatchRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Ids
@@ -34005,11 +35063,20 @@ export interface components {
          * @description Filter for batch resolve. Empty body = resolve every unresolved row.
          */
         ResolveBatchRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Ids
@@ -34154,11 +35221,20 @@ export interface components {
         };
         /** RestoreRequest */
         RestoreRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Compaction Group Id */
             compaction_group_id?: string | null;
@@ -34181,25 +35257,48 @@ export interface components {
         };
         /** ResumeRequest */
         ResumeRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
-            /** Scope Ids */
+            /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller and membership-validated server-side.
+             */
             scope_ids?: string[] | null;
+            /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
-            /** Source App */
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
             source_app?: string | null;
-            /** Source Feature */
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
             source_feature?: string | null;
             /**
              * Store
+             * @description Persist request outputs when true; run ephemerally when false.
              * @default true
              */
             store?: boolean;
-            /** Target Instance Id */
+            /**
+             * Target Instance Id
+             * @description Specific connected desktop instance allowed to claim delegated local tools.
+             */
             target_instance_id?: string | null;
             /** User Request Id */
             user_request_id?: string | null;
@@ -34413,11 +35512,20 @@ export interface components {
         };
         /** RobotsCheckBody */
         RobotsCheckBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Url */
             url: string;
@@ -34535,11 +35643,20 @@ export interface components {
         };
         /** RunBatchDeleteRequest */
         RunBatchDeleteRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Run Ids */
             run_ids: string[];
@@ -35036,11 +36153,20 @@ export interface components {
         };
         /** SandboxBindRequest */
         SandboxBindRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Sandbox Instance Id
@@ -35125,11 +36251,20 @@ export interface components {
         };
         /** SaveAsTemplateRequest */
         SaveAsTemplateRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Name */
             name: string;
@@ -35743,11 +36878,20 @@ export interface components {
         };
         /** SetCanonicalCleanRequest */
         SetCanonicalCleanRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Clean Id */
             clean_id: string;
@@ -35756,11 +36900,20 @@ export interface components {
         };
         /** SetCanonicalExtractRequest */
         SetCanonicalExtractRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Processed Document Id */
             processed_document_id: string;
@@ -35911,11 +37064,20 @@ export interface components {
         };
         /** SiteBatchArchiveRequest */
         SiteBatchArchiveRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Site Ids */
             site_ids: string[];
@@ -35927,11 +37089,20 @@ export interface components {
         };
         /** SiteBatchDeleteRequest */
         SiteBatchDeleteRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Site Ids */
             site_ids: string[];
@@ -35961,11 +37132,20 @@ export interface components {
         };
         /** SiteIntakeApplyBody */
         SiteIntakeApplyBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Confirmed Summary
@@ -35988,11 +37168,20 @@ export interface components {
         };
         /** SiteIntakeRunBody */
         SiteIntakeRunBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Force Refresh
@@ -36045,11 +37234,20 @@ export interface components {
         };
         /** SiteStrategyBody */
         SiteStrategyBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Site Id */
             site_id: string;
@@ -36070,11 +37268,20 @@ export interface components {
         };
         /** SkillCreate */
         SkillCreate: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Skill Id */
             skill_id: string;
@@ -36146,11 +37353,20 @@ export interface components {
         };
         /** SkillPatch */
         SkillPatch: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Label */
             label?: string | null;
@@ -36482,26 +37698,40 @@ export interface components {
          *     treated as neutral (any voice eligible).
          */
         SpeakerSpec: {
-            /** Name */
+            /**
+             * Name
+             * @description Speaker display name used in the script and episode metadata.
+             */
             name: string;
             /**
              * Voice
+             * @description Provider voice id; empty lets the server select a gender-matched voice.
              * @default
              */
             voice?: string;
             /**
              * Gender
+             * @description Speaker gender used for voice matching: male, female, neutral, or empty.
              * @default
              */
             gender?: string;
         };
         /** SpeechRequest */
         SpeechRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Text */
             text: string;
@@ -36972,11 +38202,20 @@ export interface components {
         };
         /** StructuredDataValidateBody */
         StructuredDataValidateBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Url */
             url: string;
@@ -37800,25 +39039,48 @@ export interface components {
         };
         /** ToolExecuteRequest */
         ToolExecuteRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
-            /** Scope Ids */
+            /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller and membership-validated server-side.
+             */
             scope_ids?: string[] | null;
+            /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
-            /** Source App */
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
             source_app?: string | null;
-            /** Source Feature */
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
             source_feature?: string | null;
             /**
              * Store
+             * @description Persist request outputs when true; run ephemerally when false.
              * @default true
              */
             store?: boolean;
-            /** Target Instance Id */
+            /**
+             * Target Instance Id
+             * @description Specific connected desktop instance allowed to claim delegated local tools.
+             */
             target_instance_id?: string | null;
             /** Agent Id */
             agent_id: string;
@@ -38097,11 +39359,20 @@ export interface components {
          *     until the drift gate is quiet. Editing it bumps the row ``version``.
          */
         ToolUpdateRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Is Active */
             is_active?: boolean | null;
@@ -38164,11 +39435,20 @@ export interface components {
         };
         /** TopicAssignBody */
         TopicAssignBody: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Territory */
             territory: string;
@@ -38569,11 +39849,20 @@ export interface components {
         };
         /** TranscriptionFileRequest */
         TranscriptionFileRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** File Id */
             file_id: string;
@@ -38637,11 +39926,20 @@ export interface components {
         };
         /** TranscriptionUrlRequest */
         TranscriptionUrlRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Url */
             url: string;
@@ -38881,6 +40179,25 @@ export interface components {
             created_at?: string | null;
             /** Updated At */
             updated_at?: string | null;
+        };
+        /**
+         * TtsDialogueTurn
+         * @description One pre-rendered dialogue turn for ElevenLabs ``text_to_dialogue`` — the
+         *     podcast pipeline's ``[{text, voice_id}]`` shape (built per run by
+         *     ``_dialogue_to_elevenlabs_turns``). Omitting this from the union broke every
+         *     3+-host podcast audio stage the day LLMParams became typed (2026-08-08).
+         */
+        TtsDialogueTurn: {
+            /**
+             * Text
+             * @description Spoken text for this turn.
+             */
+            text: string;
+            /**
+             * Voice Id
+             * @description Provider-native voice id speaking this turn.
+             */
+            voice_id: string;
         };
         /** TtsVoiceSpeaker */
         TtsVoiceSpeaker: {
@@ -39155,11 +40472,20 @@ export interface components {
         };
         /** UserDataStoreMemberCreate */
         UserDataStoreMemberCreate: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Source Kind */
             source_kind: string;
@@ -39197,11 +40523,20 @@ export interface components {
         };
         /** UserDataStorePatch */
         UserDataStorePatch: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Name */
             name?: string | null;
@@ -39234,11 +40569,20 @@ export interface components {
         };
         /** UserSecretBulkEnvRequest */
         UserSecretBulkEnvRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Env Text */
             env_text: string;
@@ -39259,11 +40603,20 @@ export interface components {
         };
         /** UserSecretCreateRequest */
         UserSecretCreateRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Key */
             key: string;
@@ -39333,11 +40686,20 @@ export interface components {
         };
         /** UserSecretUpdateRequest */
         UserSecretUpdateRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Value */
             value?: string | null;
@@ -39552,11 +40914,20 @@ export interface components {
             non_secret_fields?: components["schemas"]["NonSecretFieldIn"][] | null;
             /** Browser Fill Enabled */
             browser_fill_enabled?: boolean | null;
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Recipient Email */
             recipient_email: string;
@@ -39675,11 +41046,20 @@ export interface components {
          *     ``handling`` may move TO 'sealed' but never away from it.
          */
         VaultFieldMetadataRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Inject Into Sandbox */
             inject_into_sandbox?: boolean | null;
@@ -39755,11 +41135,20 @@ export interface components {
         };
         /** VaultFieldValueRequest */
         VaultFieldValueRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Value */
             value: string;
@@ -39768,11 +41157,20 @@ export interface components {
         };
         /** VaultForkRequest */
         VaultForkRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             to_principal: components["schemas"]["PrincipalIn"];
         } & {
@@ -39784,11 +41182,20 @@ export interface components {
          *     autocomplete, and no partial matching.
          */
         VaultGrantAddRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Recipient Email */
             recipient_email: string;
@@ -39845,11 +41252,20 @@ export interface components {
         };
         /** VaultGrantUpdateRequest */
         VaultGrantUpdateRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Can Use */
             can_use?: boolean | null;
@@ -39860,11 +41276,20 @@ export interface components {
         };
         /** VaultImportEnvRequest */
         VaultImportEnvRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             principal?: components["schemas"]["PrincipalIn"];
             /** Env Text */
@@ -39889,11 +41314,20 @@ export interface components {
             non_secret_fields?: components["schemas"]["NonSecretFieldIn"][] | null;
             /** Browser Fill Enabled */
             browser_fill_enabled?: boolean | null;
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             principal?: components["schemas"]["PrincipalIn"];
             /** Display Name */
@@ -40016,11 +41450,20 @@ export interface components {
             non_secret_fields?: components["schemas"]["NonSecretFieldIn"][] | null;
             /** Browser Fill Enabled */
             browser_fill_enabled?: boolean | null;
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Display Name */
             display_name?: string | null;
@@ -40055,11 +41498,20 @@ export interface components {
         };
         /** VaultResolveRequest */
         VaultResolveRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Refs */
             refs: components["schemas"]["VaultResolveRef"][];
@@ -40079,11 +41531,20 @@ export interface components {
         };
         /** VaultRevealRequest */
         VaultRevealRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Field Key */
             field_key: string;
@@ -40105,11 +41566,20 @@ export interface components {
         };
         /** VaultRotateRequest */
         VaultRotateRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Values
@@ -40123,11 +41593,20 @@ export interface components {
         };
         /** VaultShareRequest */
         VaultShareRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Access Mode
@@ -40145,11 +41624,20 @@ export interface components {
          *     (``recipient_email``) or a principal scope (personal ↔ organization).
          */
         VaultTransferRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             to_principal?: components["schemas"]["PrincipalIn"] | null;
             /** Recipient Email */
@@ -40395,11 +41883,20 @@ export interface components {
         };
         /** VisibilityRequest */
         VisibilityRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /** Is Public */
             is_public: boolean;
@@ -41150,6 +42647,34 @@ export interface components {
              */
             include_excluded_pages?: boolean;
         };
+        /** MentionRow */
+        aidream__api__routers__kg_inspector__MentionRow: {
+            /** Chunk Id */
+            chunk_id: string;
+            /** Source Kind */
+            source_kind: string | null;
+            /** Source Id */
+            source_id: string | null;
+            /** Snippet */
+            snippet: string;
+            /** Span Start */
+            span_start: number | null;
+            /** Span End */
+            span_end: number | null;
+            /** Confidence */
+            confidence: number | null;
+        };
+        /** MentionsPage */
+        aidream__api__routers__kg_inspector__MentionsPage: {
+            /** Items */
+            items: components["schemas"]["aidream__api__routers__kg_inspector__MentionRow"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
         /** SearchRequest */
         aidream__api__routers__rag__SearchRequest: {
             /** Query */
@@ -41256,11 +42781,20 @@ export interface components {
         };
         /** IngestRequest */
         aidream__api__routers__skills__IngestRequest: {
-            /** Organization Id */
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Roots
@@ -41298,6 +42832,55 @@ export interface components {
             deleted_summary_id: string | null;
             /** Compaction Group Id */
             compaction_group_id: string;
+        };
+        /** MentionRow */
+        aidream__services__knowledge_graph__graph__MentionRow: {
+            /**
+             * Chunk Id
+             * @description RAG chunk id containing the entity mention.
+             */
+            chunk_id: string;
+            /**
+             * Source Kind
+             * @description Canonical type of the source that owns the chunk.
+             */
+            source_kind: string | null;
+            /**
+             * Source Id
+             * @description Id of the source that owns the chunk.
+             */
+            source_id: string | null;
+            /**
+             * Snippet
+             * @description Bounded text excerpt surrounding the entity mention.
+             */
+            snippet: string;
+            /**
+             * Span Start
+             * @description Mention start offset within the chunk text.
+             */
+            span_start: number | null;
+            /**
+             * Span End
+             * @description Mention end offset within the chunk text.
+             */
+            span_end: number | null;
+            /**
+             * Confidence
+             * @description Extraction confidence for this mention.
+             */
+            confidence: number | null;
+        };
+        /** MentionsPage */
+        aidream__services__knowledge_graph__graph__MentionsPage: {
+            /** Items */
+            items: components["schemas"]["aidream__services__knowledge_graph__graph__MentionRow"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
         };
         /** DailySpendPoint */
         aidream__services__knowledge_graph__wire__DailySpendPoint: {
@@ -53636,6 +55219,41 @@ export interface operations {
             };
         };
     };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -60457,7 +62075,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MentionsPage"];
+                    "application/json": components["schemas"]["aidream__api__routers__kg_inspector__MentionsPage"];
                 };
             };
             /** @description Validation Error */
@@ -60820,7 +62438,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MentionsPage"];
+                    "application/json": components["schemas"]["aidream__services__knowledge_graph__graph__MentionsPage"];
                 };
             };
             /** @description Validation Error */
@@ -66498,6 +68116,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ImageInpaintRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_image_images_generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateImageRequest"];
             };
         };
         responses: {
