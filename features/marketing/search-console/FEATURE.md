@@ -300,37 +300,35 @@ class into it (`Classify →` / `Review →`,
   truth layer beside it. Never fork a second write path for classes —
   extend `gsc_set_keyword_class`.
 
-## Brand identity — what data alone cannot see (roadmap)
+## Brand identity — the system and what remains
 
 Deterministic matching covers the derivable identity; everything else
 enters through **`web.brand.profile->'brand_aliases'`** — extend that
-array, never the resolver's alias derivation, for per-site knowledge.
-Seeded 2026-08-07 from Arman: All Green + Titanium Success → "arman
-sadeghi"; IOPBM → "angie sadeghi", "angizeh sadeghi". Open items, in
-value order:
+array, never the resolver's alias derivation, for per-site knowledge
+(people, legal names, DBAs, misspellings). Server primitives (ONE
+derivation, in `seo_gsc_class_rpcs.sql`): `gsc_brand_aliases` (derive) →
+`gsc_brand_hits` (corpus scan) → consumed by BOTH `gsc_keyword_class_map`
+and `gsc_brand_identity` (the UI narrator: alias, origin, match counts,
+genericity demotion). Writers: `gsc_set_brand_aliases` (the
+classification workspace's Brand panel —
+`components/classification/BrandIdentityPanel.tsx`) and the intake
+wizard's accepted proposals (server-side apply) — same array, no other
+write path. Live aliases: All Green + Titanium → "arman sadeghi"; IOPBM
+→ "angie sadeghi", "angizeh sadeghi"; datadestruction → "arman
+sadeghi", "datastruction". Open items:
 
-- **Brand profile editor UI** — no surface edits `brand_aliases` yet;
-  today it is agent/DB-written only. Belongs on the brands pillar
-  (`/marketing` → brand editor), a plain string-list field.
-- **AI first-pass alias discovery** — a one-shot per-site agent (site
-  name + domain + homepage + top GSC queries in, alias array out) fills
-  `brand_aliases`: founders/doctors/attorneys, legal names ("angizeh
-  sadeghi md, inc."), DBAs, former names, obvious misspellings ("armani
-  sadeghi", "army sadeghi" exist in the corpus). With web access this is
-  a lookup, not a guess. Slots into the classifier agent-slot system
-  (aidream `docs/handoffs/content-ir-agent-slots.md`).
-- **Misspelling matching** — alias entries cover known ones; a trigram
-  similarity rung is possible later but needs a threshold argument, so
-  it waits for evidence the alias list under-catches.
+- **Misspelling matching** — alias entries cover known ones ("armani
+  sadeghi", "army sadeghi" exist in the corpus, unmatched); a trigram
+  rung waits for evidence the alias list under-catches.
+- **Web-access alias enrichment** — intake proposes aliases from GSC
+  data; a web-access agent could add officers/DBAs/former names the
+  data never shows.
 - **Competitor brand class** — "absolute data destruction",
   "guardiandatadestruction.com" are somebody else's brand traffic and
-  currently land in unclassified/educational. A future 'competitor'
-  class could derive from per-site competitor lists (same
-  `profile` mechanism) or `seo.keyword.brand_presence` once classifier
-  coverage exists; product-semantics call is Arman's.
-- **`seo.keyword.brand_presence`** — the universal agent-classified
-  column could feed a resolver rung once populated; today coverage is
-  ~zero.
+  currently land in unclassified/educational. Could derive from per-site
+  competitor lists (same `profile` mechanism) or
+  `seo.keyword.brand_presence` once classifier coverage exists;
+  product-semantics call is Arman's.
 
 ## Doctrine
 
@@ -439,6 +437,13 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-08 — Brand identity integration round: shared server
+  primitives (gsc_brand_aliases/gsc_brand_hits, threshold fn), the
+  gsc_brand_identity narrator + gsc_set_brand_aliases writer RPCs, and
+  the Brand panel in the classification workspace (view derived +
+  custom aliases, genericity explained, add/remove). Fixed a refactor
+  bug where dedup-by-joined killed the token-subset rule (dedup is by
+  token set). Resolver preserved the verbatim traffic_class rung.
 - 2026-08-08 — **Classification workbench v2** (§ Classification UI):
   class-chip dropdown cell, live class scoreboard, pattern rules
   (`seo.keyword_class_rule` + 11 clue templates, preview-prune-apply,
