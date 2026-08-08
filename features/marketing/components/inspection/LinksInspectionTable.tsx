@@ -50,6 +50,7 @@ import { useCrawl } from "@/features/marketing/data/hooks";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import {
   humanLines,
+  keyFieldsAiVariant,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
 import { ExternalLinksView } from "@/features/marketing/components/inspection/link-graph/ExternalLinksView";
@@ -559,24 +560,21 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
                 total_matching: links.data?.total ?? 0,
               }),
               aiVariants: (visible) => [
-                {
-                  id: "key-fields",
-                  label: "Key fields",
+                keyFieldsAiVariant({
+                  kind: "web-link-edges",
+                  location: pageLocation,
+                  description:
+                    "The currently loaded link-edge rows projected to key fields.",
                   hint: "Visible edges projected to core link fields",
-                  build: () => ({
-                    kind: "web-link-edges",
-                    location: pageLocation,
-                    description:
-                      "The currently loaded link-edge rows projected to key fields.",
-                    data: { query: table.state, rows: visible.map(projectLinkRow) },
-                    attributes: {
-                      site_id: site.id,
-                      session_id: crawlId,
-                      total_matching: links.data?.total ?? 0,
-                      detail: "key-fields",
-                    },
-                  }),
-                },
+                  visible,
+                  project: projectLinkRow,
+                  query: table.state,
+                  attributes: {
+                    site_id: site.id,
+                    session_id: crawlId,
+                    total_matching: links.data?.total ?? 0,
+                  },
+                }),
               ],
             }}
             detail={{

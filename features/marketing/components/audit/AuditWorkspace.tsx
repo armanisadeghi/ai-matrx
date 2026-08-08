@@ -478,7 +478,7 @@ function AuditBody({
     kind: "marketing-audit-page",
     location: pageLocation,
     description: `The full site-audit rollup dashboard for ${siteDomain}.`,
-    attributes: { domain: siteDomain },
+    attributes: { site_id: siteId, domain: siteDomain },
     summary: humanAuditSnapshot(rollup),
     sections: groomerSections(),
   });

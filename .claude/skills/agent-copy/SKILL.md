@@ -188,9 +188,14 @@ first and emit the gap list; only then wire, batch by batch:
 **Done:**
 - Primitive + README + roadmap (`components/agent-copy/`), `xs` size, groomer
   window (`AgentCopyGroomerWindow` + launcher + `groomer-types.ts`).
-- `AiCopyMenu` (2026-08-08): multi-variant dropdown + custom-preview dialog
-  with live size counts; `CopyButtons.aiVariants/aiCustom` in-place upgrade;
-  `MatrxDataTable copy.aiVariants/aiCustom`; shared `clipboard.ts`. Kept in
+- Graded Copy-for-AI variants: `AiCopyMenu`, `CopyButtons.aiVariants`,
+  `CopyButtons.aiCustom`, `MatrxDataTable copy.aiVariants/aiCustom`, shared
+  `clipboard.ts`, plus `buildGroomerPresetPayload` /
+  `groomerPresetVariants` (groomer-types) and `keyFieldsAiVariant`
+  (marketing `copy-payloads.ts`). Wired on the medium/massive marketing site
+  tabs (keywords, ranks, findings, analysis, audit, links, crawls, discovery,
+  cost + backlinks reference); small bounded tabs deliberately keep the plain
+  pair — the sized-to-data call is part of the job. `AiCopyMenu` remains in
   step with aidream `apps/dashboard/src/components/agent-copy/AiCopyMenu.tsx`.
 - Built-in integrations: `MatrxDataTable` `copy` config → row/view/window/field
   pairs; `DataRowInspector` per-field hover copy; `JsonInspector` `agentCopy`.

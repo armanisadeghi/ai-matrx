@@ -35,6 +35,7 @@ import type { PriorityQueueRow } from "@/features/marketing/data/analysis-types"
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import {
   humanLines,
+  keyFieldsAiVariant,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
 
@@ -363,23 +364,20 @@ export function SiteAnalysisTable() {
             total_matching: priority.data?.total ?? 0,
           }),
           aiVariants: (visible) => [
-            {
-              id: "key-fields",
-              label: "Key fields",
+            keyFieldsAiVariant({
+              kind: "web-priority-queue",
+              location: pageLocation,
+              description:
+                "The currently loaded priority queue rows projected to key fields.",
               hint: "Visible rows projected to core priority fields",
-              build: () => ({
-                kind: "web-priority-queue",
-                location: pageLocation,
-                description:
-                  "The currently loaded priority queue rows projected to key fields.",
-                data: { query: table.state, rows: visible.map(projectPriorityRow) },
-                attributes: {
-                  site_id: site.id,
-                  total_matching: priority.data?.total ?? 0,
-                  detail: "key-fields",
-                },
-              }),
-            },
+              visible,
+              project: projectPriorityRow,
+              query: table.state,
+              attributes: {
+                site_id: site.id,
+                total_matching: priority.data?.total ?? 0,
+              },
+            }),
           ],
         }}
         detail={{ enabled: false }}
