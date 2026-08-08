@@ -11,6 +11,7 @@
 // (see the code-splitting skill; a peek must open instantly).
 
 import { useMemo, useRef, useState } from "react";
+import { GscClassBar } from "@/features/marketing/search-console/components/ambassador/GscClassBar";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
 import { ArrowDownRight, ArrowUpRight, FileSearch, Loader2 } from "lucide-react";
@@ -334,6 +335,19 @@ export function GscPeekBody({
       ) : (
         <MiniTrendChart points={daily.data ?? []} metric={metric} />
       )}
+
+      {/* Canvas doctrine rung 2: the totals above are the raw read, kept
+          because users expect it — but a total is never the headline. The
+          class split says whether the movement was money or brand noise.
+          Mounts with the hovercard, so it costs nothing until opened. */}
+      {metric !== "position" ? (
+        <GscClassBar
+          siteId={site.id}
+          siteName={site.name}
+          heading={false}
+          className="border-0 bg-transparent p-0"
+        />
+      ) : null}
 
       <div>
         <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">

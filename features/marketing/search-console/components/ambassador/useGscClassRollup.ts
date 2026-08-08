@@ -34,6 +34,7 @@ import {
 } from "@/features/marketing/search-console/lib/url-state";
 import {
   GSC_TRAFFIC_CLASSES,
+  type GscClassSummaryRow,
   type GscRangeKey,
   type GscResolvedPeriods,
   type GscTrafficClass,
@@ -75,6 +76,52 @@ function pct(current: number, compare: number): number | null {
 }
 
 /**
+ * Pure core: shape `gsc_perf_class_summary` rows into render-ready classes.
+ * Exported separately from the hook so the arithmetic that decides what a user
+ * reads as "money is down 12%" is unit-testable without React or Supabase.
+ */
+export function shapeGscClassRollup(
+  rows: readonly GscClassSummaryRow[],
+  periods: GscResolvedPeriods,
+): GscClassRollup {
+  const byClass = new Map(rows.map((r) => [r.traffic_class, r]));
+  const totalClicks = rows.reduce((sum, r) => sum + (r.clicks ?? 0), 0);
+  const totalCmpClicks = rows.reduce((sum, r) => sum + (r.cmp_clicks ?? 0), 0);
+  const totalImpressions = rows.reduce((sum, r) => sum + (r.impressions ?? 0), 0);
+
+  // Canonical order + zero-fill: a missing class is a real zero, not a gap.
+  const classes = GSC_TRAFFIC_CLASSES.map((meta) => {
+    const row = byClass.get(meta.key);
+    const clicks = row?.clicks ?? 0;
+    const cmpClicks = row?.cmp_clicks ?? 0;
+    return {
+      key: meta.key,
+      label: meta.label,
+      tone: meta.tone,
+      description: meta.description,
+      clicks,
+      cmpClicks,
+      impressions: row?.impressions ?? 0,
+      cmpImpressions: row?.cmp_impressions ?? 0,
+      queries: row?.queries ?? 0,
+      deltaClicks: clicks - cmpClicks,
+      deltaPct: pct(clicks, cmpClicks),
+      share: totalClicks > 0 ? clicks / totalClicks : 0,
+    };
+  });
+
+  return {
+    classes,
+    totalClicks,
+    totalCmpClicks,
+    totalImpressions,
+    totalDeltaPct: pct(totalClicks, totalCmpClicks),
+    periods,
+    hasData: totalClicks > 0 || totalImpressions > 0,
+  };
+}
+
+/**
  * Class-decomposed GSC for one site, ready to render.
  *
  * @param siteId  Site to roll up. `null` disables every query (safe for
@@ -108,49 +155,10 @@ export function useGscClassRollup(
     enabled: !!siteId && !freshness.isLoading,
   });
 
-  const rollup = useMemo<GscClassRollup | null>(() => {
-    const rows = summary.data;
-    if (!rows) return null;
-
-    const byClass = new Map(rows.map((r) => [r.traffic_class, r]));
-    const totalClicks = rows.reduce((sum, r) => sum + (r.clicks ?? 0), 0);
-    const totalCmpClicks = rows.reduce((sum, r) => sum + (r.cmp_clicks ?? 0), 0);
-    const totalImpressions = rows.reduce(
-      (sum, r) => sum + (r.impressions ?? 0),
-      0,
-    );
-
-    // Canonical order + zero-fill: a missing class is a real zero, not a gap.
-    const classes = GSC_TRAFFIC_CLASSES.map((meta) => {
-      const row = byClass.get(meta.key);
-      const clicks = row?.clicks ?? 0;
-      const cmpClicks = row?.cmp_clicks ?? 0;
-      return {
-        key: meta.key,
-        label: meta.label,
-        tone: meta.tone,
-        description: meta.description,
-        clicks,
-        cmpClicks,
-        impressions: row?.impressions ?? 0,
-        cmpImpressions: row?.cmp_impressions ?? 0,
-        queries: row?.queries ?? 0,
-        deltaClicks: clicks - cmpClicks,
-        deltaPct: pct(clicks, cmpClicks),
-        share: totalClicks > 0 ? clicks / totalClicks : 0,
-      };
-    });
-
-    return {
-      classes,
-      totalClicks,
-      totalCmpClicks,
-      totalImpressions,
-      totalDeltaPct: pct(totalClicks, totalCmpClicks),
-      periods,
-      hasData: totalClicks > 0 || totalImpressions > 0,
-    };
-  }, [summary.data, periods]);
+  const rollup = useMemo<GscClassRollup | null>(
+    () => (summary.data ? shapeGscClassRollup(summary.data, periods) : null),
+    [summary.data, periods],
+  );
 
   return {
     rollup,
