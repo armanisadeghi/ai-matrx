@@ -24,6 +24,12 @@
 import { CmsPageService } from "@/features/cms/services/cmsService";
 import type { ClientPage, ClientPageSummary } from "@/features/cms/types";
 import type { MarketingPage } from "@/features/marketing/types";
+import {
+  getPlanNode,
+  updatePlanNode,
+} from "@/features/marketing/content-plan/data/service";
+import { categoriesService } from "@/features/scopes/service/categoriesService";
+import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 
 /** Leading slash, no trailing slash; `/` stays `/`. Mirrors readiness.ts. */
 export function normalizeRoutePath(path: string | null | undefined): string {
@@ -196,4 +202,73 @@ export async function executeCmsPush(args: {
   });
 
   return { created, page: saved, warnings };
+}
+
+// ─── Plan-node status bump (push v2) ────────────────────────────────────────
+
+/** The `plan_status` category slug a successful push advances a node TO. */
+export const PUSH_STATUS_BUMP_TARGET_SLUG = "in-production";
+
+/**
+ * Statuses a push may advance FROM (plus unset). Anything at or past
+ * production (`in-review`, `approved`, `published`, `live-verified`,
+ * `needs-update`, `retired`) is NEVER touched — a push must not walk a node
+ * backwards through its lifecycle.
+ */
+const PUSH_BUMPABLE_STATUS_SLUGS = new Set(["idea", "planned", "briefed"]);
+
+export interface PlanNodeStatusBump {
+  bumped: boolean;
+  fromSlug: string | null;
+  toSlug?: string;
+  /** Why nothing changed, when `bumped` is false. */
+  reason?: string;
+}
+
+/**
+ * After a successful CMS push, advance the linked `plan.node`'s status to
+ * "in-production" — the plan board should reflect that the content left
+ * planning. Only forward moves happen (see PUSH_BUMPABLE_STATUS_SLUGS);
+ * failures throw so the caller can surface them loudly (the push itself has
+ * already succeeded and is never rolled back for a bump failure).
+ */
+export async function bumpPlanNodeStatusAfterPush(
+  planNodeId: string,
+): Promise<PlanNodeStatusBump> {
+  const node = await getPlanNode(planNodeId);
+  const statuses = await categoriesService.list(CATEGORY_DIMENSIONS.planStatus);
+  if (!statuses.ok) {
+    throw new Error(
+      `Could not load plan statuses: ${statuses.error.message}`,
+    );
+  }
+  const categories = statuses.data.categories;
+  const slugById = new Map(
+    categories
+      .filter((category) => category.slug)
+      .map((category) => [category.id, category.slug as string]),
+  );
+  const fromSlug = node.status_id
+    ? (slugById.get(node.status_id) ?? null)
+    : null;
+  if (fromSlug === PUSH_STATUS_BUMP_TARGET_SLUG) {
+    return { bumped: false, fromSlug, reason: "already in production" };
+  }
+  if (fromSlug && !PUSH_BUMPABLE_STATUS_SLUGS.has(fromSlug)) {
+    return {
+      bumped: false,
+      fromSlug,
+      reason: `status "${fromSlug}" is at or past production — left untouched`,
+    };
+  }
+  const target = categories.find(
+    (category) => category.slug === PUSH_STATUS_BUMP_TARGET_SLUG,
+  );
+  if (!target) {
+    throw new Error(
+      `No "${PUSH_STATUS_BUMP_TARGET_SLUG}" status exists in the plan_status categories`,
+    );
+  }
+  await updatePlanNode(planNodeId, { status_id: target.id });
+  return { bumped: true, fromSlug, toSlug: PUSH_STATUS_BUMP_TARGET_SLUG };
 }

@@ -108,7 +108,13 @@ import {
 } from "@/features/marketing/components/pages/cards/PageTargetPerformanceCard";
 import { PageImagePlanCard } from "@/features/marketing/components/pages/cards/PageImagePlanCard";
 import { PageMediaCard } from "@/features/marketing/components/pages/cards/PageMediaCard";
-import { PushToCmsCard } from "@/features/marketing/components/pages/cards/PushToCmsCard";
+import {
+  cmsPushQueryKey,
+  PushToCmsCard,
+  summarizeCmsPushFacts,
+  type CmsPushFacts,
+} from "@/features/marketing/components/pages/cards/PushToCmsCard";
+import { normalizeRoutePath } from "@/features/marketing/lib/push-to-cms";
 import { LinksPlan } from "@/features/marketing/components/pages/cards/LinksPlanCard";
 import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
 import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
@@ -411,10 +417,16 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             page.target_keyword?.trim() ?? "",
           ),
         ) as Record<string, unknown> | undefined) ?? null,
-      inboundLinks:
-        (inboundLinks.data as unknown as Record<string, unknown>[]) ?? null,
-      outboundLinks:
-        (outboundLinks.data as unknown as Record<string, unknown>[]) ?? null,
+      inboundLinks: inboundLinks.data ?? null,
+      outboundLinks: outboundLinks.data ?? null,
+      // Trigger-time cache read — PushToCmsCard owns the fetch; the scope
+      // reads the same react-query entry without a second subscription.
+      cmsPush: (() => {
+        const facts = queryClient.getQueryData<CmsPushFacts>(
+          cmsPushQueryKey(site.id, normalizeRoutePath(page.path)),
+        );
+        return facts ? summarizeCmsPushFacts(page, facts) : null;
+      })(),
       backlinks: (backlinks.data as unknown as Record<string, unknown>) ?? null,
       pageTasks: pageTasks as unknown as Record<string, unknown>[],
       attachedItems: (() => {

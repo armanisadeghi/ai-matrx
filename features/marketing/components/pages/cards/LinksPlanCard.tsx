@@ -402,7 +402,7 @@ export function LinksPlan({ page }: { page: MarketingPage }) {
   });
 
   return (
-    <SectionCard title="Link plan" copy={copy} collapsible anchor="links_plan">
+    <SectionCard title="Link plan" copy={copy} collapsible anchor="link_plan">
       <datalist id={datalistId}>
         {(directory.data?.rows ?? []).map((row) => (
           <option key={row.id} value={row.url} />

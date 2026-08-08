@@ -12,6 +12,8 @@
  *    `saveDraft`, missing → `createPage` as a draft. Route moves NEVER happen
  *    from this push (THE 301 LAW).
  *  - Never auto-publishes. Loud errors. `plan_node_id` surfaced read-only.
+ *  - Push v2: a successful push advances the linked plan.node's status to
+ *    "in-production" (forward-only — see bumpPlanNodeStatusAfterPush).
  *
  * Push mechanics live in `features/marketing/lib/push-to-cms.ts`.
  */
@@ -38,6 +40,7 @@ import { usePageContent } from "@/features/marketing/data/hooks";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import {
   buildPushPayload,
+  bumpPlanNodeStatusAfterPush,
   executeCmsPush,
   normalizeRoutePath,
   resolvePushTarget,
@@ -53,7 +56,15 @@ const pushKeys = {
   cms: (siteId: string) => ["marketing", "push-to-cms", siteId] as const,
 };
 
-interface CmsPushFacts {
+/**
+ * The exact react-query key `useCmsPushFacts` caches under — exported so the
+ * page workspace's surface scope can read the SAME cache entry at launch time
+ * (the `cms_push` surface value) without a second fetch.
+ */
+export const cmsPushQueryKey = (siteId: string, route: string) =>
+  [...pushKeys.cms(siteId), route] as const;
+
+export interface CmsPushFacts {
   link: ReturnType<typeof resolveCmsLink>;
   /** Summaries of every page on the linked CMS site (empty when unlinked). */
   pages: Awaited<ReturnType<typeof CmsPageService.listPages>>;
@@ -64,7 +75,7 @@ interface CmsPushFacts {
 function useCmsPushFacts(site: MarketingSite, page: MarketingPage) {
   const route = normalizeRoutePath(page.path);
   return useQuery<CmsPushFacts>({
-    queryKey: [...pushKeys.cms(site.id), route],
+    queryKey: cmsPushQueryKey(site.id, route),
     retry: false,
     staleTime: 30 * 1000,
     queryFn: async () => {
@@ -82,6 +93,39 @@ function useCmsPushFacts(site: MarketingSite, page: MarketingPage) {
       return { link, pages, matched };
     },
   });
+}
+
+/**
+ * Reduce the cached push facts to the `cms_push` surface value: where this
+ * page's route lands on the linked CMS site and the bridge's standing. Pure —
+ * the scope builder calls it over the react-query cache entry at launch time.
+ */
+export function summarizeCmsPushFacts(
+  page: MarketingPage,
+  facts: CmsPushFacts,
+): Record<string, unknown> {
+  const target = resolvePushTarget(page, facts.pages);
+  const link = facts.link;
+  return {
+    linked: link.linked,
+    cms_site_id: link.linked ? link.cmsSiteId : null,
+    cms_slug: link.linked ? (link.cmsSlug ?? null) : null,
+    matched_by: link.linked ? link.matchedBy : null,
+    unlinked_reason: link.linked ? null : (link.reason ?? null),
+    target_kind: target.kind,
+    cms_page_id: target.kind === "existing" ? target.page.id : null,
+    cms_route:
+      target.kind === "existing"
+        ? normalizeRoutePath(target.page.route)
+        : target.kind === "create"
+          ? target.route
+          : null,
+    is_published: target.kind === "existing" ? target.page.is_published : false,
+    has_pending_draft:
+      target.kind === "existing" ? target.page.has_draft : false,
+    blocked_reason: target.kind === "blocked" ? target.reason : null,
+    plan_node_id: facts.matched?.plan_node_id ?? null,
+  };
 }
 
 function PayloadRow({ ok, label, detail }: { ok: boolean; label: string; detail: string }) {
@@ -150,6 +194,25 @@ export function PushToCmsCard({
       );
       for (const warning of outcome.warnings) {
         toast.warning(warning);
+      }
+      // Push v2: the plan board should reflect that this content left
+      // planning. Forward-only; a bump failure never undoes the push — it
+      // just screams.
+      const planNodeId = outcome.page.plan_node_id ?? matched?.plan_node_id;
+      if (planNodeId) {
+        try {
+          const bump = await bumpPlanNodeStatusAfterPush(planNodeId);
+          if (bump.bumped) {
+            toast.success(
+              `Linked plan node moved to In production${bump.fromSlug ? ` (was ${bump.fromSlug})` : ""}`,
+            );
+          }
+        } catch (error) {
+          toast.warning(
+            "Pushed, but updating the linked plan node status failed",
+            { description: extractErrorMessage(error) },
+          );
+        }
       }
       await queryClient.invalidateQueries({ queryKey: pushKeys.cms(site.id) });
     } catch (error) {

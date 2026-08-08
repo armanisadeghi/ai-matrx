@@ -49,6 +49,22 @@ import {
 } from "@/features/marketing/seo/audit/social";
 import { evaluateUrlQuality } from "@/features/marketing/seo/audit/url-quality";
 import type { PageAnalysisArtifact } from "@/features/marketing/components/pages/usePageAnalyzer";
+import {
+  acceptedAnchorTextsFromDesiredValues,
+  acceptedAnchorsByTargetUrl,
+  inboundPlanObservations,
+  outboundPlanObservations,
+  plannedLinksFromDesiredValues,
+  scorePlannedLinks,
+  summarizePlannedLinkScores,
+  type InboundLinkEdge,
+  type OutboundLinkEdge,
+  type PlannedLinkScore,
+} from "@/features/marketing/data/page-links";
+import {
+  buildSnapshotMediaAssets,
+  bucketSnapshotAssets,
+} from "@/features/marketing/lib/snapshot-media";
 import type { PagePerformanceRow } from "@/features/marketing/pagespeed/data";
 import type { WebAnalyticsDailyRow } from "@/features/marketing/analytics/data";
 import {
@@ -220,8 +236,13 @@ export function buildMarketingPageScope(input: {
    * react-query cache — no duplicate fetch), when the pane has resolved. */
   targetPerformance?: Record<string, unknown> | null;
   /** Inbound / outbound internal-link rows, when loaded. */
-  inboundLinks?: readonly Record<string, unknown>[] | null;
-  outboundLinks?: readonly Record<string, unknown>[] | null;
+  inboundLinks?: readonly InboundLinkEdge[] | null;
+  outboundLinks?: readonly OutboundLinkEdge[] | null;
+  /**
+   * The Plan → CMS bridge summary (`summarizeCmsPushFacts` over the Push to
+   * CMS card's react-query cache entry), when the card has resolved.
+   */
+  cmsPush?: Record<string, unknown> | null;
   /** Backlink evidence bundle, when loaded. */
   backlinks?: Record<string, unknown> | null;
   /** Tasks associated with this page, when loaded. */
@@ -258,6 +279,7 @@ export function buildMarketingPageScope(input: {
     targetPerformance,
     inboundLinks,
     outboundLinks,
+    cmsPush,
     backlinks,
     pageTasks,
     attachedItems,
@@ -411,6 +433,105 @@ export function buildMarketingPageScope(input: {
         })()
       : undefined;
 
+  // The authored link plan, scored live against the observed edges — the same
+  // pure scoring helpers LinksPlanCard renders from (one evaluation path, two
+  // consumers). Outbound target policies come from the observed edges' target
+  // pages (the card additionally consults the site directory for unlinked
+  // targets; the scope stays evidence-only).
+  const acceptedAnchors = acceptedAnchorTextsFromDesiredValues(
+    page.desired_values,
+  );
+  const inboundPlanEntries = plannedLinksFromDesiredValues(
+    page.desired_values,
+    "inbound_links",
+  );
+  const outboundPlanEntries = plannedLinksFromDesiredValues(
+    page.desired_values,
+    "outbound_links",
+  );
+  const planScoreEntry = (score: PlannedLinkScore) => ({
+    url: score.entry.url,
+    anchor_text: score.entry.anchor_text ?? null,
+    status: score.status,
+    observed_anchors: score.observedAnchors,
+    observed_edge_count: score.observedEdgeCount,
+    acceptable_anchors: score.acceptableAnchors,
+  });
+  let linkPlan: Record<string, unknown> | undefined;
+  if (
+    acceptedAnchors.length > 0 ||
+    inboundPlanEntries.length > 0 ||
+    outboundPlanEntries.length > 0
+  ) {
+    const inboundScores = scorePlannedLinks(
+      inboundPlanEntries,
+      inboundPlanObservations([...(inboundLinks ?? [])]),
+      () => acceptedAnchors,
+    );
+    const observedPolicies = acceptedAnchorsByTargetUrl([
+      ...(outboundLinks ?? []),
+    ]);
+    const outboundScores = scorePlannedLinks(
+      outboundPlanEntries,
+      outboundPlanObservations([...(outboundLinks ?? [])]),
+      (normalizedUrl) => observedPolicies.get(normalizedUrl) ?? [],
+    );
+    linkPlan = {
+      accepted_anchor_texts: acceptedAnchors,
+      inbound: {
+        summary: summarizePlannedLinkScores(inboundScores),
+        entries: inboundScores.map(planScoreEntry),
+      },
+      outbound: {
+        summary: summarizePlannedLinkScores(outboundScores),
+        entries: outboundScores.map(planScoreEntry),
+      },
+    };
+  }
+
+  // Categorized media picture — same core the Page Media card renders from,
+  // bounded for context (the raw `images` inventory rides separately).
+  const MEDIA_ASSET_CAP = 60;
+  const mediaAssets =
+    images && images.items.length > 0
+      ? buildSnapshotMediaAssets(
+          images.items.map((image) => ({ image, page: null })),
+        )
+      : null;
+  const mediaInventory =
+    mediaAssets && mediaAssets.assets.length > 0
+      ? (() => {
+          const buckets = bucketSnapshotAssets(mediaAssets.assets);
+          return {
+            total: mediaAssets.assets.length,
+            missing_alt: mediaAssets.assets.filter((asset) => asset.missingAlt)
+              .length,
+            without_src: mediaAssets.withoutSrc,
+            counts: {
+              landscape: buckets.landscape.length,
+              square: buckets.square.length,
+              portrait: buckets.portrait.length,
+              unknown_aspect: buckets.unknownAspect.length,
+              graphics: buckets.graphics.length,
+              icons: buckets.icons.length,
+            },
+            assets: mediaAssets.assets
+              .slice(0, MEDIA_ASSET_CAP)
+              .map((asset) => ({
+                src: asset.src,
+                alt: asset.alt,
+                missing_alt: asset.missingAlt,
+                featured: asset.featured,
+                tier: asset.tier,
+                aspect: asset.aspect,
+                size: asset.sizeLabel,
+                occurrences: asset.occurrences,
+              })),
+            truncated: mediaAssets.assets.length > MEDIA_ASSET_CAP,
+          };
+        })()
+      : undefined;
+
   const memberships =
     sitemapMemberships && sitemapMemberships.length > 0
       ? sitemapMemberships.map((membership) => ({
@@ -530,6 +651,9 @@ export function buildMarketingPageScope(input: {
       desiredValues && Object.keys(desiredValues).length > 0
         ? desiredValues
         : undefined,
+    link_plan: linkPlan,
+    media_inventory: mediaInventory,
+    cms_push: cmsPush ?? undefined,
     draft_content: draftContent || undefined,
     keyword_batch:
       keywordBatch && keywordBatch.length > 0 ? [...keywordBatch] : undefined,

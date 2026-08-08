@@ -95,6 +95,13 @@ const groups: SurfaceValueGroup[] = [
     description:
       "Work and resources associated with this page: tasks and attached items.",
   },
+  {
+    key: "publication",
+    label: "Publication",
+    sortOrder: 850,
+    description:
+      "Where the authored plan ships: the Plan → CMS bridge for this page's route.",
+  },
 ];
 
 const surfaceSpecific: SurfaceValue[] = [
@@ -253,7 +260,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "desired_values",
     label: "Desired values",
     description:
-      "The per-area desired-state mirror (`web.page.desired_values`): social_card, indexability (canonical/robots), headings (outline plan), image_plan, and free notes. Empty object when the user has expressed no desired state yet. Agents proposing changes to these areas write candidates for the matching key.",
+      "The per-area desired-state mirror (`web.page.desired_values`): social_card, indexability (canonical/robots), headings (outline plan), image_plan, the link plan (accepted_anchor_texts + planned inbound_links/outbound_links), and the per-area plan notes (identity_notes, structured_data_notes, strategy_notes, performance_goals, additional_content_notes, backlink_plan). Empty object when the user has expressed no desired state yet. Agents proposing changes to these areas write candidates for the matching key.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 1200,
@@ -291,6 +298,18 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 900,
     sortOrder: 330,
+    group: "authoring",
+  },
+
+  {
+    name: "link_plan",
+    label: "Link plan",
+    description:
+      "The authored internal-link plan with live compliance scores: accepted_anchor_texts plus the planned inbound and outbound links, each entry scored against the observed crawl edges (linked / wrong_anchor / missing) with per-direction summaries. Empty when the user has authored no link plan for this page.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 1500,
+    sortOrder: 340,
     group: "authoring",
   },
 
@@ -439,6 +458,18 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 8000,
     autoContext: false,
     sortOrder: 655,
+    group: "observed_seo",
+  },
+  {
+    name: "media_inventory",
+    label: "Media inventory",
+    description:
+      "The categorized media picture of the latest snapshot, deduped by src: totals, missing-alt count, size-tier/aspect bucket counts (landscape/square/portrait/graphics/icons), and a bounded asset list (src, alt, tier, aspect, size, occurrences; truncated flag when capped). Derived from the same categorization core the Page Media card renders from. Empty when uncrawled or the snapshot carries only image counts.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 4000,
+    autoContext: false,
+    sortOrder: 657,
     group: "observed_seo",
   },
   {
@@ -737,6 +768,19 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 820,
     group: "attachments",
   },
+
+  // ── Publication — the Plan → CMS bridge ───────────────────────────────
+  {
+    name: "cms_push",
+    label: "CMS push bridge",
+    description:
+      "Where this page's route lands on the linked CMS site: link standing (linked / matched_by / unlinked_reason), the resolved push target (existing page id + route, create, or blocked with reason), the target's published/pending-draft state, and the linked plan_node_id. Empty when the Push to CMS card has not resolved yet in this session.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 400,
+    sortOrder: 860,
+    group: "publication",
+  },
 ];
 
 /**
@@ -827,7 +871,7 @@ export const marketingPageManifest: SurfaceManifest = {
 The inherited brand_context and site_context values give you the client and website this page belongs to — read them for framing before working on the page itself.
 You are on the Marketing page workspace: one canonical URL of a managed website, with the evidence of what it currently serves and the user's editorial intent for what it should become.
 Two kinds of values live here and must never be confused: OBSERVED values (observed_title, observed_description, observed_seo_metrics) are immutable crawl evidence of the live site; DESIRED values (desired_title, desired_description, desired_seo_metrics) are the user's editorial targets stored on the page. When asked to improve metadata, you propose DESIRED values — you never alter or invent observed evidence.
-Beyond metadata, the surface carries complete crawl evidence: page_identity (featured image, CMS/platform identifiers, author/dates), structured_data (all raw and normalized JSON-LD/microdata/RDFa/microformats), resources (the full declared asset inventory), images, and visual captures. Large raw evidence values remain explicitly bindable but are not auto-added to every agent context. It also carries analysis evidence (Page Analyzer keyword picture, page score, open findings + findings rows), performance evidence (Search Console metrics + the default-28d per-query breakdown in gsc_queries, target_performance — SERP rank + AI-answer citation evidence specifically for the target keyword, PageSpeed Insights, GA4, internal links, backlinks), and the user's AUTHORING layer: draft_content (the markdown body the page SHOULD have), desired_values (per-area desired state: social card, canonical/robots, heading-structure plan, image plan — each planned image also carries an optional style preset), the keyword_batch (library keywords attached to this page alongside the primary target_keyword), and page_tasks (work linked to this page).
+Beyond metadata, the surface carries complete crawl evidence: page_identity (featured image, CMS/platform identifiers, author/dates), structured_data (all raw and normalized JSON-LD/microdata/RDFa/microformats), resources (the full declared asset inventory), images, and visual captures. Large raw evidence values remain explicitly bindable but are not auto-added to every agent context. It also carries analysis evidence (Page Analyzer keyword picture, page score, open findings + findings rows), performance evidence (Search Console metrics + the default-28d per-query breakdown in gsc_queries, target_performance — SERP rank + AI-answer citation evidence specifically for the target keyword, PageSpeed Insights, GA4, internal links, backlinks), and the user's AUTHORING layer: draft_content (the markdown body the page SHOULD have), desired_values (per-area desired state: social card, canonical/robots, heading-structure plan, image plan — each planned image also carries an optional style preset), the keyword_batch (library keywords attached to this page alongside the primary target_keyword), link_plan (the authored internal-link plan scored live against the observed edges), and page_tasks (work linked to this page). The cms_push value tells you where the authored plan ships: which CMS page this route resolves to and whether a push would update, create, or is blocked.
 SEO metrics are deterministic (shared pixel-width table between browser and scraper): trust the provided pixel_width / ok flags instead of estimating lengths, and validate any candidate you generate with the seo tool before presenting it.
 </surface_intro>`,
   groups,
@@ -945,6 +989,9 @@ export function createMarketingPageScope(values: {
   images?: Record<string, unknown>;
   url_quality_issues?: Array<Record<string, unknown>>;
   desired_values?: Record<string, unknown>;
+  link_plan?: Record<string, unknown>;
+  media_inventory?: Record<string, unknown>;
+  cms_push?: Record<string, unknown>;
   draft_content?: string;
   keyword_batch?: Array<Record<string, unknown>>;
   image_plan?: Array<Record<string, unknown>>;
