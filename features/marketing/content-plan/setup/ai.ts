@@ -593,6 +593,79 @@ export function buildArchetypeOptionsJson(
 }
 
 /**
+ * The user's answers to the Build-with-AI questions — HINTS, not commitments.
+ * The agents treat the research report as primary evidence and may deviate
+ * (saying so in the rationale); the user never opts into a structure here.
+ */
+export interface SetupGuidance {
+  /** Rough size feel; "ai" = let the evidence decide. */
+  sizeHint: "ai" | "micro" | "small" | "medium" | "large";
+  /** Physical footprint; "ai" = let the evidence decide. */
+  locationsHint: "ai" | "single" | "multiple";
+  /** Optional location count when "multiple" (free text, e.g. "4"). */
+  locationCount: string;
+  /** Free-form emphasis / avoid / anything-else notes. */
+  notes: string;
+}
+
+export const DEFAULT_SETUP_GUIDANCE: SetupGuidance = {
+  sizeHint: "ai",
+  locationsHint: "ai",
+  locationCount: "",
+  notes: "",
+};
+
+const SIZE_HINT_PAGES: Record<
+  Exclude<SetupGuidance["sizeHint"], "ai">,
+  string
+> = {
+  micro: "5-8",
+  small: "10-15",
+  medium: "18-30",
+  large: "30-60",
+};
+
+/**
+ * Serialize the guidance answers into the two agent inputs: the free-text
+ * `guidance` block (framed as overridable hints) and the Shape Planner's
+ * `target_page_count`. All-default answers produce empty strings — the agents
+ * then work from the research alone.
+ */
+export function buildGuidanceInputs(input: SetupGuidance): {
+  guidance: string;
+  targetPageCount: string;
+} {
+  const lines: string[] = [];
+  if (input.sizeHint !== "ai") {
+    lines.push(
+      `The user expects roughly a ${input.sizeHint} site (about ${SIZE_HINT_PAGES[input.sizeHint]} pages).`,
+    );
+  }
+  if (input.locationsHint === "single") {
+    lines.push(
+      "The business operates from a SINGLE location — do not plan a locations section unless the research clearly contradicts this.",
+    );
+  } else if (input.locationsHint === "multiple") {
+    const count = input.locationCount.trim();
+    lines.push(
+      `The business has MULTIPLE locations${count ? ` (around ${count})` : ""} — plan location pages accordingly.`,
+    );
+  }
+  if (input.notes.trim()) {
+    lines.push(`Operator notes: ${input.notes.trim()}`);
+  }
+  if (lines.length === 0) return { guidance: "", targetPageCount: "" };
+  return {
+    guidance:
+      "USER HINTS (not commitments — the research report is the primary evidence; " +
+      "deviate when the evidence clearly disagrees, and say so in your rationale):\n" +
+      lines.map((line) => `- ${line}`).join("\n"),
+    targetPageCount:
+      input.sizeHint !== "ai" ? SIZE_HINT_PAGES[input.sizeHint] : "",
+  };
+}
+
+/**
  * The Shape Planner's `site_context` variable — what we actually KNOW about
  * the site, from its own row. This used to be passed as an empty string,
  * which silently threw away the name/description a user had already written.
