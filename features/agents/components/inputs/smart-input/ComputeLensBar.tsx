@@ -6,7 +6,7 @@
  * chips, overflow + chevron opens the full Sandbox panel in run-controls window.
  */
 
-import { Box, ChevronDown, Loader2, Monitor, Unplug } from "lucide-react";
+import { Box, Check, ChevronDown, Loader2, Monitor, Plus } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -71,6 +71,13 @@ function TargetChip({
               : `Connect ${kindLabel}: ${target.name}`
           }
         >
+          {/* State reads in plain signals, not icon code: a bound chip leads
+              with a check, an unbound one leads with a + ("connect this"). */}
+          {isBound ? (
+            <Check className="h-3 w-3 shrink-0 text-emerald-500" />
+          ) : (
+            <Plus className="h-3 w-3 shrink-0 text-muted-foreground/70" />
+          )}
           <TargetGlyph
             kind={target.kind}
             className={cn("h-3 w-3 shrink-0", color)}
@@ -80,14 +87,6 @@ function TargetChip({
           >
             {target.name}
           </span>
-          {isBound ? (
-            <span
-              className={cn(
-                "h-1.5 w-1.5 shrink-0 rounded-full",
-                target.kind === "local-pc" ? "bg-blue-500" : "bg-emerald-500",
-              )}
-            />
-          ) : null}
         </button>
       </TooltipTrigger>
       <TooltipContent side="top">
@@ -161,6 +160,14 @@ export function ComputeLensBar({
         </TooltipContent>
       </Tooltip>
 
+      {/* Explicit bound-state word — Arman's ruling (2026-08-08): it must be
+          instantly clear when NOTHING is attached, in words, not icon code. */}
+      {!loading && !hasBinding ? (
+        <span className="ml-1 shrink-0 text-[11px] text-muted-foreground/80">
+          Not attached
+        </span>
+      ) : null}
+
       {visibleTargets.length > 0 ? (
         <span className="mx-0.5 h-4 w-px shrink-0 bg-border/80" aria-hidden />
       ) : null}
@@ -187,22 +194,16 @@ export function ComputeLensBar({
       </div>
 
       {hasBinding ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              onClick={() => applyBinding(null)}
-              className="inline-flex h-5 shrink-0 items-center rounded-full px-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-              aria-label="Detach compute"
-            >
-              <Unplug className="h-3 w-3" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top">
-            Detach
-            {boundTarget?.name ? ` ${boundTarget.name}` : " connected compute"}
-          </TooltipContent>
-        </Tooltip>
+        // The word "Detach", not an icon glyph — detaching must never require
+        // decoding icon language (Arman's ruling, 2026-08-08).
+        <button
+          type="button"
+          onClick={() => applyBinding(null)}
+          className="inline-flex h-5 shrink-0 items-center rounded-full px-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          title={`Detach ${boundTarget?.name ?? "connected compute"}`}
+        >
+          Detach
+        </button>
       ) : null}
 
       {(overflowCount > 0 || totalCount > 0) && (
