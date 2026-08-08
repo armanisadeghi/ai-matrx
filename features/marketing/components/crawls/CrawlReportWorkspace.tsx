@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ExternalLink, FileSearch } from "lucide-react";
+import { DuplicateClustersPanel } from "@/features/marketing/components/crawls/DuplicateClustersPanel";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
@@ -695,6 +697,12 @@ export function CrawlReportWorkspace({
   const { site, sitePath } = useMarketingSite();
   const router = useRouter();
   const report = getCrawlReport(reportKey);
+  // The content report has two views: the per-page table and the
+  // duplicate-cluster analysis built from capture-time fingerprints.
+  const [contentView, setContentView] = useState<"pages" | "duplicates">(
+    "pages",
+  );
+  const showDuplicates = reportKey === "content" && contentView === "duplicates";
   const table = useMarketingTableState({
     defaultSort:
       report.source === "crawl-url"
@@ -785,6 +793,36 @@ export function CrawlReportWorkspace({
             {report.description}
           </p>
         </div>
+        <div className="flex shrink-0 items-center gap-3">
+          {reportKey === "content" ? (
+            <div
+              role="tablist"
+              aria-label="Content report view"
+              className="flex overflow-hidden rounded-md border border-border"
+            >
+              {(
+                [
+                  ["pages", "Pages"],
+                  ["duplicates", "Duplicates"],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="tab"
+                  aria-selected={contentView === value}
+                  onClick={() => setContentView(value)}
+                  className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                    contentView === value
+                      ? "bg-accent text-foreground"
+                      : "bg-background text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          ) : null}
         <label className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground">
           Report
           <select
@@ -808,9 +846,12 @@ export function CrawlReportWorkspace({
             ))}
           </select>
         </label>
+        </div>
       </section>
       <div className="min-h-0 flex-1">
-        {query.isError ? (
+        {showDuplicates ? (
+          <DuplicateClustersPanel crawlId={crawlId} />
+        ) : query.isError ? (
           <QueryError
             error={query.error}
             onRetry={() => void query.refetch()}

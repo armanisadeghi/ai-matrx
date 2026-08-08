@@ -3,8 +3,11 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import {
+  crawlHasChainEvidence,
   getHomepageScreenshot,
   getSnapshotScreenshots,
+  listCrawlCanonicalMap,
+  listCrawlFingerprints,
   listCrawlLinks,
   listCrawlSnapshots,
   listLinkGraphEdges,
@@ -49,6 +52,8 @@ export const inspectionKeys = {
       "inspection-links",
       state,
     ] as const,
+  crawlFingerprints: (siteId: string, crawlId: string) =>
+    [...marketingKeys.crawl(siteId, crawlId), "content-fingerprints"] as const,
 };
 
 /** Direct browser-to-Supabase query for the site's selected homepage preview. */
@@ -118,6 +123,23 @@ export function useCrawlSnapshots(
     queryFn: ({ signal }) => listCrawlSnapshots(siteId, crawlId, state, signal),
     enabled: enabled && Boolean(siteId && crawlId),
     placeholderData: keepPreviousData,
+  });
+}
+
+/**
+ * Session-wide content fingerprints for duplicate clustering — snapshots are
+ * immutable, so a finished crawl's fingerprints never change (long staleTime).
+ */
+export function useCrawlFingerprints(
+  siteId: string,
+  crawlId: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: inspectionKeys.crawlFingerprints(siteId, crawlId),
+    queryFn: ({ signal }) => listCrawlFingerprints(siteId, crawlId, signal),
+    enabled: enabled && Boolean(siteId && crawlId),
+    staleTime: 5 * 60 * 1000,
   });
 }
 

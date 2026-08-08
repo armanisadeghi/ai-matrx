@@ -107,7 +107,7 @@ export const CRAWL_REPORTS: readonly CrawlReportDefinition[] = [
     shortLabel: "Content",
     category: "Content",
     description:
-      "Word and sentence counts, readability, content hashes, links, and mixed-content resources.",
+      "Word and sentence counts, readability, links, mixed content, and duplicate clusters — exact matches plus near-duplicates from capture-time fingerprints.",
     source: "snapshot",
     badge: "Ct",
   },

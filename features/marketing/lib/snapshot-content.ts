@@ -74,6 +74,22 @@ export interface SnapshotRedirectHop {
   status: number | null;
 }
 
+/**
+ * Narrow one persisted `{status, url}` hop list (oldest first, final URL
+ * last, length 1 = no redirect). The SAME shape is written by the scraper to
+ * `web.snapshot.extracted.redirect_chain` AND `web.crawl_url.metadata
+ * .redirect_chain` — parse both through here, never inline.
+ */
+export function parseRedirectChain(value: Json | undefined): SnapshotRedirectHop[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((hop): SnapshotRedirectHop[] => {
+    if (!isJsonRecord(hop)) return [];
+    const url = typeof hop.url === "string" ? hop.url : null;
+    if (!url) return [];
+    return [{ url, status: finiteNumber(hop, "status") }];
+  });
+}
+
 export interface ParsedSnapshotExtracted {
   sentenceCount: number | null;
   fleschReadingEase: number | null;
@@ -93,14 +109,7 @@ export function parseSnapshotExtracted(
       mixedContentCount: 0,
     };
   }
-  const redirectChain = Array.isArray(extracted.redirect_chain)
-    ? extracted.redirect_chain.flatMap((hop): SnapshotRedirectHop[] => {
-        if (!isJsonRecord(hop)) return [];
-        const url = typeof hop.url === "string" ? hop.url : null;
-        if (!url) return [];
-        return [{ url, status: finiteNumber(hop, "status") }];
-      })
-    : [];
+  const redirectChain = parseRedirectChain(extracted.redirect_chain);
   return {
     sentenceCount: finiteNumber(extracted, "sentence_count"),
     fleschReadingEase: finiteNumber(extracted, "flesch_reading_ease"),
@@ -108,6 +117,53 @@ export function parseSnapshotExtracted(
     mixedContentCount: Array.isArray(extracted.mixed_content)
       ? extracted.mixed_content.length
       : 0,
+  };
+}
+
+export interface ParsedSnapshotFingerprint {
+  /** Algorithm version — only compare fingerprints of equal versions. */
+  version: number;
+  /** sha256 of the whitespace-normalized lowercased visible text. */
+  exactSha256: string;
+  /** 64-bit shingle simhash as fixed-width lowercase hex. */
+  simhash64: string;
+  shingleSize: number | null;
+  tokenCount: number | null;
+}
+
+/**
+ * Normalize `web.snapshot.extracted.fingerprint` — the capture-time content
+ * fingerprint written by the scraper (`parser/hashing.compute_text_fingerprint`).
+ * Absent on crawls that predate fingerprints and on empty/non-text captures.
+ */
+export function parseSnapshotFingerprint(
+  extracted: Json,
+): ParsedSnapshotFingerprint | null {
+  const record = isJsonRecord(extracted) ? extracted : null;
+  const fingerprint =
+    record && isJsonRecord(record.fingerprint)
+      ? record.fingerprint
+      : isJsonRecord(extracted) && "simhash64" in extracted
+        ? extracted
+        : null;
+  if (!isJsonRecord(fingerprint)) return null;
+  const version = finiteNumber(fingerprint, "version");
+  const exactSha256 = optionalString(fingerprint, "exact_sha256");
+  const simhash64 = optionalString(fingerprint, "simhash64");
+  if (
+    version === null ||
+    !exactSha256 ||
+    !simhash64 ||
+    !/^[0-9a-f]{16}$/.test(simhash64)
+  ) {
+    return null;
+  }
+  return {
+    version,
+    exactSha256,
+    simhash64,
+    shingleSize: finiteNumber(fingerprint, "shingle_size"),
+    tokenCount: finiteNumber(fingerprint, "token_count"),
   };
 }
 

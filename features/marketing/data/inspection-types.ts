@@ -63,3 +63,43 @@ export interface InspectionPagedResult<T> {
   rows: T[];
   total: number;
 }
+
+/**
+ * Minimal snapshot projection for duplicate-content clustering — the whole
+ * session is fetched, so only the fingerprint sub-path of `extracted` rides
+ * along (`extracted->fingerprint`), never the full evidence blob.
+ */
+export type CrawlFingerprintQueryRow = Pick<
+  InspectionSnapshot,
+  "id" | "page_id" | "final_url" | "word_count"
+> & {
+  fingerprint: InspectionSnapshot["extracted"] | null;
+  page: InspectionPageReference | null;
+};
+
+/** Session-wide fingerprint fetch — capped at a hard row limit, flagged when hit. */
+export interface CrawlFingerprintResult {
+  rows: CrawlFingerprintQueryRow[];
+  total: number;
+  truncated: boolean;
+}
+
+/**
+ * Minimal snapshot projection for canonical-chain resolution — the whole
+ * session's observed canonicals ride along as one SQL-projected string
+ * (`head_tags->>canonical_url`), never the full head_tags blob.
+ */
+export type CrawlCanonicalQueryRow = Pick<
+  InspectionSnapshot,
+  "id" | "page_id" | "final_url" | "http_status"
+> & {
+  canonical_url: string | null;
+  page: InspectionPageReference | null;
+};
+
+/** Session-wide canonical-map fetch — capped at a hard row limit, flagged when hit. */
+export interface CrawlCanonicalMapResult {
+  rows: CrawlCanonicalQueryRow[];
+  total: number;
+  truncated: boolean;
+}

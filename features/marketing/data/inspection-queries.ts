@@ -1,5 +1,9 @@
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import type {
+  CrawlCanonicalMapResult,
+  CrawlCanonicalQueryRow,
+  CrawlFingerprintQueryRow,
+  CrawlFingerprintResult,
   InspectionLinkRow,
   InspectionPagedResult,
   InspectionScreenshotRow,
@@ -338,5 +342,123 @@ export async function listCrawlSnapshots(
     rows: assertData(response.data, response.error),
     total: response.count ?? 0,
   };
+}
+
+const FINGERPRINT_ROW_CAP = 5000;
+const FINGERPRINT_PAGE_SIZE = 1000;
+
+// Only the fingerprint sub-path rides along — the full `extracted` evidence
+// blob (resource inventory, structured data) would make a session-wide fetch
+// enormous for zero benefit. Typed `string` (not a literal) because the
+// postgrest-js select parser blows TS2589 on the JSON arrow path; the result
+// shape is pinned by `.returns<CrawlFingerprintQueryRow[]>()` below.
+const FINGERPRINT_SELECT: string =
+  "id, page_id, final_url, word_count, fingerprint:extracted->fingerprint, page:page(url)";
+
+/**
+ * Fetch EVERY capture's content fingerprint for one crawl session — duplicate
+ * clustering needs the whole session, not one table page. Capped at
+ * FINGERPRINT_ROW_CAP rows with a loud `truncated` flag.
+ */
+export async function listCrawlFingerprints(
+  siteId: string,
+  crawlId: string,
+  signal?: AbortSignal,
+): Promise<CrawlFingerprintResult> {
+  const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
+  const rows: CrawlFingerprintQueryRow[] = [];
+  let total = 0;
+  for (let from = 0; from < FINGERPRINT_ROW_CAP; from += FINGERPRINT_PAGE_SIZE) {
+    const to = Math.min(from + FINGERPRINT_PAGE_SIZE, FINGERPRINT_ROW_CAP) - 1;
+    const response = await db
+      .from("snapshot")
+      .select(FINGERPRINT_SELECT, from === 0 ? { count: "exact" } : undefined)
+      .eq("site_id", siteId)
+      .eq("session_id", crawlId)
+      .is("deleted_at", null)
+      .order("id", { ascending: true })
+      .range(from, to)
+      .abortSignal(abortSignal)
+      .returns<CrawlFingerprintQueryRow[]>();
+    const page = assertData(response.data, response.error);
+    if (from === 0) total = response.count ?? page.length;
+    rows.push(...page);
+    if (page.length < FINGERPRINT_PAGE_SIZE) break;
+  }
+  return { rows, total, truncated: total > rows.length };
+}
+
+const CANONICAL_MAP_ROW_CAP = 5000;
+const CANONICAL_MAP_PAGE_SIZE = 1000;
+
+// Only the observed canonical string rides along (`head_tags->>canonical_url`
+// as text) — a session-wide fetch of full head_tags would be enormous. Typed
+// `string` because the postgrest-js select parser blows TS2589 on the JSON
+// arrow path; the shape is pinned by `.returns<CrawlCanonicalQueryRow[]>()`.
+const CANONICAL_MAP_SELECT: string =
+  "id, page_id, final_url, http_status, canonical_url:head_tags->>canonical_url, page:page(url)";
+
+/**
+ * Fetch EVERY capture's observed canonical for one crawl session — canonical
+ * CHAIN resolution (A → B → C, loops, canonical-to-error) needs the whole
+ * session, not one table page. Capped with a loud `truncated` flag.
+ */
+export async function listCrawlCanonicalMap(
+  siteId: string,
+  crawlId: string,
+  signal?: AbortSignal,
+): Promise<CrawlCanonicalMapResult> {
+  const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
+  const rows: CrawlCanonicalQueryRow[] = [];
+  let total = 0;
+  for (
+    let from = 0;
+    from < CANONICAL_MAP_ROW_CAP;
+    from += CANONICAL_MAP_PAGE_SIZE
+  ) {
+    const to = Math.min(from + CANONICAL_MAP_PAGE_SIZE, CANONICAL_MAP_ROW_CAP) - 1;
+    const response = await db
+      .from("snapshot")
+      .select(CANONICAL_MAP_SELECT, from === 0 ? { count: "exact" } : undefined)
+      .eq("site_id", siteId)
+      .eq("session_id", crawlId)
+      .is("deleted_at", null)
+      .order("id", { ascending: true })
+      .range(from, to)
+      .abortSignal(abortSignal)
+      .returns<CrawlCanonicalQueryRow[]>();
+    const page = assertData(response.data, response.error);
+    if (from === 0) total = response.count ?? page.length;
+    rows.push(...page);
+    if (page.length < CANONICAL_MAP_PAGE_SIZE) break;
+  }
+  return { rows, total, truncated: total > rows.length };
+}
+
+/**
+ * Probe whether one crawl session recorded redirect-hop evidence at all —
+ * `web.crawl_url.metadata.redirect_chain` exists on every row of crawls run
+ * after 2026-08-08 and on none before. Distinguishes "no redirects on this
+ * site" from "crawled before chain evidence existed" so the report can say
+ * so instead of rendering an empty column.
+ */
+export async function crawlHasChainEvidence(
+  siteId: string,
+  crawlId: string,
+  signal?: AbortSignal,
+): Promise<boolean> {
+  const db = await authenticatedWebDb(supabase);
+  const response = await db
+    .from("crawl_url")
+    .select("id")
+    .eq("site_id", siteId)
+    .eq("session_id", crawlId)
+    .is("deleted_at", null)
+    .not("metadata->redirect_chain", "is", null)
+    .limit(1)
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error).length > 0;
 }
 
