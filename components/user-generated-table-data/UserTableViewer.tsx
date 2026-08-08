@@ -222,8 +222,17 @@ const UserTableViewer = ({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   // Sharing gate: owner ALWAYS edits; a non-owner edits when has_permission
   // grants editor on the dataset (same pattern as /workbooks/[id]). Derived,
-  // not stored — only the async shared-editor lookup is state.
-  const [sharedEditor, setSharedEditor] = useState(false);
+  // not stored — only the async shared-editor lookup is state, and it is
+  // keyed by tableId so a grant on one table can never leak into another
+  // while the next lookup is in flight.
+  const [sharedEditorGrant, setSharedEditorGrant] = useState<{
+    tableId: string;
+    granted: boolean;
+  } | null>(null);
+  const sharedEditor =
+    sharedEditorGrant !== null &&
+    sharedEditorGrant.tableId === tableId &&
+    sharedEditorGrant.granted;
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -326,7 +335,8 @@ const UserTableViewer = ({
         p_required_permission: "editor",
       })
       .then(({ data: perm }) => {
-        if (!cancelled) setSharedEditor(perm === true);
+        if (!cancelled)
+          setSharedEditorGrant({ tableId, granted: perm === true });
       });
     return () => {
       cancelled = true;
