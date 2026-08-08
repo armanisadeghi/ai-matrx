@@ -14,13 +14,37 @@
 --      "hard drive degausser at a degaussing-service company" case);
 --      content_role='money_page' -> 'money';
 --      content_role='supporting_content' -> 'educational'.
---   2. seo.keyword.intent_class (universal, agent-classified):
+--   2. BRAND MATCH (class_source='brand_match') — deterministic, zero-AI
+--      token matching against the site's own identity: domain minus TLD,
+--      web.site.name, and the linked web.brand.name (corporate cruft
+--      tokens stripped). Branded traffic "is not real SEO" (Arman) and is
+--      pulled out even when intent_class says transactional — "all green
+--      recycling near me" is still brand. Placed BELOW site_keyword_value
+--      deliberately: an explicit per-site valuation is the user's rescue
+--      hatch when a brand collides with a service term. Two match
+--      strengths:
+--        STRONG — the query literally contains the alias UNSPACED
+--        ("allgreenrecycling", "datadestruction.com"): always brand.
+--        WEAK — spaced/joined variants ("all green recycling",
+--        "allgreen recycling") or the query's tokens covering every alias
+--        token ("all green electronics recycling"). Weak matches count
+--        ONLY while the alias stays distinctive: an alias whose weak form
+--        matches more than 250 corpus keywords is a generic service term
+--        wearing a brand name (datadestruction.com's "data destruction"
+--        weak-matched 2,738 keywords vs <=41 for every real brand alias,
+--        measured live 2026-08-07) and is demoted to STRONG-only —
+--        otherwise the brand rung would swallow the site's entire money
+--        vocabulary. The 250 threshold is corpus-derived and lives here
+--        ONLY.
+--   3. seo.keyword.intent_class (universal, agent-classified):
 --      transactional/commercial_investigation -> 'money';
 --      informational -> 'educational'; navigational -> 'brand'.
---   3. 'unclassified' — a FIRST-CLASS bucket, never hidden: it is both the
+--   4. 'unclassified' — a FIRST-CLASS bucket, never hidden: it is both the
 --      honest answer and the work queue for the classifier agents.
 -- Extend the resolver here ONLY — never fork a second class mapping (a
 -- future topic-tree cascade via seo.site_topic_value slots in here).
+-- Never hand-write per-site brand lists — identity derives from
+-- web.site/web.brand rows so every site gets it automatically.
 --
 -- All functions compose THE ACCURACY CONTRACT from seo_gsc_perf_rpcs.sql
 -- (winning-run dedup per (profile,date) before filters; CTR/position
@@ -32,6 +56,62 @@ RETURNS TABLE (keyword_id uuid, traffic_class text, class_source text)
 LANGUAGE sql STABLE
 SET search_path = seo, pg_temp
 AS $$
+  -- Brand identity aliases, derived (never hand-listed): domain minus
+  -- www./m. and TLD, site name, brand name. Each alias carries its token
+  -- set, its joined (space-free) form, and its shortest token as a cheap
+  -- strpos prefilter probe (the corpus scan must stay ~zero-cost — the
+  -- probe cuts 151k expensive checks down to the few thousand rows that
+  -- contain the probe at all). Aliases whose joined form is under 5 chars
+  -- are dropped as degenerate.
+  WITH brand_alias AS MATERIALIZED (
+    SELECT array_to_string(nt.toks, '') AS joined,
+           nt.toks,
+           (SELECT t FROM unnest(nt.toks) t ORDER BY length(t), t LIMIT 1) AS probe
+    FROM (
+      SELECT split_part(regexp_replace(lower(s.domain), '^(www|m)\.', ''), '.', 1) AS nm
+      FROM web.site s WHERE s.id = p_site_id AND s.deleted_at IS NULL
+      UNION
+      SELECT lower(s.name) FROM web.site s WHERE s.id = p_site_id AND s.deleted_at IS NULL
+      UNION
+      SELECT lower(b.name)
+      FROM web.site s JOIN web.brand b ON b.id = s.brand_id AND b.deleted_at IS NULL
+      WHERE s.id = p_site_id AND s.deleted_at IS NULL
+    ) names
+    CROSS JOIN LATERAL (
+      SELECT ARRAY(
+        SELECT t FROM unnest(regexp_split_to_array(regexp_replace(names.nm, '[^a-z0-9]+', ' ', 'g'), '\s+')) AS t
+        WHERE t <> ''
+          AND t NOT IN ('inc','llc','ltd','co','corp','corporation','company','the','a','website','site','main','page','homepage','official')
+      ) AS toks
+    ) nt
+    WHERE length(array_to_string(nt.toks, '')) >= 5
+  ),
+  -- One corpus pass: every (keyword, alias) hit, tagged strong (query
+  -- contains the alias literally unspaced) vs weak (spaced/joined variant
+  -- or full token coverage).
+  brand_hit AS MATERIALIZED (
+    SELECT kw.id AS kid, ba.joined,
+           strpos(kw.normalized_phrase, ba.joined) > 0 AS strong
+    FROM seo.keyword kw
+    JOIN brand_alias ba
+      ON strpos(kw.normalized_phrase, ba.probe) > 0
+     AND (position(ba.joined IN translate(kw.normalized_phrase, ' .,''-&/+_:;!?()[]"', '')) > 0
+          OR ba.toks <@ string_to_array(kw.normalized_phrase, ' '))
+    WHERE kw.deleted_at IS NULL
+  ),
+  -- THE GENERICITY GUARD (see header): weak matches only count while the
+  -- alias stays distinctive in the corpus.
+  alias_ok AS MATERIALIZED (
+    SELECT bh.joined, count(*) <= 250 AS weak_ok
+    FROM brand_hit bh
+    GROUP BY bh.joined
+  ),
+  brand_kw AS MATERIALIZED (
+    SELECT DISTINCT bh.kid
+    FROM brand_hit bh
+    JOIN alias_ok ao ON ao.joined = bh.joined
+    WHERE bh.strong OR ao.weak_ok
+  )
   SELECT kw.id,
          CASE
            WHEN skv.keyword_id IS NOT NULL AND (
@@ -41,6 +121,7 @@ AS $$
                 ) THEN 'mismatch'
            WHEN skv.content_role = 'money_page' THEN 'money'
            WHEN skv.content_role = 'supporting_content' THEN 'educational'
+           WHEN bk.kid IS NOT NULL THEN 'brand'
            WHEN kw.intent_class IN ('transactional', 'commercial_investigation') THEN 'money'
            WHEN kw.intent_class = 'informational' THEN 'educational'
            WHEN kw.intent_class = 'navigational' THEN 'brand'
@@ -53,6 +134,7 @@ AS $$
                   OR skv.lead_quality = 'negative_value'
                   OR skv.content_role IN ('money_page', 'supporting_content')
                 ) THEN 'site_value'
+           WHEN bk.kid IS NOT NULL THEN 'brand_match'
            WHEN kw.intent_class IS NOT NULL THEN 'intent_class'
            ELSE 'none'
          END
@@ -61,6 +143,7 @@ AS $$
     ON skv.keyword_id = kw.id
    AND skv.site_id = p_site_id
    AND skv.deleted_at IS NULL
+  LEFT JOIN brand_kw bk ON bk.kid = kw.id
   WHERE kw.deleted_at IS NULL;
 $$;
 

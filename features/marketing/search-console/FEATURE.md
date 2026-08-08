@@ -118,7 +118,18 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   ([`migrations/seo_gsc_class_rpcs.sql`](../../../migrations/seo_gsc_class_rpcs.sql)):
   user site valuation (`seo.site_keyword_value` — suppression /
   not_offered / actively_avoided / negative_value → `mismatch`;
-  content_role → `money`/`educational`) beats universal
+  content_role → `money`/`educational`) beats **BRAND MATCH**
+  (`class_source='brand_match'`, 2026-08-07: deterministic zero-AI token
+  matching of the query against the site's identity — domain minus TLD +
+  `web.site.name` + `web.brand.name`, never a hand-written per-site list;
+  branded traffic "is not real SEO" and is pulled out even when intent
+  says transactional, so brand sits ABOVE intent_class and BELOW the
+  user's explicit valuation — the rescue hatch when a brand name collides
+  with a service term. A **genericity guard** demotes an alias whose
+  spaced/token form matches >250 corpus keywords to literal-unspaced
+  matching only — datadestruction.com's "data destruction" IS its money
+  vocabulary; the threshold + match rules live ONLY in the migration's
+  header) beats universal
   `seo.keyword.intent_class` (transactional + commercial_investigation →
   `money`, informational → `educational`, navigational → `brand`) beats
   `unclassified` — which is a FIRST-CLASS bucket and the classifier work
@@ -278,6 +289,13 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-08 — Brand-match rung in `gsc_keyword_class_map`: zero-cost
+  deterministic brand detection from web.site/web.brand identity
+  (class_source='brand_match', genericity guard at 250). Verified live:
+  allgreenrecycling 6-mo brand bucket = 1,292 clicks / 30 queries
+  (previously polluting money/educational/unclassified);
+  datadestruction.com money/educational preserved via the guard. Also:
+  QualityView totals row + explicit period label (ClassInsights.tsx).
 - 2026-08-08 — Class-aware Dig Here: traffic_class pin on rules +
   gsc_perf_dig p_traffic_class/class output (seo_gsc_dig_class.sql), class
   picker in the editor, class chips in results/rule list, three class

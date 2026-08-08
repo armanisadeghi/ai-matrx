@@ -115,8 +115,11 @@ export function QualityView({
     (acc, row) => ({
       clicks: acc.clicks + row.clicks,
       cmp: acc.cmp + (row.cmp_clicks ?? 0),
+      impressions: acc.impressions + row.impressions,
+      cmpImpressions: acc.cmpImpressions + (row.cmp_impressions ?? 0),
+      queries: acc.queries + row.queries,
     }),
-    { clicks: 0, cmp: 0 },
+    { clicks: 0, cmp: 0, impressions: 0, cmpImpressions: 0, queries: 0 },
   );
 
   const moverColumns: MatrxColumnDef<GscClassMoverRow>[] = [
@@ -181,12 +184,18 @@ export function QualityView({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto pr-0.5">
-      {compareAuto ? (
-        <p className="shrink-0 text-xs text-muted-foreground">
-          No compare period selected — comparing against the previous period
-          of the same length.
-        </p>
-      ) : null}
+      <p className="shrink-0 text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">
+          {periods.current.start} → {periods.current.end}
+        </span>{" "}
+        vs{" "}
+        {periods.compare ? (
+          <span>
+            {periods.compare.start} → {periods.compare.end}
+          </span>
+        ) : null}
+        {compareAuto ? " (previous period of the same length, auto)" : ""}
+      </p>
       <div className="shrink-0 overflow-hidden rounded-md border border-border">
         <table className="w-full text-xs">
           <thead className="bg-muted/60 text-left">
@@ -243,6 +252,29 @@ export function QualityView({
                 </td>
               </tr>
             ))}
+            {summaryRows.length > 0 ? (
+              <tr className="border-t border-border bg-muted/40 font-medium">
+                <td className="px-2 py-1.5 text-muted-foreground">Total</td>
+                <td className="px-2 py-1.5 text-right font-semibold tabular-nums">
+                  {num(totals.clicks)}
+                </td>
+                <td className="px-2 py-1.5 text-right">
+                  {deltaSpan(totals.clicks, totals.cmp)}
+                </td>
+                <td className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
+                  100%
+                </td>
+                <td className="px-2 py-1.5 text-right tabular-nums">
+                  {num(totals.impressions)}
+                </td>
+                <td className="px-2 py-1.5 text-right">
+                  {deltaSpan(totals.impressions, totals.cmpImpressions)}
+                </td>
+                <td className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
+                  {num(totals.queries)}
+                </td>
+              </tr>
+            ) : null}
             {summaryRows.length === 0 && !summary.isLoading ? (
               <tr>
                 <td
