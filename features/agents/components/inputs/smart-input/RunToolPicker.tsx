@@ -7,8 +7,8 @@
  *      from the agentDefinition slice (built-in registry tools resolved to
  *      names + custom tools + MCP servers). Read-only here; this is the agent's
  *      saved definition, edited in the Agent Builder, not per-conversation.
- *      Also surfaces the auto-tool-injection kill switch state so the user
- *      knows whether surface/capability tools get added at run time.
+ *      Rendered as ONE collapsible header row (count + auto-injection state
+ *      always visible) so the actionable add-list below gets the space.
  *
  *   2. "Add tools to this run" — additive registry picks stored on
  *      `builderAdvancedSettings.addedTools`, folded into the request by
@@ -27,6 +27,7 @@ import {
   X,
   Check,
   ChevronDown,
+  ChevronRight,
   Wrench,
   Code2,
   Server,
@@ -35,7 +36,7 @@ import {
 } from "lucide-react";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { Input } from "@/components/ui/input";
+import { ProInput } from "@/components/official/ProInput";
 import { cn } from "@/lib/utils";
 import {
   selectAllTools,
@@ -127,6 +128,9 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
   const [search, setSearch] = useState("");
   // Accordion: one description open at a time keeps the list scannable.
   const [expandedToolId, setExpandedToolId] = useState<string | null>(null);
+  // The agent's configured set is read-only reference — collapsed by default
+  // so the actionable add-list owns the vertical space.
+  const [agentSectionOpen, setAgentSectionOpen] = useState(false);
 
   // The registry catalog — needed to resolve the agent's tool UUIDs to names
   // AND to drive the add-picker. Load it once.
@@ -184,86 +188,99 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* ── Section 1: the agent's REAL configured tools ──────────────── */}
+      {/* ── Section 1: the agent's REAL configured tools (collapsible) ── */}
       <div className="shrink-0 border-b border-border">
-        <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1">
-          <Wrench className="h-3.5 w-3.5 text-primary" />
+        <button
+          type="button"
+          onClick={() => setAgentSectionOpen((o) => !o)}
+          aria-expanded={agentSectionOpen}
+          className="flex h-7 w-full items-center gap-1.5 px-2.5 text-left transition-colors hover:bg-accent/50"
+        >
+          <ChevronRight
+            className={cn(
+              "h-3 w-3 shrink-0 text-muted-foreground/70 transition-transform",
+              agentSectionOpen && "rotate-90",
+            )}
+          />
+          <Wrench className="h-3.5 w-3.5 shrink-0 text-primary" />
           <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             This agent&apos;s tools
           </span>
-          <span className="text-[10px] text-muted-foreground/70">
-            {agentLoading ? "loading…" : `${agentToolCount} configured`}
+          <span className="text-[11px] tabular-nums text-muted-foreground/80">
+            {agentLoading ? "…" : agentToolCount}
           </span>
-        </div>
+          {agentId && (
+            <span
+              title={
+                autoToolsDisabled
+                  ? "Automatic tool injection is OFF — only the agent's configured tools run."
+                  : "Automatic tool injection is ON — surface & capability tools may be added at run time."
+              }
+              className={cn(
+                "ml-auto flex shrink-0 items-center gap-1 text-[11px]",
+                autoToolsDisabled
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-muted-foreground/70",
+              )}
+            >
+              <ShieldOff className="h-3 w-3" />
+              {autoToolsDisabled ? "auto-inject off" : "auto-inject on"}
+            </span>
+          )}
+        </button>
 
-        <div className="max-h-40 overflow-y-auto px-2.5 pb-2">
-          {agentLoading ? (
-            <p className="py-1 text-[11px] text-muted-foreground">
-              Loading the agent&apos;s tools…
-            </p>
-          ) : agentToolCount === 0 ? (
-            <p className="py-1 text-[11px] text-muted-foreground">
-              This agent has no tools of its own.
-              {!autoToolsDisabled &&
-                " Surface tools may still be added at run."}
-            </p>
-          ) : (
-            <div className="flex flex-col gap-0.5">
-              {builtInIds.map((id) => {
-                const t = toolMap.get(id);
-                return (
+        {agentSectionOpen && (
+          <div className="max-h-36 overflow-y-auto px-2.5 pb-1.5">
+            {agentLoading ? (
+              <p className="py-1 text-[11px] text-muted-foreground">
+                Loading the agent&apos;s tools…
+              </p>
+            ) : agentToolCount === 0 ? (
+              <p className="py-1 text-[11px] text-muted-foreground">
+                This agent has no tools of its own.
+                {!autoToolsDisabled &&
+                  " Surface tools may still be added at run."}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-0.5">
+                {builtInIds.map((id) => {
+                  const t = toolMap.get(id);
+                  return (
+                    <AgentToolBadge
+                      key={id}
+                      icon={<Wrench className="h-3 w-3" />}
+                      label={t?.name ?? id}
+                      sub={t?.category ?? undefined}
+                    />
+                  );
+                })}
+                {customList.map((t) => (
+                  <AgentToolBadge
+                    key={t.name}
+                    icon={<Code2 className="h-3 w-3" />}
+                    label={t.name}
+                    sub={t.description ?? "custom"}
+                  />
+                ))}
+                {mcpList.map((id) => (
                   <AgentToolBadge
                     key={id}
-                    icon={<Wrench className="h-3 w-3" />}
-                    label={t?.name ?? id}
-                    sub={t?.category ?? undefined}
+                    icon={<Server className="h-3 w-3" />}
+                    label={id}
+                    sub="MCP"
                   />
-                );
-              })}
-              {customList.map((t) => (
-                <AgentToolBadge
-                  key={t.name}
-                  icon={<Code2 className="h-3 w-3" />}
-                  label={t.name}
-                  sub={t.description ?? "custom"}
-                />
-              ))}
-              {mcpList.map((id) => (
-                <AgentToolBadge
-                  key={id}
-                  icon={<Server className="h-3 w-3" />}
-                  label={id}
-                  sub="MCP"
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {agentId && (
-          <div className="flex items-center gap-1.5 border-t border-border/60 px-2.5 py-1.5">
-            <ShieldOff
-              className={cn(
-                "h-3 w-3 shrink-0",
-                autoToolsDisabled
-                  ? "text-amber-500"
-                  : "text-muted-foreground/50",
-              )}
-            />
-            <span className="text-[10px] leading-tight text-muted-foreground">
-              {autoToolsDisabled
-                ? "Automatic tool injection is OFF — only the tools above run."
-                : "Automatic tool injection is ON — surface & capability tools may be added at run time."}
-            </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* Model-capability advisory — the selected model can't use tools; the
-            server drops them all at run time. Non-blocking. */}
+            server drops them all at run time. Non-blocking, always visible. */}
         {!modelSupportsTools && (
           <div className="flex items-start gap-1.5 border-t border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5">
             <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
-            <span className="text-[10px] leading-tight text-amber-700 dark:text-amber-300">
+            <span className="text-[11px] leading-tight text-amber-700 dark:text-amber-300">
               This model doesn&apos;t support tools — any tools above or added
               here are dropped at run time. Switch to a tool-capable model to use
               them.
@@ -274,86 +291,81 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
 
       {/* ── Section 2: add registry tools to THIS run ─────────────────── */}
       {!modelSupportsTools ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-1.5 px-4 py-8 text-center">
-          <Wrench className="h-5 w-5 text-muted-foreground/40" />
+        <div className="flex flex-1 flex-col items-center justify-center gap-1.5 px-4 py-4 text-center">
           <p className="text-xs text-muted-foreground">
-            This model doesn&apos;t support tools.
+            Tools can&apos;t be added while this model is selected.
           </p>
-          <p className="text-[10px] text-muted-foreground/70">
-            Switch to a tool-capable model to add tools to this run.
-          </p>
-        </div>
-      ) : (
-        <>
-      <div className="shrink-0 border-b border-border px-2 pb-1.5 pt-2">
-        <p className="mb-1.5 text-[11px] leading-tight text-muted-foreground">
-          Add tools to this run — on top of the agent&apos;s own tools.
+          {/* Clear stays reachable so a user can clean up a set that would
+              otherwise be silently dropped at run time. */}
           {added.size > 0 && (
-            <span className="ml-1 font-medium text-primary">
-              {added.size} added
-            </span>
-          )}
-        </p>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search tools…"
-            className="h-7 pl-7 pr-7 text-xs"
-            style={{ fontSize: "16px" }}
-          />
-          {search && (
             <button
               type="button"
-              onClick={() => setSearch("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              onClick={() => setAdded([])}
+              className="text-[11px] text-muted-foreground hover:text-destructive"
             >
-              <X className="h-3.5 w-3.5" />
+              Clear {added.size} added tool{added.size === 1 ? "" : "s"}
             </button>
           )}
         </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto py-1">
-        {loadingEmpty ? (
-          <p className="px-3 py-3 text-xs text-muted-foreground">
-            Loading tools…
-          </p>
-        ) : visible.length === 0 ? (
-          <p className="px-3 py-3 text-xs text-muted-foreground">
-            {search ? `No tools match "${search}"` : "No tools available."}
-          </p>
-        ) : (
-          visible.map((t) => (
-            <ToolRow
-              key={t.id}
-              tool={t}
-              selected={added.has(t.id)}
-              expanded={expandedToolId === t.id}
-              onToggle={() => toggle(t.id)}
-              onToggleExpand={() =>
-                setExpandedToolId((cur) => (cur === t.id ? null : t.id))
-              }
-            />
-          ))
-        )}
-      </div>
-        </>
-      )}
-
-      {/* Clear added tools — available even when the model can't use tools, so a
-          user can clean up a set that would otherwise be dropped at run time. */}
-      {added.size > 0 && (
-        <div className="shrink-0 border-t border-border px-2 py-1.5">
-          <button
-            type="button"
-            onClick={() => setAdded([])}
-            className="text-[10px] text-muted-foreground hover:text-destructive"
+      ) : (
+        <>
+          {/* One-row header: search + added-count chip with inline clear. */}
+          <div
+            className="flex shrink-0 items-center gap-1.5 border-b border-border px-2 py-1.5"
+            title="Add tools to this run — on top of the agent's own tools."
           >
-            Clear {added.size} added tool{added.size === 1 ? "" : "s"}
-          </button>
-        </div>
+            <ProInput
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search tools to add…"
+              startIcon={<Search className="h-3.5 w-3.5" />}
+              clearable
+              onClear={() => setSearch("")}
+              enableVoice={false}
+              wrapperClassName="min-w-0 flex-1"
+              className="h-7"
+            />
+            {added.size > 0 && (
+              <span className="flex h-6 shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-primary/10 pl-2 pr-1 text-[11px] font-medium text-primary">
+                {added.size} added
+                <button
+                  type="button"
+                  onClick={() => setAdded([])}
+                  title="Clear all added tools"
+                  aria-label="Clear all added tools"
+                  className="flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-primary/20"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-y-auto py-0.5">
+            {loadingEmpty ? (
+              <p className="px-3 py-2 text-xs text-muted-foreground">
+                Loading tools…
+              </p>
+            ) : visible.length === 0 ? (
+              <p className="px-3 py-2 text-xs text-muted-foreground">
+                {search ? `No tools match "${search}"` : "No tools available."}
+              </p>
+            ) : (
+              visible.map((t) => (
+                <ToolRow
+                  key={t.id}
+                  tool={t}
+                  selected={added.has(t.id)}
+                  expanded={expandedToolId === t.id}
+                  onToggle={() => toggle(t.id)}
+                  onToggleExpand={() =>
+                    setExpandedToolId((cur) => (cur === t.id ? null : t.id))
+                  }
+                />
+              ))
+            )}
+          </div>
+        </>
       )}
     </div>
   );
@@ -376,7 +388,7 @@ function AgentToolBadge({
         {label}
       </span>
       {sub && (
-        <span className="shrink-0 truncate text-[9px] text-muted-foreground/70">
+        <span className="shrink-0 truncate text-[11px] text-muted-foreground/60">
           {sub}
         </span>
       )}
@@ -416,7 +428,7 @@ function ToolRow({
             onToggle();
           }
         }}
-        className="flex h-8 w-full cursor-pointer items-center gap-2 px-2.5 text-left transition-colors hover:bg-accent/60"
+        className="flex h-7 w-full cursor-pointer items-center gap-2 px-2.5 text-left transition-colors hover:bg-accent/60"
       >
         <span
           className={cn(
@@ -452,7 +464,7 @@ function ToolRow({
         )}
       </div>
       {expanded && tool.description && (
-        <p className="px-2.5 pb-1.5 pl-8 text-[11px] leading-snug text-muted-foreground">
+        <p className="px-2.5 pb-1.5 pl-8 text-xs leading-snug text-muted-foreground">
           {tool.description}
         </p>
       )}

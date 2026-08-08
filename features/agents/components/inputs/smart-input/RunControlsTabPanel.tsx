@@ -30,8 +30,12 @@ import {
   Brain,
   Zap,
 } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
+
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CHAT_CONTEXT_MENU_PROPS } from "@/features/agents/components/chat/agent-context/buildChatContextData";
+import { buildRunControlsApplicationScope } from "@/features/agents/components/chat/agent-context/buildChatRunConfiguration";
 
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import { RunToolPicker } from "./RunToolPicker";
@@ -302,6 +306,26 @@ export function RunControlsTabPanel({
   );
   const scrollClass = "h-full overflow-y-auto overscroll-contain";
   const openPromptPreview = useOpenPromptPreviewWindow();
+  const store = useAppStore();
+
+  // Live chat-surface scope (conversation identity + run_configuration) for
+  // the canonical v3 menu mounted on the run-controls-native tabs. Plain fn —
+  // React Compiler memoizes; reads the store at menu-open time, never stale.
+  const getApplicationScope = () =>
+    buildRunControlsApplicationScope(store.getState(), conversationId);
+
+  // The canonical right-click menu for run-controls-native regions. Tabs whose
+  // bodies belong to OTHER surfaces (attach / context / document / memory)
+  // keep their own wiring and are not wrapped here.
+  const menuWrap = (child: ReactNode) => (
+    <NonEditableContextMenu
+      sourceFeature={CHAT_CONTEXT_MENU_PROPS.sourceFeature}
+      surfaceName={CHAT_CONTEXT_MENU_PROPS.surfaceName}
+      getApplicationScope={getApplicationScope}
+    >
+      <div className="h-full min-h-0">{child}</div>
+    </NonEditableContextMenu>
+  );
 
   return (
     <div className={panelClass}>
@@ -315,14 +339,15 @@ export function RunControlsTabPanel({
           />
         </div>
       )}
-      {activeTab === "quickset" && (
-        <QuicksetPanel
-          conversationId={conversationId}
-          isCreator={isCreator}
-          showCreatorPanel={showCreatorPanel}
-          onToggleCreatorPanel={onToggleCreatorPanel}
-        />
-      )}
+      {activeTab === "quickset" &&
+        menuWrap(
+          <QuicksetPanel
+            conversationId={conversationId}
+            isCreator={isCreator}
+            showCreatorPanel={showCreatorPanel}
+            onToggleCreatorPanel={onToggleCreatorPanel}
+          />,
+        )}
       {activeTab === "context" && (
         <div className={cn(scrollClass, "p-2")}>
           {/* THE canonical compact Surface-A picker — same component as the
@@ -339,39 +364,45 @@ export function RunControlsTabPanel({
           />
         </div>
       )}
-      {activeTab === "model" && (
-        <div className={scrollClass}>
-          <RunModelPicker conversationId={conversationId} />
-          <RunConfigOverrides conversationId={conversationId} />
-        </div>
-      )}
-      {activeTab === "tools" && (
-        <div className="h-full overflow-hidden">
-          <RunToolPicker conversationId={conversationId} />
-        </div>
-      )}
-      {activeTab === "skills" && (
-        <div className="h-full overflow-hidden">
-          <RunSkillPicker conversationId={conversationId} />
-        </div>
-      )}
-      {activeTab === "sandbox" && (
-        <div className={scrollClass}>
-          <SandboxPanel conversationId={conversationId} />
-        </div>
-      )}
+      {activeTab === "model" &&
+        menuWrap(
+          <div className={scrollClass}>
+            <RunModelPicker conversationId={conversationId} />
+            <RunConfigOverrides conversationId={conversationId} />
+          </div>,
+        )}
+      {activeTab === "tools" &&
+        menuWrap(
+          <div className="h-full overflow-hidden">
+            <RunToolPicker conversationId={conversationId} />
+          </div>,
+        )}
+      {activeTab === "skills" &&
+        menuWrap(
+          <div className="h-full overflow-hidden">
+            <RunSkillPicker conversationId={conversationId} />
+          </div>,
+        )}
+      {activeTab === "sandbox" &&
+        menuWrap(
+          <div className={scrollClass}>
+            <SandboxPanel conversationId={conversationId} />
+          </div>,
+        )}
       {activeTab === "memory" && (
         <div className="h-full overflow-hidden">
           <AgentMemoryInlinePanel />
         </div>
       )}
-      {activeTab === "settings" && (
-        <div className={cn(scrollClass, "px-3 py-2")}>
-          <RunSettingsEditor conversationId={conversationId} />
-        </div>
-      )}
-      {activeTab === "creator" && (
-        <div className={cn(scrollClass, "px-3 py-2")}>
+      {activeTab === "settings" &&
+        menuWrap(
+          <div className={cn(scrollClass, "px-3 py-2")}>
+            <RunSettingsEditor conversationId={conversationId} />
+          </div>,
+        )}
+      {activeTab === "creator" &&
+        menuWrap(
+          <div className={cn(scrollClass, "px-3 py-2")}>
           <div className="space-y-0.5">
             {isCreator && (
               <button
@@ -421,8 +452,8 @@ export function RunControlsTabPanel({
               </span>
             </button>
           </div>
-        </div>
-      )}
+        </div>,
+        )}
     </div>
   );
 }

@@ -11,13 +11,15 @@
 
 import { useState } from "react";
 import { Brain, FileText, PanelRight } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { CHAT_CONTEXT_MENU_PROPS } from "@/features/agents/components/chat/agent-context/buildChatContextData";
+import { buildRunControlsApplicationScope } from "@/features/agents/components/chat/agent-context/buildChatRunConfiguration";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Separator } from "@/components/ui/separator";
 import {
   Select,
@@ -214,6 +216,12 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
   const [sysModalOpen, setSysModalOpen] = useState(false);
   const openSystemInstructionWindow = useOpenSystemInstructionWindow();
   const overridesError = parseRequestOverrides(settings.requestOverrides).error;
+  const store = useAppStore();
+
+  // Live chat-surface scope for the Pro fields' agent menu. Plain fn — React
+  // Compiler memoizes; reads the store at call time.
+  const getApplicationScope = () =>
+    buildRunControlsApplicationScope(store.getState(), conversationId);
 
   const openMemoryInspector = () =>
     dispatch(
@@ -373,7 +381,7 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
                 <Label htmlFor={`manual-route-${conversationId}`} className="w-1/3 text-xs text-foreground">
                   Manual route
                 </Label>
-                <Input
+                <ProInput
                   id={`manual-route-${conversationId}`}
                   value={settings.manualEndpointOverride ?? ""}
                   onChange={(event) =>
@@ -386,14 +394,16 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
                   }
                   placeholder={ENDPOINTS.ai.manual}
                   spellCheck={false}
-                  className="h-7 flex-1 font-mono text-xs"
+                  enableVoice={false}
+                  wrapperClassName="flex-1"
+                  className="h-7 font-mono"
                 />
               </div>
               <div className="flex items-center gap-3 py-1">
                 <Label htmlFor={`global-manual-route-${conversationId}`} className="w-1/3 text-xs text-foreground">
                   Global manual route
                 </Label>
-                <Input
+                <ProInput
                   id={`global-manual-route-${conversationId}`}
                   value={globalManualOverride}
                   onChange={(event) =>
@@ -406,19 +416,23 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
                   }
                   placeholder={ENDPOINTS.ai.manual}
                   spellCheck={false}
-                  className="h-7 flex-1 font-mono text-xs"
+                  enableVoice={false}
+                  wrapperClassName="flex-1"
+                  className="h-7 font-mono"
                 />
               </div>
               <div className="flex items-center gap-3 py-1">
                 <Label htmlFor={`api-version-${conversationId}`} className="w-1/3 text-xs text-foreground">
                   API version
                 </Label>
-                <Input
+                <ProInput
                   id={`api-version-${conversationId}`}
                   value={apiVersion ?? ""}
                   onChange={(event) => dispatch(setApiVersion(event.target.value))}
                   spellCheck={false}
-                  className="h-7 flex-1 font-mono text-xs"
+                  enableVoice={false}
+                  wrapperClassName="flex-1"
+                  className="h-7 font-mono"
                 />
               </div>
               {(apiVersion || Object.keys(pathOverrides).length > 0) && (
@@ -434,7 +448,7 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
               <Label htmlFor={`request-overrides-${conversationId}`} className="pt-1 text-xs text-foreground">
                 Request overrides
               </Label>
-              <Textarea
+              <ProTextarea
                 id={`request-overrides-${conversationId}`}
                 value={settings.requestOverrides ?? ""}
                 onChange={(event) =>
@@ -448,6 +462,11 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
                 placeholder='{ "key": "value" }'
                 spellCheck={false}
                 rows={4}
+                enableVoice={false}
+                // JSON body — an AI "clean up" pass would mangle it.
+                enableCleanup={false}
+                surfaceName={CHAT_CONTEXT_MENU_PROPS.surfaceName}
+                getApplicationScope={getApplicationScope}
                 className="font-mono text-xs"
               />
               {overridesError && (

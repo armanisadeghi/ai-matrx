@@ -2,7 +2,7 @@
 
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { ArrowUp, CircleStop } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import { usePasteImageResource } from "@/features/agents/components/inputs/resources/usePasteImageResource";
@@ -33,6 +33,7 @@ import {
   buildChatContextData,
   CHAT_CONTEXT_MENU_PROPS,
 } from "./agent-context/buildChatContextData";
+import { buildChatRunConfiguration } from "./agent-context/buildChatRunConfiguration";
 import { cn } from "@/lib/utils";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
@@ -80,6 +81,7 @@ export function NewChatLandingInput({
   enablePasteImages = true,
 }: NewChatLandingInputProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const text = useAppSelector(selectUserInputText(conversationId));
   const charCount = useAppSelector(selectInputCharCount(conversationId));
   const submissionPhase = useAppSelector(selectSubmissionPhase(conversationId));
@@ -206,6 +208,12 @@ export function NewChatLandingInput({
       selectionStart: start,
       selectionEnd: end,
       agentId,
+      // Chat Options is reachable from the landing composer's `+` menu, so
+      // run customization can exist before the first message is sent.
+      runConfiguration: buildChatRunConfiguration(
+        store.getState(),
+        conversationId,
+      ),
     });
     return buildApplicationScopeFromMenuContext({
       selectedText:

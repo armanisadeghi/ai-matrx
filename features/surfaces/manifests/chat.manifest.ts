@@ -61,6 +61,13 @@ const groups: SurfaceValueGroup[] = [
     description:
       "References to the conversation's working document and scratchpad (lean refs, not bodies).",
   },
+  {
+    key: "run_configuration",
+    label: "Run configuration",
+    sortOrder: 700,
+    description:
+      "How the user customized this run via Chat Options: added tools/skills, setting overrides, sandbox binding.",
+  },
 ];
 
 const surfaceSpecific: SurfaceValue[] = [
@@ -294,6 +301,55 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 470,
     group: "context_documents",
   },
+
+  // ── Run configuration (500-539) — Chat Options customization ──────────
+  {
+    name: "added_tools",
+    label: "Added tools",
+    description:
+      "Names of tools the user added to this run via Chat Options, on top of the agent's own tools. Empty array when none were added. Bindable-only — the composite run_configuration ships automatically.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    autoContext: false,
+    sortOrder: 500,
+    group: "run_configuration",
+  },
+  {
+    name: "added_skills",
+    label: "Added skills",
+    description:
+      "Names of skills the user added to this run via Chat Options, merged on top of the agent's skill tiers. Empty array when none were added. Bindable-only — the composite run_configuration ships automatically.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    autoContext: false,
+    sortOrder: 505,
+    group: "run_configuration",
+  },
+  {
+    name: "sandbox_binding",
+    label: "Sandbox binding",
+    description:
+      "Lean reference to the sandbox this conversation would route into: { row_id, kind, name, source }. Reflects the stored binding/seed, NOT a liveness check. Empty when no sandbox is bound. Bindable-only — the composite run_configuration ships automatically.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 150,
+    autoContext: false,
+    sortOrder: 510,
+    group: "run_configuration",
+  },
+  {
+    name: "run_configuration",
+    label: "Run configuration",
+    description:
+      "Composite of the user's Chat Options customization for this run: { added_tools, added_skills, disable_tool_injection, surface_override, overridden_settings, model_override, sandbox, debug }. Empty when the run has no customization (all defaults).",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 350,
+    sortOrder: 520,
+    group: "run_configuration",
+  },
 ];
 
 export const chatManifest: SurfaceManifest = {
@@ -303,7 +359,7 @@ export const chatManifest: SurfaceManifest = {
   urlPattern: "/chat",
   intro: `<surface_intro>
 You are on the live chat route — a threaded conversation between the user and an agent, with a composer for the user's next message.
-Values arrive in six families: the conversation identity (id, title, driving agent), the active message the user explicitly targeted (current_message_*), the thread history (last turns + full transcript), the composer (draft text, attached resources, variable values), session state (streaming flag, status, effective model), and lean references to the conversation's working document and scratchpad.
+Values arrive in seven families: the conversation identity (id, title, driving agent), the active message the user explicitly targeted (current_message_*), the thread history (last turns + full transcript), the composer (draft text, attached resources, variable values), session state (streaming flag, status, effective model), lean references to the conversation's working document and scratchpad, and the run configuration (how the user customized this run via Chat Options: added tools/skills, setting overrides, sandbox binding).
 Baselines mirror the composer: content/selection/text_before/text_after are the user's DRAFT, not the transcript — the transcript rides full_conversation_text / all_messages.
 No value is guaranteed: launches also happen from the pre-conversation hero composer on /chat/new, where only the draft and agent exist. The working_document and scratchpad values are references only — their bodies belong to their own surfaces.
 </surface_intro>`,
@@ -339,6 +395,27 @@ export interface ChatScratchpadRef {
   attached_scratchpad_ids: string[];
 }
 
+/** Lean sandbox-binding reference emitted in `sandbox_binding` (stored ref, not liveness-checked). */
+export interface ChatSandboxBindingRef {
+  row_id: string;
+  kind: string | null;
+  name: string | null;
+  source: "conversation" | "surface-seed" | "editor-seed";
+}
+
+/** Composite Chat Options customization emitted in `run_configuration`. */
+export interface ChatRunConfigurationRef {
+  added_tools: string[];
+  added_skills: string[];
+  disable_tool_injection: boolean;
+  surface_override: string | null;
+  /** Keys of instance-level LLM setting overrides (e.g. ["model", "temperature"]). */
+  overridden_settings: string[];
+  model_override: string | null;
+  sandbox: ChatSandboxBindingRef | null;
+  debug: boolean;
+}
+
 export function createChatScope(values: {
   selection?: string;
   text_before?: string;
@@ -365,6 +442,10 @@ export function createChatScope(values: {
   model?: string;
   working_document?: ChatWorkingDocumentRef;
   scratchpad?: ChatScratchpadRef;
+  added_tools?: string[];
+  added_skills?: string[];
+  sandbox_binding?: ChatSandboxBindingRef;
+  run_configuration?: ChatRunConfigurationRef;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }

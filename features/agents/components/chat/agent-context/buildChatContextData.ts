@@ -2,6 +2,7 @@ import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
 import {
   createChatScope,
   type ChatAttachedResourceEntry,
+  type ChatRunConfigurationRef,
   type ChatScratchpadRef,
   type ChatWorkingDocumentRef,
 } from "@/features/surfaces/manifests/chat.manifest";
@@ -26,6 +27,10 @@ import {
  *      `conversation_status` / `model`, and the lean `working_document` /
  *      `scratchpad` references (never the bodies — those are their own
  *      surfaces).
+ *   6. Run configuration — how the user customized this run via Chat Options
+ *      (`run_configuration` composite + bindable-only `added_tools` /
+ *      `added_skills` / `sandbox_binding`), sourced via
+ *      `buildChatRunConfiguration`.
  *
  * Callers pass only what they can honestly source. The pre-first-message
  * landing composer (`NewChatLandingInput`) sources just the draft + agent;
@@ -99,6 +104,13 @@ export interface BuildChatContextDataArgs {
   /** Lean refs to the conversation's context documents (never the bodies). */
   workingDocument?: ChatWorkingDocumentRef | null;
   scratchpad?: ChatScratchpadRef | null;
+
+  /**
+   * Chat Options customization for this run (see `buildChatRunConfiguration`).
+   * The composite ships as `run_configuration`; its constituents also emit as
+   * the bindable-only `added_tools` / `added_skills` / `sandbox_binding`.
+   */
+  runConfiguration?: ChatRunConfigurationRef | null;
 }
 
 function joinTranscript(messages: ChatMessageEntry[]): string {
@@ -140,6 +152,7 @@ export function buildChatContextData(
     model,
     workingDocument,
     scratchpad,
+    runConfiguration,
   } = args;
 
   // Composer baselines — selection/neighbors taken from the live draft so an
@@ -198,6 +211,16 @@ export function buildChatContextData(
     // Context documents — lean refs only; bodies belong to their own surfaces.
     working_document: workingDocument || undefined,
     scratchpad: scratchpad || undefined,
+
+    // Run configuration — the composite plus its bindable-only constituents.
+    added_tools: runConfiguration?.added_tools.length
+      ? runConfiguration.added_tools
+      : undefined,
+    added_skills: runConfiguration?.added_skills.length
+      ? runConfiguration.added_skills
+      : undefined,
+    sandbox_binding: runConfiguration?.sandbox ?? undefined,
+    run_configuration: runConfiguration || undefined,
   });
 
   return scope as Record<string, unknown>;

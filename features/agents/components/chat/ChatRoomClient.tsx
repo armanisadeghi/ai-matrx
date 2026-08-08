@@ -36,6 +36,7 @@ import {
   buildChatContextData,
   CHAT_CONTEXT_MENU_PROPS,
 } from "./agent-context/buildChatContextData";
+import { buildChatRunConfiguration } from "./agent-context/buildChatRunConfiguration";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -537,6 +538,7 @@ export function ChatRoomClient({
       model,
       workingDocument,
       scratchpad,
+      runConfiguration: buildChatRunConfiguration(state, conversationId),
     });
 
     const selectedText =
