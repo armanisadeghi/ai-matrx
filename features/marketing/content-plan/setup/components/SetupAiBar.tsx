@@ -45,7 +45,7 @@ export function SetupAiBar({
   documentLoading,
   onRecommendShape,
   shapeBusy,
-  onDraftWorkOrder,
+  onBuildWithAi,
   draftBusy,
   anyAgentBusy,
   lastRun,
@@ -62,8 +62,11 @@ export function SetupAiBar({
   documentLoading: boolean;
   onRecommendShape: () => void;
   shapeBusy: boolean;
-  /** ONE CLICK: shape + counts + names + topics, all staged for review. */
-  onDraftWorkOrder: () => void;
+  /**
+   * Open the Build-with-AI intake (hints → research if needed → shape +
+   * counts + names + topics, all staged for review). Works with NO report.
+   */
+  onBuildWithAi: () => void;
   draftBusy: boolean;
   anyAgentBusy: boolean;
   lastRun: SetupAiRunSummary | null;
@@ -140,20 +143,16 @@ export function SetupAiBar({
         <Button
           size="sm"
           className="h-7 shrink-0 gap-1.5 px-2.5 text-xs"
-          disabled={!reportReady || anyBusy}
-          title={
-            reportReady
-              ? "One click: pick the shape, set every count, name every services/locations page, and plan the article topics — all staged for your review, nothing written until you commit."
-              : "Ground the AI first: pick a research topic with a finished report, or research the company from here."
-          }
-          onClick={onDraftWorkOrder}
+          disabled={anyBusy}
+          title="Answer a few quick questions (all optional hints) and the AI builds the whole work order — researching the company first if no report exists. Everything stages for your review; nothing is written until you commit."
+          onClick={onBuildWithAi}
         >
           {draftBusy ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
             <ClipboardList className="h-3.5 w-3.5" />
           )}
-          Draft the work order
+          Build with AI
         </Button>
         <Button
           size="sm"

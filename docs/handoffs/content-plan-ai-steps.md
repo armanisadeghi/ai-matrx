@@ -139,8 +139,10 @@ research linking: start with the final report (the "Document"), user picks the t
 - Research creatable FROM Setup — "Research this company" runs the whole pipeline headlessly
   via `features/research/hooks/useCompanyQuickResearch.ts`; topic auto-selected + site-linked,
   picker refreshes (`ResearchTopicSelect` `refreshKey`), report lands in the bar (2026-08-08).
-- One-click "Draft the work order" (shape → family names → count-only topics, staged) — new
-  primary button in `SetupAiBar`; single-step demoted to "Shape only" (2026-08-08).
+- "Build with AI" guided intake — the bar's primary button opens a hints dialog (size feel,
+  single/multi location, notes; never commitments — `buildGuidanceInputs`), runs research first
+  when none exists, then drafts shape → family names → count-only topics, all staged
+  (`setup/components/BuildWithAiDialog.tsx`); single-step demoted to "Shape only" (2026-08-08).
 - `site_context` real (`buildSiteContext` in setup/ai.ts); "Name with AI" solid button on
   unnamed families (2026-08-08).
 - Header Agents popover shows role-bound agents platform-wide — `SurfaceBoundAgentsList`.

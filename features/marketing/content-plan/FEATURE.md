@@ -340,6 +340,18 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-08-08 — Claude: **Build with AI (guided intake).** The bar's primary
+  button is now "Build with AI" (`setup/components/BuildWithAiDialog.tsx`):
+  a few optional questions answered as HINTS, never commitments (size feel,
+  single/multi location + rough count, free notes — serialized by
+  `buildGuidanceInputs` in setup/ai.ts as an explicitly-overridable guidance
+  block + `target_page_count`). Works with ZERO research: the flow runs the
+  full company-research pipeline first (dialog states cost/time), reads the
+  fresh Document directly (`getLatestSuccessfulDocument`), then drafts the
+  whole work order. Bounded by design — everything stages; live plan
+  untouched until the user approves the routes. Guidance also threads into
+  the family-namer runs.
+
 - 2026-08-08 — Claude: **Setup grounding + one-click work order.** The AI bar
   can now CREATE the research from here — "Research this company" runs the
   full pipeline headlessly via the new
