@@ -88,15 +88,27 @@ guard with a confirm dialog.
 
 ## WF-8 — CMS fill durable queue has never run and has no chaos test
 
-**Status:** UNASSIGNED · **Repo:** aidream · **Severity:** MEDIUM
+**Status:** DONE (2026-08-08) · **Repo:** aidream · **Severity:** MEDIUM
 
-`plan.cms_fill_job` / `plan.cms_fill_item` (migration 0293) have 0 rows ever in production; the
-durable-work-queue standard's chaos-test deliverable is explicitly open in
-`aidream/services/content_plan/FEATURE.md`. **Fix:** (1) run one real fill end-to-end on a test
-site from `/marketing/content-plan/[siteId]?view=setup` and file everything that breaks; (2) add
-the chaos test — kill the process mid-fill, assert the job resumes on boot
-(`resume_incomplete_cms_fill_jobs`) and completes with no duplicate pages (idempotent on
-`(client_id, route)`).
+Root cause of "0 rows ever": the pipeline could not run at all — two boot-class defects, both
+fixed in `aidream/services/content_plan/cms_fill.py`:
+
+1. `_build_site_context` imported the nonexistent `DEFAULT_THEME_PROPERTIES` from
+   `starter_kit` (which exports `DEFAULT_THEME_CONFIG`) — every preview and every job died on
+   that import. Now merges via `merge_default_theme_config` + `theme_config_to_custom_properties`.
+2. `llm_to_pydantic` requires an AppContext; boot-resumed jobs (and detached coordinators after
+   their request finished) had none — every resumed item would have errored to dead_letter.
+   `_run_job` now builds its own system-run context from `job.acting_user_id`.
+
+Chaos test added (durable-queue deliverable 8):
+`aidream/services/cms/tests/test_cms_fill_chaos_live.py` — real SIGKILL mid-fill, boot-resume,
+zero dropped / zero duplicated, succeeded work not re-run, killed claim reclaimed. Passed live.
+Real fill run end-to-end from `/marketing/content-plan/[siteId]?view=setup` rung 4 on
+cosmeticinjectables (preview + fan-out).
+
+UX note (minor, not filed as its own WF): rung 4's buttons are enabled when the site has zero
+fillable draft pages (e.g. everything published) — the server refusal surfaces loudly with the
+fix named, but the rung could pre-compute fillability from the alignment report.
 
 ## WF-9 — Doc drift: FE CMS FEATURE.md denies `client_content_exceptions` exists
 
@@ -140,6 +152,6 @@ the paired `web.site`/brand on `/cms/[siteId]/settings`, using the existing brid
 
 ---
 
-**Assignment tips:** WF-1 blocks WF-6's theme editor. WF-8 part 1 (run the loop once) should go
-first overall — it will likely surface more entries for this board. Everything else is
-independent and parallelizable.
+**Assignment tips:** WF-1 blocks WF-6's theme editor. WF-8 is DONE (the loop has now run for
+real — it surfaced and fixed two aidream boot-class bugs). The remaining open items (WF-3,
+WF-4, WF-10) are independent and parallelizable.
