@@ -155,6 +155,14 @@ function toTaskRecord(
     settings: (row as { settings?: Record<string, unknown> }).settings ?? null,
     created_at: row.created_at ?? null,
     created_by: row.created_by,
+    origin: row.origin ?? null,
+    source_type: row.source_type ?? null,
+    source_url: row.source_url ?? null,
+    source_label: row.source_label ?? null,
+    start_date: row.start_date ?? null,
+    completed_at: row.completed_at ?? null,
+    updated_at: row.updated_at ?? null,
+    recurrence_rule: row.recurrence_rule ?? null,
   } satisfies TaskRecord;
 }
 
@@ -267,7 +275,7 @@ export const createSubtaskThunk = createAsyncThunk<
       parent_task_id: parentTaskId,
       project_id: inheritedProjectId,
       organization_id: inheritedOrgId,
-      status: "incomplete",
+      status: "inbox",
     });
     if (!created) return null;
 
@@ -293,7 +301,10 @@ export const toggleTaskCompleteThunk = createAsyncThunk<
     return;
   }
   const prevStatus = current.status;
-  const newStatus = prevStatus === "completed" ? "incomplete" : "completed";
+  const wasCompleted = prevStatus === "completed";
+  // Recurring tasks roll forward on completion instead of closing (the
+  // service handles it) — optimistically treat as completed either way.
+  const newStatus = wasCompleted ? "active" : "completed";
 
   // Optimistic update on the agent-context slice
   dispatch(
@@ -315,9 +326,35 @@ export const toggleTaskCompleteThunk = createAsyncThunk<
   }
 
   try {
-    const updated = await taskService.updateTask(taskId, {
-      status: newStatus,
-    });
+    const updated = wasCompleted
+      ? await taskService.updateTask(taskId, { status: "active" })
+      : await taskService.completeTask({
+          id: taskId,
+          recurrence_rule: current.recurrence_rule ?? null,
+          due_date: current.due_date,
+        });
+    if (updated) {
+      // Reconcile with the server truth (a recurring task comes back
+      // 'planned' with a rolled-forward due date, not 'completed').
+      const record = toTaskRecord(updated, current.organization_id);
+      if (record) {
+        dispatch(upsertTaskWithLevel({ record, level: "full-data" }));
+        if (
+          current.project_id &&
+          record.status !== "completed" &&
+          newStatus === "completed"
+        ) {
+          // Rolled forward — it is still open; undo the optimistic decrement.
+          dispatch(
+            adjustProjectTaskCount({
+              projectId: current.project_id,
+              openDelta: 1,
+              totalDelta: 0,
+            }),
+          );
+        }
+      }
+    }
     if (!updated) {
       // Rollback
       dispatch(

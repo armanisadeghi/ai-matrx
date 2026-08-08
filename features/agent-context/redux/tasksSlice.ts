@@ -32,13 +32,21 @@ export interface TaskRecord {
   project_id: string | null; // null = orphaned task
   parent_task_id: string | null;
   organization_id: string; // denormalized for easy lookup by org
+  // thin-list since the 2026-08 tasks upgrade (full context RPC emits them):
+  created_by?: string | null;
+  origin?: string | null;
+  source_type?: string | null;
+  source_url?: string | null;
+  source_label?: string | null;
+  start_date?: string | null;
+  completed_at?: string | null;
+  updated_at?: string | null;
+  recurrence_rule?: string | null;
   // full-data only:
   description?: string | null;
   settings?: Record<string, unknown> | null;
   created_at?: string | null;
-  created_by?: string | null;
   visibility?: string | null;
-  updated_at?: string | null;
 }
 
 type TaskPriority = "low" | "medium" | "high";
@@ -213,7 +221,9 @@ export const createTaskThunk = createAsyncThunk(
       .insert({
         ...insertData,
         organization_id: await ensureOrgId(organization_id),
-        status: data.status ?? "not_started",
+        // 'not_started' violated the DB status CHECK; 'inbox' is the canonical
+        // untriaged status (features/tasks/constants/status.ts).
+        status: data.status ?? "inbox",
         priority: toTaskPriority(priority),
         created_by: userId,
         settings: {},
@@ -299,6 +309,15 @@ const tasksSlice = createSlice({
           project_id: t.project_id,
           parent_task_id: t.parent_task_id,
           organization_id: orgId,
+          created_by: t.created_by ?? null,
+          origin: t.origin ?? null,
+          source_type: t.source_type ?? null,
+          source_url: t.source_url ?? null,
+          source_label: t.source_label ?? null,
+          start_date: t.start_date ?? null,
+          completed_at: t.completed_at ?? null,
+          updated_at: t.updated_at ?? null,
+          recurrence_rule: t.recurrence_rule ?? null,
         }));
         tasksAdapter.upsertMany(state, records);
         for (const t of tasks) {

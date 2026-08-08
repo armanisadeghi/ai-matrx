@@ -65,6 +65,16 @@ export interface NavTask {
   assignee_id: string | null;
   project_id: string | null; // NEW — null = orphaned task
   parent_task_id: string | null; // NEW — null = top-level task
+  // Lifecycle / provenance / time fields (2026-08 tasks upgrade)
+  created_by?: string | null;
+  origin?: string | null;
+  source_type?: string | null;
+  source_url?: string | null;
+  source_label?: string | null;
+  start_date?: string | null;
+  completed_at?: string | null;
+  updated_at?: string | null;
+  recurrence_rule?: string | null;
 }
 
 /** Project from full context — includes scope_tags and task counts only */

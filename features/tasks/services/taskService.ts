@@ -5,6 +5,7 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { getSharedWithMe } from "@/utils/permissions/service";
 import type { DbRpcRow } from "@/types/supabase-rpc";
+import type { Json, TablesUpdate } from "@/types/database.types";
 import type { DatabaseTask } from "../types";
 // Deep imports, NOT the `@/features/files` barrel. This module is reached from the
 // shell sidebar (navActions -> war-room/thunks -> taskService), so the barrel put the
@@ -15,6 +16,8 @@ import { associationsService } from "@/features/scopes/service/associationsServi
 import { commentsService } from "@/features/comments/service/commentsService";
 import type { Comment } from "@/features/comments/types";
 import { isScopesRpcErr } from "@/features/scopes/types";
+import type { TaskStatus, TaskOrigin } from "../constants/status";
+import { nextOccurrence } from "../utils/recurrence";
 
 export interface CreateTaskInput {
   title: string;
@@ -24,9 +27,22 @@ export interface CreateTaskInput {
   due_date?: string | null;
   priority?: "low" | "medium" | "high" | null;
   assignee_id?: string | null;
-  status?: "incomplete" | "completed";
+  status?: TaskStatus;
   created_by?: string | null;
   organization_id?: string | null;
+  // Time controls
+  start_date?: string | null;
+  due_time?: string | null;
+  timezone?: string | null;
+  recurrence_rule?: string | null;
+  reminders?: TaskReminder[];
+  // Provenance — who/what created this and where it came from
+  origin?: TaskOrigin;
+  source_type?: string | null;
+  source_id?: string | null;
+  source_url?: string | null;
+  source_label?: string | null;
+  dedupe_key?: string | null;
 }
 
 export interface UpdateTaskInput {
@@ -37,8 +53,31 @@ export interface UpdateTaskInput {
   due_date?: string | null;
   priority?: "low" | "medium" | "high" | null;
   assignee_id?: string | null;
-  status?: "incomplete" | "completed";
+  status?: TaskStatus;
+  completed_at?: string | null;
   created_by?: string | null;
+  start_date?: string | null;
+  due_time?: string | null;
+  timezone?: string | null;
+  recurrence_rule?: string | null;
+  reminders?: TaskReminder[];
+  source_url?: string | null;
+  source_label?: string | null;
+}
+
+/** A reminder attached to a task (stored in workspace.tasks.reminders jsonb). */
+export interface TaskReminder {
+  id: string;
+  /** Absolute fire time (ISO timestamptz) — set either this or offsetMinutes. */
+  at?: string;
+  /** Minutes BEFORE the due date/time (positive number). */
+  offsetMinutes?: number;
+  channel?: "inapp" | "email" | "sms";
+}
+
+/** Boundary cast: TaskReminder[] is structurally valid Json. */
+function toJson(reminders: TaskReminder[]): Json {
+  return reminders as unknown as Json;
 }
 
 export interface CreateTaskOptions {
@@ -67,9 +106,24 @@ export async function createTask(
         due_date: input.due_date || null,
         priority: input.priority || null,
         assignee_id: input.assignee_id || null,
-        status: input.status || "incomplete",
+        // Default lifecycle: anything scheduled or slotted is 'planned';
+        // bare captures land in the inbox for triage.
+        status:
+          input.status ||
+          (input.due_date || input.project_id ? "planned" : "inbox"),
         created_by: userId,
         organization_id: organizationId,
+        start_date: input.start_date || null,
+        due_time: input.due_time || null,
+        timezone: input.timezone || null,
+        recurrence_rule: input.recurrence_rule || null,
+        reminders: toJson(input.reminders ?? []),
+        origin: input.origin || "user",
+        source_type: input.source_type || null,
+        source_id: input.source_id || null,
+        source_url: input.source_url || null,
+        source_label: input.source_label || null,
+        dedupe_key: input.dedupe_key || null,
       })
       .select()
       .single();
@@ -510,9 +564,25 @@ export async function updateTask(
       previousAssigneeId = currentTask?.assignee_id || null;
     }
 
+    const { reminders, ...rest } = updates;
+    const payload: TablesUpdate<{ schema: "workspace" }, "tasks"> = {
+      ...rest,
+    };
+    if (reminders !== undefined) payload.reminders = toJson(reminders);
+    // Lifecycle bookkeeping: completing stamps completed_at; reopening clears it.
+    if (updates.status === "completed" && updates.completed_at === undefined) {
+      payload.completed_at = new Date().toISOString();
+    } else if (
+      updates.status &&
+      updates.status !== "completed" &&
+      updates.completed_at === undefined
+    ) {
+      payload.completed_at = null;
+    }
+
     const { data, error } = await workspaceDb(supabase)
       .from("tasks")
-      .update(updates)
+      .update(payload)
       .eq("id", taskId)
       .select()
       .single();
@@ -623,7 +693,7 @@ export async function createSubtask(
     title,
     description: description || null,
     parent_task_id: parentTaskId,
-    status: "incomplete",
+    status: "inbox",
   });
 }
 
@@ -637,7 +707,10 @@ export async function updateSubtaskStatus(
   try {
     const { error } = await workspaceDb(supabase)
       .from("tasks")
-      .update({ status: completed ? "completed" : "incomplete" })
+      .update({
+        status: completed ? "completed" : "active",
+        completed_at: completed ? new Date().toISOString() : null,
+      })
       .eq("id", subtaskId);
 
     if (error) {
@@ -650,6 +723,105 @@ export async function updateSubtaskStatus(
     console.error("Exception updating subtask status:", error);
     return false;
   }
+}
+
+/**
+ * Complete a task the smart way — the canonical completion path.
+ *
+ * Recurring tasks (recurrence_rule set) roll forward instead of closing:
+ * the due date advances to the next occurrence and the task returns to
+ * 'planned' (Todoist semantics). Non-recurring tasks close with a
+ * completed_at stamp. Returns the updated row.
+ */
+export async function completeTask(
+  task: Pick<DatabaseTask, "id"> &
+    Partial<Pick<DatabaseTask, "recurrence_rule" | "due_date">>,
+): Promise<DatabaseTask | null> {
+  const todayStr = new Date().toLocaleDateString("sv-SE"); // yyyy-mm-dd local
+  const rolled =
+    task.recurrence_rule && task.due_date
+      ? nextOccurrence(task.recurrence_rule, task.due_date, todayStr)
+      : null;
+
+  if (rolled) {
+    return updateTask(task.id, {
+      status: "planned",
+      due_date: rolled,
+      completed_at: null,
+    });
+  }
+  return updateTask(task.id, { status: "completed" });
+}
+
+// ─── System-created tasks (idempotent primitive) ────────────────────────────
+//
+// Any feature that wants to put work in front of a user calls
+// `upsertSystemTask` with a stable dedupe key — calling it twice never creates
+// a duplicate, and a task the user resolved (completed/cancelled/dismissed)
+// is never re-opened, so features can safely call this on every sweep.
+// When the underlying work resolves itself, call `resolveSystemTask`.
+
+export interface SystemTaskInput {
+  /** Stable idempotency key, e.g. `gsc-insight:<site>:<week>`. */
+  dedupeKey: string;
+  title: string;
+  description?: string | null;
+  origin?: TaskOrigin;
+  sourceType?: string | null;
+  sourceId?: string | null;
+  /** Deep link back to the thing that spawned this task. */
+  sourceUrl?: string | null;
+  sourceLabel?: string | null;
+  dueDate?: string | null;
+  priority?: "low" | "medium" | "high" | null;
+  assigneeId?: string | null;
+  organizationId?: string | null;
+  projectId?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+export async function upsertSystemTask(
+  input: SystemTaskInput,
+): Promise<{ id: string; created: boolean; status: string } | null> {
+  const { data, error } = await supabase.rpc("wsp_upsert_system_task", {
+    p_dedupe_key: input.dedupeKey,
+    p_title: input.title,
+    p_description: input.description ?? undefined,
+    p_origin: input.origin ?? "system",
+    p_source_type: input.sourceType ?? undefined,
+    p_source_id: input.sourceId ?? undefined,
+    p_source_url: input.sourceUrl ?? undefined,
+    p_source_label: input.sourceLabel ?? undefined,
+    p_due_date: input.dueDate ?? undefined,
+    p_priority: input.priority ?? undefined,
+    p_assignee_id: input.assigneeId ?? undefined,
+    p_organization_id: input.organizationId ?? undefined,
+    p_project_id: input.projectId ?? undefined,
+    p_metadata: (input.metadata ?? {}) as Json,
+  });
+  if (error) {
+    console.error("upsertSystemTask failed:", error.message);
+    return null;
+  }
+  return data as { id: string; created: boolean; status: string } | null;
+}
+
+/** Resolve a system task when the underlying work no longer needs the user. */
+export async function resolveSystemTask(
+  dedupeKey: string,
+  outcome: "completed" | "cancelled" | "dismissed" = "completed",
+  organizationId?: string | null,
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc("wsp_resolve_system_task", {
+    p_dedupe_key: dedupeKey,
+    p_outcome: outcome,
+    p_organization_id: organizationId ?? undefined,
+  });
+  if (error) {
+    console.error("resolveSystemTask failed:", error.message);
+    return false;
+  }
+  return !!(data as { resolved?: boolean } | null)?.resolved;
 }
 
 /**

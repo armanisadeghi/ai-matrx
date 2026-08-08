@@ -14,6 +14,7 @@
  */
 
 import type { WarRoomToolHandler } from "./types";
+import { normalizeTaskStatus } from "@/features/tasks/constants/status";
 import type {
   WarRoomUpdateTaskArgs,
   WarRoomUpdateTaskResult,
@@ -43,7 +44,8 @@ export const updateTaskHandler: WarRoomToolHandler<
     // Translate validated args → the task writer's patch shape (1:1 fields).
     const patch: UpdateTaskInput = {};
     if (args.title !== undefined) patch.title = args.title;
-    if (args.status !== undefined) patch.status = args.status;
+    if (args.status !== undefined)
+      patch.status = normalizeTaskStatus(args.status);
     if (args.description !== undefined) patch.description = args.description;
     if (args.priority !== undefined) patch.priority = args.priority;
     if (args.due_date !== undefined) patch.due_date = args.due_date;

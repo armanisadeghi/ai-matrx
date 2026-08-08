@@ -136,7 +136,7 @@ export function ProjectTaskList({
 
   async function toggle(t: DatabaseTask) {
     await patchField(t, {
-      status: isDone(t) ? "incomplete" : "completed",
+      status: isDone(t) ? "active" : "completed",
     });
   }
 
@@ -167,7 +167,7 @@ export function ProjectTaskList({
         parent_task_id: parentId,
         project_id: projectId,
         organization_id: organizationId,
-        status: "incomplete",
+        status: "planned",
       });
       if (res) {
         setTasks((cur) => [...cur, res]);
@@ -573,7 +573,7 @@ function QuickAddRow({
       title: t,
       project_id: projectId,
       organization_id: organizationId,
-      status: "incomplete",
+      status: "planned",
       priority,
       due_date: due,
       description: desc,

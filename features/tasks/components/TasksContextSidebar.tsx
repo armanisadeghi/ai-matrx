@@ -24,19 +24,24 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectProjects,
   selectValidProjectIds,
+  selectSmartViewCounts,
 } from "@/features/tasks/redux/selectors";
 import { TASK_GROUP_BY_LABELS } from "@/features/tasks/constants/groupBy";
 import {
+  SMART_VIEWS,
+  SMART_VIEW_BY_KEY,
+} from "@/features/tasks/constants/smartViews";
+import {
   selectSearchQuery,
-  selectTaskFilter,
   selectShowCompleted,
+  selectSmartView,
   selectGroupBy,
   selectSortBy,
   selectSortOrder,
   selectActiveProject,
   selectShowAllProjects,
   setSearchQuery,
-  setFilter,
+  setSmartView,
   setShowCompleted,
   setGroupBy,
   setSortBy,
@@ -45,7 +50,6 @@ import {
   setShowAllProjects,
   type TaskGroupBy,
 } from "@/features/tasks/redux/taskUiSlice";
-import type { TaskFilterType } from "@/features/tasks/types";
 import type { TaskSortField } from "@/features/tasks/types/sort";
 import { TASK_SORT_OPTIONS } from "@/features/tasks/types/sort";
 // Surface A: the tasks context sidebar IS an active-context picker — choosing an
@@ -97,36 +101,13 @@ const GROUP_MODES: { mode: TaskGroupBy; label: string; icon: LucideIcon }[] = [
   { mode: "none", label: TASK_GROUP_BY_LABELS.none, icon: Inbox },
 ];
 
-const Circle = ({ size = 14 }: { size?: number }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <circle cx="12" cy="12" r="10" />
-  </svg>
-);
-
-function filterIcon(filter: TaskFilterType) {
-  switch (filter) {
-    case "all":
-      return <Inbox size={14} />;
-    case "incomplete":
-      return <Circle size={14} />;
-    case "overdue":
-      return <AlertCircle size={14} />;
-  }
-}
-
 export default function TasksContextSidebar() {
   const dispatch = useAppDispatch();
 
-  // Search / filter / display
+  // Search / views / display
   const searchQuery = useAppSelector(selectSearchQuery);
-  const filter = useAppSelector(selectTaskFilter);
+  const smartView = useAppSelector(selectSmartView);
+  const smartViewCounts = useAppSelector(selectSmartViewCounts);
   const showCompleted = useAppSelector(selectShowCompleted);
 
   // Context (all orgs/scopes/projects, unfiltered)
@@ -330,32 +311,45 @@ export default function TasksContextSidebar() {
           </div>
         </CollapsibleSidebarSection>
 
-        {/* Quick filters */}
+        {/* Smart views — Inbox / Today / Upcoming / Overdue / Assigned / Created / Completed */}
         <CollapsibleSidebarSection
           icon={Inbox}
-          title="Filter"
-          summary={<span className="capitalize">{filter}</span>}
+          title="Views"
+          defaultOpen
+          summary={SMART_VIEW_BY_KEY[smartView]?.label ?? "All tasks"}
         >
-          <div className="flex gap-1">
-            {(["all", "incomplete", "overdue"] as TaskFilterType[]).map((f) => (
-              <button
-                key={f}
-                onClick={() => {
-                  dispatch(setFilter(f));
-                  if (!showAllProjects && !activeProject)
-                    dispatch(setShowAllProjects(true));
-                }}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-1 px-1.5 py-1 rounded text-[11px] capitalize transition-colors",
-                  filter === f
-                    ? "text-primary font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                )}
-              >
-                {filterIcon(f)}
-                <span>{f}</span>
-              </button>
-            ))}
+          <div className="flex flex-col gap-0.5">
+            {SMART_VIEWS.map((v) => {
+              const Icon = v.icon;
+              const count = smartViewCounts[v.key] ?? 0;
+              const isActive = smartView === v.key;
+              return (
+                <button
+                  key={v.key}
+                  onClick={() => dispatch(setSmartView(v.key))}
+                  title={v.description}
+                  className={cn(
+                    "flex items-center gap-1.5 px-1.5 py-1 rounded text-[11px] transition-colors",
+                    isActive
+                      ? "bg-accent text-primary font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                  )}
+                >
+                  <Icon className="w-3 h-3 shrink-0" />
+                  <span className="flex-1 text-left truncate">{v.label}</span>
+                  <span
+                    className={cn(
+                      "text-[10px] tabular-nums",
+                      v.key === "overdue" && count > 0
+                        ? "text-red-500 font-medium"
+                        : "text-muted-foreground/70",
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </CollapsibleSidebarSection>
 

@@ -4,6 +4,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { DatabaseTask, ProjectWithTasks } from "../types/database";
 import type { TaskFilterType } from "../types";
 import type { TaskSortField } from "../types/sort";
+import type { SmartViewKey } from "../constants/smartViews";
 
 export interface TaskUiState {
   // Hierarchical data (source of truth for the tasks route UI)
@@ -23,6 +24,8 @@ export interface TaskUiState {
   expandedProjects: string[];
   expandedTasks: string[];
   filter: TaskFilterType;
+  /** Smart view (Inbox/Today/Upcoming/…) — registry in constants/smartViews.ts */
+  smartView: SmartViewKey;
   showAllProjects: boolean;
   showCompleted: boolean;
   searchQuery: string;
@@ -96,6 +99,7 @@ const initialState: TaskUiState = {
   expandedProjects: [],
   expandedTasks: [],
   filter: "all",
+  smartView: "all",
   showAllProjects: true,
   showCompleted: false,
   searchQuery: "",
@@ -250,6 +254,9 @@ const slice = createSlice({
     // ─── View state ─────────────────────────────────────────────────────────
     setActiveProject(state, action: PayloadAction<string | null>) {
       state.activeProject = action.payload;
+      // Drilling into a project leaves any smart view — the two scopes are
+      // mutually exclusive.
+      if (action.payload !== null) state.smartView = "all";
     },
     toggleProjectExpand(state, action: PayloadAction<string>) {
       const id = action.payload;
@@ -268,6 +275,16 @@ const slice = createSlice({
     },
     setFilter(state, action: PayloadAction<TaskFilterType>) {
       state.filter = action.payload;
+    },
+    /** Selecting a smart view widens the scope to all projects — the view IS
+     *  the scope. Completed is self-sufficient (includesClosed). */
+    setSmartView(state, action: PayloadAction<SmartViewKey>) {
+      state.smartView = action.payload;
+      if (action.payload !== "all") {
+        state.showAllProjects = true;
+        state.activeProject = null;
+        state.filter = "all";
+      }
     },
     setShowAllProjects(state, action: PayloadAction<boolean>) {
       state.showAllProjects = action.payload;
@@ -374,6 +391,7 @@ export const {
   setExpandedProjects,
   toggleTaskExpand,
   setFilter,
+  setSmartView,
   setShowAllProjects,
   setShowCompleted,
   setSearchQuery,
@@ -424,6 +442,7 @@ export const selectExpandedProjects = (s: StateWithTasksUi) =>
 export const selectExpandedTasks = (s: StateWithTasksUi) =>
   s.tasksUi.expandedTasks;
 export const selectTaskFilter = (s: StateWithTasksUi) => s.tasksUi.filter;
+export const selectSmartView = (s: StateWithTasksUi) => s.tasksUi.smartView;
 export const selectShowAllProjects = (s: StateWithTasksUi) =>
   s.tasksUi.showAllProjects;
 export const selectShowCompleted = (s: StateWithTasksUi) =>
