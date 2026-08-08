@@ -1,4 +1,15 @@
-// Database types for content blocks system
+// Database types for the content-blocks admin editor.
+// Canonical table: skill.render_definition (public.content_blocks retired —
+// see scripts/dead-relations.json). Categories: platform.categories
+// (dimension 'shortcut', placement_type 'content-block').
+
+export type ContentBlockVisibility =
+    | "personal"
+    | "internal"
+    | "link"
+    | "public";
+
+export type ContentBlockBlockType = "render_kind" | "xml" | "markdown";
 
 export interface ContentBlockDB {
     id: string;
@@ -6,7 +17,10 @@ export interface ContentBlockDB {
     label: string;
     description: string | null;
     icon_name: string;
-    category_id: string | null; // NEW: UUID FK to shortcut_categories
+    category_id: string | null; // UUID FK to platform.categories
+    skill_id: string | null; // UUID FK to skill.definition
+    block_type: ContentBlockBlockType;
+    visibility: ContentBlockVisibility;
     template: string;
     sort_order: number;
     is_active: boolean;
@@ -44,7 +58,10 @@ export interface CreateContentBlockInput {
     label: string;
     description?: string;
     icon_name: string;
-    category_id: string; // NEW: UUID FK to shortcut_categories
+    category_id: string; // UUID FK to platform.categories
+    skill_id?: string | null;
+    block_type?: ContentBlockBlockType;
+    visibility?: ContentBlockVisibility;
     template: string;
     sort_order?: number;
     is_active?: boolean;
