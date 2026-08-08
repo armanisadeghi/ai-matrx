@@ -6,8 +6,12 @@
 // checkIsSuperAdmin and redirects otherwise), so this page only renders
 // for Super Admins. Every API route below also requires Super Admin
 // server-side, and the underlying RPCs gate again at the DB layer.
+//
+// Presentation only: list views are the canonical MatrxDataTable; all
+// mutations still go through the SECURITY DEFINER admin RPCs via
+// /api/admin/admins/* (protected-resources single path of resistance).
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, Search, ShieldAlert, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { toast } from "@/lib/toast";
 
@@ -21,7 +25,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import type { Database } from "@/types/database.types";
 
 const PAGE_LOCATION =
@@ -90,6 +95,21 @@ function levelBadgeClass(level: AdminLevel) {
     return "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200";
   }
   return "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200";
+}
+
+function auditChange(entry: AuditEntry): string {
+  const before = entry.before as { level?: AdminLevel } | null;
+  const after = entry.after as { level?: AdminLevel } | null;
+  if (entry.action === "promote") {
+    return `→ ${after?.level ? LEVEL_LABEL[after.level] : ""}`;
+  }
+  if (entry.action === "update") {
+    if (before?.level && after?.level && before.level !== after.level) {
+      return `${LEVEL_LABEL[before.level]} → ${LEVEL_LABEL[after.level]}`;
+    }
+    return "permissions / metadata";
+  }
+  return `was ${before?.level ? LEVEL_LABEL[before.level] : "admin"}`;
 }
 
 export default function AdminsManagementPage() {
@@ -189,52 +209,163 @@ export default function AdminsManagementPage() {
     }
   }
 
-  async function handleLevelChange(row: AdminRow, level: AdminLevel) {
-    if (level === row.level) return;
-    setRowBusy((s) => ({ ...s, [row.user_id]: true }));
-    try {
-      const res = await fetch(`/api/admin/admins/${row.user_id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ level }),
-      });
-      if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: res.statusText }));
-        toast.error(`Update failed: ${error}`);
-        return;
+  const handleLevelChange = useCallback(
+    async (row: AdminRow, level: AdminLevel) => {
+      if (level === row.level) return;
+      setRowBusy((s) => ({ ...s, [row.user_id]: true }));
+      try {
+        const res = await fetch(`/api/admin/admins/${row.user_id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ level }),
+        });
+        if (!res.ok) {
+          const { error } = await res.json().catch(() => ({ error: res.statusText }));
+          toast.error(`Update failed: ${error}`);
+          return;
+        }
+        toast.success(`${row.email ?? row.user_id} → ${LEVEL_LABEL[level]}`);
+        await Promise.all([fetchAdmins(), fetchAudit()]);
+      } finally {
+        setRowBusy((s) => ({ ...s, [row.user_id]: false }));
       }
-      toast.success(`${row.email ?? row.user_id} → ${LEVEL_LABEL[level]}`);
-      await Promise.all([fetchAdmins(), fetchAudit()]);
-    } finally {
-      setRowBusy((s) => ({ ...s, [row.user_id]: false }));
-    }
-  }
+    },
+    [fetchAdmins, fetchAudit],
+  );
 
-  async function handleRevoke(row: AdminRow) {
-    const ok = await confirm({
-      title: "Revoke admin access",
-      description: `Permanently revoke admin access for ${row.email ?? row.user_id}. They will no longer be able to access /administration. This is reversible — you can re-promote them later.`,
-      confirmLabel: "Revoke",
-      variant: "destructive",
-    });
-    if (!ok) return;
-
-    setRowBusy((s) => ({ ...s, [row.user_id]: true }));
-    try {
-      const res = await fetch(`/api/admin/admins/${row.user_id}`, {
-        method: "DELETE",
+  const handleRevoke = useCallback(
+    async (row: AdminRow) => {
+      const ok = await confirm({
+        title: "Revoke admin access",
+        description: `Permanently revoke admin access for ${row.email ?? row.user_id}. They will no longer be able to access /administration. This is reversible — you can re-promote them later.`,
+        confirmLabel: "Revoke",
+        variant: "destructive",
       });
-      if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: res.statusText }));
-        toast.error(`Revoke failed: ${error}`);
-        return;
+      if (!ok) return;
+
+      setRowBusy((s) => ({ ...s, [row.user_id]: true }));
+      try {
+        const res = await fetch(`/api/admin/admins/${row.user_id}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) {
+          const { error } = await res.json().catch(() => ({ error: res.statusText }));
+          toast.error(`Revoke failed: ${error}`);
+          return;
+        }
+        toast.success(`Revoked admin access for ${row.email ?? row.user_id}.`);
+        await Promise.all([fetchAdmins(), fetchAudit()]);
+      } finally {
+        setRowBusy((s) => ({ ...s, [row.user_id]: false }));
       }
-      toast.success(`Revoked admin access for ${row.email ?? row.user_id}.`);
-      await Promise.all([fetchAdmins(), fetchAudit()]);
-    } finally {
-      setRowBusy((s) => ({ ...s, [row.user_id]: false }));
-    }
-  }
+    },
+    [fetchAdmins, fetchAudit],
+  );
+
+  const adminColumns = useMemo((): MatrxColumnDef<AdminRow>[] => {
+    return [
+      {
+        id: "email",
+        header: "Email",
+        accessorFn: (r) => r.email ?? r.user_id,
+        width: 260,
+        cell: (r) =>
+          r.email ? (
+            <span className="font-medium text-foreground">{r.email}</span>
+          ) : (
+            <span className="text-muted-foreground">{r.user_id}</span>
+          ),
+      },
+      {
+        id: "level",
+        header: "Level",
+        accessorFn: (r) => LEVEL_LABEL[r.level],
+        filter: "select",
+        width: 130,
+        cell: (r) => (
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-medium ${levelBadgeClass(r.level)}`}
+          >
+            {LEVEL_LABEL[r.level]}
+          </span>
+        ),
+      },
+      {
+        id: "admin_created_at",
+        accessorKey: "admin_created_at",
+        header: "Promoted",
+        width: 180,
+        cell: (r) => (
+          <span className="text-muted-foreground">{formatDate(r.admin_created_at)}</span>
+        ),
+      },
+      {
+        id: "last_sign_in_at",
+        accessorKey: "last_sign_in_at",
+        header: "Last sign-in",
+        width: 180,
+        cell: (r) => (
+          <span className="text-muted-foreground">{formatDate(r.last_sign_in_at)}</span>
+        ),
+      },
+      {
+        id: "user_id",
+        accessorKey: "user_id",
+        header: "User ID",
+        cellKind: "uuid",
+        width: 110,
+      },
+    ];
+  }, []);
+
+  const auditColumns = useMemo((): MatrxColumnDef<AuditEntry>[] => {
+    return [
+      {
+        id: "created_at",
+        accessorKey: "created_at",
+        header: "When",
+        width: 180,
+        cell: (e) => (
+          <span className="text-muted-foreground">{formatDate(e.created_at)}</span>
+        ),
+      },
+      {
+        id: "actor",
+        header: "Actor",
+        accessorFn: (e) => e.actor_email ?? "system / service-role",
+        width: 220,
+        cell: (e) =>
+          e.actor_email ?? (
+            <span className="italic text-muted-foreground">system / service-role</span>
+          ),
+      },
+      {
+        id: "action",
+        accessorKey: "action",
+        header: "Action",
+        filter: "select",
+        width: 110,
+        cell: (e) => (
+          <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium uppercase text-foreground">
+            {e.action}
+          </span>
+        ),
+      },
+      {
+        id: "target",
+        header: "Target",
+        accessorFn: (e) => e.target_email ?? e.target_user_id,
+        width: 240,
+      },
+      {
+        id: "change",
+        header: "Change",
+        accessorFn: auditChange,
+        width: 220,
+        cell: (e) => <span className="text-muted-foreground">{auditChange(e)}</span>,
+      },
+    ];
+  }, []);
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -334,227 +465,121 @@ export default function AdminsManagementPage() {
         </section>
 
         {/* Admin list */}
-        <section className="rounded-lg border border-border bg-card">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <h2 className="text-sm font-medium text-foreground">
-              Current admins ({admins.length})
-            </h2>
-            {admins.length > 0 && (
-              <CopyButtons
-                size="sm"
-                label="All admins"
-                human={() => admins.map(adminSummary).join("\n\n")}
-                agent={() => ({
-                  kind: "admins",
-                  location: PAGE_LOCATION,
-                  description: "All current admins and their levels.",
-                  data: admins,
-                  attributes: { count: admins.length },
-                })}
-              />
-            )}
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-2 font-medium">Email</th>
-                  <th className="px-4 py-2 font-medium">Level</th>
-                  <th className="px-4 py-2 font-medium">Promoted</th>
-                  <th className="px-4 py-2 font-medium">Last sign-in</th>
-                  <th className="px-4 py-2 font-medium" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {loading && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
-                      <Loader2 className="mx-auto h-4 w-4 animate-spin" />
-                    </td>
-                  </tr>
-                )}
-                {!loading && admins.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
-                      No admins.
-                    </td>
-                  </tr>
-                )}
-                {admins.map((row) => {
-                  const busy = !!rowBusy[row.user_id];
-                  return (
-                    <tr key={row.user_id}>
-                      <td className="px-4 py-2 align-middle font-medium text-foreground">
-                        {row.email ?? <span className="text-muted-foreground">{row.user_id}</span>}
-                      </td>
-                      <td className="px-4 py-2 align-middle">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${levelBadgeClass(row.level)}`}
-                          >
-                            {LEVEL_LABEL[row.level]}
-                          </span>
-                          <Select
-                            value={row.level}
-                            onValueChange={(v) => handleLevelChange(row, v as AdminLevel)}
-                            disabled={busy}
-                          >
-                            <SelectTrigger className="h-7 w-[140px] text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {LEVELS.map((l) => (
-                                <SelectItem key={l} value={l} className="text-xs">
-                                  {LEVEL_LABEL[l]}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </td>
-                      <td className="px-4 py-2 align-middle text-muted-foreground">
-                        {formatDate(row.admin_created_at)}
-                      </td>
-                      <td className="px-4 py-2 align-middle text-muted-foreground">
-                        {formatDate(row.last_sign_in_at)}
-                      </td>
-                      <td className="px-4 py-2 align-middle text-right">
-                        <div className="flex items-center justify-end gap-1">
-                        <CopyButtons
-                          size="icon"
-                          label={row.email ?? row.user_id}
-                          human={() => adminSummary(row)}
-                          agent={() => ({
-                            kind: "admin",
-                            location: PAGE_LOCATION,
-                            description: "A single admin row.",
-                            data: row,
-                            summary: adminSummary(row),
-                            attributes: {
-                              "user-id": row.user_id,
-                              level: row.level,
-                            },
-                          })}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRevoke(row)}
-                          disabled={busy}
-                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        >
-                          {busy ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                          <span className="ml-1.5">Revoke</span>
-                        </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        <section className="space-y-2">
+          <h2 className="text-sm font-medium text-foreground">
+            Current admins ({admins.length})
+          </h2>
+          <div className="h-[480px]">
+            <MatrxDataTable
+              data={admins}
+              columns={adminColumns}
+              getRowId={(r) => r.user_id}
+              isLoading={loading}
+              pageSize={25}
+              emptyState={{ title: "No admins." }}
+              toolbar={{
+                search: true,
+                searchPlaceholder: "Search email, level, user id…",
+              }}
+              copy={{
+                label: "Admin",
+                listLabel: "All admins",
+                location: PAGE_LOCATION,
+                rowKind: "admin",
+                listKind: "admins",
+                rowDescription: "A single admin row.",
+                listDescription: "All current admins and their levels.",
+                humanRow: adminSummary,
+                rowAttributes: (r) => ({ "user-id": r.user_id, level: r.level }),
+                listAttributes: (visible, all) => ({ count: all.length }),
+              }}
+              detail={{
+                title: (r) => r.email ?? r.user_id,
+                description: (r) => `${LEVEL_LABEL[r.level]} · promoted ${formatDate(r.admin_created_at)}`,
+              }}
+              rowActions={(row) => {
+                const busy = !!rowBusy[row.user_id];
+                return (
+                  <div
+                    className="flex items-center justify-end gap-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Select
+                      value={row.level}
+                      onValueChange={(v) => void handleLevelChange(row, v as AdminLevel)}
+                      disabled={busy}
+                    >
+                      <SelectTrigger className="h-7 w-[140px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LEVELS.map((l) => (
+                          <SelectItem key={l} value={l} className="text-xs">
+                            {LEVEL_LABEL[l]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void handleRevoke(row)}
+                      disabled={busy}
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      {busy ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                      <span className="ml-1.5">Revoke</span>
+                    </Button>
+                  </div>
+                );
+              }}
+            />
           </div>
         </section>
 
         {/* Audit log */}
-        <section className="rounded-lg border border-border bg-card">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <section className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-medium text-foreground">
               Audit log ({audit.length})
             </h2>
-            <div className="flex items-center gap-3">
-              <p className="text-xs text-muted-foreground">
-                Every admin change is logged at the DB layer, including any made via direct SQL.
-              </p>
-              {audit.length > 0 && (
-                <CopyButtons
-                  size="sm"
-                  label="Audit log"
-                  human={() =>
-                    audit
-                      .map(
-                        (e) =>
-                          `${formatDate(e.created_at)} · ${e.action} · actor: ${e.actor_email ?? "system"} · target: ${e.target_email ?? e.target_user_id}`,
-                      )
-                      .join("\n")
-                  }
-                  agent={() => ({
-                    kind: "admin-audit-log",
-                    location: PAGE_LOCATION,
-                    description: "The admin audit log entries currently shown.",
-                    data: audit,
-                    attributes: { count: audit.length },
-                  })}
-                />
-              )}
-            </div>
+            <p className="text-xs text-muted-foreground">
+              Every admin change is logged at the DB layer, including any made via direct SQL.
+            </p>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-2 font-medium">When</th>
-                  <th className="px-4 py-2 font-medium">Actor</th>
-                  <th className="px-4 py-2 font-medium">Action</th>
-                  <th className="px-4 py-2 font-medium">Target</th>
-                  <th className="px-4 py-2 font-medium">Change</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {audit.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
-                      No audit entries yet.
-                    </td>
-                  </tr>
-                )}
-                {audit.map((entry) => {
-                  const before = entry.before as { level?: AdminLevel } | null;
-                  const after = entry.after as { level?: AdminLevel } | null;
-                  let change = "";
-                  if (entry.action === "promote") {
-                    change = `→ ${after?.level ? LEVEL_LABEL[after.level] : ""}`;
-                  } else if (entry.action === "update") {
-                    if (before?.level && after?.level && before.level !== after.level) {
-                      change = `${LEVEL_LABEL[before.level]} → ${LEVEL_LABEL[after.level]}`;
-                    } else {
-                      change = "permissions / metadata";
-                    }
-                  } else if (entry.action === "revoke") {
-                    change = `was ${before?.level ? LEVEL_LABEL[before.level] : "admin"}`;
-                  }
-                  return (
-                    <tr key={entry.id}>
-                      <td className="px-4 py-2 align-middle text-muted-foreground">
-                        {formatDate(entry.created_at)}
-                      </td>
-                      <td className="px-4 py-2 align-middle text-foreground">
-                        {entry.actor_email ?? (
-                          <span className="text-muted-foreground italic">
-                            system / service-role
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2 align-middle">
-                        <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium uppercase text-foreground">
-                          {entry.action}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 align-middle text-foreground">
-                        {entry.target_email ?? entry.target_user_id}
-                      </td>
-                      <td className="px-4 py-2 align-middle text-muted-foreground">
-                        {change}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="h-[440px]">
+            <MatrxDataTable
+              data={audit}
+              columns={auditColumns}
+              getRowId={(e) => e.id}
+              isLoading={loading}
+              pageSize={25}
+              emptyState={{ title: "No audit entries yet." }}
+              toolbar={{
+                search: true,
+                searchPlaceholder: "Search actor, action, target…",
+              }}
+              copy={{
+                label: "Audit entry",
+                listLabel: "Audit log",
+                location: PAGE_LOCATION,
+                rowKind: "admin-audit-entry",
+                listKind: "admin-audit-log",
+                listDescription: "The admin audit log entries currently shown.",
+                humanRow: (e) =>
+                  `${formatDate(e.created_at)} · ${e.action} · actor: ${e.actor_email ?? "system"} · target: ${e.target_email ?? e.target_user_id} · ${auditChange(e)}`,
+                rowAttributes: (e) => ({ id: e.id, action: e.action }),
+                listAttributes: (visible, all) => ({ count: all.length }),
+              }}
+              detail={{
+                title: (e) => `${e.action} · ${e.target_email ?? e.target_user_id}`,
+                description: (e) => formatDate(e.created_at),
+              }}
+            />
           </div>
         </section>
       </div>
