@@ -70,7 +70,14 @@ or removes a column.
   bespoke table. If wanted back, extend `MatrxDataTable` with a hierarchy
   concept — the one place extending the canonical table is likely correct.
 - **Transcripts row actions are read-only** (open/copy). Delete / move-to-
-  session / detach actions belong in the `useTranscriptRowActions` menu.
+  session / detach actions belong in the `useTranscriptRowActions` menu. The
+  old hub's `ReferencesBulkCopyButton` (copy ALL visible items as reference
+  fences) was also dropped — restore as a shell-level affordance if missed.
+- **Deep-search cost:** `trx_list_scoped` evaluates the transcript-segments
+  ILIKE in the pre-scope `unified` CTE, so a deep search scans all users'
+  transcripts before scoping filters them. Counting calls skip scoring
+  (LIMIT<=1 guard) but the deep ILIKE still runs — restructure if it shows up
+  in timings.
 - **`components/official/ListScopeSwitcher.tsx`** — old chip-per-org shape;
   remaining consumer: `TranscriptsSidebar`. Should absorb `EntityScopeTabs`.
 - **Industry scope documented but unwired** — first feature that needs it

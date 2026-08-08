@@ -32,6 +32,18 @@ gap stops masquerading as data loss (this one cost two review round-trips). Revi
 2ecba5c0/b60b6c75 were repointed at datadestruction.com (visible to admin@admin.com) and
 resubmitted.
 
+### D134 — agx_list_scoped org-grant branch: nondeterministic access_level (2026-08-08)
+
+The shared-scope org-grant branch in `public.agx_list_scoped` uses
+`SELECT DISTINCT ON (a.id) …` with **no ORDER BY**, so when an agent carries
+grants to two of the caller's orgs at different levels, which
+`permission_level` the row reports is planner-dependent (can flip between
+loads). Cosmetic today (the level is display-only in the list), but any future
+consumer branching on `access_level` inherits a heisenbug. Fix: wrap the
+branch in a subquery with `ORDER BY a.id, permission_level` — the transcripts
+twin already does this (`migrations/trx_list_scoped.sql`, org_shared
+subquery); port the same shape into `agx_list_scoped` and re-apply live.
+
 ### D131 — Component tables still outside the COMPONENT-ACCESS membrane + two stale entity_types rows (2026-08-08)
 
 The precedent sweep regenerated 96 component tables onto `iam.apply_rls`'s membrane, but these `is_component` tables carry BESPOKE policy families whose extra lanes (public_read, curator, grant_read, read-only runtime) the component variant would drop, so they were deliberately not clobbered — each needs its own canonicalization pass onto the membrane (db-canonicalize-table): `files.analysis/entities/overrides/page_annotations/pages`, `docproc.processed_document_pages`, `transcripts.studio_documents/studio_recording_segments/studio_session_settings`, `workbench.udt_dataset_fields/udt_dataset_rows/udt_structured_list_items`, `pdf.redaction_mapping`, `workflow.node_data_slot`, `legal.wc_impairment_definition`, `runtime.global_execution*/work_item` (their std_select still calls `iam.has_access` per row). Also found: `platform.entity_types` rows `component_group` (`public.component_groups`) and `field_component` (`public.field_components`) point at tables that no longer exist (delete or repoint the registry rows), and `agent.card` is a VIEW flagged `is_component` (no RLS possible — fine, but the flag is misleading).

@@ -118,7 +118,10 @@ export async function saveTranscriptRowEdit(
 ): Promise<void> {
   if (edit.title === undefined) return;
   const title = edit.title.trim();
-  if (!title) return;
+  // Throw, don't silently skip: the shell only patches the local row and
+  // toasts success AFTER save resolves, so a swallowed blank would show an
+  // empty title that never persisted.
+  if (!title) throw new Error("Title cannot be empty.");
 
   if (row.kind === "transcript") {
     const { error } = await supabase
