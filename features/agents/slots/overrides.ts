@@ -24,7 +24,7 @@ import { createClient } from "@/utils/supabase/client";
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { Database, Json } from "@/types/database.types";
-import { isJsonObject, type JsonValue } from "@/types/json";
+import { isJsonObject, type JsonObject } from "@/types/json";
 import { invalidateClientSlotCache } from "./service";
 
 export type SlotDefinitionRow = Database["agent"]["Tables"]["slot_definition"]["Row"];
@@ -250,7 +250,7 @@ export interface SlotBindingInput {
   agentId: string | null;
   /** LLMParams-shaped settings override (model, thinking_level, …). Null =
    * agent-swap-only. At least one of the two must be set. */
-  configOverrides: Record<string, JsonValue> | null;
+  configOverrides: JsonObject | null;
 }
 
 export interface SlotBindingPrincipalInput {

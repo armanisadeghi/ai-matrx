@@ -13,6 +13,16 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D133 — `pnpm check:hatches` is red on main: baseline drifted, ratchet no longer ratchets (2026-08-08)
+
+`scripts/type-escape-baseline.json` is far behind the tree — five categories are ABOVE baseline
+(`as unknown as` +88, `value!` +38, `?? ""` +861, `?? {}` +230, `@ts-expect-error` +4) while
+others are far below (`: any` −68, `|| []` −57), so ~1,200 hatches landed unfrozen and every
+run fails regardless of the change being checked — the gate can no longer distinguish a clean
+diff from one that adds hatches. Verified on a clean tree at `0059545b`. Fix: audit whether the
+growth is legitimate (or burn it down), then re-freeze with `pnpm check:hatches --update` in a
+dedicated change — not as a side effect of an unrelated task.
+
 ### D131 — Component tables still outside the COMPONENT-ACCESS membrane + two stale entity_types rows (2026-08-08)
 
 The precedent sweep regenerated 96 component tables onto `iam.apply_rls`'s membrane, but these `is_component` tables carry BESPOKE policy families whose extra lanes (public_read, curator, grant_read, read-only runtime) the component variant would drop, so they were deliberately not clobbered — each needs its own canonicalization pass onto the membrane (db-canonicalize-table): `files.analysis/entities/overrides/page_annotations/pages`, `docproc.processed_document_pages`, `transcripts.studio_documents/studio_recording_segments/studio_session_settings`, `workbench.udt_dataset_fields/udt_dataset_rows/udt_structured_list_items`, `pdf.redaction_mapping`, `workflow.node_data_slot`, `legal.wc_impairment_definition`, `runtime.global_execution*/work_item` (their std_select still calls `iam.has_access` per row). Also found: `platform.entity_types` rows `component_group` (`public.component_groups`) and `field_component` (`public.field_components`) point at tables that no longer exist (delete or repoint the registry rows), and `agent.card` is a VIEW flagged `is_component` (no RLS possible — fine, but the flag is misleading).
