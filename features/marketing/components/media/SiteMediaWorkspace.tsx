@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
+  Film,
   FolderOpen,
   Globe,
   ImageIcon,
@@ -17,15 +18,18 @@ import { BrandLibraryView } from "@/features/marketing/components/media/BrandLib
 import { ResearchMediaView } from "@/features/marketing/components/media/ResearchMediaView";
 import { GenerateMediaView } from "@/features/marketing/components/media/GenerateMediaView";
 import { MediaStandardsView } from "@/features/marketing/components/media/MediaStandardsView";
+import { SiteVideosView } from "@/features/marketing/components/media/SiteVideosView";
 import { parseSiteMediaStandards } from "@/features/marketing/data/media-library";
 import type { ResearchImageRow } from "@/features/marketing/data/media-library";
 import type { SnapshotMediaAsset } from "@/features/marketing/lib/snapshot-media";
 
 /**
- * SiteMediaWorkspace — the site's full media command center, five views on
+ * SiteMediaWorkspace — the site's full media command center, six views on
  * one route (`?view=`):
  *
  *  - `crawled`   — every image observed across canonical pages (evidence)
+ *  - `videos`    — crawled video/embed evidence + owned video assets, with
+ *                  the metadata agent flow (SiteVideosView)
  *  - `library`   — the brand's OWNED assets (uploads, promoted, generated)
  *  - `research`  — research-captured images: reuse + inspiration
  *  - `generate`  — order AI images off the preset menu, saved to the library
@@ -33,11 +37,13 @@ import type { SnapshotMediaAsset } from "@/features/marketing/lib/snapshot-media
  *
  * Cross-view flows: a crawled asset can be promoted to the library or sent
  * to Generate as a replacement order; a research image can be promoted or
- * become a creative brief.
+ * become a creative brief; a crawled video can be promoted or get agent
+ * metadata written.
  */
 
 const VIEWS = [
   { id: "crawled", label: "Crawled", icon: Globe },
+  { id: "videos", label: "Videos", icon: Film },
   { id: "library", label: "Library", icon: FolderOpen },
   { id: "research", label: "Research", icon: Lightbulb },
   { id: "generate", label: "Generate", icon: Sparkles },
@@ -154,6 +160,8 @@ export function SiteMediaWorkspace() {
             standards={standards}
             onOrderReplacement={orderReplacement}
           />
+        ) : view === "videos" ? (
+          <SiteVideosView brandId={brandId} standards={standards} />
         ) : view === "library" ? (
           <BrandLibraryView
             brandId={brandId}

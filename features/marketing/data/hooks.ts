@@ -79,6 +79,7 @@ import {
   fetchSiteAuditTrendRows,
   fetchSiteMediaRows,
   fetchSiteStructureRows,
+  fetchSiteVideoResourceRows,
   getPageContent,
   getSiteGscDaily,
   getSiteGscTopPages,
@@ -109,6 +110,7 @@ import {
   buildSiteRouteTree,
   type SiteRouteTree,
 } from "@/features/marketing/lib/route-tree";
+import { buildSiteVideoAssets } from "@/features/marketing/lib/snapshot-video";
 import type {
   PageCoverageFilter,
   SitemapPagesFilter,
@@ -132,6 +134,8 @@ export const marketingKeys = {
     [...marketingKeys.site(siteId), "audit-trend"] as const,
   siteMedia: (siteId: string) =>
     [...marketingKeys.site(siteId), "media"] as const,
+  siteVideos: (siteId: string) =>
+    [...marketingKeys.site(siteId), "videos"] as const,
   researchImages: (organizationId: string) =>
     [...marketingKeys.root, "research-images", organizationId] as const,
   siteStructure: (siteId: string) =>
@@ -1063,6 +1067,21 @@ export function useSiteMedia(siteId: string) {
   return useQuery({
     queryKey: marketingKeys.siteMedia(siteId),
     queryFn: ({ signal }) => fetchSiteMediaRows(siteId, signal),
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * Site-wide crawled VIDEO inventory — every canonical page's latest snapshot
+ * reduced to its DOM media resources, deduplicated by provider+id. Fetch is
+ * bounded and paged (service, `extracted->resources` sub-path only);
+ * dedupe/canonicalization is pure (lib/snapshot-video.ts).
+ */
+export function useSiteVideos(siteId: string) {
+  return useQuery({
+    queryKey: marketingKeys.siteVideos(siteId),
+    queryFn: async ({ signal }) =>
+      buildSiteVideoAssets(await fetchSiteVideoResourceRows(siteId, signal)),
     staleTime: 60_000,
   });
 }

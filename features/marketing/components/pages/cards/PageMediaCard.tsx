@@ -5,6 +5,7 @@ import { ExternalLink, Film, Share2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { MarketingPage, PageSnapshot } from "@/features/marketing/types";
 import {
+  isMediaResourceKind,
   parseSnapshotImages,
   parseSnapshotResources,
   type ParsedSnapshotResource,
@@ -32,15 +33,10 @@ import { webCopy } from "@/features/marketing/lib/copy-payloads";
  * exception to InlineMediaRef/fileHandler (third-party site assets, no file_id).
  */
 
-/** DOM resource kinds that count as playable/embedded media evidence. */
-const MEDIA_RESOURCE_KINDS = new Set(["video", "audio", "embed", "iframe"]);
-
 function mediaResources(
   resources: ParsedSnapshotResource[],
 ): ParsedSnapshotResource[] {
-  return resources.filter((resource) =>
-    MEDIA_RESOURCE_KINDS.has(resource.kind.toLowerCase()),
-  );
+  return resources.filter((resource) => isMediaResourceKind(resource.kind));
 }
 
 function ShareImageTile({ label, url }: { label: string; url: string }) {

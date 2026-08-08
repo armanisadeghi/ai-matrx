@@ -347,6 +347,22 @@ export interface ParsedSnapshotResource {
   attributes: Record<string, Json>;
 }
 
+/**
+ * DOM resource kinds that count as playable/embedded media evidence. The ONE
+ * shared vocabulary — consumers (PageMediaCard, lib/snapshot-video) must not
+ * re-declare their own set.
+ */
+export const MEDIA_RESOURCE_KINDS = new Set([
+  "video",
+  "audio",
+  "embed",
+  "iframe",
+]);
+
+export function isMediaResourceKind(kind: string): boolean {
+  return MEDIA_RESOURCE_KINDS.has(kind.toLowerCase());
+}
+
 export interface ParsedSnapshotResources {
   count: number;
   counts: Record<string, number>;

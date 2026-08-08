@@ -235,6 +235,15 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/marketing/brands/[brandId]/sites/[siteId]/media",
+      label: "Media workspace",
+      description:
+        "Six-view media canvas (?view=): crawled images, videos (crawled embeds + owned assets + metadata agent), brand library, research images, generate, standards.",
+      filePath:
+        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/media/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/marketing/brands/[brandId]/sites/[siteId]/structure",
       label: "Site structure",
       description:

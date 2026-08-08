@@ -285,8 +285,10 @@ export function AssetDetailSheet({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="text-[11px]">
+                  {/* Promoting an IMAGE — video/color/font kinds don't apply. */}
                   {BRAND_ASSET_KINDS.filter(
-                    (kind) => kind !== "color" && kind !== "font",
+                    (kind) =>
+                      kind !== "color" && kind !== "font" && kind !== "video",
                   ).map((kind) => (
                     <SelectItem key={kind} value={kind}>
                       {BRAND_ASSET_KIND_LABELS[kind]}

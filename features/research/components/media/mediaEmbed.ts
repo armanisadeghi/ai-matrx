@@ -1,23 +1,10 @@
 import type { ResearchMedia } from "../../types";
-// YouTube id extraction lives in the shared primitive — do not re-implement.
+// YouTube/Vimeo id extraction lives in the shared primitives — never re-implement.
 import { youtubeId } from "@/lib/media/youtube";
+import { vimeoId } from "@/lib/media/vimeo";
 
 export { youtubeId } from "@/lib/media/youtube";
-
-/** Extract a numeric Vimeo id from player/share URLs. */
-export function vimeoId(url: string): string | null {
-  try {
-    const u = new URL(url);
-    const host = u.hostname.replace(/^www\./, "").toLowerCase();
-    if (host === "vimeo.com" || host.endsWith(".vimeo.com")) {
-      const m = u.pathname.match(/(\d{6,})/);
-      return m ? m[1] : null;
-    }
-  } catch {
-    /* malformed */
-  }
-  return null;
-}
+export { vimeoId } from "@/lib/media/vimeo";
 
 export interface EmbedInfo {
   provider: "youtube" | "vimeo";

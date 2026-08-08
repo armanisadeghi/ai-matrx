@@ -435,7 +435,13 @@ export interface UpdateBrandAssetInput {
   patch: Partial<
     Pick<
       BrandAsset,
-      "kind" | "source_url" | "title" | "notes" | "is_primary" | "sort_order"
+      | "kind"
+      | "source_url"
+      | "title"
+      | "notes"
+      | "is_primary"
+      | "sort_order"
+      | "data"
     >
   >;
 }

@@ -60,8 +60,12 @@ import { isJsonRecord, isPropertyKind } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import type { Database, Json } from "@/types/database.types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
-import { parseSnapshotImages } from "@/features/marketing/lib/snapshot-content";
+import {
+  parseSnapshotImages,
+  parseSnapshotResources,
+} from "@/features/marketing/lib/snapshot-content";
 import type { SiteMediaPageRow } from "@/features/marketing/lib/snapshot-media";
+import type { SiteVideoResourceRow } from "@/features/marketing/lib/snapshot-video";
 import type { StructurePageRow } from "@/features/marketing/lib/route-tree";
 import {
   normalisePageUrl,
@@ -3257,6 +3261,95 @@ export async function fetchSiteMediaRows(
       images: parseSnapshotImages(media.images),
       ogImage: headTags.og.image,
       twitterImage: headTags.twitter.image,
+    });
+  }
+  return rows;
+}
+
+// ---------------------------------------------------------------------------
+// Site video evidence — every canonical page's latest snapshot reduced to its
+// DOM resource inventory (`extracted->resources` JSON sub-path ONLY — never
+// the full `extracted` blob). Aggregation/dedupe is pure
+// (lib/snapshot-video.ts); this only pages the rows out of Supabase.
+// ---------------------------------------------------------------------------
+
+// Typed `string` (not a literal) because the postgrest-js select parser blows
+// TS2589 on the JSON arrow path; the result shape is pinned by `.returns<…>()`
+// below (same pattern as inspection-queries.ts).
+const VIDEO_RESOURCES_SELECT: string =
+  "id, captured_at, resources:extracted->resources";
+
+export async function fetchSiteVideoResourceRows(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<SiteVideoResourceRow[]> {
+  const db = await authenticatedWebDb(supabase);
+  const pages: {
+    id: string;
+    url: string;
+    path: string | null;
+    latest_snapshot_id: string | null;
+  }[] = [];
+  for (let offset = 0; ; offset += MEDIA_PAGE_SIZE) {
+    if (offset >= MEDIA_PAGE_CAP) {
+      throw new Error(
+        `Site video inventory exceeded its ${MEDIA_PAGE_CAP}-page bound — refusing to return a silently truncated inventory.`,
+      );
+    }
+    const response = await db
+      .from("page")
+      .select("id, url, path, latest_snapshot_id")
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .not("latest_snapshot_id", "is", null)
+      .order("id", { ascending: true })
+      .range(offset, offset + MEDIA_PAGE_SIZE - 1)
+      .abortSignal(signal ?? new AbortController().signal);
+    const batch = assertData(response.data, response.error);
+    pages.push(...batch);
+    if (batch.length < MEDIA_PAGE_SIZE) break;
+  }
+
+  const snapshotIds = pages.flatMap((page) =>
+    page.latest_snapshot_id ? [page.latest_snapshot_id] : [],
+  );
+  const resourcesBySnapshot = new Map<
+    string,
+    { resources: Json; captured_at: string }
+  >();
+  for (let start = 0; start < snapshotIds.length; start += MEDIA_PAGE_SIZE) {
+    const chunk = snapshotIds.slice(start, start + MEDIA_PAGE_SIZE);
+    const response = await db
+      .from("snapshot")
+      .select(VIDEO_RESOURCES_SELECT)
+      .eq("site_id", siteId)
+      .in("id", chunk)
+      .abortSignal(signal ?? new AbortController().signal)
+      .returns<{ id: string; captured_at: string; resources: Json }[]>();
+    for (const snapshot of assertData(response.data, response.error)) {
+      resourcesBySnapshot.set(snapshot.id, {
+        resources: snapshot.resources,
+        captured_at: snapshot.captured_at,
+      });
+    }
+  }
+
+  const rows: SiteVideoResourceRow[] = [];
+  for (const page of pages) {
+    const entry = page.latest_snapshot_id
+      ? resourcesBySnapshot.get(page.latest_snapshot_id)
+      : undefined;
+    if (!entry) continue;
+    // parseSnapshotResources reads `extracted.resources` — re-wrap the
+    // projected sub-path so the ONE parser stays the single entry point.
+    const parsed = parseSnapshotResources({ resources: entry.resources });
+    if (parsed.items.length === 0) continue;
+    rows.push({
+      pageId: page.id,
+      url: page.url,
+      path: page.path,
+      capturedAt: entry.captured_at,
+      resources: parsed.items,
     });
   }
   return rows;

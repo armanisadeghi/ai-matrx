@@ -6,6 +6,10 @@
  * for the run to finish, pull the result out of redux, destroy the instance.
  * Callers own persistence (the plan entry's file_id) and UI.
  *
+ * `runHeadlessAgent` + `waitForAnswerText` are exported as THE shared
+ * headless-agent shell for marketing — generate-video-metadata.ts consumes
+ * them; never fork a second launch/execute/destroy loop.
+ *
  * THREE generation paths (the card picks):
  * 1. `generatePageImageTwoStep` — the DEFAULT. Mini-pipeline: the prompt
  *    generator agent turns the plan entry's spec + style preset into a
@@ -93,7 +97,7 @@ async function waitForImage(
 }
 
 /** Wait for a run to reach a terminal status, then return its answer text. */
-async function waitForAnswerText(
+export async function waitForAnswerText(
   getState: () => RootState,
   requestId: string,
   timeoutMs = 120_000,
@@ -111,7 +115,7 @@ async function waitForAnswerText(
   return selectAnswerText(requestId)(getState());
 }
 
-interface HeadlessRunArgs {
+export interface HeadlessRunArgs {
   agentId: string;
   surfaceKey: string;
   /** User-message text (some agents key entirely off runtime variables). */
@@ -125,7 +129,7 @@ interface HeadlessRunArgs {
  * `collect` while the instance is still alive. The ONE headless shell every
  * path shares.
  */
-async function runHeadlessAgent<T>(
+export async function runHeadlessAgent<T>(
   dispatch: AppDispatch,
   args: HeadlessRunArgs,
   collect: (requestId: string) => Promise<T>,
