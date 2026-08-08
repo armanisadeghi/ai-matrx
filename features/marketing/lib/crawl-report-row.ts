@@ -103,10 +103,13 @@ export function summarizeRedirectChain(
   const redirectCount = Math.max(0, hops.length - 1);
   let issue: RedirectChainIssue = null;
   if (redirectCount >= 1) {
+    // Loop detection must keep the PATH exact — `/a` → `/a/` is the single
+    // most common legitimate redirect, and the slash-stripping canonical
+    // normalizer would call it a loop. Only scheme+host are case-folded.
     const seen = new Set<string>();
     let hasLoop = false;
     for (const hop of hops) {
-      const key = normalizeUrlForComparison(hop.url);
+      const key = redirectHopKey(hop.url);
       if (seen.has(key)) {
         hasLoop = true;
         break;
@@ -119,6 +122,17 @@ export function summarizeRedirectChain(
     else if (redirectCount >= 2) issue = "chain";
   }
   return { recorded, hops, redirectCount, issue };
+}
+
+function redirectHopKey(url: string): string {
+  try {
+    const parsed = new URL(url.trim());
+    return `${parsed.protocol.toLowerCase()}//${parsed.hostname.toLowerCase()}${
+      parsed.port ? `:${parsed.port}` : ""
+    }${parsed.pathname}${parsed.search}`;
+  } catch {
+    return url.trim();
+  }
 }
 
 // ---------------------------------------------------------------------------

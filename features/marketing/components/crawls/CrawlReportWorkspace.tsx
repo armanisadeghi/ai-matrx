@@ -58,6 +58,11 @@ const OUTCOME_OPTIONS = [
   label: value.charAt(0).toUpperCase() + value.slice(1),
 }));
 
+// Outcomes that actually fetched the URL — only these can carry hop
+// evidence. Never-fetched rows (excluded, skipped, …) show "—", not a
+// misleading "Not recorded".
+const FETCHED_OUTCOMES = new Set(["captured", "redirected", "failed"]);
+
 function urlCell(url: string, pageHref?: string) {
   return (
     <div className="flex min-w-72 max-w-3xl items-center gap-1.5">
@@ -644,6 +649,7 @@ function responseColumns(): MatrxColumnDef<CrawlUrl>[] {
       filter: false,
       cellKind: "text",
       cell: (row) => {
+        if (!FETCHED_OUTCOMES.has(row.outcome)) return "—";
         const chain = summarizeRedirectChain(row.metadata, row.http_status);
         if (!chain.recorded) {
           return (
@@ -680,6 +686,7 @@ function responseColumns(): MatrxColumnDef<CrawlUrl>[] {
       sortable: false,
       filter: false,
       cell: (row) => {
+        if (!FETCHED_OUTCOMES.has(row.outcome)) return "—";
         const chain = summarizeRedirectChain(row.metadata, row.http_status);
         if (!chain.recorded || !chain.issue) return "—";
         return (
@@ -1075,13 +1082,15 @@ export function CrawlReportWorkspace({
                   ["Final URL", row.final_url],
                   [
                     "Redirect chain",
-                    !chain.recorded
-                      ? "not recorded (pre-hop-capture crawl)"
-                      : chain.redirectCount === 0
-                        ? null
-                        : chain.hops
-                            .map((hop) => `${hop.status ?? "?"} ${hop.url}`)
-                            .join(" → "),
+                    !FETCHED_OUTCOMES.has(row.outcome)
+                      ? null
+                      : !chain.recorded
+                        ? "not recorded (pre-hop-capture crawl)"
+                        : chain.redirectCount === 0
+                          ? null
+                          : chain.hops
+                              .map((hop) => `${hop.status ?? "?"} ${hop.url}`)
+                              .join(" → "),
                   ],
                   ["Chain finding", chain.issue],
                   ["Depth", row.depth],

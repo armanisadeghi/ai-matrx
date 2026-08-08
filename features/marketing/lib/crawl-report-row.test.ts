@@ -146,18 +146,32 @@ describe("summarizeRedirectChain", () => {
     expect(chain.issue).toBe("redirect-to-missing");
   });
 
-  it("flags loops over redirect-to-missing", () => {
+  it("flags exact-URL loops over redirect-to-missing", () => {
     const chain = summarizeRedirectChain(
       {
         redirect_chain: [
           { status: 301, url: "https://example.com/a" },
           { status: 301, url: "https://example.com/b" },
-          { status: 301, url: "https://example.com/a/" },
+          { status: 301, url: "https://EXAMPLE.com/a" },
         ],
       },
       404,
     );
     expect(chain.issue).toBe("loop");
+  });
+
+  it("never calls a trailing-slash redirect a loop", () => {
+    const chain = summarizeRedirectChain(
+      {
+        redirect_chain: [
+          { status: 301, url: "https://example.com/a" },
+          { status: 200, url: "https://example.com/a/" },
+        ],
+      },
+      200,
+    );
+    expect(chain.issue).toBeNull();
+    expect(chain.redirectCount).toBe(1);
   });
 
   it("reports single redirects without an issue", () => {
