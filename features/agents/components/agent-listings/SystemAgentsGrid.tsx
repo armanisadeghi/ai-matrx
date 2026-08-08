@@ -32,6 +32,13 @@ import {
   ADMIN_SYSTEM_AGENTS_SURFACE_NAME,
   createAdminSystemAgentsScope,
 } from "@/features/surfaces/manifests/admin-system-agents.manifest";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
+import {
+  buildSystemAgentRosterEntries,
+  systemAgentRosterEntrySummary,
+} from "@/features/agents/format";
 
 const ADMIN_BASE_PATH = "/administration/agents/system-agents/agents";
 const NEW_HREF = "/administration/agents/system-agents/agents/new";
@@ -141,17 +148,7 @@ export function SystemAgentsGrid() {
     createAdminSystemAgentsScope({
       roster_agent_ids: agents.map((a) => a.id),
       roster_count: agents.length,
-      roster_agents: agents.map((a) => ({
-        id: a.id,
-        name: a.name,
-        description: a.description ?? null,
-        category: a.category ?? null,
-        tags: a.tags ?? null,
-        model_id: a.modelId ?? null,
-        is_active: a.isActive ?? null,
-        is_archived: a.isArchived ?? null,
-        updated_at: a.updatedAt ?? null,
-      })),
+      roster_agents: buildSystemAgentRosterEntries(agents),
       roster_filtered_agent_ids: filtered.map((a) => a.id),
       roster_search_query: search || undefined,
       selection: window.getSelection()?.toString() || undefined,
@@ -188,6 +185,58 @@ export function SystemAgentsGrid() {
         <span className="text-xs text-muted-foreground shrink-0 px-1">
           {filtered.length} agent{filtered.length !== 1 ? "s" : ""}
         </span>
+        {filtered.length > 0 && (
+          <>
+            <CopyButtons
+              size="icon"
+              label="System agents roster"
+              human={() =>
+                buildSystemAgentRosterEntries(filtered)
+                  .map(systemAgentRosterEntrySummary)
+                  .join("\n")
+              }
+              json={() => buildSystemAgentRosterEntries(filtered)}
+              agent={() => ({
+                kind: "system-agents",
+                location:
+                  "AI Matrx Admin — System Agents · Roster (/administration/agents/system-agents/agents)",
+                description: "All filtered system agents currently listed.",
+                data: filtered,
+                attributes: { count: filtered.length },
+                context: { search: search || undefined, total: agents.length },
+              })}
+              aiVariants={[
+                {
+                  id: "roster-summary",
+                  label: "Roster summary",
+                  hint: "Compact projection — id, name, category, model, status",
+                  build: () => ({
+                    kind: "system-agents-roster",
+                    location:
+                      "AI Matrx Admin — System Agents · Roster (/administration/agents/system-agents/agents)",
+                    description:
+                      "Compact roster projection of all filtered system agents.",
+                    data: buildSystemAgentRosterEntries(filtered),
+                    attributes: { count: filtered.length },
+                  }),
+                },
+              ]}
+            />
+            <ExportMenu
+              label="system-agents-roster"
+              items={[
+                jsonExportItem(() => buildSystemAgentRosterEntries(filtered)),
+                csvExportItem(
+                  () =>
+                    buildSystemAgentRosterEntries(
+                      filtered,
+                    ) as unknown as Array<Record<string, unknown>>,
+                  "CSV",
+                ),
+              ]}
+            />
+          </>
+        )}
         <Link href={NEW_HREF}>
           <Button size="sm" className="shrink-0">
             <Plus className="h-4 w-4 mr-1.5" />
