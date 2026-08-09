@@ -73,12 +73,10 @@ interface JsonSchemaObject {
 
 function loadEnv(): { url: string; key: string } | null {
   let url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-  let key =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    process.env.SUPABASE_PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-    process.env.SUPABASE_ANON_KEY ??
-    "";
+  // ONE name each — no second candidate, no fallback chain. (The old
+  // *_ANON_KEY names are deprecated and BANNED by eslint.config.mjs.)
+  // See common-docs/policies/package-vs-implementation.md
+  let key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
 
   if (!url || !key) {
     for (const f of [".env.local", ".env.production.local", ".env.production", ".env"]) {
@@ -90,14 +88,7 @@ function loadEnv(): { url: string; key: string } | null {
         const [, k, raw] = m;
         const v = (raw ?? "").replace(/^['"]|['"]$/g, "");
         if (!url && k === "NEXT_PUBLIC_SUPABASE_URL") url = v;
-        if (
-          !key &&
-          (k === "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" ||
-            k === "SUPABASE_PUBLISHABLE_KEY" ||
-            k === "NEXT_PUBLIC_SUPABASE_ANON_KEY" ||
-            k === "SUPABASE_ANON_KEY")
-        )
-          key = v;
+        if (!key && k === "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") key = v;
       }
       if (url && key) break;
     }

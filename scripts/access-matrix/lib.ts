@@ -38,7 +38,9 @@ export interface Env {
 
 /** Reads .env* like scripts/check-migrations.ts. Returns null when absent. */
 export function loadEnv(): Env | null {
-  let url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
+  // ONE name for the URL — no second candidate, no fallback chain.
+  // See common-docs/policies/package-vs-implementation.md
+  let url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   let secretKey = process.env.SUPABASE_SECRET_KEY ?? "";
   let publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
 
@@ -50,7 +52,7 @@ export function loadEnv(): Env | null {
         const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.+?)\s*$/);
         if (!m) continue;
         const v = (m[2] ?? "").replace(/^['"]|['"]$/g, "");
-        if (!url && (m[1] === "NEXT_PUBLIC_SUPABASE_URL" || m[1] === "SUPABASE_URL")) url = v;
+        if (!url && m[1] === "NEXT_PUBLIC_SUPABASE_URL") url = v;
         if (!secretKey && m[1] === "SUPABASE_SECRET_KEY") secretKey = v;
         if (!publishableKey && m[1] === "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") publishableKey = v;
       }

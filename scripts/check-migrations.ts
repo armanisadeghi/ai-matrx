@@ -81,16 +81,17 @@ function sha256(s: string): string {
   return createHash("sha256").update(s, "utf8").digest("hex");
 }
 
-/** Resolve Supabase URL + a key. Prefer the secret key — `_schema_migrations` may be
- *  RLS-guarded against anon. Falls back to publishable so a read still works if RLS
- *  is open. Reads .env* like the other gate scripts (scripts/check-tool-db-drift.ts). */
+/** Resolve Supabase URL + a key. There is exactly ONE name for the URL —
+ *  `NEXT_PUBLIC_SUPABASE_URL`; never a second candidate or a fallback chain
+ *  (see common-docs/policies/package-vs-implementation.md). The KEY degrades
+ *  secret → publishable on purpose: same database, lower privilege, because
+ *  `_schema_migrations` may be RLS-guarded against anon.
+ *  Reads .env* like the other gate scripts (scripts/check-tool-db-drift.ts). */
 function loadEnv(): { url: string; key: string } | null {
-  let url =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
+  let url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   let key =
     process.env.SUPABASE_SECRET_KEY ??
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    process.env.SUPABASE_PUBLISHABLE_KEY ??
     "";
 
   if (!url || !key) {
@@ -107,13 +108,11 @@ function loadEnv(): { url: string; key: string } | null {
         if (!m) continue;
         const [, k, raw] = m;
         const v = (raw ?? "").replace(/^['"]|['"]$/g, "");
-        if (!url && (k === "NEXT_PUBLIC_SUPABASE_URL" || k === "SUPABASE_URL"))
-          url = v;
+        if (!url && k === "NEXT_PUBLIC_SUPABASE_URL") url = v;
         if (
           !key &&
           (k === "SUPABASE_SECRET_KEY" ||
-            k === "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" ||
-            k === "SUPABASE_PUBLISHABLE_KEY")
+            k === "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY")
         )
           key = v;
       }

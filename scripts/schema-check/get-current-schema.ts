@@ -23,11 +23,12 @@ const OUT = resolve(ROOT, "scripts/schema-check/current-schema.json");
 const C = { reset: "\x1b[0m", dim: "\x1b[2m", red: "\x1b[31m", green: "\x1b[32m", yellow: "\x1b[33m", cyan: "\x1b[36m" };
 
 function loadEnv(): { url: string; key: string } | null {
-  let url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
+  // ONE name for the URL — no second candidate, no fallback chain.
+  // See common-docs/policies/package-vs-implementation.md
+  let url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   let key =
     process.env.SUPABASE_SECRET_KEY ??
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    process.env.SUPABASE_PUBLISHABLE_KEY ??
     "";
   if (!url || !key) {
     for (const f of [".env.local", ".env.production.local", ".env.production", ".env"]) {
@@ -37,12 +38,11 @@ function loadEnv(): { url: string; key: string } | null {
         const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.+?)\s*$/);
         if (!m) continue;
         const v = (m[2] ?? "").replace(/^['"]|['"]$/g, "");
-        if (!url && (m[1] === "NEXT_PUBLIC_SUPABASE_URL" || m[1] === "SUPABASE_URL")) url = v;
+        if (!url && m[1] === "NEXT_PUBLIC_SUPABASE_URL") url = v;
         if (
           !key &&
           (m[1] === "SUPABASE_SECRET_KEY" ||
-            m[1] === "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" ||
-            m[1] === "SUPABASE_PUBLISHABLE_KEY")
+            m[1] === "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY")
         )
           key = v;
       }

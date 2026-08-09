@@ -3,9 +3,18 @@
 // ---------------------------------------------------------------------------
 // Implements the OAuth 2.1 Authorization Code Flow with PKCE against the
 // AI Matrx Supabase project acting as an identity provider.
+//
+// That project is THE project this repo talks to — so the URL comes from the
+// one name we already have, `NEXT_PUBLIC_SUPABASE_URL`. There is no second
+// candidate (`AIMATRX_SUPABASE_URL` was one, holding the identical value, and
+// was removed 2026-08-09). Pointing this at another Supabase project is a
+// change of VALUES, never a new variable name. Rule:
+// /Users/armanisadeghi/code/common-docs/policies/package-vs-implementation.md
 // ---------------------------------------------------------------------------
 
-function requireEnv(name: "AIMATRX_SUPABASE_URL" | "AIMATRX_OAUTH_CLIENT_ID"): string {
+function requireEnv(
+  name: "NEXT_PUBLIC_SUPABASE_URL" | "AIMATRX_OAUTH_CLIENT_ID",
+): string {
   const value = process.env[name];
   if (!value) {
     throw new Error(`${name} is required for AI Matrx OAuth but is not set`);
@@ -13,13 +22,13 @@ function requireEnv(name: "AIMATRX_SUPABASE_URL" | "AIMATRX_OAUTH_CLIENT_ID"): s
   return value;
 }
 
-const AIMATRX_SUPABASE_URL = requireEnv("AIMATRX_SUPABASE_URL");
+const IDP_SUPABASE_URL = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
 const AIMATRX_OAUTH_CLIENT_ID = requireEnv("AIMATRX_OAUTH_CLIENT_ID");
 const AIMATRX_OAUTH_CLIENT_SECRET = process.env.AIMATRX_OAUTH_CLIENT_SECRET;
 
-const AUTHORIZE_ENDPOINT = `${AIMATRX_SUPABASE_URL}/auth/v1/oauth/authorize`;
-const TOKEN_ENDPOINT = `${AIMATRX_SUPABASE_URL}/auth/v1/oauth/token`;
-const USERINFO_ENDPOINT = `${AIMATRX_SUPABASE_URL}/auth/v1/oauth/userinfo`;
+const AUTHORIZE_ENDPOINT = `${IDP_SUPABASE_URL}/auth/v1/oauth/authorize`;
+const TOKEN_ENDPOINT = `${IDP_SUPABASE_URL}/auth/v1/oauth/token`;
+const USERINFO_ENDPOINT = `${IDP_SUPABASE_URL}/auth/v1/oauth/userinfo`;
 
 // ---------------------------------------------------------------------------
 // Base64 URL encoding

@@ -53,9 +53,10 @@ function loadEnv(): {
   backend?: string;
 } | null {
   const env: Record<string, string> = {};
+  // ONE name for the Supabase URL — no second candidate, no fallback chain.
+  // See common-docs/policies/package-vs-implementation.md
   const want = [
     "NEXT_PUBLIC_SUPABASE_URL",
-    "SUPABASE_URL",
     "SUPABASE_SECRET_KEY",
     "MATRX_ADMIN_JWT",
     "NEXT_PUBLIC_BACKEND_URL_PROD",
@@ -63,10 +64,7 @@ function loadEnv(): {
   ];
   for (const k of want) if (process.env[k]) env[k] = process.env[k] as string;
 
-  if (
-    !env.SUPABASE_SECRET_KEY ||
-    !(env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL)
-  ) {
+  if (!env.SUPABASE_SECRET_KEY || !env.NEXT_PUBLIC_SUPABASE_URL) {
     for (const f of [
       ".env.local",
       ".env.production.local",
@@ -85,7 +83,7 @@ function loadEnv(): {
     }
   }
 
-  const url = env.NEXT_PUBLIC_SUPABASE_URL ?? env.SUPABASE_URL ?? "";
+  const url = env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const key = env.SUPABASE_SECRET_KEY ?? "";
   if (!url || !key) return null;
   return {
