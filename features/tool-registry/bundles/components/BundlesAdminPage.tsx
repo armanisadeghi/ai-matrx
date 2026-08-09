@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dialog";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import {
   listBundles,
   listBundleMembers,
@@ -49,6 +50,7 @@ import {
 } from "@/features/tool-registry/bundles/services/bundles.service";
 import {
   BUNDLE_DEEP_LINK_PARAM,
+  bundleHref,
   toolHref,
 } from "@/features/tool-registry/doors";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -308,7 +310,16 @@ function NewBundleDialog({
       // executor, and links it — every bundle is born with its lister, so it
       // reduces to one tool the model expands on demand. See
       // migrations/tool_bundle_lister_enforcement.sql.
-      toast.success(`Bundle ${name} created`);
+      // `bundleHref` (features/tool-registry/doors.ts) is this feature's own
+      // route builder — `tool_bundle` has no registry hrefFor, and its page sits
+      // behind the super-admin layout, so the registry default would be wrong
+      // for anyone else anyway. The viewer here IS an admin: they are standing
+      // in this console.
+      toast.success(`Bundle ${name} created`, {
+        action: toastDoor("tool_bundle", result.bundle_id, {
+          href: bundleHref(result.bundle_id),
+        }),
+      });
       onCreated(result.bundle_id);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Create failed");

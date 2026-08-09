@@ -291,6 +291,26 @@ route there is correct. `agent-apps/categories` deliberately has no door on its
 deep-link miss — `categoryHref` would link back to the same page with the same
 unresolvable param.
 
+🚩 **Wave 4's remainder is blocked on ROUTES THAT DO NOT EXIST, not on call-site
+work.** Checked on 2026-08-09 against both the generated registry and the `app/`
+tree: `plan_entity`, `study_goal`, and `pc_episode` are registered tokens with
+no `hrefFor` **and no per-record page to point one at** — content-plan is a tree
+editor at `/marketing/content-plan/[siteId]`, study aids are keyed by slug with
+no goal detail, podcasts stop at `/podcast/[slug]` for the SHOW. `brand_asset`
+is not registered at all. Adding `hrefFor` for these would mean inventing
+routes, which is the wrong-record defect wearing a helpful face.
+
+So the honest state: **those toasts stay doorless until someone builds the
+detail pages**, and that is a product decision, not sweep work. `toastDoor`
+already returns `undefined` for them, so nothing renders a control that goes
+nowhere. Do not "finish wave 4" by forcing links onto these.
+
+The exception worth copying: `tool_bundle` also has no registry route, but its
+console has a real `?bundle=<id>` deep link AND the feature owns a `bundleHref`
+builder (`features/tool-registry/doors.ts`) — so the call site passes it as an
+href override. **Check for a feature-level `doors.ts` before concluding an
+entity is unreachable.**
+
 **Not every "created" toast needs a door — check what the surface already
 does.** `PromoteToSiteDialog` looked like a textbook case, but the CMS lives in
 a SEPARATE Supabase project, so its page id is NOT a `web_page`; using that
