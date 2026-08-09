@@ -491,12 +491,27 @@ are now deleted.**
       `cell` renderer would ALSO bypass the shell's pencil-forcing and
       reintroduce the fight.
 
-      **The primitive move (do this before converting either column):** make the
-      shell's `href` path render through `EntityRef` — column declares
-      `entityToken` (+ optional `href` override), shell renders the doors and
-      keeps forcing the pencil. One edit, and every table column that names a
-      record gains the same three doors. Grep `href?: (row)` for the blast
-      radius first, and check `MatrxDataTable.controlled.test.tsx`. `/agents/all` additionally opens
+      **DONE — the shell now owns one door.** A column declares `entityToken`
+      (+ optional `entityId`, defaulting to `getRowId`) and the cell renders
+      through `EntityRef`; `href` still works and still WINS as the route, for
+      an admin-side override on a satellite. The pencil-forcing is preserved
+      exactly: when the door renders, `href` is not passed down (two nested
+      anchors) and the trigger is forced to `"pencil"` — which is what `href`
+      did anyway. Blast radius was small (two columns used `href`); the 14
+      data-table jest tests pass.
+
+      **It needed `EntityRef` to accept CHILDREN**, and that is the reusable
+      lesson: its label was string-only, so any surface whose name is JSX — a
+      title plus a Draft badge, a card title over a subtitle — could not adopt
+      it without flattening what it shows. **That is exactly how a shell ends
+      up building its own poorer door.** When you find a surface that "can't
+      use the primitive", check whether the primitive is refusing the surface's
+      SHAPE rather than its need. `name` still supplies title/aria text.
+
+      `features/transcripts/browse/columns.tsx` consumes it. `agents/browse`
+      is next and is the harder one — `/agents/all` opens `AgentActionModal` on
+      row click ON PURPOSE (an agent has four UIs), so check that against the
+      new anchor before converting. `/agents/all` additionally opens
       `AgentActionModal` on row click ON PURPOSE (an agent has four UIs, so
       there is no single "the" route); converting its name to a plain link would
       REPLACE that chooser. The additive form is `onOpen={openActionModal}` plus
