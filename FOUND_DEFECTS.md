@@ -13,6 +13,50 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D139 — CRM scope counts fire `3 + N_orgs` round trips per keystroke (2026-08-09)
+
+`fetchPartyScopeCounts` (`features/crm/service.ts:224-267`) issues one
+`head:true` count query per scope PLUS one per organization, and
+`usePartyList.ts:94` re-runs it on a 200ms search debounce. A user in 8 orgs
+types one character and fires 11 requests. The exemplars do this in ONE call —
+`agx_list_scope_counts` / `trx_list_scope_counts` return `{byKind, narrow}` from
+a single RPC.
+
+**Fix:** it disappears as a side effect of the `crm_list_scope_counts` RPC that
+the `lib/entity-list` conversion needs anyway (see
+`docs/handoffs/inventory-law-sweep.md` § Wave 4). Filed separately because the
+fan-out is a live cost today and should not wait on that conversion's scheduling.
+
+### D140 — `lib/entity-list` cannot be used in a window panel or by the surfaces runtime (2026-08-09)
+
+Three gaps in the canonical list shell, found while scoping the CRM conversion.
+Each one BLOCKS adoption by a surface that otherwise wants the shell, which
+reframes "26 bespoke list pages" from purely an adoption failure into partly a
+capability gap:
+
+1. **No `presentation` prop.** `EntityListPage.tsx:120` hardcodes
+   `pt-[calc(var(--shell-header-h)+0.5rem)]`. A list rendered inside a
+   `WindowPanel` gets route-header padding. `CrmListPage` already solves this
+   with `presentation: "route" | "window"` (`CrmListPage.tsx:118-121`) because
+   `CrmManagerWindow` embeds it — so the bespoke page is strictly MORE capable
+   than the shell here.
+2. **No surfaces-runtime slot.** `CrmListPage.tsx:311-339` wraps its list in
+   `SurfaceRuntimeProvider` with a 16-field live snapshot for the agent/surfaces
+   system. `lib/entity-list/**` has zero references to `surfaces/runtime` —
+   converting would silently DROP the manifest integration.
+3. **No segmented-control axis.** `EntityListQuery` (`lib/entity-list/types.ts:44-60`)
+   models `scope/search/deep/archived/filters/page` only. A top-level
+   either/or that is not a scope (CRM's People/Companies) can only degrade into
+   a filter chip inside the Filters popover.
+
+Also unmodelled: the shell's `archived: active|archived|all` is not CRM's
+`active|trash` — `crm.party` has `deleted_at` and no archive flag, so soft-delete
+and archive are different axes wearing one name.
+
+**Who decides:** 1 is a clear small fix once a second consumer needs it (do NOT
+add it speculatively). 2 and 3 are Arman's call on whether the shell grows them
+or those surfaces stay bespoke.
+
 ### D138 — the sharing registry is a SECOND route authority, and it disagrees with itself (2026-08-09)
 
 `platform.shareable_resource_registry.url_path_template` (mirrored in

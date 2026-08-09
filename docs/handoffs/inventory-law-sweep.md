@@ -485,6 +485,43 @@ these — but **not** `AgentListDropdown` (42 consumers) or `AgentActionModal`.
 
 26 bespoke list surfaces; full ranked table in the audit. Highest value first:
 
+> ### 🚨 SCOPED 2026-08-09 — `/crm` is NOT the next conversion, and the reason matters
+>
+> A full scope of `/crm` against `lib/entity-list` (file:line evidence in the
+> commit that added this note) settles it: **this is a "build the missing
+> service layer first" task, not a "write a config" task.** The three service
+> methods are all non-optional (`config.tsx:37-44`) and CRM has **no
+> `fetchFacets` at all**; both exemplars pay for a three-RPC set
+> (`agx_list_scoped`/`_scope_counts`/`_facets`, `trx_*` likewise) BEFORE the
+> config, and `types/database.types.ts` has no `crm_list_*` RPC of any kind.
+>
+> **The finding that changes this wave's framing:** three of the blockers are
+> not CRM being weird, they are the SHELL missing capabilities — no
+> `presentation` prop (so it cannot render in a `WindowPanel`, which
+> `CrmListPage` already supports), no surfaces-runtime slot (converting would
+> DROP CRM's 16-field agent manifest), and no axis for a top-level segmented
+> control that isn't a scope. Filed as **D140**. On those three points the
+> bespoke page is strictly MORE capable than the canonical shell.
+>
+> So "26 bespoke list pages" is not purely 26 agents failing to look. Some
+> surfaces cannot adopt the shell as it stands. **Before converting any of the
+> remaining 25, scope it the same way** — if the same three gaps recur, fixing
+> the SHELL unblocks many conversions at once and is the higher-leverage move.
+> That is this campaign's own operating principle applied to itself.
+>
+> Also filed: **D139** — CRM's scope counts fire `3 + N_orgs` round trips per
+> keystroke. Independent of the conversion, and it disappears when
+> `crm_list_scope_counts` exists.
+>
+> Approach when it IS scheduled (decided, don't re-litigate): three SECURITY
+> DEFINER RPCs in the `agx_`/`trx_` mold per `lib/list-scope/FEATURE.md`, then
+> re-sign `features/crm/service.ts` to `(query, sort)` — which deletes
+> `usePartyList.ts` (176 lines) and its `getUserOrganizations()` prefetch — then
+> the config (~120-200 lines) plus a `columns.tsx` rewrite to
+> `EntityColumnSpec` and a `useCrmRowActions` extraction. **Two decisions need
+> Arman:** trash-vs-`archived` (different axes, one name) and where
+> People/Companies lives.
+
 | Route | File | Effort | Note |
 |---|---|---|---|
 | `/crm` | `features/crm/components/CrmListPage.tsx` (493) | **M** (audit said S — wrong, see below) | Closest in UI terms: already uses `EntityScopeTabs`, `useListViewPrefs`, `ItemMenu`, controlled `MatrxDataTable`, and hand-writes a filter bridge the shell owns. |
