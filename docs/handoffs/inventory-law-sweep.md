@@ -74,6 +74,15 @@ work running are a local `pnpm dev` or an actual `./scripts/release.sh`. Do NOT
 report a surface as "verified" on the strength of a preview URL that never
 built.
 
+**1b. `pnpm check:doc-claims` is RED in any cloud/container session, and it is
+not your change.** CLAUDE.md links cross-repo docs by absolute path
+(`/Users/armanisadeghi/code/common-docs/...`), which only resolves on Arman's
+machine — in a remote session common-docs is checked out elsewhere (here:
+`/home/user/matrx-common-docs/`), so `doc-paths-resolve` reports ~11 dead
+pointers on a clean tree. Verified against `origin/main`. Read past that
+failure to the OTHER claims, which are real; do not "fix" it by rewriting the
+paths, which would break the check on the machine where it works.
+
 **2. There is sibling work in flight — coordinate before re-doing it.**
 As of 2026-08-09 other branches are touching the same doctrine:
 - `claude/no-dead-ends-detector-dashboard-vrm0aj` — a dead-ends DETECTOR, an

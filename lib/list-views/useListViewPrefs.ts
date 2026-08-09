@@ -4,10 +4,13 @@
 //
 // ONE hook for "remember how I like to look at this list".
 //
-// Replaces the four byte-identical localStorage blocks in ProjectsHub,
-// TranscriptsListPage, TaskListPane, and app/(core)/documents/page.tsx — each
-// of which declared its own `HubViewMode` union and its own storage key, and
-// none of which followed the user to another device.
+// It replaced every hand-rolled list-STYLE localStorage block in the app —
+// TranscriptsListPage, ProjectsHub, TaskListPane, app/(core)/documents/page.tsx,
+// and CloudImagesTab — each of which declared its own view-mode union and its
+// own storage key, and none of which followed the user to another device.
+// None are left; a new one is a defect. (Two PAGE-LAYOUT toggles — which panes
+// are on screen — deliberately stay off this hook: WorkspaceViewToggle and
+// user-lists' LayoutToggle. That is a different axis, not a list style.)
 //
 // Rides `userPreferences` (synced tier: Redux → IDB + localStorage mirror →
 // Supabase `user_preferences`), so a choice made on a laptop shows up on a

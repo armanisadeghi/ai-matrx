@@ -465,6 +465,12 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- 2026-08-09 — claude: **`/documents` hub view toggle moved onto `useListViewPrefs`**
+  (`surfaceKey` `documents-hub`). The page's local `HubViewMode` union, the
+  `documents-hub-view` localStorage key, and its `useState`/`useEffect` pair are
+  deleted; the page narrows `prefs.view` to cards/table for `DocumentsHubToolbar`
+  (which keeps its own presentation union). Default is unchanged (cards), and the
+  choice now syncs across devices via `userPreferences`.
 - 2026-08-08 — **Row history is interactive.** `VersionHistoryViewer` gained restore
   (whole-row rewrite to a snapshot; deleted rows re-insert as a new row), per-field
   revert, copy-snapshot-JSON, relative timestamps, display-name field labels, and
