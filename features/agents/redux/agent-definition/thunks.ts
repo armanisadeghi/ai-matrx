@@ -789,6 +789,7 @@ export const createAgent = createAsyncThunk<
     // Default 0 boost — user picks a non-zero value in Settings if they
     // want this agent's derivatives to outrank raw extracts in RAG.
     defaultRagBoost: partial.defaultRagBoost ?? 0,
+    ragAwarenessMode: partial.ragAwarenessMode ?? "none",
   };
 
   const { data, error } = await supabase
@@ -1292,13 +1293,18 @@ export interface SyncLinkedAgentsArgs {
    * those identity fields are preserved. Defaults to true.
    */
   includeIdentity?: boolean;
+  /** Saved source timestamp shown in the comparison the user reviewed. */
+  expectedFromUpdatedAt: string;
+  /** Saved target timestamp shown in the comparison the user reviewed. */
+  expectedToUpdatedAt: string;
 }
 
 /**
  * Copies the canonical config from one agent of a linked pair to the other via
  * `agx_sync_linked_agents`. Powers both Push (user → system, super-admin) and
- * Pull (system → my copy, owner). The DB enforces linkage + write gating.
- * Reloads the target row on success. Returns the target id.
+ * Pull (system → my copy, owner). The DB enforces linkage + write gating and
+ * rejects either record changing after the comparison was reviewed. Returns
+ * the target id without hydrating Redux, so an open Builder draft is untouched.
  */
 export const syncLinkedAgents = createAsyncThunk<
   string,
@@ -1306,16 +1312,28 @@ export const syncLinkedAgents = createAsyncThunk<
   ThunkApi
 >(
   "agentDefinition/syncLinked",
-  async ({ fromId, toId, includeIdentity = true }, { dispatch }) => {
-    const { data, error } = await supabase.rpc("agx_sync_linked_agents", {
+  async (
+    {
+      fromId,
+      toId,
+      includeIdentity = true,
+      expectedFromUpdatedAt,
+      expectedToUpdatedAt,
+    },
+  ) => {
+    const { data, error } = await supabase.rpc(
+      "agx_sync_linked_agents_reviewed",
+      {
       p_from_id: fromId,
       p_to_id: toId,
       p_include_identity: includeIdentity,
-    });
+        p_expected_from_updated_at: expectedFromUpdatedAt,
+        p_expected_to_updated_at: expectedToUpdatedAt,
+      },
+    );
     if (error) throw pgErrorToError(error);
 
     const targetId = data as string;
-    await dispatch(fetchFullAgent(targetId));
     return targetId;
   },
 );

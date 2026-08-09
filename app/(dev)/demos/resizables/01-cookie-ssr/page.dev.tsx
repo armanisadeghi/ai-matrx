@@ -51,7 +51,7 @@ export default async function CookieSsrDemoPage() {
           className="h-full w-full"
         >
           <Panel id="left" defaultSize="20%" minSize="5%">
-            <div className="h-full overflow-auto bg-muted px-4 pb-4 pt-[var(--shell-header-h)]">
+            <div className="h-full overflow-auto bg-muted px-4 pb-4">
               <h2 className="text-sm font-medium mb-2">Left</h2>
               <p className="text-xs text-muted-foreground">
                 <code className="text-foreground">id=&quot;left&quot;</code> · default 20%
@@ -62,7 +62,7 @@ export default async function CookieSsrDemoPage() {
           <Handle />
 
           <Panel id="center" defaultSize="60%" minSize="30%">
-            <div className="h-full overflow-auto bg-card px-4 pb-4 pt-[var(--shell-header-h)]">
+            <div className="h-full overflow-auto bg-card px-4 pb-4">
               <h2 className="text-sm font-medium mb-2">Center</h2>
               <p className="text-xs text-muted-foreground">
                 <code className="text-foreground">id=&quot;center&quot;</code> · default 60%
@@ -79,7 +79,7 @@ export default async function CookieSsrDemoPage() {
           <Handle />
 
           <Panel id="right" defaultSize="20%" minSize="5%">
-            <div className="h-full overflow-auto bg-muted px-4 pb-4 pt-[var(--shell-header-h)]">
+            <div className="h-full overflow-auto bg-muted px-4 pb-4">
               <h2 className="text-sm font-medium mb-2">Right</h2>
               <p className="text-xs text-muted-foreground">
                 <code className="text-foreground">id=&quot;right&quot;</code> · default 20%

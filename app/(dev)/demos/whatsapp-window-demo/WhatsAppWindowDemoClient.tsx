@@ -40,7 +40,7 @@ export function WhatsAppWindowDemoClient({
 
   return (
     <WhatsAppDataModeProvider initialMode={mode} key={mode}>
-      <div className="relative h-[calc(100dvh-var(--header-height,2.5rem))] w-full overflow-hidden bg-textured">
+      <div className="relative h-full w-full overflow-hidden bg-textured">
         {mode === "live" ? <MessagingInitializer /> : null}
 
         {!shellOpen ? (

@@ -81,7 +81,7 @@ export function ToolListSidebar({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search tools..."
-            className="h-7 text-xs pl-7"
+            className="h-10 pl-7 text-base sm:h-7 sm:text-xs"
           />
         </div>
       </div>
@@ -92,7 +92,7 @@ export function ToolListSidebar({
           <div className="flex flex-wrap gap-1">
             <Badge
               variant={activeCategory === null ? 'default' : 'outline'}
-              className="text-[10px] px-1.5 py-0 cursor-pointer hover:bg-primary/10 transition-colors"
+              className="min-h-10 cursor-pointer px-2 py-1 text-xs transition-colors hover:bg-primary/10 sm:min-h-0 sm:px-1.5 sm:py-0 sm:text-[10px]"
               onClick={() => setActiveCategory(null)}
             >
               All
@@ -101,7 +101,7 @@ export function ToolListSidebar({
               <Badge
                 key={cat}
                 variant={activeCategory === cat ? 'default' : 'outline'}
-                className="text-[10px] px-1.5 py-0 cursor-pointer hover:bg-primary/10 transition-colors"
+                className="min-h-10 cursor-pointer px-2 py-1 text-xs transition-colors hover:bg-primary/10 sm:min-h-0 sm:px-1.5 sm:py-0 sm:text-[10px]"
                 onClick={() =>
                   setActiveCategory(activeCategory === cat ? null : cat)
                 }
@@ -132,7 +132,7 @@ export function ToolListSidebar({
                 <button
                   key={tool.name}
                   onClick={() => onSelectTool(tool.name)}
-                  className={`w-full text-left px-2 py-1.5 rounded-md transition-colors text-xs cursor-pointer ${
+                  className={`min-h-11 w-full cursor-pointer rounded-md px-2 py-1.5 text-left text-xs transition-colors ${
                     isSelected
                       ? 'bg-primary/10 border border-primary/20 text-foreground'
                       : 'hover:bg-muted border border-transparent text-foreground/80'

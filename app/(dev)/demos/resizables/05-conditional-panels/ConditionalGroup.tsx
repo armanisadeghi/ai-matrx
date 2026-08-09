@@ -88,7 +88,7 @@ export function ConditionalGroup({ initialLayout }: Props) {
       className="h-full w-full"
     >
       <Panel id="left" defaultSize="20%" minSize="5%">
-        <div className="h-full overflow-auto bg-muted px-4 pb-4 pt-[var(--shell-header-h)]">
+        <div className="h-full overflow-auto bg-muted px-4 pb-4">
           <h2 className="text-sm font-medium mb-1">Left</h2>
           <p className="text-xs text-muted-foreground">
             <code className="text-foreground">defaultSize=&quot;20%&quot;</code> · always mounted
@@ -97,7 +97,7 @@ export function ConditionalGroup({ initialLayout }: Props) {
       </Panel>
       <Handle />
       <Panel id="center" minSize="30%">
-        <div className="h-full overflow-auto bg-card px-4 pb-4 pt-[var(--shell-header-h)] space-y-3">
+        <div className="h-full overflow-auto bg-card px-4 pb-4 space-y-3">
           <h2 className="text-sm font-medium">Center</h2>
           <p className="text-xs text-muted-foreground">
             Currently mounted panels:{" "}
@@ -123,7 +123,7 @@ export function ConditionalGroup({ initialLayout }: Props) {
         <>
           <Handle />
           <Panel id="right" defaultSize="22%" minSize="5%">
-            <div className="h-full overflow-auto bg-muted px-4 pb-4 pt-[var(--shell-header-h)]">
+            <div className="h-full overflow-auto bg-muted px-4 pb-4">
               <h2 className="text-sm font-medium mb-1">Right</h2>
               <p className="text-xs text-muted-foreground">
                 Mounted/unmounted via toggle. Not just collapsed.

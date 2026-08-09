@@ -26,6 +26,8 @@ const PICKER_TABS: {
 interface AgentListTabsProps {
   consumer: UseAgentConsumerReturn;
   tabCounts: AgentListTabCounts;
+  /** Limit the ownership tabs for constrained pickers (for example system-only slot pins). */
+  visibleTabs?: readonly AgentTab[];
   /**
    * Label for the builtin-agent tab. Users see "Public" (that is what a
    * platform agent is to them); ADMIN surfaces pass "System", because there
@@ -38,6 +40,7 @@ export function AgentListTabs({
   consumer,
   tabCounts,
   systemTabLabel,
+  visibleTabs,
 }: AgentListTabsProps) {
   return (
     <div
@@ -45,7 +48,9 @@ export function AgentListTabs({
       role="tablist"
       aria-label="Agent ownership"
     >
-      {PICKER_TABS.map(({ value, label: baseLabel, countKey }) => {
+      {PICKER_TABS.filter(
+        ({ value }) => !visibleTabs || visibleTabs.includes(value),
+      ).map(({ value, label: baseLabel, countKey }) => {
         const label =
           value === "system" ? (systemTabLabel ?? baseLabel) : baseLabel;
         const active = consumer.tab === value;

@@ -102,7 +102,7 @@ function FilesSidebar() {
   // Static title at top — pt clears the shell header so it doesn't render behind
   // the header tap targets. Items below scroll under the header on overflow.
   return (
-    <div className="h-full overflow-auto bg-muted pt-[var(--shell-header-h)]">
+    <div className="h-full overflow-auto bg-muted">
       <div className="px-3 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
         Files
       </div>
@@ -125,10 +125,10 @@ function FilesSidebar() {
 }
 
 function EditorSurface() {
-  // Static "file tab" at top + non-scrolling code area — pt-[shell-header-h]
+  // Static "file tab" at top + non-scrolling code area.
   // keeps the tab visible below the header.
   return (
-    <div className="h-full overflow-auto bg-card pt-[var(--shell-header-h)]">
+    <div className="h-full overflow-auto bg-card">
       <div className="px-4 py-2 text-xs text-muted-foreground">page.tsx</div>
       <pre className="p-4 text-xs leading-relaxed text-foreground/90 font-mono">
 {`export default async function Page() {
@@ -154,7 +154,7 @@ function EditorSurface() {
 
 function InspectorSurface() {
   return (
-    <div className="h-full overflow-auto bg-muted pt-[var(--shell-header-h)]">
+    <div className="h-full overflow-auto bg-muted">
       <div className="px-3 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
         <SettingsIcon className="h-3 w-3" /> Inspector
       </div>

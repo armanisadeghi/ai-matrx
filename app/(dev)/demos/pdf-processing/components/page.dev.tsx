@@ -110,7 +110,7 @@ export default function PdfComponentsBenchPage() {
   }, []);
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-2.5rem)] max-w-6xl flex-col gap-3 overflow-y-auto p-4">
+    <div className="mx-auto flex h-full max-w-6xl flex-col gap-3 overflow-y-auto p-4">
       <header className="flex flex-wrap items-center gap-3">
         <FileText className="h-5 w-5 text-destructive" />
         <h1 className="text-base font-semibold">

@@ -4,9 +4,9 @@
  * AgentConvertSystemWindow
  *
  * Floating window wrapping `AgentSyncBody` — the unified link surface between a
- * user agent and its system ("builtin") twin. From either side it offers:
- * pull (system → my copy), push (user → system), create-my-personal-copy, and
- * the convert-to-new-system bootstrap when a user agent has no twin yet.
+ * user agent and its system ("builtin") twin. From either side it offers the
+ * relationship map, structured configuration diff, pull/push sync, personal-copy
+ * creation, and the convert-to-new-system bootstrap when no twin exists.
  *
  * The overlay id (`agentConvertSystemWindow`) and registry slug
  * (`agent-convert-system-window`) are preserved so the menu dispatcher
@@ -61,14 +61,14 @@ export default function AgentConvertSystemWindow({
       id={WINDOW_ID}
       title="Linked Agent Sync"
       onClose={onClose}
-      width={620}
-      height={580}
-      minWidth={480}
-      minHeight={420}
+      width={960}
+      height={740}
+      minWidth={560}
+      minHeight={480}
       overlayId={OVERLAY_ID}
-      bodyClassName="p-4"
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
-      <AgentSyncBody agentId={agentId} onClose={onClose} />
+      <AgentSyncBody key={agentId} agentId={agentId} onClose={onClose} />
     </WindowPanel>
   );
 }

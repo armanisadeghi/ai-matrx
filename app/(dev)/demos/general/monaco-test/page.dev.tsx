@@ -177,7 +177,7 @@ export default function MonacoTestPage() {
     };
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto pb-safe">
+    <div className="h-full overflow-y-auto pb-safe">
         <div className="container mx-auto p-6 space-y-6">
           <Card>
             <CardHeader>

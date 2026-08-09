@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { agentListEmptyLabel } from "@/features/agents/constants/agent-list-labels";
 import type { UseAgentConsumerReturn } from "@/features/agents/hooks/useAgentConsumer";
 import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
+import type { AgentTab } from "@/features/agents/redux/agent-consumers/slice";
 import type { RightPanel } from "./types";
 import { SearchInput } from "./primitives";
 import { AgentFilterBar } from "./AgentFilterBar";
@@ -32,6 +33,8 @@ export interface AgentListContentProps {
   onFilterChipClick: (panel: "sort" | "categories" | "tags") => void;
   rightPanel: RightPanel;
   tabCounts: AgentListTabCounts;
+  /** Limit the ownership tabs shown by this picker. */
+  visibleTabs?: readonly AgentTab[];
   /** Label override for the builtin tab — admin surfaces pass "System". */
   systemTabLabel?: string;
   /** Resolved current agent — pinned at the top when the list opens. */
@@ -60,6 +63,7 @@ export function AgentListContent({
   onFilterChipClick,
   rightPanel,
   tabCounts,
+  visibleTabs,
   systemTabLabel,
   pinnedAgent = null,
   listOpen = false,
@@ -90,6 +94,7 @@ export function AgentListContent({
         consumer={consumer}
         tabCounts={tabCounts}
         systemTabLabel={systemTabLabel}
+        visibleTabs={visibleTabs}
       />
 
       {/* Filter bar */}

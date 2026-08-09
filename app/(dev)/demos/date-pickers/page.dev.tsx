@@ -9,7 +9,7 @@ export const metadata = createRouteMetadata("/demos/date-pickers", {
 
 export default function DatePickersDemoPage() {
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
+    <div className="h-full overflow-y-auto bg-textured">
       <div className="mx-auto max-w-7xl space-y-8 px-6 py-8">
         <header className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">

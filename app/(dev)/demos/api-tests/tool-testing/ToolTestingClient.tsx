@@ -145,7 +145,10 @@ export default function ToolTestingClient() {
   }, []);
 
   useEffect(() => {
-    loadTools();
+    const frame = requestAnimationFrame(() => {
+      void loadTools();
+    });
+    return () => cancelAnimationFrame(frame);
   }, [loadTools]);
 
   // ─── Tool selection ───────────────────────────────────────────────────────
@@ -312,10 +315,10 @@ export default function ToolTestingClient() {
     <TooltipProvider>
       <div className="h-full flex flex-col overflow-hidden bg-background">
         {/* ── Header ── */}
-        <div className="flex-shrink-0 px-3 py-1">
+        <div className="flex-shrink-0 px-2 py-1 sm:px-3">
           {/* Top row: title + server toggle + reload */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 py-1 border-b">
-            <h1 className="text-lg font-bold flex-shrink-0">
+            <h1 className="flex-shrink-0 text-base font-bold sm:text-lg">
               Tool Testing Dashboard
             </h1>
 
@@ -335,7 +338,7 @@ export default function ToolTestingClient() {
                       value="local"
                       aria-label="Localhost"
                       disabled={isCheckingServer}
-                      className="h-6 w-6 p-0 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground disabled:opacity-40"
+                      className="h-10 w-10 p-0 sm:h-6 sm:w-6 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground disabled:opacity-40"
                     >
                       {isCheckingServer ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -352,7 +355,7 @@ export default function ToolTestingClient() {
                       value="production"
                       aria-label="Production"
                       disabled={isCheckingServer}
-                      className="h-6 w-6 p-0 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                      className="h-10 w-10 p-0 sm:h-6 sm:w-6 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                     >
                       <Globe className="h-3 w-3" />
                     </ToggleGroupItem>
@@ -364,7 +367,7 @@ export default function ToolTestingClient() {
               </ToggleGroup>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="text-[10px] text-muted-foreground font-mono truncate max-w-[160px] cursor-default">
+                  <span className="max-w-[110px] cursor-default truncate font-mono text-[10px] text-muted-foreground sm:max-w-[160px]">
                     {backendUrl}
                   </span>
                 </TooltipTrigger>
@@ -382,7 +385,7 @@ export default function ToolTestingClient() {
                     variant="outline"
                     onClick={loadTools}
                     disabled={loadingTools}
-                    className="h-6 text-xs px-2 gap-1"
+                    className="h-10 px-3 text-xs gap-1 sm:h-6 sm:px-2"
                   >
                     <RefreshCw
                       className={`h-3 w-3 ${loadingTools ? "animate-spin" : ""}`}
@@ -519,9 +522,9 @@ export default function ToolTestingClient() {
         </div>
 
         {/* ── Three-panel layout ── */}
-        <div className="flex-1 min-h-0 px-3 py-1">
-          <div className="grid grid-cols-12 gap-2 h-full">
-            <Card className="col-span-2 h-full overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 py-1 pb-safe sm:px-3 lg:overflow-hidden lg:pb-1">
+          <div className="grid h-auto grid-cols-1 gap-2 lg:h-full lg:grid-cols-12">
+            <Card className="h-[28rem] overflow-hidden lg:col-span-2 lg:h-full">
               <ToolListSidebar
                 tools={tools}
                 loading={loadingTools}
@@ -530,7 +533,7 @@ export default function ToolTestingClient() {
               />
             </Card>
 
-            <Card className="col-span-4 h-full overflow-hidden">
+            <Card className="h-auto min-h-[28rem] overflow-hidden lg:col-span-4 lg:h-full lg:min-h-0">
               <ToolConfigPanel
                 tool={selectedTool}
                 argValues={argValues}
@@ -544,7 +547,7 @@ export default function ToolTestingClient() {
               />
             </Card>
 
-            <Card className="col-span-6 h-full overflow-hidden">
+            <Card className="h-[36rem] overflow-hidden lg:col-span-6 lg:h-full">
               <ResultsPanel
                 toolName={selectedToolName ?? ""}
                 toolId={selectedTool?.id ?? null}

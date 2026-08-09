@@ -50,9 +50,7 @@ export default function MediaCaptureDemoPage() {
   );
 
   return (
-    // pt clears the shell's transparent fixed header (--header-height, 2.5rem)
-    // so the title row is not rendered behind it.
-    <div className="mx-auto flex h-dvh max-w-3xl flex-col gap-3 p-4 pt-[calc(var(--header-height)+0.75rem)]">
+    <div className="mx-auto flex h-full max-w-3xl flex-col gap-3 p-4">
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         <Camera className="h-4 w-4 text-primary" />
         <h1 className="text-sm font-semibold">Capture Studio</h1>

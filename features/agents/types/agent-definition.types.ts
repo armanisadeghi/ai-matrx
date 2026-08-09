@@ -362,6 +362,13 @@ export interface AgentDefinition {
    * tie-break lower.
    */
   defaultRagBoost: number;
+
+  /**
+   * Retrieval-awareness posture copied by the canonical duplicate/sync RPCs.
+   * The database default is `none`; keep this on the definition model so a
+   * linked-agent comparison cannot report a false match when the modes differ.
+   */
+  ragAwarenessMode: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -467,6 +474,7 @@ export interface AgentExecutionFull {
   // FE-only model-gated UI flags — projected so the chat/execution path can gate
   // attachment inputs (previously read from settings before the 2026-06 move).
   ui_gates: UiGates;
+  rag_awareness_mode?: string;
 }
 
 // AgentDriftItem / AgentReference / AcceptVersionResult were removed when the
@@ -554,6 +562,7 @@ export interface AgentVersionSnapshot {
   skill_config: AgentDefinition["skillConfig"] | null;
   matrx_actions: MatrxActionsConfig;
   ui_gates: UiGates;
+  rag_awareness_mode?: string;
 }
 
 /**

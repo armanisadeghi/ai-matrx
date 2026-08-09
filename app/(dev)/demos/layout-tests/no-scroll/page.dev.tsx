@@ -14,7 +14,7 @@ export default function NoScrollPage() {
         </Link>
       </PageSpecificHeader>
       
-      <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
+      <div className="h-full flex flex-col overflow-hidden">
         {/* Red section at top */}
         <div className="flex-shrink-0 h-16 bg-red-500 flex items-center justify-center">
           <div className="text-white font-bold">TOP (Red)</div>

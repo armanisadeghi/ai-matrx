@@ -9,6 +9,7 @@ export function DemosRouteHeader({ routes }: { routes: readonly string[] }) {
       basePath="/demos"
       rootLabel="Demos"
       backHref="/dashboard"
+      fallback
     />
   );
 }
