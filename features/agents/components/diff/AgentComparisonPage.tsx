@@ -41,36 +41,117 @@ interface SideState {
   versionsLoading: boolean;
   versionHistory: AgentVersionHistoryItem[];
   snapshotLoading: boolean;
+  /**
+   * The agent row itself is in flight. Tracked separately from
+   * `versionsLoading` because the version-history request can settle FIRST —
+   * and if only that cleared, a deep link would render the empty
+   * "select an agent on each side" state while its agent was still loading.
+   */
+  agentLoading: boolean;
+  /**
+   * Set when the agent itself could not be loaded (gone, or not visible to
+   * this account). Without it a failed deep link silently renders the empty
+   * "select an agent on each side" state, which reads as "you didn't pick
+   * anything" rather than "the link you followed did not resolve".
+   */
+  loadError: string | null;
 }
 
-const initialSide: SideState = {
-  agentId: null,
-  version: null,
-  versionsLoading: false,
-  versionHistory: [],
-  snapshotLoading: false,
-};
+/** A side, optionally already pointed at an agent (URL preselection). */
+function sideFor(agentId: string | null): SideState {
+  return {
+    agentId,
+    version: agentId ? "current" : null,
+    versionsLoading: !!agentId,
+    versionHistory: [],
+    snapshotLoading: false,
+    agentLoading: !!agentId,
+    loadError: null,
+  };
+}
 
-export function AgentComparisonPage() {
+export interface AgentComparisonPageProps {
+  /**
+   * Preselect a side (from `?left=` / `?right=`). Lets a surface that already
+   * knows which two agents are in question — the Linked Agent Sync panel, a
+   * lineage view — open the full diff already pointed at them.
+   *
+   * SEED VALUES, read on mount only: after that the user owns the pickers, and
+   * a prop change must not yank the selection out from under them. A caller
+   * that can change these (a route reading search params) MUST therefore key
+   * this component on them so a second deep link remounts — see
+   * `app/(core)/agents/compare/page.tsx`.
+   */
+  initialLeftAgentId?: string | null;
+  initialRightAgentId?: string | null;
+}
+
+export function AgentComparisonPage({
+  initialLeftAgentId = null,
+  initialRightAgentId = null,
+}: AgentComparisonPageProps = {}) {
   const dispatch = useAppDispatch();
   const [, startTransition] = useTransition();
 
   const allAgents = useAppSelector(selectAllAgentsArray);
   const [agentsLoading, setAgentsLoading] = useState(allAgents.length === 0);
 
-  const [left, setLeft] = useState<SideState>(initialSide);
-  const [right, setRight] = useState<SideState>(initialSide);
+  // Preselected sides start already pointed at their agent, so a deep link
+  // renders the diff instead of an empty picker on the first paint.
+  const [left, setLeft] = useState<SideState>(() => sideFor(initialLeftAgentId));
+  const [right, setRight] = useState<SideState>(() =>
+    sideFor(initialRightAgentId),
+  );
+
+  /**
+   * Fetch one side's agent + version list. Only writes state from callbacks,
+   * and EVERY write is guarded on the side still pointing at `agentId` — a slow
+   * response must never land on the agent the user picked after it.
+   */
+  const loadSideData = (side: "left" | "right", agentId: string) => {
+    const setter = side === "left" ? setLeft : setRight;
+    const patchIfCurrent = (patch: Partial<SideState>) =>
+      setter((prev) =>
+        prev.agentId === agentId ? { ...prev, ...patch } : prev,
+      );
+
+    dispatch(fetchFullAgent(agentId))
+      .unwrap()
+      // Clearing loadError on success matters: pick A (slow) → pick B → pick A
+      // again lets request #1's rejection through the agentId guard, so a
+      // later success has to be able to undo it.
+      .then(() => patchIfCurrent({ agentLoading: false, loadError: null }))
+      .catch(() =>
+        patchIfCurrent({
+          agentLoading: false,
+          versionsLoading: false,
+          loadError: `Could not load agent ${agentId.slice(0, 8)}… — it may have been deleted, or it isn't visible to this account.`,
+        }),
+      );
+
+    dispatch(fetchAgentVersionHistory({ agentId, limit: 100 }))
+      .unwrap()
+      .then((data) =>
+        patchIfCurrent({ versionHistory: data, versionsLoading: false }),
+      )
+      .catch(() => patchIfCurrent({ versionsLoading: false }));
+  };
 
   useEffect(() => {
-    if (allAgents.length === 0) {
-      dispatch(fetchAgentsListFull())
-        .unwrap()
-        .finally(() => setAgentsLoading(false));
-    } else {
-      setAgentsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (allAgents.length > 0) return;
+    dispatch(fetchAgentsListFull())
+      .unwrap()
+      .finally(() => setAgentsLoading(false));
+     
   }, []);
+
+  // Load whatever the URL preselected. State for those sides is already set
+  // above; this only fires the fetches.
+  useEffect(() => {
+    if (initialLeftAgentId) loadSideData("left", initialLeftAgentId);
+    if (initialRightAgentId) loadSideData("right", initialRightAgentId);
+     
+  }, [initialLeftAgentId, initialRightAgentId]);
 
   const handleAgentChange = (side: "left" | "right", agentId: string) => {
     const setter = side === "left" ? setLeft : setRight;
@@ -80,21 +161,11 @@ export function AgentComparisonPage() {
       version: "current",
       versionsLoading: true,
       versionHistory: [],
+      agentLoading: true,
+      // Picking a different agent clears the previous one's failure.
+      loadError: null,
     }));
-
-    dispatch(fetchFullAgent(agentId));
-    dispatch(fetchAgentVersionHistory({ agentId, limit: 100 }))
-      .unwrap()
-      .then((data) => {
-        setter((prev) => ({
-          ...prev,
-          versionHistory: data,
-          versionsLoading: false,
-        }));
-      })
-      .catch(() => {
-        setter((prev) => ({ ...prev, versionsLoading: false }));
-      });
+    loadSideData(side, agentId);
   };
 
   const handleVersionChange = (side: "left" | "right", option: Option) => {
@@ -202,7 +273,10 @@ export function AgentComparisonPage() {
       </div>
 
       {/* Diff content */}
-      {left.snapshotLoading || right.snapshotLoading ? (
+      {left.snapshotLoading ||
+      right.snapshotLoading ||
+      left.agentLoading ||
+      right.agentLoading ? (
         <div className="flex-1 p-4 space-y-3">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-64 w-full" />
@@ -216,6 +290,19 @@ export function AgentComparisonPage() {
             newLabel={rightLabel}
             className="h-full"
           />
+        </div>
+      ) : left.loadError || right.loadError ? (
+        // A deep link that failed must say so. Falling through to the "select
+        // an agent" state would blame the user for a link that didn't resolve.
+        <div className="flex-1 flex flex-col items-center justify-center gap-1 px-6 text-center text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">
+            This comparison could not be opened.
+          </span>
+          {left.loadError && <span>{left.loadError}</span>}
+          {right.loadError && <span>{right.loadError}</span>}
+          <span className="text-xs">
+            Pick an agent on each side above to compare something else.
+          </span>
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">

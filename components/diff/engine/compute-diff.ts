@@ -33,6 +33,11 @@ function isPrimitive(value: unknown): boolean {
   return value === null || value === undefined || typeof value !== "object";
 }
 
+/** Safe to recurse into with `key in obj` / Object.keys. */
+function isPlainObject(value: unknown): boolean {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function getIdentityKey(
   config: string | IdentityKeyFn | undefined,
   item: unknown,
@@ -140,6 +145,20 @@ function diffArrayOfObjects(
           path: [...path, String(newEntry.index)],
           key,
           changeType: "unchanged",
+          oldValue: oldItem,
+          newValue: newEntry.item,
+        });
+      } else if (!isPlainObject(oldItem) || !isPlainObject(newEntry.item)) {
+        // An array is only "of objects" because its FIRST element was one.
+        // A heterogeneous array ([{...}, "str"], [{...}, null], nested arrays)
+        // pairs a non-object against something here, and recursing would run
+        // `key in <string>` / Object.keys(null) and THROW — inside a render for
+        // every viewer built on this engine. A mismatched pair is simply a
+        // modified leaf.
+        nodes.push({
+          path: [...path, String(newEntry.index)],
+          key,
+          changeType: "modified",
           oldValue: oldItem,
           newValue: newEntry.item,
         });

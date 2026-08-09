@@ -54,6 +54,13 @@ if $STRICT; then
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts --strict"
         "Entity registry generation drift|pnpm check:entity-types"
+        # --live pulls the deployed agx_sync_linked_agents() and diffs the TS
+        # list against it. If the DB is unreachable it screams and falls back to
+        # the committed snapshot rather than failing the release — and because
+        # "LIVE PULL FAILED" / "COMMITTED SNAPSHOT IS STALE" are in run_gate's
+        # advisory-marker list, that degraded run prints as [WARN] with the full
+        # banner instead of a silent green [OK].
+        "Agent sync fields vs live RPC (snapshot fallback)|pnpm exec tsx scripts/check-agent-sync-fields.ts --live --strict"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts --strict"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts --strict"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts --strict"
@@ -86,6 +93,7 @@ else
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
         "Entity registry generation drift|pnpm check:entity-types"
+        "Agent sync fields vs live RPC (snapshot fallback)|pnpm exec tsx scripts/check-agent-sync-fields.ts --live"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts"
@@ -178,7 +186,7 @@ run_gate() {
 
     # Heuristic: non-strict checkers still print SCHEMA TRUTH-CHECK / FAIL boxes
     # while exiting 0. Treat that as a loud advisory failure for the summary.
-    if $has_output && grep -qE 'ADMIN ROUTE REGISTRY GAP|SCHEMA TRUTH-CHECK|PROTOCOL MIRROR DRIFT|DEAD ENDS FOUND|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
+    if $has_output && grep -qE 'ADMIN ROUTE REGISTRY GAP|SCHEMA TRUTH-CHECK|PROTOCOL MIRROR DRIFT|DEAD ENDS FOUND|LIVE PULL FAILED|COMMITTED SNAPSHOT IS STALE|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
         echo -e "${YELLOW}[WARN]${NC}  [$step/$total] ${label} (${elapsed}s) — findings below (advisory)"
         print_gate_details "$tmp"
         rm -f "$tmp"

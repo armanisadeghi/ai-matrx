@@ -12,6 +12,7 @@
  *   fetchFullAgent               — complete row, marks record clean
  *   fetchAgentVersionHistory     — paginated version list (returns data, no slice storage)
  *   fetchAgentVersionSnapshot    — full version snapshot → stored in agents map (isVersion = true)
+ *   fetchAgentSyncComparison     — identical/differs/unknown verdict for a linked pair
  *
  * Write thunks:
  *   saveAgentField               — optimistic single-field save with rollback
@@ -39,6 +40,14 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Database } from "@/types/database.types";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  compareAgentSyncSnapshots,
+  type AgentSyncComparison,
+} from "@/features/agents/sync/compare";
+import {
+  AGENT_SYNC_SNAPSHOT_SELECT,
+  toAgentSyncSnapshot,
+} from "@/features/agents/sync/sync-fields";
 import type {
   AgentDefinition,
   AgentListRow,
@@ -1178,7 +1187,7 @@ export const updateAgentFromSource = createAsyncThunk<
 // ---------------------------------------------------------------------------
 
 const LINKED_REF_COLS =
-  "id, agent_type, name, source_agent_id, source_snapshot_at, updated_at, user_id";
+  "id, agent_type, name, source_agent_id, source_snapshot_at, updated_at, user_id, deleted_at";
 
 interface LinkedRefRow {
   id: string;
@@ -1188,6 +1197,7 @@ interface LinkedRefRow {
   source_snapshot_at: string | null;
   updated_at: string;
   user_id: string | null;
+  deleted_at: string | null;
 }
 
 function toLinkedRef(
@@ -1202,6 +1212,7 @@ function toLinkedRef(
     sourceSnapshotAt: row.source_snapshot_at,
     updatedAt: row.updated_at,
     isOwnedByMe: !!currentUserId && row.user_id === currentUserId,
+    deletedAt: row.deleted_at,
   };
 }
 
@@ -1211,6 +1222,17 @@ function toLinkedRef(
  * can see — so from a system agent this surfaces the caller's own personal
  * copies (plus the original maintainer agent if visible), never other users'
  * private copies. Returns data only; nothing is written to the slice.
+ *
+ * Soft-deleted `source`/`derived` rows are excluded here, exactly as
+ * `fetchAgentSyncComparison` excludes them (`deleted_at` is NOT RLS-filtered on
+ * this table). The two reads MUST agree: if the pair card resolved a twin the
+ * comparison cannot read, the panel would show a live-looking agent, report
+ * `unknown`, and leave Pull/Push enabled against a deleted target.
+ *
+ * `self` is the one deliberate exception — read UNFILTERED and carrying its
+ * `deletedAt`. Filtering it would collapse "this agent is deleted" into "this
+ * agent isn't linked to a system agent", which is a different and false
+ * statement. The panel reads the stamp and says which one is true.
  */
 export const fetchLinkedCounterpart = createAsyncThunk<
   LinkedCounterpartResult | null,
@@ -1235,6 +1257,7 @@ export const fetchLinkedCounterpart = createAsyncThunk<
       .from("definition")
       .select(LINKED_REF_COLS)
       .eq("id", selfRow.source_agent_id)
+      .is("deleted_at", null)
       .maybeSingle<LinkedRefRow>();
     if (srcErr) throw pgErrorToError(srcErr);
     if (srcRow) source = toLinkedRef(srcRow, uid);
@@ -1246,6 +1269,7 @@ export const fetchLinkedCounterpart = createAsyncThunk<
     .select(LINKED_REF_COLS)
     .eq("source_agent_id", agentId)
     .eq("is_archived", false)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .returns<LinkedRefRow[]>();
   if (derErr) throw pgErrorToError(derErr);
@@ -1293,6 +1317,60 @@ export const syncLinkedAgents = createAsyncThunk<
     const targetId = data as string;
     await dispatch(fetchFullAgent(targetId));
     return targetId;
+  },
+);
+
+export interface AgentSyncComparisonArgs {
+  /** The user-side agent of the linked pair. */
+  userAgentId: string;
+  /** The system ("builtin") agent of the linked pair. */
+  systemAgentId: string;
+}
+
+/**
+ * Reads both sides of a linked pair and answers whether they are actually the
+ * same — the question the sync panel exists to answer.
+ *
+ * Reads EXACTLY the columns `agx_sync_linked_agents` copies
+ * (`AGENT_SYNC_SNAPSHOT_SELECT`), raw, so the verdict can never disagree with
+ * what Pull/Push would write. A side RLS hides (or that no longer exists) comes
+ * back as no row, which the comparison reports as `unknown` — never as
+ * "identical".
+ *
+ * Returns data only; nothing is written to the slice.
+ */
+export const fetchAgentSyncComparison = createAsyncThunk<
+  AgentSyncComparison,
+  AgentSyncComparisonArgs,
+  ThunkApi
+>(
+  "agentDefinition/fetchSyncComparison",
+  async ({ userAgentId, systemAgentId }) => {
+    // `deleted_at` is NOT filtered by RLS on this table, so a soft-deleted
+    // side would otherwise be compared and offered as a live sync target.
+    // Excluding it here makes that side unreadable, which surfaces as
+    // `unknown` — the honest answer.
+    const { data, error } = await supabase
+      .schema("agent")
+      .from("definition")
+      .select(AGENT_SYNC_SNAPSHOT_SELECT)
+      .in("id", [userAgentId, systemAgentId])
+      .is("deleted_at", null)
+      .returns<Record<string, unknown>[]>();
+    if (error) throw pgErrorToError(error);
+
+    const byId = new Map<string, Record<string, unknown>>();
+    for (const row of data ?? []) {
+      if (typeof row.id === "string") byId.set(row.id, row);
+    }
+
+    const userRow = byId.get(userAgentId);
+    const systemRow = byId.get(systemAgentId);
+
+    return compareAgentSyncSnapshots(
+      userRow ? toAgentSyncSnapshot(userRow) : null,
+      systemRow ? toAgentSyncSnapshot(systemRow) : null,
+    );
   },
 );
 
