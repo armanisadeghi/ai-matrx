@@ -15,6 +15,7 @@ import {
   XCircle,
   Zap,
 } from "lucide-react";
+import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { LocalToolsPageShell } from "../_lib/LocalToolsPageShell";
 import { MessageLog } from "../_lib/ResultPanel";
 import { useMatrxLocalContext } from "../_lib/MatrxLocalContext";
@@ -798,6 +799,7 @@ function ResultCard({
 
 function ComparisonPanel({ local }: { local: UseMatrxLocalReturn }) {
   const { invokeViaRest, loading } = local;
+  const { scrapeUrlSilent } = useScraperApi();
   const [url, setUrl] = useState("https://titaniumsuccess.com/");
   const [results, setResults] = useState<
     [CompareResult | null, CompareResult | null, CompareResult | null]
@@ -812,26 +814,22 @@ function ComparisonPanel({ local }: { local: UseMatrxLocalReturn }) {
     setComparing(true);
     setResults([null, null, null]);
 
-    // Server scrape: Next.js API route → Python backend (runs from data center)
+    // Server scrape: browser → Python backend directly (runs from data center)
     const serverScrape = async (): Promise<CompareResult> => {
       const t = Date.now();
-      const res = await fetch("/api/scraper/content", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: normalizedUrl }),
-      });
-      const elapsed = Date.now() - t;
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
+      try {
+        const data = await scrapeUrlSilent(normalizedUrl, { use_cache: true });
+        const content =
+          data?.textContent ||
+          data?.overview?.page_title ||
+          JSON.stringify(data);
+        return { content, elapsedMs: Date.now() - t };
+      } catch (err) {
         return {
-          content: `Error: ${err.error || res.statusText}`,
-          elapsedMs: elapsed,
+          content: `Error: ${err instanceof Error ? err.message : String(err)}`,
+          elapsedMs: Date.now() - t,
         };
       }
-      const data = await res.json();
-      const content =
-        data.textContent || data.overview?.page_title || JSON.stringify(data);
-      return { content, elapsedMs: elapsed };
     };
 
     const [server_, localScrape_, localBrowser_] = await Promise.allSettled([

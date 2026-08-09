@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { usePublicScraperContent } from "@/features/public-chat/hooks/usePublicScraperContent";
+import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import {
   extractSocialFromScrapeResponse,
   normalizeScrapeUrl,
@@ -84,11 +84,31 @@ export function SocialCardAnalyzer({
   const [siteName, setSiteName] = useState(initialSiteName);
   const [ogType, setOgType] = useState(initialOgType);
   const [cardType, setCardType] = useState(initialCardType);
-  const { scrapeUrl, isLoading: isFetching } = usePublicScraperContent();
+  const [isFetching, setIsFetching] = useState(false);
+  // Direct-to-backend scrape (guest fingerprint or Bearer token, no Next hop).
+  // `scrapeUrlSilent` throws the real backend error so the toast can show it.
+  const { scrapeUrlSilent } = useScraperApi();
 
   useEffect(() => {
-    onValuesChange?.({ url, title, description, image, siteName, ogType, cardType });
-  }, [url, title, description, image, siteName, ogType, cardType, onValuesChange]);
+    onValuesChange?.({
+      url,
+      title,
+      description,
+      image,
+      siteName,
+      ogType,
+      cardType,
+    });
+  }, [
+    url,
+    title,
+    description,
+    image,
+    siteName,
+    ogType,
+    cardType,
+    onValuesChange,
+  ]);
 
   const evaluation = evaluateSocialCard({
     ogTitle: cleanTagValue(title),
@@ -108,13 +128,16 @@ export function SocialCardAnalyzer({
   );
 
   async function handleFetch() {
-    if (!normalizeScrapeUrl(url)) {
+    const normalized = normalizeScrapeUrl(url);
+    if (!normalized) {
       toast.error("Enter a valid website URL");
       return;
     }
+    setIsFetching(true);
     try {
-      const result = await scrapeUrl(url.trim());
-      const extracted = extractSocialFromScrapeResponse(result.rawResponse);
+      const result = await scrapeUrlSilent(normalized, { use_cache: true });
+      if (!result) throw new Error("No data returned from scraper");
+      const extracted = extractSocialFromScrapeResponse(result);
       if (extracted.url) setUrl(extracted.url);
       setTitle(extracted.ogTitle);
       setDescription(extracted.ogDescription);
@@ -129,6 +152,8 @@ export function SocialCardAnalyzer({
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to fetch tags");
+    } finally {
+      setIsFetching(false);
     }
   }
 
@@ -339,7 +364,8 @@ export function SocialCardAnalyzer({
                 <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-xs font-medium text-foreground">X</span>
                 <span className="ml-auto text-[10px] text-muted-foreground">
-                  {evaluation.cardType ?? "no twitter:card — small summary fallback"}
+                  {evaluation.cardType ??
+                    "no twitter:card — small summary fallback"}
                 </span>
               </div>
               <CardContent className="border-0 p-5">
@@ -358,7 +384,9 @@ export function SocialCardAnalyzer({
             <Card className="overflow-hidden rounded-2xl shadow-sm">
               <div className={previewChromeClass}>
                 <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-foreground">Facebook</span>
+                <span className="text-xs font-medium text-foreground">
+                  Facebook
+                </span>
                 <span className="ml-auto text-[10px] text-muted-foreground">
                   1200×630 recommended
                 </span>
@@ -377,7 +405,9 @@ export function SocialCardAnalyzer({
             <Card className="overflow-hidden rounded-2xl shadow-sm">
               <div className={previewChromeClass}>
                 <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-foreground">LinkedIn</span>
+                <span className="text-xs font-medium text-foreground">
+                  LinkedIn
+                </span>
                 <span className="ml-auto text-[10px] text-muted-foreground">
                   1200×627 recommended
                 </span>
