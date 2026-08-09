@@ -12,6 +12,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { JsonViewer } from "./JsonViewer";
 
 export type LogEntryKind =
@@ -28,6 +29,13 @@ export interface LogEntry {
   kind: LogEntryKind;
   title: string;
   body?: unknown;
+  /**
+   * The conversation this event acted on, when there is one. A log line that
+   * names a real conversation must be able to reach it (THE DOOR LAW) — the
+   * door renders BESIDE the expand button, since an <a> cannot nest in a
+   * <button>.
+   */
+  conversationId?: string;
 }
 
 export interface LiveEventLogProps {
@@ -121,11 +129,12 @@ export function LiveEventLog({
               const meta = KIND_BADGE[e.kind];
               const open = expanded.has(e.id);
               return (
-                <div key={e.id} className="px-3 py-2 text-xs">
+                <div key={e.id} className="group px-3 py-2 text-xs">
+                  <div className="flex w-full items-center gap-2">
                   <button
                     type="button"
                     onClick={() => toggle(e.id)}
-                    className="flex w-full items-center gap-2 text-left hover:text-primary"
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left hover:text-primary"
                   >
                     {open ? (
                       <ChevronDown className="h-3.5 w-3.5" />
@@ -140,6 +149,14 @@ export function LiveEventLog({
                     </Badge>
                     <span className="truncate">{e.title}</span>
                   </button>
+                  {e.conversationId && (
+                    <MatrxUuidCell
+                      value={e.conversationId}
+                      token="conversation"
+                      label="Conversation"
+                    />
+                  )}
+                  </div>
                   {open && e.body !== undefined && (
                     <div className="mt-2 pl-6">
                       <JsonViewer value={e.body} maxHeight="max-h-48" />

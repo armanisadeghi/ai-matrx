@@ -141,7 +141,10 @@ export default function ExtensionBridgeDemoPage() {
                 appendLog({
                   ts: entry.ts,
                   kind: entry.ok ? "append-success" : "append-error",
-                  title: `POST append-message → ${entry.status} (${entry.role}, ${entry.conversationId.slice(0, 8)}…)`,
+                  title: `POST append-message → ${entry.status} (${entry.role})`,
+                  // The message was just appended to a REAL conversation —
+                  // the id used to be truncated into the title and stranded.
+                  conversationId: entry.conversationId,
                   body: entry.error ? { error: entry.error } : entry.response,
                 });
               }}
