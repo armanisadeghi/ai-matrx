@@ -305,8 +305,25 @@ export function scanFile(
   /** Every `a.b` / `a` text in the file — the "is the id in scope?" oracle. */
   const scopeText = src;
   let sawEntityName = false;
+  /**
+   * A bare id whose entity we could RESOLVE — `{conv.conversationId}`, not
+   * `{d.originalId}`. A surface can present records without ever naming one,
+   * and the Inventory Law applies to it just the same; keying the file rule
+   * on names alone missed every id-only list.
+   */
+  let sawNamedId = false;
   let importsDoor = DOOR_IMPORT_MARKERS.some((m) => src.includes(m));
   let importsEntitySource = false;
+
+  /**
+   * A debug panel, diagnostic or test client prints raw ids BY DESIGN — that
+   * is the whole surface. The individual `bare-id-text` findings still report
+   * there; adding a file-level "you skipped the inventory pass" on top is a
+   * false accusation. Measured: without this, widening added 14 files of which
+   * 8 were diagnostics.
+   */
+  const isDiagnosticSurface =
+    /(^|\/)(debug|diagnostic|devtools)|Debug|Diagnostic|DevTools|TestClient/.test(relPath);
 
   const visit = (node: ts.Node): void => {
     if (ts.isImportDeclaration(node)) {
@@ -321,6 +338,9 @@ export function scanFile(
       const finding = classifyExpression(node, sf, relPath, scopeText, ctx);
       if (finding) {
         if (finding.rule === "unlinked-entity-name") sawEntityName = true;
+        if (finding.rule === "bare-id-text" && !finding.entity.startsWith("?")) {
+          sawNamedId = true;
+        }
         findings.push(finding);
       }
     }
@@ -328,9 +348,11 @@ export function scanFile(
   };
   visit(sf);
 
-  // Inventory Law: a surface that reads real records, names them, and imports
-  // no door mechanism at all has skipped the inventory pass wholesale.
-  if (!importsDoor && importsEntitySource && sawEntityName) {
+  // Inventory Law: a surface that reads real records, PRESENTS them — by name
+  // or by an id whose entity resolves — and imports no door mechanism at all
+  // has skipped the inventory pass wholesale.
+  const presentsRecords = sawEntityName || (sawNamedId && !isDiagnosticSurface);
+  if (!importsDoor && importsEntitySource && presentsRecords) {
     findings.push(
       makeFinding({
         relPath,

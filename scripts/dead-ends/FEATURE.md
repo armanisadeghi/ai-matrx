@@ -95,7 +95,7 @@ the shape doctor uses (`features/content-ir/admin/shape-doctor-server.ts`).
 | `bare-id-text` | high when the token has a route | An id-shaped expression (`x.id`, `r.agent_id`, `fileId`) is rendered as JSX text with no door ancestor. |
 | `unlinked-entity-name` | high when the token has a route | A name-shaped expression (`x.name`, `agentName`, `noteTitle`) is rendered as text **and the same object's id is in scope in that file** — the surface provably knows the identity and withheld the door. |
 | `unlinked-count` | medium | `{n} agents` / `{x.length} members` with no navigation — a count is a door. |
-| `no-doors-in-file` | high | A file reads records (imports a service/slice/selector), names them, and imports **no** door mechanism at all — the Inventory Law skipped wholesale. |
+| `no-doors-in-file` | high | A file reads records (imports a service/slice/selector), **presents** them — by name, or by an id whose entity resolves — and imports **no** door mechanism at all. Debug panels, diagnostics and test clients are excluded: they print raw ids by design, and their individual `bare-id-text` findings still report. |
 
 `high` means "the entity already has an `hrefFor`, so the fix is one
 `<EntityRef>`". `medium` means "real, but needs a judgment call" — usually the
@@ -195,7 +195,7 @@ Additional gates, each traceable to a real false positive:
   suppressed `brokerId`, `call_id`, `nodeId`, `blockId` — every one a real
   record here. Suppressing a real entity is worse than ranking it low.
 
-Measured on the shipped ruleset: **133 findings (66 high, 67 medium) across 82
+Measured on the shipped ruleset: **140 findings (73 high, 67 medium) across 82
 files out of 6,806 scanned, in ~9s.**
 
 ## Known limits — stated, not hidden
@@ -283,7 +283,7 @@ new one.
   advisory wiring in `run-release-gates.sh`. Retuned after each of four
   finding-by-finding adversarial audits (~31% → ~55% → ~50% → PR review);
   against the union of their samples, 14/14 true positives kept and 20/20 false
-  positives dropped. Baseline: 133 findings / 66 high across 82 files.
+  positives dropped. Baseline: 140 findings / 73 high across 82 files.
   Post-merge review then caught six more defects in the ESLint half — see the
   2026-08-09 (later) entry.
 - **2026-08-09 (later)** — `matrx/no-bare-id-text` measured for the first time:
@@ -294,3 +294,11 @@ new one.
   two of those gates over-suppressing (the ternary skip covered both arms of
   any conditional; the transient-root gate ran before the own-id test and hid
   every foreign key). Checker output unchanged throughout.
+- **2026-08-09 (later still)** — `no-doors-in-file` only fired when a surface
+  rendered a record's NAME, so a list presenting records purely as ids was
+  invisible to the Inventory Law rule however door-less it was. Widened to
+  named ids, with diagnostics excluded (measured: without that exclusion the
+  widening added 14 files, 8 of them debug panels). 9 → **16** door-less files;
+  totals 140 / 73 high. Highest-value new finding:
+  `ConversationHistorySidebar.tsx`, a sidebar listing conversations by id with
+  zero door primitives imported.

@@ -49,32 +49,51 @@ and imports **no** door mechanism at all — no `next/link`, no `EntityRef`, no
 router, no overlay opener. That is the inventory pass skipped wholesale, and it
 is the highest-confidence signal we have for this law.
 
-**Baseline 2026-08-09: 9 files.** Deliberately short — earlier cuts flagged 21
-and then 16, and audits found most of those DID own a door the checker could
-not see (a local `scopeHref` helper, an `openFilePreview` import, a row whose
-`onClick` hands the handler the record's own id). The rule was tightened each
-time rather than left noisy. Do the inventory pass ONCE per feature.
+**Baseline 2026-08-09: 16 files.** It was 9 until review found the file rule
+only fired when a surface rendered a record's NAME — so a list that presents
+records purely as ids never got flagged, however door-less it was. Widening it
+to named ids added 7 genuine surfaces. Do the inventory pass ONCE per feature.
 
-1. **Agent comparison (2)** — `features/agent-comparison/components/MasterInputWindow.tsx`,
+1. **Agents (5)** — `features/agents/components/inputs/smart-input/RunSkillPicker.tsx`,
+   `features/agents/ui-first-tools/ui/lists/TaskPanel.tsx`,
+   `features/agents/components/conversation-history/ConversationHistorySidebar.tsx`,
+   `features/agents/components/context-slots-display/ContextSlotDetailSheet.tsx`,
+   `features/agents/route/AgentViewContent.tsx`, plus the
+   `assignment-demo/AgentAssignmentsDemo.tsx` demo. Two are the doctrine's own
+   examples verbatim: **TaskPanel** makes a task title a `<button>` that opens
+   an *inline rename*, so the user can edit the record's name and never reach
+   the record — an affordance that looks like a door and isn't is worse than
+   none; **ContextSlotDetailSheet** renders `{slot.summary_agent_id}`, the
+   "system twin you can resolve but don't link" case.
+2. **Agent comparison (2)** — `features/agent-comparison/components/MasterInputWindow.tsx`,
    `RunsComparisonTable.tsx`. The whole feature was built blind (5 findings, all
    high). A comparison must also **state the verdict, not a timestamp**
    (corollary 3) — check that too.
-2. **Agents (2)** —
-   `features/agents/components/inputs/smart-input/RunSkillPicker.tsx`,
-   `features/agents/ui-first-tools/ui/lists/TaskPanel.tsx`. TaskPanel is the
-   sharpest case in the list: it makes a task title a `<button>` that opens an
-   **inline rename**, so the user can edit the record's name but can never reach
-   the record. An affordance that looks like a door and isn't is worse than none.
-3. **Scopes & skills (2)** —
+3. **Conversation history is the highest-value single fix.**
+   `ConversationHistorySidebar.tsx` is a sidebar that LISTS conversations and
+   shows `{conv.conversationId}` with zero door primitives imported. A list of
+   records you cannot open is the law's central case.
+4. **Scopes & skills (2)** —
    `features/scopes/components/entity-context/EntityScopeTagger.tsx`,
    `features/skills/components/SkillResourcesPanel.tsx`. Both name records the
    platform can open; neither `scope` nor `skill` has a registry route yet (see
    the registry-gaps table in `no-dead-ends-sweep.md` — 11 and 3 findings
    respectively), so these two are gated on that decision.
-4. **Code library (1)** — `features/code/views/library/LibraryTreeNode.tsx`.
-5. **Surfaces (1)** — `features/surfaces/components/bind/SurfaceAgentBindPanel.tsx`.
-6. **Demos (1)** — `app/(dev)/demos/scopes/context-lab/page.dev.tsx`. Demos are
-   in scope; the doctrine has no size threshold.
+5. **Notes (1)** — `features/notes/components/NoteInfoPanel.tsx` renders
+   `{note.organization_id}` with no door.
+6. **Code library (1)** — `features/code/views/library/LibraryTreeNode.tsx`.
+7. **Surfaces (1)** — `features/surfaces/components/bind/SurfaceAgentBindPanel.tsx`.
+8. **Admin & demos (3)** — `app/(admin)/administration/reporting/events/page.tsx`,
+   `app/(dev)/demos/scopes/context-lab/page.dev.tsx`,
+   `app/(dev)/demos/context-menu/surface-mappings/page.dev.tsx`. In scope; the
+   doctrine has no size threshold.
+
+**Debug panels and diagnostics are deliberately excluded** from this file-level
+rule — `StreamDebugPanel`, `ChatDebugModal`, `AgentExecutionDebugPanel` and
+friends print raw ids because that is the entire surface. Their individual
+`bare-id-text` findings still report; accusing the whole file of skipping the
+inventory pass would be false. Without that exclusion the widening added 14
+files, of which 8 were diagnostics.
 
 Two files that appeared on the 2026-08-09 morning cut —
 `features/notes/components/mobile/MobileNotesList.tsx` and
@@ -82,7 +101,7 @@ Two files that appeared on the 2026-08-09 morning cut —
 row-detection gates were tightened that afternoon. They were false positives,
 not fixes.
 
-**Beyond the nine**, this law is not fully machine-detectable — the checker
+**Beyond the sixteen**, this law is not fully machine-detectable — the checker
 sees a *missing import*, not a *poorer surface*. The scoreboard's worst-features
 ranking is the better hunting ground, and `scripts/dead-ends/FEATURE.md`
 § Known limits says what the detector cannot see (notably: `hooks/`, `utils/`,

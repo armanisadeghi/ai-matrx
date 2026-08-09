@@ -25,5 +25,14 @@
     "medium": 67,
     "low": 0,
     "filesWithFindings": 82
+  },
+  {
+    "generatedAt": "2026-08-09T09:43:45.817Z",
+    "commit": "a5d146fcbca8ff87548ebe87bd21051c8e28aa26",
+    "findings": 140,
+    "high": 73,
+    "medium": 67,
+    "low": 0,
+    "filesWithFindings": 82
   }
 ]

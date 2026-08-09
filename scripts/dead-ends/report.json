@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-08-09T09:24:21.748Z",
-  "commit": "8a0dc07df571aa27d90df25c8531705a014e7b75",
+  "generatedAt": "2026-08-09T09:43:45.817Z",
+  "commit": "a5d146fcbca8ff87548ebe87bd21051c8e28aa26",
   "totals": {
-    "findings": 133,
-    "high": 66,
+    "findings": 140,
+    "high": 73,
     "medium": 67,
     "low": 0,
     "filesWithFindings": 82,
@@ -14,7 +14,7 @@
     "bare-id-text": 81,
     "unlinked-entity-name": 40,
     "unlinked-count": 3,
-    "no-doors-in-file": 9
+    "no-doors-in-file": 16
   },
   "worstFiles": [
     {
@@ -43,12 +43,37 @@
       "high": 2
     },
     {
+      "key": "app/(dev)/demos/context-menu/surface-mappings/page.dev.tsx",
+      "count": 2,
+      "high": 2
+    },
+    {
       "key": "app/(dev)/demos/tasks-widgets/_client.tsx",
       "count": 2,
       "high": 2
     },
     {
       "key": "features/agent-comparison/components/RunsComparisonTable.tsx",
+      "count": 2,
+      "high": 2
+    },
+    {
+      "key": "features/agents/components/assignment-demo/AgentAssignmentsDemo.tsx",
+      "count": 2,
+      "high": 2
+    },
+    {
+      "key": "features/agents/components/context-slots-display/ContextSlotDetailSheet.tsx",
+      "count": 2,
+      "high": 2
+    },
+    {
+      "key": "features/agents/components/conversation-history/ConversationHistorySidebar.tsx",
+      "count": 2,
+      "high": 2
+    },
+    {
+      "key": "features/agents/route/AgentViewContent.tsx",
       "count": 2,
       "high": 2
     },
@@ -64,6 +89,11 @@
     },
     {
       "key": "features/cx-conversation/ChatDebugModal.tsx",
+      "count": 2,
+      "high": 2
+    },
+    {
+      "key": "features/notes/components/NoteInfoPanel.tsx",
       "count": 2,
       "high": 2
     },
@@ -103,6 +133,11 @@
       "high": 1
     },
     {
+      "key": "app/(admin)/administration/reporting/events/page.tsx",
+      "count": 2,
+      "high": 1
+    },
+    {
       "key": "app/(dev)/demos/local-tools/documents/page.dev.tsx",
       "count": 2,
       "high": 1
@@ -134,11 +169,6 @@
     },
     {
       "key": "app/(dev)/demos/api-tests/agent/AgentTestClient.tsx",
-      "count": 1,
-      "high": 1
-    },
-    {
-      "key": "app/(dev)/demos/context-menu/surface-mappings/page.dev.tsx",
       "count": 1,
       "high": 1
     },
@@ -178,26 +208,6 @@
       "high": 1
     },
     {
-      "key": "features/agents/components/assignment-demo/AgentAssignmentsDemo.tsx",
-      "count": 1,
-      "high": 1
-    },
-    {
-      "key": "features/agents/components/context-slots-display/ContextSlotDetailSheet.tsx",
-      "count": 1,
-      "high": 1
-    },
-    {
-      "key": "features/agents/components/conversation-history/ConversationHistorySidebar.tsx",
-      "count": 1,
-      "high": 1
-    },
-    {
-      "key": "features/agents/route/AgentViewContent.tsx",
-      "count": 1,
-      "high": 1
-    },
-    {
       "key": "features/code-files/actions/QuickSaveCodeCore.tsx",
       "count": 1,
       "high": 1
@@ -233,11 +243,6 @@
       "high": 1
     },
     {
-      "key": "features/notes/components/NoteInfoPanel.tsx",
-      "count": 1,
-      "high": 1
-    },
-    {
       "key": "features/pdf-extractor/components/LineageTreeView.tsx",
       "count": 1,
       "high": 1
@@ -261,23 +266,18 @@
       "key": "app/(dev)/demos/api-tests/tool-testing/ToolTestingClient.tsx",
       "count": 3,
       "high": 0
-    },
-    {
-      "key": "app/(transitional)/_apps/app-builder/applets/[id]/components/BrokerMappingsTab.tsx",
-      "count": 3,
-      "high": 0
     }
   ],
   "worstFeatures": [
     {
       "key": "features/agents",
-      "count": 15,
-      "high": 10
+      "count": 19,
+      "high": 14
     },
     {
       "key": "app/(dev)",
-      "count": 23,
-      "high": 7
+      "count": 24,
+      "high": 8
     },
     {
       "key": "components/admin",
@@ -290,13 +290,13 @@
       "high": 5
     },
     {
-      "key": "features/surfaces",
+      "key": "features/notes",
       "count": 5,
-      "high": 4
+      "high": 5
     },
     {
-      "key": "features/notes",
-      "count": 4,
+      "key": "features/surfaces",
+      "count": 5,
       "high": 4
     },
     {
@@ -305,14 +305,14 @@
       "high": 4
     },
     {
-      "key": "features/admin",
-      "count": 4,
+      "key": "app/(admin)",
+      "count": 6,
       "high": 3
     },
     {
-      "key": "app/(admin)",
-      "count": 5,
-      "high": 2
+      "key": "features/admin",
+      "count": 4,
+      "high": 3
     },
     {
       "key": "components/debug",
@@ -446,6 +446,18 @@
       "route": "/administration/ai/ai-tasks"
     },
     {
+      "file": "app/(admin)/administration/reporting/events/page.tsx",
+      "line": 1,
+      "column": 1,
+      "rule": "no-doors-in-file",
+      "severity": "high",
+      "entity": "(file)",
+      "entityHasRoute": false,
+      "expression": "app/(admin)/administration/reporting/events/page.tsx",
+      "feature": "app/(admin)",
+      "route": "/administration/reporting/events"
+    },
+    {
       "file": "app/(dev)/demos/api-tests/agent/AgentTestClient.tsx",
       "line": 176,
       "column": 14,
@@ -456,6 +468,18 @@
       "expression": "log.conversationId",
       "feature": "app/(dev)",
       "route": null
+    },
+    {
+      "file": "app/(dev)/demos/context-menu/surface-mappings/page.dev.tsx",
+      "line": 1,
+      "column": 1,
+      "rule": "no-doors-in-file",
+      "severity": "high",
+      "entity": "(file)",
+      "entityHasRoute": false,
+      "expression": "app/(dev)/demos/context-menu/surface-mappings/page.dev.tsx",
+      "feature": "app/(dev)",
+      "route": "/demos/context-menu/surface-mappings"
     },
     {
       "file": "app/(dev)/demos/context-menu/surface-mappings/page.dev.tsx",
@@ -771,6 +795,18 @@
     },
     {
       "file": "features/agents/components/assignment-demo/AgentAssignmentsDemo.tsx",
+      "line": 1,
+      "column": 1,
+      "rule": "no-doors-in-file",
+      "severity": "high",
+      "entity": "(file)",
+      "entityHasRoute": false,
+      "expression": "features/agents/components/assignment-demo/AgentAssignmentsDemo.tsx",
+      "feature": "features/agents",
+      "route": null
+    },
+    {
+      "file": "features/agents/components/assignment-demo/AgentAssignmentsDemo.tsx",
       "line": 608,
       "column": 20,
       "rule": "bare-id-text",
@@ -783,6 +819,18 @@
     },
     {
       "file": "features/agents/components/context-slots-display/ContextSlotDetailSheet.tsx",
+      "line": 1,
+      "column": 1,
+      "rule": "no-doors-in-file",
+      "severity": "high",
+      "entity": "(file)",
+      "entityHasRoute": false,
+      "expression": "features/agents/components/context-slots-display/ContextSlotDetailSheet.tsx",
+      "feature": "features/agents",
+      "route": null
+    },
+    {
+      "file": "features/agents/components/context-slots-display/ContextSlotDetailSheet.tsx",
       "line": 170,
       "column": 18,
       "rule": "bare-id-text",
@@ -790,6 +838,18 @@
       "entity": "agent",
       "entityHasRoute": true,
       "expression": "slot.summary_agent_id",
+      "feature": "features/agents",
+      "route": null
+    },
+    {
+      "file": "features/agents/components/conversation-history/ConversationHistorySidebar.tsx",
+      "line": 1,
+      "column": 1,
+      "rule": "no-doors-in-file",
+      "severity": "high",
+      "entity": "(file)",
+      "entityHasRoute": false,
+      "expression": "features/agents/components/conversation-history/ConversationHistorySidebar.tsx",
       "feature": "features/agents",
       "route": null
     },
@@ -838,6 +898,18 @@
       "entity": "(file)",
       "entityHasRoute": false,
       "expression": "features/agents/components/inputs/smart-input/RunSkillPicker.tsx",
+      "feature": "features/agents",
+      "route": null
+    },
+    {
+      "file": "features/agents/route/AgentViewContent.tsx",
+      "line": 1,
+      "column": 1,
+      "rule": "no-doors-in-file",
+      "severity": "high",
+      "entity": "(file)",
+      "entityHasRoute": false,
+      "expression": "features/agents/route/AgentViewContent.tsx",
       "feature": "features/agents",
       "route": null
     },
@@ -1018,6 +1090,18 @@
       "entity": "note",
       "entityHasRoute": true,
       "expression": "savedNote.label",
+      "feature": "features/notes",
+      "route": null
+    },
+    {
+      "file": "features/notes/components/NoteInfoPanel.tsx",
+      "line": 1,
+      "column": 1,
+      "rule": "no-doors-in-file",
+      "severity": "high",
+      "entity": "(file)",
+      "entityHasRoute": false,
+      "expression": "features/notes/components/NoteInfoPanel.tsx",
       "feature": "features/notes",
       "route": null
     },
