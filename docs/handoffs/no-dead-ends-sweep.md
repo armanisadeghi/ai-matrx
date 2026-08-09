@@ -911,10 +911,10 @@ row=re.compile(r'"(\w+)":\s*\{\s*token:\s*"(\w+)",\s*schema:\s*"([\w.]+)",'
                r'\s*table:\s*"([\w.]+)",[^}]*?titleColumn:\s*("?\w+"?|null)')
 ents={}
 for m in row.finditer(gen):
-    tok,table,tc = m.group(2), m.group(4), m.group(5)
+    tok,schema,table,tc = m.group(2), m.group(3), m.group(4), m.group(5)
     if tc in ("null",""): continue
     e=re.search(r'\b'+tok+r':\s*\{(.*?)\n  \},', nc, re.S)
-    if e and re.search(r'hrefFor:\s*\(', e.group(1)): ents[tok]=(table, tc.strip('"'))
+    if e and re.search(r'hrefFor:\s*\(', e.group(1)): ents[tok]=(schema, table, tc.strip('"'))
 door=re.compile(r'EntityRef|EntityDoorControls|next/link|<a\s|OverlayLaunchButton'
                 r'|hrefFor|MatrxDataTable|EntityListPage')
 for base in ("features","app","components"):
@@ -925,17 +925,39 @@ for base in ("features","app","components"):
         if not f.endswith(".tsx"): continue
         p=os.path.join(root,f); s=open(p,encoding="utf-8").read()
         if door.search(s): continue
-        for tok,(table,tc) in ents.items():
-            if not re.search(r'\.from\(\s*["\']'+re.escape(table)+r'["\']', s): continue
+        for tok,(schema,table,tc) in ents.items():
+            # SCHEMA-QUALIFIED: `definition` alone matches agent/app/workflow/tool.
+            q = (r'\.from\(\s*["\']'+re.escape(table)+r'["\']' if schema in ("public","")
+                 else r'\.schema\(\s*["\']'+re.escape(schema)+r'["\']\s*\)\s*'
+                      r'\.from\(\s*["\']'+re.escape(table)+r'["\']')
+            if not re.search(q, s): continue
             if re.search(r'\{\s*\w+\.'+re.escape(tc)+r'\s*[}\?]', s): print(p, tok)
 PY
 ```
 
-**Grounding on a real `.from("<table>")` query is what makes it precise** —
-requiring only that the table NAME appear as a quoted string returns 53 files,
-badly polluted by short generic table names (`agent`, `app`, `workflow` appear
-in unrelated schema lists and dropdowns; watch for those three clustering on one
-file, which is the tell). Requiring the actual query drops it to a handful.
+**Grounding must be a SCHEMA-QUALIFIED query.** Three tightenings, each of which
+looked sufficient until it wasn't:
+
+| grounding | hits | verdict |
+|---|---|---|
+| table name appears as a quoted string | 53 | polluted by schema lists / dropdowns |
+| `.from("<table>")` | 6 (3 files) | still wrong — see below |
+| `.schema("<s>").from("<table>")` | 1 | that one is a false positive too |
+
+The middle row is the instructive one. **`definition` is the table name for
+`agent`, `app` AND `workflow`** — four schemas own a table called `definition`
+(`tool.definition` too). So a page querying `tool.definition` matched three
+unrelated tokens at once. **Three tokens clustering on one file is the tell**,
+and it is the same ambiguity that produced a live wrong-record door in aidream's
+`ID_FIELD_TABLE` earlier in this campaign (`tool_id: "definition"` → the agent
+explorer). A bare table name is not an identity.
+
+**Current result: ZERO real defects.** The single schema-qualified hit,
+`app/(public)/p/[slug]/page.tsx`, is a false positive — every `.name` use is in
+`generateMetadata` (OG title strings), and the page IS the app, so there is no
+named-but-unreachable record. **Do not re-run this expecting a backlog**; it is
+exhausted for self-fetching surfaces. Re-run it after adding a new entity token
+or a new self-fetching list, which is exactly when it earns its keep.
 
 The cost of that precision is recall: a component that receives rows as props
 never names the table, so this finds only self-fetching surfaces. It is a
