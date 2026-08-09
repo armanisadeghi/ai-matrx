@@ -202,7 +202,7 @@ export function BuildWithAiDialog({
             {busy
               ? "Building — watch every step below. Closing this window does not stop the run."
               : errored
-                ? "The build stopped — the last step below says why. Nothing broken was staged; you can try again."
+                ? "The build stopped — the last step below says why. Steps that finished before the stop are still staged (check the routes before committing); you can try again."
                 : finished
                   ? "Done — the drafted work order is staged. Review the routes on the right, then Create pages."
                   : "Answer what you know — everything here is a hint, not a commitment. The AI reads the research, picks the shape and counts, names the pages, and stages it all for your review. Nothing is created until you approve the routes."}
