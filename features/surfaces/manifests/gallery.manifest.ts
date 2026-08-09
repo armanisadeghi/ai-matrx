@@ -7,9 +7,11 @@
  * chips + orientation filter, results in masonry/grid/compact layouts, a
  * favorites sidebar (localStorage-persisted), click-through to the Image
  * Viewer window. State is split between the window shell (view mode) and
- * `GalleryFloatingWorkspace` (search, filters, photos, favorites). Image
+ * `GalleryFloatingWorkspace` (search, filters, photos, favorites — the ONE
+ * state owner; the shell reads viewMode from it since 2026-08-09). Image
  * search widget — no text/content concept, so generic baselines are
- * skipped. Emitter not wired yet.
+ * skipped. Emitter: nested SurfaceRuntimeProvider inside `GalleryWindow`
+ * (wired 2026-08-09).
  */
 
 import type {
@@ -102,8 +104,9 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const galleryManifest: SurfaceManifest = {
   surfaceName: GALLERY_SURFACE_NAME,
-  readiness: "stub",
-  readinessNote: "Manifest from window-component audit; emitter not wired",
+  readiness: "partial",
+  readinessNote:
+    "Emitter wired 2026-08-09 (nested SurfaceRuntimeProvider inside GalleryWindow reading the workspace's live state; the shell/workspace duplicate viewMode state was also collapsed — the footer view-mode buttons previously never changed the grid). Needs the live browser pass to earn verified.",
   overlayId: "galleryWindow",
   label: "Gallery",
   intro: `<surface_intro>

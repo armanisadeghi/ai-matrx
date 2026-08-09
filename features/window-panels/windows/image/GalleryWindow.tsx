@@ -7,43 +7,32 @@
  * for full zoom/pan/download. Favorites sidebar tracks liked images.
  */
 
-import React, { useState } from "react";
+import React from "react";
 import { Columns2, Grid3X3, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { GalleryFloatingWorkspace } from "@/features/gallery/components/GalleryFloatingWorkspace";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  GALLERY_SURFACE_NAME,
+  createGalleryScope,
+} from "@/features/surfaces/manifests/gallery.manifest";
 
 interface GalleryWindowProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type ViewMode = "grid" | "masonry" | "compact";
-
 export default function GalleryWindow({ isOpen, onClose }: GalleryWindowProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>("masonry");
-
   if (!isOpen) return null;
-
-  return (
-    <GalleryWindowInner
-      onClose={onClose}
-      viewMode={viewMode}
-      onViewModeChange={setViewMode}
-    />
-  );
+  return <GalleryWindowInner onClose={onClose} />;
 }
 
-function GalleryWindowInner({
-  onClose,
-  viewMode,
-  onViewModeChange,
-}: {
-  onClose: () => void;
-  viewMode: ViewMode;
-  onViewModeChange: (mode: ViewMode) => void;
-}) {
+function GalleryWindowInner({ onClose }: { onClose: () => void }) {
+  // The workspace is the ONE owner of gallery state (view mode included) —
+  // the shell's footer buttons and the surface emitter both read from it.
   const workspace = GalleryFloatingWorkspace();
+  const { viewMode, setViewMode: onViewModeChange } = workspace;
 
   const footerRight = (
     <div className="flex items-center gap-0.5">
@@ -109,7 +98,24 @@ function GalleryWindowInner({
       overlayId="galleryWindow"
       onCollectData={() => ({ viewMode })}
     >
-      {workspace.body}
+      {/* Nested overlay emitter — while this window is open, its scope
+          out-depths the page's provider (deepest wins). */}
+      <SurfaceRuntimeProvider
+        surfaceName={GALLERY_SURFACE_NAME}
+        getScope={() =>
+          createGalleryScope({
+            view_mode: workspace.viewMode,
+            search_input: workspace.searchInput,
+            active_query: workspace.activeQuery || undefined,
+            orientation_filter: workspace.orientationFilter,
+            photo_count: workspace.photoCount,
+            favorite_count: workspace.favoriteCount,
+          })
+        }
+        isEditable={false}
+      >
+        {workspace.body}
+      </SurfaceRuntimeProvider>
     </WindowPanel>
   );
 }

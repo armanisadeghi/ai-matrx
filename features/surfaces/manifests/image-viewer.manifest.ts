@@ -7,7 +7,8 @@
  * one or more image URLs, with a thumbnail sidebar when there are several.
  * The window never renders with an empty image list, so the image set is
  * guaranteed while the surface exists. Purely visual — no text/content
- * concept, so generic baselines are skipped. Emitter not wired yet.
+ * concept, so generic baselines are skipped. Emitter: nested
+ * SurfaceRuntimeProvider inside `ImageViewerWindow` (wired 2026-08-09).
  */
 
 import type {
@@ -88,8 +89,9 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const imageViewerManifest: SurfaceManifest = {
   surfaceName: IMAGE_VIEWER_SURFACE_NAME,
-  readiness: "stub",
-  readinessNote: "Manifest from window-component audit; emitter not wired",
+  readiness: "partial",
+  readinessNote:
+    "Emitter wired 2026-08-09 (nested SurfaceRuntimeProvider inside ImageViewerWindow, live index/URL/alt at Run time); values audited against the window component. Needs the live browser pass (open the window, confirm the scope in the Agents chrome) to earn verified.",
   overlayId: "imageViewer",
   label: "Image Viewer",
   intro: `<surface_intro>

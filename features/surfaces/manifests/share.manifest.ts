@@ -9,7 +9,8 @@
  * render without a valid resource type + id, so resource identity is
  * guaranteed while the surface exists; permission data loads asynchronously
  * via `useSharing`. Access-management widget — no text/content concept, so
- * generic baselines are skipped. Emitter not wired yet.
+ * generic baselines are skipped. Emitter: nested SurfaceRuntimeProvider
+ * inside `ShareModalWindow` (wired 2026-08-09).
  */
 
 import type {
@@ -156,8 +157,9 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const shareManifest: SurfaceManifest = {
   surfaceName: SHARE_SURFACE_NAME,
-  readiness: "stub",
-  readinessNote: "Manifest from window-component audit; emitter not wired",
+  readiness: "partial",
+  readinessNote:
+    "Emitter wired 2026-08-09 (nested SurfaceRuntimeProvider inside ShareModalWindow — resource identity, share URL, active tab, and post-load grant state at Run time). Needs the live browser pass to earn verified.",
   overlayId: "shareModalWindow",
   label: "Share",
   intro: `<surface_intro>
