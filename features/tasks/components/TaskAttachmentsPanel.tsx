@@ -28,9 +28,25 @@ import {
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { folderForTask } from "@/features/files/utils/folder-conventions";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { cn } from "@/utils/cn";
+
+/**
+ * Where a conversation attached to this task actually lives.
+ *
+ * These two rows used to point at `/demos/chat/c/<id>` — a `(dev)` demo route.
+ * `(dev)` is parked out of the main app build and deploys to its own host, so
+ * from `/tasks` (a `(core)` route) the link either 404s or throws the user onto
+ * demos.aimatrx.com. The registry owns the real destination (`/chat/<id>`), and
+ * routing through it means a future move of the chat route drags these with it.
+ */
+function conversationHref(id: string, fragment?: string): string | undefined {
+  const href = resolveEntityDoors("conversation", id).href;
+  if (!href) return undefined;
+  return fragment ? `${href}#${fragment}` : href;
+}
 
 interface TaskAttachmentsPanelProps {
   taskId: string;
@@ -266,7 +282,7 @@ export default function TaskAttachmentsPanel({
               key: m.id,
               primary: m.preview || "AI message",
               secondary: `${m.role ?? "message"} · ${new Date(m.created_at).toLocaleString()}`,
-              href: `/demos/chat/c/${m.conversation_id}#m-${m.id}`,
+              href: conversationHref(m.conversation_id, `m-${m.id}`),
               onRemove: () => handleRemove("message", m.id),
             }))}
           />
@@ -278,7 +294,7 @@ export default function TaskAttachmentsPanel({
             items={bundle.cx_conversations.map((c) => ({
               key: c.id,
               primary: c.title,
-              href: `/demos/chat/c/${c.id}`,
+              href: conversationHref(c.id),
               onRemove: () => handleRemove("conversation", c.id),
             }))}
           />
