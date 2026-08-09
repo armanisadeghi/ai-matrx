@@ -178,5 +178,60 @@ function asArray(value: unknown, where: string): unknown[] {
   return value;
 }
 
+/**
+ * Do the headline numbers agree with the rows underneath them?
+ *
+ * `parseReport` checks that every field has the right TYPE, which cannot catch
+ * the failure that actually happens here: `report.json` is machine-written in
+ * one pass — totals, byRule and findings all derived from the same array — so
+ * they can only disagree if the file was hand-edited or half-committed. When
+ * they do, the page would show a confident "140 findings" above 12 rows and
+ * rank buckets that sum to neither. That is worse than an error, because it
+ * reads as truth.
+ *
+ * Returns the mismatches as sentences. It does NOT throw: the rows themselves
+ * are still usable and worth showing, so the console renders these loudly
+ * beside the data (loud recovery — a fixer that fires must scream) rather than
+ * taking the scoreboard down, which is exactly the failure the history
+ * validator already had to be walked back from.
+ */
+export function reconcileReport(report: DeadEndReport): string[] {
+  const problems: string[] = [];
+  const { findings, totals } = report;
+
+  const severity = { high: 0, medium: 0, low: 0 } as Record<DeadEndSeverity, number>;
+  const rules = {} as Record<DeadEndRuleId, number>;
+  for (const rule of Object.keys(RULE_TITLES) as DeadEndRuleId[]) rules[rule] = 0;
+  const files = new Set<string>();
+  for (const f of findings) {
+    severity[f.severity] += 1;
+    rules[f.rule] += 1;
+    files.add(f.file);
+  }
+
+  const compare = (label: string, claimed: number, actual: number): void => {
+    if (claimed !== actual) {
+      problems.push(`${label} says ${claimed}, the findings list holds ${actual}`);
+    }
+  };
+
+  compare("totals.findings", totals.findings, findings.length);
+  compare("totals.high", totals.high, severity.high);
+  compare("totals.medium", totals.medium, severity.medium);
+  compare("totals.low", totals.low, severity.low);
+  compare("totals.filesWithFindings", totals.filesWithFindings, files.size);
+  for (const rule of Object.keys(RULE_TITLES) as DeadEndRuleId[]) {
+    compare(`byRule.${rule}`, report.byRule[rule], rules[rule]);
+  }
+
+  return problems;
+}
+
 export const DEAD_END_REPORT: DeadEndReport = parseReport(rawReport);
 export const DEAD_END_HISTORY: DeadEndHistoryPoint[] = parseHistory(rawHistory);
+
+/**
+ * Mismatches in the committed snapshot, computed once at module load — the
+ * same place the report is parsed, so no surface can forget to ask.
+ */
+export const DEAD_END_REPORT_PROBLEMS: string[] = reconcileReport(DEAD_END_REPORT);

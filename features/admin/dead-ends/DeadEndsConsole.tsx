@@ -89,6 +89,13 @@ function ageInDays(iso: string): number {
 interface DeadEndsConsoleProps {
   report: DeadEndReport;
   history: DeadEndHistoryPoint[];
+  /**
+   * Ways the snapshot's headline numbers disagree with its own findings list
+   * (`reconcileReport`). Empty on every machine-written report; non-empty means
+   * the file was hand-edited or half-committed, and the page must say so
+   * instead of printing a total it cannot support.
+   */
+  problems: string[];
 }
 
 type BucketFilter =
@@ -98,7 +105,7 @@ type BucketFilter =
   | { kind: "rule"; value: DeadEndRuleId }
   | { kind: "severity"; value: DeadEndSeverity };
 
-export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
+export function DeadEndsConsole({ report, history, problems }: DeadEndsConsoleProps) {
   const [bucket, setBucket] = useState<BucketFilter>({ kind: "none" });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   /**
@@ -338,6 +345,7 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
         report={report}
         scanAgeDays={scanAgeDays}
         delta={delta}
+        problems={problems}
         onCopyRefresh={() =>
           void copy("refresh", REFRESH_COMMAND, "Refresh command")
         }
@@ -521,6 +529,7 @@ function Header({
   report,
   scanAgeDays,
   delta,
+  problems,
   onCopyAll,
   onCopyRefresh,
 }: {
@@ -528,6 +537,7 @@ function Header({
   /** `null` until the client has read the clock (see the console above). */
   scanAgeDays: number | null;
   delta: number | null;
+  problems: string[];
   onCopyAll: () => void;
   onCopyRefresh: () => void;
 }) {
@@ -576,6 +586,32 @@ function Header({
             title="Copy the refresh command"
             aria-label="Copy the refresh command"
             className="rounded p-0.5 hover:bg-amber-500/20"
+          >
+            <Copy className="h-3 w-3" />
+          </button>
+        </span>
+      )}
+
+      {problems.length > 0 && (
+        <span
+          className="inline-flex flex-wrap items-center gap-1.5 rounded-md border border-red-500/50 bg-red-500/10 px-2 py-1 text-[11px] text-red-700 dark:text-red-400"
+          role="alert"
+        >
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          <strong className="font-semibold">
+            Snapshot is inconsistent — the totals below do not match its own findings.
+          </strong>
+          <span>
+            {problems.join("; ")}. Re-run{" "}
+            <code className="font-mono">pnpm check:dead-ends:write</code> and commit both
+            JSON files together.
+          </span>
+          <button
+            type="button"
+            onClick={onCopyRefresh}
+            title="Copy the refresh command"
+            aria-label="Copy the refresh command"
+            className="rounded p-0.5 hover:bg-red-500/20"
           >
             <Copy className="h-3 w-3" />
           </button>

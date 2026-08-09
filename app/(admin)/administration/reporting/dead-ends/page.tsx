@@ -3,6 +3,7 @@ import { DeadEndsConsole } from "@/features/admin/dead-ends/DeadEndsConsole";
 import {
   DEAD_END_HISTORY,
   DEAD_END_REPORT,
+  DEAD_END_REPORT_PROBLEMS,
 } from "@/features/admin/dead-ends/report-data";
 
 /**
@@ -28,7 +29,11 @@ export const metadata: Metadata = {
 export default function DeadEndsPage() {
   return (
     <div className="h-[calc(100dvh-2.5rem)] bg-textured">
-      <DeadEndsConsole report={DEAD_END_REPORT} history={DEAD_END_HISTORY} />
+      <DeadEndsConsole
+        report={DEAD_END_REPORT}
+        history={DEAD_END_HISTORY}
+        problems={DEAD_END_REPORT_PROBLEMS}
+      />
     </div>
   );
 }

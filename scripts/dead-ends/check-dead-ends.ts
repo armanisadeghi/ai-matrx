@@ -112,13 +112,38 @@ function parseArgs(): Args {
     const hit = argv.find((a) => a.startsWith(`${flag}=`));
     return hit ? hit.slice(flag.length + 1) : null;
   };
+  /**
+   * A filter flag written with no value is a MALFORMED scope, never "no filter".
+   *
+   * `--path=` and `--path=/` both reduce to an empty prefix, and every gate
+   * downstream tests the string for truthiness: `matchesPathFilter` returns
+   * true for every file, `assertFilters` skips its zero-match guard, and the
+   * `--write` refusal stops refusing. The run then scans the whole repo and
+   * can overwrite the baseline snapshot while the operator believes they
+   * scoped it — the same "lie clean" failure `assertFilters` exists to stop.
+   */
+  const scopeOf = (flag: string): string | null => {
+    const raw = valueOf(flag);
+    if (raw === null) return null;
+    const clean = raw.trim().replace(/^\/+|\/+$/g, "");
+    if (!clean) {
+      console.error(
+        `${RED}[dead-ends] ${flag}= was passed with no value.${NC} ` +
+          `An empty filter is not "scan everything" — it is a typo. ` +
+          `Drop the flag for a full run, or give it a value ` +
+          `(e.g. --path=features/notes, --rule=bare-id-text).`,
+      );
+      process.exit(2);
+    }
+    return clean;
+  };
   const limitRaw = valueOf("--limit");
   return {
     write: argv.includes("--write"),
     json: argv.includes("--json"),
     strict: argv.includes("--strict"),
-    rule: (valueOf("--rule") as DeadEndRuleId | null) ?? null,
-    pathPrefix: valueOf("--path"),
+    rule: (scopeOf("--rule") as DeadEndRuleId | null) ?? null,
+    pathPrefix: scopeOf("--path"),
     // `--limit=0` means "print everything" — `Number("0") || 40` silently
     // turned that into 40.
     limit: limitRaw === null ? 40 : Math.max(0, Number(limitRaw) || 0),
@@ -228,11 +253,21 @@ function currentCommit(): string | null {
  * scope would travel with the work order.
  *
  * Matches the path itself (so a full file path works) or anything beneath it.
+ *
+ * `null` — and ONLY `null` — means "no filter, scan everything". An empty or
+ * slash-only prefix never reaches here: `parseArgs` exits 2 on one, because
+ * treating it as "match all" is how a run scans the whole repo while looking
+ * scoped. Callers outside the CLI must uphold the same contract.
  */
 export function matchesPathFilter(relPath: string, prefix: string | null): boolean {
-  if (!prefix) return true;
-  const clean = prefix.replace(/\/+$/, "");
-  if (!clean) return true;
+  if (prefix === null) return true;
+  const clean = prefix.replace(/^\/+|\/+$/g, "");
+  if (!clean) {
+    throw new Error(
+      `[dead-ends] matchesPathFilter got an empty --path prefix (${JSON.stringify(prefix)}). ` +
+        `Pass null for an unfiltered run — an empty prefix is a typo, not "everything".`,
+    );
+  }
   return relPath === clean || relPath.startsWith(`${clean}/`);
 }
 

@@ -88,12 +88,34 @@ run would shrink the page to one feature and add a false trend point, looking
 exactly like the campaign had been won. The scoped read is encouraged; the
 scoped write is not a thing.
 
+**An empty filter value is a typo, never "everything"** (exit 2, loud). `--path=`
+and `--path=/` both reduce to an empty prefix, and every gate downstream tested
+that string for truthiness — the path matcher waved every file through, the
+zero-match guard skipped itself, and the `--write` refusal above stopped
+refusing. The run scanned the whole repo while the operator believed it was
+scoped, and could overwrite the baseline doing it. `parseArgs` now rejects both
+flags when they arrive without a value; `null` — and only `null` — means no
+filter. Leading and trailing slashes on a real prefix are stripped, so
+`--path=/features/notes/` works.
+
 **The scoreboard is only as fresh as the last committed snapshot.** Run
 `pnpm check:dead-ends:write` and commit `report.json` + `history.json` after a
 sweep; the page shows the scan's age and screams past 7 days. A live 6,800-file
 AST walk is not a page load, and a static import is the only thing that
 reliably resolves inside a Vercel function — this is the same snapshot pattern
 the shape doctor uses (`features/content-ir/admin/shape-doctor-server.ts`).
+
+**The snapshot's totals are reconciled against its own findings, and a
+mismatch is shown, not thrown.** `parseReport` type-checks each field, which
+cannot catch the failure that actually happens: the two JSON files are written
+in one pass but committed as two files, so a half-commit or a hand-edit leaves
+a confident "140 findings" above 12 rows. `reconcileReport`
+(`features/admin/dead-ends/report-data.ts`) recomputes findings, severities,
+`byRule` and the distinct-file count from the rows and names every
+disagreement; the console renders them in a red alert beside the numbers. It
+deliberately does not throw — the rows are still worth showing, and a parse
+that takes the scoreboard down is the mistake the history validator already had
+to be walked back from.
 
 ## The rules
 
@@ -309,3 +331,11 @@ new one.
   totals 140 / 73 high. Highest-value new finding:
   `ConversationHistorySidebar.tsx`, a sidebar listing conversations by id with
   zero door primitives imported.
+- **2026-08-09 (evening)** — two consistency defects closed. `--path=` /
+  `--rule=` with no value silently scanned the whole repo *and* bypassed the
+  `--write` refusal, because every downstream gate tested the string for
+  truthiness; both now exit 2. And the dashboard's snapshot parse checked field
+  types but never that `totals` / `byRule` agreed with the findings list, so a
+  half-committed `report.json` would print a total the rows could not support —
+  `reconcileReport` now names every disagreement in a red alert on the page
+  (shown, not thrown). Committed snapshot reconciles clean; counts unchanged.
