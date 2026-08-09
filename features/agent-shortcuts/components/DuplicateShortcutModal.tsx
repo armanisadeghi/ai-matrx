@@ -31,7 +31,11 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, ChevronRight, Copy, Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getPlacementTypeMeta, PLACEMENT_TYPES } from "../constants";
+import {
+  entityTokenForAgentScope,
+  getPlacementTypeMeta,
+  PLACEMENT_TYPES,
+} from "../constants";
 import type { PlacementType } from "../constants";
 import { useAgentShortcutCrud } from "../hooks/useAgentShortcutCrud";
 import type {
@@ -59,6 +63,7 @@ export function DuplicateShortcutModal({
 }: DuplicateShortcutModalProps) {
   const isMobile = useIsMobile();
   const crud = useAgentShortcutCrud({ scope, scopeId });
+  const containerToken = entityTokenForAgentScope(scope);
 
   const sourceCategory = useMemo(
     () => categories.find((c) => c.id === shortcut.categoryId) ?? null,
@@ -224,14 +229,16 @@ export function DuplicateShortcutModal({
               The duplicate will copy label, description, agent reference, scope
               mappings, and all other settings. It will be created in the
               current scope ({scope}
-              {scopeId ? " · " : ""}
+              {scopeId && containerToken ? " · " : ""}
             </span>
             {/* Was a hand-truncated bare uuid — unopenable and uncopyable. The
-                `scope` token now has an hrefFor (/scopes/s/<id>), so the scope
-                this copy lands in is reachable before the user commits to it. */}
-            {scopeId ? (
+                container this copy lands in is now reachable before the user
+                commits to it. The token comes from `scope`, never a literal:
+                `scopeId` is an org/project/task id, NOT a context.scopes row
+                (see entityTokenForAgentScope). */}
+            {scopeId && containerToken ? (
               <EntityRef
-                token="scope"
+                token={containerToken}
                 id={scopeId}
                 name={null}
                 showIcon={false}
