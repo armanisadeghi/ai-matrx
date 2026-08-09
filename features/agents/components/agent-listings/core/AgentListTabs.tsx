@@ -26,16 +26,28 @@ const PICKER_TABS: {
 interface AgentListTabsProps {
   consumer: UseAgentConsumerReturn;
   tabCounts: AgentListTabCounts;
+  /**
+   * Label for the builtin-agent tab. Users see "Public" (that is what a
+   * platform agent is to them); ADMIN surfaces pass "System", because there
+   * these are the agents they own and maintain.
+   */
+  systemTabLabel?: string;
 }
 
-export function AgentListTabs({ consumer, tabCounts }: AgentListTabsProps) {
+export function AgentListTabs({
+  consumer,
+  tabCounts,
+  systemTabLabel,
+}: AgentListTabsProps) {
   return (
     <div
       className="flex items-center gap-0.5 px-2 pb-1 overflow-x-auto scrollbar-none shrink-0"
       role="tablist"
       aria-label="Agent ownership"
     >
-      {PICKER_TABS.map(({ value, label, countKey }) => {
+      {PICKER_TABS.map(({ value, label: baseLabel, countKey }) => {
+        const label =
+          value === "system" ? (systemTabLabel ?? baseLabel) : baseLabel;
         const active = consumer.tab === value;
         const count = tabCounts[countKey];
         return (

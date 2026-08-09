@@ -41,10 +41,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { CreateAgentAppForm } from "./CreateAgentAppForm";
 import { AutoCreateAgentAppForm } from "./AutoCreateAgentAppForm";
 import { LiveBuilder } from "./LiveBuilder";
-import {
-  SearchableAgentSelect,
-  type AgentOption,
-} from "./SearchableAgentSelect";
+import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
 import {
   selectLiveAgents,
   selectAgentById,
@@ -110,18 +107,10 @@ export function CreateAgentAppFormWrapper({
     void dispatch(fetchFullAgent(preselectedAgentId));
   }, [preselectedAgentId, agentInRedux?.name, dispatch]);
 
-  // Thin AgentOption[] for SearchableAgentSelect (id/name/description/category/isPublic).
-  const agentOptions: AgentOption[] = useMemo(
-    () =>
-      liveAgents
-        .filter((a) => !a.isArchived)
-        .map((a) => ({
-          id: a.id,
-          name: a.name,
-          description: a.description ?? null,
-          category: a.category ?? null,
-          isPublic: !!a.isPublic,
-        })),
+  // Count shown beside the picker label. The picker itself reads the Redux
+  // agent slice directly (canonical) — this is display only.
+  const availableAgentCount = useMemo(
+    () => liveAgents.filter((a) => !a.isArchived).length,
     [liveAgents],
   );
 
@@ -350,7 +339,6 @@ export function CreateAgentAppFormWrapper({
         )}
         {mode === "manual" && (
           <CreateAgentAppForm
-            agents={agentOptions}
             onSubmit={handleManualSubmit}
             onCancel={backToGrid}
             busy={submitting}
@@ -368,18 +356,21 @@ export function CreateAgentAppFormWrapper({
         <div className="space-y-3 max-w-3xl mx-auto">
           <div className="flex items-center justify-between">
             <Label className="text-base font-semibold">Select Your Agent</Label>
-            {agentOptions.length > 0 && (
+            {availableAgentCount > 0 && (
               <span className="text-xs text-muted-foreground">
-                {agentOptions.length} agent
-                {agentOptions.length !== 1 ? "s" : ""} available
+                {availableAgentCount} agent
+                {availableAgentCount !== 1 ? "s" : ""} available
               </span>
             )}
           </div>
-          <SearchableAgentSelect
-            agents={agentOptions}
-            value={selectedAgentId ?? null}
-            onChange={handlePickerChange}
-            placeholder="Choose the agent to power your app..."
+          {/* THE canonical agent picker — full search, Mine/Shared/All/System
+              tabs with counts, sort, favorites, category + tag filters. */}
+          <AgentListInlinePicker
+            consumerId="agent-app-wrapper-picker"
+            onSelect={handlePickerChange}
+            activeAgentId={selectedAgentId ?? null}
+            autoFocusSearch={false}
+            className="h-96 rounded-md border border-border bg-card"
           />
         </div>
       )}

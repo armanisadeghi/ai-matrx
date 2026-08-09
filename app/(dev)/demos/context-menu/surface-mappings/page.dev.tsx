@@ -31,7 +31,7 @@ import {
   Play,
   RefreshCw,
 } from "lucide-react";
-import { SearchableAgentSelect } from "@/features/agent-apps/components/SearchableAgentSelect";
+import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   fetchAgentsListFull,
@@ -330,11 +330,12 @@ export default function SurfaceMappingsDemoPage() {
               </div>
             ) : (
               <div className="[&_button]:min-h-11">
-                <SearchableAgentSelect
-                  agents={agentOptions}
-                  value={agentId}
-                  onChange={setAgentId}
-                  emptyLabel="No agents match this search."
+                <AgentListInlinePicker
+                  consumerId="surface-mappings-demo-agent"
+                  onSelect={setAgentId}
+                  activeAgentId={agentId}
+                  autoFocusSearch={false}
+                  className="h-80 rounded-md border border-border bg-card"
                 />
               </div>
             )}

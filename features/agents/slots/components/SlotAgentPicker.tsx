@@ -10,7 +10,7 @@
  * THE TWO SELECTION LAWS (SoR common-docs/systems/agent-slots/FEATURE.md):
  * options feed from the canonical Redux agent-definition slice
  * (selectOwnedAgents + selectSharedWithMeAgents — never a raw table dump),
- * rendered through the ONE SearchableAgentSelect primitive.
+ * rendered through the ONE canonical picker (AgentListInlinePicker).
  *
  * Writes ride the ONE bind path (aidream PUT/DELETE
  * /agent-slots/{slot_key}/binding). The candidate is contract-checked
@@ -40,10 +40,7 @@ import {
   selectOwnedAgents,
   selectSharedWithMeAgents,
 } from "@/features/agents/redux/agent-definition/selectors";
-import {
-  SearchableAgentSelect,
-  type AgentOption,
-} from "@/features/agent-apps/components/SearchableAgentSelect";
+import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
 import {
   checkSlotContract,
   fetchSlotPickerData,
@@ -74,21 +71,6 @@ export function SlotAgentPicker({
   const ownedAgents = useAppSelector(selectOwnedAgents);
   const sharedAgents = useAppSelector(selectSharedWithMeAgents);
 
-  const agentOptions = useMemo<AgentOption[]>(() => {
-    const seen = new Set<string>();
-    const options: AgentOption[] = [];
-    for (const a of [...ownedAgents, ...sharedAgents]) {
-      if (a.isArchived || seen.has(a.id)) continue;
-      seen.add(a.id);
-      options.push({
-        id: a.id,
-        name: a.name ?? "(unnamed agent)",
-        description: a.description,
-        category: a.category,
-      });
-    }
-    return options;
-  }, [ownedAgents, sharedAgents]);
 
   const load = useCallback(() => {
     if (!userId) return;
@@ -113,7 +95,8 @@ export function SlotAgentPicker({
 
   const overrideAgentId = data?.myBinding?.is_enabled ? (data.myBinding.agent_id ?? null) : null;
   const overrideAgentName = overrideAgentId
-    ? (agentOptions.find((o) => o.id === overrideAgentId)?.name ?? "your agent")
+    ? ([...ownedAgents, ...sharedAgents].find((a) => a.id === overrideAgentId)
+        ?.name ?? "your agent")
     : null;
 
   const handlePick = async (candidateId: string) => {
@@ -261,12 +244,15 @@ export function SlotAgentPicker({
               )}
             </button>
 
-            <SearchableAgentSelect
-              agents={agentOptions}
-              value={overrideAgentId}
-              onChange={(id) => void handlePick(id)}
-              placeholder="Search your agents…"
-              emptyLabel="No agents you own or that are shared with you."
+            {/* THE canonical agent picker — full search, tabs with counts,
+                sort, favorites, category + tag filters. */}
+            <AgentListInlinePicker
+              consumerId={`slot-agent-picker-${slotKey}`}
+              onSelect={(id) => void handlePick(id)}
+              activeAgentId={overrideAgentId}
+              initialTab="mine"
+              autoFocusSearch={false}
+              className="h-80 rounded-md border border-border bg-card"
             />
 
             {saving ? (

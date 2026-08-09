@@ -80,10 +80,7 @@ import {
   fetchAgentExecutionMinimal,
   fetchAgentsListFull,
 } from "@/features/agents/redux/agent-definition/thunks";
-import {
-  SearchableAgentSelect,
-  type AgentOption,
-} from "@/features/agent-apps/components/SearchableAgentSelect";
+import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import type { ContextSlot } from "@/features/agents/types/agent-api-types";
 import type {
@@ -442,20 +439,6 @@ export function ShortcutForm({
     if (!open || !isGlobalScope) return;
     dispatch(fetchAgentsListFull());
   }, [open, isGlobalScope, dispatch]);
-  const builtinOptions = useMemo<AgentOption[]>(
-    () =>
-      builtinAgents
-        .filter((a) => !!a.name && !a.isArchived)
-        .map((a) => ({
-          id: a.id,
-          name: a.name as string,
-          description: a.description ?? null,
-          category: a.category ?? null,
-          isPublic: true,
-        }))
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    [builtinAgents],
-  );
   const builtinIds = useMemo(
     () => new Set(builtinAgents.map((a) => a.id)),
     [builtinAgents],
@@ -707,16 +690,20 @@ export function ShortcutForm({
               Global shortcuts run for every user, so only system agents can be
               bound here.
             </p>
-            <SearchableAgentSelect
-              agents={builtinOptions}
-              value={formData.agentId}
-              onChange={(id) => {
+            {/* THE canonical agent picker (admin/system variant) — full
+                search, tabs with counts, sort, favorites, filters. */}
+            <AgentListInlinePicker
+              consumerId="shortcut-global-agent"
+              onSelect={(id) => {
                 if (id === formData.agentId) return;
                 handleChange("agentId", id);
                 handleChange("agentVersionId", null);
               }}
-              placeholder="Search system agents…"
-              emptyLabel="No system agents found."
+              activeAgentId={formData.agentId}
+              initialTab="system"
+              includeSystemInAll
+              autoFocusSearch={false}
+              className="h-80 rounded-md border border-border bg-card"
             />
             {globalScopeAgentViolation && (
               <Alert variant="destructive">

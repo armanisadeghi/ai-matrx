@@ -15,10 +15,14 @@ export interface AgentFilterBarProps {
   rightPanel: RightPanel;
   onFilterChipClick: (panel: "sort" | "categories" | "tags") => void;
   onReset: () => void;
-  /** System tab — sort only; skip fav/category/tag filters. */
-  systemTab?: boolean;
 }
 
+/**
+ * The filter bar is IDENTICAL on every tab, system included. A tab that offers
+ * fewer controls than its neighbour is the half-built shape this list exists
+ * to prevent — the system tab's category/tag options simply come from the
+ * builtin population (see `selectAllSystemAgentCategories`).
+ */
 export function AgentFilterBar({
   consumer,
   allCategories,
@@ -28,7 +32,6 @@ export function AgentFilterBar({
   rightPanel,
   onFilterChipClick,
   onReset,
-  systemTab = false,
 }: AgentFilterBarProps) {
   return (
     <div className="flex items-center gap-1 px-2 pb-1.5 overflow-x-auto scrollbar-none shrink-0">
@@ -41,55 +44,45 @@ export function AgentFilterBar({
         focused={!isMobile && rightPanel === "sort"}
         onClick={() => onFilterChipClick("sort")}
       />
-      {!systemTab && (
-        <>
-          <FilterChip
-            icon={Star}
-            label={
-              consumer.favFilter === "yes"
-                ? "Favs"
-                : consumer.favFilter === "no"
-                  ? "No Favs"
-                  : "Favs"
-            }
-            active={consumer.favFilter !== "all"}
-            onClick={() => {
-              const next =
-                consumer.favFilter === "all"
-                  ? "yes"
-                  : consumer.favFilter === "yes"
-                    ? "no"
-                    : "all";
-              consumer.setFavFilter(next as "all" | "yes" | "no");
-            }}
-          />
-          {allCategories.length > 0 && (
-            <FilterChip
-              icon={Folder}
-              label={
-                consumer.includedCats.length > 0
-                  ? `${consumer.includedCats.length}`
-                  : "Category"
-              }
-              active={consumer.includedCats.length > 0}
-              focused={!isMobile && rightPanel === "categories"}
-              onClick={() => onFilterChipClick("categories")}
-            />
-          )}
-          {allTags.length > 0 && (
-            <FilterChip
-              icon={Tag}
-              label={
-                consumer.includedTags.length > 0
-                  ? `${consumer.includedTags.length}`
-                  : "Tags"
-              }
-              active={consumer.includedTags.length > 0}
-              focused={!isMobile && rightPanel === "tags"}
-              onClick={() => onFilterChipClick("tags")}
-            />
-          )}
-        </>
+      <FilterChip
+        icon={Star}
+        label={consumer.favFilter === "no" ? "No Favs" : "Favs"}
+        active={consumer.favFilter !== "all"}
+        onClick={() => {
+          const next =
+            consumer.favFilter === "all"
+              ? "yes"
+              : consumer.favFilter === "yes"
+                ? "no"
+                : "all";
+          consumer.setFavFilter(next);
+        }}
+      />
+      {allCategories.length > 0 && (
+        <FilterChip
+          icon={Folder}
+          label={
+            consumer.includedCats.length > 0
+              ? `${consumer.includedCats.length}`
+              : "Category"
+          }
+          active={consumer.includedCats.length > 0}
+          focused={!isMobile && rightPanel === "categories"}
+          onClick={() => onFilterChipClick("categories")}
+        />
+      )}
+      {allTags.length > 0 && (
+        <FilterChip
+          icon={Tag}
+          label={
+            consumer.includedTags.length > 0
+              ? `${consumer.includedTags.length}`
+              : "Tags"
+          }
+          active={consumer.includedTags.length > 0}
+          focused={!isMobile && rightPanel === "tags"}
+          onClick={() => onFilterChipClick("tags")}
+        />
       )}
       {activeFilterCount > 0 && (
         <button

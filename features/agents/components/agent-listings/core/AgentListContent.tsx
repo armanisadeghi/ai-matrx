@@ -32,6 +32,8 @@ export interface AgentListContentProps {
   onFilterChipClick: (panel: "sort" | "categories" | "tags") => void;
   rightPanel: RightPanel;
   tabCounts: AgentListTabCounts;
+  /** Label override for the builtin tab — admin surfaces pass "System". */
+  systemTabLabel?: string;
   /** Resolved current agent — pinned at the top when the list opens. */
   pinnedAgent?: AgentDefinitionRecord | null;
   /** When true, scroll the list to the pinned row (top). */
@@ -58,11 +60,11 @@ export function AgentListContent({
   onFilterChipClick,
   rightPanel,
   tabCounts,
+  systemTabLabel,
   pinnedAgent = null,
   listOpen = false,
 }: AgentListContentProps) {
   const listScrollRef = useRef<HTMLDivElement>(null);
-  const isSystemTab = consumer.tab === "system";
 
   useEffect(() => {
     if (listOpen && pinnedAgent) {
@@ -84,7 +86,11 @@ export function AgentListContent({
         />
       </div>
 
-      <AgentListTabs consumer={consumer} tabCounts={tabCounts} />
+      <AgentListTabs
+        consumer={consumer}
+        tabCounts={tabCounts}
+        systemTabLabel={systemTabLabel}
+      />
 
       {/* Filter bar */}
       <AgentFilterBar
@@ -96,7 +102,6 @@ export function AgentListContent({
         rightPanel={rightPanel}
         onFilterChipClick={onFilterChipClick}
         onReset={onReset}
-        systemTab={isSystemTab}
       />
 
       <div className="h-px bg-border shrink-0" />

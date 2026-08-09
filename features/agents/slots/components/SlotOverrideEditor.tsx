@@ -47,10 +47,7 @@ import {
   selectOwnedAgents,
   selectSharedWithMeAgents,
 } from "@/features/agents/redux/agent-definition/selectors";
-import {
-  SearchableAgentSelect,
-  type AgentOption,
-} from "@/features/agent-apps/components/SearchableAgentSelect";
+import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
 import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
 import {
   checkSlotContract,
@@ -100,21 +97,6 @@ export function SlotOverrideEditor({
   const ownedAgents = useAppSelector(selectOwnedAgents);
   const sharedAgents = useAppSelector(selectSharedWithMeAgents);
 
-  const agentOptions = useMemo<AgentOption[]>(() => {
-    const seen = new Set<string>();
-    const options: AgentOption[] = [];
-    for (const a of [...ownedAgents, ...sharedAgents]) {
-      if (a.isArchived || seen.has(a.id)) continue;
-      seen.add(a.id);
-      options.push({
-        id: a.id,
-        name: a.name ?? "(unnamed agent)",
-        description: a.description,
-        category: a.category,
-      });
-    }
-    return options;
-  }, [ownedAgents, sharedAgents]);
 
   const existingOverrides = useMemo(
     () => (binding && isJsonObject(binding.config_overrides) ? binding.config_overrides : null),
@@ -311,7 +293,7 @@ export function SlotOverrideEditor({
 
   const selectedAgentName = agentId
     ? (agentsById[agentId]?.name ??
-      agentOptions.find((o) => o.id === agentId)?.name ??
+      [...ownedAgents, ...sharedAgents].find((a) => a.id === agentId)?.name ??
       agentId)
     : null;
 
@@ -368,12 +350,16 @@ export function SlotOverrideEditor({
           </p>
         )}
 
-        <SearchableAgentSelect
-          agents={agentOptions}
-          value={agentId}
-          onChange={handlePickAgent}
-          placeholder="Search your agents…"
-          emptyLabel="No agents you own or that are shared with you."
+        {/* THE canonical agent picker — search, Mine/Shared/All/System tabs
+            with counts, sort, favorites, category + tag filters. Opens on
+            "Mine" because a swap replaces the system agent with YOUR agent. */}
+        <AgentListInlinePicker
+          consumerId="slot-override-editor-agent"
+          onSelect={handlePickAgent}
+          activeAgentId={agentId}
+          initialTab="mine"
+          autoFocusSearch={false}
+          className="h-80 rounded-md border border-border bg-card"
         />
 
         {/* Contract check result */}

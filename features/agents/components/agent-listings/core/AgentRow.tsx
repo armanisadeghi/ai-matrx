@@ -62,11 +62,17 @@ export function AgentRow({
         >
           {agent.name || "Untitled"}
         </span>
-        {agent.isOwner === false && (
+        {/* Origin badge. On a blended list (admin "All", search results) this
+            is the only thing that tells a system agent from your own. */}
+        {agent.agentType === "builtin" ? (
+          <span className="text-[9px] font-medium text-primary bg-primary/10 px-1 py-px rounded shrink-0 ml-auto">
+            system
+          </span>
+        ) : agent.isOwner === false ? (
           <span className="text-[9px] text-muted-foreground bg-muted px-1 py-px rounded shrink-0 ml-auto">
             shared
           </span>
-        )}
+        ) : null}
       </Link>
       {isMobile && (
         <button

@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
+import type { AgentTab } from "@/features/agents/redux/agent-consumers/slice";
 import { useAgentListCore } from "./useAgentListCore";
 import { AgentListContent } from "./core/AgentListContent";
 import { AgentDetailCard } from "./core/AgentDetailCard";
@@ -25,6 +26,17 @@ export interface AgentListInlinePickerProps {
   className?: string;
   /** Auto-focus the search field on mount. Default true. */
   autoFocusSearch?: boolean;
+  /**
+   * Tab to open on. Admin surfaces that manage system agents pass `"system"`.
+   * Omit for the normal user heuristic.
+   */
+  initialTab?: AgentTab;
+  /**
+   * ADMIN variant: blend system agents into the "All" tab (each row still
+   * carries its `system` badge). Off for user surfaces, where system agents
+   * are a separate catalogue.
+   */
+  includeSystemInAll?: boolean;
 }
 
 export function AgentListInlinePicker({
@@ -33,6 +45,8 @@ export function AgentListInlinePicker({
   activeAgentId = null,
   className,
   autoFocusSearch = true,
+  initialTab,
+  includeSystemInAll = false,
 }: AgentListInlinePickerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [catSearch, setCatSearch] = useState("");
@@ -61,6 +75,8 @@ export function AgentListInlinePicker({
     consumerId,
     onSelect,
     activeAgentIdOverride: activeAgentId,
+    initialTab,
+    includeSystemInAll,
   });
 
   useEffect(() => {
@@ -147,6 +163,7 @@ export function AgentListInlinePicker({
         onFilterChipClick={handleFilterChipClick}
         rightPanel={null}
         tabCounts={tabCounts}
+        systemTabLabel={includeSystemInAll ? "System" : undefined}
         pinnedAgent={pinnedAgent}
         listOpen
       />

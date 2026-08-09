@@ -13,10 +13,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import {
-  SearchableAgentSelect,
-  type AgentOption,
-} from "./SearchableAgentSelect";
+import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
+import type { AgentTab } from "@/features/agents/redux/agent-consumers/slice";
 import {
   DISPLAY_MODE_OPTIONS,
   getTemplateForDisplayMode,
@@ -29,7 +27,6 @@ import {
 import type { AppDisplayMode, CreateAgentAppInput } from "../types";
 
 interface CreateAgentAppFormProps {
-  agents: AgentOption[];
   onSubmit: (input: CreateAgentAppInput) => Promise<void> | void;
   onCancel?: () => void;
   busy?: boolean;
@@ -37,15 +34,20 @@ interface CreateAgentAppFormProps {
   defaultAgentId?: string | null;
   /** Optional default name (e.g. inherited from the preset agent). */
   defaultName?: string;
+  /** Tab the agent picker opens on. Admin/system surfaces pass `"system"`. */
+  agentInitialTab?: AgentTab;
+  /** ADMIN variant: blend system agents into the picker's "All" tab. */
+  agentIncludeSystemInAll?: boolean;
 }
 
 export function CreateAgentAppForm({
-  agents,
   onSubmit,
   onCancel,
   busy = false,
   defaultAgentId = null,
   defaultName = "",
+  agentInitialTab,
+  agentIncludeSystemInAll = false,
 }: CreateAgentAppFormProps) {
   const [agentId, setAgentId] = useState<string | null>(defaultAgentId);
   const [name, setName] = useState(defaultName);
@@ -122,10 +124,17 @@ export function CreateAgentAppForm({
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="agent-app-agent">Agent</Label>
-        <SearchableAgentSelect
-          agents={agents}
-          value={agentId}
-          onChange={setAgentId}
+        {/* THE canonical agent picker — search, Mine/Shared/All/System tabs
+            with counts, sort, favorites, category + tag filters. Never a
+            bespoke list + text box. */}
+        <AgentListInlinePicker
+          consumerId="create-agent-app-agent"
+          onSelect={setAgentId}
+          activeAgentId={agentId}
+          initialTab={agentInitialTab}
+          includeSystemInAll={agentIncludeSystemInAll}
+          autoFocusSearch={false}
+          className="h-80 rounded-md border border-border bg-card"
         />
       </div>
 

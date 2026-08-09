@@ -18,7 +18,7 @@ import { isJsonObject } from "@/types/json";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
-import { SearchableAgentSelect } from "@/features/agent-apps/components/SearchableAgentSelect";
+import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -125,12 +125,10 @@ const HEALTH_CLASS: Record<SlotHealth, string> = {
 function SlotEditor({
   slot,
   data,
-  agentOptions,
   onSaved,
 }: {
   slot: SlotDefinitionRow;
   data: SlotConsoleData;
-  agentOptions: SlotAgentOption[];
   onSaved: () => void;
 }) {
   const pinnedVersion = slot.default_agent_version_id
@@ -201,16 +199,18 @@ function SlotEditor({
     <div className="space-y-3">
       <div>
         <div className="text-xs font-medium text-muted-foreground mb-1">Agent</div>
-        <SearchableAgentSelect
-          agents={agentOptions.map((a) => ({
-            id: a.id,
-            name: a.name,
-            description: a.description,
-            category: a.category,
-          }))}
-          value={agentId}
-          onChange={setAgentId}
-          placeholder="Search agents to repin…"
+        {/* THE canonical agent picker — full search, Mine/Shared/All/System
+            tabs with counts, sort, favorites, category + tag filters, detail
+            peek. Admin variant: opens on System (a slot default must be a
+            system agent) but the admin can still reach every other tab, and
+            every row is badged so system and personal are never confused. */}
+        <AgentListInlinePicker
+          consumerId={`agent-slot-repin-${slot.id}`}
+          onSelect={setAgentId}
+          activeAgentId={agentId}
+          initialTab="system"
+          includeSystemInAll
+          className="h-96 rounded-md border border-border bg-card"
         />
       </div>
       <label className="flex items-center gap-2 text-sm">
@@ -303,12 +303,10 @@ function OverridesList({
 function SlotDetail({
   row,
   data,
-  agentOptions,
   onSaved,
 }: {
   row: SlotRow;
   data: SlotConsoleData;
-  agentOptions: SlotAgentOption[];
   onSaved: () => void;
 }) {
   const bindings = data.bindingsBySlotId[row.id] ?? [];
@@ -322,11 +320,10 @@ function SlotDetail({
         key={row.id}
         slot={row.slot}
         data={data}
-        agentOptions={agentOptions}
         onSaved={onSaved}
       />
       <div className="border-t border-border pt-3">
-        <SlotTestBench key={row.id} slot={row.slot} agentOptions={agentOptions} />
+        <SlotTestBench key={row.id} slot={row.slot} />
       </div>
       <div className="border-t border-border pt-3">
         <div className="text-xs font-medium text-muted-foreground mb-2">
@@ -682,12 +679,7 @@ export function AgentSlotsConsole() {
             defaultWidth: 520,
             render: (r) =>
               data ? (
-                <SlotDetail
-                  row={r}
-                  data={data}
-                  agentOptions={agentOptions}
-                  onSaved={reload}
-                />
+                <SlotDetail row={r} data={data} onSaved={reload} />
               ) : null,
           }}
           window={{

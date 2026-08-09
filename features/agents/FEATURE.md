@@ -2,9 +2,42 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-07-28`
+**Last updated:** `2026-08-08`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
+
+---
+
+## 🚨 THERE IS ONE AGENT PICKER. Building a second one is a defect.
+
+**Any UI that lets a person choose an agent renders `AgentListDropdown` (trigger +
+popover/drawer) or `AgentListInlinePicker` (embedded panel).** Both are shells over the
+ONE core — `useAgentListCore` + `AgentListContent` — so every agent-selection surface in
+the product gets the full set, always:
+
+search · **Mine / Shared / All / System tabs with live counts** · sort · favorites ·
+category filter · tag filter · reset · current-agent pinned on top · per-row origin badge
+(`system` / `shared`) · detail peek · cmd-click to open the agent · footer count.
+
+- **A list + a text box is NOT an agent picker.** That shape (`SearchableAgentSelect`)
+  existed in 8 places, shipped none of the above, and was **deleted 2026-08-08**. Do not
+  reintroduce it under any name. If a surface needs an agent, import the canonical picker.
+- **No tab is allowed to be poorer than its neighbours.** The System tab used to offer
+  sort only; it now carries the identical filter bar, with category/tag options drawn from
+  the builtin population (`selectAllSystemAgentCategories` / `…Tags`).
+- **User vs ADMIN variant — same component, two props.** `initialTab` picks the opening
+  tab; `includeSystemInAll` is the admin reading of "All" (system agents blend into it,
+  and the tab reads **System** instead of **Public**). Admin surfaces that manage system
+  agents pass `initialTab="system" includeSystemInAll` — an admin owns the system agents
+  AND their own, must reach both, and must never confuse them, which is what the per-row
+  `system` badge is for.
+- **Never hand a picker a pre-built `agents` array.** It reads the canonical Redux
+  agent-definition slice itself. A caller-supplied list is how a surface silently ends up
+  showing a partial set.
+
+Files: `features/agents/components/agent-listings/` — `AgentListDropdown.tsx`,
+`AgentListInlinePicker.tsx`, `useAgentListCore.ts`, `core/AgentList{Content,Tabs}.tsx`,
+`core/AgentFilterBar.tsx`, `core/AgentRow.tsx`.
 
 ---
 
@@ -292,6 +325,7 @@ model overrides.
 - `2026-07-22` — **Two-tier server-side agent search (`agx_search`).** Paginated data REQUIRES a server search: filtering only what the client happened to load answers "no results" for agents that were merely never fetched — a wrong answer, not a missing feature. One RPC, two tiers: **tier 1** (default) matches name / description / category / tags / model / type / id / shared-by email; **tier 2** (`p_deep`, opt-in via the "Prompts" toggle) adds the agent's own `messages` prompt content. Tier 2 is a strict superset and a prompt hit scores **50** — below every tier-1 field — so deep results can only ever append BELOW the obvious matches, never bury a name match. SQL weights **mirror `features/agents/search/score.ts`; change one, change both** or the list reshuffles when the server responds. Results merge **additively** through the same `mergeAgentListRows` path as a list fetch (`searchAgentsServer` thunk) — nothing is replaced or evicted, local matches keep rendering throughout. Wired into `useAgentConsumer`, so **every** agent surface gets it, not just the gallery. Because the local scorer cannot see prompt content, `serverMatchedIds` on the consumer lets a server hit survive the local filter — without it the server would return tier-2 matches and the UI would filter them straight back out. `ORDER BY` ends in `id` (total order) so paging search results cannot drop rows either. Verified live: exact UUID → the agent; "mitochondria" → 0 tier-1, 2 tier-2, ids matching the DB exactly. `migrations/agx_search_two_tier.sql`.
 - `2026-07-22` — **`agx_get_list` unstable pagination fixed (agents were missing from search).** The RPC ordered by `is_favorite DESC, updated_at DESC` — not a total order — so each `LIMIT/OFFSET` page re-sorted independently and rows were duplicated onto one page and skipped from another. Paging a 365-agent account 100-at-a-time yielded only **306 distinct ids**; the ~59 dropped agents never entered Redux, so the client-side search could not find them while `/agents/[id]/build` (a direct `agent.definition` read) worked normally. Fix: append `id` as a unique tiebreaker (`migrations/agx_get_list_stable_pagination.sql`) — **do not remove it**. Only bites above one page, so it scaled with agent count. Same defect class audited across all paginated RPCs; see FOUND_DEFECTS D82 for the unrelated findings that audit surfaced.
 - `2026-07-22` — THE VIEW LAW: documented (not narrowed) `fetchAppsInitial` in `agent-apps/thunks.ts` as a deliberate blended view (mine + org/project-shared + public + admin-sees-all) — mine-scoping it would drop legitimate org/public apps from the apps home page; a real Mine/Org/Public tab split is future UX work, not this fix.
+- `2026-08-08` — **One agent picker, everywhere — `SearchableAgentSelect` annihilated.** Eight surfaces were still choosing agents through a bare list + text box with no tabs, counts, sort, favorites, or filters: the Agent Slots repin drawer and test bench (`/administration/agents/slots`), the slot override editor and consumer `SlotAgentPicker`, the global-scope shortcut form, the agent-app create form + its wrapper's "Select Your Agent", the New System App admin page, and a context-menu demo. All now render the canonical `AgentListInlinePicker`; the component and its `AgentOption` type are **deleted**, along with every `agents={...}` array a caller was hand-building (pickers read the Redux agent slice themselves). Three gaps in the canonical picker were closed in the same pass, so the promise is real rather than nominal: (1) the **System tab is no longer crippled** — `filterBuiltinTypeAgents` honours favorites/category/tags (not just search), `AgentFilterBar` lost its `systemTab` suppression, and new `selectAllSystemAgentCategories`/`selectAllSystemAgentTags` supply the builtin population's options; (2) an **ADMIN variant** — `initialTab` + `includeSystemInAll` (blends system agents into "All" and relabels that tab **System**, since to an admin these are their own agents), threaded through both shells and `useAgentListCore`; (3) **every row is badged** `system` or `shared`, so a blended list can never hide which is which. `AgentListDropdown` also gained a `consumerId` override for surfaces that want isolated filter state. Invariant written at the top of this file. Verified live in the slots drawer: tabs `Mine 14 / Shared 10 / All 24 / System 216`, full filter row, builtin categories listed, no console errors.
 - `2026-07-19` — PlusAttachMenu manual-mode gate: `selectIsManualExecutionMode` disables the model picker (shows live builder model read-only) and Advanced Settings Window on Agent Builder test runs; agent-mode runs unchanged.
 - `2026-07-18` — Unified file-family controls across Agent Builder defaults,
   runtime media variables, and durable chat attachments. The shared dynamic

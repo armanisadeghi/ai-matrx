@@ -19,13 +19,12 @@ import { Input } from "@/components/ui/input";
 import { isJsonObject } from "@/types/json";
 import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { SearchableAgentSelect } from "@/features/agent-apps/components/SearchableAgentSelect";
+import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
 import {
   createSlotExemplar,
   deleteSlotExemplar,
   fetchSlotExemplars,
   runSlotTest,
-  type SlotAgentOption,
   type SlotDefinitionRow,
   type SlotExemplarRow,
   type SlotTestCandidate,
@@ -87,13 +86,7 @@ function ResultCard({
   );
 }
 
-export function SlotTestBench({
-  slot,
-  agentOptions,
-}: {
-  slot: SlotDefinitionRow;
-  agentOptions: SlotAgentOption[];
-}) {
+export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
   const [exemplars, setExemplars] = useState<SlotExemplarRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [candidateAgentId, setCandidateAgentId] = useState<string | null>(null);
@@ -242,18 +235,18 @@ export function SlotTestBench({
           <div className="text-[11px] font-medium text-muted-foreground mb-1">
             Candidate agent (blank = current default)
           </div>
-          <SearchableAgentSelect
-            agents={agentOptions.map((a) => ({
-              id: a.id,
-              name: a.name,
-              description: a.description,
-              category: a.category,
-            }))}
-            value={candidateAgentId}
-            onChange={(id) =>
+          {/* THE canonical agent picker (admin variant) — never a bespoke
+              list + text box. See AgentSlotsConsole for the rationale. */}
+          <AgentListInlinePicker
+            consumerId={`slot-test-candidate-${slot.id}`}
+            onSelect={(id) =>
               setCandidateAgentId((current) => (current === id ? null : id))
             }
-            placeholder="Search system agents…"
+            activeAgentId={candidateAgentId}
+            initialTab="system"
+            includeSystemInAll
+            autoFocusSearch={false}
+            className="h-80 rounded-md border border-border bg-card"
           />
         </div>
         <div>

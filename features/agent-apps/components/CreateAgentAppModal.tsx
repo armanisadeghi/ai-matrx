@@ -17,13 +17,11 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreateAgentAppForm } from "./CreateAgentAppForm";
-import type { AgentOption } from "./SearchableAgentSelect";
 import type { CreateAgentAppInput } from "../types";
 
 interface CreateAgentAppModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  agents: AgentOption[];
   onSubmit: (input: CreateAgentAppInput) => Promise<void> | void;
   busy?: boolean;
 }
@@ -31,7 +29,6 @@ interface CreateAgentAppModalProps {
 export function CreateAgentAppModal({
   open,
   onOpenChange,
-  agents,
   onSubmit,
   busy,
 }: CreateAgentAppModalProps) {
@@ -54,7 +51,6 @@ export function CreateAgentAppModal({
           </DrawerHeader>
           <div className="p-4 pb-safe overflow-auto">
             <CreateAgentAppForm
-              agents={agents}
               onSubmit={handleSubmit}
               onCancel={() => onOpenChange(false)}
               busy={busy}
@@ -75,7 +71,6 @@ export function CreateAgentAppModal({
           </DialogDescription>
         </DialogHeader>
         <CreateAgentAppForm
-          agents={agents}
           onSubmit={handleSubmit}
           onCancel={() => onOpenChange(false)}
           busy={busy}

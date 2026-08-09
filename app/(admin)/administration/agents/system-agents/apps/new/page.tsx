@@ -20,7 +20,6 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import { CreateAgentAppForm } from "@/features/agent-apps/components/CreateAgentAppForm";
-import type { AgentOption } from "@/features/agent-apps/components/SearchableAgentSelect";
 import type { CreateAgentAppInput } from "@/features/agent-apps/types";
 
 interface CreatedApp {
@@ -43,19 +42,8 @@ export default function AdminNewSystemAppPage() {
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState<CreatedApp | null>(null);
 
-  const agentOptions = useMemo<AgentOption[]>(
-    () =>
-      builtins
-        .filter((a) => !!a.id && !!a.name)
-        .map((a) => ({
-          id: a.id as string,
-          name: a.name as string,
-          description: a.description ?? null,
-          category: a.category ?? null,
-          isPublic: true,
-        })),
-    [builtins],
-  );
+  // Count only — the picker reads the canonical Redux agent slice itself.
+  const systemAgentCount = builtins.length;
 
   const handleSubmit = useCallback(
     async (input: CreateAgentAppInput) => {
@@ -149,7 +137,7 @@ export default function AdminNewSystemAppPage() {
     );
   }
 
-  if (agentOptions.length === 0) {
+  if (systemAgentCount === 0) {
     return (
       <div className="h-full flex items-center justify-center p-6">
         <Card className="max-w-lg w-full">
@@ -203,7 +191,8 @@ export default function AdminNewSystemAppPage() {
       <div className="flex-1 overflow-y-auto">
         <div className="container mx-auto p-4 max-w-2xl">
           <CreateAgentAppForm
-            agents={agentOptions}
+            agentInitialTab="system"
+            agentIncludeSystemInAll
             onSubmit={handleSubmit}
             onCancel={() => router.push("/administration/agents/system-agents/apps")}
             busy={submitting}

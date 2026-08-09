@@ -13,10 +13,13 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { shouldDefaultAgentListToPublicTab } from "@/features/agents/constants/agent-list-labels";
 import { useAgentConsumer } from "@/features/agents/hooks/useAgentConsumer";
+import type { AgentTab } from "@/features/agents/redux/agent-consumers/slice";
 import {
   makeSelectFilteredAgents,
   selectAllAgentCategories,
   selectAllAgentTags,
+  selectAllSystemAgentCategories,
+  selectAllSystemAgentTags,
   selectTotalBuiltinAgentsCount,
   selectTotalOwnedAgentsCount,
   selectTotalSharedAgentsCount,
@@ -38,6 +41,18 @@ export interface AgentListCoreOptions {
   navigateTo?: string;
   /** Route-scoped agent id (chat/builder headers). Overrides Redux activeAgentId. */
   activeAgentIdOverride?: string | null;
+  /**
+   * Tab this surface opens on, applied once on first mount. Admin surfaces
+   * that manage system agents pass `"system"`. When omitted the normal
+   * user heuristic applies (a user with no agents of their own lands on the
+   * public/system catalogue).
+   */
+  initialTab?: AgentTab;
+  /**
+   * ADMIN reading of the "All" tab: blend system agents into it instead of
+   * keeping them to their own tab. See `makeSelectFilteredAgents`.
+   */
+  includeSystemInAll?: boolean;
 }
 
 /**
@@ -54,6 +69,8 @@ export function useAgentListCore({
   onSelect,
   navigateTo,
   activeAgentIdOverride,
+  initialTab,
+  includeSystemInAll = false,
 }: AgentListCoreOptions) {
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -70,8 +87,8 @@ export function useAgentListCore({
   const ownedCount = useAppSelector(selectTotalOwnedAgentsCount);
 
   const selectFiltered = useMemo(
-    () => makeSelectFilteredAgents(consumerId),
-    [consumerId],
+    () => makeSelectFilteredAgents(consumerId, includeSystemInAll),
+    [consumerId, includeSystemInAll],
   );
   const agents = useAppSelector(selectFiltered);
   const sliceStatus = useAppSelector(selectAgentsSliceStatus);
@@ -80,8 +97,15 @@ export function useAgentListCore({
   const pinnedAgent = useAppSelector((state) =>
     activeAgentId ? selectAgentById(state, activeAgentId) : undefined,
   );
-  const allCategories = useAppSelector(selectAllAgentCategories);
-  const allTags = useAppSelector(selectAllAgentTags);
+  // Category/tag options follow the ACTIVE TAB's population: user agents on
+  // mine/shared/all, builtins on system. Same controls either way.
+  const userCategories = useAppSelector(selectAllAgentCategories);
+  const userTags = useAppSelector(selectAllAgentTags);
+  const systemCategories = useAppSelector(selectAllSystemAgentCategories);
+  const systemTags = useAppSelector(selectAllSystemAgentTags);
+  const onSystemTab = consumer.tab === "system";
+  const allCategories = onSystemTab ? systemCategories : userCategories;
+  const allTags = onSystemTab ? systemTags : userTags;
   const tabCounts: AgentListTabCounts = {
     mine: useAppSelector(selectTotalOwnedAgentsCount),
     shared: useAppSelector(selectTotalSharedAgentsCount),
@@ -100,6 +124,15 @@ export function useAgentListCore({
 
   useEffect(() => {
     if (defaultTabAppliedRef.current) return;
+
+    // An explicit surface default wins over the heuristic below, but only
+    // once — after that the tab belongs to the user.
+    if (initialTab) {
+      defaultTabAppliedRef.current = true;
+      if (consumer.tab !== initialTab) consumer.setTab(initialTab);
+      return;
+    }
+
     if (consumer.tab !== "mine") {
       defaultTabAppliedRef.current = true;
       return;
@@ -120,7 +153,14 @@ export function useAgentListCore({
 
     consumer.setTab("system");
     defaultTabAppliedRef.current = true;
-  }, [userId, ownedCount, agentsLoaded, consumer.tab, consumer.setTab]);
+  }, [
+    userId,
+    ownedCount,
+    agentsLoaded,
+    initialTab,
+    consumer.tab,
+    consumer.setTab,
+  ]);
 
   useEffect(() => {
     ensureLoaded();
@@ -143,9 +183,9 @@ export function useAgentListCore({
 
   const activeFilterCount =
     (consumer.sortBy !== "updated-desc" ? 1 : 0) +
-    (consumer.tab !== "system" && consumer.includedCats.length > 0 ? 1 : 0) +
-    (consumer.tab !== "system" && consumer.includedTags.length > 0 ? 1 : 0) +
-    (consumer.tab !== "system" && consumer.favFilter !== "all" ? 1 : 0);
+    (consumer.includedCats.length > 0 ? 1 : 0) +
+    (consumer.includedTags.length > 0 ? 1 : 0) +
+    (consumer.favFilter !== "all" ? 1 : 0);
 
   const handleAgentHover = useCallback(
     (agent: AgentDefinitionRecord, panelOpen: boolean) => {
