@@ -47,10 +47,29 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
 
 Ordered by traffic. Each item is independently actionable.
 
-1. **`(core)` feature list/detail surfaces** — `/agents`, `/notes`, `/files`,
-   `/tasks`, `/transcripts`, `/marketing/*`, `/crm`, `/research`. Highest user
-   traffic and NOT yet audited. Start with a census like the admin one: find
-   names rendered as `<span>`, bare uuids, and counts.
+1. **`(core)` surfaces — audited 2026-08-09, in progress.** The audit found ~30
+   HIGH/MED surfaces and ~130 `router.push`-only navigations (a row that
+   navigates on click but is not an anchor: no cmd-click, no middle-click, no
+   new tab — a Door Law violation even though clicking "works").
+   **In flight:** `lib/entity-list/` shell, `/agents/all` columns, `/chat`
+   history sidebar, `/rag/library`, `/war-room/all`, `/lists`, `/files`,
+   `/tasks`, `/projects`, `/marketing/{brands,sites,pages}`.
+   **Still open after that:** `features/research/components/sources/SourceResultsTable.tsx`
+   (`router.push` only), `features/notes/components/GlobalSearchResults.tsx:147`,
+   `features/agents/components/agent-listings/AgentCard.tsx:184` (hand-rolled
+   `window.open` on cmd-click instead of an anchor),
+   `features/agents/components/shortcuts/AgentShortcutsPanel.tsx:83`,
+   `features/agent-apps/components/agent-app-listings/AgentAppCard.tsx:138`,
+   `features/agents/agent-sets/components/AgentSetCard.tsx` (member agents
+   rendered as anonymous glyphs — neither named nor linked),
+   `/documents`, `/workbooks`, `/scopes`, and the ~35 remaining
+   `MatrxColumnDef` files under `features/marketing/**` (NONE declare `href`).
+   Already correct, do not redo: `features/crm/components/record/*`,
+   `features/dashboard/**`, `components/user-generated-table-data/TableCards.tsx`,
+   `features/research/components/landing/TopicList.tsx`,
+   the conversation-history ROW level, `features/data-tables/components/DocumentListCard.tsx`,
+   `features/rag/components/RagHomePage.tsx`, `features/tasks/components/CompactTaskItem.tsx`.
+
 2. **Remaining admin consoles.** Routes rendering
    from `features/agents` / `features/skills` / `features/podcasts` /
    `features/content-ir` rather than `features/admin`:
@@ -103,6 +122,23 @@ Ordered by traffic. Each item is independently actionable.
     fix** — the picker is where "which one is that?" actually bites.
 13. **Scheduling admin consoles show only the viewer's own rows** (D140) — they
     present as fleet-wide and are not.
+14. **`scope` has a real route the registry doesn't know.**
+    `/organizations/<org>/scopes/<typeId>/<scopeId>` exists and `ScopesHub`
+    builds it by hand, but `scope` has no `hrefFor` and no peek. It needs org +
+    type as well as the id, so `hrefFor(id)` alone can't express it — decide
+    whether to add a resolver route (`/scopes/<id>` → redirect) or leave scope
+    doors surface-local. Same shape for `scope_type`.
+15. **`brand` and marketing `site` are not registered tokens at all**, though
+    `marketingRoutes.brand()` / `.site()` exist. Registering them would let
+    `EntityRef` serve the ~35 marketing tables instead of each hand-rolling.
+16. **`context_item` needs a peek**; `user_feedback` now has a real route
+    (`/administration/users/feedback?feedback=<id>`) but sits behind the
+    super-admin gate — same "403 door" question as `skill`.
+17. **`/sandbox/[id]` is owner-only** (`app/api/sandbox/[id]/route.ts` filters
+    `.eq("user_id", user.id)`), so the fleet-wide sandbox console can only open
+    the viewer's own rows. Needs a super-admin read path.
+18. **Industries have no entity token at all** (`public.industries`), so every
+    "Industry — X" grant label is unavoidably plain text.
 14. **Registry entries the admin sweep wanted and could not add** (they need an
     owner's call, not a call-site patch):
     - `user_feedback` — now HAS a working route
