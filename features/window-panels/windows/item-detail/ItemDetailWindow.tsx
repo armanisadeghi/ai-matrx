@@ -13,6 +13,22 @@
  * This is the single fallback that closes the "no opener" gap for ALL item
  * types at once. As a type earns a richer bespoke window, flip its branch in
  * `useOpenItemPresentation` — nothing here changes.
+ *
+ * THE DOOR LAW applies twice here, and generically both times:
+ *
+ *   - The RECORD itself. `itemType` is a canonical entity token (the
+ *     `KnownItemType` union is the token vocabulary, and `doors.ts` already
+ *     maps the two that differ in the peek catalogue), so the title bar
+ *     resolves its own doors. The id chip used to be copy-only: a window that
+ *     shows you a record's full uuid and offers no way to open it is the
+ *     purest form of the dead end this sweep exists to remove.
+ *   - Its RELATIONSHIPS. Every `<token>_id` column in the fetched row goes
+ *     through `tokenFromColumnName` → `MatrxUuidCell`, so `project_id` /
+ *     `agent_id` / `conversation_id` become openable instead of printing as
+ *     bare uuids. This is deliberately generic: it costs nothing per entity
+ *     and every type this window can ever show gains it at once. Columns that
+ *     resolve to no token keep rendering as plain text — a wrong link is worse
+ *     than no link, which is exactly why `tokenFromColumnName` is strict.
  */
 
 "use client";
@@ -25,6 +41,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/utils/supabase/client";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
+import { tokenFromColumnName } from "@/components/official/entity-ref/doors";
+import {
+  MatrxUuidCell,
+  isUuidValue,
+} from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { getItemConfig } from "@/features/item-presentation/registry";
 import type { ItemType } from "@/features/item-presentation/types";
 
@@ -196,13 +218,28 @@ function ItemDetailWindowInner({
   const displayTitle =
     fetchedTitle?.trim() || initialName?.trim() || `Untitled ${config.label}`;
 
-  const fields: { key: string; value: { text: string; mono?: boolean } }[] = row
+  const fields: {
+    key: string;
+    value: { text: string; mono?: boolean };
+    /** Set when this column is an FK we can actually open. */
+    fkToken: string | null;
+  }[] = row
     ? Object.entries(row)
         .filter(([k]) => !HIDDEN_FIELDS.has(k))
-        .map(([k, v]) => ({ key: k, value: formatValue(v) }))
+        .map(([k, v]) => ({
+          key: k,
+          value: formatValue(v),
+          // Only a real uuid VALUE earns a door — a `<token>_id` column holding
+          // a slug or a business key would send the resolver looking for a row
+          // that isn't there.
+          fkToken: isUuidValue(v) ? tokenFromColumnName(k) : null,
+        }))
         .filter(
-          (f): f is { key: string; value: { text: string; mono?: boolean } } =>
-            f.value !== null,
+          (f): f is {
+            key: string;
+            value: { text: string; mono?: boolean };
+            fkToken: string | null;
+          } => f.value !== null,
         )
     : [];
 
@@ -236,19 +273,33 @@ function ItemDetailWindowInner({
       }
       actionsRight={
         itemId ? (
-          <button
-            type="button"
-            onClick={handleCopyId}
-            className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground transition-colors hover:text-foreground"
-            title="Copy ID"
-          >
-            {copied ? (
-              <Check className="h-3 w-3 text-emerald-500" />
-            ) : (
-              <Copy className="h-3 w-3" />
-            )}
-            <span className="max-w-[160px] truncate">{itemId}</span>
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleCopyId}
+              className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground transition-colors hover:text-foreground"
+              title="Copy ID"
+            >
+              {copied ? (
+                <Check className="h-3 w-3 text-emerald-500" />
+              ) : (
+                <Copy className="h-3 w-3" />
+              )}
+              <span className="max-w-[160px] truncate">{itemId}</span>
+            </button>
+            {/* The record's own doors. Controls render as a SIBLING of the copy
+                button, never inside it — and `EntityDoorControls` renders no
+                chrome at all when the token has neither route nor peek, so an
+                unrecognised item type simply keeps the copy chip it had. */}
+            {itemType ? (
+              <EntityDoorControls
+                token={itemType}
+                id={itemId}
+                name={displayTitle}
+                alwaysShowActions
+              />
+            ) : null}
+          </div>
         ) : undefined
       }
       onClose={onClose}
@@ -311,7 +362,7 @@ function ItemDetailWindowInner({
                   No additional fields to show.
                 </p>
               )}
-              {fields.map(({ key, value }) => (
+              {fields.map(({ key, value, fkToken }) => (
                 <div
                   key={key}
                   className="flex flex-col gap-0.5 border-b border-border/40 pb-2 last:border-b-0"
@@ -322,11 +373,20 @@ function ItemDetailWindowInner({
                   <dd
                     className={cn(
                       "text-sm text-foreground break-words",
-                      value.mono &&
+                      !fkToken &&
+                        value.mono &&
                         "whitespace-pre-wrap rounded-md bg-muted px-2 py-1 font-mono text-xs",
                     )}
                   >
-                    {value.text}
+                    {fkToken ? (
+                      <MatrxUuidCell
+                        value={value.text}
+                        label={titleizeKey(key)}
+                        token={fkToken}
+                      />
+                    ) : (
+                      value.text
+                    )}
                   </dd>
                 </div>
               ))}
