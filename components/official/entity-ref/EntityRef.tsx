@@ -112,6 +112,14 @@ export interface EntityRefProps {
    * browser's native new-tab behaviour via the real `href`, so a surface that
    * takes over the click can never cost the user their current state. The
    * explicit new-tab control stays visible regardless.
+   *
+   * CONTRACT — pass `undefined` when the handler cannot actually open
+   * anything. With no registry route AND an `onOpen`, the name renders as a
+   * link-styled BUTTON; if that handler then no-ops (because it too was
+   * gated on a route that doesn't exist), the user gets a control that looks
+   * openable and does nothing — a dead end with extra steps, which is the
+   * precise thing this component exists to kill. Gate at the call site:
+   * `onOpen={canOpen ? handler : undefined}`.
    */
   onOpen?: () => void;
   className?: string;

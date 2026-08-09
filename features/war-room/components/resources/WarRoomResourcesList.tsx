@@ -195,6 +195,15 @@ export function WarRoomResourcesList({
     if (href) window.open(href, "_blank", "noopener,noreferrer");
   };
 
+  /**
+   * Whether `openRow` can actually do anything. Peek-only tokens (skill,
+   * workflow, canvas_item…) have no registry route, so the handler no-ops —
+   * and handing a no-op to `EntityRef.onOpen` renders a link-styled title that
+   * does nothing, a dead end with extra steps.
+   */
+  const canOpenRow = (row: ContainerResourceRow) =>
+    Boolean(tryGetEntityInfo(row.token)?.hrefFor);
+
   const deleteEntity = async (row: ContainerResourceRow) => {
     const info = tryGetEntityInfo(row.token);
     if (!info || !DELETABLE_TOKENS.has(row.token)) {
@@ -450,7 +459,11 @@ export function WarRoomResourcesList({
                                   token={row.token}
                                   id={row.resourceId}
                                   title={title}
-                                  onOpen={() => openRow(row)}
+                                  onOpen={
+                                    canOpenRow(row)
+                                      ? () => openRow(row)
+                                      : undefined
+                                  }
                                   originNote={row.originNote}
                                   idPrefix={idPrefix}
                                   menu={menu}
@@ -594,7 +607,7 @@ function DefaultResourceRow({
   token: string;
   id: string;
   title: string;
-  onOpen: () => void;
+  onOpen: (() => void) | undefined;
   originNote?: string | null;
   idPrefix: ReactNode;
   menu: ReactNode;

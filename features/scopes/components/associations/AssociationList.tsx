@@ -205,6 +205,15 @@ export function AssociationList(props: AssociationListProps) {
     if (href) window.open(href, "_blank", "noopener,noreferrer");
   };
 
+  /**
+   * Whether `openRow` can actually do anything for this row. Peek-only tokens
+   * (skill, workflow, canvas_item…) have no registry route, so without a
+   * container-supplied `openEntity` the handler is a no-op — and handing a
+   * no-op to `EntityRef.onOpen` renders a link-styled title that does nothing.
+   */
+  const canOpenRow = (row: ContainerResourceRow) =>
+    Boolean(props.openEntity || tryGetEntityInfo(row.token)?.hrefFor);
+
   // role → token → rows, in registry role order.
   const grouped = groupRows(visibleRows);
   const isLoading = adapter.status === "loading" || adapter.status === "idle";
@@ -390,7 +399,11 @@ export function AssociationList(props: AssociationListProps) {
                                   label: row.label,
                                 })}
                                 showIcon={Boolean(Icon)}
-                                onOpen={() => openRow(row)}
+                                onOpen={
+                                  canOpenRow(row)
+                                    ? () => openRow(row)
+                                    : undefined
+                                }
                                 className="min-w-0 flex-1 text-foreground"
                               />
                               {row.originNote && (
