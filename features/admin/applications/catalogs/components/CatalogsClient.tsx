@@ -38,6 +38,11 @@ import type {
   CatalogEntryRow,
   EntryPrefill,
 } from "@/features/admin/applications/catalogs/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_APPLICATIONS_SURFACE_NAME,
+  createAdminApplicationsScope,
+} from "@/features/surfaces/manifests/admin-applications.manifest";
 
 interface CatalogsClientProps {
   initialRows: CatalogEntryRow[];
@@ -222,12 +227,37 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
     },
   ];
 
+  // Nested provider — out-depths the layout's base provider while the
+  // Catalogs tab is mounted; scope reads the live drill-down state at Run
+  // time.
+  const getSurfaceScope = () =>
+    createAdminApplicationsScope({
+      active_tab: "catalogs",
+      catalog_selected_app: app,
+      catalog_entry_count: appRows.length,
+      catalog_kind_summary: kindRows.map((k) => ({
+        slug: k.slug,
+        label: k.label,
+        registered: k.registered,
+        total: k.total,
+        active: k.active,
+      })),
+      catalog_view: view.mode,
+      catalog_selected_kind: view.mode === "kinds" ? "" : view.kind,
+      catalog_selected_entry_id:
+        view.mode === "edit" ? view.entryId : undefined,
+    });
+
   if (view.mode === "edit" || view.mode === "new") {
     const row =
       view.mode === "edit"
         ? (rows.find((r) => r.id === view.entryId) ?? null)
         : null;
     return (
+      <SurfaceRuntimeProvider
+        surfaceName={ADMIN_APPLICATIONS_SURFACE_NAME}
+        getScope={getSurfaceScope}
+      >
       <div className="h-full overflow-y-auto p-4">
         <CatalogEntryEditor
           key={view.mode === "edit" ? view.entryId : `new-${view.kind}`}
@@ -250,12 +280,17 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
           onPick={handleLinkPick}
         />
       </div>
+      </SurfaceRuntimeProvider>
     );
   }
 
   if (view.mode === "kind") {
     const kindEntries = appRows.filter((r) => r.kind === view.kind);
     return (
+      <SurfaceRuntimeProvider
+        surfaceName={ADMIN_APPLICATIONS_SURFACE_NAME}
+        getScope={getSurfaceScope}
+      >
       <div className="flex h-full flex-col gap-3 p-4">
         <CatalogKindTable
           app={app}
@@ -279,10 +314,15 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
           onPick={handleLinkPick}
         />
       </div>
+      </SurfaceRuntimeProvider>
     );
   }
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_APPLICATIONS_SURFACE_NAME}
+      getScope={getSurfaceScope}
+    >
     <div className="flex h-full flex-col gap-3 p-4">
       <div className="flex flex-wrap items-center gap-2">
         <LibraryBig className="h-5 w-5 text-muted-foreground" />
@@ -384,5 +424,6 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
         onPick={handleLinkPick}
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

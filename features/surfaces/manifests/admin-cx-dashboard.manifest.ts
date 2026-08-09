@@ -17,16 +17,15 @@
  * max_tokens", "summarize this conversation's cost"). Nothing on this
  * surface is a write path.
  *
- * Emitters (real, wired):
+ * Emitters (real, wired — every tab, nested-provider pattern, deepest wins):
  *   - Section (which tab)        → `CxDashboardLayoutClient.tsx` (base provider, all tabs)
- *   - Overview KPIs              → `overview-content.tsx` (nested provider, overview tab only)
- *
- * Deliberately declared-but-unemitted (no provider wired yet — see
- * `readinessNote`): conversations/requests list + detail, usage, and errors.
- * Declaring them is still correct per THE COMPLETENESS LAW (they ARE data
- * the page loads) — an author can already see and bind them; the runtime
- * value simply won't be populated until an emitter is added to each
- * "*-content.tsx" component (same nested-provider pattern as overview).
+ *   - Overview KPIs              → `overview-content.tsx`
+ *   - Conversations list         → `conversations/conversations-content.tsx`
+ *   - Conversation detail        → `conversations/[id]/conversation-detail-content.tsx`
+ *   - Requests list              → `requests/requests-content.tsx`
+ *   - Request detail             → `requests/[id]/request-detail-content.tsx`
+ *   - Usage & cost               → `features/cx-dashboard/components/UsageContent.tsx`
+ *   - Errors                     → `errors/errors-content.tsx`
  */
 
 import type {
@@ -407,9 +406,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminCxDashboardManifest: SurfaceManifest = {
   surfaceName: ADMIN_CX_DASHBOARD_SURFACE_NAME,
-  readiness: "partial",
-  readinessNote:
-    "dashboard_section is wired everywhere via a base provider in CxDashboardLayoutClient.tsx. The Overview tab additionally emits its full overview_kpis scope via a nested provider in overview-content.tsx (deepest wins). Conversations/requests list+detail, usage, and errors values are declared (THE COMPLETENESS LAW — this IS the data those pages load) but have no emitter yet; each needs the same nested-provider treatment added to its own *-content.tsx.",
+  readiness: "verified",
   label: "CX Dashboard",
   urlPattern: "/administration/chat/cx-dashboard",
   intro: `<surface_intro>

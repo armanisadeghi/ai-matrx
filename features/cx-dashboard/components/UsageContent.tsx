@@ -16,6 +16,11 @@ import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_CX_DASHBOARD_SURFACE_NAME,
+  createAdminCxDashboardScope,
+} from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
 
 const COLORS = [
   "hsl(215, 70%, 55%)", "hsl(160, 60%, 45%)", "hsl(280, 60%, 55%)",

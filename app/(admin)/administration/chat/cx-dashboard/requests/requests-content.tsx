@@ -28,6 +28,11 @@ import type {
   CxUserRequest,
   CxPaginatedResponse,
 } from "@/features/cx-dashboard/types/cxDashboardTypes";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_CX_DASHBOARD_SURFACE_NAME,
+  createAdminCxDashboardScope,
+} from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
 
 type Props = {
   result: CxPaginatedResponse<CxUserRequest>;
@@ -217,6 +222,29 @@ export function RequestsContent({ result }: Props) {
   }, []);
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_CX_DASHBOARD_SURFACE_NAME}
+      getScope={() =>
+        createAdminCxDashboardScope({
+          dashboard_section: "requests",
+          request_list_results: result.data.map((r) => ({
+            id: r.id,
+            conversation_id: r.conversation_id,
+            conversation_title: r.conversation_title,
+            status: r.status,
+            finish_reason: r.finish_reason,
+            iterations: r.iterations,
+            total_tool_calls: r.total_tool_calls,
+            total_tokens: r.total_tokens,
+            total_cost: r.total_cost,
+            model_name: r.model_name,
+            created_at: r.created_at,
+          })),
+          request_list_total: result.total,
+        })
+      }
+      isEditable={false}
+    >
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <h2 className="text-sm font-semibold">
         User Requests
@@ -317,5 +345,6 @@ export function RequestsContent({ result }: Props) {
         </div>
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

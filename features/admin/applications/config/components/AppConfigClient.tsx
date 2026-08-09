@@ -22,6 +22,11 @@ import { AppConfigEditor } from "@/features/admin/applications/config/components
 import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
 import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
 import type { AppConfigRow } from "@/features/admin/applications/config/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_APPLICATIONS_SURFACE_NAME,
+  createAdminApplicationsScope,
+} from "@/features/surfaces/manifests/admin-applications.manifest";
 
 interface AppConfigClientProps {
   initialRows: AppConfigRow[];
@@ -141,12 +146,33 @@ export function AppConfigClient({
     ];
   }, [adminEmails]);
 
+  // Nested provider — out-depths the layout's base provider while this tab is
+  // mounted, so Run scope carries the tab's live rows and editor state.
+  const getSurfaceScope = () =>
+    createAdminApplicationsScope({
+      active_tab: "configuration",
+      config_row_count: rows.length,
+      config_rows_summary: rows.map((r) => ({
+        app: r.app,
+        schema_version: r.schema_version,
+        min_supported_app_version: r.min_supported_app_version,
+        updated_at: r.updated_at,
+        updated_by: r.updated_by,
+      })),
+      config_editor_view: view.mode,
+      config_editor_app: view.mode === "edit" ? view.app : "",
+    });
+
   if (view.mode !== "list") {
     const row =
       view.mode === "edit"
         ? (rows.find((r) => r.app === view.app) ?? null)
         : null;
     return (
+      <SurfaceRuntimeProvider
+        surfaceName={ADMIN_APPLICATIONS_SURFACE_NAME}
+        getScope={getSurfaceScope}
+      >
       <div className="h-full overflow-y-auto p-4">
         <AppConfigEditor
           key={view.mode === "edit" ? view.app : "new"}
@@ -160,10 +186,15 @@ export function AppConfigClient({
           }
         />
       </div>
+      </SurfaceRuntimeProvider>
     );
   }
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_APPLICATIONS_SURFACE_NAME}
+      getScope={getSurfaceScope}
+    >
     <div className="flex h-full flex-col gap-3 p-4">
       <div className="flex flex-wrap items-center gap-2">
         <MonitorCog className="h-5 w-5 text-muted-foreground" />
@@ -233,5 +264,6 @@ export function AppConfigClient({
         />
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

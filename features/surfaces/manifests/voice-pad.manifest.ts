@@ -61,9 +61,9 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const voicePadManifest: SurfaceManifest = {
   surfaceName: "matrx-user/voice-pad",
-  readiness: "stub",
+  readiness: "partial",
   readinessNote:
-    "Values authored from a code audit of VoicePad; no runtime emitter yet — nothing emits this scope.",
+    "Emitter wired 2026-08-09 (nested SurfaceRuntimeProvider inside VoicePad — entries/draft/live transcript from voicePadSlice + local state at Run time). Needs the live browser pass to earn verified.",
   overlayId: "voicePad",
   label: "Voice Pad",
   intro: `<surface_intro>

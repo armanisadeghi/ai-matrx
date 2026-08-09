@@ -46,6 +46,8 @@ vision: []
 
 ## Done
 
+- Admin fleet wave 2 (2026-08-09): cx-dashboard, applications, and agent-apps section emitters verified and DB-synced through `migrations/surface_sync_admin_fleet_verified_20260809.sql`; agent-review emitter code-audited with browser pass outstanding.
+- Overlay emitter wave 1 (2026-08-09): image-viewer, gallery, share, and voice-pad wired with nested providers; gallery's duplicate footer view state was collapsed into `GalleryFloatingWorkspace`.
 - **Image Studio family (2026-08-09): 4 new surfaces registered + DB-synced + route-mapped + live emitters** — `matrx-user/image-studio` (`/images/convert`, fronted by `/images/studio`; emitter in `ImageStudioShell`, describe shortcut now launches with `runtime.surfaceName`), `image-generate` (`/images/generate` + `/images/ai-generate`; emitter in `GenerateShellClient`), `image-edit` (`/images/edit(+/[id])`; emitter nested in `EditModeShell` so modal mounts register too), `image-annotate` (`/images/annotate`; emitter nested in `AnnotateModeShell`). All honest `partial` (anchors + live binding tests pending). Sync migration: `migrations/surface_sync_image_studio_family.sql` (applied + ledgered). `matrx-user/images` stale readiness note refreshed. Route tests cover segment-safety (`/images/studio` must not claim `/images/studio-library`).
 
 - Canonical platform (NAMING/COMPLETENESS laws, groups, provenance, breadcrumb, Locate, agent-feed contract) — `features/surfaces/FEATURE.md` 2026-07-24 entries; aidream deployed.

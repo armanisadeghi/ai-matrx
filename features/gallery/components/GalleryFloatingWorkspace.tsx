@@ -337,6 +337,17 @@ export function GalleryFloatingWorkspace() {
 
   return {
     sidebar,
+    // Live state exposed so the window shell can drive its footer view-mode
+    // buttons and the surface emitter from the ONE state owner. The shell
+    // previously kept its own duplicate viewMode that the grid never read —
+    // the footer buttons highlighted but the layout never changed.
+    viewMode,
+    setViewMode,
+    searchInput,
+    activeQuery,
+    orientationFilter,
+    photoCount: photos.length,
+    favoriteCount: favorites.length,
     body: (
       <div className="flex flex-col h-full min-h-0">
         {/* Search bar */}

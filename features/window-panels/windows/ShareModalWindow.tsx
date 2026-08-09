@@ -20,6 +20,11 @@ import { ShareWithOrgTab } from "@/features/sharing/components/tabs/ShareWithOrg
 import { PublicAccessTab } from "@/features/sharing/components/tabs/PublicAccessTab";
 import { useToast } from "@/components/ui/use-toast";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SHARE_SURFACE_NAME,
+  createShareScope,
+} from "@/features/surfaces/manifests/share.manifest";
 
 export interface ShareModalWindowProps {
   isOpen: boolean;
@@ -178,6 +183,28 @@ export default function ShareModalWindow({
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       onCollectData={collectData}
     >
+      {/* Nested overlay emitter — while this window is open, its scope
+          out-depths the page's provider (deepest wins). */}
+      <SurfaceRuntimeProvider
+        surfaceName={SHARE_SURFACE_NAME}
+        getScope={() =>
+          createShareScope({
+            resource_type: resourceType,
+            resource_id: resourceId,
+            resource_name: resourceName,
+            share_url: getShareUrl(),
+            active_tab: activeTab,
+            is_owner: ownerLoading ? undefined : isOwner,
+            is_public: loading ? undefined : resourceIsPublic,
+            user_grant_count: loading ? undefined : userPermissions.length,
+            org_grant_count: loading ? undefined : orgPermissions.length,
+            permissions: loading
+              ? undefined
+              : permissions.map((p) => ({ ...p })),
+          })
+        }
+        isEditable={false}
+      >
       <div className="flex flex-col h-full bg-background overflow-hidden p-4">
         {/* Tabs Section */}
         <Tabs
@@ -283,6 +310,7 @@ export default function ShareModalWindow({
           </div>
         )}
       </div>
+      </SurfaceRuntimeProvider>
     </WindowPanel>
   );
 }

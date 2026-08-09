@@ -38,6 +38,11 @@ import {
   CheckCircle,
   Info,
 } from "lucide-react";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_CX_DASHBOARD_SURFACE_NAME,
+  createAdminCxDashboardScope,
+} from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
 
 type Detail = {
   user_request: CxUserRequest;
@@ -141,6 +146,60 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
   );
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_CX_DASHBOARD_SURFACE_NAME}
+      getScope={() =>
+        createAdminCxDashboardScope({
+          dashboard_section: "request_detail",
+          current_request_id: ur.id,
+          current_user_request: {
+            id: ur.id,
+            conversation_id: ur.conversation_id,
+            conversation_title: ur.conversation_title,
+            status: ur.status,
+            finish_reason: ur.finish_reason,
+            iterations: ur.iterations,
+            total_tool_calls: ur.total_tool_calls,
+            total_input_tokens: ur.total_input_tokens,
+            total_output_tokens: ur.total_output_tokens,
+            total_cached_tokens: ur.total_cached_tokens,
+            total_tokens: ur.total_tokens,
+            total_cost: ur.total_cost,
+            total_duration_ms: ur.total_duration_ms,
+            api_duration_ms: ur.api_duration_ms,
+            error: ur.error,
+            model_name: ur.model_name,
+            provider: ur.provider,
+            created_at: ur.created_at,
+            completed_at: ur.completed_at,
+          },
+          current_request_api_iterations: requests.map((r) => ({
+            iteration: r.iteration,
+            model_name: r.model_name,
+            input_tokens: r.input_tokens,
+            output_tokens: r.output_tokens,
+            cached_tokens: r.cached_tokens,
+            cost: r.cost,
+            api_duration_ms: r.api_duration_ms,
+            finish_reason: r.finish_reason,
+          })),
+          current_request_tool_calls: tool_calls.map((t) => ({
+            tool_name: t.tool_name,
+            tool_type: t.tool_type,
+            status: t.status,
+            is_error: t.is_error,
+            error_type: t.error_type,
+            error_message: t.error_message,
+            arguments: t.arguments,
+            output: t.output,
+            cost_usd: t.cost_usd,
+            duration_ms: t.duration_ms,
+          })),
+          current_request_cost_verification: cost_verification,
+        })
+      }
+      isEditable={false}
+    >
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="flex items-start gap-3">
@@ -418,5 +477,6 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
         defaultCollapsed={false}
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

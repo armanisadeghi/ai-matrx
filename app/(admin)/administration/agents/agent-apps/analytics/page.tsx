@@ -43,6 +43,11 @@ import {
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { humanAgentApp } from "@/features/agent-apps/format";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_AGENT_APPS_SURFACE_NAME,
+  createAdminAgentAppsScope,
+} from "@/features/surfaces/manifests/admin-agent-apps.manifest";
 
 export default function AgentAppsAnalyticsPage() {
   const [apps, setApps] = useState<AgentAppAdminView[]>([]);
@@ -112,6 +117,32 @@ export default function AgentAppsAnalyticsPage() {
   }
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
+      getScope={() =>
+        createAdminAgentAppsScope({
+          admin_section: "analytics",
+          analytics_totals: totals,
+          analytics_overall_success_rate: Number(overallSuccessRate),
+          analytics_per_app_rows: apps.map((a) => ({
+            id: a.id,
+            name: a.name,
+            slug: a.slug,
+            status: a.status,
+            category: a.category,
+            creator_email: a.creator_email,
+            is_featured: a.is_featured,
+            is_verified: a.is_verified,
+            total_executions: a.total_executions ?? null,
+            unique_users_count: a.unique_users_count ?? null,
+            success_rate: a.success_rate ?? null,
+            total_cost: a.total_cost ?? null,
+            updated_at: a.updated_at,
+            avg_execution_time_ms: a.avg_execution_time_ms ?? null,
+          })),
+        })
+      }
+    >
     <div className="flex flex-col h-full w-full bg-textured overflow-hidden">
       <div className="p-4 border-b border-border bg-textured">
         <h2 className="text-lg font-semibold text-foreground">
@@ -322,6 +353,7 @@ export default function AgentAppsAnalyticsPage() {
         </div>
       </ScrollArea>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

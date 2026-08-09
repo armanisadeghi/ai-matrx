@@ -37,6 +37,11 @@ import {
   initialImageViewerTransform,
 } from "./imageViewerTransforms";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  IMAGE_VIEWER_SURFACE_NAME,
+  createImageViewerScope,
+} from "@/features/surfaces/manifests/image-viewer.manifest";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -424,13 +429,29 @@ export function ImageViewerWindow({
       sidebarMinSize={150}
       defaultSidebarOpen={hasMany}
     >
-      <ImageViewer
-        images={images}
-        initialIndex={initialIndex}
-        alts={alts}
-        activeIndex={index}
-        onIndexChange={setIndex}
-      />
+      {/* Nested overlay emitter — while this window is open, its scope
+          out-depths the page's provider (deepest wins). */}
+      <SurfaceRuntimeProvider
+        surfaceName={IMAGE_VIEWER_SURFACE_NAME}
+        getScope={() =>
+          createImageViewerScope({
+            images,
+            image_count: images.length,
+            active_index: index,
+            active_image_url: images[index] ?? "",
+            active_image_alt: alts?.[index],
+          })
+        }
+        isEditable={false}
+      >
+        <ImageViewer
+          images={images}
+          initialIndex={initialIndex}
+          alts={alts}
+          activeIndex={index}
+          onIndexChange={setIndex}
+        />
+      </SurfaceRuntimeProvider>
     </WindowPanel>
   );
 }

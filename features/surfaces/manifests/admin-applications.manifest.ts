@@ -1,8 +1,7 @@
 /**
  * Surface manifest — Applications admin (`matrx-admin/applications`).
  *
- * ADMIN SURFACE. NEW surface — no `ui_surface` row exists yet; seed one
- * before syncing. Drives `/administration/applications/**`
+ * ADMIN SURFACE. Drives `/administration/applications/**`
  * (`app/(admin)/administration/applications/`), the hub governing OUR shipped
  * client applications (desktop, extension, mobile): remote runtime
  * configuration, remote catalogs, the installed fleet, and one unified audit
@@ -25,20 +24,21 @@
  *     merged audit timeline over `app_config_history` + `catalog_entries_history`.
  *
  * `active_tab` is derived from the pathname (route-tabbed, so reliably knowable
- * at any moment) and is the ONE value with a real emitter today. Each tab's own
- * list/detail data is separate client-component state with no shared bridge
- * across tabs — the per-tab summary values below are declared for
- * completeness (THE COMPLETENESS LAW: they are real page/component state) but
- * are NOT emitted yet; see readinessNote.
+ * at any moment) via the layout's base provider; each tab component mounts a
+ * NESTED provider (deepest wins) that adds its own live component state.
  *
- * What an agent bound here may safely do: read which tab the admin is on and,
- * once the deeper values are wired, reason about a specific application's
- * configuration/catalog/fleet standing. It must NOT assume any row beyond
- * active_tab is currently live in scope.
+ * What an agent bound here may safely do: read which tab the admin is on and
+ * reason about a specific application's configuration/catalog/fleet standing.
+ * It must NOT assume anything outside the active tab's group is currently
+ * live in scope.
  *
  * Emitters (real, wired):
- *   - active_tab → `ApplicationsAdminLayoutClient.tsx` via
- *     `<SurfaceRuntimeProvider surfaceName="matrx-admin/applications">`.
+ *   - active_tab   → `ApplicationsAdminLayoutClient.tsx` (base provider)
+ *   - Overview     → `overview/components/ApplicationsOverview.tsx`
+ *   - Configuration→ `config/components/AppConfigClient.tsx`
+ *   - Catalogs     → `catalogs/components/CatalogsClient.tsx`
+ *   - Installations→ `installations/components/InstallationsClient.tsx`
+ *   - History      → `history/components/ApplicationsHistoryClient.tsx`
  */
 
 import type {
@@ -334,9 +334,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminApplicationsManifest: SurfaceManifest = {
   surfaceName: ADMIN_APPLICATIONS_SURFACE_NAME,
-  readiness: "partial",
-  readinessNote:
-    "active_tab has a real emitter (ApplicationsAdminLayoutClient.tsx). Every other value here is real page/component state (AppConfigClient, CatalogsClient, InstallationsClient, ApplicationsHistoryClient, ApplicationsOverview) declared for completeness, but none of it is bridged to the layout's provider yet — each tab's data lives in its own client component with no shared scope today. Wiring those requires either lifting state to the layout or mounting a nested SurfaceRuntimeProvider per tab component.",
+  readiness: "verified",
   label: "Applications",
   urlPattern: "/administration/applications",
   intro: `<surface_intro>
@@ -344,7 +342,7 @@ This is an ADMIN surface: the Applications hub at /administration/applications �
 
 active_tab tells you which tab the admin is on right now and is always present. On Overview, applications_overview_summary and fleet_below_minimum_total describe every known application's config/catalog/fleet standing. On Configuration, config_rows_summary lists the remote runtime config for each application and config_editor_view/config_editor_app say whether one is open for editing. On Catalogs, catalog_kind_summary breaks down remote catalog entries by kind for catalog_selected_app, and catalog_view/catalog_selected_kind/catalog_selected_entry_id track the drill-down. On Installations, the fleet is compared against installation_min_supported_version, with installation_below_min_count naming instances running unsupported builds. On History, history_entry_count and history_fetch_limit describe the merged audit timeline window.
 
-Note: only active_tab is live today — the deeper per-tab values are declared but not yet emitted (see readinessNote). Treat everything past active_tab as "not currently in scope" until the emitter is extended.
+Only the values matching active_tab are populated — each tab mounts its own nested emitter, so everything belonging to another tab is absent, not stale.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(

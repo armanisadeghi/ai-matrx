@@ -15,6 +15,8 @@ import {
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createVoicePadScope } from "@/features/surfaces/manifests/voice-pad.manifest";
 
 const VoicePadExpanded = lazy(() => import("./VoicePadExpanded"));
 
@@ -123,6 +125,23 @@ export default function VoicePad({ instanceId }: VoicePadProps) {
         ) : undefined
       }
     >
+      {/* Nested overlay emitter — while the pad is open, its scope
+          out-depths the page's provider (deepest wins). */}
+      <SurfaceRuntimeProvider
+        surfaceName="matrx-user/voice-pad"
+        getScope={() =>
+          createVoicePadScope({
+            content: currentText || undefined,
+            transcript_entries: entries.map((e) => ({
+              id: e.id,
+              text: e.text,
+            })),
+            draft_text: draftText ?? undefined,
+            live_transcript: liveTranscript || undefined,
+          })
+        }
+        isEditable
+      >
       <Suspense fallback={<ExpandedLoadingFallback />}>
         <VoicePadExpanded
           entries={entries}
@@ -136,6 +155,7 @@ export default function VoicePad({ instanceId }: VoicePadProps) {
           micButtonId={micId}
         />
       </Suspense>
+      </SurfaceRuntimeProvider>
     </WindowPanel>
   );
 }

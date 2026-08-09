@@ -36,6 +36,11 @@ import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/const
 import { versionStanding } from "@/features/admin/applications/version";
 import type { VersionStanding } from "@/features/admin/applications/version";
 import type { AppInstanceRow } from "@/features/admin/applications/installations/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_APPLICATIONS_SURFACE_NAME,
+  createAdminApplicationsScope,
+} from "@/features/surfaces/manifests/admin-applications.manifest";
 
 interface InstallationsClientProps {
   initialRows: AppInstanceRow[];
@@ -316,6 +321,18 @@ export function InstallationsClient({
   }, [standingOf]);
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_APPLICATIONS_SURFACE_NAME}
+      getScope={() =>
+        createAdminApplicationsScope({
+          active_tab: "installations",
+          installation_app: app,
+          installation_count: summary.total,
+          installation_below_min_count: summary.below,
+          installation_min_supported_version: minSupportedVersion,
+        })
+      }
+    >
     <div className="flex h-full flex-col gap-3 p-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -422,5 +439,6 @@ export function InstallationsClient({
         />
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

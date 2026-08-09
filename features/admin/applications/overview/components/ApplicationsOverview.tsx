@@ -32,6 +32,11 @@ import { versionStanding } from "@/features/admin/applications/version";
 import type { AppConfigRow } from "@/features/admin/applications/config/types";
 import type { CatalogEntryRow } from "@/features/admin/applications/catalogs/types";
 import type { AppInstanceRow } from "@/features/admin/applications/installations/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_APPLICATIONS_SURFACE_NAME,
+  createAdminApplicationsScope,
+} from "@/features/surfaces/manifests/admin-applications.manifest";
 
 interface ApplicationsOverviewProps {
   configRows: AppConfigRow[];
@@ -172,6 +177,35 @@ export function ApplicationsOverview({
   }, [apps, configRows, catalogRows, instanceRows, instancesApp, nowMs]);
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_APPLICATIONS_SURFACE_NAME}
+      getScope={() =>
+        createAdminApplicationsScope({
+          active_tab: "overview",
+          application_count: summaries.length,
+          applications_overview_summary: summaries.map((s) => ({
+            app: s.app,
+            schema_version: s.config?.schema_version ?? null,
+            min_supported_app_version: s.minVersion,
+            url_count: s.urls.filter((u) => u.value !== null).length,
+            active_flags: s.activeFlags,
+            total_flags: s.totalFlags,
+            notice_live: s.noticeLive,
+            catalog_total: s.catalogTotal,
+            catalog_active: s.catalogActive,
+            catalog_kinds: s.catalogKinds,
+            fleet_total: s.fleetTotal,
+            fleet_recent: s.fleetRecent,
+            fleet_below_minimum: s.fleetBelow,
+            fleet_unreported: s.fleetUnknown,
+          })),
+          fleet_below_minimum_total: summaries.reduce(
+            (sum, s) => sum + s.fleetBelow,
+            0,
+          ),
+        })
+      }
+    >
     <div className="h-full overflow-y-auto p-4">
       <div className="mb-4">
         <h1 className="text-base font-semibold">Applications</h1>
@@ -349,5 +383,6 @@ export function ApplicationsOverview({
         ))}
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

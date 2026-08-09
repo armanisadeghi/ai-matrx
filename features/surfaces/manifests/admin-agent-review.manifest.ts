@@ -177,7 +177,7 @@ export const adminAgentReviewManifest: SurfaceManifest = {
   surfaceName: ADMIN_AGENT_REVIEW_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "Emitter wired in AgentReviewClient.tsx (counts + a row sample), but not yet browser-verified end to end, so this stays partial rather than verified per the readiness rules.",
+    "Emitter wired in AgentReviewClient.tsx (counts + a row sample); code-audited complete 2026-08-09. Still needs the browser verification pass (load /administration/users/agent-review, open the Agents chrome, confirm the live scope) — the 2026-08-09 remote session couldn't reach production (network policy blocked aimatrx.com), so this stays partial per the readiness rules until someone runs it from an environment with production access.",
   label: "Agent Review Queue",
   urlPattern: "/administration/users/agent-review",
   intro: `<surface_intro>
