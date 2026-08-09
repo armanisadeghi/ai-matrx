@@ -28,6 +28,30 @@ build time as you go.
 
 ---
 
+## Two constraints the next agent must know
+
+**1. You cannot browser-verify this branch from a Vercel preview.** Every
+deployment for it is `CANCELED` — the release-prefix gate
+(`scripts/vercel-ignore-build.sh`) skips any commit whose first line is not
+release-prefixed, and that applies to PR previews too, not just production
+(verified 2026-08-09 across all three projects). So the only ways to see this
+work running are a local `pnpm dev` or an actual `./scripts/release.sh`. Do NOT
+report a surface as "verified" on the strength of a preview URL that never
+built.
+
+**2. There is sibling work in flight — coordinate before re-doing it.**
+As of 2026-08-09 other branches are touching the same doctrine:
+- `claude/no-dead-ends-detector-dashboard-vrm0aj` — a dead-ends DETECTOR, an
+  admin scoreboard at `/administration/reporting/dead-ends`, and a
+  `matrx/no-bare-id-text` ESLint rule. That detector's output should become the
+  input to this sweep's Wave 2 list rather than a second hand-built inventory.
+- PR #74 (`claude/linked-agent-sync-compare-rnrki6`) is already consuming
+  `EntityRef` for linked-agent relatives. EntityRef adoption is no longer
+  single-threaded through this campaign — re-count consumers before quoting
+  "1 consumer" anywhere.
+
+---
+
 ## Audit provenance
 
 Four exhaustive read-only audits, 2026-08-09, over the whole repo. Counts below
