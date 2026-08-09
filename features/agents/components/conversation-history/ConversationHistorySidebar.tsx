@@ -1062,6 +1062,12 @@ const Row: React.FC<RowProps> = ({
   return (
     <ItemRow
       sourceFeature="conversation"
+      entity={{
+        type: "conversation",
+        id: conv.conversationId,
+        title,
+        resourceType: "conversation",
+      }}
       label={title}
       size="sm"
       active={active}
@@ -1217,6 +1223,12 @@ const ConsumerRow: React.FC<{
   return (
     <ItemRow
       sourceFeature="conversation"
+      entity={{
+        type: "conversation",
+        id: conv.conversationId,
+        title,
+        resourceType: "conversation",
+      }}
       className="mx-1"
       label={title}
       active={active}

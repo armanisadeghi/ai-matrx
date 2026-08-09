@@ -113,6 +113,12 @@ function ConversationRow({
   return (
     <ItemRow
       sourceFeature="conversation"
+      entity={{
+        type: "conversation",
+        id: conv.conversationId,
+        title: conv.title || "Untitled",
+        resourceType: "conversation",
+      }}
       className="mx-1"
       size="sm"
       label={conv.title || "Untitled"}

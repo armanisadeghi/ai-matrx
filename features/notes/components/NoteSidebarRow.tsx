@@ -106,6 +106,12 @@ export function NoteSidebarRow({
       <div className="flex-1 min-w-0">
         <ItemRow
           sourceFeature="notes"
+          entity={{
+            type: "note",
+            id: note.id,
+            title: note.label,
+            resourceType: "note",
+          }}
           size="sm"
           label={note.label}
           secondaryLabel={

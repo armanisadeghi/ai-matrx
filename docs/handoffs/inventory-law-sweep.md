@@ -732,6 +732,22 @@ these — but **not** `AgentListDropdown` (42 consumers) or `AgentActionModal`.
         sits between a rich primitive and its consumers, diff the props it
         ACCEPTS against the props it FORWARDS — the gap is a capability nobody
         knows they have.
+
+        **Then CONNECT the pipe — plumbing it is not the deliverable.** Five
+        rows now pass a verified `entity`: notes sidebar (`note`), both
+        conversation-history rails and the chat-history widget
+        (`conversation`), and the documents rail (`working_document`, verified
+        by reading the service — the rail queries
+        `workbench.working_documents`, which is exactly what the token and the
+        shareable registry name). Each `resourceType` is the one the sharing
+        registry already declares, so right-click Share and any existing share
+        UI cannot disagree about what the record is. **Deliberately NOT wired:**
+        the four agent-run / content-history rails
+        (`AgentRunsSidebar`, `AgentRunSidebarMenu`, `AgentRunHistoryWindow`,
+        `AgentContentHistoryPanel`) and `CodeEditorHistoryPanel` — a run and a
+        content-history entry have no registered entity token, and inventing
+        one would offer to attach a record that does not exist. Those five are
+        the honest `undefined`, not an oversight.
 - [ ] `useListViewPrefs` — migrate the 4 hand-rolled localStorage copies, each
       deleting a `useState` + `useEffect` + a local type:
       `features/projects/components/ProjectsHub.tsx:93,111,116` ·
