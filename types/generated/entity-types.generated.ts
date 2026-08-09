@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 320 active entity tokens. A token here is FK-valid for
+// 321 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -82,6 +82,7 @@ export type EntityTypeToken =
   | "assessment"
   | "assessment_item"
   | "assessment_result"
+  | "assist"
   | "auto_ingest_batch"
   | "auto_ingest_cost_event"
   | "canvas_comment"
@@ -627,6 +628,7 @@ export type ScopeableEntityToken =
   | "assessment"
   | "assessment_item"
   | "assessment_result"
+  | "assist"
   | "auto_ingest_batch"
   | "auto_ingest_cost_event"
   | "canvas_comment"
@@ -902,6 +904,7 @@ export type ListedEntityToken =
   | "ai_model_alias"
   | "ai_provider"
   | "ai_setting"
+  | "assist"
   | "content_ir_kind"
   | "content_ir_kind_instance"
   | "crm_campaign"
@@ -965,6 +968,7 @@ export const ENTITY_TYPE_METADATA = {
   "assessment": { token: "assessment", schema: "education", table: "assessment", label: "Assessment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "assessment_item": { token: "assessment_item", schema: "education", table: "assessment_item", label: "Assessment Item", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "assessment_result": { token: "assessment_result", schema: "education", table: "assessment_result", label: "Assessment Result", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "assist": { token: "assist", schema: "platform", table: "assists", label: "Assist", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: "platform", referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "auto_ingest_batch": { token: "auto_ingest_batch", schema: "public", table: "auto_ingest_batch", label: "Auto Ingest Batch", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "auto_ingest_cost_event": { token: "auto_ingest_cost_event", schema: "public", table: "auto_ingest_cost_event", label: "Auto Ingest Cost Event", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "canvas_comment": { token: "canvas_comment", schema: "canvas", table: "canvas_comments", label: "Canvas Comment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "display_name", contentRole: null, referenceCategory: null },
@@ -1289,6 +1293,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "assessment",
   "assessment_item",
   "assessment_result",
+  "assist",
   "auto_ingest_batch",
   "auto_ingest_cost_event",
   "canvas_comment",
