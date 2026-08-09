@@ -20,7 +20,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectTaskEdit,
   selectTaskIsDirty,
-  selectOperatingTaskId,
+  selectIsTaskOperating,
   patchTaskEdit,
   clearTaskEdit,
 } from "@/features/tasks/redux/taskUiSlice";
@@ -46,7 +46,7 @@ export function useTaskEditorController(taskId: string) {
   const task = useAppSelector((s) => selectTaskById(s, taskId));
   const draft = useAppSelector(selectTaskEdit(taskId));
   const isDirty = useAppSelector(selectTaskIsDirty(taskId));
-  const operatingTaskId = useAppSelector(selectOperatingTaskId);
+  const isOperating = useAppSelector(selectIsTaskOperating(taskId));
   const orgId = useAppSelector(selectOrganizationId);
   const project = useAppSelector((s) =>
     task?.project_id ? selectProjectById(s, task.project_id) : undefined,
@@ -93,7 +93,6 @@ export function useTaskEditorController(taskId: string) {
   };
 
   const completed = normalizeTaskStatus(task?.status) === "completed";
-  const isOperating = operatingTaskId === taskId;
 
   // Plain functions (React Compiler memoizes) — mirrors the original TaskEditor.
   const patch = <K extends keyof typeof draft>(

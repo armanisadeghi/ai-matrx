@@ -140,14 +140,6 @@ persistent save-failure (N consecutive failures) to a blocking banner on the edi
 
 Root cause found: `processStream`'s read loop exits only when the TRANSPORT closes — a server that reached terminal (both messages persisted 08:44:57Z on `989ac832-…`) but held the response socket open with heartbeats kept the watchdog happy for the 24h lifetime, so `executeInstance` never settled. Fixed at the canonical pipeline: `process-stream.ts` **terminal-settlement guard** — on `completion(user_request)` / fatal `error` / `end`, a 30s grace window closes the stream locally through the normal commit path (screams via `captureError` source `agent-stream-terminal-guard`). Also hardened `generate-page-image.ts`: real `RequestStatus` terminal values (old set had nonexistent "completed"/"failed", missed "timeout"/"cancelled") and `fileId`-OR-`file_id` extraction (FileRecord contract drift). GenerateMediaView's 5-minute `Promise.race` stays as a loud last-resort backstop. **Still open (server, aidream):** why the response was held open post-terminal + the 409 on the conversation-start stream reservation — the guard now self-reports every occurrence.
 
-### D129 — Tasks: known small gaps from the 2026-08 lifecycle upgrade adversarial review (2026-08-07)
-
-Three verified-but-deferred findings from the tasks world-class build (branch `feat/tasks-world-class`); the 12 serious ones were fixed in the same session.
-- `taskUiSlice.operatingTaskId` is a single slot — rapid toggling of TWO different tasks lets the second toggle bypass the in-flight guard for the first, so project open-count deltas can interleave and drift until refetch. **Fix:** make it a `Set<string>` (`operatingTaskIds`).
-- A snooze expiring does not resurface the task until some other store change recomputes `selectFilteredTasks` (the `now` is captured per-recompute). **Fix:** a cheap interval tick (e.g. 60s) into a `nowMinute` selector input on /tasks.
-- Monthly recurrence loses its month-end anchor across successive rolls once clamped (Jan 31 → Feb 28 → Mar 28, not Mar 31): `nextOccurrence` anchors on the *current* due date only. **Fix:** persist the original anchor day (e.g. `BYMONTHDAY=-1` or a metadata key) and honor it.
-
-
 ### D128 — MCP user connections dead since the vault cutover; connect flow unverified E2E (2026-08-06)
 
 All 4 `tool.mcp_user_conn` rows are `status='expired'` with `credential_item_id IS NULL`
@@ -497,6 +489,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 One line per fix — title, date, pointer. History lives in git.
 
+- **D129 (tasks lifecycle)** — all three gaps closed: `operatingTaskId` → `operatingTaskIds` set (add/remove actions, `selectIsTaskOperating`, all thunks/consumers ported); `tasksUi.nowMinute` ticked ~60s by `useNowMinuteTick` on /tasks feeds `selectFilteredTasks`/`selectSmartViewCounts`/`buildSmartViewContext` so snooze expiry + date windows resurface without an unrelated store change; monthly recurrence keeps its month-end anchor via `BYMONTHDAY` (parsed/formatted/honored in `utils/recurrence.ts`, `-1` = last day; `completeTask` stamps it on first roll via `ensureMonthDayAnchor`) — jest suite `features/tasks/utils/__tests__/recurrence.test.ts`. 2026-08-09.
 - **D129** — Apple OAuth secret rotated and verified; hard-coded expiry replaced by live `app_config` credential metadata plus an audited admin editor and actionable Manage toast. 2026-08-07.
 - **D113** — no Cartesia key in the browser: ONE token primitive (`lib/cartesia/accessToken.ts` — lazy, cached, dedupe, refresh-retry-once) + ONE ws connector (`connection.ts`); all 8 hooks/adapters ported; voices list/clone/create moved to authed server routes (`/api/cartesia/voices*`); raw-key `client.ts`/`tts-service.ts`/`AudioPlayground` deleted; `NEXT_PUBLIC_OPENAI_API_KEY`/`NEXT_PUBLIC_GOOGLE_API_KEY` bundle refs also removed. Rotation = D114. 2026-07-28.
 - **D107** — closed by Arman's attribution: the OOM fix was eliminating bad edge lazy imports (v0.4.137 revert), NOT the memory ceiling; `turbopackMemoryLimit` restored to 40GiB. 2026-07-28.
