@@ -19,6 +19,7 @@ import ts from "typescript";
 import {
   expressionWords,
   inferToken,
+  nounsForToken,
   type EntityTokenInfo,
 } from "./entity-tokens";
 import type { DeadEndFinding, DeadEndRuleId, DeadEndSeverity } from "./types";
@@ -34,6 +35,42 @@ const ID_PROPERTY_RE = /^(id|.+_id|.+Id|uuid|.+Uuid|.+UUID)$/;
 
 /** Count-ish expressions: `x.length`, `overrideCount`, `total`, `count`. */
 const COUNT_PROPERTY_RE = /^(length|count|.+Count|total|.+Total|size)$/;
+
+/**
+ * Ids that identify a UI thing rather than a record. Rendering one is not a
+ * dead end because there is no record behind it to open — a request, a tab, a
+ * DOM node and a broker session have no route by design.
+ */
+const NON_RECORD_ID_RE =
+  /^(request|instance|client|session|tab|node|element|trace|correlation|block|field|call|container|broker|render|form|input|slot|panel|widget|step|row|cell|group|toast|dialog|menu)(_id|Id|_uuid|Uuid)$/;
+
+/** Controls that OPEN something — a row door only counts if it does this. */
+const OPEN_AFFORDANCE_RE = /\b(open|view|details?|preview|manage|inspect|go to|edit)\b/i;
+
+/** Controls that destroy or dismiss — never a door, even with an onClick. */
+const CLOSING_AFFORDANCE_RE =
+  /\b(delete|remove|archive|dismiss|close|cancel|copy|duplicate|download|revoke|unlink|detach)\b/i;
+
+/** Inline tags that wrap a value for styling without adding meaning. */
+const INLINE_WRAPPER_TAGS = new Set([
+  "span",
+  "strong",
+  "b",
+  "em",
+  "i",
+  "code",
+  "mark",
+]);
+
+/** Placeholder markers — a name inside one is not the real surface. */
+const PLACEHOLDER_RE = /\b(Loader2|Skeleton|animate-spin|Spinner)\b/;
+
+/** Calls that format a value without changing what it identifies. */
+const FORMATTER_CALL_RE =
+  /^(slice|substring|substr|toString|trim|toUpperCase|toLowerCase|padStart|padEnd)$/;
+
+/** Result-count phrasing: describes the view, not reachable records. */
+const PAGINATION_PHRASE_RE = /\b(showing|of|out of|total|results?|selected|matching|filtered)\b/i;
 
 /**
  * Tags that ARE doors. An ancestor with one of these means the user can reach
@@ -119,7 +156,14 @@ const SKIP_ANCESTOR_TAGS = new Set([
   "FormDescription",
 ]);
 
-/** Imports that prove a file owns at least one door mechanism. */
+/**
+ * Imported BINDINGS that are doors even when the module path says nothing —
+ * this repo's local idiom (`openFilePreview`, `scopeHref`, `goToRecord`).
+ * Missing these made `no-doors-in-file` report files that DO have a door.
+ */
+const DOOR_BINDING_RE = /^(open|goTo|navigateTo|show)[A-Z]|(Href|Url|Route)$/;
+
+/** Module specifiers that prove a file owns at least one door mechanism. */
 const DOOR_IMPORT_MARKERS = [
   "next/link",
   "entity-ref/EntityRef",
@@ -157,13 +201,10 @@ export function shouldScanFile(relPath: string): boolean {
   return !SKIP_PATH_FRAGMENTS.some((frag) => p.includes(frag));
 }
 
-/**
- * Cheap pre-filter so we only pay for a TS parse on files that could possibly
- * match. Cuts the tree roughly in half on this repo.
- */
-export function couldContainFinding(src: string): boolean {
-  return /\{\s*[A-Za-z_$][\w$.?[\]]*\s*(\}|\.(slice|toString)\()/.test(src);
-}
+// A source pre-filter used to live here, claiming to halve the tree. Measured,
+// it dropped 134 of 6,803 files (2%) while silently excluding real shapes it
+// could not express (`{x.name ?? "Untitled"}`, `{row["name"]}`). A full run is
+// ~9s. It bought nothing and could hide findings, so it is gone.
 
 // ─── Scanning ───────────────────────────────────────────────────────────────
 
@@ -178,7 +219,6 @@ export function scanFile(
 ): DeadEndFinding[] {
   const relPath = relative(ctx.repoRoot, absPath).split(sep).join("/");
   const src = readFileSync(absPath, "utf8");
-  if (!couldContainFinding(src)) return [];
 
   const sf = ts.createSourceFile(
     relPath,
@@ -199,6 +239,9 @@ export function scanFile(
     if (ts.isImportDeclaration(node)) {
       const spec = node.moduleSpecifier.getText(sf);
       if (ENTITY_SOURCE_IMPORT_RE.test(spec)) importsEntitySource = true;
+      if (!importsDoor && importedBindings(node).some((b) => DOOR_BINDING_RE.test(b))) {
+        importsDoor = true;
+      }
     }
 
     if (ts.isJsxExpression(node) && isTextPosition(node)) {
@@ -230,6 +273,20 @@ export function scanFile(
   }
 
   return findings;
+}
+
+/** Local names a file imports — the binding, not the module path. */
+function importedBindings(node: ts.ImportDeclaration): string[] {
+  const clause = node.importClause;
+  if (!clause) return [];
+  const out: string[] = [];
+  if (clause.name) out.push(clause.name.text);
+  const bindings = clause.namedBindings;
+  if (bindings) {
+    if (ts.isNamespaceImport(bindings)) out.push(bindings.name.text);
+    else for (const el of bindings.elements) out.push(el.name.text);
+  }
+  return out;
 }
 
 function isTextPosition(node: ts.JsxExpression): boolean {
@@ -266,7 +323,8 @@ function classifyExpression(
   // That is the Door Law honoured, not broken.
   if (isIdGuardedFallback(node)) return null;
 
-  const doorTag = findDoorAncestor(node);
+  // A name inside a loading/empty placeholder is not the real surface.
+  if (isInPlaceholder(node, sf)) return null;
 
   const words = expressionWords(rawText);
   const tokenInfo = inferToken(words, ctx.tokens);
@@ -276,16 +334,26 @@ function classifyExpression(
   const line = pos.line + 1;
   const column = pos.character + 1;
 
+  // A door directly above the value, or one in the same rendered ROW. Splitting
+  // the two matters: an ancestor door is certain, a row door is inferred from
+  // an "Open"-shaped control beside the value, and a row door only counts when
+  // it leads to the same entity (an app link in a row does not open the task).
+  if (findDoorAncestor(node)) return null;
+  if (findRowDoor(node, sf, tokenInfo?.token ?? null, ctx)) return null;
+
   // ── Rule: bare id rendered as text ────────────────────────────────────────
   if (ID_PROPERTY_RE.test(property)) {
-    if (doorTag) return null;
     // `key={x.id}` style is an attribute, already excluded by text position.
     // A `cellKind: "uuid"` cell renders through the table's own resolver.
     if (/cellKind:\s*["']uuid["']/.test(scopeText)) return null;
+    // Ids that identify a UI thing, not a record: a request, a tab, a DOM node.
+    if (NON_RECORD_ID_RE.test(property)) return null;
     // A naked `{id}` with no object root and no inferable entity is usually a
     // map key, a config slug, or an HTML element id — not a record identifier.
-    // Require either a resolvable entity or a `<object>.<id>` read.
     if (!tokenInfo && !ts.isPropertyAccessExpression(unwrap(expr))) return null;
+    // The record's OWN surface printing its own id (a detail page, an editor,
+    // a confirm modal) is not a dead end — the user is already there.
+    if (isSelfSubject(node, expr)) return null;
     return makeFinding({
       relPath,
       line,
@@ -300,12 +368,16 @@ function classifyExpression(
 
   // ── Rule: entity name rendered with no door ───────────────────────────────
   if (NAME_PROPERTY_RE.test(property)) {
-    if (doorTag) return null;
-    const root = rootIdentifier(expr);
-    if (!idIsInScope(root, rawText, scopeText)) return null;
     // Only report when we could actually name the entity — an unnameable
-    // `{x.label}` is chrome more often than a record reference.
+    // `{x.label}` is chrome more often than a record reference. (This is also
+    // the rule's biggest recall limit: a row bound to `r`/`item` names nothing
+    // the expression text can resolve. See FEATURE.md § Known limits.)
     if (!tokenInfo) return null;
+    const root = rootIdentifier(expr);
+    if (!idIsInScope(root, rawText, scopeText, tokenInfo.token)) return null;
+    if (isSelfSubject(node, expr)) return null;
+    // A name inside a sentence is copy, not a reference.
+    if (isInProse(node, sf)) return null;
     return makeFinding({
       relPath,
       line,
@@ -320,7 +392,18 @@ function classifyExpression(
 
   // ── Rule: a count is a door too ───────────────────────────────────────────
   if (COUNT_PROPERTY_RE.test(property)) {
-    if (doorTag) return null;
+    // Three gates, in order of how much noise each removes. Without them this
+    // rule scored 0/5 in an adversarial sample — every hit was a "Showing N of
+    // M" label sitting directly above the list it counted.
+    //
+    // 1. Name the entity, or say nothing. `{entries.length} items` is chrome.
+    if (!tokenInfo) return null;
+    // 2. A count is only a door when the records are ELSEWHERE. If this file
+    //    already renders the collection, the user can reach them by looking.
+    const collection = rootIdentifier(expr);
+    if (collection && rendersCollection(collection, scopeText)) return null;
+    // 3. Result-count / pagination phrasing describes the view, not records.
+    if (isPaginationPhrasing(node)) return null;
     const noun = siblingNoun(node);
     if (!noun) return null;
     return makeFinding({
@@ -354,9 +437,7 @@ function terminalProperty(expr: ts.Expression): string | null {
     if (
       ts.isCallExpression(cur) &&
       ts.isPropertyAccessExpression(cur.expression) &&
-      /^(slice|substring|substr|toString|trim|toUpperCase|toLowerCase)$/.test(
-        cur.expression.name.text,
-      )
+      FORMATTER_CALL_RE.test(cur.expression.name.text)
     ) {
       cur = cur.expression.expression;
       continue;
@@ -400,29 +481,349 @@ function rootIdentifier(expr: ts.Expression): string | null {
   return ts.isIdentifier(cur) ? cur.text : null;
 }
 
+function escapeRe(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 /**
  * The load-bearing precision gate. We flag a name only when the surface
- * provably holds that record's identity: `row.name` needs `row.id` /
- * `row.<x>Id` / a same-named `<x>Id` binding somewhere in the file.
+ * provably holds THAT RECORD'S identity: `row.name` needs `row.id`, `row.uuid`,
+ * or an id named for the same entity (`row.agent_id` for an `agent`).
+ *
+ * Scoping to the entity matters. Accepting any `<root>.<anything>Id` let
+ * `requestId` on an in-flight upload satisfy the gate for a `file`, which is
+ * how "Uploading {u.fileName}" got reported as a dead end.
  */
 function idIsInScope(
   root: string | null,
   rawText: string,
   scopeText: string,
+  token: string,
 ): boolean {
+  const nouns = nounsForToken(token);
+  const idNames = ["id", "uuid", ...nouns.flatMap((n) => [`${n}_id`, `${n}Id`])];
+  const alternation = idNames.map(escapeRe).join("|");
+
   if (root) {
-    const escaped = root.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const rootIdRe = new RegExp(
-      `\\b${escaped}\\??\\.(id|uuid|[A-Za-z0-9_]*(_id|Id)\\b)`,
-    );
+    const rootIdRe = new RegExp(`\\b${escapeRe(root)}\\??\\.(${alternation})\\b`);
     if (rootIdRe.test(scopeText)) return true;
   }
   // `{agentName}` destructured alongside `agentId`.
   const bare = rawText.replace(/^.*\./, "");
   const stem = bare.replace(/(Name|Title|Label)$/, "");
   if (stem && stem !== bare) {
-    const stemRe = new RegExp(`\\b${stem}(Id|_id)\\b`);
+    const stemRe = new RegExp(`\\b${escapeRe(stem)}(Id|_id)\\b`);
     if (stemRe.test(scopeText)) return true;
+  }
+  return false;
+}
+
+/** Does this file render the collection it is counting? */
+function rendersCollection(collection: string, scopeText: string): boolean {
+  const re = new RegExp(
+    `\\b${escapeRe(collection)}\\??\\.(map|slice|forEach|flatMap)\\(`,
+  );
+  return re.test(scopeText);
+}
+
+/**
+ * True when the expression belongs to the surface's OWN subject — the record
+ * whose detail page, editor or confirm dialog this is. Detected structurally:
+ * the root identifier is bound by a parameter of the nearest enclosing
+ * function that is NOT a `.map()` / `.filter()` row callback. A row callback's
+ * parameter IS a per-record binding, so `{r.task_id}` inside `.map((r) => …)`
+ * still reports.
+ */
+function isSelfSubject(node: ts.Node, expr: ts.Expression): boolean {
+  const root = rootIdentifier(expr);
+  if (!root) return false;
+
+  let cur: ts.Node | undefined = node;
+  while (cur) {
+    if (
+      ts.isArrowFunction(cur) ||
+      ts.isFunctionExpression(cur) ||
+      ts.isFunctionDeclaration(cur)
+    ) {
+      if (isIterationCallback(cur)) return false;
+      return cur.parameters.some((p) => bindsName(p.name, root));
+    }
+    cur = cur.parent;
+  }
+  return false;
+}
+
+function isIterationCallback(fn: ts.Node): boolean {
+  const call = fn.parent;
+  if (!call || !ts.isCallExpression(call)) return false;
+  if (!ts.isPropertyAccessExpression(call.expression)) return false;
+  return /^(map|flatMap|filter|forEach|find|reduce|some|every|sort)$/.test(
+    call.expression.name.text,
+  );
+}
+
+function bindsName(name: ts.BindingName, target: string): boolean {
+  if (ts.isIdentifier(name)) return name.text === target;
+  if (ts.isObjectBindingPattern(name) || ts.isArrayBindingPattern(name)) {
+    return name.elements.some(
+      (el) => ts.isBindingElement(el) && bindsName(el.name, target),
+    );
+  }
+  return false;
+}
+
+/**
+ * A door in the same rendered ROW rather than directly above the value —
+ * `{row.name}` in one cell with an "Open" button in the next. Bounded to the
+ * row/card container (the nearest ancestor carrying a `key`, else the nearest
+ * enclosing function's JSX) so it can never mean "some door exists somewhere
+ * in this 900-line file".
+ *
+ * The door must lead to the SAME entity. An `/p/{app_slug}` link in a row does
+ * not open the row's task, and treating it as one would silence a real finding.
+ */
+function findRowDoor(
+  node: ts.Node,
+  sf: ts.SourceFile,
+  token: string | null,
+  ctx: ScanContext,
+): boolean {
+  const container = findRowContainer(node);
+  if (!container) return false;
+
+  let found = false;
+  const visit = (n: ts.Node): void => {
+    if (found) return;
+    const opening = openingElementOf(n);
+    if (opening && isOpeningDoor(opening, sf)) {
+      if (!token || doorTargetsToken(opening, sf, token, ctx)) {
+        found = true;
+        return;
+      }
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(container);
+  return found;
+}
+
+/**
+ * The repeated ROW this value sits in — the nearest ancestor carrying a `key`,
+ * or the JSX root of an iteration callback.
+ *
+ * Returns null when neither exists. Falling back to "the whole component" was
+ * tried and is wrong: any Open/Edit button anywhere in a 300-line component
+ * then counted as a door for every name in it, which silenced real findings
+ * like a post-save "Saved to <note name>" banner.
+ */
+function findRowContainer(node: ts.Node): ts.Node | null {
+  let cur: ts.Node | undefined = node.parent;
+  let lastJsx: ts.Node | null = null;
+  while (cur) {
+    const opening = openingElementOf(cur);
+    if (opening) {
+      lastJsx = cur;
+      const hasKey = opening.attributes.properties.some(
+        (a) => ts.isJsxAttribute(a) && ts.isIdentifier(a.name) && a.name.text === "key",
+      );
+      if (hasKey) return cur;
+    }
+    if (
+      ts.isArrowFunction(cur) ||
+      ts.isFunctionExpression(cur) ||
+      ts.isFunctionDeclaration(cur)
+    ) {
+      return isIterationCallback(cur) ? lastJsx : null;
+    }
+    cur = cur.parent;
+  }
+  return null;
+}
+
+function isOpeningDoor(
+  el: ts.JsxOpeningElement | ts.JsxSelfClosingElement,
+  sf: ts.SourceFile,
+): boolean {
+  const tag = tagNameOf(el);
+  // Affordance words are matched against what a HUMAN sees — label text and
+  // title/aria-label — never the raw source. Reading the source made a row
+  // variable named `view` ("view.role.label") look like a View button and
+  // silenced a real finding.
+  const text = humanTextOf(el, sf);
+  if (CLOSING_AFFORDANCE_RE.test(text) && !OPEN_AFFORDANCE_RE.test(text)) return false;
+
+  for (const attr of el.attributes.properties) {
+    if (!ts.isJsxAttribute(attr) || !ts.isIdentifier(attr.name)) continue;
+    const name = attr.name.text;
+    if ((name === "href" || name === "to" || /Href$|Url$/.test(name)) &&
+      !isDeadHref(attr)) {
+      return true;
+    }
+  }
+  if (tag && DOOR_TAGS.has(tag)) return true;
+
+  const hasClick = el.attributes.properties.some(
+    (a) => ts.isJsxAttribute(a) && ts.isIdentifier(a.name) && a.name.text === "onClick",
+  );
+  return hasClick && OPEN_AFFORDANCE_RE.test(text);
+}
+
+/**
+ * The text a human actually reads on an element: its literal label text plus
+ * `title` / `aria-label` / `alt` string values (template-literal heads count —
+ * `title={`Run ${x}`}` reads as "Run"). Deliberately excludes identifiers.
+ */
+function humanTextOf(
+  el: ts.JsxOpeningElement | ts.JsxSelfClosingElement,
+  sf: ts.SourceFile,
+): string {
+  const parts: string[] = [];
+
+  for (const attr of el.attributes.properties) {
+    if (!ts.isJsxAttribute(attr) || !ts.isIdentifier(attr.name)) continue;
+    if (!/^(title|aria-label|alt|label)$/.test(attr.name.text)) continue;
+    const init = attr.initializer;
+    if (!init) continue;
+    if (ts.isStringLiteral(init)) parts.push(init.text);
+    else if (ts.isJsxExpression(init) && init.expression) {
+      const value = init.expression;
+      if (ts.isStringLiteral(value) || ts.isNoSubstitutionTemplateLiteral(value)) {
+        parts.push(value.text);
+      } else if (ts.isTemplateExpression(value)) {
+        parts.push(value.head.text);
+        for (const span of value.templateSpans) parts.push(span.literal.text);
+      }
+    }
+  }
+
+  const parent = el.parent;
+  if (parent && ts.isJsxElement(parent)) {
+    const collect = (node: ts.Node): void => {
+      if (ts.isJsxText(node)) parts.push(node.text);
+      else if (
+        ts.isJsxExpression(node) &&
+        node.expression &&
+        ts.isStringLiteral(node.expression)
+      ) {
+        parts.push(node.expression.text);
+      }
+      ts.forEachChild(node, collect);
+    };
+    for (const child of parent.children) collect(child);
+  }
+
+  return parts.join(" ");
+}
+
+/** `learnMoreHref="#"` is a dead end wearing a door's clothes. */
+function isDeadHref(attr: ts.JsxAttribute): boolean {
+  const init = attr.initializer;
+  if (!init) return true;
+  if (ts.isStringLiteral(init)) return init.text.trim() === "" || init.text.trim() === "#";
+  if (
+    ts.isJsxExpression(init) &&
+    init.expression &&
+    ts.isStringLiteral(init.expression)
+  ) {
+    const value = init.expression.text.trim();
+    return value === "" || value === "#";
+  }
+  return false;
+}
+
+/** Does the door's own source name the same entity as the finding? */
+function doorTargetsToken(
+  el: ts.JsxOpeningElement | ts.JsxSelfClosingElement,
+  sf: ts.SourceFile,
+  token: string,
+  ctx: ScanContext,
+): boolean {
+  const doorToken = inferToken(expressionWords(el.getText(sf)), ctx.tokens);
+  return doorToken == null || doorToken.token === token;
+}
+
+/** Loading / empty placeholder arm — not the real surface. */
+function isInPlaceholder(node: ts.Node, sf: ts.SourceFile): boolean {
+  let cur: ts.Node | undefined = node.parent;
+  for (let depth = 0; cur && depth < 4; depth++) {
+    if (ts.isJsxElement(cur) && PLACEHOLDER_RE.test(cur.getText(sf))) return true;
+    cur = cur.parent;
+  }
+  return false;
+}
+
+/**
+ * A name embedded in a sentence — "Seeds a new personal shortcut for {name} on
+ * …". Prose names its subject; it is not a reference list. Needs words on both
+ * sides, which is what separates it from a table cell.
+ *
+ * Prettier emits `{" "}` between text runs, so a JsxText-only reading of the
+ * siblings finds nothing — string-literal expressions count as text here.
+ */
+function isInProse(node: ts.JsxExpression, sf: ts.SourceFile): boolean {
+  // Climb inline wrappers that carry no text of their own — the prose lives
+  // one level up from `<span className="font-medium">{name}</span> will be …`.
+  let subject: ts.Node = node;
+  for (let depth = 0; depth < 3; depth++) {
+    const wrapper = subject.parent;
+    if (!wrapper || !ts.isJsxElement(wrapper)) break;
+    const tag = tagNameOf(wrapper.openingElement);
+    if (!tag || !INLINE_WRAPPER_TAGS.has(tag)) break;
+    const meaningful = wrapper.children.filter(
+      (c) => !(ts.isJsxText(c) && c.text.trim() === ""),
+    );
+    if (meaningful.length !== 1) break;
+    subject = wrapper;
+  }
+
+  const parent = subject.parent;
+  if (!parent || (!ts.isJsxElement(parent) && !ts.isJsxFragment(parent))) return false;
+  const children = parent.children;
+  const idx = children.indexOf(subject as ts.JsxChild);
+
+  const wordsAt = (offset: number): number => {
+    for (let i = idx + offset; i >= 0 && i < children.length; i += offset) {
+      const child = children[i];
+      const text = jsxChildText(child);
+      if (text === null) return 0;
+      const count = text.trim().split(/\s+/).filter(Boolean).length;
+      if (count > 0) return count;
+    }
+    return 0;
+  };
+
+  const before = wordsAt(-1);
+  const after = wordsAt(1);
+  // Mid-sentence: words on both sides.
+  if (before >= 1 && after >= 1 && before + after >= 3) return true;
+  // Sentence-initial: "{agentName} will be copied into the system agent
+  // library." A table cell never carries five words of trailing copy.
+  return before === 0 && after >= 5;
+}
+
+/** Literal text of a JSX child, or null when the child is not text. */
+function jsxChildText(child: ts.JsxChild | undefined): string | null {
+  if (!child) return null;
+  if (ts.isJsxText(child)) return child.text;
+  if (
+    ts.isJsxExpression(child) &&
+    child.expression &&
+    ts.isStringLiteral(child.expression)
+  ) {
+    return child.expression.text;
+  }
+  return null;
+}
+
+/** "Showing {n} of {m} results" — a description of the view, not a reference. */
+function isPaginationPhrasing(node: ts.JsxExpression): boolean {
+  const parent = node.parent;
+  if (!parent || (!ts.isJsxElement(parent) && !ts.isJsxFragment(parent))) return false;
+  const children = parent.children;
+  const idx = children.indexOf(node as ts.JsxChild);
+  for (const offset of [-2, -1, 1, 2]) {
+    const text = jsxChildText(children[idx + offset]);
+    if (text && PAGINATION_PHRASE_RE.test(text)) return true;
   }
   return false;
 }
@@ -491,23 +892,41 @@ function siblingNoun(node: ts.JsxExpression): string | null {
   if (!parent || (!ts.isJsxElement(parent) && !ts.isJsxFragment(parent))) return null;
   const children = parent.children;
   const idx = children.indexOf(node as ts.JsxChild);
-  const sibling = children[idx + 1];
-  if (!sibling || !ts.isJsxText(sibling)) return null;
-  const head = sibling.text.trim().split(/\s+/).slice(0, 2).join(" ");
-  if (!head || !COUNTABLE_NOUNS.test(head)) return null;
-  return head;
+  // Prettier splits `{n} agents` into `{n}`, `{" "}`, `agents` — read forward
+  // past whitespace-only text so the noun is still found.
+  for (let i = idx + 1; i < children.length && i <= idx + 3; i++) {
+    const text = jsxChildText(children[i]);
+    if (text === null) break;
+    const head = text.trim().split(/\s+/).slice(0, 2).join(" ");
+    if (!head) continue;
+    return COUNTABLE_NOUNS.test(head) ? head : null;
+  }
+  return null;
 }
 
-/** Strip `!`, `(…)`, `?? fallback` down to the underlying read. */
+/**
+ * Strip `!`, `(…)`, `?? fallback` AND the same formatter calls
+ * `terminalProperty` strips, down to the underlying read. The two MUST agree:
+ * when `unwrap` stopped at a `CallExpression` that `terminalProperty` had
+ * already seen through, `{doc.id.slice(0, 8)}` was silently dropped.
+ */
 function unwrap(expr: ts.Expression): ts.Node {
   let cur: ts.Node = expr;
-  for (let guard = 0; guard < 6; guard++) {
+  for (let guard = 0; guard < 8; guard++) {
     if (ts.isNonNullExpression(cur) || ts.isParenthesizedExpression(cur)) {
       cur = cur.expression;
       continue;
     }
     if (ts.isBinaryExpression(cur)) {
       cur = cur.left;
+      continue;
+    }
+    if (
+      ts.isCallExpression(cur) &&
+      ts.isPropertyAccessExpression(cur.expression) &&
+      FORMATTER_CALL_RE.test(cur.expression.name.text)
+    ) {
+      cur = cur.expression.expression;
       continue;
     }
     break;

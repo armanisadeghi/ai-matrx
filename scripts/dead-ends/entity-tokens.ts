@@ -24,8 +24,17 @@ export interface EntityTokenInfo {
  * refer to. Only entries whose token actually exists in the registry survive
  * `loadEntityTokens()`, so a renamed token drops out instead of misreporting.
  *
- * Keys are matched case-insensitively against the identifier segments of the
- * expression root (`agentRow` → `agent`, `noteTitle` → `note`).
+ * Matching is on WHOLE camel/underscore segments (with a naive plural strip),
+ * never substrings: `applet` must not resolve to `app`, and `appName` must not
+ * be dragged in by `application`. Substring matching mis-attributed 32 findings
+ * in `features/applet` to the agent-apps token on the first run.
+ *
+ * DELIBERATELY ABSENT — words whose everyday meaning swamps the entity:
+ *   `list` (any array), `page` (pagination), `store` (the Redux store),
+ *   `session` (auth/chat sessions), `thread`, `doc`, `member`, `repo`.
+ * A wrong token is worse than no token: it puts a confident, false entity name
+ * on a finding and, when that token happens to own a route, promotes it to
+ * high severity. Unmatched findings still report — just ranked lower.
  */
 const NOUN_TO_TOKEN: Record<string, string> = {
   agent: "agent",
@@ -33,37 +42,27 @@ const NOUN_TO_TOKEN: Record<string, string> = {
   app: "app",
   skill: "skill",
   workflow: "workflow",
-  template: "message_template",
-  list: "structured_list",
   picklist: "structured_list",
   file: "file",
   folder: "folder",
   transcript: "transcript",
   dataset: "dataset",
   workbook: "workbook",
-  store: "data_store",
-  session: "studio_session",
   note: "note",
   document: "udt_document",
-  doc: "udt_document",
   conversation: "conversation",
   chat: "conversation",
-  thread: "conversation",
   project: "project",
   task: "task",
   party: "party",
   contact: "party",
-  page: "web_page",
   keyword: "seo_keyword",
   scope: "scope",
   organization: "organization",
   org: "organization",
-  user: "user",
-  member: "user",
   flashcard: "flashcard_set",
   quiz: "quiz_session",
   repository: "code_repository",
-  repo: "code_repository",
 };
 
 /** Parse the registry's overlay object for tokens and which carry `hrefFor`. */
@@ -151,18 +150,46 @@ export function inferToken(
   words: string[],
   tokens: Map<string, EntityTokenInfo>,
 ): EntityTokenInfo | null {
-  // Longest noun first so `code_repository` wins over `repo` on a tie.
-  const nouns = Object.keys(NOUN_TO_TOKEN).sort((a, b) => b.length - a.length);
   for (const word of words) {
-    const lower = word.toLowerCase();
-    for (const noun of nouns) {
-      if (!lower.includes(noun)) continue;
-      const token = NOUN_TO_TOKEN[noun];
+    for (const candidate of segmentCandidates(word)) {
+      const token = NOUN_TO_TOKEN[candidate];
+      if (!token) continue;
       const info = tokens.get(token);
       if (info) return info;
     }
   }
   return null;
+}
+
+/**
+ * The forms one identifier segment may take: itself, its naive singular
+ * (`agents` → `agent`), and — for all-lowercase compounds that camelCase
+ * splitting cannot separate — a leading-noun match (`filename` → `file`,
+ * `docid` → `doc`). Without the last case `fileName` matched and `filename`
+ * silently did not, which quietly dropped real findings.
+ */
+function segmentCandidates(word: string): string[] {
+  const lower = word.toLowerCase();
+  const out = [lower];
+  if (lower.endsWith("s") && lower.length > 2) out.push(lower.slice(0, -1));
+  for (const suffix of ["name", "title", "id", "label", "slug"]) {
+    if (lower.length > suffix.length && lower.endsWith(suffix)) {
+      out.push(lower.slice(0, -suffix.length));
+    }
+  }
+  return out;
+}
+
+/**
+ * Every noun that resolves to a token — used to build an entity-SCOPED
+ * "is the id in scope?" oracle. Without it, any `<root>.<anything>Id` counted,
+ * so `requestId` on an upload or `instanceId` on a debug panel satisfied the
+ * gate for a completely unrelated record.
+ */
+export function nounsForToken(token: string): string[] {
+  return Object.entries(NOUN_TO_TOKEN)
+    .filter(([, value]) => value === token)
+    .map(([noun]) => noun);
 }
 
 /** Split an expression like `row.agentName` into lowercase word candidates. */

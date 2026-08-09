@@ -59,6 +59,16 @@ const DOCTRINE_HREF =
 /** A scan older than this is stale enough that the page must say so. */
 const STALE_AFTER_DAYS = 7;
 
+/**
+ * A finding in `app/(core)/tasks/[id]/page.tsx` reports the route pattern
+ * `/tasks/[id]`, which is NOT a URL — the App Router throws
+ * "Dynamic href found in <Link>" on it. Patterns render as text; only concrete
+ * routes get a door.
+ */
+function isConcreteRoute(route: string | null): route is string {
+  return route !== null && !route.includes("[");
+}
+
 /** The clock never notifies us; the age only needs to be right on mount. */
 const subscribeToNothing = () => () => {};
 
@@ -150,7 +160,7 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
               setBucket({ kind: "rule", value: f.rule });
             }}
             title={`Show only ${RULE_TITLES[f.rule]}`}
-            className="truncate text-left text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
+            className="block w-full truncate text-left text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
           >
             {RULE_TITLES[f.rule]}
           </button>
@@ -163,8 +173,8 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
         filter: "select",
         width: 150,
         cell: (f) => (
-          <span className="inline-flex min-w-0 items-center gap-1">
-            <span className="truncate font-mono text-xs">{f.entity}</span>
+          <span className="flex min-w-0 items-center gap-1">
+            <span className="min-w-0 truncate font-mono text-xs">{f.entity}</span>
             {f.entityHasRoute ? (
               <Badge variant="outline" className="h-4 px-1 text-[9px]">
                 route
@@ -190,7 +200,7 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
         header: "Source",
         width: 420,
         cell: (f) => (
-          <span className="inline-flex min-w-0 max-w-full items-center gap-1">
+          <span className="flex min-w-0 max-w-full items-center gap-1">
             <Link
               href={sourceHref(f.file, f.line, report.commit)}
               target="_blank"
@@ -221,7 +231,12 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
         header: "Renders",
         width: 220,
         cell: (f) => (
-          <code className="truncate text-xs text-muted-foreground">{f.expression}</code>
+          <code
+            className="block w-full truncate text-xs text-muted-foreground"
+            title={f.expression}
+          >
+            {f.expression}
+          </code>
         ),
       },
       {
@@ -230,8 +245,8 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
         header: "Surface",
         width: 260,
         cell: (f) =>
-          f.route ? (
-            <span className="inline-flex min-w-0 items-center gap-1">
+          isConcreteRoute(f.route) ? (
+            <span className="flex min-w-0 items-center gap-1">
               <Link
                 href={f.route}
                 onClick={(e) => e.stopPropagation()}
@@ -251,6 +266,13 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
               >
                 <ExternalLink className="h-3 w-3" />
               </Link>
+            </span>
+          ) : f.route ? (
+            <span
+              className="truncate text-xs text-muted-foreground"
+              title="Dynamic route pattern — needs a record id to open"
+            >
+              {f.route}
             </span>
           ) : (
             <span className="text-xs text-muted-foreground">component</span>
@@ -787,7 +809,7 @@ function FindingDetail({
           </Link>
         </Row>
         <Row label="Surface">
-          {finding.route ? (
+          {isConcreteRoute(finding.route) ? (
             <Link
               href={finding.route}
               target="_blank"
@@ -796,6 +818,11 @@ function FindingDetail({
             >
               {finding.route}
             </Link>
+          ) : finding.route ? (
+            <span className="text-muted-foreground">
+              <code className="font-mono">{finding.route}</code> — a dynamic
+              route pattern; pick a record to open it.
+            </span>
           ) : (
             <span className="text-muted-foreground">
               a component — reachable from whichever route mounts it

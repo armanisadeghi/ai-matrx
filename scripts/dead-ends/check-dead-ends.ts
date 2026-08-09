@@ -18,7 +18,7 @@
  *   pnpm check:dead-ends --json          machine-readable report on stdout
  *   pnpm check:dead-ends --rule=<id>     only one rule
  *   pnpm check:dead-ends --path=<prefix> only files under a prefix
- *   pnpm check:dead-ends --limit=<n>     how many findings to print (default 40)
+ *   pnpm check:dead-ends --limit=<n>     findings to print (default 40; 0 = all)
  *   pnpm check:dead-ends --strict        exit 1 when findings exist
  *
  * Admin dashboard: /administration/reporting/dead-ends
@@ -26,7 +26,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { DEAD_END_ALLOWLIST } from "./allowlist";
 import { describeFinding } from "./describe";
@@ -89,7 +89,9 @@ function parseArgs(): Args {
     strict: argv.includes("--strict"),
     rule: (valueOf("--rule") as DeadEndRuleId | null) ?? null,
     pathPrefix: valueOf("--path"),
-    limit: limitRaw ? Math.max(1, Number(limitRaw) || 40) : 40,
+    // `--limit=0` means "print everything" — `Number("0") || 40` silently
+    // turned that into 40.
+    limit: limitRaw === null ? 40 : Math.max(0, Number(limitRaw) || 0),
   };
 }
 
@@ -105,10 +107,13 @@ function walk(dir: string, out: string[] = []): string[] {
     const full = join(dir, entry);
     let st;
     try {
-      st = statSync(full);
+      // lstat, not stat: `statSync` follows symlinks, so one symlinked
+      // directory loop would recurse until the stack blows.
+      st = lstatSync(full);
     } catch {
       continue;
     }
+    if (st.isSymbolicLink()) continue;
     if (st.isDirectory()) {
       walk(full, out);
       continue;
@@ -248,7 +253,10 @@ function main(): void {
     }
   }
 
-  process.exit(args.strict && findings.length > 0 ? 1 : 0);
+  // NEVER `process.exit()` here: stdout writes to a pipe are async, and exiting
+  // truncated `--json | jq` at exactly one 64 KiB pipe buffer. Setting the code
+  // lets node flush and exit on its own.
+  process.exitCode = args.strict && findings.length > 0 ? 1 : 0;
 }
 
 function readHistory(): DeadEndHistoryPoint[] {
@@ -315,15 +323,16 @@ function printReport(report: DeadEndReport, limit: number): void {
   }
   console.log("");
 
-  console.log(`${BOLD}  Findings${NC} ${DIM}(worst first, showing ${Math.min(limit, report.findings.length)} of ${report.findings.length})${NC}`);
-  for (const f of report.findings.slice(0, limit)) {
+  const shown = limit === 0 ? report.findings.length : Math.min(limit, report.findings.length);
+  console.log(`${BOLD}  Findings${NC} ${DIM}(worst first, showing ${shown} of ${report.findings.length})${NC}`);
+  for (const f of report.findings.slice(0, shown)) {
     const tag = f.severity === "high" ? `${RED}high${NC}` : f.severity === "medium" ? `${YELLOW}med ${NC}` : `${DIM}low ${NC}`;
     console.log(`    ${tag}  ${CYAN}${f.file}:${f.line}:${f.column}${NC}  ${DIM}[${f.rule}]${NC}`);
     console.log(`          ${f.entity}  ${DIM}·${NC}  ${describeFinding(f)}`);
   }
-  if (report.findings.length > limit) {
+  if (report.findings.length > shown) {
     console.log(
-      `${DIM}    … ${report.findings.length - limit} more. Use --limit=<n>, --rule=<id> or --path=<prefix>.${NC}`,
+      `${DIM}    … ${report.findings.length - shown} more. Use --limit=0 for all, --rule=<id> or --path=<prefix>.${NC}`,
     );
   }
   console.log("");
