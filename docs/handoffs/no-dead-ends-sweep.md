@@ -689,6 +689,28 @@ already links is a strong candidate.
 triage table are done; what's left is mostly rows 3–5 (the "Fine" shapes), so
 expect a low hit rate — but nobody has confirmed that end to end.
 
+**THREE DISCRIMINATORS that actually found defects, in increasing reach.** Use
+these rather than reading 140 files; each returned under a dozen candidates.
+
+1. `onClick={() => router.push(\`` — the narrow inline form. 9 sites, all now
+   triaged.
+2. `<Button …onClick={…router.push…}>` whose visible label matches
+   `Open|View|Go to|See`. 10 candidates, 3 real.
+3. **Files that DEFINE a `*Card`/`*Row`/`*Item`/`*Tile` component, push a
+   template route, AND contain no anchor of any kind** — no `next/link`, no
+   `EntityRef`, no bare `<a>`. If a file renders record components and has
+   ZERO anchors, the record's name cannot possibly be a door. 10 files; found
+   `/education/audio-study`.
+
+Discriminator 3 also cleanly separates the two most common false positives —
+both worth knowing because they look identical to a defect in a grep:
+- **Post-create navigation.** `OrphanThreadRow` pushes after
+  `openOrphanThreadInNewRoom` *creates* the room; the destination id does not
+  exist until the dispatch resolves, so it CANNOT be an anchor.
+- **Selection within the surface.** `AgentRunsSidebar` pushes
+  `${pathname}?conversationId=` — it re-parameterises the current page rather
+  than opening a record.
+
 ### Converting to `<Link>` is not enough — guard the MODIFIED click
 
 An anchor that runs a side effect in `onClick` (close a dialog, clear state,
