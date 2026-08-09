@@ -382,12 +382,30 @@ are now deleted.**
         route is the cmd/middle-click destination only. This is checklist
         question 1 with a twist — the old door didn't *navigate* at all, so
         "preserve what it did" meant preserving an absence.
-- [ ] **`SkillConfigPicker` (both sites) — still open, same class.** The
-      name sits inside a selection `<button>` at
-      `features/skills/components/SkillConfigPicker.tsx:486` and `:598`. Same
-      split applies. Extra wrinkle: `skill` has NO registry route, so the only
-      door `EntityRef` can add there is the peek — and that control is itself a
-      `<button>`, so the split is mandatory, not cosmetic.
+- [x] **`SkillConfigPicker` — DONE, and only ONE of the two sites was a
+      violation.** Worth reading before assuming a listed site needs converting:
+      - **The assigned-tier chip (`:598`) was a real dead end, and the worst
+        kind — a *disabled* one.** When the catalogue had no row for an assigned
+        id it printed `Unknown skill 1a2b3c4d` and set `disabled`, so an id the
+        user is assigned to, can see, and might need to remove-or-understand had
+        no door at all. **The record was reachable the whole time:** `SkillPeek`
+        queries `skill.definition` by id itself and never consults the
+        catalogue — the surface's own gate was the only thing hiding it. Now an
+        `EntityRef`, with `onOpen` gated on `skill` (checklist 2 — the detail
+        pane is driven off the catalogue map and would open empty), so the
+        unknown case gets the peek and no link-styled no-op. Label text kept
+        verbatim: "unknown" is a true statement about the catalogue being
+        browsed, and the peek is what resolves the real name.
+      - **The catalogue row (`:486`) was NOT converted, deliberately.** Its
+        whole text block is one `<button>` opening an in-place
+        `SkillDetailView` — a RICHER door than anything `EntityRef` offers here
+        (`skill` has no `hrefFor`, so the primitive could contribute only a
+        peek, which the pane already supersedes). Splitting the block to insert
+        an anchor would trade a large hit target for a duplicate preview.
+        **Nothing on that row is unreachable**, including the mono `skillId`,
+        which sits inside the control that opens it. Non-adoption is the right
+        answer when the surface's own door is richer — the Inventory Law is
+        "don't build a POORER one", not "adopt everywhere".
 - [ ] **`PinnedSection` is a poor EntityRef target** — it is a card with a large
       colored icon and its own layout, not an inline name reference, and it is
       already a real `<Link>`. What it actually lacks is a peek control; that
@@ -455,7 +473,7 @@ so an admin can still copy it AND open it) and `ExposureAuditClient` (the named
 resource now opens). Both use `openInNewTab` so the audit survives the click.
 Remaining:
 `app/(admin)/administration/reporting/events/page.tsx:265-271` (three raw
-UUIDs) · `features/skills/components/SkillConfigPicker.tsx:486,598` ·
+UUIDs) ·
 `features/pdf-extractor/components/LineageTreeView.tsx:97,224,266` ·
 `features/administration/kg-cost/components/KgCostDashboard.tsx:279,827`.
 
