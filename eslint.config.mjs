@@ -458,6 +458,130 @@ const matrxLintPlugin = {
                 };
             },
         },
+        // THE DOOR LAW, narrowest slice (common-docs/policies/no-dead-ends.md,
+        // CLAUDE.md § NO DEAD ENDS). The full detector is `pnpm check:dead-ends`
+        // — it carries the fuzzy cases (unlinked names, unreachable counts,
+        // surfaces with no door primitive at all) because those need whole-file
+        // context this rule cannot see. What lives HERE is only the subset with
+        // near-zero false positives: a raw identifier rendered as JSX TEXT with
+        // no link/handler anywhere above it. A UUID in a cell is a dead end with
+        // extra steps; the user cannot read it and cannot open it.
+        'no-bare-id-text': {
+            meta: {
+                type: 'problem',
+                docs: {
+                    description:
+                        'Disallow rendering a raw record identifier as JSX text with no way to open it. THE DOOR LAW: never show an id you cannot open — resolve it to a name plus a door (<EntityRef token=… id=… name=… />), or do not show it. Scoped tightly: only `{x.id}` / `{x.foo_id}` / `{fooId}` in TEXT position, with no Link/anchor/href/onClick ancestor; attributes, keys, pickers and headings are untouched.',
+                },
+                schema: [],
+                messages: {
+                    banned:
+                        "Bare id rendered as text — a dead end with extra steps. Render <EntityRef token=\"<entity>\" id={…} name={…} /> from @/components/official/entity-ref/EntityRef (Open + new tab + peek, resolved from the registries), or use the table's cellKind: \"uuid\". Missing route? Add an hrefFor to the token in features/scopes/registry/entityRegistry.ts. See common-docs/policies/no-dead-ends.md and `pnpm check:dead-ends`.",
+                },
+            },
+            create(context) {
+                // Hosts: the door primitive itself renders the id fallback, and
+                // the uuid cell IS the sanctioned way to show one.
+                const ALLOWED = [
+                    '/components/official/entity-ref/',
+                    '/components/official/matrx-data-table/',
+                    '/__tests__/',
+                ];
+                const filename = context.filename || context.getFilename?.() || '';
+                if (ALLOWED.some((p) => filename.includes(p))) return {};
+
+                const ID_NAME_RE = /^(id|uuid|.+_id|.+Id|.+Uuid|.+UUID)$/;
+                const DOOR_TAGS = new Set([
+                    'a',
+                    'Link',
+                    'NextLink',
+                    'EntityRef',
+                    'NavLink',
+                ]);
+                const DOOR_ATTRS = new Set([
+                    'href',
+                    'onClick',
+                    'onDoubleClick',
+                    'onSelect',
+                    'onRowClick',
+                    'to',
+                ]);
+                // Choosing, labelling and debugging are not referencing.
+                const SKIP_TAGS = new Set([
+                    'SelectItem',
+                    'CommandItem',
+                    'DropdownMenuItem',
+                    'ContextMenuItem',
+                    'MenuItem',
+                    'option',
+                    'Option',
+                    'label',
+                    'Label',
+                    'TooltipContent',
+                    'pre',
+                    'code',
+                ]);
+
+                const tagOf = (el) => {
+                    const n = el.name;
+                    if (!n) return null;
+                    if (n.type === 'JSXIdentifier') return n.name;
+                    if (n.type === 'JSXMemberExpression') return n.property?.name ?? null;
+                    return null;
+                };
+
+                /** `row.agent.id` → `id`; `{agentId}` → `agentId`. Anything
+                 *  else (calls, templates, ternaries) is out of scope — this
+                 *  rule only claims the unambiguous shapes. */
+                const terminalName = (expr) => {
+                    if (!expr) return null;
+                    if (expr.type === 'Identifier') return expr.name;
+                    if (expr.type === 'MemberExpression' && !expr.computed) {
+                        return expr.property?.type === 'Identifier'
+                            ? expr.property.name
+                            : null;
+                    }
+                    if (expr.type === 'ChainExpression') return terminalName(expr.expression);
+                    return null;
+                };
+
+                return {
+                    JSXExpressionContainer(node) {
+                        // Text position only. An attribute value's parent is a
+                        // JSXAttribute, so `key={x.id}` never reaches here.
+                        const parent = node.parent;
+                        if (
+                            !parent ||
+                            (parent.type !== 'JSXElement' && parent.type !== 'JSXFragment')
+                        ) {
+                            return;
+                        }
+                        const name = terminalName(node.expression);
+                        if (!name || !ID_NAME_RE.test(name)) return;
+
+                        for (let cur = node.parent; cur; cur = cur.parent) {
+                            if (cur.type !== 'JSXElement') continue;
+                            const opening = cur.openingElement;
+                            if (!opening) continue;
+                            const tag = tagOf(opening);
+                            if (tag && SKIP_TAGS.has(tag)) return;
+                            if (tag && DOOR_TAGS.has(tag)) return;
+                            for (const attr of opening.attributes || []) {
+                                if (attr.type === 'JSXSpreadAttribute') return;
+                                if (
+                                    attr.type === 'JSXAttribute' &&
+                                    attr.name?.type === 'JSXIdentifier' &&
+                                    DOOR_ATTRS.has(attr.name.name)
+                                ) {
+                                    return;
+                                }
+                            }
+                        }
+                        context.report({ node, messageId: 'banned' });
+                    },
+                };
+            },
+        },
     },
 };
 
@@ -889,6 +1013,11 @@ export default [
             // selection come from the agent-definition slice or agx_list_scoped
             // — never a raw agent.definition list query. Error, not warn.
             'matrx/no-raw-agent-list-query': 'error',
+            // THE DOOR LAW (Arman, 2026-08-08): never render an id you can't
+            // open. 'warn' because the tree still carries a long tail — the
+            // scoreboard at /administration/reporting/dead-ends tracks it down
+            // to zero, and this ratchets to 'error' when it gets there.
+            'matrx/no-bare-id-text': 'warn',
             'react-hooks/exhaustive-deps': 'off',
             '@next/next/no-img-element': 'off',
             'react/no-unescaped-entities': 'off',

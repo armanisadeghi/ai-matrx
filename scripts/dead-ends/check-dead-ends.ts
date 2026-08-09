@@ -282,8 +282,11 @@ function printReport(report: DeadEndReport, limit: number): void {
     return;
   }
 
+  // Marker line the release-gate runner greps for so this check surfaces as a
+  // loud advisory WARN instead of a silent [OK]. Keep it in sync with the
+  // alternation in scripts/run-release-gates.sh.
   console.log(
-    `  ${RED}${totals.high} high${NC} · ${YELLOW}${totals.medium} medium${NC} · ${totals.low} low` +
+    `  ${RED}DEAD ENDS FOUND${NC}: ${RED}${totals.high} high${NC} · ${YELLOW}${totals.medium} medium${NC} · ${totals.low} low` +
       `  ${DIM}across ${totals.filesWithFindings} file(s)${NC}`,
   );
   console.log("");

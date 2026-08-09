@@ -1,0 +1,881 @@
+"use client";
+
+/**
+ * No Dead Ends scoreboard — the admin view of `pnpm check:dead-ends`.
+ *
+ * Documentation was necessary and not sufficient; a check nobody looks at is
+ * the same. This page is the part every previous "we added a check" skipped:
+ * the standing, ranked, openable scoreboard for the Door Law campaign.
+ *
+ * It obeys the doctrine it enforces. Every row is a door:
+ *   file          → the exact source line at the scanned commit (new tab)
+ *   route         → the offending surface itself, in-app and in a new tab
+ *   feature/file  → a count is a door; clicking a bucket filters the findings
+ *   every finding → a one-click, paste-ready repair brief (the fix ships with
+ *                   the complaint — corollary 2)
+ *
+ * THE FRAGMENTATION LAW: this is ONE statically-imported client component
+ * behind the server page. No `next/dynamic`, no per-tab split — the whole
+ * surface is a table plus some cards.
+ *
+ * Data: the committed `scripts/dead-ends/report.json`, the same snapshot
+ * pattern the shape doctor uses. Refresh with `pnpm check:dead-ends:write`
+ * and commit — the page says so, loudly, with the scan's age.
+ */
+
+import React, { useMemo, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  Check,
+  Copy,
+  DoorOpen,
+  ExternalLink,
+  ShieldOff,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
+import { toast } from "@/lib/toast";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { describeFinding } from "@/scripts/dead-ends/describe";
+import {
+  RULE_DOCTRINE,
+  RULE_TITLES,
+  type DeadEndFinding,
+  type DeadEndHistoryPoint,
+  type DeadEndReport,
+  type DeadEndRuleId,
+} from "@/scripts/dead-ends/types";
+import { fixPromptForBucket, fixPromptForFinding } from "./fix-prompt";
+import { ENTITY_REGISTRY_PATH, sourceHref, treeHref } from "./source-links";
+
+const DOCTRINE_HREF =
+  "https://github.com/armanisadeghi/ai-matrx/blob/main/.claude/skills/no-dead-ends/SKILL.md";
+
+/** A scan older than this is stale enough that the page must say so. */
+const STALE_AFTER_DAYS = 7;
+
+/** The clock never notifies us; the age only needs to be right on mount. */
+const subscribeToNothing = () => () => {};
+
+function ageInDays(iso: string): number {
+  const ms = Date.now() - new Date(iso).getTime();
+  return Number.isFinite(ms) ? Math.max(0, Math.floor(ms / 86_400_000)) : 0;
+}
+
+interface DeadEndsConsoleProps {
+  report: DeadEndReport;
+  history: DeadEndHistoryPoint[];
+}
+
+type BucketFilter =
+  | { kind: "none" }
+  | { kind: "file"; value: string }
+  | { kind: "feature"; value: string }
+  | { kind: "rule"; value: DeadEndRuleId };
+
+export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
+  const [bucket, setBucket] = useState<BucketFilter>({ kind: "none" });
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  /**
+   * Snapshot age in days. The wall clock is an external system, so it is read
+   * through `useSyncExternalStore` rather than during render — `Date.now()` in
+   * a render body is impure and a setState-in-effect would cascade. The
+   * snapshot is a whole number of days, so it is stable across re-renders and
+   * React's Object.is check never loops. `null` on the server.
+   */
+  const scanAgeDays = useSyncExternalStore(
+    subscribeToNothing,
+    () => ageInDays(report.generatedAt),
+    () => null,
+  );
+
+  const findings = useMemo(() => {
+    switch (bucket.kind) {
+      case "file":
+        return report.findings.filter((f) => f.file === bucket.value);
+      case "feature":
+        return report.findings.filter((f) => f.feature === bucket.value);
+      case "rule":
+        return report.findings.filter((f) => f.rule === bucket.value);
+      default:
+        return report.findings;
+    }
+  }, [report.findings, bucket]);
+
+  const copy = async (key: string, text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      window.setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1500);
+      toast.success(`${label} copied`);
+    } catch {
+      // Never swallow: the operator needs to know the click did nothing.
+      toast.error("Clipboard unavailable — select the text manually.");
+    }
+  };
+
+  const columns = useMemo<MatrxColumnDef<DeadEndFinding>[]>(
+    () => [
+      {
+        id: "severity",
+        accessorKey: "severity",
+        header: "Sev",
+        filter: "select",
+        width: 84,
+        cell: (f) => (
+          <Badge
+            variant={f.severity === "high" ? "destructive" : "secondary"}
+            className="text-[10px] uppercase"
+          >
+            {f.severity}
+          </Badge>
+        ),
+      },
+      {
+        id: "rule",
+        accessorKey: "rule",
+        header: "Rule",
+        filter: "select",
+        width: 190,
+        cell: (f) => (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setBucket({ kind: "rule", value: f.rule });
+            }}
+            title={`Show only ${RULE_TITLES[f.rule]}`}
+            className="truncate text-left text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
+          >
+            {RULE_TITLES[f.rule]}
+          </button>
+        ),
+      },
+      {
+        id: "entity",
+        accessorKey: "entity",
+        header: "Entity",
+        filter: "select",
+        width: 150,
+        cell: (f) => (
+          <span className="inline-flex min-w-0 items-center gap-1">
+            <span className="truncate font-mono text-xs">{f.entity}</span>
+            {f.entityHasRoute ? (
+              <Badge variant="outline" className="h-4 px-1 text-[9px]">
+                route
+              </Badge>
+            ) : (
+              <Link
+                href={treeHref(ENTITY_REGISTRY_PATH, report.commit)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                title="No hrefFor for this token — open the entity registry to add one"
+                className="text-[9px] text-amber-600 underline underline-offset-2 dark:text-amber-500"
+              >
+                no route
+              </Link>
+            )}
+          </span>
+        ),
+      },
+      {
+        id: "file",
+        accessorKey: "file",
+        header: "Source",
+        width: 420,
+        cell: (f) => (
+          <span className="inline-flex min-w-0 max-w-full items-center gap-1">
+            <Link
+              href={sourceHref(f.file, f.line, report.commit)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              title={`Open ${f.file}:${f.line} at the scanned commit`}
+              className="min-w-0 truncate font-mono text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
+            >
+              {f.file}:{f.line}
+            </Link>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setBucket({ kind: "file", value: f.file });
+              }}
+              title="Show only this file's findings"
+              className="shrink-0 rounded px-1 text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              only
+            </button>
+          </span>
+        ),
+      },
+      {
+        id: "expression",
+        accessorKey: "expression",
+        header: "Renders",
+        width: 220,
+        cell: (f) => (
+          <code className="truncate text-xs text-muted-foreground">{f.expression}</code>
+        ),
+      },
+      {
+        id: "route",
+        accessorKey: "route",
+        header: "Surface",
+        width: 260,
+        cell: (f) =>
+          f.route ? (
+            <span className="inline-flex min-w-0 items-center gap-1">
+              <Link
+                href={f.route}
+                onClick={(e) => e.stopPropagation()}
+                title={`Open ${f.route}`}
+                className="min-w-0 truncate text-xs underline-offset-2 hover:text-primary hover:underline"
+              >
+                {f.route}
+              </Link>
+              <Link
+                href={f.route}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                title={`Open ${f.route} in a new tab`}
+                aria-label={`Open ${f.route} in a new tab`}
+                className="shrink-0 text-muted-foreground hover:text-foreground"
+              >
+                <ExternalLink className="h-3 w-3" />
+              </Link>
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">component</span>
+          ),
+      },
+      {
+        id: "fix",
+        header: "Fix",
+        filter: false,
+        sortable: false,
+        width: 76,
+        align: "center",
+        cell: (f) => {
+          const key = `${f.file}:${f.line}:${f.column}`;
+          return (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 px-1.5 text-[10px]"
+              title="Copy a paste-ready repair brief for an agent"
+              onClick={(e) => {
+                e.stopPropagation();
+                void copy(key, fixPromptForFinding(f), "Repair brief");
+              }}
+            >
+              {copiedKey === key ? (
+                <Check className="h-3 w-3" />
+              ) : (
+                <Copy className="h-3 w-3" />
+              )}
+            </Button>
+          );
+        },
+      },
+    ],
+    [report.commit, copiedKey],
+  );
+
+  const previous = history.length > 1 ? history[history.length - 2] : null;
+  const delta = previous ? report.totals.findings - previous.findings : null;
+
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+      <Header
+        report={report}
+        scanAgeDays={scanAgeDays}
+        delta={delta}
+        onCopyAll={() =>
+          void copy(
+            "all",
+            fixPromptForBucket("the whole repository", report.findings, "feature"),
+            "Campaign brief",
+          )
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <TotalsCard report={report} delta={delta} history={history} />
+        <BucketCard
+          title="Worst features"
+          buckets={report.worstFeatures.slice(0, 8)}
+          commit={report.commit}
+          active={bucket.kind === "feature" ? bucket.value : null}
+          onPick={(value) => setBucket({ kind: "feature", value })}
+          onCopy={(value) =>
+            void copy(
+              `feature:${value}`,
+              fixPromptForBucket(
+                value,
+                report.findings.filter((f) => f.feature === value),
+                "feature",
+              ),
+              "Sweep brief",
+            )
+          }
+        />
+        <BucketCard
+          title="Worst files"
+          buckets={report.worstFiles.slice(0, 8)}
+          commit={report.commit}
+          active={bucket.kind === "file" ? bucket.value : null}
+          onPick={(value) => setBucket({ kind: "file", value })}
+          onCopy={(value) =>
+            void copy(
+              `file:${value}`,
+              fixPromptForBucket(
+                value,
+                report.findings.filter((f) => f.file === value),
+                "file",
+              ),
+              "Sweep brief",
+            )
+          }
+        />
+      </div>
+
+      <RuleLegend
+        report={report}
+        active={bucket.kind === "rule" ? bucket.value : null}
+        onPick={(rule) => setBucket({ kind: "rule", value: rule })}
+      />
+
+      {bucket.kind !== "none" && (
+        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-1.5 text-xs">
+          <span className="text-muted-foreground">Filtered to</span>
+          <code className="font-mono">
+            {bucket.kind === "rule" ? RULE_TITLES[bucket.value] : bucket.value}
+          </code>
+          <Badge variant="secondary">{findings.length}</Badge>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 px-2 text-xs"
+            onClick={() => setBucket({ kind: "none" })}
+          >
+            Clear
+          </Button>
+        </div>
+      )}
+
+      <div className="min-h-0 flex-1">
+        <MatrxDataTable
+          data={findings}
+          columns={columns}
+          getRowId={(f) => `${f.file}:${f.line}:${f.column}:${f.rule}`}
+          pageSize={50}
+          emptyState={{
+            icon: <DoorOpen className="h-8 w-8 text-muted-foreground" />,
+            title:
+              report.totals.findings === 0
+                ? "No dead ends detected"
+                : "No findings match this filter",
+            description:
+              report.totals.findings === 0
+                ? "Every named record the detector can see has a door. Keep it that way."
+                : "Clear the bucket filter to see the full report.",
+          }}
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Search file, entity, expression…",
+          }}
+          copy={{
+            label: "Dead-end finding",
+            listLabel: "Dead-end findings (this view)",
+            location: "/administration/reporting/dead-ends",
+            rowKind: "dead-end-finding",
+            listKind: "dead-end-findings",
+            humanRow: (f) =>
+              `${f.file}:${f.line} [${f.rule}/${f.severity}] ${f.entity} — ${describeFinding(f)}`,
+            rowAttributes: (f) => ({
+              file: f.file,
+              line: f.line,
+              rule: f.rule,
+              severity: f.severity,
+              entity: f.entity,
+              entity_has_route: f.entityHasRoute,
+              route: f.route,
+            }),
+          }}
+          detail={{
+            title: (f) => (
+              <span className="font-mono text-sm">
+                {f.file.split("/").pop()}:{f.line}
+              </span>
+            ),
+            description: (f) => RULE_TITLES[f.rule],
+            defaultWidth: 560,
+            render: (f) => (
+              <FindingDetail
+                finding={f}
+                commit={report.commit}
+                onCopyFix={() =>
+                  void copy(
+                    `detail:${f.file}:${f.line}`,
+                    fixPromptForFinding(f),
+                    "Repair brief",
+                  )
+                }
+              />
+            ),
+          }}
+        />
+      </div>
+
+      <AllowlistPanel report={report} />
+    </div>
+  );
+}
+
+// ─── Header ─────────────────────────────────────────────────────────────────
+
+function Header({
+  report,
+  scanAgeDays,
+  delta,
+  onCopyAll,
+}: {
+  report: DeadEndReport;
+  scanAgeDays: number;
+  delta: number | null;
+  onCopyAll: () => void;
+}) {
+  const stale = scanAgeDays !== null && scanAgeDays >= STALE_AFTER_DAYS;
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="flex items-center gap-2">
+        <DoorOpen className="h-5 w-5 text-primary" />
+        <h1 className="text-base font-semibold">No Dead Ends</h1>
+        <Badge variant="outline" className="text-[10px]">
+          Door Law detector
+        </Badge>
+      </div>
+
+      <span className="text-xs text-muted-foreground">
+        {report.totals.filesScanned.toLocaleString()} files scanned
+        {report.commit ? (
+          <>
+            {" · "}
+            <Link
+              href={treeHref("", report.commit)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono underline-offset-2 hover:text-primary hover:underline"
+              title="Open the scanned commit"
+            >
+              {report.commit.slice(0, 7)}
+            </Link>
+          </>
+        ) : null}
+        {scanAgeDays === null
+          ? null
+          : scanAgeDays === 0
+            ? " · scanned today"
+            : ` · scanned ${scanAgeDays}d ago`}
+      </span>
+
+      {stale && (
+        <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="h-3.5 w-3.5" />
+          Snapshot is {scanAgeDays} days old — run{" "}
+          <code className="font-mono">pnpm check:dead-ends:write</code> and commit.
+        </span>
+      )}
+
+      <div className="ml-auto flex items-center gap-2">
+        <Button size="sm" variant="outline" onClick={onCopyAll} className="h-7 text-xs">
+          <Copy className="mr-1.5 h-3 w-3" />
+          Campaign brief
+        </Button>
+        <Link
+          href={DOCTRINE_HREF}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        >
+          Doctrine
+          <ArrowUpRight className="h-3 w-3" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ─── Cards ──────────────────────────────────────────────────────────────────
+
+function TotalsCard({
+  report,
+  delta,
+  history,
+}: {
+  report: DeadEndReport;
+  delta: number | null;
+  history: DeadEndHistoryPoint[];
+}) {
+  const { totals } = report;
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <div className="flex items-baseline gap-3">
+        <span className="text-2xl font-semibold tabular-nums">{totals.findings}</span>
+        <span className="text-xs text-muted-foreground">findings</span>
+        {delta !== null && delta !== 0 && (
+          <span
+            className={
+              delta < 0
+                ? "inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-500"
+                : "inline-flex items-center gap-1 text-xs text-destructive"
+            }
+          >
+            {delta < 0 ? (
+              <TrendingDown className="h-3.5 w-3.5" />
+            ) : (
+              <TrendingUp className="h-3.5 w-3.5" />
+            )}
+            {delta > 0 ? `+${delta}` : delta} since last scan
+          </span>
+        )}
+        {delta === 0 && (
+          <span className="text-xs text-muted-foreground">unchanged since last scan</span>
+        )}
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <span>
+          <span className="font-medium text-destructive">{totals.high}</span> high
+        </span>
+        <span>
+          <span className="font-medium text-foreground">{totals.medium}</span> medium
+        </span>
+        <span>{totals.filesWithFindings} files affected</span>
+        <span>{totals.allowlisted} allowlisted</span>
+      </div>
+
+      <Trend history={history} />
+    </div>
+  );
+}
+
+/**
+ * Inline SVG bars — deliberately not a chart library. This is one number over
+ * time on an admin card; pulling a charting dependency into this chunk to draw
+ * ten rectangles is exactly the weight the Fragmentation Law exists to avoid.
+ */
+function Trend({ history }: { history: DeadEndHistoryPoint[] }) {
+  const points = history.slice(-40);
+  if (points.length < 2) {
+    return (
+      <p className="mt-3 text-[11px] text-muted-foreground">
+        Trend appears after a second scan — run{" "}
+        <code className="font-mono">pnpm check:dead-ends:write</code> and commit.
+      </p>
+    );
+  }
+  const max = Math.max(...points.map((p) => p.findings), 1);
+  const width = 100;
+  const height = 28;
+  const barWidth = width / points.length;
+
+  return (
+    <div className="mt-3">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="none"
+        className="h-8 w-full"
+        role="img"
+        aria-label={`Findings trend over the last ${points.length} scans, now ${
+          points[points.length - 1]?.findings ?? 0
+        }`}
+      >
+        {points.map((p, i) => {
+          const total = (p.findings / max) * height;
+          const high = (p.high / max) * height;
+          return (
+            <g key={`${p.generatedAt}-${i}`}>
+              <rect
+                x={i * barWidth}
+                y={height - total}
+                width={Math.max(barWidth - 0.6, 0.6)}
+                height={total}
+                className="fill-muted-foreground/30"
+              />
+              <rect
+                x={i * barWidth}
+                y={height - high}
+                width={Math.max(barWidth - 0.6, 0.6)}
+                height={high}
+                className="fill-destructive/70"
+              />
+            </g>
+          );
+        })}
+      </svg>
+      <p className="mt-1 text-[10px] text-muted-foreground">
+        {points.length} scan(s) · bars show total, red shows high severity
+      </p>
+    </div>
+  );
+}
+
+function BucketCard({
+  title,
+  buckets,
+  commit,
+  active,
+  onPick,
+  onCopy,
+}: {
+  title: string;
+  buckets: DeadEndReport["worstFiles"];
+  commit: string | null;
+  active: string | null;
+  onPick: (value: string) => void;
+  onCopy: (value: string) => void;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <p className="mb-2 text-xs font-medium text-muted-foreground">{title}</p>
+      {buckets.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Nothing to show.</p>
+      ) : (
+        <ul className="space-y-0.5">
+          {buckets.map((b) => (
+            <li key={b.key} className="flex items-center gap-1.5 text-xs">
+              <button
+                type="button"
+                onClick={() => onPick(b.key)}
+                title={`Show the ${b.count} finding(s) in ${b.key}`}
+                className={
+                  "min-w-0 flex-1 truncate text-left font-mono underline-offset-2 hover:text-primary hover:underline" +
+                  (active === b.key ? " text-primary" : "")
+                }
+              >
+                {b.key}
+              </button>
+              <span className="shrink-0 tabular-nums text-muted-foreground">{b.count}</span>
+              {b.high > 0 && (
+                <Badge variant="destructive" className="h-4 shrink-0 px-1 text-[9px]">
+                  {b.high}
+                </Badge>
+              )}
+              <Link
+                href={treeHref(b.key, commit)}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={`Open ${b.key} in a new tab`}
+                aria-label={`Open ${b.key} in a new tab`}
+                className="shrink-0 text-muted-foreground hover:text-foreground"
+              >
+                <ExternalLink className="h-3 w-3" />
+              </Link>
+              <button
+                type="button"
+                onClick={() => onCopy(b.key)}
+                title="Copy a sweep brief for this bucket"
+                aria-label={`Copy a sweep brief for ${b.key}`}
+                className="shrink-0 text-muted-foreground hover:text-foreground"
+              >
+                <Copy className="h-3 w-3" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function RuleLegend({
+  report,
+  active,
+  onPick,
+}: {
+  report: DeadEndReport;
+  active: DeadEndRuleId | null;
+  onPick: (rule: DeadEndRuleId) => void;
+}) {
+  const entries = Object.entries(report.byRule) as [DeadEndRuleId, number][];
+  return (
+    <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
+      {entries.map(([rule, count]) => (
+        <button
+          key={rule}
+          type="button"
+          onClick={() => onPick(rule)}
+          title={`Show only ${RULE_TITLES[rule]}`}
+          className={
+            "rounded-lg border p-2 text-left transition-colors hover:bg-accent " +
+            (active === rule ? "border-primary bg-accent" : "border-border bg-card")
+          }
+        >
+          <div className="flex items-baseline gap-2">
+            <span className="text-lg font-semibold tabular-nums">{count}</span>
+            <span className="truncate text-xs font-medium">{RULE_TITLES[rule]}</span>
+          </div>
+          <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
+            {RULE_DOCTRINE[rule]}
+          </p>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Detail panel ───────────────────────────────────────────────────────────
+
+function FindingDetail({
+  finding,
+  commit,
+  onCopyFix,
+}: {
+  finding: DeadEndFinding;
+  commit: string | null;
+  onCopyFix: () => void;
+}) {
+  return (
+    <div className="space-y-3 p-3 text-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant={finding.severity === "high" ? "destructive" : "secondary"}>
+          {finding.severity}
+        </Badge>
+        <Badge variant="outline">{RULE_TITLES[finding.rule]}</Badge>
+        <Badge variant="outline" className="font-mono">
+          {finding.entity}
+        </Badge>
+      </div>
+
+      <p className="text-sm text-foreground">{describeFinding(finding)}</p>
+
+      <p className="rounded border border-border bg-muted/40 p-2 text-xs text-muted-foreground">
+        {RULE_DOCTRINE[finding.rule]}
+      </p>
+
+      <dl className="space-y-1.5 text-xs">
+        <Row label="Renders">
+          <code className="font-mono">{finding.expression}</code>
+        </Row>
+        <Row label="Source">
+          <Link
+            href={sourceHref(finding.file, finding.line, commit)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono underline-offset-2 hover:text-primary hover:underline"
+          >
+            {finding.file}:{finding.line}:{finding.column}
+          </Link>
+        </Row>
+        <Row label="Feature">
+          <Link
+            href={treeHref(finding.feature, commit)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono underline-offset-2 hover:text-primary hover:underline"
+          >
+            {finding.feature}
+          </Link>
+        </Row>
+        <Row label="Surface">
+          {finding.route ? (
+            <Link
+              href={finding.route}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline-offset-2 hover:text-primary hover:underline"
+            >
+              {finding.route}
+            </Link>
+          ) : (
+            <span className="text-muted-foreground">
+              a component — reachable from whichever route mounts it
+            </span>
+          )}
+        </Row>
+        <Row label="Registry">
+          {finding.entityHasRoute ? (
+            <span className="text-muted-foreground">
+              <code className="font-mono">{finding.entity}</code> already has an
+              hrefFor — the door is one <code className="font-mono">EntityRef</code> away.
+            </span>
+          ) : (
+            <Link
+              href={treeHref(ENTITY_REGISTRY_PATH, commit)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline-offset-2 hover:text-primary hover:underline"
+            >
+              Add an hrefFor for this token
+            </Link>
+          )}
+        </Row>
+      </dl>
+
+      <Button size="sm" variant="outline" onClick={onCopyFix} className="w-full">
+        <Copy className="mr-1.5 h-3.5 w-3.5" />
+        Copy repair brief for an agent
+      </Button>
+    </div>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex gap-2">
+      <dt className="w-20 shrink-0 text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 flex-1 break-words">{children}</dd>
+    </div>
+  );
+}
+
+// ─── Allowlist ──────────────────────────────────────────────────────────────
+
+/**
+ * What we deliberately silenced, and why — rendered as prominently as what we
+ * found. An exemption nobody can see is how the class comes back.
+ */
+function AllowlistPanel({ report }: { report: DeadEndReport }) {
+  if (report.allowlist.length === 0) return null;
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <p className="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <ShieldOff className="h-3.5 w-3.5" />
+        Deliberate exemptions ({report.allowlist.length}) —
+        scripts/dead-ends/allowlist.ts
+      </p>
+      <ul className="space-y-1.5">
+        {report.allowlist.map((entry) => (
+          <li key={`${entry.file}:${entry.rule ?? "*"}`} className="text-xs">
+            <span className="inline-flex flex-wrap items-baseline gap-1.5">
+              <Link
+                href={treeHref(entry.file, report.commit)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono underline-offset-2 hover:text-primary hover:underline"
+              >
+                {entry.file}
+              </Link>
+              <Badge variant="outline" className="h-4 px-1 text-[9px]">
+                {entry.rule ?? "all rules"}
+              </Badge>
+              <span className="text-[10px] text-muted-foreground">
+                {entry.addedBy} · {entry.addedOn}
+              </span>
+            </span>
+            <p className="text-muted-foreground">{entry.reason}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
