@@ -1765,6 +1765,7 @@ export function SetupView() {
           onReset={() => {
             setBuildLog([]);
             setBuildFailed(false);
+            setAiError(null);
           }}
           busy={draftingWorkOrder}
           onSubmit={(hints) => void handleBuildWithAi(hints)}
