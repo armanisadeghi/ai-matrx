@@ -229,6 +229,19 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
     linking the previous app's public page. **Any component that resolves a
     display name for an id-shaped prop has this bug unless the two are stored
     together.**
+  - 🚨 **An optional callback may UPGRADE a door; it must never GRANT one.**
+    `FeedbackDetailDialog` rendered its parent-ticket control as
+    `disabled={!onOpenFeedback}` — so in the two of three callers that mount
+    the dialog without that prop (`CategoriesTab`, `WorkQueueTab`; only
+    `FeedbackTable` passes it) the primary affordance was a DISABLED button
+    still displaying the parent's id and description. Naming a record and
+    greying out the way to it is the campaign's exact target, and it was
+    reachable only if a caller remembered to wire a callback — so the next
+    caller would have broken it again. The route always exists
+    (`feedbackHref`), so the control now renders a real `<a>` when there is no
+    callback and a `<button>` (in-place swap) when there is. **Test: grep every
+    `disabled={!on…}` on a control whose label names a record — if a canonical
+    href exists, that gate is a dead end, not a graceful degradation.**
   - **An unregistered token silently strips a notice of its doors.**
     `DeepLinkMissNotice`/`EntityDoorControls` resolve route + peek from the
     entity registry, so a token that is not registered (`app_category`) yields

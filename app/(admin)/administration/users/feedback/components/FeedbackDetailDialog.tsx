@@ -1196,33 +1196,59 @@ export default function FeedbackDetailDialog({
                             {/* THE DOOR LAW: this dialog can already RESOLVE
                                 the parent — so it opens it. Clicking swaps the
                                 dialog's subject (and the URL); the new-tab
-                                control keeps the current record on screen. */}
+                                control keeps the current record on screen.
+                                🚨 `onOpenFeedback` UPGRADES this door to an
+                                in-place swap — it does not GRANT the door.
+                                Gating the control on the prop made the primary
+                                affordance a DISABLED button still showing the
+                                parent's name, in the two of three callers that
+                                mount this dialog without the callback
+                                (CategoriesTab, WorkQueueTab). A door that only
+                                exists when a caller remembered to wire a
+                                callback is the exact dead end this campaign
+                                kills. The route always exists, so with no
+                                callback the same control is a real anchor. */}
                             <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => onOpenFeedback?.(parentId)}
-                                disabled={!onOpenFeedback}
-                                title={
-                                  onOpenFeedback
-                                    ? `Open parent ${parentLabel ?? parentId}`
-                                    : "Parent record"
-                                }
-                                className="flex min-w-0 flex-1 items-center gap-2 text-xs px-2 py-1.5 rounded bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors text-left disabled:cursor-default disabled:hover:bg-primary/5"
-                              >
-                                <CornerDownRight className="w-3 h-3 text-primary flex-shrink-0 rotate-180" />
-                                <span className="font-mono text-primary">
-                                  {parentId.slice(0, 8)}
-                                </span>
-                                {parentLabel ? (
-                                  <span className="text-muted-foreground truncate">
-                                    {parentLabel}
-                                  </span>
+                              {(() => {
+                                const doorClass =
+                                  "flex min-w-0 flex-1 items-center gap-2 text-xs px-2 py-1.5 rounded bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors text-left";
+                                const doorTitle = `Open parent ${parentLabel ?? parentId}`;
+                                const doorContent = (
+                                  <>
+                                    <CornerDownRight className="w-3 h-3 text-primary flex-shrink-0 rotate-180" />
+                                    <span className="font-mono text-primary">
+                                      {parentId.slice(0, 8)}
+                                    </span>
+                                    {parentLabel ? (
+                                      <span className="text-muted-foreground truncate">
+                                        {parentLabel}
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground italic">
+                                        Loading...
+                                      </span>
+                                    )}
+                                  </>
+                                );
+                                return onOpenFeedback ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => onOpenFeedback(parentId)}
+                                    title={doorTitle}
+                                    className={doorClass}
+                                  >
+                                    {doorContent}
+                                  </button>
                                 ) : (
-                                  <span className="text-muted-foreground italic">
-                                    Loading...
-                                  </span>
-                                )}
-                              </button>
+                                  <a
+                                    href={feedbackHref(parentId)}
+                                    title={doorTitle}
+                                    className={doorClass}
+                                  >
+                                    {doorContent}
+                                  </a>
+                                );
+                              })()}
                               <a
                                 href={feedbackHref(parentId)}
                                 target="_blank"
@@ -1521,17 +1547,30 @@ export default function FeedbackDetailDialog({
                           ) : null;
                         })()}
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onOpenFeedback?.(parentId)}
-                        disabled={!onOpenFeedback}
-                        className="h-8 px-2"
-                        title="Open parent ticket"
-                      >
-                        <ArrowRight className="w-4 h-4" />
-                      </Button>
+                      {/* Same rule as the Details tab above: without the
+                          swap callback this is still a door, never a disabled
+                          arrow next to a record we can plainly resolve. */}
+                      {onOpenFeedback ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onOpenFeedback(parentId)}
+                          className="h-8 px-2"
+                          title="Open parent ticket"
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                        </Button>
+                      ) : (
+                        <a
+                          href={feedbackHref(parentId)}
+                          title="Open parent ticket"
+                          aria-label="Open parent ticket"
+                          className="inline-flex h-8 items-center justify-center rounded-md px-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                        </a>
+                      )}
                       <a
                         href={feedbackHref(parentId)}
                         target="_blank"
