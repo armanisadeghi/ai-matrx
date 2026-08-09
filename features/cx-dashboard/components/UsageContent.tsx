@@ -12,6 +12,11 @@ import { CxEmptyState } from "@/features/cx-dashboard/components/CxEmptyState";
 import { CxJsonViewer } from "@/features/cx-dashboard/components/CxJsonViewer";
 import { formatCost, formatTokens, formatDuration } from "@/features/cx-dashboard/utils/format";
 import { exportToCSV, exportToJSON } from "@/features/cx-dashboard/utils/export";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_CX_DASHBOARD_SURFACE_NAME,
+  createAdminCxDashboardScope,
+} from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
 
 const COLORS = [
   "hsl(215, 70%, 55%)", "hsl(160, 60%, 45%)", "hsl(280, 60%, 55%)",
@@ -73,6 +78,17 @@ export function UsageContent({ analytics }: { analytics: Analytics }) {
   }));
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_CX_DASHBOARD_SURFACE_NAME}
+      getScope={() =>
+        createAdminCxDashboardScope({
+          dashboard_section: "usage",
+          usage_analytics: analytics,
+          usage_total_requests: analytics.total_requests,
+        })
+      }
+      isEditable={false}
+    >
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">
@@ -213,5 +229,6 @@ export function UsageContent({ analytics }: { analytics: Analytics }) {
         </>
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

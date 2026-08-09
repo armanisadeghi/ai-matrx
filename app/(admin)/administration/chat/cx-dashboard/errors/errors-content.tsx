@@ -24,6 +24,11 @@ import type {
   CxUserRequest,
   CxToolCall,
 } from "@/features/cx-dashboard/types/cxDashboardTypes";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_CX_DASHBOARD_SURFACE_NAME,
+  createAdminCxDashboardScope,
+} from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
 
 type ErrorsData = {
   error_requests: CxUserRequest[];
@@ -239,6 +244,34 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
   }, []);
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_CX_DASHBOARD_SURFACE_NAME}
+      getScope={() =>
+        createAdminCxDashboardScope({
+          dashboard_section: "errors",
+          error_pending_count: pendingCount,
+          error_max_tokens_count: maxTokensCount,
+          error_request_count: errorCount,
+          error_pending_requests: errors.error_requests
+            .filter((r) => r.status === "pending")
+            .map((r) => ({
+              id: r.id,
+              conversation_title: r.conversation_title,
+              total_tokens: r.total_tokens,
+              total_cost: r.total_cost,
+              created_at: r.created_at,
+            })),
+          error_tool_calls: errors.error_tool_calls.map((t) => ({
+            tool_name: t.tool_name,
+            tool_type: t.tool_type,
+            error_type: t.error_type,
+            error_message: t.error_message,
+            created_at: t.created_at,
+          })),
+        })
+      }
+      isEditable={false}
+    >
     <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">
@@ -418,5 +451,6 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
       {/* Raw error data */}
       <CxJsonViewer data={errors} label="Raw Error Data (Debug)" />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

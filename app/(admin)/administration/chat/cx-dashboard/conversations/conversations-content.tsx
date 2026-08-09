@@ -24,6 +24,11 @@ import type {
   CxConversation,
   CxPaginatedResponse,
 } from "@/features/cx-dashboard/types/cxDashboardTypes";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_CX_DASHBOARD_SURFACE_NAME,
+  createAdminCxDashboardScope,
+} from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
 
 type Props = {
   result: CxPaginatedResponse<CxConversation>;
@@ -137,6 +142,26 @@ export function ConversationsContent({ result }: Props) {
   }, []);
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_CX_DASHBOARD_SURFACE_NAME}
+      getScope={() =>
+        createAdminCxDashboardScope({
+          dashboard_section: "conversations",
+          conversation_list_results: result.data.map((c) => ({
+            id: c.id,
+            title: c.title,
+            status: c.status,
+            message_count: c.message_count,
+            model_name: c.model_name,
+            provider: c.provider,
+            parent_conversation_id: c.parent_conversation_id,
+            created_at: c.created_at,
+          })),
+          conversation_list_total: result.total,
+        })
+      }
+      isEditable={false}
+    >
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <h2 className="text-sm font-semibold">
         Conversations
@@ -235,5 +260,6 @@ export function ConversationsContent({ result }: Props) {
         </div>
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

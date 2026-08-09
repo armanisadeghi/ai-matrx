@@ -37,6 +37,11 @@ import {
   ChevronRight,
 } from "lucide-react";
 import dynamic from "next/dynamic";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_CX_DASHBOARD_SURFACE_NAME,
+  createAdminCxDashboardScope,
+} from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
 
 const MarkdownStream = dynamic(() => import("@/components/MarkdownStream"), {
   ssr: false,
@@ -59,6 +64,46 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
   } = detail;
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_CX_DASHBOARD_SURFACE_NAME}
+      getScope={() =>
+        createAdminCxDashboardScope({
+          dashboard_section: "conversation_detail",
+          current_conversation_id: conv.id,
+          current_conversation: {
+            id: conv.id,
+            title: conv.title,
+            status: conv.status,
+            model_name: conv.model_name,
+            provider: conv.provider,
+            message_count: conv.message_count,
+            parent_conversation_id: conv.parent_conversation_id,
+            config: conv.config,
+            variables: conv.variables,
+            overrides: conv.overrides,
+            metadata: conv.metadata,
+            created_at: conv.created_at,
+            updated_at: conv.updated_at,
+          },
+          current_conversation_messages: messages,
+          current_conversation_user_requests: user_requests.map((ur) => ({
+            id: ur.id,
+            status: ur.status,
+            iterations: ur.iterations,
+            total_tool_calls: ur.total_tool_calls,
+            total_cost: ur.total_cost,
+            total_tokens: ur.total_tokens,
+          })),
+          current_conversation_children: child_conversations.map((c) => ({
+            id: c.id,
+            title: c.title,
+            model_name: c.model_name,
+            message_count: c.message_count,
+          })),
+        })
+      }
+      isEditable={false}
+    >
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="flex items-start gap-3">
@@ -246,6 +291,7 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
         label="Config / Variables / Metadata"
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 
