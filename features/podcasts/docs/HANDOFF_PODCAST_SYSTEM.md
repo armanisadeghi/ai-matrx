@@ -16,15 +16,15 @@ known weakness. Supersedes `HANDOFF_2026-06-12.md` (archived at `docs/archive/20
 
 The flow is now `Content → Script → Audio` with **hard gates** between stages, and
 it produces real audio across every starting point and host count we've tested
-(1, 2, 3, 6 — and the SCRIPT stage now verified live on prod at 10, 14, 20).
+(1, 2, 3, 6, and — verified live on prod 2026-08-08 — 10, 14, 20).
 The class of failure that prompted the rebuild — a script agent's thinking text
 leaking into TTS, and the "speaker name mismatch" error — is now **structurally
 impossible**: nothing reaches TTS that isn't a validated `<podcast_dialogue>`
 script with exactly the requested number of speakers and names that match.
-The same-day typed-params regression that broke the 3–20 host audio stage is
-fixed and deployed; **10-host audio is verified green end-to-end on prod**
-(run `afd2d558`, eleven_v3). 11–20 hosts hit ElevenLabs' hard 10-distinct-voice
-cap — a voice-sharing fix is committed and awaits the next aidream release (§5.2).
+**Large casts are no longer a question mark: 10-, 14-, and 20-host episodes all
+render end-to-end on production** (script + ElevenLabs audio), after two server
+fixes shipped the same day — the typed-`LLMParams` regression and ElevenLabs'
+hard 10-distinct-voice cap (§5.1/§5.2).
 
 ---
 
@@ -39,6 +39,7 @@ cap — a voice-sharing fix is committed and awaits the next aidream release (§
 | `partial_content` → script writer (no extractor)                   | real run `partial_content` PASS+audio                                                                                | ✅                                            |
 | `full_content` already-a-script → skip generation                  | real run `pasted_script` (22s, "skipping generation")                                                                | ✅                                            |
 | 1/2/3/6 hosts produce audio (Gemini + ElevenLabs)                  | real runs `solo`/`two_host_custom_names`/`three_host`/`six_host_roundtable` all PASS+audio                           | ✅                                            |
+| **10/14/20 hosts produce audio (large cast)**                      | live PROD runs `afd2d558` / `25031425` / `966bfb95` — every stage `completed`; exact GATE 2 counts + matching `<speaker_settings>` | ✅ (2026-08-08)                               |
 | Content gate rejects thin sources                                  | thin fixtures rejected at GATE 1 (331/358 chars)                                                                     | ✅                                            |
 | Blog / show-notes generate + publish                               | `EpisodeContentStudio`, `pc_articles` live                                                                           | ✅ wired (live-UI run still pending — see §6) |
 | Create form: 1–20 hosts, all formats, per-host names/voices        | live DOM check, zero false "Coming Soon"                                                                             | ✅                                            |
@@ -81,7 +82,7 @@ Full detail in `PODCAST_PIPELINE.md` §3. Summary:
 **Agents (master / pinned version):**
 
 - Script (legacy, 2-host, best quality): `podcast_script_educational` `4541ba46`, `_news` `23ca9704`, `_persian` `3456f665`.
-- Script (generic, host-count-aware): solo `764830c0`, multihost (2–4) `73623c8f`, roundtable (5–20) `ecbecb02`.
+- Script (generic, host-count-aware) — **repinned 2026-08-08** to the hardened versions: solo `3f0b22c2`, multihost (2–4) `29bebcba`, roundtable (5–20) `e7cad8a6`. The DB slot (`agent.slot_definition`, `podcast.*_script`) is the pin authority — repin there, never in code.
 - Audio: Gemini english `055c6d30` / persian `21238b08`; **ElevenLabs dialogue `podcast_audio_dialogue` master `88f05360`, version `293425be`** (model `eleven_v3` = `7b1bc855…`).
 - Companion: blog `58204bd9`, show-notes `b1910198`, chapters/title/audience built but unwired.
 
@@ -107,8 +108,9 @@ Ordered by importance. These are the honest gaps.
    override reaches `TTSVoiceConfig.dialogue_turns`. Failed runs remain
    resumable through `POST /api/podcast/resume/{run_id}`.
 
-2. **Large casts (7–20 hosts): SCRIPT STAGE VERIFIED LIVE at 10/14/20
-   (2026-08-08).** The roundtable/multihost/solo agents were hardened (required
+2. ~~**Large casts (7–20 hosts) are UNVERIFIED.**~~ **VERIFIED END-TO-END ON
+   PROD at 10/14/20 hosts (2026-08-08)** — script AND audio. The
+   roundtable/multihost/solo agents were hardened (required
    `<speaker_settings>` + a roster-first / post-write count-check protocol; the
    roundtable user message's "Output only the dialogue block" line — which
    contradicted and suppressed the declaration — removed) and their
@@ -119,17 +121,18 @@ Ordered by importance. These are the honest gaps.
    matching the dialogue labels exactly (verified in `chat.agent_run_stage`
    output; GATE 2 passed at all three sizes, ~40–50s per script on Gemini 3.6
    Flash). `scripts/podcast_e2e_matrix.py` gained `roundtable_10/14/20`
-   scenarios. **Audio results (post-deploy re-run, 2026-08-08):** 10-host
-   rendered end-to-end (run `afd2d558`, eleven_v3, ~$0.55 truncated). 14/20
-   failed on a hard PROVIDER limit — ElevenLabs `text_to_dialogue` allows at
-   most **10 distinct voice_ids per request** (`max_voices_exceeded "N/10"`).
-   Fix committed to aidream (`9977828`, awaiting release):
-   `_ELEVENLABS_MAX_DISTINCT_VOICES` caps assignment and SHARES gender-matched
-   voices beyond 10 (labels stay distinct; loud warning), plus a pre-flight
-   guard when explicit pins force past the cap. After it deploys, re-run
-   `roundtable_14`/`roundtable_20` to confirm; if all-distinct voices at 11–20
-   matter as a product bar, the alternative is multi-request render + stitch
-   (Arman's call — tracked in aidream FOUND_DEFECTS.md).
+   scenarios. **Audio: ALL THREE GREEN on prod** — 10-host (`afd2d558`),
+   14-host (`25031425`), 20-host (`966bfb95`), every stage `completed`. Getting
+   there took two server fixes, both shipped: the typed-`LLMParams` regression
+   (item 1) and a hard PROVIDER limit found at 14/20 — ElevenLabs
+   `text_to_dialogue` accepts at most **10 distinct voice_ids per request**
+   (`max_voices_exceeded "13/10"` / `"17/10"`). `_ELEVENLABS_MAX_DISTINCT_VOICES`
+   now caps assignment and SHARES gender-matched voices beyond 10 (labels stay
+   distinct, so GATE 2 and transcripts are unaffected; loud warning on every
+   firing), plus a pre-flight `PodcastConfigError` when explicit per-speaker
+   pins force past the cap — raised before the paid call. **Open product call
+   for Arman:** if all-distinct voices at 11–20 matter, the upgrade is a
+   multi-request render + stitch (deferred in aidream `FOUND_DEFECTS.md`).
 
 3. **`<speaker_settings>` is now REQUIRED and emitted (2026-08-08).** All three
    generic script agents demand the declaration (name + gender, never voice —
@@ -192,10 +195,11 @@ summarization,fact_checking,expansion}`) → the create form's "Pre/Post-script
   2026-08-08** for both Gemini PCM and ElevenLabs MP3, including Play/Pause,
   advancing position/rendered duration, and canonical-player handoff. The
   blog/show-notes generate→publish UI remains separate and unverified here.
-- **3–20 host audio on production** — script stage verified live at 10/14/20
-  (§5.2); resume the recorded
-  runs (or re-run `podcast_e2e_matrix.py roundtable_10 roundtable_14
-roundtable_20`) to confirm ElevenLabs renders 10/14/20 distinct voices.
+- **A listening check on a large cast.** 10/14/20-host audio is confirmed to
+  RENDER end-to-end on prod (§5.2), but nobody has listened to it: at 11–20
+  hosts several speakers necessarily SHARE a voice (ElevenLabs' 10-distinct-voice
+  cap), so verify by ear that a 14- or 20-host episode is still followable
+  before advertising that size.
 
 ---
 
