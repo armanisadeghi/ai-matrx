@@ -10,6 +10,7 @@
 // React Compiler is on: no manual memo.
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Headphones,
@@ -86,7 +87,7 @@ export function AudioStudyHome() {
       ) : (
         <ul className="space-y-2">
           {rows.map((row) => (
-            <AudioRow key={row.id} row={row} onOpen={() => router.push(`/education/audio-study/${row.id}`)} />
+            <AudioRow key={row.id} row={row} href={`/education/audio-study/${row.id}`} />
           ))}
         </ul>
       )}
@@ -94,13 +95,18 @@ export function AudioStudyHome() {
   );
 }
 
-function AudioRow({ row, onOpen }: { row: StudyMediaRow; onOpen: () => void }) {
+// An audio study item is a real record with its own page, so the row is an
+// ANCHOR, not a <button>. As a button it navigated on click and nothing else —
+// no cmd-click, no middle-click, no "open in new tab", no destination on hover.
+// Same layout, all four doors back. (`href` replaced an `onOpen` callback so
+// the destination lives on the row rather than being handed in imperatively;
+// there is exactly one call site.)
+function AudioRow({ row, href }: { row: StudyMediaRow; href: string }) {
   const Icon = FORMAT_ICON[row.audio_format ?? "overview"] ?? Headphones;
   return (
     <li>
-      <button
-        type="button"
-        onClick={onOpen}
+      <Link
+        href={href}
         className="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-accent"
       >
         <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
@@ -111,7 +117,7 @@ function AudioRow({ row, onOpen }: { row: StudyMediaRow; onOpen: () => void }) {
           )}
         </div>
         <StatusChip status={row.status} />
-      </button>
+      </Link>
     </li>
   );
 }
