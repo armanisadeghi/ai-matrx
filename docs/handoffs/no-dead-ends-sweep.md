@@ -187,9 +187,18 @@ Ordered by traffic. Each item is independently actionable.
     resolver route was built (`/scopes/s/[scopeId]`, `scopeShortHref`). All that
     remains is the registry one-liner; see item 0. `scope_type` still has no
     resolver and no peek.
-15. **`brand` and marketing `site` are not registered tokens at all**, though
-    `marketingRoutes.brand()` / `.site()` exist. Registering them would let
-    `EntityRef` serve the ~35 marketing tables instead of each hand-rolling.
+15. ~~**`brand` and marketing `site` are not registered tokens at all.**~~
+    RESOLVED — `web_brand` (`/marketing/brands/<id>`) and `web_site`
+    (`/marketing/sites/<id>`, the id-only shim that resolves `brand_id` and
+    redirects) both carry `hrefFor` now. **Still missing: a `web_page` token.**
+    A canonical page is the most-linked record in the whole domain (every GSC
+    breakdown, dig, insight, watch row, crawl ledger and cost rollup resolves a
+    `page_id`), and its route needs a `site_id` an id alone cannot supply. The
+    fix is the same shape as `web_site`: a `/marketing/pages/[pageId]` resolver
+    already exists on disk — point `web_page.hrefFor` at it and every one of
+    those columns can drop its local `marketingRoutes.sitePage(...)` for an
+    `EntityRef`, gaining peek and new-tab for free. Until then those surfaces
+    pass the builder explicitly, which is correct but door-less on peek.
 16. **`context_item` needs a peek**; `user_feedback` now has a real route
     (`/administration/users/feedback?feedback=<id>`) but sits behind the
     super-admin gate — same "403 door" question as `skill`.
@@ -342,3 +351,58 @@ Ordered by traffic. Each item is independently actionable.
     `getAgent`/`getAgentApp` both filter `deleted_at is null`, and neither list
     surface has a trash view, so no door lands on a soft-deleted row. **No
     browser** — see the banner above.
+- **Marketing table columns** (every `MatrxColumnDef` file under
+  `features/marketing/**`). The domain-wide shape was a record printed as text
+  with a whole-row `onRowOpen` as its only way in — no cmd-click, no
+  middle-click, no keyboard, nothing for the context menu. Identity cells now
+  declare `href`, so the table renders a real `next/link`:
+  - **Site workspace tables** — crawl sessions (`CrawlsTable`), snapshots
+    (`SnapshotsTable`), findings (`FindingsTable`), the analysis priority queue
+    (`SiteAnalysisTable`), sitemap listings (`SitemapDetail`), and the crawl run
+    URL ledger (`CrawlUrlsTable`). Each destination is the one `onRowOpen`
+    already used.
+  - **Relationships that were knowable and unreachable** — a finding's affected
+    page was a `<button onClick={router.push}>` (no new-tab gesture reached it);
+    a crawl run URL and the crawl-report response ledger both carried the
+    `page_id` the crawler had already resolved and printed the URL as text.
+  - **Cross-site hubs** — `BatchesTable` (the id fragment was an inner link
+    while the rest of the identity cell was inert), `BatchDetailWorkspace`,
+    `SiteCostWorkspace`, `WorkspaceCostWorkspace`, `CrossSiteRanksHub`.
+  - **Search Console, in ONE edit** — `buildGscKeyColumn`
+    (`search-console/lib/columns.tsx`) takes an optional per-row `recordHref`
+    and renders the door itself, so `GscDimensionTable`, `DigResultsTable`,
+    `InsightsTab` (CTR-gap + trend), and `ClassInsights` (movers + juice) all
+    light up at once. `gsc_perf_breakdown` / `_dig` / `_ctr_gap` / `_trend` /
+    `_class_movers` / `_juice` every one RETURNS `page_id` — the page was
+    knowable in all six. `WatchlistTab` resolves the same door through
+    `entity_id` when `kind === "page"`; `NewPagesTab` rows ARE pages.
+  - The door in those tables is a trailing anchor, not the whole cell, because
+    the row click there is the DRILLDOWN (queries for this page / pages for this
+    query). Swallowing that gesture would trade one destination for another
+    rather than adding one.
+  - **Bare ids that became doors:** the site-access grant's `grantee_id` when
+    `grantee_type === "organization"`, and the workspace cost rollup's
+    `client_org_id` — both via `fk.token: "organization"`, so route + new tab +
+    peek come from the registries with no call-site wiring. A `user` grantee
+    stays copy-only (no canonical account route — D138).
+  - **Route builders, not string concatenation:** `marketingRoutes` gained
+    `sitePage(brandId, siteId, pageId)` and `batch(batchId)`; six hand-built
+    `/marketing/sites/<id>` / `/marketing/batches/<id>` paths now go through the
+    builders.
+  - Verified by `pnpm type-check` (green), ESLint on every changed file, and
+    reading each route leaf on disk under
+    `app/(core)/marketing/brands/[brandId]/sites/[siteId]/` plus
+    `/marketing/batches/[batchId]`. Cross-site links that know only `site_id`
+    use the id-only form, whose `[...rest]` shim resolves the brand and replaces
+    the URL. **No browser** — see the banner above.
+  - **Deliberately left door-less, do not "fix":** `DismissedPagesTable` (its
+    rows ARE soft-deleted pages and the single-page fetchers exclude them — a
+    door there is the /files/trash 404 bug); `CrawlLogsTable` (crawl events have
+    no route); `FindingDetail`'s result rows and its `run_id` /
+    `payload_instance_id` (analysis results and runs have no route);
+    `PlanNodesTable` (a plan node has NO shareable URL at all — the workbench
+    holds the selection in React state; a `?node=<id>` deep link is the fix and
+    is a workbench change, not a column change); both backlink tables (external
+    domains/anchors, already real anchors, and no internal record id on the
+    row); `SiteKeywordPerformanceWorkspace`'s query column (keywords have no
+    route — its "Strongest page" column was already a door).
