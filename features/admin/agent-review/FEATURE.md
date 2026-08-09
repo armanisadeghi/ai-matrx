@@ -25,9 +25,11 @@ The one place agents register anything they built that Arman must go see/test, w
 - **Metadata is runtime-validated.** Missing and invalid triage are shown loudly and can receive a deterministic suggested classification. Never cast JSONB into a local mirror type.
 - **Claims are coordination, not authorization.** Agents atomically claim ready rows with `FOR UPDATE SKIP LOCKED`, record a stable owner label, and hand off to a separate verifier for high-risk work. RLS remains the authorization layer.
 - **"Copy for AI"** uses the shared `components/agent-copy` primitive, `kind: "agent-review-item"`, embedding the full row, feedback, and triage metadata.
+- **Rows describe the LIVE app — deployment/PR status never appears in `title`/`instructions`.** All agent code auto-merges to `main` and deploys within ~30 minutes, so "not deployed yet" is false by review time. Contract in the skill's "Everything is LIVE" section.
 - **Do not grow the table.** New needs go in `metadata` jsonb or don't belong here — the existing feedback system (`users.user_feedback`) is the heavyweight tracker; this stays a 4-status queue.
 
 ## Change Log
 
+- 2026-08-08 — "Everything is LIVE" doctrine: rows may never carry deployment/PR status (auto-merge ships all agent code within ~30 min); skill + invariant updated, legacy contaminated rows queued for cleanup.
 - 2026-08-08 — Evolved into the Agent Repair Board: versioned metadata triage, lane/tool filters, compact expandable rows, assignment/claim/verification contract, and agent-facing coordinator queries. No schema expansion; reused `metadata` JSONB and direct Supabase path.
 - 2026-07-21 — Created: table + RLS, admin page, nav registration, `agent-review-queue` skill, CLAUDE.md pointer.

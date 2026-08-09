@@ -58,6 +58,7 @@ import { ProInput } from "@/components/official/ProInput";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TaskPriorityPicker, TASK_PRIORITY_META } from "../TaskPriorityPicker";
+import { TASK_STATUSES } from "@/features/tasks/constants/status";
 import { TaskDueDatePicker } from "../TaskDueDatePicker";
 import { TaskStatusPicker } from "../TaskStatusPicker";
 import { TaskRecurrencePicker } from "../TaskRecurrencePicker";
@@ -320,11 +321,81 @@ export function TaskEditorBody({
     patch("labels", next);
   };
 
+  // Write half of the tasks surface (manifest `writeTargets`): every handler
+  // validates its input and THROWS on a bad shape — the writeback seam
+  // converts throws to safe error envelopes. Draft targets stage through the
+  // same `patch` the user's own typing uses; entity targets run the canonical
+  // thunks. Fresh closures per call (getWriteHandlers contract).
+  const getSurfaceWriteHandlers = () => ({
+    task_title: (value: unknown) => {
+      if (typeof value !== "string" || !value.trim())
+        throw new Error("task_title expects a non-empty string.");
+      patch("title", value.trim());
+    },
+    task_description: (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error("task_description expects a string.");
+      patch("description", value);
+    },
+    task_status: (value: unknown) => {
+      if (
+        typeof value !== "string" ||
+        !(TASK_STATUSES as readonly string[]).includes(value)
+      )
+        throw new Error(
+          `task_status expects one of: ${TASK_STATUSES.join(" | ")}.`,
+        );
+      patch("status", value as (typeof TASK_STATUSES)[number]);
+    },
+    task_priority: (value: unknown) => {
+      if (value !== "low" && value !== "medium" && value !== "high")
+        throw new Error("task_priority expects low | medium | high.");
+      patch("priority", value);
+    },
+    task_due_date: (value: unknown) => {
+      if (value !== null && (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)))
+        throw new Error(
+          "task_due_date expects a YYYY-MM-DD string, or null to clear.",
+        );
+      patch("due_date", value);
+    },
+    task_labels: (value: unknown) => {
+      const allowed = TASK_LABEL_OPTIONS.map((o) => o.value as string);
+      if (
+        !Array.isArray(value) ||
+        !value.every((v) => typeof v === "string" && allowed.includes(v))
+      )
+        throw new Error(
+          `task_labels expects an array drawn from: ${allowed.join(" | ")}.`,
+        );
+      patch("labels", value as TaskLabel[]);
+    },
+    add_subtasks: async (value: unknown) => {
+      if (
+        !Array.isArray(value) ||
+        value.length === 0 ||
+        !value.every((v) => typeof v === "string" && v.trim())
+      )
+        throw new Error(
+          "add_subtasks expects a non-empty array of subtask title strings.",
+        );
+      for (const title of value as string[]) {
+        await dispatch(
+          createSubtaskThunk({ parentTaskId: taskId, title }),
+        ).unwrap();
+      }
+    },
+    save_task: async () => {
+      await handleSave();
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={TASKS_CONTEXT_MENU_PROPS.surfaceName}
       getScope={getApplicationScope}
       isEditable
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
       <div className="flex-1 overflow-y-auto min-h-0">
         <div

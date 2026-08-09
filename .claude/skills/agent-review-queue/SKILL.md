@@ -7,6 +7,15 @@ description: Register anything you built that Arman must go see/test in the UI, 
 
 **The failure this kills:** agents build things, mention them mid-message, Arman misses it, and finished features rot undiscovered for weeks. The queue at `/administration/agent-review` is the ONE place he checks. If you built something he must look at and you didn't register it, assume it will never be seen.
 
+## Everything is LIVE — never write deployment status into a row
+
+**All agent code auto-merges to `main` and deploys within ~30 minutes; branches are then deleted. There is no such thing as not-yet-live code.** Arman only ever reviews the live app — by the time he opens a row, your work IS deployed, so any "not deployed yet" claim is false the moment he reads it.
+
+- **Instructions describe the live app, period.** Never mention PR numbers, branches, "merge first", "pending release", "review after deploy", "RETEST AFTER DEPLOY", or any deploy caveat. Don't claim "deployed"/"verified live" either — deployment status simply does not appear.
+- **Don't spend instructions on PR handling.** Nobody reviews PRs; they auto-approve and merge. Wondering what to do with your PR is wasted work.
+- A row that leads with deploy caveats is a defect — it burns his review on a false premise.
+- `metadata.origin.branch`/`commit` stay — that's provenance, not a status claim.
+
 ## When to add an item (end of task)
 
 Add a row when you produced **anything reviewable in the UI that Arman didn't explicitly walk through with you live**: a demo page, a new route, a reworked surface, an admin panel, a feature needing validation/approval. Skip it only when the work has no UI surface, or Arman already reviewed it in this conversation.
@@ -142,6 +151,7 @@ The verifier records their stable label in `verification.verified_by`. Prefer a 
 ## Rules
 
 - **This queue, not prose.** A "please test /demos/foo" buried in a chat message is the anti-pattern — register it.
+- **No deployment status, ever** — see "Everything is LIVE" above.
 - Don't duplicate: before inserting, check for an existing row with the same `url` — update its `instructions` and reset to `pending` instead.
 - Never infer ownership from `source`; it is only the repository identifier.
 - UI lives at `features/admin/agent-review/` (see its `FEATURE.md`). The table is deliberately minimal — do NOT add columns, RPCs, or satellite tables to it. Extend the versioned `metadata.triage` contract.

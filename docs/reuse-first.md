@@ -195,6 +195,7 @@ this section exists to stop. Campaign: `docs/handoffs/inventory-law-sweep.md`.
 | Slugify to kebab-case | `convertToKebabCase` | `utils/text/stringUtils.ts` |
 | Markdown → speakable plain text (TTS) | `parseMarkdownToText` | `utils/markdown-processors/parse-markdown-for-speech.ts` |
 | Strip markdown to plain text | `cleanMarkdown` | `utils/markdown-processors/clean-markdown-to-text.ts` |
+| Drop a portion's (slide / page / sheet) leading heading when your own chrome already shows it | `stripDuplicatePortionHeading` | `lib/markdown/portion-heading.ts` |
 | Copy / strip / sanitize markdown for clipboard | markdown-copy helpers | `components/matrx/buttons/markdown-copy-utils.ts` |
 | Detect expiring S3 signed URLs | `isSignedUrl` | `lib/media/signed-url.ts` |
 | Categorize an image by size tier / photo grade / aspect (photo vs graphic vs icon, dimension inference from URL) | `categorizeSizeTier`, `photoGrade`, `categorizeAspect`, `resolveDimensions` | `lib/media/categorization.ts` |

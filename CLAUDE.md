@@ -14,6 +14,10 @@ Every task is a probe exposing what the platform is missing. Build (or extend) t
 
 **Before writing ANY new function, component, hook, slice, service, or table, read [docs/reuse-first.md](./docs/reuse-first.md)** — the ladder (**Reuse → Extend → Compose → Create**, exhaust each rung), the mandatory search gate (concept + synonyms + the Primitives Index; "found nothing" names the queries you ran), the importable-code rules (pure core, thin shell, no speculative abstraction), and the new-table bar (exceptional — same entity, new variant → column/flag/JSONB on the existing table). Its Primitives Index is guarded by `pnpm check:reuse-index` — fix or delete a row when a file moves. Your summary states what you searched, what you found, and what you reused or extended.
 
+## The user — a brilliant, absolutely NON-technical Subject Matter Expert
+
+**Our core user is world-best at something (a doctor, lawyer, researcher, SEO expert, opera singer) and here to turn that knowledge into AI-integrated systems — and they do not code, do not prompt-engineer, do not know AI, and never will.** A surface that needs technical intuition is broken for our user regardless of its power: zero jargon, zero developer concepts, a UX that just flows. **THE MISMATCH RULE:** never assume the person inside a topic UI is an expert in that topic — the SEO expert is most likely here building their own SEO systems; the opera singer may be the one inside our SEO tools. Build **topic surfaces** for a smart novice (the system supplies the expert reflexes, per the Canvas Doctrine); build **builder surfaces** (workflows, agents, scopes, apps) for a genius in something else who is a total novice at building. Canonical (Arman's words, 2026-08-08): `/Users/armanisadeghi/code/common-docs/systems/ai-dream-platform/USER.md`.
+
 ## 🚨 NO DEAD ENDS — every identity is a door, every capability is on the table
 
 > **THE DOOR LAW.** If the UI names a thing that has an identity in our system, the UI must let the user reach it.
@@ -125,6 +129,7 @@ Same rule as migrations, one layer up: **a commit that is not pushed, and a push
 > `--no-migrate` / `--no-gates` flags, per-invocation.
 
 - **Deploy:** `./scripts/release.sh` / `./ship.sh` (applies pending FE migrations, bumps, tags, pushes). **Vercel builds ONLY for release-prefixed commits** (`vercel.json` → `scripts/vercel-ignore-build.sh`) — plain pushes to `main` are skipped so agent traffic cannot start a second overlapping ~20-minute production build. The prefix picks the deployment (see Build gate): `release:` → main app only; `release-admin:` / `release-demos:` → that subdomain only; `release-all:` → all three. Ship a satellite with `./ship.sh "msg" --target admin|demos|all`. Sibling repos: `aidream` → its own `./scripts/release.sh` (Coolify auto-deploys on push; `/health/version` returns the deployed git SHA — compare to `origin/main`). `my-matrx` → push to `main` (Vercel GitHub integration).
+- **PR/branch sessions: your code auto-merges to `main` and goes LIVE within ~30 minutes; branches are then deleted.** Nobody reviews PRs — they auto-approve. There is no not-yet-live code: never document "not deployed yet" / "pending merge" (false within the half hour, and Arman reviews only the live app), and never spend output deciding what to do with your PR.
 - **Report deployed state, never intended state.** "Built and verified" ≠ "shipped". If you didn't deploy, say so in the same breath as the completion claim.
 - **Verify against production, not localhost** — hit the real URL and confirm your change answers there.
 - **Half-deployed is the dangerous state.** For a cross-repo feature, shipping only some repos can break a surface that previously worked (page JS calling a global that exists only in the undeployed half fails harder than the old code did).
@@ -260,9 +265,16 @@ A signed S3 URL (`?X-Amz-Signature=…&Expires=…`) expires and breaks days lat
 - **A column the public web reads MUST hold a public URL.** Register it with the DB-edge guard (`migrations/mtx_public_media_url_guard.sql`): `insert into mtx_public_url_guard(table_name,column_name)…` + `mtx_public_url_guard_trigger`. Non-durable writes get logged + queued to `mtx_media_heal_queue`.
 - **Surface violations loudly** — `reportMediaDurabilityViolation()` (same file) screams when an expiring URL hits a render/store path. That's a defect, not something to silently fix.
 
+## Pattern Patrols — recurring mistakes become scheduled, certified sweeps
+
+System (canonical, cross-repo): `/Users/armanisadeghi/code/common-docs/systems/pattern-patrols/FEATURE.md` + its `PATROL_REGISTRY.md` (10 live patrols: dead ends, unused primitives, mobile breakage, light/dark, copy-everywhere, emojis, browser dialogs, bare Loading, coming-soon compliance, type-suppression debt). Recurring runs execute in Codex; certification by a second adversarial agent is mandatory for every fix batch. **Two standing duties for EVERY agent in this repo — invoke the `pattern-patrol` skill for the mechanics:**
+
+1. **Log sightings, don't fix off-mission.** Spot a violation of a registered patrol while doing something else → one line in [`.matrx/PATROL_SIGHTINGS.md`](./.matrx/PATROL_SIGHTINGS.md), keep moving.
+2. **Nominate patterns.** When a mistake you're fixing is a recurring CLASS (third occurrence, past Arman rant, a check you wish existed) — stop and tell Arman it's a patrol candidate, with real grep counts as evidence. The registry is meant to grow from 10 toward 50+.
+
 ## Found defects & task tracking
 
-Track bugs/gaps you can't fully fix in [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (the frontend twin of aidream's). If a fix is partial, record what's open there — a defect that lives only in a chat log will recur. Four-file task system: `FOUND_DEFECTS.md` (unapproved discoveries), `CURRENT_ERRORS.md` (error-dump inbox), `.matrx/AGENT_TASKS.md` (the only approved worklist), `.matrx/ARMAN_TASKS.md` (Arman-only asks).
+Track bugs/gaps you can't fully fix in [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (the frontend twin of aidream's). If a fix is partial, record what's open there — a defect that lives only in a chat log will recur. Task system files: `FOUND_DEFECTS.md` (unapproved discoveries), `CURRENT_ERRORS.md` (error-dump inbox), `.matrx/AGENT_TASKS.md` (the only approved worklist), `.matrx/ARMAN_TASKS.md` (Arman-only asks), `.matrx/PATROL_SIGHTINGS.md` (registered-pattern sightings — see Pattern Patrols above).
 
 ## 🚨 An env var is a VALUE, never a TOGGLE — a flag in env fails silently and invisibly
 
@@ -293,7 +305,7 @@ Same doctrine, server side: aidream's `../aidream/CLAUDE.md` §"A new env var fa
 
 ## Assists — AI assists everywhere (Arman's standing ruling, 2026-08-08)
 
-**The system uses its own AI on itself.** Every friction point, error state, or gap gets asked *"could an AI button/chip do this for the user?"* BEFORE a manual affordance is designed. The primitive is **`features/assists/`**: producers (deterministic code, background agents, sweeps) write `platform.assists` rows or render ephemeral chips; the user one-clicks; the assist action registry runs a REAL action (launch a pre-filled agent, apply a surface write, navigate). **Building any feature? Look for its assist.** Rules + producer contract: [`features/assists/FEATURE.md`](./features/assists/FEATURE.md); cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/assists/FEATURE.md`. Never fork a second chip component, suggestion table, or accept handler — that disease is what this primitive killed.
+**The system uses its own AI on itself.** Every friction point, error state, or gap gets asked *"could an AI button/chip do this for the user?"* BEFORE a manual affordance is designed. The primitive is **`features/assists/`**: producers (deterministic code, background agents, sweeps) write `platform.assists` rows or render ephemeral chips; the user one-clicks; the assist action registry runs a REAL action (launch a pre-filled agent, apply a surface write, navigate). **Building or touching any page? Ask which assists IT needs and mount them in place with `<AssistStrip surfaceName="…"/>`** — the global dock is the ambient overflow, never the substitute. **THE INTENTIONAL-ACTION LAW:** a chip never runs on click — hover/click expands the full card; only the verb-labeled button (with explainer + receipt, `runtime/action-descriptors.ts`) executes. Rules + producer contract: [`features/assists/FEATURE.md`](./features/assists/FEATURE.md); cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/assists/FEATURE.md`. Never fork a second chip component, suggestion table, or accept handler — that disease is what this primitive killed.
 
 ## "Coming Soon" is a promise — track it like a found defect
 
