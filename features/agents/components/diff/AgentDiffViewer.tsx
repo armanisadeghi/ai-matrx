@@ -55,8 +55,16 @@ function buildAgentAdapterRegistry() {
   registry.register("isPublic", { ...BooleanFieldAdapter, label: "Public" });
   registry.register("isArchived", { ...BooleanFieldAdapter, label: "Archived" });
   registry.register("isFavorite", { ...BooleanFieldAdapter, label: "Favorite" });
+  registry.register("autoToolsDisabled", {
+    ...BooleanFieldAdapter,
+    label: "Automatic Tool Injection Disabled",
+  });
   registry.register("version", { ...TextFieldAdapter, label: "Version" });
   registry.register("changeNote", { ...TextFieldAdapter, label: "Change Note" });
+  registry.register("defaultRagBoost", {
+    ...TextFieldAdapter,
+    label: "Default RAG Boost",
+  });
   registry.register("ragAwarenessMode", {
     ...TextFieldAdapter,
     label: "RAG Awareness Mode",
@@ -65,6 +73,18 @@ function buildAgentAdapterRegistry() {
   // JSON fields
   registry.register("modelTiers", { ...JsonObjectAdapter, label: "Model Tiers" });
   registry.register("outputSchema", { ...JsonObjectAdapter, label: "Output Schema" });
+  registry.register("skillConfig", {
+    ...JsonObjectAdapter,
+    label: "Skill Configuration",
+  });
+  registry.register("uiGates", {
+    ...JsonObjectAdapter,
+    label: "UI Gates",
+  });
+  registry.register("matrxActions", {
+    ...JsonObjectAdapter,
+    label: "Matrx Actions",
+  });
 
   return registry;
 }
