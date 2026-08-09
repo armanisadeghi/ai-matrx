@@ -689,6 +689,35 @@ already links is a strong candidate.
 triage table are done; what's left is mostly rows 3–5 (the "Fine" shapes), so
 expect a low hit rate — but nobody has confirmed that end to end.
 
+### Converting to `<Link>` is not enough — guard the MODIFIED click
+
+An anchor that runs a side effect in `onClick` (close a dialog, clear state,
+collapse a panel) runs it on **every** click, including cmd/ctrl/shift and
+middle-click. So "now you can cmd-click to open it in a new tab" is FALSE if
+the side effect also fires — the new tab opens and the surface behind it still
+closes.
+
+I shipped exactly that in `PromoteToSiteDialog` with a comment promising the
+opposite; Cursor Bugbot caught it. The idiom the codebase already had, in
+`SessionsBrowser`:
+
+```tsx
+onClick={(e) => {
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+  closeTheThing();
+}}
+```
+
+**A plain `<Link href>` with no side effect needs no guard.** The guard is only
+for anchors that also mutate the current surface. And note the general shape of
+the miss: the comment described an *intention* the code did not implement —
+which is the same failure as a stale doc, just at three-line scale.
+
+**Also check the component's prop surface before passing a handler.**
+`EntityRef` has no `onClick` prop; it stops propagation on its own anchor
+(`EntityRef.tsx:91,107`). Passing one is silently ignored, not a compile error
+in every shape.
+
 ### A FOURTH failure mode: the route literal that has no page
 
 Alongside "no door", "wrong record" and "param the destination never reads":
