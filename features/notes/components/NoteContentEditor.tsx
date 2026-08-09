@@ -164,7 +164,17 @@ export function NoteContentEditor({
     updatedAt: string | null;
   } | null>(null);
 
-  // When Redux detects a conflict, fetch the remote version to show diff
+  // ── Local content state — initialized from Redux, synced back on debounce
+  const [localContent, setLocalContent] = useState(reduxContent);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastReduxRef = useRef(reduxContent);
+  const noteIdRef = useRef(noteId);
+  const localContentRef = useRef(localContent);
+
+  // When Redux detects a conflict, fetch the remote version to show diff.
+  // Declared after `localContentRef` because it reads the live editor buffer to
+  // verify the conflict is real before surfacing it.
   useEffect(() => {
     if (saveState !== "conflict") {
       setConflictRemote(null);
@@ -178,22 +188,34 @@ export function NoteContentEditor({
       .eq("id", noteId)
       .maybeSingle()
       .then(({ data }) => {
-        if (data?.content != null) {
-          setConflictRemote({
-            content: data.content,
-            updatedAt: data.updated_at ?? null,
-          });
-        }
-      });
-  }, [saveState, noteId]);
+        if (data?.content == null) return;
 
-  // ── Local content state — initialized from Redux, synced back on debounce
-  const [localContent, setLocalContent] = useState(reduxContent);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastReduxRef = useRef(reduxContent);
-  const noteIdRef = useRef(noteId);
-  const localContentRef = useRef(localContent);
+        // LAST LINE OF DEFENSE — never show a conflict the real data does not
+        // support. If the live server row already holds exactly what is in the
+        // editor right now, there is nothing to reconcile: adopt the server's
+        // `updated_at` (so the next save's optimistic lock passes) and clear
+        // the flag silently instead of alarming the user about their own work.
+        if (data.content === localContentRef.current) {
+          console.warn(
+            "[Notes] false conflict suppressed — server content already matches the editor for",
+            noteId,
+          );
+          dispatch(
+            resolveNoteConflict({
+              id: noteId,
+              updatedAt: data.updated_at ?? undefined,
+            }),
+          );
+          return;
+        }
+
+        setConflictRemote({
+          content: data.content,
+          updatedAt: data.updated_at ?? null,
+        });
+      });
+  }, [saveState, noteId, dispatch]);
+
   useEffect(() => {
     localContentRef.current = localContent;
   }, [localContent]);

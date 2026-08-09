@@ -44,6 +44,7 @@ import {
   upsertNoteFromServer,
   upsertNotesFromServer,
   removeNote,
+  recordNoteWriteAttempt,
   markNoteSaving,
   markNoteSaved,
   markNoteSaveError,
@@ -53,6 +54,7 @@ import {
   addTab,
   setNoteField,
 } from "./slice";
+import { serverMatchesAttempt } from "../utils/saveVerification";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -254,7 +256,10 @@ export const saveNote = createAsyncThunk<void, string>(
       savedSnapshot[field] = record[field];
     }
 
-    // Proceed with save
+    // Proceed with save. Record what we are about to send BEFORE sending it —
+    // the realtime echo of this write can arrive before the REST response does,
+    // and the conflict check must be able to recognize our own values.
+    dispatch(recordNoteWriteAttempt({ id: noteId, values: savedSnapshot }));
     dispatch(markNoteSaving(noteId));
 
     // Atomic optimistic lock via updated_at predicate (OLD row; trigger only
@@ -284,7 +289,7 @@ export const saveNote = createAsyncThunk<void, string>(
         const { data: stillThere } = await supabase
           .schema("workbench")
           .from("notes")
-          .select("updated_at")
+          .select("updated_at, content, label")
           .eq("id", noteId)
           .maybeSingle();
 
@@ -295,12 +300,25 @@ export const saveNote = createAsyncThunk<void, string>(
           throw new Error(friendly);
         }
 
-        const conflictMsg =
-          "Conflict: note was modified on another device or tab. Please refresh.";
-        dispatch(markNoteSaveError({ id: noteId, error: "conflict" }));
-        throw new Error(conflictMsg);
+        // Check the ACTUAL server row before crying conflict: if it already
+        // holds exactly what we tried to write, only our cached `updated_at`
+        // was stale. Nobody overwrote the user — adopt the timestamp and move
+        // on rather than raising a conflict prompt.
+        if (serverMatchesAttempt(stillThere, savedSnapshot)) {
+          console.warn(
+            "[saveNote] stale updated_at recovered — server row already matches this write for",
+            noteId,
+          );
+          updatedAt = stillThere.updated_at;
+        } else {
+          const conflictMsg =
+            "Conflict: note was modified on another device or tab. Please refresh.";
+          dispatch(markNoteSaveError({ id: noteId, error: "conflict" }));
+          throw new Error(conflictMsg);
+        }
+      } else {
+        updatedAt = data.updated_at;
       }
-      updatedAt = data.updated_at;
     }
 
     try {
