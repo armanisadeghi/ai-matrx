@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AgentListInlinePicker — embeddable agent browser (search + Mine/Shared/Public tabs).
+ * AgentListInlinePicker — embeddable agent browser with configurable ownership tabs.
  *
  * Reuses the same core as `AgentListDropdown` (`useAgentListCore` +
  * `AgentListContent`) without a popover/drawer shell. Intended for surfaces
@@ -37,6 +37,14 @@ export interface AgentListInlinePickerProps {
    * are a separate catalogue.
    */
   includeSystemInAll?: boolean;
+  /** Restrict which ownership tabs are available for domain-constrained pickers. */
+  visibleTabs?: readonly AgentTab[];
+  /** Label override for the builtin-agent tab. Admin surfaces use "System". */
+  systemTabLabel?: string;
+  /** Resolve the route used by each named agent door. */
+  resolveAgentHref?: (agent: AgentDefinitionRecord) => string;
+  /** Show the globally active agent above the filtered list. Default true. */
+  showPinnedAgent?: boolean;
 }
 
 export function AgentListInlinePicker({
@@ -47,6 +55,10 @@ export function AgentListInlinePicker({
   autoFocusSearch = true,
   initialTab,
   includeSystemInAll = false,
+  visibleTabs,
+  systemTabLabel,
+  resolveAgentHref,
+  showPinnedAgent = true,
 }: AgentListInlinePickerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [catSearch, setCatSearch] = useState("");
@@ -153,6 +165,7 @@ export function AgentListInlinePicker({
         allTags={allTags}
         inputRef={inputRef}
         onSelectAgent={handleSelectAgent}
+        resolveAgentHref={resolveAgentHref}
         onReset={consumer.resetFilters}
         activeFilterCount={activeFilterCount}
         isMobile={isMobile}
@@ -163,8 +176,9 @@ export function AgentListInlinePicker({
         onFilterChipClick={handleFilterChipClick}
         rightPanel={null}
         tabCounts={tabCounts}
-        systemTabLabel={includeSystemInAll ? "System" : undefined}
-        pinnedAgent={pinnedAgent}
+        visibleTabs={visibleTabs}
+        systemTabLabel={systemTabLabel ?? (includeSystemInAll ? "System" : undefined)}
+        pinnedAgent={showPinnedAgent ? pinnedAgent : null}
         listOpen
       />
     </div>

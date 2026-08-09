@@ -423,10 +423,12 @@ function SlotAgentIdentityCard({
 function SlotEditor({
   slot,
   data,
+  builtinAgentIds,
   onSaved,
 }: {
   slot: SlotDefinitionRow;
   data: SlotConsoleData;
+  builtinAgentIds: ReadonlySet<string>;
   onSaved: () => void;
 }) {
   const pinnedVersion = slot.default_agent_version_id
@@ -471,6 +473,10 @@ function SlotEditor({
       toast.error("Pick an agent first.");
       return;
     }
+    if (!builtinAgentIds.has(agentId)) {
+      toast.error("Choose a system agent before saving this slot.");
+      return;
+    }
     if (!useLatest && !versionId) {
       toast.error("Pick a version to pin, or switch to latest.");
       return;
@@ -491,23 +497,27 @@ function SlotEditor({
     } finally {
       setSaving(false);
     }
-  }, [agentId, useLatest, versionId, slot.id, slot.slot_key, onSaved]);
+  }, [agentId, builtinAgentIds, useLatest, versionId, slot.id, slot.slot_key, onSaved]);
 
   return (
     <div className="space-y-3">
       <div>
         <div className="text-xs font-medium text-muted-foreground mb-1">Agent</div>
-        {/* THE canonical agent picker — full search, Mine/Shared/All/System
-            tabs with counts, sort, favorites, category + tag filters, detail
-            peek. Admin variant: opens on System (a slot default must be a
-            system agent) but the admin can still reach every other tab, and
-            every row is badged so system and personal are never confused. */}
+        {/* THE canonical agent picker, constrained to system agents because a
+            slot default serves every user. A personal legacy pin stays visible
+            in the identity card above, but is not repeated as a selectable
+            current row here. */}
         <AgentListInlinePicker
           consumerId={`agent-slot-repin-${slot.id}`}
           onSelect={setAgentId}
-          activeAgentId={agentId}
+          activeAgentId={
+            agentId && builtinAgentIds.has(agentId) ? agentId : null
+          }
           initialTab="system"
-          includeSystemInAll
+          visibleTabs={["system"]}
+          systemTabLabel="System"
+          resolveAgentHref={(agent) => agentHref(agent.id, agent.agentType)}
+          showPinnedAgent={Boolean(agentId && builtinAgentIds.has(agentId))}
           className="h-96 rounded-md border border-border bg-card"
         />
       </div>
@@ -602,11 +612,13 @@ function SlotDetail({
   row,
   data,
   lineage,
+  builtinAgentIds,
   onSaved,
 }: {
   row: SlotRow;
   data: SlotConsoleData;
   lineage: AgentLineage;
+  builtinAgentIds: ReadonlySet<string>;
   onSaved: () => void;
 }) {
   const bindings = data.bindingsBySlotId[row.id] ?? [];
@@ -625,6 +637,7 @@ function SlotDetail({
         key={row.id}
         slot={row.slot}
         data={data}
+        builtinAgentIds={builtinAgentIds}
         onSaved={onSaved}
       />
       <div className="border-t border-border pt-3">
@@ -708,6 +721,10 @@ export function AgentSlotsConsole() {
   // admin pinning a personal/shared agent here would break every user the
   // slot serves. Never hand-query agent.definition for a picker.
   const builtinAgents = useAppSelector(selectBuiltinAgents);
+  const builtinAgentIds = useMemo<ReadonlySet<string>>(
+    () => new Set(builtinAgents.map((agent) => agent.id)),
+    [builtinAgents],
+  );
   // Lineage for every agent the slice holds — derived, no extra queries. This
   // is how the console can answer "does a system copy of this already exist?"
   // instead of just complaining that the pin is personal.
@@ -1055,6 +1072,7 @@ export function AgentSlotsConsole() {
                       systemTwin: null,
                     }
                   }
+                  builtinAgentIds={builtinAgentIds}
                   onSaved={reload}
                 />
               ) : null,

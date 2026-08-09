@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { computeDiff } from "@/components/diff/engine/compute-diff";
 import { createAdapterRegistry } from "@/components/diff/adapters/registry";
 import { DiffViewerShell } from "@/components/diff/views/DiffViewerShell";
 import {
@@ -14,7 +13,7 @@ import {
 import type { ViewMode } from "@/components/diff/engine/types";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { useDiffEnrichment } from "@/features/agents/hooks/useDiffEnrichment";
-import { AGENT_DIFF_OPTIONS } from "./agent-diff-constants";
+import { compareAgentDefinitions } from "./compare-agent-definitions";
 
 import { MessagesAdapter } from "./adapters/MessagesAdapter";
 import { ModelAdapter } from "./adapters/ModelAdapter";
@@ -58,6 +57,10 @@ function buildAgentAdapterRegistry() {
   registry.register("isFavorite", { ...BooleanFieldAdapter, label: "Favorite" });
   registry.register("version", { ...TextFieldAdapter, label: "Version" });
   registry.register("changeNote", { ...TextFieldAdapter, label: "Change Note" });
+  registry.register("ragAwarenessMode", {
+    ...TextFieldAdapter,
+    label: "RAG Awareness Mode",
+  });
 
   // JSON fields
   registry.register("modelTiers", { ...JsonObjectAdapter, label: "Model Tiers" });
@@ -78,12 +81,7 @@ export function AgentDiffViewer({
   const adapters = useMemo(() => buildAgentAdapterRegistry(), []);
 
   const diffResult = useMemo(
-    () =>
-      computeDiff(
-        oldAgent as Record<string, unknown>,
-        newAgent as Record<string, unknown>,
-        AGENT_DIFF_OPTIONS,
-      ),
+    () => compareAgentDefinitions(oldAgent, newAgent).diffResult,
     [oldAgent, newAgent],
   );
 
