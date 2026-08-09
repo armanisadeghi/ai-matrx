@@ -19,6 +19,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -133,6 +134,48 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * The WRITE half — what an agent may change on the brand cockpit. Both
+ * targets persist through the canonical `updateBrand` service (version
+ * guard included) and default to `ask`: the profile is the voice-of-the-
+ * client document agents draft BEST, but a human still confirms in place.
+ *
+ * Deliberately absent: `brand_business_facts`. The surface doctrine is that
+ * confirmed facts are HUMAN-owned — machine discovery writes candidates to
+ * the review inbox, and a human promotes them there. An ask-dialog confirm
+ * is a weaker consent seam than the purpose-built discovery review, so no
+ * agent write path lands on `createBusinessFact`. Likewise absent: brand
+ * name (identity is human-owned), status/visibility (permissions-adjacent),
+ * asset/property/fact deletes (destructive stays human). Handlers:
+ * `features/marketing/components/brands/MarketingBrandWriteTargets.tsx`.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "brand_profile",
+    label: "Brand profile",
+    description:
+      "Update the editorial brand profile (`web.brand.profile`) — the voice-of-the-client document downstream content and SEO agents rely on. Value: a partial object with any of { audience?: string, voice_tone?: string, positioning?: string, service_area?: string, content_guidelines?: string, notes?: string, value_props?: string[], offerings?: string[], competitors?: string[], target_keywords?: string[] }. Omitted fields keep their current value; an empty string or empty array CLEARS that field. List fields replace the FULL list — when extending, include the existing entries from the brand_profile read value. Persists immediately through updateBrand with the version guard. Ground every claim in confirmed facts and crawl evidence; separate inference from evidence.",
+    valueType: "object",
+    updatesValue: "brand_profile",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "brand_context",
+    sortOrder: 100,
+  },
+  {
+    name: "brand_identity",
+    label: "Brand identity copy",
+    description:
+      "Update the brand's editorial identity copy. Value: { industry?: string, description?: string }; omitted fields keep their current value, an empty string clears the field. The brand NAME is human-owned and NOT writable here. Persists immediately through updateBrand with the version guard; the change is visible in brand_context on the next load.",
+    valueType: "object",
+    updatesValue: "brand_context",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "brand_identity",
+    sortOrder: 110,
+  },
+];
+
 export const marketingBrandManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-brand",
   readiness: "verified",
@@ -149,6 +192,7 @@ All values except brand_id populate only after the workspace loads — treat emp
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
   agentRoles: [
     {
       name: "brand_strategist",
