@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -448,10 +449,10 @@ export function SitemapsWorkspace() {
                 <SitemapRow
                   key={sitemap.id}
                   sitemap={sitemap}
-                  onOpen={() =>
-                    sitemap.kind !== "sitemapindex"
-                      ? router.push(`${sitePath}/sitemaps/${sitemap.id}`)
-                      : undefined
+                  href={
+                    sitemap.kind === "sitemapindex"
+                      ? null
+                      : `${sitePath}/sitemaps/${sitemap.id}`
                   }
                   onToggleActive={() => void toggleActive(sitemap)}
                   onDismiss={() => setDismissing(sitemap)}
@@ -553,19 +554,24 @@ export function SitemapsWorkspace() {
   );
 }
 
+// `href` replaced an `onOpen` callback so the row's destination is a URL, not
+// an imperative handler — which is what lets the sitemap's own URL become an
+// anchor below. A sitemapindex has no detail page, so it passes null and the
+// row stays plain text rather than pretending to be a door.
 function SitemapRow({
   sitemap,
-  onOpen,
+  href,
   onToggleActive,
   onDismiss,
   mutating,
 }: {
   sitemap: SiteSitemap;
-  onOpen: () => void;
+  href: string | null;
   onToggleActive: () => void;
   onDismiss: () => void;
   mutating: boolean;
 }) {
+  const router = useRouter();
   const isIndex = sitemap.kind === "sitemapindex";
   const rowCopy = webCopy({
     kind: "web-sitemap",
@@ -603,7 +609,7 @@ function SitemapRow({
         "flex flex-wrap items-center gap-3 px-3 py-2",
         !isIndex && "cursor-pointer hover:bg-muted/30",
       )}
-      onClick={isIndex ? undefined : onOpen}
+      onClick={href ? () => router.push(href) : undefined}
     >
       <FileCode2
         className={cn(
@@ -613,9 +619,22 @@ function SitemapRow({
       />
       <div className="min-w-0 flex-1 basis-64">
         <div className="flex items-center gap-1.5">
-          <p className="truncate font-mono text-xs text-foreground">
-            {sitemap.url}
-          </p>
+          {/* THE DOOR LAW: the row onClick is mouse convenience; the sitemap
+              URL is the real anchor (keyboard, middle-click, new tab, hover
+              destination). stopPropagation so it does not double-fire. */}
+          {href ? (
+            <Link
+              href={href}
+              onClick={(e) => e.stopPropagation()}
+              className="truncate font-mono text-xs text-foreground hover:text-primary hover:underline underline-offset-2"
+            >
+              {sitemap.url}
+            </Link>
+          ) : (
+            <p className="truncate font-mono text-xs text-foreground">
+              {sitemap.url}
+            </p>
+          )}
           <PreviouslyDismissedBadge metadata={sitemap.metadata} />
         </div>
         {sitemap.fetch_error ? (
