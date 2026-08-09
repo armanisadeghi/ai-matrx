@@ -14,6 +14,10 @@
 import type React from "react";
 
 import { compileSlotComponent } from "@/features/agent-apps/utils/compile-slot";
+import {
+  INVALIDATION_KEYS,
+  registerInvalidationCallback,
+} from "@/lib/invalidation/invalidation-registry";
 import type { ToolRendererProps } from "../types";
 import { fetchToolRendererRow } from "./fetchToolRendererRow";
 import { compileToolRenderer } from "./compileToolRenderer";
@@ -93,9 +97,26 @@ export function loadToolRenderer(
   const existing = inflight.get(toolName);
   if (existing) return existing;
 
+  // Snapshot the tool's invalidation version at load start. If the row is
+  // edited (invalidated) while this fetch is in flight, the fetched data may
+  // be PRE-edit — writing it to the caches would resurrect the stale renderer
+  // with nothing left to heal it (tool_ui compiles are not updated_at-keyed).
+  // On a mid-flight version bump: discard this result and load fresh.
+  const startVersion = getToolRendererVersion(toolName);
+  const invalidatedMidFlight = () =>
+    getToolRendererVersion(toolName) !== startVersion;
+
+  // Assigned right after the async body is created; the finally below reads it
+  // to release only OUR in-flight slot (invalidation may have already cleared
+  // it and a newer load may own it by the time this settles).
+  let self: Promise<ToolComponent | null> | null = null;
+
   const promise = (async (): Promise<ToolComponent | null> => {
     try {
       const row = await fetchToolRendererRow(toolName);
+      // Everything below this await is synchronous, so one check covers all
+      // cache writes on this path.
+      if (invalidatedMidFlight()) return loadToolRenderer(toolName);
       if (!row) {
         markNoToolRenderer(toolName);
         return null;
@@ -153,13 +174,19 @@ export function loadToolRenderer(
         `[toolRendererCache] load failed for "${toolName}":`,
         err,
       );
+      // Same mid-flight guard: don't negative-cache a tool off a fetch that
+      // raced an invalidation — retry against the fresh row instead.
+      if (invalidatedMidFlight()) return loadToolRenderer(toolName);
       markNoToolRenderer(toolName);
       return null;
     } finally {
-      inflight.delete(toolName);
+      if (self !== null && inflight.get(toolName) === self) {
+        inflight.delete(toolName);
+      }
     }
   })();
 
+  self = promise;
   inflight.set(toolName, promise);
   return promise;
 }
@@ -174,10 +201,70 @@ export function prefetchToolRenderer(toolName: string): void {
   void loadToolRenderer(toolName);
 }
 
-/** Drop a tool from every cache (e.g. after an admin edits its code). */
+// ─── Invalidation + repaint (D115) ───────────────────────────────────────────
+//
+// Mounted consumers (`DbToolRendererImpl`, `useDbToolMeta`) subscribe to a
+// monotonic per-tool version via `useToolRendererVersion`. Invalidation drops
+// the caches AND bumps the version, so an already-rendered card re-resolves —
+// the in-session repaint after an agent edits a `tool_ui` row.
+
+let globalBump = 0;
+const perToolBump = new Map<string, number>();
+const versionListeners = new Set<() => void>();
+
+/** Monotonic version for a tool's renderer — bumps on every invalidation. */
+export function getToolRendererVersion(toolName: string): number {
+  return globalBump + (perToolBump.get(toolName) ?? 0);
+}
+
+/** Subscribe to version bumps (any tool). Returns the unsubscribe. */
+export function subscribeToolRendererVersions(listener: () => void): () => void {
+  versionListeners.add(listener);
+  return () => {
+    versionListeners.delete(listener);
+  };
+}
+
+function notifyVersionListeners(): void {
+  for (const listener of versionListeners) listener();
+}
+
+/** Drop a tool from every cache (e.g. after an agent/admin edits its code)
+ *  and bump its version so mounted cards re-resolve immediately. */
 export function invalidateToolRenderer(toolName: string): void {
   positive.delete(toolName);
   negative.delete(toolName);
   inflight.delete(toolName);
   metaStore.delete(toolName);
+  perToolBump.set(toolName, (perToolBump.get(toolName) ?? 0) + 1);
+  notifyVersionListeners();
 }
+
+/**
+ * Drop EVERY cached renderer + meta and bump every version. The fallback for
+ * edits whose target tool can't be named (e.g. `toolcomp_update_code` returns
+ * only a `component_id`). Cheap: warm re-fetches are per-tool, on view.
+ */
+export function invalidateAllToolRenderers(): void {
+  positive.clear();
+  negative.clear();
+  inflight.clear();
+  metaStore.clear();
+  globalBump += 1;
+  notifyVersionListeners();
+}
+
+// The D115 inversion: this module registers itself at chunk init (this chunk
+// is loaded wherever a tool card can render), and the ubiquitous
+// `toolStateEffects` fires by NAME — zero import edge into this cluster.
+registerInvalidationCallback(INVALIDATION_KEYS.dbToolRenderers, (detail) => {
+  const toolName =
+    detail !== null &&
+    typeof detail === "object" &&
+    "toolName" in detail &&
+    typeof (detail as { toolName?: unknown }).toolName === "string"
+      ? (detail as { toolName: string }).toolName
+      : null;
+  if (toolName) invalidateToolRenderer(toolName);
+  else invalidateAllToolRenderers();
+});
