@@ -637,10 +637,14 @@ export function ExposureAuditClient() {
             title: (row) => row.display_name,
             description: (row) =>
               `${row.resource_type}:${row.resource_id} · ${row.discovery_status}`,
-            // These rows come from one audit RPC whose FK columns are checked:
-            // `organization_id` is a real org, `owner_id`/`resource_id` resolve
-            // to no token and stay copy-only. Safe to open every `<token>_id`.
-            tokenForField: tokenFromColumnName,
+            // `resource_id` is the row's OWN record, whose type varies per row —
+            // the column name says "resource", which is not a token, so it has
+            // to come from `resource_type`. Everything else on this audit RPC is
+            // a checked FK, so the name-based resolution is safe for the rest.
+            tokenForField: (key, row) =>
+              key === "resource_id"
+                ? ((row as ExposureAuditRow).resource_type ?? null)
+                : tokenFromColumnName(key),
           }}
           window={{ enabled: true, title: (row) => row.display_name }}
           emptyState={{

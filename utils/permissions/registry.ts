@@ -1,4 +1,5 @@
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 
 /**
  * Shareable Resource Registry — TypeScript mirror
@@ -927,6 +928,13 @@ export function getResourceSharePath(
 ): string | null {
   const registryHref = resolveEntityDoors(resourceType, resourceId).href;
   if (registryHref) return registryHref;
+
+  // A REGISTERED token with no `hrefFor` is a decision, not a gap: we looked and
+  // there is no route (`workflow` lives in workflow-studio; `skill` is
+  // admin-only). Falling through to the template here would hand back exactly
+  // the stale `/workflows/{id}` and `/skills/{id}` this function exists to stop.
+  // Only a resource type the entity registry does not know at all may fall back.
+  if (tryGetEntityInfo(resourceType)) return null;
 
   const entry = getShareableResource(resourceType);
   if (!entry?.urlPathTemplate) return null;

@@ -37,7 +37,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * row gets hover-revealed Copy + Copy-for-AI buttons (set `fieldCopy={false}`
  * to opt out). Pass a custom `renderView` / `renderDetail` to replace it.
  */
-export function DataRowInspector({
+export function DataRowInspector<T = unknown>({
   row,
   title,
   className,
@@ -47,7 +47,7 @@ export function DataRowInspector({
   location,
   tokenForField = noFieldToken,
 }: {
-  row: unknown;
+  row: T;
   title?: ReactNode;
   className?: string;
   /** Hover Copy + Copy-for-AI on every field row. Default true. */
@@ -67,7 +67,7 @@ export function DataRowInspector({
    * pass `tokenFromColumnName` (from `components/official/entity-ref/doors`) to
    * open every `<token>_id` field, or its own stricter map.
    */
-  tokenForField?: (key: string) => string | null;
+  tokenForField?: (key: string, row: T) => string | null;
 }) {
   const entries = isPlainObject(row)
     ? Object.entries(row)
@@ -116,7 +116,7 @@ export function DataRowInspector({
                     <MatrxUuidCell
                       value={value}
                       label={key}
-                      token={tokenForField(key)}
+                      token={tokenForField(key, row)}
                     />
                   </dd>
                 </div>

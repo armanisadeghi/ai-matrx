@@ -84,6 +84,12 @@ export function OrgResourceList({
   emptyIcon,
 }: OrgResourceListProps) {
   const [peekId, setPeekId] = React.useState<string | null>(null);
+
+  // Switching org or resource tab reuses this component instance, so an open
+  // peek would keep showing a record from the grid the user just left.
+  React.useEffect(() => {
+    setPeekId(null);
+  }, [orgId, resourceType]);
   const [items, setItems] = React.useState<ResourceCardData[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);

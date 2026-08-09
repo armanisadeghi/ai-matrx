@@ -282,8 +282,11 @@ export interface MatrxDataTableDetailConfig<T> {
    * SCHEDULED task, not a workspace `task`). A table whose FKs you HAVE checked
    * can pass `tokenFromColumnName` (`components/official/entity-ref/doors`) to
    * open every `<token>_id` field at once.
+   *
+   * The ROW is passed too, because a table whose target type varies per row (an
+   * audit log, an exposure report) cannot answer from the column name alone.
    */
-  tokenForField?: (key: string) => string | null;
+  tokenForField?: (key: string, row: T) => string | null;
 }
 
 export interface MatrxDataTableWindowConfig<T> {
