@@ -40,6 +40,7 @@ import {
   type PreviewVariantSpec,
 } from "@/features/files/api/assets";
 import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
+import { IMAGE_STUDIO_SURFACE_NAME } from "@/features/surfaces/manifests/image-studio.manifest";
 import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
 import type { Visibility } from "@/features/files/types";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
@@ -962,9 +963,12 @@ export function useImageStudio(
         const launchResult = await trigger(DESCRIBE.id, {
           sourceFeature: "image-studio",
           config: { autoRun: false, displayMode: "background" },
-          ...(contextHint?.trim()
-            ? { runtime: { userInput: contextHint.trim() } }
-            : {}),
+          runtime: {
+            surfaceName: IMAGE_STUDIO_SURFACE_NAME,
+            ...(contextHint?.trim()
+              ? { userInput: contextHint.trim() }
+              : {}),
+          },
         });
         conversationId = launchResult.conversationId;
 

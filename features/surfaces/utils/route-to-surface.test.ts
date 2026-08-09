@@ -251,3 +251,40 @@ describe("Admin surface resolution (post catch-all removal)", () => {
     expect(surfaceFromPathname("/admin")).toBeNull();
   });
 });
+
+describe("Images family (studio tools)", () => {
+  it("resolves the library and each studio tool to its own surface", () => {
+    expect(surfaceFromPathname("/images/my-cloud")).toBe("matrx-user/images");
+    expect(surfaceFromPathname("/images/convert")).toBe(
+      "matrx-user/image-studio",
+    );
+    expect(surfaceFromPathname("/images/studio")).toBe(
+      "matrx-user/image-studio",
+    );
+    expect(surfaceFromPathname("/images/generate")).toBe(
+      "matrx-user/image-generate",
+    );
+    expect(surfaceFromPathname("/images/ai-generate")).toBe(
+      "matrx-user/image-generate",
+    );
+    expect(surfaceFromPathname("/images/edit")).toBe("matrx-user/image-edit");
+    expect(
+      surfaceFromPathname(
+        "/images/edit/02648d08-93bd-4c2e-b5cf-54c9c7828475",
+      ),
+    ).toBe("matrx-user/image-edit");
+    expect(surfaceFromPathname("/images/annotate")).toBe(
+      "matrx-user/image-annotate",
+    );
+  });
+
+  it("does not leak the studio prefix onto its sibling library routes", () => {
+    // Segment-safe prefix matching: /images/studio must NOT claim
+    // /images/studio-library or /images/studio-light.
+    expect(surfaceFromPathname("/images/studio-library")).toBeNull();
+    expect(surfaceFromPathname("/images/studio-light")).toBeNull();
+    // Static explainers/stubs stay unmapped.
+    expect(surfaceFromPathname("/images")).toBeNull();
+    expect(surfaceFromPathname("/images/presets")).toBeNull();
+  });
+});

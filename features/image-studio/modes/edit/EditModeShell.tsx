@@ -65,6 +65,11 @@ import { FileVersionsList } from "@/features/files/components/core/FileVersions/
 import { addAssetVariants } from "@/features/files/api/assets";
 import type { AssetPreset } from "@/features/files/types";
 import { useImageSource } from "../shared/use-image-source";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  IMAGE_EDIT_SURFACE_NAME,
+  createImageEditScope,
+} from "@/features/surfaces/manifests/image-edit.manifest";
 import { saveEditedImage } from "../shared/save-edited-image";
 import type { ModeShellProps } from "../shared/types";
 import { EditAiToolbar } from "./EditAiToolbar";
@@ -578,7 +583,28 @@ export function EditModeShell({
   const activeTheme = isDark ? darkTheme : lightTheme;
   const editorKey = `${themeMode}-${reloadKey}-${activeUrl}`;
 
+  // Surface scope — built at trigger time from the live editor state. The
+  // provider is mounted INSIDE the shell so modal mounts register too and
+  // the deepest provider wins while the editor is open (overlay doctrine).
+  const getEditScope = () =>
+    createImageEditScope({
+      ...(effectiveCloudFileId ? { image_file_id: effectiveCloudFileId } : {}),
+      image_file_name: displayName,
+      ...(sourceDims ? { source_dimensions: sourceDims } : {}),
+      presentation,
+      save_folder: defaultFolder,
+      ...(chainFileId ? { edit_chain_file_id: chainFileId } : {}),
+      mask_active: mask.active,
+      mask_has_pixels: mask.hasPixels,
+      is_saving: saving,
+      ...(savingVariants ? { saving_variant_preset: savingVariants } : {}),
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={IMAGE_EDIT_SURFACE_NAME}
+      getScope={getEditScope}
+    >
     <TooltipProvider delayDuration={200}>
       <div
         className="h-full min-h-0 flex flex-col bg-background"
@@ -902,6 +928,7 @@ export function EditModeShell({
         </div>
       </div>
     </TooltipProvider>
+    </SurfaceRuntimeProvider>
   );
 }
 

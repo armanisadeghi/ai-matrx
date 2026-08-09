@@ -28,6 +28,11 @@ import {
 } from "@/features/image-studio/api/python";
 import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "@/features/image-studio/constants/backend-capabilities";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  IMAGE_GENERATE_SURFACE_NAME,
+  createImageGenerateScope,
+} from "@/features/surfaces/manifests/image-generate.manifest";
 
 type Size = "square" | "portrait" | "landscape" | "wide" | "tall";
 
@@ -73,7 +78,32 @@ export default function GenerateShellClient() {
     }
   };
 
+  // Surface scope — built at trigger time from the live form + results state.
+  const getGenerateScope = () =>
+    createImageGenerateScope({
+      prompt,
+      ...(style.trim() ? { style: style.trim() } : {}),
+      image_size: size,
+      image_count: count,
+      generation_request_summary: {
+        prompt,
+        style: style.trim() || null,
+        image_size: size,
+        image_count: count,
+      },
+      result_count: results.length,
+      result_file_ids: results
+        .map((r) => r.cloud_file_id)
+        .filter((id): id is string => Boolean(id)),
+      is_generating: busy,
+      generation_enabled: IMAGE_STUDIO_BACKEND_CAPABILITIES.generate,
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={IMAGE_GENERATE_SURFACE_NAME}
+      getScope={getGenerateScope}
+    >
     <div className="h-full min-h-0 overflow-y-auto overscroll-contain lg:overflow-hidden grid grid-cols-1 lg:grid-cols-[minmax(360px,440px)_1fr] gap-3 md:gap-4 p-3 md:p-5">
       <aside className="flex flex-col gap-3 min-h-0">
         <div className="flex flex-col gap-1.5">
@@ -221,5 +251,6 @@ export default function GenerateShellClient() {
         </div>
       </section>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

@@ -50,6 +50,11 @@ const InitialCropWindow = dynamic(
   { ssr: false, loading: () => null },
 );
 import { useImageStudio } from "../hooks/useImageStudio";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  IMAGE_STUDIO_SURFACE_NAME,
+  createImageStudioScope,
+} from "@/features/surfaces/manifests/image-studio.manifest";
 import {
   downloadVariantsAsZip,
   type BundleEntry,
@@ -66,6 +71,16 @@ import {
 interface ImageStudioShellProps {
   /** Optional default folder for Save-to-library. */
   defaultFolder?: string;
+}
+
+/**
+ * Serialize the crop anchor for the surface scope: a named anchor passes
+ * through; a precise focal point becomes "focal x%,y%".
+ */
+function formatCropAnchor(position: import("../types").ImagePosition): string {
+  return typeof position === "string"
+    ? position
+    : `focal ${position.x}%,${position.y}%`;
 }
 
 export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
@@ -299,12 +314,65 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
     toast.success(`Described ${studio.files.length} file(s) in ${elapsed}s`);
   }, [studio]);
 
+  // Surface scope — built at trigger time from the live studio state so the
+  // header Agents chrome and bound agents see exactly what the user sees.
+  const getStudioScope = () =>
+    createImageStudioScope({
+      source_file_count: studio.files.length,
+      source_files: studio.files.slice(0, 50).map((f) => ({
+        name: f.originalName,
+        filename_base: f.filenameBase,
+        mime_type: f.mimeType,
+        size: f.size,
+        width: f.width,
+        height: f.height,
+        status: f.status,
+        variant_count: Object.keys(f.variants).length,
+        metadata_status: f.metadataStatus,
+      })),
+      selected_preset_ids: studio.selectedPresetIds,
+      selected_preset_count: studio.selectedPresetIds.length,
+      output_format: studio.format,
+      output_quality: studio.quality,
+      background_color: studio.backgroundColor,
+      resize_fit: studio.fit,
+      resize_position: formatCropAnchor(studio.position),
+      studio_settings_summary: {
+        selected_preset_ids: studio.selectedPresetIds,
+        output_format: studio.format,
+        output_quality: studio.quality,
+        background_color: studio.backgroundColor,
+        resize_fit: studio.fit,
+        resize_position: formatCropAnchor(studio.position),
+      },
+      total_variant_count: studio.totalVariantCount,
+      generated_variant_count: studio.generatedVariantCount,
+      total_output_bytes: studio.totalOutputBytes,
+      ...(studio.lastSaveResult
+        ? {
+            last_save_result: {
+              folder_path: studio.lastSaveResult.folderPath,
+              saved_count: studio.lastSaveResult.savedCount,
+              failed_filenames: studio.lastSaveResult.failedFilenames,
+            },
+          }
+        : {}),
+      ...(studio.error ? { studio_error: studio.error } : {}),
+      is_processing: studio.isProcessing,
+      is_saving: studio.isSaving,
+      is_describing: studio.isDescribing,
+    });
+
   return (
-    // `@container/studio` so the three columns respond to the studio's OWN
-    // available width, not the viewport. The app sidebar (and the images
-    // sub-nav) eat width outside this container — keying the side panels off
-    // viewport `md`/`lg` used to let both claim their fixed widths and crush
-    // the center work-column to zero (content overflowed / "popped out").
+    <SurfaceRuntimeProvider
+      surfaceName={IMAGE_STUDIO_SURFACE_NAME}
+      getScope={getStudioScope}
+    >
+    {/* `@container/studio` so the three columns respond to the studio's OWN
+        available width, not the viewport. The app sidebar (and the images
+        sub-nav) eat width outside this container — keying the side panels off
+        viewport `md`/`lg` used to let both claim their fixed widths and crush
+        the center work-column to zero (content overflowed / "popped out"). */}
     <div className="@container/studio flex h-full min-h-0">
       {/* LEFT — Preset Catalog ─────────────────────────── */}
       <div className="hidden @3xl/studio:flex flex-col w-72 @5xl/studio:w-80 @7xl/studio:w-96 border-r border-border bg-card/30 min-h-0">
@@ -623,5 +691,6 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
         </BottomSheetBody>
       </BottomSheet>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
