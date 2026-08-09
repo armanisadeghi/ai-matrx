@@ -16,6 +16,9 @@ import type {
   AgentDriftReportRow,
 } from "@/features/agents/redux/usages/usages.types";
 import type { ReportSortKey } from "@/features/agents/redux/usages/usages.selectors";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 interface RollupSummary {
   agents: number;
@@ -112,7 +115,7 @@ export function RollupTable({
           className="px-3 py-1.5"
         />
       ) : null}
-      <table className="w-full border-collapse text-sm">
+      <table className={cn("border-collapse text-sm", MOBILE_TABLE_FROZEN)}>
         <thead className="sticky top-0 z-10 border-b border-border bg-card">
           <tr>
             <Th

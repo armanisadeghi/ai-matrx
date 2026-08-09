@@ -28,6 +28,10 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -295,7 +299,7 @@ function CostEstimatePanel({ cost }: { cost: CostEstimate }) {
                 <span className="font-mono">{cost.chars_per_token} chars/token</span>
             </div>
             <div className="rounded border border-border overflow-hidden">
-                <table className="w-full text-[11px]">
+                <table className={cn("text-[11px]", MOBILE_TABLE_FROZEN)}>
                     <thead>
                         <tr className="bg-muted/50 border-b border-border">
                             <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">Model</th>
