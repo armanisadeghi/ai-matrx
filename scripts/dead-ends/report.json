@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-08-09T06:48:36.669Z",
-  "commit": "0ed1d45ada22555349a179ff815d2864b71350d7",
+  "generatedAt": "2026-08-09T07:48:54.307Z",
+  "commit": "e45ba041636f3c370a1f23da5018ccc731dae1a5",
   "totals": {
     "findings": 126,
     "high": 68,
     "medium": 58,
     "low": 0,
     "filesWithFindings": 80,
-    "filesScanned": 6803,
+    "filesScanned": 6805,
     "allowlisted": 0
   },
   "byRule": {
