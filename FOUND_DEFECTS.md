@@ -13,6 +13,22 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D137 — `/canvas/{id}` has no route: four callsites link there, including email notifications (2026-08-09)
+
+`app/(public)/canvas/` contains only `discover/` and `shared/[token]/` — there is no
+`[id]/page.tsx` and no `page.tsx`, so **both `/canvas` and `/canvas/{id}` 404**. Four
+places build that URL and hand it to a user:
+
+- `features/window-panels/windows/ShareModalWindow.tsx:57` (`canvas`) and `:65` (`canvas_items`)
+- `features/organizations/peek/kinds/CanvasPeek.tsx:51` — the peek's "Open" door
+- `lib/email/notificationService.ts:229` — **a link mailed to users**, the worst of the four
+
+Fix: decide the canonical canvas record route, then either build
+`app/(public)/canvas/[id]/page.tsx` or repoint all four callsites at the real destination
+(the only working canvas detail URL today is `/canvas/shared/[token]`, which needs a share
+token, not an id). Until then `canvas_item` deliberately carries no `hrefFor` in
+`features/scopes/registry/entityRegistry.ts` — do not add one without the route.
+
 ### D136 — `pnpm check:hatches` is red on main: baseline drifted, ratchet no longer ratchets (2026-08-08)
 
 `scripts/type-escape-baseline.json` is far behind the tree — five categories are ABOVE baseline

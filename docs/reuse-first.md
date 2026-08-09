@@ -117,6 +117,33 @@ delete yours and extend ours.
 | Single-value picker over a `platform.categories` dimension (FK columns) | `CategorySelect` | `features/scopes/components/CategorySelect.tsx` |
 | Tag an entity with categories via association edges (multi-select + inline create) | `CategoryTagPicker` | `features/scopes/components/CategoryTagPicker.tsx` |
 
+### Components — lists, rows & record actions
+
+Building a feature's list page, a row menu, or "what can I do to this record?"
+Start here — there are ~26 bespoke list pages in the repo and that is the defect
+this section exists to stop. Campaign: `docs/handoffs/inventory-law-sweep.md`.
+
+| If you need to… | Use | Located at |
+| --- | --- | --- |
+| **A feature's list page** — table/cards/dense, Mine/My Orgs/Shared/Public scopes with true server counts, facets, column picker, inline edit. Write a config, never a bespoke table | `EntityListPage` + `EntityListConfig` | `lib/entity-list/components/EntityListPage.tsx`, `lib/entity-list/config.tsx` — see `lib/entity-list/FEATURE.md`; best consumer `features/agents/browse/` |
+| Declare a list column (sorts AND filters server-side — no exceptions) | `EntityColumnSpec` (+ `relativeTime` / `timeCell`) | `lib/entity-list/columns.tsx` |
+| The scoped list RPC behind a config's `service` | the `*_list_scoped` template | `lib/list-scope/FEATURE.md` |
+| **One action list per entity**, consumed identically by table, cards, rows, and right-click | `ItemMenuConfig` + `ItemMenu` / `ItemContextMenu` | `components/official/item/types.ts`, `components/official/item/ItemMenu.tsx` |
+| A list / sidebar / tree row with kebab + right-click + inline rename | `ItemRow` | `components/official/item/ItemRow.tsx` |
+| Rename in place (optimistic or awaited) | `EditableLabel` | `components/official/item/EditableLabel.tsx` |
+| Persist a list's VIEW STYLE (view, density, sort, page size, hidden columns — never search/filters/page) | `useListViewPrefs` | `lib/list-views/useListViewPrefs.ts` — see `lib/list-views/FEATURE.md` |
+| Every action an **agent** record supports (23 entries) | `buildAgentMenu` + `useAgentRowActions` | `features/agents/browse/agentActionRegistry.tsx`, `features/agents/browse/useAgentRowActions.tsx` |
+| The same for a **note** / **conversation** / **pdf doc** | `buildNoteMenu` · `conversationActionRegistry` · `buildPdfDocMenu` | `features/notes/components/note-actions/noteMenuRegistry.tsx` · `features/agents/components/conversation-actions/conversationActionRegistry.tsx` · `features/pdf-extractor/studio/pdfDocMenu.tsx` |
+| **Universal right-click menu** (copy-as, export, download as markdown, convert, attach, share, AI actions) | `NonEditableContextMenu` / `EditableContextMenu` — pass `contentSource` **and** `entity` or half the menu stays dark | `features/context-menu-v3/NonEditableContextMenu.tsx`, `features/context-menu-v3/EditableContextMenu.tsx` — see the `context-menu-v3` skill |
+
+### Components — AI assists & promises
+
+| If you need to… | Use | Located at |
+| --- | --- | --- |
+| Offer a one-click AI action at a friction point (error, empty state, gap) — ask this BEFORE designing a manual affordance | `makeEphemeralAssist` + `AssistChip` (inline) · `emitAssistTracked` (durable, needs `dedupeKey` + `filterUndecidedKeys` first) | `features/assists/types.ts`, `features/assists/components/AssistChip.tsx`, `features/assists/redux/emitTracked.ts` — see `features/assists/FEATURE.md` |
+| Run / dismiss an assist (never hand-roll an accept handler) | `useAssistRunner` | `features/assists/runtime/useAssistRunner.ts` |
+| Advertise a not-yet-built action (never a bare "coming soon" string) | `announceComingSoon(id)` + register the id | `lib/coming-soon/announce.ts`, `lib/coming-soon/registry.ts` |
+
 ### Components — markdown & content
 
 | If you need to… | Use | Located at |
@@ -197,5 +224,10 @@ delete yours and extend ours.
 | Window panels + tray | `features/window-panels/` | `features/window-panels/FEATURE.md` + `window-panels` skill |
 | Universal files | `features/files/handler/` | `features/files/handler/FEATURE.md` |
 | Message / content action registries | `messageActionRegistry`, `contentActionRegistry` | extend the registry; don't build a parallel menu |
+| Canonical entity list shell | `lib/entity-list/` | `lib/entity-list/FEATURE.md` — write a config, never a bespoke table |
+| Per-entity record actions | `components/official/item/` | one `ItemMenuConfig` builder per entity; three rival lists for one entity is the defect this kills |
+| Universal right-click | `features/context-menu-v3/` | `features/context-menu-v3/FEATURE.md` + `context-menu-v3` skill |
+| AI assists everywhere | `features/assists/` | `features/assists/FEATURE.md` — never fork a second chip, table, or accept handler |
+| Entity token → route / icon / peek (THE DOOR LAW) | `features/scopes/registry/entityRegistry.ts` + `features/organizations/peek/` | add `hrefFor` / a peek to the REGISTRY, never to the call site |
 | Scopes / context assignment | `features/scopes/` | `features/scopes/FEATURE.md` — Surface A vs B invariant |
 | Settings catalogue | `features/settings/` | `features/settings/FEATURE.md` + `settings-system` skill |

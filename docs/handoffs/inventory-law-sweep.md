@@ -1,0 +1,339 @@
+# THE INVENTORY LAW SWEEP — powerful primitives that nothing uses
+
+**Status:** active, long-running (weeks). **Owner:** rotating agents.
+**Doctrine:** `/Users/armanisadeghi/code/common-docs/policies/no-dead-ends.md` LAW 2 ·
+`docs/reuse-first.md` · `PRINCIPLES.md` · the `no-dead-ends` skill.
+
+> Reuse-first says *don't build a SECOND one*. This sweep is the harder half:
+> **don't build a POORER one.** A surface that hand-rolls a weak version of
+> something we already own is the same defect as forking it — the user gets the
+> weak surface either way, and the strong code rots.
+
+Arman, 2026-08-08: *"We have so many features, and they're just not used… We
+cannot have amazing, powerful code dying in a corner because an agent was too
+lazy to go looking before it built a feature."*
+
+**How to work a wave:** pick a primitive → establish the "using it well" bar
+from its best consumer → convert surfaces in traffic order → **delete the
+hand-rolled code as you go** (no shims, no fallbacks) → `pnpm type-check` →
+browser-verify → commit → `./scripts/release.sh`. Extend the primitive when a
+surface genuinely needs more; never exempt the surface. If a primitive is
+nearly-unused because it is genuinely *bad*, say so to Arman with evidence
+instead of mass-adopting it.
+
+**Respect THE FRAGMENTATION LAW.** Invoke the `code-splitting` skill before
+changing how anything enters a chunk. Mass-adopting a heavy primitive across
+many surfaces is exactly how this repo OOM-killed 14 production builds. Measure
+build time as you go.
+
+---
+
+## Audit provenance
+
+Four exhaustive read-only audits, 2026-08-09, over the whole repo. Counts below
+are from those audits unless marked **verified** (re-checked by hand — several
+audit claims were wrong; verify before acting on a number).
+
+---
+
+## Primitive ledger
+
+| # | Primitive | Real consumers | Verdict | Wave |
+|---|---|---|---|---|
+| P1 | `features/scopes/registry/entityRegistry.ts` `hrefFor` | **21 tokens** (was 13) | **strong, under-populated** | 1 ✅ |
+| P2 | `features/organizations/peek/` (19 kinds) | EntityRef + 2 org surfaces | strong, key-vocabulary mismatch fixed | 1 ✅ |
+| P3 | `components/official/entity-ref/EntityRef.tsx` | **1** (`AgentSlotsConsole`) | strong, ~0% adopted | 2 |
+| P4 | `lib/entity-list/` (`EntityListPage`) | **2** (`/agents/all`, `/transcripts`) | strong, 26 bespoke list pages | 4 |
+| P5 | `components/official/item/` (`ItemMenuConfig`) | 30 files, mostly sidebars | strong, absent from list pages | 3 |
+| P6 | `features/agents/browse/agentActionRegistry.tsx` (23 actions) | **1 route** | strong, 3 rival agent action lists | 3 |
+| P7 | `lib/list-views/useListViewPrefs` | 4 | strong, 4 hand-rolled copies remain | 3 |
+| P8 | `features/context-menu-v3/` | 45 files | **healthy** — backlog doc is stale | 5 |
+| P9 | `features/window-panels/` (153 entries) | very uneven | strong; 4 dead, ~24 grid-only | 6 |
+| P10 | `features/assists/` | **3 producers, 2 render sites** | new (2026-08-08), unadopted | 7 |
+
+---
+
+## WAVE 1 — registry route coverage ✅ SHIPPED (commit `51a28922`)
+
+**The find.** Eleven of the nineteen registered peek kinds had a preview
+component and **no route**. The platform had built a previewer for each —
+proving they are user-facing records — and `EntityRef` could not link any of
+them. Separately, the peek registry is keyed by the **legacy resource-catalogue
+vocabulary**, not canonical entity tokens, so a caller passing the *correct*
+token silently lost the peek door.
+
+**Done:**
+- `hrefFor` added for 8 tokens whose detail route was verified to exist:
+  `app`, `agent_shortcut`, `project`, `transcript`, `message_template`,
+  `assessment`, `organization`, `sandbox_instance`.
+- `transcript` reuses the exact target `primaryRowHref`
+  (`features/transcripts/browse/types.ts`) navigates to — one open target.
+- `PEEK_KEY_BY_TOKEN` in `EntityRef.tsx` bridges the 4 real token↔peek-key
+  mismatches, each verified against the table the peek queries:
+  `canvas_item`, `flashcard_data`, `sandbox_instance`, `quiz_session`.
+- New overlay entries (icon + label) for `flashcard_data`, `assessment`,
+  `canvas_item`, `sandbox_instance`.
+
+**Deliberately NOT done:**
+- `skill`, `workflow` — no detail route exists anywhere in `app/`
+  (`/agent-connections/skills` is a list; workflows appear only nested under an
+  org). An `hrefFor` that 404s is worse than none. **Building those two routes
+  is real product work, not a registry edit.**
+- `canvas_item` — `/canvas/{id}` 404s. **FOUND_DEFECTS D137.**
+
+**Verification:** `pnpm type-check` clean. Not yet browser-verified.
+
+### Wave 1 remainder (open)
+- [ ] Browser-verify a peek+open door on `/agents/all` and one org resource row.
+- [ ] **Rename the peek registry keys to canonical tokens** and delete
+      `PEEK_KEY_BY_TOKEN`. Touches `features/organizations/resource-catalogue.ts`
+      and the two surfaces that key off `entry.key`
+      (`OrgResourceDetail.tsx:136`, `ContainerResourceSheet.tsx:97`).
+- [ ] Decide + build the `skill` and `workflow` detail routes, then add `hrefFor`.
+- [ ] D137: canvas route.
+
+---
+
+## WAVE 2 — EntityRef adoption (NEXT)
+
+`EntityRef` is the Door Law made importable and has **one** consumer. Wave 1
+made it much more capable; now spend it. Convert in traffic order, **deleting
+the hand-rolled equivalent each time**.
+
+**The five hand-rolled route/open/peek resolvers to delete** (this is the
+primitive-duplication defect, not merely an adoption gap):
+
+| File | What it hand-rolls |
+|---|---|
+| `features/scopes/components/associations/AssociationList.tsx:385` | open + hover `window.open` new-tab, no peek — and it already holds `tryGetEntityInfo` at `:186`. **Generic: one conversion fixes every association surface.** |
+| `features/organizations/components/OrgResourceDetail.tsx:494,576` | open + new-tab (`:514`) + peek behind right-click. ~60 lines. |
+| `features/organizations/components/ContainerResourceSheet.tsx:170` | second copy of the above |
+| `features/war-room/components/resources/WarRoomResourcesList.tsx:389` | title text + `window.open` in a menu + a raw UUID beside it |
+| `features/scheduling/components/shared/OutputRefLink.tsx:23,39-50` | a **fourth private route table** (`hrefForOutputRef`) that should be the registry |
+
+**Then the top inert-name surfaces** (ranked by traffic):
+
+1. `features/agents/browse/columns.tsx:68` + `AgentBrowseRows.tsx:89` +
+   `AgentBrowseCards.tsx:115` — `/agents/all`. Convert all three together or
+   one entity gets three behaviours.
+2. `features/files/components/surfaces/desktop/FileTableRow.tsx:259` — a bare
+   `<button>`, so no cmd-click/middle-click at all.
+3. `features/dashboard/components/PinnedSection.tsx:61` — favorites already
+   carry `(entityType, entityId)` via `favoriteEntityRef()`; drop-in.
+4. `features/agent-shortcuts/components/ShortcutDirectory.tsx:387` — renders
+   **name OR a raw UUID**, both inert.
+5. `features/transcripts/browse/columns.tsx:58` — now unblocked by Wave 1.
+6. `features/data-tables/components/DocumentsHubTable.tsx:523` — the href
+   exists two lines above and is never rendered as a link.
+7. `features/tasks/components/TasksTableView.tsx:696` (task) and `:563` +
+   `AllTasksView.tsx:162` (project — unblocked by Wave 1).
+8. `features/agents/components/builder/AgentResourcesManager.tsx:253` —
+   resolves the entity at `:248` and throws the route away.
+9. `features/notes/components/GlobalSearchResults.tsx:147` — search results are
+   exactly where peek earns its keep.
+
+**Bare-UUID violations** (`never render an id you can't open`):
+`features/admin/relationships/components/ReachabilityInspectorClient.tsx:162`
+(token and id side by side, prints the UUID) ·
+`ExposureAuditClient.tsx:173` (a security audit you cannot click through) ·
+`app/(admin)/administration/reporting/events/page.tsx:265-271` (three raw
+UUIDs) · `features/skills/components/SkillConfigPicker.tsx:486,598` ·
+`features/pdf-extractor/components/LineageTreeView.tsx:97,224,266` ·
+`features/administration/kg-cost/components/KgCostDashboard.tsx:279,827`.
+
+---
+
+## WAVE 3 — one action list per entity
+
+**The defect, still live:** `agent` has **three** divergent action lists.
+`agentActionRegistry.tsx` (23 entries) is consumed by **one route**.
+
+| Rival list | Consumers | Missing vs registry |
+|---|---|---|
+| `agent-listings/AgentListDropdown.tsx` (+`AgentDetailCard`,`AgentRow`) | **42** | 20 of 23; favorite star is display-only |
+| `agent-listings/AgentCard.tsx` | `/agents/classic` + admin system-agents | 12 of 23; has 2 things the registry only promises as `Soon` |
+| `agent-listings/AgentListItem.tsx` | `/agents/classic` list | 13 of 23 |
+| `agent-listings/AgentActionModal.tsx` | **the primary click target on all three** | 16 of 23 |
+
+`/agents/classic` is slated for deletion ~mid-Aug 2026, which retires two of
+these — but **not** `AgentListDropdown` (42 consumers) or `AgentActionModal`.
+
+- [ ] Point `AgentListDropdown` + `AgentActionModal` at `useAgentRowActions`.
+- [ ] **Doc lie to fix in the same change:** `agentActionRegistry.tsx:11` and
+      `features/agents/browse/FEATURE.md:110` both assert the config drives
+      "table row menu, card kebab, **and right-click**". The right-click half
+      is not wired anywhere (`EntityListTable.tsx:224` renders `ItemMenu`, never
+      `ItemContextMenu`). Either wire it or correct both docs.
+- [ ] `useListViewPrefs` — migrate the 4 hand-rolled localStorage copies, each
+      deleting a `useState` + `useEffect` + a local type:
+      `features/projects/components/ProjectsHub.tsx:93,111,116` ·
+      `features/tasks/components/TaskListPane.tsx:47,78,83` ·
+      `app/(core)/documents/page.tsx:43,59,65` ·
+      `components/image/cloud/CloudImagesTab.tsx:110,122,167`.
+- [ ] **Doc contradiction:** `CLAUDE.md` says four copies,
+      `lib/list-views/FEATURE.md:7-12` says three (it omits `CloudImagesTab`).
+      Four is correct — fix the FEATURE.md.
+- [ ] Extract the 5 inline `ItemMenuConfig` builders into registries:
+      `CrmListPage.tsx:143` · `SitesPortfolio.tsx:206` ·
+      `PlanSitesList.tsx:192` (near-duplicate of the previous) ·
+      `KeywordResearchWorkbench.tsx:608` · `SiteKeywordPerformanceWorkspace.tsx:116`.
+- [ ] Entities with **no** registry, by surface count: **file/folder** (4 rival
+      vocabularies; `FileContextMenu.tsx` alone has 29 `DropdownMenuItem`s),
+      **task** (6 surfaces), agent shortcut (5+), agent app, agent set,
+      schedule, project, document, podcast, artifact, image, agent template,
+      surface.
+- [ ] **`messageActionRegistry` is forked three ways** — `features/agents/…/
+      message-options/` (2004 lines), `features/cx-chat/actions/` (710),
+      `features/messaging/actions/` (203), with overlapping-but-divergent
+      implementations of the same actions. The drift problem, one level up.
+
+---
+
+## WAVE 4 — the canonical list shell
+
+26 bespoke list surfaces; full ranked table in the audit. Highest value first:
+
+| Route | File | Effort | Note |
+|---|---|---|---|
+| `/crm` | `features/crm/components/CrmListPage.tsx` (493) | **S** | Closest in the repo — already uses `EntityScopeTabs`, `useListViewPrefs`, `ItemMenu`, controlled `MatrxDataTable`. Missing facets, column picker, card/dense; hand-writes a filter bridge the shell owns. |
+| `/marketing/sites` | `SitesPortfolio.tsx` (647) | **S** | Best non-adopter: has `MatrxDataTable` + `ItemMenu` already |
+| `/schedules` | `ScheduleList.tsx` (98) | **S** | Small, zero primitives, cheap win |
+| `/agents/sets` | `AgentSetsBrowser.tsx` (150) | **S** | Sits inside the feature that owns the gold standard |
+| `/documents` | `DocumentsHubTable.tsx` (579) | **M** | textbook bespoke hub |
+| `/workbooks` | `app/(core)/workbooks/page.tsx` (568) | **M** | all in the route file, nothing extracted |
+| `/notes` | — | **M** | **No list page exists** — `page.tsx` returns `null`. Violates the "feature entry pages are LIST views" doctrine head-on. `noteMenuRegistry` + `ItemRow` are already done; only the route + scoped RPC are missing. |
+| `/projects` | `ProjectsHub.tsx` (**1335**) | **L** | largest offender |
+| `/files/all` | `FileTable`/`FileGrid`/`FileList` | **L** | highest traffic; genuinely hierarchical — needs a decision on the shell's flat scoped-list model first |
+
+Also: `features/user-lists/` declares `ActionConfig<T>[]` and
+`features/tool-call-visualization/renderers/**` declares `EntityAction[]` —
+**parallel action schemas**, worse than a hand-rolled dropdown.
+
+---
+
+## WAVE 5 — context-menu-v3
+
+**Correct the record first:** the backlog in `features/context-menu-v3/FEATURE.md:192-203`
+is **stale** — items 1, 2, 4, 5, 6, 7 are done. 45 live consumers.
+
+Remaining bespoke/fake right-click menus:
+- `features/organizations/components/OrgResourceDetail.tsx:392-450` — the **only**
+  remaining ad-hoc `@/components/ui/context-menu` consumer. Zero v3 capability.
+- `features/notes/components/NotesSidebar.tsx` + `NoteTabs.tsx` + `NoteTabItem.tsx`
+  — coordinate-anchored `AdvancedMenu` masquerading as right-click (legacy shell;
+  dies with it — the modern `NoteSidebarRow` is already on v3).
+- `json-explorer/NavigationRows.tsx` + `processor-extractor/NavigationRows.tsx` —
+  dead `onContextMenu` plumbing predating the v3 wiring in their own hosts.
+- `features/pdf/components/viewer/annotation-layer/PdfAnnotationLayer.tsx:367` —
+  suppresses the native menu; `RegionContextMenu.tsx:21` warns not to pass the
+  handler on the v3 path, so any surface that does has a **genuine dead end**.
+
+Missing-entirely, ranked: `/agents/all` rows (see the Wave 3 doc lie) ·
+`/transcripts` rows · `AgentListDropdown` · tasks list rows · scheduling ·
+agent shortcuts · agent apps · agent sets · chat pinned agents · CRM rows.
+
+---
+
+## WAVE 6 — window-panels
+
+**The single highest-leverage change:** `features/organizations/peek/PeekDialog.tsx`
+is a `max-w-lg` **blocking** `<Dialog>` shared by all **19** peek kinds — so the
+doctrine's fourth door ("Window — beside the work, not instead of it") is
+unreachable for every peekable entity. One "Open as window" affordance lights up
+19 kinds at once.
+
+**Genuinely dead — candidates for deletion** (registered, reachable from nowhere):
+`brokerState` · `saveToNotesFullscreen` (duplicate registration of `saveToNotes`,
+same exported hook name) · `structuredListManagerV1Window` (superseded by V2/V3) ·
+`resourcePickerWindow` (opener + controller block deleted 2026-06-14; the registry
+entries are orphan residue).
+
+**Duplicate-opener defect** — 7 windows where the canonical
+`features/overlays/openers/*.tsx` file has **zero** call sites while a colocated
+twin does the work: `createProjectWindow` (12) · `imageUploaderWindow` (12) ·
+`contentEditorWindow` (8) · `curatedIconPickerWindow` (7) ·
+`surfaceAgentBindWindow` (6) · `smartCodeEditorWindow` (6) ·
+`multiFileSmartCodeEditorWindow` (3). Pick one path and delete the other.
+
+**Blocking modals that should offer a window** — where the twin already exists,
+this is nearly free: `AgentSneakPeekModal` (6 consumers; `AgentPeekWindow.tsx`
+already wraps this exact modal in a `WindowPanel` with 1 consumer) ·
+`AgentSettingsModal` (`agentSettingsWindow` exists; `SystemInstructionModal`
+already offers Dialog/Window side by side two files over) · `TaskDetails`
+(`taskEditorWindow` has 13 call sites) · `UserTableViewer` (`userTableWindow`
+exists). No twin yet: `AdvancedTranscriptViewer` (1278 LOC) ·
+`DocumentViewer` (RAG) · `FeedbackDetailDialog` (2648 LOC, the record's only door).
+
+**Already dead, delete rather than migrate:** `AICodeEditorModal`,
+`ContextAwareCodeEditorModal`, `SmartCodeEditorModal`, `ChatDebugModal` — zero
+import sites each, superseded by live windows.
+
+Six components render `<WindowPanel>` inline with no registry entry and no
+`@registry-status` marker — surfaces reinventing the pattern locally.
+
+---
+
+## WAVE 7 — assists
+
+3 producers, 2 render sites, 8 referencing files. Ranked friction points:
+
+1. **`lib/coming-soon/announce.ts`** — 34 registered promises, and the announce
+   is a blocking confirm with a single "Got it". **One function; fixing it lights
+   up all 34.** Add a "Do it with AI now" chip pre-filled from the promise text.
+2. **`features/marketing/components/MarketingComingSoon.tsx`** — 20 reserved
+   routes whose promised tasks an agent already does today.
+3. **`lib/entity-list/config.tsx:185`** — the canonical list shell's `emptyState`
+   is title + description with **no action and no assist**. One optional
+   `emptyAssist` config field covers every current and future entity list.
+4. **Zero-result search** — `RagSearchHits.tsx:97` detects zero hits and tells
+   the user to rewrite the query by hand; `DocumentSearch.tsx:288` names the AI
+   alternative *in prose* instead of offering it.
+5. **`OverlayErrorFallback`** — builds a rich diagnostics payload and hands it to
+   a clipboard for admins only. Send it instead.
+6. **Error Inspector** — `"assists"` is already a registered `CapturedErrorSource`,
+   but the wiring is one-directional. A sweep producing "Fix this error" assists
+   is the flagship "system uses its own AI on itself" case.
+7. `components/official/cards/EmptyStateCard.tsx` (13 consumers) — add an
+   `assist?` slot; 13 surfaces inherit an AI path for free. Seven bespoke
+   empty-state components should collapse onto it.
+
+---
+
+## Primitives Index (`docs/reuse-first.md`) — the highest-leverage output
+
+**An agent cannot reuse what it cannot find.** Every primitive validated by this
+sweep gets a row. Guarded by `pnpm check:reuse-index`.
+
+- [x] `EntityRef` — added
+- [ ] peek registry / `hasPeek` (+ the "import from `kinds-list`, never
+      `registry`" fragmentation rule)
+- [ ] `EntityListPage` + `EntityColumnSpec`
+- [ ] `ItemMenuConfig` / `ItemMenu` / `ItemContextMenu` / `ItemRow` / `EditableLabel`
+- [ ] `useListViewPrefs`
+- [ ] `agentActionRegistry` / `useAgentRowActions` (+ note/conversation/pdf-doc registries)
+- [ ] `EditableContextMenu` / `NonEditableContextMenu` (+ `contentSource`/`entity` unlocks)
+- [ ] window-panels registration API + `useOpen*` openers
+- [ ] `emitAssistTracked` / `makeEphemeralAssist` / `AssistChip` / `useAssistRunner`
+- [ ] `announceComingSoon` + the registry
+
+---
+
+## Genuinely dead primitives (deletion candidates — need Arman's call)
+
+| Item | Evidence |
+|---|---|
+| `brokerState` window | zero references outside its own registration |
+| `saveToNotesFullscreen` window | zero references; duplicate of `saveToNotes` |
+| `structuredListManagerV1Window` | superseded by V2 (5 sites) + V3 |
+| `resourcePickerWindow` registry entries | opener + controller block deleted 2026-06-14 |
+| `AICodeEditorModal`, `ContextAwareCodeEditorModal`, `SmartCodeEditorModal`, `ChatDebugModal` | zero import sites; live windows supersede |
+
+---
+
+## Change log
+
+- **2026-08-09** — Campaign opened. Four exhaustive audits. Wave 1 shipped
+  (`51a28922`): 8 new `hrefFor` routes + the peek token bridge. D137 filed
+  (`/canvas/{id}` 404s, incl. email links).
+</content>
+</invoke>
