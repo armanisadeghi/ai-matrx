@@ -55,6 +55,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { buildSiteKeywordsScope } from "@/features/marketing/lib/scopes/site-keywords-scope";
 import { KeywordCompetitionBadge } from "./KeywordMetrics";
+import { SiteKeywordsWriteTargets } from "./SiteKeywordsWriteTargets";
 
 import type { SiteKeywordPerformanceRow } from "../types";
 import { useSiteKeywordPerformance } from "../useSiteKeywordPerformance";
@@ -426,6 +427,10 @@ export function SiteKeywordPerformanceWorkspace() {
       surfaceName="matrx-user/marketing-site-keywords"
       getScope={getScope}
     >
+    <SiteKeywordsWriteTargets
+      site={site}
+      onEvidenceChanged={() => performance.refetch()}
+    />
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto bg-textured p-3 sm:p-4">
       <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3">
         <div className="min-w-0">

@@ -149,7 +149,11 @@ internal platform use — never a washed-down user variant beside a private one:
   agent-writable adopters: `matrx-user/marketing-page`,
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
-  `TaskEditorBody.tsx`).
+  `TaskEditorBody.tsx`), and `matrx-user/marketing-site-keywords`
+  (3 entity targets — `library_keywords` / `keyword_traffic_class` /
+  `attach_page_keywords` through `ensureKeywordId`, `setGscKeywordClass`,
+  and `addPageSupportingKeywords`; handlers in
+  `features/marketing/seo/keyword-research/components/SiteKeywordsWriteTargets.tsx`).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -310,6 +314,8 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
 
 ## Change Log
+
+- **2026-08-09 — Site keywords surface agent-writable (third adopter).** `matrx-user/marketing-site-keywords` declares 3 ask-policy entity targets — `library_keywords` (phrase upsert via the canonical `ensureKeywordId` → `seo.fn_upsert_keyword` + archive-restore), `keyword_traffic_class` (site ruling via `setGscKeywordClass` → `seo.gsc_set_keyword_class`, stamped `origin:"ai"`, `confirmed:true` because the ask-dialog Apply IS the human eyeball; notes required for mismatch validated client-side too), `attach_page_keywords` (`addPageSupportingKeywords`, page_id from a row's `top_page_id`). Handlers in `features/marketing/seo/keyword-research/components/SiteKeywordsWriteTargets.tsx` (mounted by `SiteKeywordPerformanceWorkspace`, refetches the table after evidence-changing writes). Live-verified end-to-end on the Badass Agent: per-target ask dialogs, applied writes confirmed in `seo.site_keyword_value` (+ provenance) and `platform.associations`, decline = clean no-op, undeclared write (site domain) loudly refused, Error Inspector clean. DB mirror rows upserted in `ui.ui_surface_write_target`; readiness → `verified`.
 
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 
