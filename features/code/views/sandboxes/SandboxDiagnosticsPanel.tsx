@@ -53,6 +53,7 @@ import {
   Folder as FolderIcon,
   FolderOpen,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type DiagCheck = {
   ok?: boolean;

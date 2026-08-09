@@ -40,6 +40,7 @@ import {
   selectGroupBy,
   selectFilterScopeIds,
   selectFilterScopeMatchAll,
+  selectNowMinute,
 } from "./taskUiSlice";
 import type { TaskGroupBy } from "./taskUiSlice";
 
@@ -253,6 +254,7 @@ export const selectFilteredTasks = createSelector(
     selectOrganizationId,
     selectValidProjectIds,
     selectTaskUserStateMap,
+    selectNowMinute,
   ],
   (
     projects,
@@ -271,9 +273,13 @@ export const selectFilteredTasks = createSelector(
     appOrgId,
     validProjectIdsForTaskPipe,
     userStateMap,
+    nowMinute,
   ): TaskWithProject[] => {
+    // All "now" derivations come from the ticking nowMinute input so snooze
+    // expiry / overdue re-evaluate within ~60s instead of waiting for an
+    // unrelated store change (D129).
     // Local-date string — toISOString() would shift UTC+ users to yesterday.
-    const todayStr = new Date().toLocaleDateString("sv-SE");
+    const todayStr = new Date(nowMinute).toLocaleDateString("sv-SE");
 
     let tasks: TaskWithProject[] = [];
 
@@ -313,7 +319,7 @@ export const selectFilteredTasks = createSelector(
     // Smart view (Inbox/Today/Upcoming/Overdue/Assigned to me/…) — the
     // registry in constants/smartViews.ts is the single definition.
     const view = SMART_VIEW_BY_KEY[smartView] ?? SMART_VIEW_BY_KEY.all;
-    const viewCtx = buildSmartViewContext(currentUserId);
+    const viewCtx = buildSmartViewContext(currentUserId, nowMinute);
     if (!view.includesClosed && !showCompleted) {
       // Closed tasks (completed/cancelled/dismissed) hidden by default.
       tasks = tasks.filter((t) => !isClosedStatus(t.status));
@@ -324,7 +330,7 @@ export const selectFilteredTasks = createSelector(
     // Snoozed tasks disappear from the attention views (everything except
     // All tasks / Completed) until their snooze expires.
     if (view.key !== "all" && view.key !== "completed") {
-      const nowIso = new Date().toISOString();
+      const nowIso = nowMinute;
       tasks = tasks.filter((t) => {
         const snoozedUntil = userStateMap[t.id]?.snoozedUntil;
         return !snoozedUntil || snoozedUntil <= nowIso;
@@ -534,6 +540,7 @@ export const selectSmartViewCounts = createSelector(
     selectUserId,
     selectOrganizationId,
     selectTaskUserStateMap,
+    selectNowMinute,
   ],
   (
     tasks,
@@ -541,9 +548,10 @@ export const selectSmartViewCounts = createSelector(
     currentUserId,
     appOrgId,
     userStateMap,
+    nowMinute,
   ): Record<SmartViewKey, number> => {
-    const ctx = buildSmartViewContext(currentUserId);
-    const nowIso = new Date().toISOString();
+    const ctx = buildSmartViewContext(currentUserId, nowMinute);
+    const nowIso = nowMinute;
     // Respect the active org context so counts always agree with the list.
     let scoped = tasks;
     if (appOrgId) {

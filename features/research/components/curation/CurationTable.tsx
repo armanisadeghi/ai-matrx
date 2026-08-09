@@ -46,6 +46,9 @@ import { CurationBatchBar } from "./CurationBatchBar";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
+import {
+  MOBILE_TABLE,
+} from "@/components/official/mobile-table/mobileTable";
 
 type GroupBy = "none" | "keyword" | "tag";
 
@@ -618,7 +621,7 @@ export default function CurationTable() {
             </p>
           </div>
         ) : (
-          <table className="w-full text-left border-separate border-spacing-0">
+          <table className={cn("text-left border-separate border-spacing-0", MOBILE_TABLE)}>
             <thead className="sticky top-0 z-10 bg-background">
               <tr className="[&>th]:border-b [&>th]:border-border/60 [&>th]:py-1.5">
                 <th className="pl-1 pr-1 w-8 align-middle">

@@ -23,7 +23,8 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
 import { AssistChip } from "@/features/assists/components/AssistChip";
 import { makeEphemeralAssist, type Assist } from "@/features/assists/types";
-import { shapeCreatorAgentId } from "@/features/content-ir/studio/constants";
+import { KIND_CREATOR_SLOT_KEY } from "@/features/content-ir/studio/constants";
+import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
 import type { EmitRendererProps } from "./types";
 
 /** Cap for the inlined payload JSON — enough context, never a mega-prompt. */
@@ -40,9 +41,11 @@ function surpriseUiAssist(
   value: unknown,
   title: string | null | undefined,
   nodeId: string,
+  creatorId: string | null,
 ): Assist | null {
   if (!value || typeof value !== "object") return null;
-  const creatorId = shapeCreatorAgentId();
+  // The `content_ir.kind_creator` slot resolves in the component (the user's
+  // own binding wins); unresolved → no chip (useAgentSlot already screamed).
   if (!creatorId) return null;
   let json: string;
   try {
@@ -105,10 +108,14 @@ export const GenericEmitRenderer: React.FC<EmitRendererProps> = ({
   nodeId,
 }) => {
   const value = unwrapValue(payload);
+  const { slot: creatorSlot } = useAgentSlot(KIND_CREATOR_SLOT_KEY);
+  const creatorId = creatorSlot?.agentId ?? null;
   const assist = useMemo(
     () =>
-      mode === "confirmation" ? null : surpriseUiAssist(value, title, nodeId),
-    [mode, value, title, nodeId],
+      mode === "confirmation"
+        ? null
+        : surpriseUiAssist(value, title, nodeId, creatorId),
+    [mode, value, title, nodeId, creatorId],
   );
 
   // ─── Confirmation ─────────────────────────────────────────────────────────

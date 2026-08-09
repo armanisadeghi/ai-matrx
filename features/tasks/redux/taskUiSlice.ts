@@ -16,8 +16,15 @@ export interface TaskUiState {
   initialized: boolean;
   isCreatingProject: boolean;
   isCreatingTask: boolean;
-  operatingTaskId: string | null;
+  /** Tasks with a mutation in flight — a set, so concurrent ops on different
+   *  tasks never clobber each other's in-flight guard (D129). */
+  operatingTaskIds: string[];
   operatingProjectId: string | null;
+
+  /** Wall-clock minute (ISO), ticked ~60s by useNowMinuteTick on /tasks so
+   *  time-dependent derivations (snooze expiry, overdue) re-evaluate without
+   *  an unrelated store change (D129). */
+  nowMinute: string;
 
   // Sidebar / view state
   activeProject: string | null;
@@ -85,6 +92,13 @@ export interface PendingSource {
   };
 }
 
+/** Current wall-clock time truncated to the minute, as an ISO string. */
+export function currentMinuteIso(): string {
+  const d = new Date();
+  d.setSeconds(0, 0);
+  return d.toISOString();
+}
+
 export type TaskGroupBy =
   "project" | "scope" | "priority" | "status" | "dueDate" | "none";
 
@@ -109,8 +123,10 @@ const initialState: TaskUiState = {
   initialized: false,
   isCreatingProject: false,
   isCreatingTask: false,
-  operatingTaskId: null,
+  operatingTaskIds: [],
   operatingProjectId: null,
+
+  nowMinute: currentMinuteIso(),
 
   activeProject: null,
   expandedProjects: [],
@@ -263,8 +279,20 @@ const slice = createSlice({
     setIsCreatingTask(state, action: PayloadAction<boolean>) {
       state.isCreatingTask = action.payload;
     },
-    setOperatingTaskId(state, action: PayloadAction<string | null>) {
-      state.operatingTaskId = action.payload;
+    addOperatingTaskId(state, action: PayloadAction<string>) {
+      if (!state.operatingTaskIds.includes(action.payload)) {
+        state.operatingTaskIds.push(action.payload);
+      }
+    },
+    removeOperatingTaskId(state, action: PayloadAction<string>) {
+      state.operatingTaskIds = state.operatingTaskIds.filter(
+        (id) => id !== action.payload,
+      );
+    },
+    setNowMinute(state, action: PayloadAction<string>) {
+      if (state.nowMinute !== action.payload) {
+        state.nowMinute = action.payload;
+      }
     },
     setOperatingProjectId(state, action: PayloadAction<string | null>) {
       state.operatingProjectId = action.payload;
@@ -430,7 +458,9 @@ export const {
   setInitialized,
   setIsCreatingProject,
   setIsCreatingTask,
-  setOperatingTaskId,
+  addOperatingTaskId,
+  removeOperatingTaskId,
+  setNowMinute,
   setOperatingProjectId,
   setActiveProject,
   toggleProjectExpand,
@@ -479,8 +509,13 @@ export const selectIsCreatingProject = (s: StateWithTasksUi) =>
   s.tasksUi.isCreatingProject;
 export const selectIsCreatingTask = (s: StateWithTasksUi) =>
   s.tasksUi.isCreatingTask;
-export const selectOperatingTaskId = (s: StateWithTasksUi) =>
-  s.tasksUi.operatingTaskId;
+export const selectOperatingTaskIds = (s: StateWithTasksUi) =>
+  s.tasksUi.operatingTaskIds;
+export const selectIsTaskOperating =
+  (taskId: string) =>
+  (s: StateWithTasksUi): boolean =>
+    s.tasksUi.operatingTaskIds.includes(taskId);
+export const selectNowMinute = (s: StateWithTasksUi) => s.tasksUi.nowMinute;
 export const selectOperatingProjectId = (s: StateWithTasksUi) =>
   s.tasksUi.operatingProjectId;
 export const selectActiveProject = (s: StateWithTasksUi) =>

@@ -52,6 +52,9 @@ import {
 import { listExtractionCatalog, type ExtractionCatalogEntry } from "./data";
 import { CatalogRowActions } from "./CatalogRowActions";
 import { EXTRACTION_ENTITY_TYPE } from "./constants";
+import {
+  MOBILE_TABLE,
+} from "@/components/official/mobile-table/mobileTable";
 
 type SortKey = "updated" | "name" | "rows" | "source";
 
@@ -249,7 +252,7 @@ export function ExtractionCatalogClient() {
           ) : visible.length === 0 ? (
             <EmptyState hasAny={entries.length > 0} />
           ) : (
-            <table className="w-max min-w-full max-w-none text-sm sm:w-full sm:min-w-0 sm:max-w-full">
+            <table className={cn("text-sm", MOBILE_TABLE)}>
               <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur">
                 <tr className="border-b border-border text-left text-xs text-muted-foreground">
                   <Th

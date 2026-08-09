@@ -510,6 +510,14 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-09 — Brand + Rules panels de-modalized: both workspace side
+  sheets moved off the blocking `Sheet` onto the canonical
+  `SidePanelSurface` (non-blocking, drag-resizable, table stays live;
+  mutually exclusive toggles). Brand alias input is now a live typeahead —
+  debounced server-side `pattern/contains` corpus probe (the same matcher
+  as rule preview) shows the broad-match count + top matches with the hit
+  highlighted, click-to-complete; every alias row's match count is a door
+  that filters the keyword table behind (`onInspectAlias` → table search).
 - 2026-08-08 — Assists wired (§ Assists): insight findings (money decay /
   CTR gap / unclassified backlog) emit deduped one-click assists — page
   findings launch the `seo.page_analyzer` slot pre-filled with the finding,

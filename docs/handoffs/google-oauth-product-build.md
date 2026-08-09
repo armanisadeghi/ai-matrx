@@ -59,8 +59,11 @@ Search Console immediately afterward.
   (exchange, vault, refresh — see its FEATURE.md; `refresh_connection_access_token()` is
   the server-side access-token primitive; tokens NEVER reach the browser).
 - Connect UI exemplar to generalize: `features/marketing/components/integrations/MarketingConnectionsWorkspace.tsx`.
-- Scope source of truth: the registries from `docs/handoffs/google-scope-registry.md`
-  (do that handoff first or in the same effort).
+- Scope source of truth: the two registries (consolidation landed 2026-08-08) —
+  frontend `lib/googleScopes.ts`, backend mirror
+  `aidream/services/google_integrations/scopes.py`. Scope strings live in those two
+  files and nowhere else; the governing contract is
+  `common-docs/projects/google-oauth-verification/PLAN.md`.
 - Agent tool patterns in aidream: `aidream/tools/` + tool registration via
   `tool.definition`; injection funnel `aidream/services/tooling/tool_merge.py` (nothing
   there needs changing). Tool output contract + size caps: matrx-ai
