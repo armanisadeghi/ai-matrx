@@ -8,7 +8,9 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { PARTY_KINDS } from "@/features/crm/types";
 
 export const CRM_CREATE_PARTY_SURFACE_NAME = "matrx-user/crm-create-party";
 
@@ -186,6 +188,44 @@ const values: SurfaceValue[] = [
   },
 ];
 
+/**
+ * The write half of this surface (handlers in
+ * `features/crm/components/PartyCreateForm.tsx`).
+ *
+ * ONE composite target, deliberately — not one per input. Every field here is
+ * filled in during a single act of drafting (from an email signature, a chat
+ * mention, a scraped page) and consumed by ONE save, so they are edited
+ * together, which is exactly the case the skill reserves for an object target.
+ * Splitting them would also make the form's cross-field rule unenforceable:
+ * `party_kind` decides which inputs are even RENDERED, so a lone
+ * `company_name` write against a person draft would land in state the user
+ * cannot see. One target validates the whole shape at once, asks once, and
+ * lands a coherent draft.
+ *
+ * Creating the record is NOT a target. Save is where deduplication, medium
+ * linking, and ownership happen — the human presses Create record.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "party_draft",
+    label: "CRM record draft",
+    description: [
+      "Stages a drafted person or company into the open create form — the same fields the user would type, staged the same way.",
+      `Object with any of: party_kind (${PARTY_KINDS.join(" | ")}), first_name, last_name, job_title (person drafts only), company_name, primary_domain (company drafts only), email, phone — all strings.`,
+      "Only the keys you send are changed; omit a key to leave the user's value alone, or pass an empty string to clear that one field. display_name is computed from the names and cannot be set.",
+      "The fields must match the kind being drafted: a person takes first_name/last_name/job_title, a company takes company_name/primary_domain. This form has no field for a person's employer — capture that as job_title and create the company as its own record.",
+      "email must be a real address and phone must be dialable (international form, e.g. +13105551234, is safest); a value that fails is rejected rather than corrected.",
+      "Everything is staged only. Nothing is saved, deduplicated against existing parties, or linked to a contact medium until the user presses Create record.",
+    ].join(" "),
+    valueType: "object",
+    updatesValue: "party_draft",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "form_state",
+    sortOrder: 400,
+  },
+];
+
 export const crmCreatePartyManifest: SurfaceManifest = {
   surfaceName: CRM_CREATE_PARTY_SURFACE_NAME,
   readiness: "verified",
@@ -196,6 +236,7 @@ You are in the Create CRM Record window. The user is drafting either a person or
 </surface_intro>`,
   groups,
   values,
+  writeTargets,
   skipBaselineValues: true,
 };
 

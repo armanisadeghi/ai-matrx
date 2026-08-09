@@ -124,8 +124,10 @@ internal platform use — never a washed-down user variant beside a private one:
   surface-bound agents as a `<surface_write_targets>` block. Live adopters:
   `matrx-user/marketing-page` (`page_meta_tags`, `page_target_keyword`,
   `page_supporting_keywords` — handlers in
-  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`) and
-  `matrx-user/keyword-intelligence` (`keyword_selection`). The LSI kind
+  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`),
+  `matrx-user/keyword-intelligence` (`keyword_selection`), and
+  `matrx-user/crm-create-party` (`party_draft` — handlers in
+  `features/crm/components/PartyCreateForm.tsx`). The LSI kind
   components (`meta_tag_options` / `keyword_relationship_research` /
   `keyword_search_metrics`, DB components) call
   `runAction("apply_surface_write", …)` — same seam users' agent-authored
@@ -149,7 +151,16 @@ internal platform use — never a washed-down user variant beside a private one:
   agent-writable adopters: `matrx-user/marketing-page`,
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
-  `TaskEditorBody.tsx`).
+  `TaskEditorBody.tsx`), `matrx-user/crm-create-party` (ONE composite
+  `party_draft` target — the whole capture form is drafted in one act and
+  `party_kind` decides which inputs render, so five micro-targets would ask
+  five times and let an incoherent half-draft land; creating the record is
+  deliberately NOT a target, since dedup/medium-linking/ownership all happen
+  at save). **`crm-create-party` has not had its live agent run yet** —
+  declaration, handler, `type-check` and `check:surface-drift` are done and
+  its manifest/validation primitives are unit-exercised, but the
+  browser-side confirm-and-stage pass is still owed; it is registered in
+  `agent.review_queue` for that.
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as

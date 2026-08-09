@@ -180,6 +180,20 @@ attachments = `features/files` · tags/stages = `platform.categories` · the 360
 
 ## Change log
 
+- 2026-08-09 — Made the create-record surface (`matrx-user/crm-create-party`)
+  agent-writable: ONE composite `party_draft` write target (`mode: "draft"`,
+  `applyPolicy: "ask"`) so an agent can stage a person or company drafted from
+  context — kind, names, job title, domain, email, phone — into the capture
+  form the user then reviews and saves. Handlers live on the existing
+  `SurfaceRuntimeProvider` in `PartyCreateForm.tsx` and stage through the same
+  `useState` setters typing uses; they THROW on a bad shape, validating kind
+  against `PARTY_KINDS` and email/phone through the canonical
+  `normalizeMediumValue` (so an agent-staged medium can never fail only at
+  Create time), and reject fields belonging to the other kind, which would
+  land in inputs the user cannot see. **Creating the record is deliberately
+  NOT a target** — dedup, medium linking, and ownership all happen at save,
+  and the human presses Create record. Live agent run still owed (registered
+  in `agent.review_queue`).
 - 2026-08-08 — Repaired `/crm` review feedback: specific route metadata and
   semantic header H1, 44px mobile scope controls, concise search placeholder,
   and an explicit mobile Open affordance in each sticky identity cell.
