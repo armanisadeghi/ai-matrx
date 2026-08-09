@@ -16,7 +16,7 @@
  * (see DbToolRenderer.tsx) so `@babel/standalone` never enters the main chat
  * bundle — it arrives only when a tool actually has a DB renderer.
  */
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { GenericRenderer } from "../registry/GenericRenderer";
 import type { ToolRendererProps } from "../types";
@@ -26,6 +26,7 @@ import {
   isKnownNoToolRenderer,
   loadToolRenderer,
 } from "./toolRendererCache";
+import { useToolRendererVersion } from "./useToolRendererVersion";
 
 export interface DbToolRendererImplProps extends ToolRendererProps {
   toolName: string;
@@ -35,6 +36,11 @@ export const DbToolRendererImpl: React.FC<DbToolRendererImplProps> = ({
   toolName,
   ...toolProps
 }) => {
+  // Bumps when the tool's renderer is invalidated (agent edited its `tool_ui`
+  // row mid-session) — re-runs resolution against the now-empty cache so the
+  // card repaints with the fresh code, no hard refresh (D115).
+  const version = useToolRendererVersion(toolName);
+
   // Seed from the positive cache so a warmed/prefetched renderer paints on the
   // first render with no flash. `null` means "not resolved yet this mount".
   const [component, setComponent] =
@@ -47,26 +53,24 @@ export const DbToolRendererImpl: React.FC<DbToolRendererImplProps> = ({
       getCachedToolRenderer(toolName) !== null ||
       isKnownNoToolRenderer(toolName),
   );
-  const fetchedRef = useRef(false);
 
-  // Fire the fetch exactly once per mount when nothing is cached yet. The
-  // shared in-flight promise in the cache dedups across sibling cards; the
-  // `cancelled` guard avoids a state update after unmount.
+  // Resolve once per (toolName, version). `loadToolRenderer` answers from the
+  // positive/negative cache immediately when warm, so this is one microtask on
+  // the warm path and the shared deduped fetch+compile on the cold path. A
+  // version bump re-enters with the cache cleared; the previous compile keeps
+  // rendering until the fresh one lands (no blank flash), then swaps in.
   useEffect(() => {
-    if (component || resolved || fetchedRef.current) return undefined;
-    fetchedRef.current = true;
-
     let cancelled = false;
     void loadToolRenderer(toolName).then((compiled) => {
       if (cancelled) return;
-      if (compiled) setComponent(() => compiled);
+      setComponent(() => compiled);
       setResolved(true);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [toolName, component, resolved]);
+  }, [toolName, version]);
 
   if (component) {
     const Compiled = component;
