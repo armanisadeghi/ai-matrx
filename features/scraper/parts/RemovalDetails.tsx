@@ -6,6 +6,8 @@ import React, { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
 
 type FilterColumn = "type" | "details" | "remover";
@@ -170,7 +172,7 @@ const RemovalDetails = ({ allRemovals }: RemovalDetailsProps) => {
           <thead>
             <tr>
               <th
-                className="sm:w-9/12 max-sm:min-w-[14rem] border p-2 text-left cursor-pointer bg-gray-100 dark:bg-gray-700"
+                className={cn("sm:w-9/12 border p-2 text-left cursor-pointer bg-gray-100 dark:bg-gray-700", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[11rem] max-sm:bg-gray-100 max-sm:dark:bg-gray-700")}
                 onClick={() => handleSort("text")}
               >
                 Text{" "}
@@ -249,7 +251,7 @@ const RemovalDetails = ({ allRemovals }: RemovalDetailsProps) => {
                 className={`${index % 2 === 0 ? "bg-gray-50 dark:bg-gray-800" : "bg-textured"} hover:bg-gray-100 dark:hover:bg-gray-700`}
               >
                 <td
-                  className="border p-2 cursor-pointer sm:overflow-hidden sm:text-ellipsis max-sm:min-w-[14rem]"
+                  className={cn("border p-2 cursor-pointer sm:overflow-hidden sm:text-ellipsis", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[11rem]")}
                   onClick={() => setSelectedItem(item)}
                   style={{ whiteSpace: "normal" }}
                 >
