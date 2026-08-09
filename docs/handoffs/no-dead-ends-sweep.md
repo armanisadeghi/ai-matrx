@@ -53,9 +53,19 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
   Use `alwaysShowActions` whenever the surface has no hover affordance of its
   own, and always for a dialog: the user is being asked a question and the
   control that answers it must be on screen when the question is.
-  **Three in one session is a default problem, not three mistakes** — whether
+  **Repeated occurrences are a default problem, not separate mistakes** — whether
   standalone controls should be visible by default is filed for Arman as
-  `.matrx/ARMAN_TASKS.md` item 0a. The wider lesson for this sweep: **"the door renders" is
+  `.matrx/ARMAN_TASKS.md` item 0a. (It has now happened five times: the two debug
+  sidebars, `DuplicateUploadDialog`, the test-modal task rows, and
+  `PermissionsList` — the last two caught at write time by asking the question,
+  not by review.)
+
+  ✅ **Swept 2026-08-09: every `EntityDoorControls` on this branch is visible.**
+  Each one either passes `alwaysShowActions` or sits under an ancestor carrying
+  `group` / `group/entity-ref` — including the three that pass the door as a
+  PROP (`ListRow`'s `door=`, the history sidebar `Section`'s `action=`), where
+  the class lives in the consuming component and a same-file grep would miss it.
+  **Re-run that check after any wave**; the one-file view is not enough. The wider lesson for this sweep: **"the door renders" is
   not "the door is reachable"** — and only a browser can settle the difference,
   which is why the section below matters.
 - 🚨 **`EntityRef` ALWAYS makes the name a same-tab link.** There is no prop to
