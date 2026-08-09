@@ -240,6 +240,28 @@ function OptionColumnFilter<T extends string>({
   );
 }
 
+/**
+ * `/documents/{id}` from the ONE registry entry, with an alarm.
+ *
+ * The registry is the route authority (never a second inline template), but a
+ * missing `hrefFor` here is not a cosmetic gap: it removes the table's only
+ * remaining door. Screaming once per session makes that impossible to ship
+ * unnoticed, which a bare `?.` could not.
+ */
+let warnedNoDocumentRoute = false;
+function documentHref(id: string): string | undefined {
+  const href = tryGetEntityInfo("udt_document")?.hrefFor?.(id);
+  if (!href && !warnedNoDocumentRoute) {
+    warnedNoDocumentRoute = true;
+    console.error(
+      "[DocumentsHubTable] entity registry has no `hrefFor` for `udt_document` — " +
+        "every door on this table is now dead (row click, name, new tab). " +
+        "Fix features/scopes/registry/entityRegistry.ts.",
+    );
+  }
+  return href;
+}
+
 export function DocumentsHubTable({
   documents,
   onDelete,
@@ -512,7 +534,13 @@ export function DocumentsHubTable({
             sorted.map((doc) => {
               // ONE route authority: the same registry entry the name's
               // `EntityRef` resolves, not a second copy of the path.
-              const href = tryGetEntityInfo("udt_document")?.hrefFor?.(doc.id);
+              //
+              // If that entry ever loses its `hrefFor`, this table has NO way
+              // left to open a document — the row click, the name, and (since
+              // the duplicate button went) every other path all hang off it.
+              // A silent version of that is the opposite of CLAUDE.md's loud
+              // recovery rule, so it screams instead of degrading quietly.
+              const href = documentHref(doc.id);
               return (
                 <TableRow
                   key={doc.id}

@@ -149,6 +149,27 @@ export function resolveShortcutEditUrl(
   return `/agents/shortcuts/edit/${row.id}`;
 }
 
+/**
+ * Where the shortcut's AGENT lives, in this directory's mode.
+ *
+ * This exists for the same reason its two siblings above do: the admin
+ * deployment PARKS the `(core)` route group, and `proxy.ts`'s satellite gate
+ * bounces any non-`/administration/*` path on the admin host back to the main
+ * host. So the registry's canonical `/agents/{id}` is not merely a different
+ * page in admin mode — it is a different ORIGIN, and following it throws away
+ * the console, the list, and every filter/sort/group the admin had set.
+ *
+ * `EntityRef.href` is documented for exactly this override.
+ */
+export function resolveAgentUrl(
+  agentId: string,
+  mode: ShortcutDirectoryMode,
+): string {
+  return mode === "admin"
+    ? `/administration/agents/system-agents/agents/${agentId}`
+    : `/agents/${agentId}`;
+}
+
 export function resolveShortcutDirectUrl(
   shortcutId: string,
   mode: ShortcutDirectoryMode,

@@ -52,6 +52,7 @@ import type {
 } from "../utils/shortcut-directory-rows";
 import {
   getGroupKey,
+  resolveAgentUrl,
   isShortcutUuid,
   resolveShortcutDirectUrl,
   resolveShortcutEditUrl,
@@ -382,7 +383,7 @@ export function ShortcutDirectory({
           </div>
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell onClick={(e) => e.stopPropagation()}>
         {/* This column printed `agentName ?? agentId` — so a shortcut whose
             agent name had not resolved rendered a bare UUID you could not
             click, the Door Law's named worst case. `EntityRef` opens the
@@ -392,7 +393,8 @@ export function ShortcutDirectory({
           <EntityRef
             token="agent"
             id={row.agentId}
-            name={row.agentName}
+            name={row.agentName ?? row.agentId}
+            href={resolveAgentUrl(row.agentId, mode)}
             showIcon={false}
             className="max-w-[180px] text-sm"
           />
@@ -802,8 +804,26 @@ export function ShortcutDirectory({
                     {groupBy !== "none" && (
                       <TableRow className="bg-muted/40 hover:bg-muted/40">
                         <TableCell colSpan={9}>
-                          <div className="font-semibold text-sm">
-                            {group.key}
+                          <div className="flex items-center font-semibold text-sm">
+                            {/* Grouping by agent made every header a raw
+                                unclickable UUID in admin mode (admin rows all
+                                carry `agentName: null`) — the very defect the
+                                cell below was just fixed for. */}
+                            {groupBy === "agent" && group.rows[0]?.agentId ? (
+                              <EntityRef
+                                token="agent"
+                                id={group.rows[0].agentId}
+                                name={group.key}
+                                href={resolveAgentUrl(
+                                  group.rows[0].agentId,
+                                  mode,
+                                )}
+                                showIcon={false}
+                                className="font-semibold"
+                              />
+                            ) : (
+                              group.key
+                            )}
                             <Badge variant="secondary" className="ml-2">
                               {group.rows.length}
                             </Badge>

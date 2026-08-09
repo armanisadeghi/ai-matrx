@@ -204,8 +204,15 @@ export function EntityRef({
       <span
         className={cn(
           "inline-flex shrink-0 items-center gap-0.5",
+          // `opacity-0` alone still takes pointer events, which on a touch
+          // device leaves an invisible new-tab link sitting beside every name:
+          // a tap that lands there opens a tab with nothing to explain why.
+          // `pointer-events-none` closes that; it does not affect the keyboard,
+          // so the controls stay tab-reachable and `focus-within` restores them.
           !alwaysShowActions &&
-            "opacity-0 transition-opacity group-hover/entity-ref:opacity-100 focus-within:opacity-100",
+            "pointer-events-none opacity-0 transition-opacity " +
+              "group-hover/entity-ref:pointer-events-auto group-hover/entity-ref:opacity-100 " +
+              "focus-within:pointer-events-auto focus-within:opacity-100",
         )}
       >
         {canPeek && (
