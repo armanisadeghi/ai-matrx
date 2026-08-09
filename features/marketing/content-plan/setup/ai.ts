@@ -21,7 +21,6 @@
 import { useRef, useState } from "react";
 
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import { resolveAgentSlot } from "@/features/agents/slots/service";
 import {
   selectFirstExtractedObject,
   selectJsonExtractionComplete,
@@ -756,12 +755,14 @@ export function useSetupAgents(siteId: string | null) {
   ): Promise<T> {
     // Which agent runs this step is a SLOT, never a hardcoded id: the system
     // default is managed in the admin console and any user may bind their own
-    // agent at /agents/slots. Resolution is loud — an unresolvable slot throws
-    // here rather than silently running the wrong agent.
-    const { agentId } = await resolveAgentSlot(slotKey);
+    // agent at /agents/slots. The launch thunk resolves the slot itself and
+    // applies BOTH halves of the binding — the agent AND its config_overrides
+    // (a settings-only binding changes the model here too). Resolution is loud
+    // — an unresolvable slot throws rather than silently running the wrong
+    // agent.
     const { requestId } = await dispatch(
       launchAgentExecution({
-        agentId,
+        slotKey,
         surfaceKey: `content-plan-setup:${siteId ?? "none"}:${slotKey}`,
         sourceFeature: "marketing",
         jsonExtraction: { enabled: true, fuzzyOnFinalize: true },

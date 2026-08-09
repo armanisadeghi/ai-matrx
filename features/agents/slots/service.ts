@@ -27,20 +27,23 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { isJsonObject, type JsonObject } from "@/types/json";
-import type { LLMParamsBody } from "@/lib/api/call-api";
+import type { LLMParams } from "@/features/agents/types/agent-api-types";
 
 export interface ResolvedClientSlot {
   slotKey: string;
   agentId: string;
-  configOverrides: LLMParamsBody | null;
+  /** Non-null values only (toLlmParams never writes null), so the result is
+   * assignable both to the API's `config_overrides` body and to the execution
+   * system's `llmOverrides` / instance-model-overrides delta shape. */
+  configOverrides: Partial<LLMParams> | null;
   provenance: "system" | "user";
 }
 
 /** Runtime-narrow a binding's config_overrides Json into the generated
  * LLMParams shape — field by field, no casts. Keys the client doesn't know
  * are dropped loudly; the server's apply_overrides stays the authority. */
-function toLlmParams(obj: JsonObject): LLMParamsBody {
-  const out: LLMParamsBody = {};
+function toLlmParams(obj: JsonObject): Partial<LLMParams> {
+  const out: Partial<LLMParams> = {};
   if (typeof obj.model === "string") out.model = obj.model;
   if (typeof obj.offering_id === "string") out.offering_id = obj.offering_id;
   if (typeof obj.temperature === "number") out.temperature = obj.temperature;
@@ -124,7 +127,7 @@ export async function resolveAgentSlot(slotKey: string): Promise<ResolvedClientS
 
   let agentId = slot.default_agent_id;
   let provenance: ResolvedClientSlot["provenance"] = "system";
-  let configOverrides: LLMParamsBody | null = null;
+  let configOverrides: Partial<LLMParams> | null = null;
 
   // The caller's own user binding (RLS-scoped; other principals' rows are
   // invisible so no explicit user filter is needed beyond principal_type).

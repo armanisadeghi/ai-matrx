@@ -24,6 +24,8 @@ import type {
   ManagedAgentOptions,
   ResultDisplayMode,
 } from "@/features/agents/types/instance.types";
+import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import { resolveAgentSlot } from "@/features/agents/slots/service";
 import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { toast } from "@/lib/toast";
@@ -324,7 +326,8 @@ export const launchAgentExecution = createAsyncThunk<
   { state: RootState }
 >("instances/launch", async (options, { dispatch, getState }) => {
   const {
-    agentId,
+    agentId: providedAgentId,
+    slotKey,
     shortcutId,
     manual,
     sourceFeature,
@@ -339,6 +342,28 @@ export const launchAgentExecution = createAsyncThunk<
     conversationId: providedConversationId,
     surfaceKey,
   } = options;
+
+  // ── Slot-first identity — resolve BOTH halves of the binding ──────────────
+  // A slot binding can swap the agent AND/OR override settings (model,
+  // thinking_level, temperature …). Resolving inside the one launch funnel is
+  // what makes a settings-only binding effective on this path: the resolved
+  // config_overrides merge over the caller's `config.llmOverrides` (the
+  // binding wins per key — same precedence as useSlotRunner) and are seeded
+  // into the instance-model-overrides slice below, so every turn's request
+  // carries them as `config_overrides`. Resolution is LOUD: an unresolvable
+  // slot throws here and nothing launches — never a hardcoded fallback.
+  let agentId = providedAgentId;
+  let slotLlmOverrides: Partial<LLMParams> | null = null;
+  if (slotKey) {
+    if (providedAgentId || shortcutId) {
+      throw new Error(
+        `launchAgentExecution: slotKey ("${slotKey}") is mutually exclusive with agentId/shortcutId`,
+      );
+    }
+    const resolved = await resolveAgentSlot(slotKey);
+    agentId = resolved.agentId;
+    slotLlmOverrides = resolved.configOverrides;
+  }
 
   // ── Read all config/runtime values from the nested bundles ────────────────
   //
@@ -846,8 +871,10 @@ export const launchAgentExecution = createAsyncThunk<
       );
     }
 
-    const llmOverrides = config?.llmOverrides;
-    if (llmOverrides && Object.keys(llmOverrides).length > 0) {
+    // The caller's llmOverrides are the feature's defaults; the slot binding's
+    // config_overrides (the USER's choice) win per key.
+    const llmOverrides = { ...config?.llmOverrides, ...slotLlmOverrides };
+    if (Object.keys(llmOverrides).length > 0) {
       const { setOverrides } =
         await import("../instance-model-overrides/instance-model-overrides.slice");
       dispatch(setOverrides({ conversationId, changes: llmOverrides }));
