@@ -15,9 +15,15 @@ The USER/ORG-facing override surface (browse slots, provenance, write `slot_bind
    `migrations/agx_system_promotion_superadmin.sql`.
 2. **THE CANONICAL-SELECTION LAW.** Anywhere agents are listed for selection, use the canonical agent listing system — the Redux agent-definition slice (`fetchAgentsListFull` + the purpose-fit selector: `selectBuiltinAgents` here, `selectActiveAgents` for user-facing pickers) or the scoped server RPCs (`agx_list_scoped` with true scopes). **A raw `.from("definition")` query dumped alphabetically is the recurring disease this repo keeps re-catching**: it blends mine/shared/org/public/system into one meaningless list, ignores scopes, and treats an administrator like a user. Never write one. The console consumed exactly this bug at birth (fixed 2026-08-08, same day).
 
-## Test bench (2026-08-08)
+## Owner test bench (Wave 2, 2026-08-09)
 
-"Latest is not always better." Every slot holds **exemplars** (`agent.slot_exemplar`): real inputs+outputs auto-captured from production runs (up to 3 per slot, size-capped, in `run_slot`) or hand-authored/manual. The bench (`SlotTestBench.tsx`) runs a CANDIDATE — different system agent, pinned version, or just `config_overrides` — against an exemplar's stored inputs via aidream `POST /agent-slots/{slot_key}/test` (super-admin gated; one call per exemplar so runs parallelize), then renders reference vs candidate side by side with a **content-IR structural verdict** (`output_kind` schema + required keys — the same checker the workflow engine uses) plus model/duration. Image outputs render via `InlineMediaRef` (file_id recovered with `fileIdFromUserFilesUrl` — never a raw expiring URL). A test run is `system_run` and writes nothing.
+The bench is organized around the decisions an owner actually makes:
+
+1. **Is the new version better?** Name any number of comparison columns and choose the slot's pinned version, latest version, an arbitrary saved version, another system agent, or the currently resolved agent with inherited/custom/no settings overrides. Blank overrides inherit; explicit `{}` means no overrides. **Run all exemplars** sends one generated-contract `callApi` batch to `POST /agent-slots/{slot_key}/tests`. Every exemplar renders labeled Reference / Baseline / candidate columns side by side. Agent failures are red result cards with an `error`, not rejected-call toasts.
+2. **Make this result the reference.** Every successful result has a one-click action that updates the exemplar's `reference_output` / `reference_artifact` directly in Supabase and stamps that persisted result as promoted.
+3. **Test as principal.** The canonical admin user and organization directories let an owner reproduce user-only, org-only, or combined binding resolution. Named principals retain their real record doors.
+
+Manual exemplars accept both variables JSON and `user_input`. The server persists a capped history (100 entries) in the existing `agent.slot_exemplar.metadata.test_bench_results`; the frontend parses that open JSONB defensively. Owner verdict notes and reference promotion are direct, optimistic-concurrency Supabase updates because they are pure record CRUD. Python owns only agent execution and the result append. API request/response aliases come exclusively from `types/python-generated/api-types.ts`; there is no local response mirror or backend `fetch`. Image outputs still render via `InlineMediaRef` (file_id recovered with `fileIdFromUserFilesUrl`, never a raw expiring URL).
 
 ## Console shape (2026-08-08 rebuild)
 
@@ -38,6 +44,8 @@ Doctrine: `/Users/armanisadeghi/code/common-docs/policies/no-dead-ends.md`; reci
 The page is the `matrx-admin/agent-slots` surface (`features/surfaces/manifests/agent-slots.manifest.ts`, readiness `partial`; route mapped in `features/surfaces/utils/route-to-surface.ts`; `ui.ui_surface` + values synced live 2026-08-08). `AgentSlotsConsole` mounts `<SurfaceRuntimeProvider>` and builds the Run-time scope via `createAgentSlotsScope` — slot list summary, health roll-up, system-agent picker count, and the selected slot's id/detail/health/overrides. Test-bench state (exemplars, candidate runs) stays in `SlotTestBench` local state and is NOT in the scope yet — lifting it promotes readiness.
 
 ## Change Log
+
+- 2026-08-09 — **Wave 2 owner bench rebuild:** multi-candidate/all-exemplar batch comparisons with explicit Baseline columns; pinned/latest/arbitrary-version/different-agent/current ± override choices; persisted history and verdict notes; one-click reference promotion; manual `user_input`; user/org principal simulation; failed runs inline. The aidream call now uses `callApi` plus generated OpenAPI types, while note/reference CRUD stays direct to `agent.slot_exemplar`.
 
 - 2026-08-09 — Replaced the three permanently expanded agent catalogues in the slot workbench (default pin, test candidate, and principal override) with the canonical `AgentListDropdown`. Each trigger now shows its selected agent or default state; opening it preserves the existing search, ownership scopes, filters, previews, record doors, and mobile drawer.
 
