@@ -11,6 +11,9 @@
 // into an unmissable message so edits are never silently thrown away.
 
 import { toast } from "@/lib/toast";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { NOTE_SAVE_FAILURE_BLOCK_THRESHOLD } from "../redux/notes.types";
+import { captureNoteDrafts } from "./notesDrafts";
 
 interface WriteErrorLike {
   code?: string | null;
@@ -53,4 +56,56 @@ export function toastNoteWriteBlocked(noteId: string, message: string): void {
 /** Clear the dedupe window after a successful save so a later failure screams again. */
 export function clearNoteWriteBlockedToast(noteId: string): void {
   lastToastAt.delete(noteId);
+  lastEscalationAt.delete(noteId);
+}
+
+// ── Escalation: a streak of failures is a DEFECT, not a notification ────────
+//
+// A toast is dismissible, deduped and easy to ignore — on 2026-08-08 fourteen
+// hours of failing autosaves were ignorable exactly that way (D132). Once the
+// streak reaches NOTE_SAVE_FAILURE_BLOCK_THRESHOLD the editor raises a
+// blocking banner (see NoteSaveFailureBanner); this function is the other
+// half of the loud recovery: it snapshots the buffer to a local draft (the
+// only remaining copy of that text) and screams into the Error Inspector.
+
+const lastEscalationAt = new Map<string, number>();
+/** Re-scream at most this often while a streak continues. */
+const ESCALATION_DEDUPE_MS = 60_000;
+
+export function reportNoteSaveFailure(input: {
+  noteId: string;
+  failureCount: number;
+  message: string;
+  label?: string | null;
+}): void {
+  if (input.failureCount < NOTE_SAVE_FAILURE_BLOCK_THRESHOLD) return;
+
+  const now = Date.now();
+  const first = !lastEscalationAt.has(input.noteId);
+  if (!first && now - (lastEscalationAt.get(input.noteId) ?? 0) < ESCALATION_DEDUPE_MS) {
+    return;
+  }
+  lastEscalationAt.set(input.noteId, now);
+
+  // The buffer is now the only copy — persist it before anything else.
+  captureNoteDrafts("note-save-failures");
+
+  console.error(
+    `[Notes] ${input.failureCount} consecutive save failures on note ${input.noteId}.`,
+    "The editor buffer is the only copy of this work; a local draft was",
+    "snapshotted and the editor is showing a blocking banner.",
+    input.message,
+  );
+
+  captureError({
+    source: "unsaved-work",
+    operation: "update",
+    schema: "workbench",
+    relation: "notes",
+    message: `Note save failed ${input.failureCount}× in a row — user work is unsaved`,
+    details: input.message,
+    hint: "The editor raised its blocking save-failure banner and snapshotted the buffer to a local draft. Find why the write path is failing (RLS deny, identity drift, network).",
+    userMessage: input.message,
+    callSite: `note:${input.noteId}${input.label ? ` (${input.label})` : ""}`,
+  });
 }

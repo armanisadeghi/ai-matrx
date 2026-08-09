@@ -97,6 +97,7 @@ import {
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { NotesInstanceProvider } from "../context/NotesInstanceContext";
 import { NotePresenceBanner } from "./NotePresenceBanner";
+import { NotesDraftRecoveryList } from "./NotesDraftRecoveryList";
 import { NoteContentEditor } from "./NoteContentEditor";
 import { NoteCleanupButton } from "./cleanup/NoteCleanupButton";
 import { NoteMetadataBar } from "./NoteMetadataBar";
@@ -548,6 +549,10 @@ export function NotesView({
 
         {/* Presence indicator (shared with the window view) */}
         <NotePresenceBanner instanceId={instanceId} />
+
+        {/* Unsaved work rescued from a blocked/failed save path — including
+            notes that never reached the DB, which appear in no other list. */}
+        <NotesDraftRecoveryList instanceId={instanceId} />
 
         {/* Layer 1: Content editor (fills available space) */}
         {activeTabId ? (

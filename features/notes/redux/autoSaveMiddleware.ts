@@ -30,6 +30,7 @@ import {
   noteSaveErrorMessage,
   toastNoteWriteBlocked,
   clearNoteWriteBlockedToast,
+  reportNoteSaveFailure,
 } from "../utils/writeErrors";
 import { serverMatchesAttempt } from "../utils/saveVerification";
 
@@ -44,6 +45,31 @@ function snapshotDirtyFields(
     snap[field] = record[field];
   }
   return snap;
+}
+
+/**
+ * Record the failure in Redux, toast once per burst, and — once the streak
+ * reaches the threshold — snapshot the buffer + scream. The banner itself
+ * reads the streak from Redux (see NoteSaveFailureBanner).
+ */
+function failSave(
+  storeApi: {
+    getState: () => unknown;
+    dispatch: (action: ReturnType<typeof markNoteSaveError>) => unknown;
+  },
+  noteId: string,
+  message: string,
+): void {
+  storeApi.dispatch(markNoteSaveError({ id: noteId, error: message }));
+  toastNoteWriteBlocked(noteId, message);
+  const after = storeApi.getState() as StateWithNotes;
+  const record = after.notes?.notes?.[noteId];
+  reportNoteSaveFailure({
+    noteId,
+    failureCount: record?._consecutiveSaveFailures ?? 1,
+    message,
+    label: record?.label ?? null,
+  });
 }
 
 /**
@@ -146,9 +172,7 @@ export const autoSaveMiddleware: Middleware =
           const userId =
             recordAfterLabel.created_by || currentState.userAuth?.id;
           if (!userId) {
-            storeApi.dispatch(
-              markNoteSaveError({ id: noteId, error: "No user ID" }),
-            );
+            failSave(storeApi, noteId, "No signed-in user — cannot save this note.");
             return;
           }
 
@@ -196,11 +220,7 @@ export const autoSaveMiddleware: Middleware =
 
           if (error) {
             console.error("[AutoSave] INSERT failed:", error.message);
-            const friendly = noteSaveErrorMessage(error);
-            storeApi.dispatch(
-              markNoteSaveError({ id: noteId, error: friendly }),
-            );
-            toastNoteWriteBlocked(noteId, friendly);
+            failSave(storeApi, noteId, noteSaveErrorMessage(error));
             return;
           }
 
@@ -241,11 +261,7 @@ export const autoSaveMiddleware: Middleware =
 
           if (error) {
             console.error("[AutoSave] UPDATE failed:", error.message);
-            const friendly = noteSaveErrorMessage(error);
-            storeApi.dispatch(
-              markNoteSaveError({ id: noteId, error: friendly }),
-            );
-            toastNoteWriteBlocked(noteId, friendly);
+            failSave(storeApi, noteId, noteSaveErrorMessage(error));
             return;
           }
 
@@ -260,11 +276,11 @@ export const autoSaveMiddleware: Middleware =
               .maybeSingle();
 
             if (probeError || !stillThere) {
-              const friendly = "You don't have permission to save this note.";
-              storeApi.dispatch(
-                markNoteSaveError({ id: noteId, error: friendly }),
+              failSave(
+                storeApi,
+                noteId,
+                "You don't have permission to save this note.",
               );
-              toastNoteWriteBlocked(noteId, friendly);
               return;
             }
 
@@ -328,11 +344,10 @@ export const autoSaveMiddleware: Middleware =
           });
         }
       } catch (err) {
-        storeApi.dispatch(
-          markNoteSaveError({
-            id: noteId,
-            error: err instanceof Error ? err.message : "Save failed",
-          }),
+        failSave(
+          storeApi,
+          noteId,
+          err instanceof Error ? err.message : "Save failed",
         );
       }
     }, delay);

@@ -23,11 +23,19 @@ import { Button } from "@/components/ui/button";
 interface AuthSessionWatcherImplProps {
   variant: "expired" | "identity-changed";
   newEmail?: string;
+  /**
+   * How many unsaved items were snapshotted to local drafts before this
+   * overlay went up. The reload used to be a guaranteed loss of the in-memory
+   * buffer (D132) — when we rescued something, say so, or the user has every
+   * reason to refuse to reload.
+   */
+  rescuedDraftCount?: number;
 }
 
 export default function AuthSessionWatcherImpl({
   variant,
   newEmail,
+  rescuedDraftCount = 0,
 }: AuthSessionWatcherImplProps) {
   const router = useRouter();
 
@@ -53,6 +61,15 @@ export default function AuthSessionWatcherImpl({
               or attributed to the wrong account. Reload to continue as the
               current account.
             </p>
+            {rescuedDraftCount > 0 && (
+              <p className="text-sm text-foreground leading-relaxed">
+                {rescuedDraftCount === 1
+                  ? "Your unsaved change was kept"
+                  : `Your ${rescuedDraftCount} unsaved changes were kept`}{" "}
+                in this browser. Sign back in as the original account and open
+                the record — you will be offered the recovered version.
+              </p>
+            )}
           </div>
 
           <Button

@@ -153,7 +153,16 @@ export type CapturedErrorSource =
    * failing after the action ran. Every firing is a real defect in the
    * producer's action binding or the registry wiring.
    */
-  | "assists";
+  | "assists"
+  /**
+   * Unsaved user work was in danger: a feature's saves failed N times in a row
+   * (the editor escalated to a blocking banner), or the app had to snapshot
+   * in-memory edits to a local draft because it was about to discard them
+   * (auth identity drift forcing a reload). Every firing means real user text
+   * existed only in a browser buffer — the D132 class (2026-08-08, ~14h of
+   * note edits lost). Never downgrade this.
+   */
+  | "unsaved-work";
 
 /** A Supabase DML verb, or "rpc" for a function call. */
 export type CapturedOperation =

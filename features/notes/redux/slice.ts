@@ -595,6 +595,10 @@ const notesSlice = createSlice({
       if (!record) return;
       record._saving = false;
       record._error = null;
+      // A save landed — the failure streak (and the blocking banner it drives)
+      // ends here, not on the next edit.
+      record._consecutiveSaveFailures = 0;
+      record._firstSaveFailureAt = null;
       if (action.payload.updatedAt) {
         record.updated_at = action.payload.updatedAt;
       }
@@ -616,6 +620,15 @@ const notesSlice = createSlice({
       if (record) {
         record._saving = false;
         record._error = action.payload.error;
+        // "conflict" is its own, already-blocking UI (NoteConflictWindow) and
+        // needs a decision, not an escalation — every OTHER failure counts
+        // toward the blocking save-failure banner.
+        if (action.payload.error !== "conflict") {
+          record._consecutiveSaveFailures += 1;
+          if (record._firstSaveFailureAt == null) {
+            record._firstSaveFailureAt = Date.now();
+          }
+        }
       }
       state._savingNoteIds = state._savingNoteIds.filter(
         (id) => id !== action.payload.id,
