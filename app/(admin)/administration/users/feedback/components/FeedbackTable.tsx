@@ -558,14 +558,24 @@ export default function FeedbackTable() {
   // makes every feedback link — the id cell, a parent edge, a pasted URL —
   // actually arrive somewhere.
   //
-  // Deliberately keyed on the URL + the loaded rows ONLY. Depending on
-  // `detailDialogOpen` here would race the close handler: closing clears the
-  // param through `router.replace`, which lands a tick later, and the effect
-  // would re-fire in between and spring the dialog back open.
+  // Opens each id EXACTLY ONCE. Depending on `detailDialogOpen` here would race
+  // the close handler (closing clears the param through `router.replace`, which
+  // lands a tick later), but keying on the URL + rows alone had the same bug
+  // from the other side: while the param is still set, any `loadFeedback()`
+  // refresh gives `feedback` a new identity and the effect springs the dialog
+  // back open under a user who just closed it. The ref records what we already
+  // acted on, and clears when the param does, so re-opening the same record
+  // later still works.
+  const openedDeepLink = useRef<string | null>(null);
   useEffect(() => {
-    if (!deepLinkId) return;
+    if (!deepLinkId) {
+      openedDeepLink.current = null;
+      return;
+    }
+    if (openedDeepLink.current === deepLinkId) return;
     const item = feedback.find((f) => f.id === deepLinkId);
     if (!item) return;
+    openedDeepLink.current = deepLinkId;
     setSelectedFeedback(item);
     setDetailDialogOpen(true);
   }, [deepLinkId, feedback]);

@@ -64,8 +64,17 @@ function initialView(
   // `?entry=` alone is a complete instruction — the row knows its own kind, so
   // requiring the caller to also pass `?kind=` would silently drop the deep
   // link on the dashboard and never open the record it names.
-  const resolvedKind =
-    kind ?? (entryId ? rows.find((r) => r.id === entryId)?.kind : undefined);
+  //
+  // When BOTH are present the ROW wins: `?kind=` is a caller's claim, the row's
+  // own `kind` is the fact. A stale or hand-edited link that disagrees would
+  // otherwise open the right entry under the wrong kind, and `view.kind` is what
+  // drives Back and post-delete routing — dropping the operator on a table the
+  // entry was never in. Falling back to `?kind=` still covers the case the row
+  // isn't in this page's `rows` yet.
+  const rowKind = entryId
+    ? rows.find((r) => r.id === entryId)?.kind
+    : undefined;
+  const resolvedKind = rowKind ?? kind;
   if (resolvedKind && entryId)
     return { mode: "edit", kind: resolvedKind, entryId };
   if (resolvedKind) return { mode: "kind", kind: resolvedKind };
