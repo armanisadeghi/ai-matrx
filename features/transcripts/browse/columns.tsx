@@ -21,6 +21,7 @@ import {
   KIND_META,
   type TranscriptListKind,
   type TranscriptListRow,
+  primaryRowHref,
 } from "./types";
 
 const DURATION_FILTER_OPTIONS = [
@@ -54,7 +55,15 @@ export const TRANSCRIPT_COLUMNS: EntityColumnSpec<TranscriptListRow>[] = [
       // the shell keeps forcing the pencil so the link and the inline edit
       // cannot fight. This column was blocked on exactly that interplay; the
       // answer was that MatrxDataTable already solved it for its own `href`.
-      entityToken: "transcript",
+      // PER ROW: this hub is heterogeneous. Only a `transcript` row names a
+      // `transcript`; a studio session, a cleanup run and the "unsorted"
+      // bucket have their own destinations (`primaryRowHref`) and their ids
+      // are not transcript ids. A constant token here would have linked a
+      // session to the transcript processor and peeked the wrong record —
+      // conversion checklist item 5. Those kinds keep the plain link.
+      entityToken: (row) =>
+        row.kind === "transcript" ? "transcript" : undefined,
+      href: primaryRowHref,
       editable: "string",
       // Unsorted recordings have no user-facing title — no pencil for them.
       editableIf: (row) => row.kind !== "unsorted",

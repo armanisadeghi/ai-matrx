@@ -740,7 +740,10 @@ export function MatrxDataTable<T>({
                       // `href` still wins as the route (admin-side overrides),
                       // and still forces the pencil trigger below — the linked
                       // body and the inline edit must not fight.
-                      const entityToken = col.entityToken;
+                      const entityToken =
+                        typeof col.entityToken === "function"
+                          ? col.entityToken(row)
+                          : col.entityToken;
                       const entityId = entityToken
                         ? (col.entityId?.(row) ?? getRowId(row))
                         : undefined;

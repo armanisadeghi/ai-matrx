@@ -90,8 +90,16 @@ export interface MatrxColumnDef<T> {
    *
    * Needs the record's id: `entityToken` is paired with `entityId`, defaulting
    * to the table's own `getRowId`.
+   *
+   * **PER ROW, not per column** — a hub can be heterogeneous. `/transcripts`
+   * lists transcripts, studio sessions, cleanup runs and an "unsorted" bucket
+   * in one table, each with its own destination; a constant token would have
+   * sent a session id to the transcript processor route and opened the
+   * transcript peek on a record that is not one. Return `undefined` for a row
+   * that names no entity — it falls back to the plain `href` link, or to inert
+   * text. Pair with a per-row `href` when the kinds diverge.
    */
-  entityToken?: string;
+  entityToken?: string | ((row: T) => string | undefined);
   /** The id `entityToken` refers to. Defaults to the table's `getRowId(row)`. */
   entityId?: (row: T) => string | undefined;
   /**
