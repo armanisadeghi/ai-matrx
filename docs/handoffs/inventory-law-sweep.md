@@ -48,8 +48,8 @@ conversion that is correct on the main deployment and broken on a satellite, and
 one that is correct for the surface's rare case and wrong for its common one. Adopting `EntityRef` is not a drop-in — the hand-rolled code
 it replaces encodes decisions you must carry over deliberately.
 
-Before replacing hand-rolled code with a shared primitive, answer all eight.
-1-3 and 6-7 are door-specific; 4, 5 and 8 apply to ANY primitive adoption:
+Before replacing hand-rolled code with a shared primitive, answer all nine.
+1-3, 6-7 and 9 are door-specific; 4, 5 and 8 apply to ANY primitive adoption:
 
 1. **Where did the old primary click go?** `router.push` (in place) or
    `window.open` (new tab)? Preserve it. A rail, sheet, side panel, or dialog
@@ -132,6 +132,22 @@ Before replacing hand-rolled code with a shared primitive, answer all eight.
    detail — and I had written "the id stays whole" in a code comment AND a
    commit message while it did not, which is the version of this that stops the
    next reader from checking.)*
+
+9. **Does the surface already have handlers that FIGHT the anchor you just
+   introduced?** The conversion adds a real `<a>` where there was none, so
+   ancestor handlers that were harmless around inert text can now suppress
+   native link behaviour. The one that bit: a row-level
+   `onMouseDown → preventDefault()` (guarding focus in a find input) fires for
+   EVERY button, so it also lands on the middle-click the anchor exists to
+   serve. Sweep the ancestors for `preventDefault`, `stopPropagation`,
+   `onMouseDown`, `onPointerDown`, and drag handlers before declaring
+   "cmd/middle-click works natively" — that claim is not free once you add a
+   link, and it is not verifiable from source alone. Fix by narrowing the
+   handler with `shouldOpenInNewTab` from
+   `utils/navigation/should-open-in-new-tab` (the repo's ONE predicate for this;
+   `EntityRef` uses it on the click side, so narrowing with anything else
+   guarantees the two halves drift). *(Caught in `GlobalSearchResults`, on a
+   claim I had put in a commit message without being able to verify it.)*
 
 Everything the primitive cannot decide for itself is documented on the props;
 read them rather than inferring from a neighbouring call site.
