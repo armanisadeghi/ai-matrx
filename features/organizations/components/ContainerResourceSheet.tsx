@@ -37,20 +37,35 @@ export function ContainerResourceSheet({
   column: ContainerColumn;
   value: string;
 }) {
-  const [items, setItems] = React.useState<Item[]>([]);
-  const [loading, setLoading] = React.useState(false);
-  const [query, setQuery] = React.useState("");
+  // Items keyed by the query they were fetched for — "loading" and "empty"
+  // are DERIVED (requested key ≠ loaded key), so the effect never sets state
+  // synchronously (react-hooks/set-state-in-effect). Same pattern as
+  // AgentSlotsConsole's SlotEditor. The search query is keyed too, so a
+  // fresh load presents with a clean search without an effect reset.
+  const loadKey =
+    open && entry && entry.table ? `${entry.table}|${column}|${value}` : null;
+  const [loaded, setLoaded] = React.useState<{
+    key: string;
+    items: Item[];
+  } | null>(null);
+  const [queryState, setQueryState] = React.useState<{
+    key: string;
+    text: string;
+  } | null>(null);
   const [peekId, setPeekId] = React.useState<string | null>(null);
 
+  const items = loaded && loaded.key === loadKey ? loaded.items : [];
+  const loading = loadKey !== null && loaded?.key !== loadKey;
+  const query =
+    queryState && queryState.key === loadKey ? queryState.text : "";
+  const setQuery = (text: string) => {
+    if (loadKey) setQueryState({ key: loadKey, text });
+  };
+
   React.useEffect(() => {
-    if (!open || !entry || !entry.table) {
-      setItems([]);
-      return undefined;
-    }
+    if (!loadKey || !entry || !entry.table) return undefined;
     let cancelled = false;
     (async () => {
-      setLoading(true);
-      setQuery("");
       const titleCol = entry.titleColumn ?? "id";
       try {
         const db = (
@@ -72,25 +87,24 @@ export function ContainerResourceSheet({
         // resource catalogue at runtime (any cardable kind), so the row
         // shape cannot be a compile-time DbRpcRow guard.
         const rows = (data ?? []) as unknown as Array<Record<string, unknown>>;
-        setItems(
-          rows.map((r) => ({
+        setLoaded({
+          key: loadKey,
+          items: rows.map((r) => ({
             id: String(r.id),
             title: String(r[titleCol] ?? "").trim() || "Untitled",
           })),
-        );
+        });
       } catch (err) {
         if (!cancelled) {
           console.error("[ContainerResourceSheet] load failed:", err);
-          setItems([]);
+          setLoaded({ key: loadKey, items: [] });
         }
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [open, entry, column, value]);
+  }, [loadKey, entry, column, value]);
 
   if (!entry) return null;
   const Icon = entry.icon;
