@@ -102,12 +102,12 @@ Ordered by traffic. Each item is independently actionable.
    `features/rag/components/RagHomePage.tsx`, `features/tasks/components/CompactTaskItem.tsx`.
 
 2. **Remaining admin consoles.** Routes rendering
-   from `features/agents` / `features/skills` / `features/podcasts` /
-   `features/content-ir` rather than `features/admin`:
-   `/administration/agents/system-agents/agents`, `…/shortcuts/all`,
-   `…/mcp-tools`, `…/skills`, `…/bundles`,
-   `/administration/knowledge/{podcasts/shows,kg-inspector}`,
+   from `features/podcasts` / `features/content-ir` rather than
+   `features/admin`: `/administration/knowledge/{podcasts/shows,kg-inspector}`,
    `/administration/utilities/{kind-registry,content-blocks}`.
+   The `features/agents` / `features/skills` / tool-registry consoles
+   (`…/system-agents/agents`, `…/shortcuts/all`, `…/mcp-tools`, `…/skills`,
+   `…/bundles`) are DONE — see the tool-registry + skills entry under **Done**.
 3. **Dialogs / drawers / warnings** that name an entity.
 4. **Toasts and badges.**
 5. **`(dev)` demos** — last.
@@ -228,11 +228,26 @@ Ordered by traffic. Each item is independently actionable.
     super-admin `(admin)` layout — the same "403 door" question as item 11. A
     `/agent-apps/[id]/executions` route would light up the count for owners.
 21. **MCP servers have no entity token.** `features/agent-connections`'
-    `McpServersSection` lists real `McpCatalogEntry` records (and the admin
-    console at `/administration/agents/mcp-tools` exists), but there is no
-    registered token, so `ListRow`'s new `door` slot has nothing to resolve and
-    those rows stay panel-only. Registering `mcp_server` with an `hrefFor` would
-    serve that section and the tools manager at once.
+    `McpServersSection` lists real `McpCatalogEntry` records, but there is no
+    registered token, so `ListRow`'s `door` slot has nothing to resolve and
+    those rows stay panel-only. A server now HAS a route
+    (`mcpServerHref` → `/administration/agents/mcp-servers?server=<id|slug>`,
+    `features/tool-registry/doors.ts`), so registering `mcp_server` with that
+    `hrefFor` would light up that section — but it is super-admin only, the same
+    "403 door" question as `skill` in item 11. A peek would serve the panel
+    without the gate.
+22. **`tool` and `tool_bundle` are registered tokens with no `hrefFor`.** Both
+    have a real destination, and both destinations are super-admin admin routes
+    (`toolHref` / `bundleHref`), so the admin consoles pass them as an `href`
+    override rather than registering a door most users cannot walk through.
+    Peek already works for both (`RegistryPeek`, via their `titleColumn`), so a
+    non-admin surface naming a tool CAN preview it today. Build a user-facing
+    tool route → register `hrefFor` and every call site drops its override.
+23. **`skill_category` has no route and no peek.** `SkillsBrowser` groups every
+    skill under a category label that names a real `skill.category` row and
+    opens nothing; `SkillCategoryTreeEditor` is the only place a category
+    exists, and it is a mode of the admin console, not an address. A peek is the
+    cheap fix (same argument as item 12).
 16. **Counts still without a destination** (deliberately left inert): a library
     store's `N members` and the sandbox console's `Unique users` have no list to
     reach; the enum Usage tab's `schema.table` names have nowhere to go —
@@ -396,3 +411,47 @@ Ordered by traffic. Each item is independently actionable.
     domains/anchors, already real anchors, and no internal record id on the
     row); `SiteKeywordPerformanceWorkspace`'s query column (keywords have no
     route — its "Strongest page" column was already a door).
+- **Tool registry + skills consoles** (`/administration/agents/{mcp-tools,
+  mcp-servers,bundles,skills}`; the system-agents agent grid and shortcut
+  directory were already done by the agent-adjacent wave). The recurring shape
+  here was a console that MANAGES a record type while being unable to open one,
+  plus two live 404s:
+  - **`/administration/agents/mcp-servers/<id>` does not exist.** Both
+    `McpToolsManager`'s "MCP" column and `ToolViewPage`'s MCP Server row linked
+    it — one via `window.open`, one via a raw `<a target="_blank">`. The console
+    is a single page holding its selection in React state, so a server had no
+    address at all. Fixed with `?server=<id|slug>` (matches either, because
+    `tool.definition.managed_by_server_id` is an id while the console's list is
+    keyed by slug).
+  - **`features/tool-registry/doors.ts`** is the one place these routes and
+    deep-link params are declared — `toolHref` / `toolUiHref` /
+    `toolIncidentsHref` / `toolEditHref` / `mcpServerHref` / `bundleHref`. None
+    of them belongs in `entityRegistry.ts`: every one sits behind the
+    super-admin `(admin)` layout, the same "403 door" question as `skill` in
+    item 11. Admin surfaces pass them to `EntityRef` / `MatrxUuidCell` as an
+    explicit `href` override.
+  - **Deep links are DERIVED, never an effect** — an explicit click wins, and
+    until there is one the param picks the row. A param the list cannot resolve
+    renders its own loud state naming the id, never the neutral "pick one" empty
+    view (and the bundles one says the list is filtered to Active, because that
+    is the likely reason an id misses).
+  - **`tool` and `tool_bundle` are registered tokens with a `titleColumn`**, so
+    `RegistryPeek` previews them for free — no new peek component was written.
+  - MCP tools table: the NAME opens the tool, the raw ID column is a
+    `MatrxUuidCell`, and **Samples / UI Components are count-doors** to the
+    pages that list those rows.
+  - Bundles: member tool names open (a member whose tool row did not come back
+    renders the id, never a made-up name), the lister tool id is a door, and the
+    add-member picker keeps its click while `EntityDoorControls` rides as a
+    SIBLING so a preview never costs the user the dialog.
+  - Skills: browser rows gain the registered `skill` peek beside their click;
+    **the editor now renders the PARENT SKILL**, which was loaded on every skill
+    and shown nowhere; project chips are `EntityRef`s. `SkillsBrowser`,
+    `SkillDetailEditor` and `SkillIngestPanel` take an optional `skillHref` so
+    the super-admin console supplies the route and the agent-connections panel
+    (same components, ordinary users) shows the peek alone.
+  - Verified by `pnpm type-check` (green) and ESLint on every changed file (the
+    only errors are pre-existing `react-hooks/set-state-in-effect` on effects
+    this wave did not write). Route leaves checked on disk under
+    `app/(admin)/administration/agents/`, which is how the missing
+    `mcp-servers/[id]` leaf was found. **No browser** — see the banner above.
