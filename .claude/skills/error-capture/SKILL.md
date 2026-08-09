@@ -25,6 +25,7 @@ One sink, many adapters. Every error in the app funnels through **`captureError(
 ## Non-negotiables
 
 - **Capture never breaks the caller.** Wrap every `captureError` call in `try { … } catch {}`. It runs on hot paths and for **all** users (only the UI is admin-gated).
+- **Capture is render-safe — calling it during render is legal, and `emit()` must stay async.** The store defers listener notification to a microtask precisely so a loud-recovery scream inside render can't re-render the Inspector badge mid-render (React's "Cannot update a component while rendering a different component" — FOUND_DEFECTS D61/D76). **Never make notification synchronous**; `lib/diagnostics/errorCaptureStore.renderSafety.test.tsx` fails if you do. Corollary: a test asserting a subscriber saw a capture must `await act(...)` / flush microtasks first.
 - **Preserve structured fields — don't flatten into `raw`.** `CaptureInput` carries `code`, `message`, `userMessage`, `details`, `hint`, `status`, `relation`, `requestId`, `conversationId`, `name`, `stack`, `callSite`. Map the real fields; `raw` is the full dump on top, not instead.
 - **`userMessage`** is the server's human-facing text (distinct from technical `message`) — the seam for the future user-facing surface. Always set it when the source has one.
 - **`relation`** is the "what failed" label shown in lists — a table, `tool:<name>`, `METHOD /path`, a thunk name, an endpoint. Set it.
