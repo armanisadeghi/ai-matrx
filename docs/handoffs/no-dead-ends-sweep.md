@@ -60,6 +60,16 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
   `PermissionsList` — the last two caught at write time by asking the question,
   not by review.)
 
+  📌 **This applies to a STANDALONE `EntityDoorControls` only — do not
+  generalize it.** `EntityRef` puts `group/entity-ref` on its OWN wrapper span,
+  so it self-reveals with no ancestor whatsoever; `MatrxUuidCell` has no
+  `opacity-0` state at all and its controls are always visible. Adding `group`
+  around either is inert. An adversarial pass on 2026-08-09 found seven such
+  inert classes added by this campaign, each with a comment asserting a rule
+  that does not match the primitive it names — harmless at runtime, but it
+  teaches the next agent something false. **Check the component you are actually
+  using before writing the reason down.**
+
   ✅ **Swept 2026-08-09: every `EntityDoorControls` on this branch is visible.**
   Each one either passes `alwaysShowActions` or sits under an ancestor carrying
   `group` / `group/entity-ref` — including the three that pass the door as a
@@ -254,19 +264,28 @@ Ordered by traffic. Each item is independently actionable.
    toast-system limits recorded above. Do not "finish" this item by forcing
    links onto entities that have no page.
 
-   **Badges: started 2026-08-09, and the first result reframes the corollary.**
-   The doctrine's own example is "3 overrides". The actual site
-   (`features/research/admin/ProjectsOverview.tsx:87`) counts **JSONB keys in
-   `agent_config`**, not rows with ids — there is no set of records to reach, so
-   it is not a door and forcing one would be theatre.
+   **Badges: started 2026-08-09.**
 
-   **The test for a count is therefore: does a SET OF RECORDS exist behind it,
-   and is there a destination that lists them?** Two failing cases so far, both
-   correctly left alone: the overrides badge (no records), and
-   `AgentAssignmentsDemo`'s "Durable results (N)" (the records are already
-   rendered directly underneath — the count's destination is the screen you are
-   on). A systematic pass over the remaining count sites
-   (`SettingsColumnHeader.tsx:96`, `TopicAgentsPage.tsx:62`, …) has not happened.
+   **THE TEST FOR A COUNT: does a set of RECORDS sit behind it, and does a
+   destination list them?** Both halves must hold.
+
+   ⚠️ **Do not answer the first half by reading the counting function's SHAPE.**
+   The doctrine's own example, "3 overrides"
+   (`features/research/admin/ProjectsOverview.tsx`), counts *keys* of a JSONB
+   object — which reads like "not records" and was written up that way. It is
+   wrong: every `AGENT_CONFIG_KEY` is `*_agent_id` and every **value is an agent
+   uuid** (the sibling `AgentWiringDashboard` resolves those same values to
+   agent names). Seven reachable agents sat behind that badge. It now links to
+   `/research/topics/<id>/agents`, the page that lists exactly them. **Read what
+   the values ARE, not how the count is computed.**
+
+   Genuinely not doors, verified: `SettingsColumnHeader.tsx` (counts model
+   settings — temperature, reasoning effort; no records) ·
+   `AgentAssignmentsDemo`'s "Durable results (N)" and `TopicAgentsPage`'s
+   "N of M overridden" (the records are rendered on the same screen, so the
+   count's destination is where you already are).
+
+   A systematic pass over the remaining count sites has not happened.
 5. **`(dev)` demos — audited + swept 2026-08-09. Effectively DONE.**
 
    **The ratio is the headline, and it is the opposite of what the wave order
@@ -332,11 +351,17 @@ hand-rolling a bare `ExternalLink` to exactly that path — **that is the tell.*
 When you find a surface hardcoding a route for a token, the fix is the registry
 entry, not the call site.
 
-**Registered but route-blocked** (a token exists; no per-record page does).
-Do NOT invent an `hrefFor` for these — an id here gets `MatrxUuidCell` with NO
-token (full value + copy) so it is at least honest and copyable:
+**Registered but route-blocked** (a token exists; no per-record page does):
 `research_template` · `plan_entity` · `study_goal` · `pc_episode`.
 `brand_asset` is not registered at all.
+
+🚨 **STILL PASS THE TOKEN on these.** Passing `token` does NOT invent a route —
+`resolveEntityDoors` returns `hrefFor?.(id) ?? null`, so a token with no route
+yields no route. What the token DOES add is the registry **peek**, which is
+often the record's only door. Dropping the token to "avoid a fake link" throws
+that away. (Caught by an adversarial pass on 2026-08-09, in the same commit that
+claimed to be closing dead ends.) Omit the token only when it would resolve the
+WRONG record — see `shortcut_category` (points at a graveyard table).
 
 **No token at all** (nothing to resolve — the name is unavoidably plain text):
 

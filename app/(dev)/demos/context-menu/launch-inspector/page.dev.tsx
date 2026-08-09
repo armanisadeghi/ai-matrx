@@ -561,13 +561,19 @@ export default function LaunchInspectorDemoPage() {
                   <span className="text-sm text-foreground">
                     {run.shortcutLabel}
                   </span>
-                  <span className="ml-2 font-mono text-[11px] text-muted-foreground">
-                    {run.conversationId}
-                  </span>
                   <span className="ml-2 text-[10px] text-muted-foreground">
                     {run.launchedAt}
                   </span>
                 </button>
+                {/* A real persisted conversation minted by launchShortcut's
+                    onConversationCreated. It used to be a raw uuid inside the
+                    select button — the door has to be a SIBLING, since an <a>
+                    cannot nest in a <button>. */}
+                <MatrxUuidCell
+                  value={run.conversationId}
+                  token="conversation"
+                  label="Conversation"
+                />
                 <button
                   type="button"
                   onClick={() => destroyRun(run.conversationId)}

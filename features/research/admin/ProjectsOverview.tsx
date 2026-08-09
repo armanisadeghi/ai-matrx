@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,7 +21,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import type { Json } from "@/types/database.types";
 import type { ResearchTemplate } from "../types";
-import { AGENT_CONFIG_KEYS, AGENT_CONFIG_META } from "./types";
+import { AGENT_CONFIG_KEYS } from "./types";
 import { fetchResearchTopics, fetchTemplates } from "./service";
 import { getTopicProjectLinks } from "../service";
 
@@ -140,14 +141,13 @@ export function ProjectsOverview() {
                 Agent Overrides
               </TableHead>
               <TableHead className="w-36">Created</TableHead>
-              <TableHead className="w-16" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {configs.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={7}
                   className="text-center text-muted-foreground py-12"
                 >
                   No research projects found.
@@ -158,6 +158,7 @@ export function ProjectsOverview() {
               // Association-backed: absent edge = projectless topic (valid).
               const linkedProjectId = projectLinks[config.id] ?? null;
               const templateName = getTemplateName(config.template_id);
+              const overrideCount = getAgentOverrideCount(config.agent_config);
               return (
               <TableRow key={config.id} className="group">
                 {/* The topic's own name was fetched on every row and never
@@ -197,16 +198,18 @@ export function ProjectsOverview() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {/* `research_template` is a registered token with NO
-                      per-record route, so an unresolved template id gets the
-                      canonical uuid cell (full value + copy) rather than a
-                      silently truncated string. Forcing an `hrefFor` here
-                      would invent a page that does not exist. */}
+                  {/* `research_template` has NO per-record route — but PASSING
+                      THE TOKEN DOES NOT INVENT ONE: resolveEntityDoors returns
+                      `hrefFor?.(id) ?? null`. What the token adds is the
+                      registry PEEK (titleColumn "name" on research.rs_template,
+                      which this file already reads from the browser). Omitting
+                      it would throw away the only door the record has. */}
                   {templateName ? (
                     <span className="text-xs">{templateName}</span>
                   ) : config.template_id ? (
                     <MatrxUuidCell
                       value={config.template_id}
+                      token="research_template"
                       label="Template"
                     />
                   ) : (
@@ -214,13 +217,24 @@ export function ProjectsOverview() {
                   )}
                 </TableCell>
                 <TableCell className="text-center">
-                  {getAgentOverrideCount(config.agent_config) > 0 ? (
-                    <Badge
-                      variant="secondary"
-                      className="text-[10px] bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                  {/* A COUNT IS A DOOR. Every AGENT_CONFIG_KEY holds an AGENT
+                      UUID (page_summary_agent_id, …) — the sibling
+                      AgentWiringDashboard resolves those same values to agent
+                      names — so N reachable records sit behind this badge.
+                      `/research/topics/<id>/agents` is the page that lists
+                      exactly them, which makes it the count's destination. */}
+                  {overrideCount > 0 ? (
+                    <Link
+                      href={`/research/topics/${config.id}/agents`}
+                      title={`Open the ${overrideCount} agent override${overrideCount === 1 ? "" : "s"} on this topic`}
                     >
-                      {getAgentOverrideCount(config.agent_config)} overrides
-                    </Badge>
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 hover:underline"
+                      >
+                        {overrideCount} overrides
+                      </Badge>
+                    </Link>
                   ) : (
                     <span className="text-xs text-muted-foreground">None</span>
                   )}
@@ -231,22 +245,6 @@ export function ProjectsOverview() {
                       ? new Date(config.created_at).toLocaleDateString()
                       : "Unknown"}
                   </span>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-6 w-6 rounded-full"
-                    asChild
-                  >
-                    <a
-                      href={`/research/topics/${config.id}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  </Button>
                 </TableCell>
               </TableRow>
               );

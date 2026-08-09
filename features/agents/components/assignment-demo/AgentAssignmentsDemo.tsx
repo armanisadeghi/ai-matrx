@@ -238,7 +238,8 @@ export function AgentAssignmentsDemo() {
                   {/* The assignment session is real and durable, but it has no
                       UI route of its own (only the REST read documented below),
                       so there is nothing to open. It gets the canonical uuid
-                      cell — full value + copy — rather than an invented door. */}
+                      cell rather than an invented door: 8…4 in place, full
+                      value on hover, one-click copy. */}
                   {state.sessionId && (
                     <div className="group flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
                       Session:{" "}

@@ -115,6 +115,8 @@ import { supabase } from "@/utils/supabase/client";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { isUuidValue } from "@/components/official/entity-ref/doors";
+import { entityTokenForAgentScope } from "@/features/agent-shortcuts/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -264,6 +266,14 @@ function IdentityBanner({
   const taskId = useAppSelector(selectTaskId);
   const taskName = useAppSelector(selectTaskName);
 
+  // The token the scope picker's id ACTUALLY identifies — never the literal
+  // "scope". Null for global/user (no navigable record) or a hand-typed id
+  // that is not a uuid.
+  const scopeTokenForRef =
+    scopeRef.scopeId && isUuidValue(scopeRef.scopeId)
+      ? entityTokenForAgentScope(scopeRef.scope)
+      : null;
+
   return (
     // THE DOOR LAW: every record this banner names is a live row the signed-in
     // user owns, and every id was already in scope. Names are EntityRefs; ids
@@ -321,17 +331,32 @@ function IdentityBanner({
           )
         }
       />
+      {/* 🚨 `scopeRef.scopeId` is NOT a `context.scopes` row — `applyScopeToFields`
+          (features/agents/redux/shared/scope.ts) writes it to
+          userId/organizationId/projectId/taskId depending on `scope`. Linking it
+          with the `scope` token would send the user to /scopes/s/<orgId>, which
+          resolves nothing and 404s. `entityTokenForAgentScope` is the declared
+          vocabulary for exactly this; `global`/`user` carry no navigable record
+          and map to null. The id is also free-typed on this page, so it must
+          pass `isUuidValue` before it can be treated as a record. */}
       <Field
         label="Scope being fetched"
         value={
-          scopeRef.scopeId ? (
+          scopeTokenForRef && scopeRef.scopeId ? (
             <span className="flex min-w-0 items-center gap-1">
               <span className="shrink-0">{scopeRef.scope}</span>
               <MatrxUuidCell
                 value={scopeRef.scopeId}
-                token="scope"
-                label="Scope"
+                token={scopeTokenForRef}
+                label={scopeRef.scope}
               />
+            </span>
+          ) : scopeRef.scopeId ? (
+            <span className="flex min-w-0 items-center gap-1">
+              <span className="shrink-0">{scopeRef.scope}</span>
+              <span className="truncate font-mono text-[10px]">
+                {scopeRef.scopeId}
+              </span>
             </span>
           ) : (
             scopeRef.scope
@@ -357,9 +382,9 @@ function Field({
   accent?: string;
 }) {
   return (
-    // `group` reveals the hover-only door controls inside EntityRef /
-    // MatrxUuidCell — without it they stay at opacity-0 and the doors are
-    // invisible, which is the exact bug this sweep keeps finding.
+    // `group` is here for a STANDALONE `EntityDoorControls`, should one ever be
+    // added — `EntityRef` carries its own `group/entity-ref` and self-reveals,
+    // and `MatrxUuidCell` has no hover-hidden state at all.
     <div className="group rounded-md border border-border bg-muted/30 p-2">
       <div className="flex items-center gap-2">
         <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -371,9 +396,13 @@ function Field({
           </span>
         )}
       </div>
-      <div className="min-w-0 text-foreground font-medium">{value}</div>
+      {/* `truncate` must stay: two of the four slots still hold plain strings
+          (userEmail, surfaceName), and a long one would grow the card out of
+          the shared md:grid-cols-4 baseline. Door components bring their own
+          min-w-0/truncate. */}
+      <div className="min-w-0 truncate text-foreground font-medium">{value}</div>
       {mono && (
-        <div className="min-w-0 font-mono text-[10px] text-muted-foreground">
+        <div className="min-w-0 truncate font-mono text-[10px] text-muted-foreground">
           {mono}
         </div>
       )}
