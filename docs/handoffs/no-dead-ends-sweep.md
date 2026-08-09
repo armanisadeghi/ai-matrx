@@ -58,6 +58,33 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
   `.matrx/ARMAN_TASKS.md` item 0a. The wider lesson for this sweep: **"the door renders" is
   not "the door is reachable"** — and only a browser can settle the difference,
   which is why the section below matters.
+- 🚨 **`EntityRef` ALWAYS makes the name a same-tab link.** There is no prop to
+  turn that off — `EntityDoorControls` is the surface that offers peek + new tab
+  *without* it (`showOpen` opts same-tab back in). So the choice between the two
+  is not stylistic, and "it's a dialog" is not the test. **The test is where the
+  surface's state lives:**
+
+  | The surface's in-progress state | Door |
+  |---|---|
+  | Redux, or nothing worth keeping | `EntityRef` — all three doors, name links |
+  | Local `useState` the user typed or decided (a textarea, an accept/reject set, a list of launched runs) | plain name + `EntityDoorControls` sibling |
+
+  A same-tab navigation unmounts the dialog/modal and destroys local state with
+  no way back; Redux state survives the route change, so the user lands on the
+  same unsaved record and loses nothing.
+
+  Written because it was got wrong: on 2026-08-09 five surfaces in this campaign
+  were given `EntityRef` **with docblocks claiming same-tab Open was disabled to
+  protect the session** — the comment described `EntityDoorControls`' behaviour
+  while the code did the opposite. Bugbot caught the contradiction. Resolved in
+  both directions after checking each surface: `CleanupReviewDialog` (local
+  accept/reject set), `AgentExecutionTestModal` (local list of launched runs),
+  `NotifyOwnerDialog` (typed note), and `PromoteToGlobalModal` (edited label
+  override) moved to sibling controls; the three window panels kept `EntityRef`
+  and had their comments corrected, because their dirty state is in Redux.
+  `DuplicateShortcutModal` and `ShareModal` also kept it — two dropdowns and a
+  tab index are cheap to rebuild. **Do not blanket-apply either primitive; check
+  where the state lives.**
 - Test login: `/login` → `admin@admin.com` / `Password1234#`
 
 ## 🚨 NOTHING IN THIS CAMPAIGN HAS BEEN SEEN IN A BROWSER

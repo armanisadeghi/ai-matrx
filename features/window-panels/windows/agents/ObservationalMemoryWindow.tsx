@@ -411,7 +411,12 @@ function ObservationalMemoryWindowInner({
   // THE DOOR LAW: the window is titled after a conversation the user cannot
   // open. `titleNode` is the established rich-title path (5 sibling windows use
   // it) and WindowPanel gives it `pointer-events-auto` with drag suppressed, so
-  // the doors work without costing the user the window.
+  // the anchor is not swallowed by the drag gesture.
+  //
+  // The name is a same-tab link as well as peek/new-tab: this inspector holds no
+  // local state worth protecting (every value it shows is a Redux selector over
+  // the conversation), so navigating costs the user nothing they cannot get back
+  // by reopening the window.
   const titleNode = selectedConversationId ? (
     <span className="flex min-w-0 items-center gap-1">
       <span className="shrink-0">Memory —</span>

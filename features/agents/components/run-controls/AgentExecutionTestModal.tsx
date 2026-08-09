@@ -18,6 +18,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useWidgetHandle } from "@/features/agents/hooks/useWidgetHandle";
 import {
@@ -477,7 +479,7 @@ function BackgroundTestMode({
             {tasks.map((task) => (
               <div
                 key={task.conversationId}
-                className="flex items-start gap-2 px-3 py-2"
+                className="group flex items-start gap-2 px-3 py-2"
               >
                 <Badge
                   variant={task.status === "complete" ? "default" : "secondary"}
@@ -492,8 +494,24 @@ function BackgroundTestMode({
                   {task.status}
                 </Badge>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[10px] text-muted-foreground font-mono">
-                    {task.startedAt} — {task.conversationId.substring(0, 8)}
+                  <div className="flex min-w-0 items-center gap-1 text-[10px] text-muted-foreground font-mono">
+                    <span className="shrink-0">
+                      {task.startedAt} — {task.conversationId.substring(0, 8)}
+                    </span>
+                    {/* THE DOOR LAW: each background task IS a conversation, and
+                        its id was truncated into unreachable text — the run you
+                        just launched was the one thing you could not open.
+
+                        Sibling controls, not a link on the id: `tasks` is local
+                        `useState`, so a same-tab navigation unmounts the modal
+                        and the whole record of what was launched goes with it.
+                        The row carries `group` so these actually appear. */}
+                    <EntityDoorControls
+                      token="conversation"
+                      id={task.conversationId}
+                      name={task.conversationId.substring(0, 8)}
+                      className="shrink-0"
+                    />
                   </div>
                   {task.preview && (
                     <p className="text-xs text-foreground mt-0.5 line-clamp-2">
@@ -513,6 +531,31 @@ function BackgroundTestMode({
 // =============================================================================
 // Main Modal
 // =============================================================================
+
+/**
+ * The agent this modal is testing, as a door. Split out so the name selector
+ * runs in its own component rather than re-rendering the whole modal shell.
+ */
+function AgentUnderTest({ agentId }: { agentId: string }) {
+  const agentName = useAppSelector((state) => selectAgentName(state, agentId));
+  return (
+    <>
+      <span className="min-w-0 truncate font-medium">
+        {agentName || `${agentId.slice(0, 8)}…`}
+      </span>
+      {/* Sibling controls for the same reason as the task rows: the launched-run
+          list is local state, so a same-tab jump to the agent would erase it.
+          `alwaysShowActions` because a dialog header offers nothing to hover. */}
+      <EntityDoorControls
+        token="agent"
+        id={agentId}
+        name={agentName}
+        alwaysShowActions
+        className="shrink-0"
+      />
+    </>
+  );
+}
 
 const MODE_TITLES: Record<string, string> = {
   direct: "Direct Stream Test",
@@ -534,8 +577,15 @@ export function AgentExecutionTestModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-sm">
-            {MODE_TITLES[testType] ?? "Test Execution"}
+          {/* The modal exists to run ONE agent and never said which. The id was
+              in props the whole time — naming the record and refusing to link it
+              is the corollary; not naming it at all is worse. */}
+          <DialogTitle className="flex min-w-0 items-center gap-1.5 text-sm">
+            <span className="shrink-0">
+              {MODE_TITLES[testType] ?? "Test Execution"}
+            </span>
+            <span className="shrink-0 text-muted-foreground">—</span>
+            <AgentUnderTest agentId={agentId} />
           </DialogTitle>
         </DialogHeader>
 

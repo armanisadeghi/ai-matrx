@@ -253,9 +253,13 @@ function FooterControls({
       <div className="flex min-w-0 items-center gap-1.5">
         {/* THE DOOR LAW in a window title bar: this window IS an agent, and its
             name was a flat span with the id sitting right beside it in a
-            copy-only button. The window is a companion surface, so new-tab and
-            peek are the doors that matter — same-tab Open would throw away the
-            editing session the window exists to hold.
+            copy-only button.
+
+            All three doors, including same-tab Open on the name: the edit buffer
+            and its dirty flag live in Redux (`selectAgentIsDirty`), so a route
+            change does not discard them — the user lands on the same unsaved
+            agent. Contrast `CleanupReviewDialog`, whose decisions are local
+            state and therefore gets sibling controls instead.
 
             Safe here because WindowPanel's action zone stops pointer-down
             propagation, so the anchor cannot be swallowed by the drag gesture. */}

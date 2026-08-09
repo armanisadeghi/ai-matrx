@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import {
   Drawer,
   DrawerContent,
@@ -170,12 +170,17 @@ export function PromoteToGlobalModal({
             </>
           )}
           <ChevronRight className="h-3 w-3 text-muted-foreground" />
-          {/* THE DOOR LAW: the shortcut being promoted, openable. */}
-          <EntityRef
+          {/* THE DOOR LAW: the shortcut being promoted, openable. Sibling
+              controls rather than a linked name — this modal carries a
+              `labelOverride` the user may have edited, and a same-tab
+              navigation would unmount the modal and discard it. */}
+          <span className="truncate text-sm">{shortcut.label}</span>
+          <EntityDoorControls
             token="agent_shortcut"
             id={shortcut.id}
             name={shortcut.label}
-            showIcon={false}
+            alwaysShowActions
+            className="shrink-0"
           />
         </div>
         <p className="mt-2 text-xs text-muted-foreground">

@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -140,12 +140,25 @@ export function NotifyOwnerDialog({ open, target, onClose }: NotifyOwnerDialogPr
         {target?.drift.agentId ? (
           <div className="flex min-w-0 items-center gap-1.5 text-xs">
             <span className="shrink-0 text-muted-foreground">Agent</span>
-            {/* name={null} deliberately: `contextLabel` describes the
+            {/* name is omitted deliberately: `contextLabel` describes the
                 notification SCOPE ("all affected users", an org label), not
                 the agent — passing it here labels the right link with the
-                wrong name, which is worse than no name. EntityRef falls back
-                to the truncated id, and peek supplies the identity. */}
-            <EntityRef token="agent" id={target.drift.agentId} name={null} />
+                wrong name, which is worse than no name. Peek supplies the
+                identity.
+
+                Sibling controls rather than a linked name: this dialog holds a
+                note the user may have typed, and a same-tab navigation unmounts
+                it and loses that prose. `alwaysShowActions` because the row has
+                nothing to hover. */}
+            <span className="font-mono text-muted-foreground">
+              {target.drift.agentId.slice(0, 8)}…
+            </span>
+            <EntityDoorControls
+              token="agent"
+              id={target.drift.agentId}
+              alwaysShowActions
+              className="shrink-0"
+            />
           </div>
         ) : null}
 
