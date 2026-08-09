@@ -136,7 +136,7 @@ audit claims were wrong; verify before acting on a number).
 |---|---|---|---|---|
 | P1 | `features/scopes/registry/entityRegistry.ts` `hrefFor` | **21 tokens** (was 13) | **strong, under-populated** | 1 ✅ |
 | P2 | `features/organizations/peek/` (19 kinds) | EntityRef + 2 org surfaces | strong, key-vocabulary mismatch fixed | 1 ✅ |
-| P3 | `components/official/entity-ref/EntityRef.tsx` | **7+** (agent-slots, association rail, 2 org surfaces, war-room, scheduling, + PR #74) | adopted; gained `onOpen`/`openInNewTab` | 2 ✅ |
+| P3 | `components/official/entity-ref/EntityRef.tsx` | **9+** (agent-slots, association rail, 2 org surfaces, war-room, scheduling, `/documents` table, shortcut directory, + PR #74) | adopted; gained `onOpen`/`openInNewTab` | 2 ✅ |
 | P4 | `lib/entity-list/` (`EntityListPage`) | **2** (`/agents/all`, `/transcripts`) | strong, 26 bespoke list pages | 4 |
 | P5 | `components/official/item/` (`ItemMenuConfig`) | 30 files, mostly sidebars | strong, absent from list pages | 3 |
 | P6 | `features/agents/browse/agentActionRegistry.tsx` (23 actions) | **1 route** | strong, 3 rival agent action lists | 3 |
@@ -237,8 +237,50 @@ token silently lost the peek door.
 **All five hand-rolled route/open/peek resolvers named at the top of this wave
 are now deleted.**
 
+- **The three rails' `window.open` follow-up** — `OutputRefLink`,
+  `WarRoomResourcesList` and `AssociationList` were converted BEFORE
+  `openInNewTab` existed, so each kept a `window.open(href, "_blank")` behind
+  `EntityRef.onOpen`: the primitive resolving the route while the surface still
+  hand-rolled the door. All three now pass `openInNewTab`. **A JS `window.open`
+  is strictly worse than the anchor it replaces** — no middle-click, no
+  cmd-click, and a popup blocker can eat it. This also deleted both `canOpenRow`
+  guards: with the door expressed as an anchor, `EntityRef` degrades to plain
+  text by itself when a token has no route, so there is nothing left to guard.
+  `openRow` survives in both rails — it still backs `ResourceRowContext.onOpen`,
+  the imperative opener handed to custom `renderRow` implementations.
+- **`DocumentsHubTable`** — the name was a plain `<span>` in a `router.push`
+  row, so `/documents` was reachable by exactly ONE gesture: a left-click that
+  replaces the list. Now `EntityRef`; the row's own href comes from the same
+  registry entry instead of a second inline template; the triplicate "Open" eye
+  button is deleted.
+- **`ShortcutDirectory`** — the Agent column printed `agentName ?? agentId`, so
+  an unresolved name rendered a bare UUID: the Door Law's explicitly named worst
+  case, on the column whose whole job is saying which agent a shortcut runs.
+  The 2-branch conditional became 3 deliberately — a row with a name but no id
+  kept its plain span rather than being folded into "has id" and dropped.
+
 ### Open
 
+- [ ] **`GlobalSearchResults` is NOT a drop-in — do not convert it blind.** The
+      note name at `features/notes/components/GlobalSearchResults.tsx:147` lives
+      INSIDE a `<button>` whose click collapses/expands the hit list. Dropping
+      an `EntityRef` there nests an `<a>` in a `<button>` (invalid HTML, React
+      warns) and, worse, `onOpen` would have to mean "collapse", which is not
+      opening. The fix is to split the chevron toggle from the name first, then
+      convert — a small restructure, not a substitution.
+- [ ] **`PinnedSection` is a poor EntityRef target** — it is a card with a large
+      colored icon and its own layout, not an inline name reference, and it is
+      already a real `<Link>`. What it actually lacks is a peek control; that
+      means composing `ResourcePeekHost` on the card, not replacing the card
+      body with `EntityRef`. Re-rank it accordingly.
+- [ ] **The two `editable` name columns** (`features/agents/browse/columns.tsx`,
+      `features/transcripts/browse/columns.tsx`) need the inline-edit interplay
+      checked before conversion — both are `editable: "string"` with
+      `editTrigger: "pencil"`. `/agents/all` additionally opens
+      `AgentActionModal` on row click ON PURPOSE (an agent has four UIs, so
+      there is no single "the" route); converting its name to a plain link would
+      REPLACE that chooser. The additive form is `onOpen={openActionModal}` plus
+      the peek and new-tab controls — verify against the modal, don't assume.
 - [ ] `features/war-room/components/thread/ThreadResourcesTab.tsx` —
       `FileResourceRow` renders its own `<p>{name}</p>` via the `renderRow`
       override (it swaps in a media thumbnail). Same dead-end class, missed by
@@ -528,6 +570,15 @@ sweep gets a row. Guarded by `pnpm check:reuse-index`.
 
 ## Change log
 
+- **2026-08-09** — Wave 2 continued: the three converted rails still hand-rolled
+  `window.open` inside `EntityRef.onOpen` — all now `openInNewTab`, both
+  `canOpenRow` guards deleted. `/documents` and the shortcut directory converted
+  (the latter was printing a bare UUID). Three surfaces re-ranked as NOT
+  drop-ins with the reason recorded, so the next agent doesn't convert them
+  blind: `GlobalSearchResults` (name inside a `<button>`), `PinnedSection` (a
+  card, already a link — wants a peek control, not a body swap), and the two
+  `editable` name columns (inline-edit interplay; `/agents/all` opens a chooser
+  modal on purpose).
 - **2026-08-09** — Two review findings on the Wave 3 migrations, both closed
   with no code change, both checked against the code first:
   - *"Cloud gallery ignores invalid view"* — **refuted.** The claim was that a
