@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-09T19:17:57.747Z",
-  "commit": "f5f71d10ab91058681f2b1a4fe6c72f67d343c9f",
+  "generatedAt": "2026-08-09T20:20:00.809Z",
+  "commit": "d30bbf33202c9bb8720b06645728410fb93188f6",
   "totals": {
     "findings": 142,
     "high": 73,
@@ -675,7 +675,7 @@
     },
     {
       "file": "features/admin/agent-slots/AgentSlotsConsole.tsx",
-      "line": 326,
+      "line": 327,
       "column": 54,
       "rule": "bare-id-text",
       "severity": "high",
