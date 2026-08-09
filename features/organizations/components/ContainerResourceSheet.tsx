@@ -181,6 +181,10 @@ export function ContainerResourceSheet({
                       href={
                         registryHasRoute ? undefined : shareHrefFor(item.id)
                       }
+                      // This sheet sits over the project workspace / task
+                      // editor. Following a row must never replace what the
+                      // user has open — same rule as the association rail.
+                      openInNewTab
                       showIcon={!entry.hideRowIcon}
                       className="flex-1 min-w-0 text-sm"
                     />

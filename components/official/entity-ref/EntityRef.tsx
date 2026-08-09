@@ -84,6 +84,21 @@ export interface EntityRefProps {
   disablePeek?: boolean;
   /** Hide the new-tab control (rare — only when the row is already a link). */
   disableNewTab?: boolean;
+  /**
+   * The name itself opens in a NEW TAB.
+   *
+   * Set this on any surface embedded in something the user would lose by
+   * navigating — a side panel, a workspace rail, a sheet over an editor, a
+   * dialog. In-place navigation there is the data-loss THE DOOR LAW's new-tab
+   * door exists to prevent, and it is the single easiest regression to
+   * introduce when replacing a hand-rolled `window.open` with this component
+   * (it has already been caught twice in review).
+   *
+   * Implemented as a real `target="_blank"` on the anchor — no JS interception,
+   * so modified clicks and middle-clicks keep behaving natively. The separate
+   * new-tab control is suppressed automatically, since it would be a duplicate.
+   */
+  openInNewTab?: boolean;
   /** Controls stay visible instead of appearing on hover/focus. */
   alwaysShowActions?: boolean;
   /** Surface-specific extra doors (open in window, jump to versions, …). */
@@ -114,6 +129,7 @@ export function EntityRef({
   showIcon = true,
   disablePeek = false,
   disableNewTab = false,
+  openInNewTab = false,
   alwaysShowActions = false,
   extraActions,
   onOpen,
@@ -144,6 +160,8 @@ export function EntityRef({
       {resolvedHref ? (
         <Link
           href={resolvedHref}
+          target={openInNewTab ? "_blank" : undefined}
+          rel={openInNewTab ? "noopener noreferrer" : undefined}
           onClick={(e) => {
             stop(e);
             // A modified click keeps the browser's native new-tab behaviour —
@@ -152,7 +170,7 @@ export function EntityRef({
             e.preventDefault();
             onOpen();
           }}
-          title={`Open ${label}`}
+          title={openInNewTab ? `Open ${label} in a new tab` : `Open ${label}`}
           className="min-w-0 truncate text-inherit underline-offset-2 hover:text-primary hover:underline"
         >
           {label}
@@ -196,7 +214,7 @@ export function EntityRef({
             <Lightbulb className="h-3 w-3" />
           </button>
         )}
-        {resolvedHref && !disableNewTab && (
+        {resolvedHref && !disableNewTab && !openInNewTab && (
           <Link
             href={resolvedHref}
             target="_blank"
