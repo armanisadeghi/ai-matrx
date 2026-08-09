@@ -195,6 +195,8 @@ export interface AgentSlotsHealthSummary {
   version_drift: number;
   agent_archived: number;
   not_a_system_agent: number;
+  /** Pins whose agent row the caller could not read (RLS or deleted). */
+  unresolved_pin: number;
 }
 
 /** Full detail of the slot open in the workbench. */

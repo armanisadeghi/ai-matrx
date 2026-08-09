@@ -14,12 +14,8 @@
  */
 
 import type { AppDispatch } from "@/lib/redux/store";
-import {
-  emitAssist,
-  filterUndecidedKeys,
-} from "@/features/assists/service";
-import { assistEmitted } from "@/features/assists/redux/assistsSlice";
-import { toAssist } from "@/features/assists/types";
+import { filterUndecidedKeys } from "@/features/assists/service";
+import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
 import type { EmitAssistInput } from "@/features/assists/types";
 import { shapeCreatorAgentId } from "./constants";
 import { composeKindAgentIntent } from "./kind-agent-intents";
@@ -71,40 +67,6 @@ export async function produceMissingComponentAssists(
       dedupeKey: keyFor(entry.kind),
       expiresAt: new Date(Date.now() + THIRTY_DAYS_MS).toISOString(),
     };
-    const id = await emitAssist(userId, input);
-    if (id) {
-      const assist = toAssist({
-        // Local mirror of the row we just wrote — enough for the dock.
-        id,
-        user_id: userId,
-        entity_type: input.entityType ?? null,
-        entity_id: input.entityId ?? null,
-        surface_name: input.surfaceName ?? null,
-        source_kind: "deterministic",
-        source_key: input.sourceKey,
-        title: input.title,
-        body: input.body ?? null,
-        reasoning: null,
-        confidence: null,
-        action: JSON.parse(JSON.stringify(input.action)),
-        status: "pending",
-        decided_at: null,
-        decided_by: null,
-        result: null,
-        dedupe_key: input.dedupeKey,
-        expires_at: input.expiresAt ?? null,
-        suppressed_until: null,
-        priority: 0,
-        organization_id: null,
-        created_by: userId,
-        updated_by: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        version: 1,
-        visibility: "personal",
-        deleted_at: null,
-      });
-      if (assist) dispatch(assistEmitted(assist));
-    }
+    await emitAssistTracked(userId, input, dispatch);
   }
 }

@@ -55,6 +55,16 @@ jest.mock(
   "@/features/agents/scribe-tools/dispatcher/dispatch-scribe-tool.thunk",
   () => ({ dispatchScribeTool: jest.fn() }),
 );
+const mockDispatchSurfaceWrite = jest.fn((args) => ({
+  type: "test/dispatchSurfaceWrite",
+  payload: args,
+}));
+jest.mock("@/features/surfaces/runtime/surface-writeback", () => ({
+  SURFACE_WRITE_TOOL_NAME: "apply_surface_write",
+}));
+jest.mock("../dispatch-surface-write.thunk", () => ({
+  dispatchSurfaceWrite: mockDispatchSurfaceWrite,
+}));
 
 import { surfaceDelegatedToolCall } from "../surface-delegated-tool-call.thunk";
 
@@ -149,6 +159,26 @@ describe("surfaceDelegatedToolCall cold desktop reconciliation", () => {
       "Desktop connection status is unavailable",
       expect.any(Object),
     );
+  });
+
+  it("routes apply_surface_write to the surface write dispatcher", async () => {
+    const dispatch = jest.fn((action) => action);
+    surfaceDelegatedToolCall({
+      ...BASE_ARGS,
+      toolName: "apply_surface_write",
+      data: { arguments: { target: "page_meta_tags", value: { meta_title: "T" } } },
+    })(dispatch as never, jest.fn() as never, undefined);
+    await flushPromises();
+
+    expect(mockDispatchSurfaceWrite).toHaveBeenCalledWith({
+      conversationId: "conversation-1",
+      requestId: "request-1",
+      callId: "call-1",
+      toolName: "apply_surface_write",
+      args: { target: "page_meta_tags", value: { meta_title: "T" } },
+    });
+    // Routed — never answered as unsupported, never resolved here.
+    expect(mockSubmitToolResult).not.toHaveBeenCalled();
   });
 
   it("still rejects an unknown non-desktop delegated tool", async () => {

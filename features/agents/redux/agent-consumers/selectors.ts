@@ -95,6 +95,22 @@ export const selectAllAgentCategories = createSelector(
 );
 
 /**
+ * All unique categories across live SYSTEM (builtin) agents. The system tab
+ * gets the same category filter every other tab has — its options just come
+ * from a different population.
+ */
+export const selectAllSystemAgentCategories = createSelector(
+  selectLiveAgents,
+  (agents): string[] => {
+    const cats = new Set<string>();
+    for (const a of agents) {
+      if (a.agentType === "builtin" && a.category) cats.add(a.category);
+    }
+    return Array.from(cats).sort();
+  },
+);
+
+/**
  * All unique tags across live user agents, sorted alphabetically.
  */
 export const selectAllAgentTags = createSelector(
@@ -103,6 +119,18 @@ export const selectAllAgentTags = createSelector(
     const tags = new Set<string>();
     for (const a of agents) {
       if (a.agentType === "user") a.tags?.forEach((t) => tags.add(t));
+    }
+    return Array.from(tags).sort();
+  },
+);
+
+/** All unique tags across live SYSTEM (builtin) agents. */
+export const selectAllSystemAgentTags = createSelector(
+  selectLiveAgents,
+  (agents): string[] => {
+    const tags = new Set<string>();
+    for (const a of agents) {
+      if (a.agentType === "builtin") a.tags?.forEach((t) => tags.add(t));
     }
     return Array.from(tags).sort();
   },
@@ -239,18 +267,54 @@ export function filterUserTypeAgents(
   return sortFilteredAgents(filtered, consumer);
 }
 
-/** Builtin/system agents — search + sort only (tab === "system"). */
+/**
+ * Builtin/system agents (tab === "system").
+ *
+ * Gets the SAME filter surface every other tab has — search, favorites,
+ * category, tags, sort. Ownership/archive/access filters are meaningless here
+ * (a builtin is always active and belongs to the platform), so those are the
+ * only ones skipped. A picker that offers less on one tab than another is the
+ * exact half-built shape this list exists to prevent.
+ */
 export function filterBuiltinTypeAgents(
   agents: AgentDefinitionRecord[],
   consumer: AgentConsumerState,
 ): AgentDefinitionRecord[] {
-  const { searchTerm } = consumer;
+  const { searchTerm, favFilter, includedCats, includedTags } = consumer;
   const serverMatched = new Set(consumer.serverMatchedIds);
-  const filtered = searchTerm
-    ? agents.filter(
-        (a) => agentMatchesSearch(a, searchTerm) || serverMatched.has(a.id),
-      )
-    : agents;
+
+  const filtered = agents.filter((agent) => {
+    if (favFilter === "yes" && !agent.isFavorite) return false;
+    if (favFilter === "no" && agent.isFavorite) return false;
+
+    if (includedCats.length > 0) {
+      const category = agent.category;
+      if (!category) {
+        if (!includedCats.includes(AGENT_NONE_SENTINEL)) return false;
+      } else if (!includedCats.includes(category)) {
+        return false;
+      }
+    }
+
+    if (includedTags.length > 0) {
+      const isUntagged = !agent.tags?.length;
+      if (isUntagged) {
+        if (!includedTags.includes(AGENT_NONE_SENTINEL)) return false;
+      } else if (!agent.tags?.some((t) => includedTags.includes(t))) {
+        return false;
+      }
+    }
+
+    if (
+      searchTerm &&
+      !agentMatchesSearch(agent, searchTerm) &&
+      !serverMatched.has(agent.id)
+    )
+      return false;
+
+    return true;
+  });
+
   return sortFilteredAgents(filtered, consumer);
 }
 
@@ -284,8 +348,17 @@ export const makeSelectFilteredSharedAgents = (consumerId: string) =>
  * Factory: returns a memoized selector that filters and sorts agents for a
  * consumer. User tabs (mine / shared / all) draw from user-type agents;
  * the system tab draws from builtins.
+ *
+ * `includeSystemInAll` is the ADMIN reading of the "All" tab. For a normal
+ * user, system agents are a separate catalogue and "All" means "all of MY
+ * agents". For an admin surface, system agents ARE their agents — so "All"
+ * must be a single blended list, with each row still labelled (the `system`
+ * badge on `AgentRow`) so the two are never confused.
  */
-export const makeSelectFilteredAgents = (consumerId: string) =>
+export const makeSelectFilteredAgents = (
+  consumerId: string,
+  includeSystemInAll = false,
+) =>
   createSelector(
     selectUserTypeAgents,
     selectBuiltinTypeAgents,
@@ -293,6 +366,12 @@ export const makeSelectFilteredAgents = (consumerId: string) =>
     (userAgents, builtinAgents, consumer): AgentDefinitionRecord[] => {
       if (consumer.tab === "system") {
         return filterBuiltinTypeAgents(builtinAgents, consumer);
+      }
+      if (includeSystemInAll && consumer.tab === "all") {
+        return [
+          ...filterUserTypeAgents(userAgents, consumer),
+          ...filterBuiltinTypeAgents(builtinAgents, consumer),
+        ];
       }
       return filterUserTypeAgents(userAgents, consumer);
     },

@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-08
+updated: 2026-08-09
 repos: [matrx-frontend, aidream, matrx-local]
 ---
 
@@ -46,28 +46,36 @@ first real user surfaces shipped: **Word/PowerPoint preview in Files, Convert-to
 
 ## Remaining work
 
-1. **Office thumbnails backfill** (aidream — chip spawned 2026-08-08). New-upload page-1 thumbs
-   need verification; pre-existing files need a re-render backfill (mirror
-   `aidream/cli/scan_thumbnail_backfill.py`; note the variant-key dedup trap in FOUND_DEFECTS.md).
-2. **Desktop bundle verification on macOS/Windows** (matrx-local). Done and fixed on Linux
+1. **Desktop bundle verification on macOS/Windows** (matrx-local). Done and fixed on Linux
    (see Done, 2026-08-09) — the bug and the fix are platform-independent (all four specs are
    one-file), and the new gate runs on every target inside `build-sidecar.sh` + the release
    workflow. It just has not executed on a mac/Windows runner yet: **the next release build is
    the verification**. If it goes red there, read `matrx-local/specs/_office_bundle.py` first.
-3. **Files-service catch-up** (ops). `packages/matrx-files/Dockerfile` carries LibreOffice but
+2. **Files-service catch-up** (ops). `packages/matrx-files/Dockerfile` carries LibreOffice but
    that image deploys manually and is not the traffic path yet. Nothing breaks meanwhile.
+3. **AI-generated Office files are born with an icon thumbnail** (aidream — filed in
+   `aidream/FOUND_DEFECTS.md`, 2026-08-09). Files created via `generate_office_asset` →
+   `save_media_envelope_async` get a mime icon at creation even on a LibreOffice host; the same
+   bytes re-render fine afterwards, so it's the creation-time render, not the codec. Healable with
+   `thumbnail_backfill --office --force-rerender`.
 4. **Visual-fidelity preview (optional next rung).** Today's preview is extracted text. A
    LibreOffice→PDF render lane (reusing the convert endpoint) could show true layout — decide if
    fidelity matters before building.
 5. **xlsx "extract" parity note:** xlsx previews client-side via SheetJS (good); the office
    markdown endpoint also handles xlsx if a text view is ever wanted.
-6. **Polish nit (prod-observed 2026-08-08):** pptx preview shows the slide title twice — the
-   card divider says "SLIDE 1 <title>" and the portion markdown's own first heading repeats
-   "Slide 1: <title>". Either strip the leading heading client-side in `OfficePreview` when it
-   duplicates the portion title, or drop the heading from the codec's portion markdown.
 
 ## Done
 
+- **2026-08-09 — Office thumbnails, end to end.** New uploads verified in production (fresh
+  docx/pptx → real page-1 renders). Every pre-existing Office master healed:
+  `thumbnail_backfill --office --force-rerender` → audit **22 icons/missing → 0**, all 23 Office
+  masters now render page 1, confirmed through the exact `GET /api/files` payload the Files UI
+  binds to. Required building `force_rerender` (overwrite-in-place, the fix for the variant-key
+  dedup trap) plus a guard that refuses to replace a real thumbnail with an icon fallback — and
+  fixing two defects that made the universal backfill inert for EVERY mime type (bare-row
+  `owner_id` KeyError; a total failure printing a green `DONE ... failed=0`). Knock-on: 155
+  platform-wide files that had no thumbnail at all were healed, and the tracked pre-2026-07-10
+  PDF icon defect was closed (61 icons → 0). aidream `1953f5f04`/`acaa54eaa`, v0.1.740.
 - Office codec (extract ↔ generate ↔ LibreOffice convert) + ingest + chat-attachment reads +
   `office` agent tool + generation service + `POST /office/generate` + MIME routing guard.
 - **2026-08-08:** read-side endpoints (`GET /office/{file_id}/markdown`,
@@ -97,12 +105,15 @@ first real user surfaces shipped: **Word/PowerPoint preview in Files, Convert-to
   (`aidream/graph_actions/office/`); result kinds `office_file_result` +
   `office_extraction_result` seeded live (`migrations/content_ir_seed_office_result_kinds.sql`);
   E2E proven against the real scheduler + DB (generate → extract round-trip + kind-gate negative).
+- **2026-08-08 (kinds activated — Arman's ruling):** all five office kinds are now
+  `is_active=true`. `office_document` / `office_presentation` / `office_spreadsheet` activated
+  through the gated `content_ir.set_kind_activation` (dual gate passed clean: `render_ok`,
+  `structural_ok`, web `generic_structured` component); `office_file_result` /
+  `office_extraction_result` were swept in by the named-shapes campaign. Standalone model
+  emissions now render; the tool/workflow FileRef path remains canonical. Blocker found and
+  filed while doing it: `set_kind_activation` ignores `p_actor` in its super-admin leg
+  (aidream `FOUND_DEFECTS.md`) — it breaks the platform's own `kind_activate` tool.
 
 ## Decisions needed
 
-**Should the three `office_*` content-IR kinds be activated?**
-They're registered with valid schemas, skills, content blocks, and a `generic_structured`
-component, but sit `is_active=false`. The canonical consumption path is the `office` tool
-returning a downloadable FileRef; activation only changes what happens if a model emits a
-standalone `__kind` payload instead of calling the tool. Decide: leave inactive (tool is the
-only path) or activate and accept the generic structured viewer for standalone emissions.
+*(none — the `office_*` activation question was decided and executed 2026-08-08; see Done.)*

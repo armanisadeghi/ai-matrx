@@ -71,6 +71,7 @@ import { KpiBand } from "@/features/marketing/search-console/components/KpiBand"
 import { PerformanceChart } from "@/features/marketing/search-console/components/PerformanceChart";
 import { RangeCompareControl } from "@/features/marketing/search-console/components/RangeCompareControl";
 import { IngestionHealthBanner } from "@/features/marketing/search-console/components/IngestionHealthBanner";
+import { GscAssistStrip } from "@/features/marketing/search-console/components/GscAssistStrip";
 import { SearchConsolePortfolio } from "@/features/marketing/search-console/components/SearchConsolePortfolio";
 import {
   SiteSwitcher,
@@ -590,6 +591,15 @@ export function SearchConsoleWorkspace() {
               syncing={syncing}
               canSync={gscBound}
               suppressed={knownEmpty}
+            />
+            {/* This site's insight assists (money-page decay, CTR gap,
+                unclassified backlog) — deterministic sweep, one per session;
+                the same chips also live in the global dock. */}
+            <GscAssistStrip
+              siteId={state.siteId}
+              siteLabel={site?.domain ?? siteName}
+              dataThrough={dataThrough}
+              enabled={gscBound === true && hasAnyData}
             />
             {/* THE IMPORT NARRATOR. Three states, all server-aware so a page
                 refresh never loses the story:

@@ -80,7 +80,7 @@ import {
   type ModelChangePlan,
 } from "./reconciliation/analyze";
 import { ModelChangeReconciliation } from "./reconciliation/ModelChangeReconciliation";
-import { NumberInput } from "./controls/NumberInput";
+import { SettingControlInput } from "./controls/SettingControlInput";
 import { UiGatesEditor } from "./ui-gates/UiGatesEditor";
 import { SettingsJsonEditor } from "./json/SettingsJsonEditor";
 import { OutputSchemaTab } from "./output-schema/OutputSchemaTab";
@@ -1427,169 +1427,42 @@ export function AgentSettingsCore({
 
   // ── render helpers ────────────────────────────────────────────────────────
 
+  // Renders through the shared SettingControlInput primitive — ONE dense
+  // control renderer for every settings surface (builder, per-run overrides,
+  // model replacement review). Only what the primitive cannot know stays
+  // here: the builder's value defaulting (value ?? control.default ?? min)
+  // and the response_format unwrap — the primitive emits the canonical
+  // `{ type: <value> }` object, while handleSettingChange validates the
+  // plain STRING through toResponseFormat.
   const renderControlInput = (
     key: keyof FeLlmParams,
     control: ControlDefinition,
     value: unknown,
     isEnabled: boolean,
   ) => {
-    // Explicit `unknown` annotation: inferring from `value ?? control.default ?? ...`
-    // degenerates through `NonNullable<unknown>` (`{}`), which then rejects the
-    // `.type` narrowing reassignment below.
-    let actualValue: unknown =
+    const defaulted: unknown =
       value ??
       control.default ??
       (control.type === "number" || control.type === "integer"
         ? (control.min ?? 0)
         : "");
-
-    if (
-      key === "response_format" &&
-      typeof actualValue === "object" &&
-      actualValue !== null &&
-      "type" in (actualValue as Record<string, unknown>)
-    ) {
-      actualValue = (actualValue as Record<string, unknown>).type;
-    }
-
-    if (control.type === "enum" && control.enum) {
-      const storedValue =
-        key === "response_format" &&
-        typeof value === "object" &&
-        value !== null &&
-        "type" in (value as Record<string, unknown>)
-          ? String((value as Record<string, unknown>).type)
-          : (value as string | undefined);
-      const isValueMismatch =
-        storedValue !== undefined &&
-        storedValue !== null &&
-        storedValue !== "" &&
-        !control.enum.includes(storedValue);
-
-      return (
-        <div className="flex items-center gap-1.5 flex-1">
-          <Select
-            value={isValueMismatch ? "" : (actualValue as string)}
-            onValueChange={(val) => handleSettingChange(key, val)}
-            disabled={!isEnabled}
-          >
-            <SelectTrigger className="h-7 text-xs flex-1">
-              <SelectValue
-                placeholder={isValueMismatch ? `⚠ ${storedValue}` : "Select..."}
-              />
-            </SelectTrigger>
-            <SelectContent className="text-xs">
-              {control.enum.map((option) => (
-                <SelectItem
-                  key={option}
-                  value={option}
-                  className="text-xs py-1"
-                >
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {isValueMismatch && (
-            <TooltipProvider delayDuration={200}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="text-amber-500 flex-shrink-0 cursor-help">
-                    <AlertTriangle className="h-3.5 w-3.5" />
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs max-w-[220px]">
-                  "{storedValue}" is not a recognized option for this model
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
-      );
-    }
-
-    if (control.type === "boolean") {
-      const boolId = `bool-agent-${key}`;
-      return (
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id={boolId}
-            checked={!!actualValue}
-            onCheckedChange={(checked) => handleSettingChange(key, checked)}
-            disabled={!isEnabled}
-            className="cursor-pointer"
-          />
-          <Label
-            htmlFor={boolId}
-            className="text-xs text-gray-600 dark:text-gray-400 cursor-pointer"
-          >
-            {actualValue ? "Enabled" : "Disabled"}
-          </Label>
-        </div>
-      );
-    }
-
-    if (
-      (control.type === "number" || control.type === "integer") &&
-      control.min !== undefined &&
-      control.max !== undefined
-    ) {
-      return (
-        <NumberInput
-          value={actualValue as number}
-          onChange={(val) => handleSettingChange(key, val)}
-          onSliderChange={(val) => handleSettingChange(key, val)}
-          min={control.min}
-          max={control.max}
-          step={control.type === "integer" ? 1 : 0.01}
-          isInteger={control.type === "integer"}
-          disabled={!isEnabled}
-          withSlider
-        />
-      );
-    }
-
-    if (control.type === "number" || control.type === "integer") {
-      return (
-        <NumberInput
-          value={actualValue as number}
-          onChange={(val) => handleSettingChange(key, val)}
-          min={control.min}
-          max={control.max}
-          step={control.type === "integer" ? 1 : 0.01}
-          isInteger={control.type === "integer"}
-          disabled={!isEnabled}
-        />
-      );
-    }
-
-    if (control.type === "string_array") {
-      const arrayValue = Array.isArray(value)
-        ? (value as string[]).join("\n")
-        : "";
-      return (
-        <Textarea
-          value={arrayValue}
-          onChange={(e) =>
-            handleSettingChange(
-              key,
-              e.target.value.split("\n").filter((s) => s.trim()),
-            )
-          }
-          disabled={!isEnabled}
-          className="min-h-[60px] text-xs font-mono disabled:opacity-50"
-          placeholder="One value per line..."
-        />
-      );
-    }
-
     return (
-      <input
-        type="text"
-        value={actualValue as string}
-        onChange={(e) => handleSettingChange(key, e.target.value)}
+      <SettingControlInput
+        settingKey={key as string}
+        control={control}
+        value={defaulted}
+        onChange={(v) => {
+          const unwrapped =
+            key === "response_format" &&
+            typeof v === "object" &&
+            v !== null &&
+            "type" in (v as Record<string, unknown>)
+              ? (v as Record<string, unknown>).type
+              : v;
+          handleSettingChange(key, unwrapped);
+        }}
         disabled={!isEnabled}
-        className="h-7 px-2 text-xs text-gray-900 dark:text-gray-100 bg-textured border border-border rounded disabled:opacity-50 w-full"
+        id={`setting-control-agent-${key}`}
       />
     );
   };

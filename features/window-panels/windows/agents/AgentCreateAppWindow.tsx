@@ -28,7 +28,6 @@ import {
 import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
 import { AgentComingSoonContent } from "@/features/agents/components/coming-soon/AgentComingSoonContent";
 import { CreateAgentAppForm } from "@/features/agent-apps/components/CreateAgentAppForm";
-import type { AgentOption } from "@/features/agent-apps/components/SearchableAgentSelect";
 import type { CreateAgentAppInput } from "@/features/agent-apps/types";
 import { toast } from "@/lib/toast-service";
 import { Button } from "@/components/ui/button";
@@ -131,10 +130,8 @@ function CreateAppWindowBody({
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState<CreatedApp | null>(null);
 
-  // The form's SearchableAgentSelect expects an `AgentOption[]` list. Build
-  // it lazily from the Redux agent list; when the window is opened for a
-  // specific agent and that agent isn't in the list yet, seed it so the
-  // form can default to it.
+  // The form's picker reads the canonical Redux agent slice directly; we only
+  // need to make sure that slice is hydrated when the window is opened cold.
   useEffect(() => {
     // Ensure the agents list is hydrated so the picker has options even if
     // the user opened this window directly without visiting the list.
@@ -143,31 +140,7 @@ function CreateAppWindowBody({
     }
   }, [dispatch, liveAgents.length]);
 
-  const agentOptions = useMemo<AgentOption[]>(() => {
-    const base: AgentOption[] = liveAgents
-      .filter((a) => !!a.id && !!a.name)
-      .map((a) => ({
-        id: a.id as string,
-        name: a.name as string,
-        description: a.description ?? null,
-        category: a.category ?? null,
-        isPublic: a.isPublic ?? false,
-      }));
-
-    // If the preset agent is missing from the list (e.g. it's a builtin or
-    // not in the user's default scope), splice it in at the top so the form
-    // can preselect it.
-    if (presetAgent && !base.some((a) => a.id === presetAgent.id)) {
-      base.unshift({
-        id: presetAgent.id,
-        name: presetAgent.name ?? "Untitled agent",
-        description: presetAgent.description ?? null,
-        category: presetAgent.category ?? null,
-        isPublic: presetAgent.isPublic ?? false,
-      });
-    }
-    return base;
-  }, [liveAgents, presetAgent]);
+  const hasAnyAgents = liveAgents.length > 0;
 
   const handleSubmit = useCallback(
     async (input: CreateAgentAppInput) => {
@@ -210,7 +183,7 @@ function CreateAppWindowBody({
 
   // Empty-state when the window was opened without an agent context and the
   // user also has no agents to pick from yet.
-  if (!agentId && agentOptions.length === 0) {
+  if (!agentId && !hasAnyAgents) {
     return (
       <AgentComingSoonContent
         icon={AppWindow}
@@ -272,7 +245,6 @@ function CreateAppWindowBody({
     <div className="flex flex-col h-full min-h-0">
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
         <CreateAgentAppForm
-          agents={agentOptions}
           onSubmit={handleSubmit}
           onCancel={onClose}
           busy={submitting}

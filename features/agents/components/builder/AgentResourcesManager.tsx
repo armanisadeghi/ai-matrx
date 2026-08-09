@@ -28,8 +28,7 @@ const AGENT_RESOURCE_ROLE = "agent_resource";
  * registered entity id that the agent-resource RPC can permission-check.
  */
 const AGENT_RESOURCE_PICKER_VIEWS = [
-  "storage",
-  "upload",
+  "files",
   "notes",
   "workbooks",
   "documents",

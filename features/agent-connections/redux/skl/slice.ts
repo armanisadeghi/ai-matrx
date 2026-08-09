@@ -50,9 +50,11 @@ const sklSlice = createSlice({
     },
     /**
      * Merge many PARTIAL definitions WITHOUT clearing the existing set —
-     * used by fetchUnifiedMenu (context-menu hydration), whose wire rows
-     * carry only the menu-relevant fields. Existing rows keep every field
-     * the patch doesn't mention (blockType/visibility/skillId survive).
+     * used by fetchUnifiedMenu (context-menu hydration). Since 2026-08-08
+     * agent.context_menu_view emits the full classification
+     * (block_type/skill_id/visibility), so the wire rows are near-complete;
+     * the merge stays partial-safe as defense — existing rows keep every
+     * field a patch doesn't mention.
      */
     renderDefinitionsMerged(
       state,

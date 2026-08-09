@@ -19,6 +19,7 @@ import {
   markNoteSaved,
   markNoteSaveError,
   materializeNote,
+  recordNoteWriteAttempt,
   updateNoteLabel,
 } from "./slice";
 import { getAutoSaveDelay } from "./notes.types";
@@ -30,6 +31,7 @@ import {
   toastNoteWriteBlocked,
   clearNoteWriteBlockedToast,
 } from "../utils/writeErrors";
+import { serverMatchesAttempt } from "../utils/saveVerification";
 
 // Timer map — one debounce timer per note
 const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -131,6 +133,11 @@ export const autoSaveMiddleware: Middleware =
 
       const savedSnapshot = snapshotDirtyFields(recordAfterLabel);
 
+      // Record what we are about to send BEFORE sending it — the realtime echo
+      // of this write can arrive before the REST response does.
+      storeApi.dispatch(
+        recordNoteWriteAttempt({ id: noteId, values: savedSnapshot }),
+      );
       storeApi.dispatch(markNoteSaving(noteId));
 
       try {
@@ -248,7 +255,7 @@ export const autoSaveMiddleware: Middleware =
             const { data: stillThere, error: probeError } = await supabase
               .schema("workbench")
               .from("notes")
-              .select("updated_at")
+              .select("updated_at, content, label")
               .eq("id", noteId)
               .maybeSingle();
 
@@ -261,24 +268,44 @@ export const autoSaveMiddleware: Middleware =
               return;
             }
 
+            // Check the ACTUAL server row before crying conflict. If it already
+            // holds exactly what we tried to write, the write landed (or the
+            // row was already there) — only our cached `updated_at` was stale.
+            // That is a timestamp bookkeeping miss, not someone overwriting the
+            // user, and must never surface as a conflict prompt.
+            if (!serverMatchesAttempt(stillThere, savedSnapshot)) {
+              console.warn(
+                "[AutoSave] conflict — updated_at mismatch for",
+                noteId,
+              );
+              storeApi.dispatch(
+                markNoteSaveError({ id: noteId, error: "conflict" }),
+              );
+              return;
+            }
+
             console.warn(
-              "[AutoSave] conflict — updated_at mismatch for",
+              "[AutoSave] stale updated_at recovered — server row already matches this write for",
               noteId,
             );
+            clearNoteWriteBlockedToast(noteId);
             storeApi.dispatch(
-              markNoteSaveError({ id: noteId, error: "conflict" }),
+              markNoteSaved({
+                id: noteId,
+                updatedAt: stillThere.updated_at ?? undefined,
+                savedSnapshot,
+              }),
             );
-            return;
+          } else {
+            clearNoteWriteBlockedToast(noteId);
+            storeApi.dispatch(
+              markNoteSaved({
+                id: noteId,
+                updatedAt: data.updated_at ?? undefined,
+                savedSnapshot,
+              }),
+            );
           }
-
-          clearNoteWriteBlockedToast(noteId);
-          storeApi.dispatch(
-            markNoteSaved({
-              id: noteId,
-              updatedAt: data.updated_at ?? undefined,
-              savedSnapshot,
-            }),
-          );
         }
 
         // Notify sidebar of label changes

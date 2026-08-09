@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight, MousePointerClick } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
+import type { AgentTab } from "@/features/agents/redux/agent-consumers/slice";
 import {
   Popover,
   PopoverTrigger,
@@ -54,6 +55,16 @@ interface AgentListDropdownProps {
    * covering it. Ignored on mobile (uses a Drawer).
    */
   contentSide?: "top" | "right" | "bottom" | "left";
+  /**
+   * Isolate this dropdown's filter/tab state under its own consumer id.
+   * Defaults to the shared `agent-list-dropdown` consumer so ordinary chat
+   * triggers keep one remembered set of filters across the app.
+   */
+  consumerId?: string;
+  /** Tab to open on. Admin surfaces managing system agents pass `"system"`. */
+  initialTab?: AgentTab;
+  /** ADMIN variant: blend system agents into the "All" tab. */
+  includeSystemInAll?: boolean;
 }
 
 export function AgentListDropdown({
@@ -66,6 +77,9 @@ export function AgentListDropdown({
   compact = false,
   activeAgentId: activeAgentIdProp,
   contentSide,
+  consumerId = CONSUMER_ID,
+  initialTab,
+  includeSystemInAll = false,
 }: AgentListDropdownProps) {
   const isMobile = useIsMobile();
   const dialogContainer = useDialogContainer();
@@ -99,10 +113,12 @@ export function AgentListDropdown({
     handleDetailPanelMouseEnter,
     handleDetailPanelMouseLeave: coreDetailMouseLeave,
   } = useAgentListCore({
-    consumerId: CONSUMER_ID,
+    consumerId,
     onSelect,
     navigateTo,
     activeAgentIdOverride: activeAgentIdProp,
+    initialTab,
+    includeSystemInAll,
   });
 
   const showAssignedTooltip =
@@ -236,6 +252,7 @@ export function AgentListDropdown({
       onFilterChipClick={handleFilterChipClick}
       rightPanel={rightPanel}
       tabCounts={tabCounts}
+      systemTabLabel={includeSystemInAll ? "System" : undefined}
       pinnedAgent={pinnedAgent}
       listOpen={open}
     />

@@ -208,6 +208,35 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   this). Page creation reuses `createManualPage`; "Track as new page"
   lives in the page context menu.
 
+## Assists — insight findings become one-click chips (2026-08-08)
+
+The Assists primitive (`features/assists/FEATURE.md`) consumes this feature's
+algorithm layer: `insights-assists-producer.ts` sweeps three findings per site
+— **money-page decay** (`gsc_perf_class_movers` page/money/loss), **CTR gap**
+(`gsc_perf_ctr_gap`, page dimension), **unclassified backlog**
+(`gsc_perf_class_summary`) — and emits capped, deduped assists with REAL
+actions: the page findings launch the **`seo.page_analyzer` agent slot**
+pre-filled with the code-compressed finding (window, class, clicks/Δ, actual
+vs expected CTR — pre-fill only, the user sends); the classification finding
+navigates to the classification workbench (`?view=classification`, filtered
+to unclassified) or, above 70% unclassified share, the intake wizard.
+
+- **The sweep window is FIXED**: 28 days ending at the site's freshest data
+  day vs the previous 28 (`resolvePeriods` with `range:"28d"`, `compare:"prev"`)
+  — never the user's URL range, so findings and dedupe keys don't churn with
+  view state. One sweep per site per browser session.
+- Producer rules: `filterUndecidedKeys` first (dismissal is durable), one
+  assist per finding kind per site, 14-day expiry, conservative thresholds
+  (constants at the top of the producer). Dedupe key =
+  `seo.gsc_insight.<finding>:<siteId>:<page_id|key>`; site scope rides the
+  key (`isGscInsightAssist`).
+- `components/GscAssistStrip.tsx` renders THIS site's chips inline under the
+  health banner via `selectAssistsForSurface` + the canonical `AssistChip` —
+  never a forked chip. The same rows appear in the global dock; deciding in
+  either place clears both. `surface_name` is `matrx-user/marketing` (what
+  the route resolves to in route-to-surface) — move the `GSC_ASSIST_SURFACE`
+  constant when a dedicated GSC surface manifest lands.
+
 ## Classification UI — the manual truth-editing surface (2026-08-08)
 
 Classification is important enough for a DEDICATED UI (Arman, 2026-08-08).
@@ -481,6 +510,13 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-08 — Assists wired (§ Assists): insight findings (money decay /
+  CTR gap / unclassified backlog) emit deduped one-click assists — page
+  findings launch the `seo.page_analyzer` slot pre-filled with the finding,
+  classification navigates to the workbench/intake. Inline `GscAssistStrip`
+  under the health banner. Live-verified on datadestruction (CTR gap →
+  agent window pre-filled), vasaro (thresholds correctly withhold classify
+  at 28% share), IOPBM (classify chip → workbench filtered to unclassified).
 - 2026-08-08 — Ambassador layer: traffic classes now render on site
   overview, the sites-list hovercard, and brand pages via
   `components/ambassador/` + the new `gsc_perf_class_summary_multi` RPC.

@@ -16,7 +16,7 @@ import { supabase } from "@/utils/supabase/client";
 import { getShareableResource } from "@/utils/permissions/registry";
 import type { OrgResourceEntry } from "../resource-catalogue";
 import { ResourcePeekHost } from "../peek/ResourcePeekHost";
-import { hasPeek } from "../peek/registry";
+import { hasPeek } from "../peek/kinds-list";
 import type { ContainerColumn } from "../hooks/useContainerInventory";
 
 interface Item {

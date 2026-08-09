@@ -339,6 +339,49 @@ export async function applySurfaceWrite(
 }
 
 /**
+ * The ONE delegated tool name through which an agent's RUN reaches this seam.
+ *
+ * `buildToolInjection` offers it as an inline spec whenever the mounted
+ * surface stack has agent-writable targets (see `listAgentWritableTargets`),
+ * and the delegated-call router dispatches it into `applySurfaceWrite` with
+ * `origin: "agent"` — the stream side of the 360 loop. Deliberately the same
+ * name as the kind-action registry key: one verb, two callers (a rendered
+ * component's button vs. the model's own tool call).
+ */
+export const SURFACE_WRITE_TOOL_NAME = "apply_surface_write";
+
+/**
+ * The subset of live write targets an AGENT may currently drive: declared on
+ * a mounted surface, wired to a handler, and resolving (surface default +
+ * per-run binding overrides) to `ask` or `auto`. This is what the injected
+ * `apply_surface_write` tool advertises each turn — a `manual` target is
+ * never offered (advertising a write the platform will refuse reads as a
+ * broken promise; mirrors aidream's `_write_targets_block`).
+ *
+ * Policies are re-resolved at APPLY time too, so a policy that tightened
+ * between injection and call is still enforced — this list is the offer, not
+ * the gate.
+ */
+export function listAgentWritableTargets(): ReadonlyArray<{
+  surfaceName: string;
+  target: SurfaceWriteTarget;
+  policy: Exclude<SurfaceWritePolicy, "manual">;
+}> {
+  const out: Array<{
+    surfaceName: string;
+    target: SurfaceWriteTarget;
+    policy: Exclude<SurfaceWritePolicy, "manual">;
+  }> = [];
+  for (const live of listLiveWriteTargets()) {
+    if (!live.hasHandler) continue;
+    const policy = resolveApplyPolicy(live.target, live.surfaceName);
+    if (policy === "manual") continue;
+    out.push({ surfaceName: live.surfaceName, target: live.target, policy });
+  }
+  return out;
+}
+
+/**
  * The write targets currently reachable (declared AND mounted), deepest
  * surface first — for authoring surfaces / debug chrome (the Surface Context
  * window can show "what could an agent write here right now").

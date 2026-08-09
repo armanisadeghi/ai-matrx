@@ -68,7 +68,7 @@ import {
   type OrgSharedItem,
 } from "../hooks/useOrgSharedItems";
 import { ResourcePeekHost } from "../peek/ResourcePeekHost";
-import { hasPeek } from "../peek/registry";
+import { hasPeek } from "../peek/kinds-list";
 
 export function OrgResourceDetail() {
   const params = useParams();

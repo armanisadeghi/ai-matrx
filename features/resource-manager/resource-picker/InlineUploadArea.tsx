@@ -1,16 +1,33 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
-import { Upload, Image as ImageIcon, File as FileIcon2, Loader2, AlertCircle, CheckCircle2, X, Minimize2 } from "lucide-react";
+/**
+ * InlineUploadArea — the compact, embeddable upload surface for the unified
+ * "Files" attach picker. Extracted from the deleted standalone
+ * `UploadResourcePicker` (2026-08-08, one-Files-entry overhaul); the upload
+ * contract is unchanged: compression for large images/PDFs, `useFileUpload`
+ * with `visibility: "personal"` + share link, and `onSelect(files)` fired
+ * once with every successfully uploaded file so the host can await durable
+ * edges before dismissing.
+ */
+
+import React, { useCallback, useState } from "react";
+import {
+    AlertCircle,
+    CheckCircle2,
+    File as FileIcon,
+    Loader2,
+    Minimize2,
+    Upload,
+    X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { composeUploadFolderPath } from "@/features/files/handler/utils/upload-folder-path";
 import { compressPdfMultipart, materializeAssetResult } from "@/features/files/api/assets";
 import { getFileDetailsByUrl, EnhancedFileDetails } from "@/utils/file-operations/constants";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 
-interface UploadedFile {
+export interface UploadedFile {
     /**
      * cld_files UUID. When present, downstream code building outbound AI
      * API payloads should construct a `MediaRef` from this id (via
@@ -21,7 +38,7 @@ interface UploadedFile {
     /**
      * **FE classification token** — one of `"image" | "video" | "audio"
      * | "document" | "text" | "pdf" | "other" | "unknown"` from
-     * `classifyFileType()`. This is NOT a MIME type; do not send it to
+     * `classifyUploadType()`. This is NOT a MIME type; do not send it to
      * the backend as `mime_type`. Use `mime_type` below for the real
      * RFC MIME (`"image/jpeg"`, `"audio/mp3"`, etc.).
      */
@@ -31,9 +48,14 @@ interface UploadedFile {
     details?: EnhancedFileDetails;
 }
 
-interface UploadResourcePickerProps {
-    onBack: () => void;
-    onSelect: (files: UploadedFile[]) => void;
+interface InlineUploadAreaProps {
+    /**
+     * Fired once per batch with every file that uploaded successfully.
+     * Failed files stay visible in the progress list with a retry.
+     */
+    onSelect: (files: UploadedFile[]) => void | Promise<void>;
+    /** Lets the host disable navigation while uploads are in flight. */
+    onBusyChange?: (busy: boolean) => void;
 }
 
 function classifyUploadType(mimeType: string): string {
@@ -124,7 +146,7 @@ async function compressPdfFile(file: File, maxSizeMB = 50): Promise<{ file: File
 
 const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024; // 10 MB — warn user, attempt compression
 
-export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerProps) {
+export function InlineUploadArea({ onSelect, onBusyChange }: InlineUploadAreaProps) {
     const [isDragging, setIsDragging] = useState(false);
     const [fileStatuses, setFileStatuses] = useState<FileStatus[]>([]);
     const [uploadError, setUploadError] = useState<string | null>(null);
@@ -135,9 +157,15 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
 
     const isProcessing = fileStatuses.some((f) => f.status === "compressing" || f.status === "uploading");
 
+    const setBusy = useCallback(
+        (busy: boolean) => onBusyChange?.(busy),
+        [onBusyChange],
+    );
+
     const handleFiles = useCallback(async (files: File[]) => {
         if (files.length === 0) return;
 
+        setBusy(true);
         setUploadError(null);
         const initialStatuses: FileStatus[] = files.map((f) => ({ file: f, status: "pending" }));
         setFileStatuses(initialStatuses);
@@ -253,14 +281,15 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
         }
 
         if (firstError) setUploadError(firstError);
-        if (results.length > 0) onSelect(results);
-    }, [upload, onSelect]);
+        setBusy(false);
+        if (results.length > 0) await onSelect(results);
+    }, [upload, onSelect, setBusy]);
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
         setIsDragging(false);
-        handleFiles(Array.from(e.dataTransfer.files));
+        void handleFiles(Array.from(e.dataTransfer.files));
     }, [handleFiles]);
 
     const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -276,7 +305,7 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
     }, []);
 
     const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        handleFiles(Array.from(e.target.files || []));
+        void handleFiles(Array.from(e.target.files || []));
         if (fileInputRef.current) fileInputRef.current.value = "";
     }, [handleFiles]);
 
@@ -285,152 +314,113 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
     const clearAndReset = useCallback(() => {
         setFileStatuses([]);
         setUploadError(null);
-    }, []);
+        setBusy(false);
+    }, [setBusy]);
 
     const hasErrors = fileStatuses.some((f) => f.status === "error");
     const displayError = uploadError || hookError;
 
     return (
-        <div className="flex flex-col max-h-[min(460px,70dvh)]">
-            {/* Header */}
-            <ResourcePickerSubViewHeader
-                title="Upload Files"
-                onBack={onBack}
-                disabled={isProcessing}
-                icon={<Upload className="h-3.5 w-3.5 shrink-0 text-primary" />}
+        <div className="shrink-0 border-b border-border px-2 py-1.5">
+            {/* Hidden file input */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="*/*"
+                onChange={handleFileInputChange}
+                className="hidden"
             />
 
-            {/* Content */}
-            <div className="flex-1 flex flex-col p-2.5 overflow-y-auto gap-2.5">
-                {/* Hidden file input */}
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept="*/*"
-                    onChange={handleFileInputChange}
-                    className="hidden"
-                />
-
-                {/* Error Alert */}
-                {displayError && (
-                    <Alert variant="destructive" className="py-2">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle className="text-xs font-semibold">Upload Failed</AlertTitle>
-                        <AlertDescription className="text-xs">
-                            {displayError}
-                            <div className="mt-1 text-xs opacity-80">
-                                Large PDFs and images are automatically compressed before upload. If the file is still too large,
-                                try splitting it into smaller parts or reducing the resolution.
-                            </div>
-                        </AlertDescription>
-                        <button onClick={clearAndReset} className="absolute top-2 right-2 text-current opacity-60 hover:opacity-100">
-                            <X className="h-3 w-3" />
-                        </button>
-                    </Alert>
-                )}
-
-                {/* File progress list */}
-                {fileStatuses.length > 0 && (
-                    <div className="space-y-1.5">
+            {fileStatuses.length === 0 ? (
+                /* Idle: one dense drop strip. */
+                <button
+                    type="button"
+                    onClick={openFilePicker}
+                    disabled={isLoading}
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    className={cn(
+                        "flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-dashed text-xs transition-colors",
+                        isDragging
+                            ? "border-primary bg-primary/5 text-primary"
+                            : "border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground",
+                    )}
+                >
+                    <Upload className="h-3.5 w-3.5 shrink-0" />
+                    <span>
+                        {isDragging ? "Drop to upload" : "Drop files here or "}
+                        {!isDragging && (
+                            <span className="font-medium text-primary">browse</span>
+                        )}
+                    </span>
+                </button>
+            ) : (
+                <div className="space-y-1">
+                    {/* Compact progress rows — capped and scrollable. */}
+                    <div className="max-h-32 space-y-1 overflow-y-auto">
                         {fileStatuses.map((fs, i) => (
                             <div
                                 key={i}
-                                className={`flex items-start gap-2 px-2.5 py-2 rounded-md text-xs border ${
+                                className={cn(
+                                    "flex items-center gap-1.5 rounded border px-1.5 py-1 text-[11px]",
                                     fs.status === "error"
                                         ? "border-destructive/20 bg-destructive/10"
                                         : fs.status === "done"
-                                        ? "border-emerald-500/20 bg-emerald-500/10"
-                                        : "bg-muted border-border"
-                                }`}
+                                          ? "border-emerald-500/20 bg-emerald-500/10"
+                                          : "border-border bg-muted",
+                                )}
                             >
-                                <div className="flex-shrink-0 mt-0.5">
-                                    {fs.status === "compressing" && <Minimize2 className="w-3.5 h-3.5 text-blue-500 animate-pulse" />}
-                                    {fs.status === "uploading" && <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />}
-                                    {fs.status === "done" && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
-                                    {fs.status === "error" && <AlertCircle className="w-3.5 h-3.5 text-destructive" />}
-                                    {fs.status === "pending" && <FileIcon2 className="w-3.5 h-3.5 text-muted-foreground" />}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <span className="font-medium truncate text-foreground">{fs.file.name}</span>
-                                        <span className="text-muted-foreground flex-shrink-0">{formatBytes(fs.file.size)}</span>
-                                    </div>
-                                    {fs.status === "compressing" && (
-                                        <div className="text-blue-600 dark:text-blue-400 mt-0.5">Compressing…</div>
-                                    )}
-                                    {fs.status === "uploading" && (
-                                        <div className="text-blue-600 dark:text-blue-400 mt-0.5">Uploading…</div>
-                                    )}
-                                    {fs.compressionNote && fs.status !== "compressing" && (
-                                        <div className="text-muted-foreground mt-0.5">{fs.compressionNote}</div>
-                                    )}
-                                    {fs.status === "error" && fs.errorMessage && (
-                                        <div className="text-destructive mt-0.5">{fs.errorMessage}</div>
-                                    )}
-                                </div>
+                                <span className="shrink-0">
+                                    {fs.status === "compressing" && <Minimize2 className="h-3 w-3 animate-pulse text-blue-500" />}
+                                    {fs.status === "uploading" && <Loader2 className="h-3 w-3 animate-spin text-blue-500" />}
+                                    {fs.status === "done" && <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />}
+                                    {fs.status === "error" && <AlertCircle className="h-3 w-3 text-destructive" />}
+                                    {fs.status === "pending" && <FileIcon className="h-3 w-3 text-muted-foreground" />}
+                                </span>
+                                <span className="min-w-0 flex-1 truncate text-foreground" title={fs.file.name}>
+                                    {fs.file.name}
+                                </span>
+                                <span className="shrink-0 text-muted-foreground">
+                                    {fs.status === "compressing"
+                                        ? "Compressing…"
+                                        : fs.status === "uploading"
+                                          ? "Uploading…"
+                                          : formatBytes(fs.file.size)}
+                                </span>
                             </div>
                         ))}
-                        {hasErrors && (
-                            <Button variant="outline" size="sm" className="w-full h-7 text-xs" onClick={clearAndReset}>
-                                Try Again
-                            </Button>
-                        )}
                     </div>
-                )}
 
-                {/* Drop zone — only show when no active uploads */}
-                {fileStatuses.length === 0 && (
-                    <div
-                        onDrop={handleDrop}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-4 transition-colors ${
-                            isDragging
-                                ? "border-primary bg-primary/5"
-                                : "border-border hover:border-muted-foreground/40"
-                        }`}
-                    >
-                        <div className="flex gap-3 mb-3">
-                            <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                            <FileIcon2 className="w-8 h-8 text-muted-foreground" />
+                    {displayError && (
+                        <div className="flex items-start gap-1.5 rounded border border-destructive/20 bg-destructive/10 px-1.5 py-1 text-[11px] text-destructive">
+                            <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                            <span className="min-w-0 flex-1">{displayError}</span>
+                            <button
+                                type="button"
+                                onClick={clearAndReset}
+                                className="shrink-0 opacity-60 hover:opacity-100"
+                                aria-label="Dismiss upload error"
+                            >
+                                <X className="h-3 w-3" />
+                            </button>
                         </div>
-                        <h3 className="text-sm font-medium text-foreground mb-1">
-                            Drop files here
-                        </h3>
-                        <p className="text-xs text-muted-foreground mb-3 text-center">
-                            or click the button below to browse
-                        </p>
-                        <Button onClick={openFilePicker} className="h-8" disabled={isProcessing || isLoading}>
-                            <Upload className="w-4 h-4 mr-2" />
-                            Choose Files
+                    )}
+
+                    {!isProcessing && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 w-full text-xs"
+                            onClick={clearAndReset}
+                        >
+                            <Upload className="mr-1.5 h-3 w-3" />
+                            {hasErrors ? "Try Again" : "Upload More Files"}
                         </Button>
-                    </div>
-                )}
-
-                {/* Upload another batch after completion */}
-                {fileStatuses.length > 0 && !isProcessing && !hasErrors && (
-                    <Button variant="outline" size="sm" className="h-8 text-xs" onClick={clearAndReset}>
-                        <Upload className="w-3.5 h-3.5 mr-1.5" />
-                        Upload More Files
-                    </Button>
-                )}
-
-                {/* Info */}
-                <div className="bg-blue-500/10 p-2.5 rounded-md flex-shrink-0">
-                    <h4 className="text-xs font-medium text-blue-800 dark:text-blue-200 mb-1">
-                        Supported Files
-                    </h4>
-                    <ul className="text-[10px] text-blue-600 dark:text-blue-300 space-y-0.5">
-                        <li>• Images: JPG, PNG, GIF, WebP, SVG</li>
-                        <li>• Documents: PDF, DOC, DOCX, TXT, MD</li>
-                        <li>• Media: MP3, MP4, WAV</li>
-                        <li>• Data: CSV, JSON, XML</li>
-                        <li>• Archives: ZIP, RAR</li>
-                        <li className="text-blue-500 dark:text-blue-400">• Large PDFs and images are automatically compressed</li>
-                    </ul>
+                    )}
                 </div>
-            </div>
+            )}
         </div>
     );
 }

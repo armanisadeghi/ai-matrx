@@ -57,6 +57,11 @@ import {
   isDeclaredSurfaceClientToolName,
   listLiveSurfaceClientTools,
 } from "@/features/surfaces/runtime/surface-client-tools";
+import {
+  listAgentWritableTargets,
+  SURFACE_WRITE_TOOL_NAME,
+} from "@/features/surfaces/runtime/surface-writeback";
+import type { ToolSpecInline } from "@/features/agents/types/tool-injection.types";
 
 interface BuildOptions {
   mode?: "additive" | "replace";
@@ -90,6 +95,64 @@ const SANDBOX_FS_STOPGAP_TOOL_NAMES = [
   "shell_python",
   "git_ingest",
 ] as const;
+
+/**
+ * The inline spec for `apply_surface_write`, built per turn from the LIVE
+ * agent-writable targets (see `listAgentWritableTargets`). Null when nothing
+ * is currently agent-writable — no tool is offered, matching aidream's
+ * `_write_targets_block` (which likewise stays silent when every target is
+ * manual). The `target` enum makes the server reject an undeclared target
+ * before it is ever delegated; `value` is deliberately open (each target
+ * documents its own shape in the description) — the page handler is the
+ * runtime validator.
+ */
+function buildSurfaceWriteInlineSpec(): ToolSpecInline | null {
+  const writable = listAgentWritableTargets();
+  if (writable.length === 0) return null;
+
+  const lines = writable.map(({ target, policy }) => {
+    const applied =
+      policy === "auto" ? "applied immediately" : "the user is asked first";
+    const landing =
+      target.mode === "draft"
+        ? "staged into the page's editor for the user to review and save"
+        : target.mode === "entity"
+          ? "persisted through the page's canonical save path"
+          : "ephemeral view state";
+    return `- ${target.name} (type=${target.valueType}, ${landing}, ${applied}): ${target.description}`;
+  });
+
+  return {
+    kind: "inline",
+    name: SURFACE_WRITE_TOOL_NAME,
+    description:
+      "Write a value into the page the user is currently looking at, through " +
+      "one of its declared write targets. The page itself applies the value " +
+      "through its own handler — you never touch storage directly, and " +
+      "targets not listed here cannot be written. Depending on the target's " +
+      "policy the user may be asked to approve in place; a decline is a " +
+      "normal outcome (respect it, do not retry). Available targets right " +
+      "now:\n" +
+      lines.join("\n"),
+    input_schema: {
+      type: "object",
+      properties: {
+        target: {
+          type: "string",
+          description: "The declared write target to apply.",
+          enum: writable.map(({ target }) => target.name),
+        },
+        value: {
+          type: ["string", "number", "boolean", "array", "object", "null"],
+          description:
+            "The value for the chosen target, shaped exactly as that " +
+            "target's description specifies.",
+        },
+      },
+      required: ["target", "value"],
+    },
+  };
+}
 
 export async function buildToolInjection(
   state: RootState,
@@ -222,6 +285,26 @@ export async function buildToolInjection(
         description: live.tool.description,
         input_schema: live.tool.inputSchema,
       });
+    }
+
+    // SURFACE WRITE TOOL — the stream side of the surfaces 360 loop. Whenever
+    // the mounted stack has agent-writable targets (declared + handled +
+    // resolving to ask/auto after per-run binding overrides), offer ONE inline
+    // tool through which the model lands values in the page. The delegated
+    // call routes through `applySurfaceWrite` with `origin: "agent"`, so the
+    // apply-policy machinery (ask → in-place confirm, per-binding overrides,
+    // the manual floor) governs every write — this injection is the offer, the
+    // seam is the gate. Read fresh every turn, like the client tools above.
+    const surfaceWriteTool = buildSurfaceWriteInlineSpec();
+    if (surfaceWriteTool) {
+      if (alreadyNamed.has(surfaceWriteTool.name)) {
+        console.warn(
+          `[surface-writeback] another tool spec is already named "${surfaceWriteTool.name}" — the surface write tool is not offered this turn.`,
+        );
+      } else {
+        alreadyNamed.add(surfaceWriteTool.name);
+        allTools.push(surfaceWriteTool);
+      }
     }
   }
 

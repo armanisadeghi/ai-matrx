@@ -31,6 +31,7 @@ import QuizPeek from "./kinds/QuizPeek";
 import SandboxPeek from "./kinds/SandboxPeek";
 import ProjectPeek from "./kinds/ProjectPeek";
 import type { PeekProps } from "./types";
+import { PEEK_KINDS } from "./kinds-list";
 
 export const PEEK_REGISTRY: Record<
   string,
@@ -58,6 +59,22 @@ export const PEEK_REGISTRY: Record<
   // Add new kinds here as their peek components land.
 };
 
-export function hasPeek(key: string): boolean {
-  return key in PEEK_REGISTRY;
+// `hasPeek` lives in ./kinds-list — import it from THERE. Importing this module
+// drags all 19 peek components into the caller's chunk, and there is no
+// re-export here precisely so that mistake can't be made by accident.
+
+// Loud parity guard: the importable key list and the real registry must agree.
+if (process.env.NODE_ENV !== "production") {
+  const registered = Object.keys(PEEK_REGISTRY).sort();
+  const listed = [...PEEK_KINDS].sort();
+  if (registered.join("|") !== listed.join("|")) {
+    console.error(
+      "[peek/registry] PEEK_KINDS (kinds-list.ts) is out of sync with " +
+        "PEEK_REGISTRY. Registered: " +
+        registered.join(", ") +
+        " — listed: " +
+        listed.join(", ") +
+        ". Add the kind to BOTH or surfaces will silently lose the Peek door.",
+    );
+  }
 }

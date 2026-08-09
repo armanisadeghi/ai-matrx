@@ -315,11 +315,25 @@ function applyServerNoteUpsert(
   }
 
   // If user has local edits, don't overwrite — mark conflict if content changed
+  //
+  // "Changed" means changed by SOMEONE ELSE. A value this client itself wrote
+  // (`_lastWrittenValues`) is our own work coming back — our write's realtime
+  // echo lands 50–500ms after the REST response, so if the user kept typing in
+  // that window the echo no longer matches the live buffer. Comparing only
+  // against the live buffer asked "is this different from what I'm typing right
+  // now?" and answered yes for every own-echo-during-typing, which is exactly
+  // the recurring false "another device edited this note" report. Check the
+  // actual data we sent before telling the user anything.
   if (existing._dirty) {
+    const written = existing._lastWrittenValues;
     const serverContentChanged =
-      note.content !== undefined && note.content !== existing.content;
+      note.content !== undefined &&
+      note.content !== existing.content &&
+      note.content !== written?.content;
     const serverLabelChanged =
-      note.label !== undefined && note.label !== existing.label;
+      note.label !== undefined &&
+      note.label !== existing.label &&
+      note.label !== written?.label;
     if (serverContentChanged || serverLabelChanged) {
       // Store server data but keep local edits — saveState handled by consumers
       existing._error = "conflict";
@@ -532,6 +546,27 @@ const notesSlice = createSlice({
     },
 
     // ── Save state ──────────────────────────────────────────────────────
+
+    /**
+     * Record the exact values being sent to the server, at the moment the write
+     * is ISSUED (not when it returns — the echo can beat the response).
+     * Read only by the conflict check, so a payload carrying our own values is
+     * never mistaken for a collaborator's edit. Never touches dirty/undo state.
+     */
+    recordNoteWriteAttempt(
+      state,
+      action: PayloadAction<{
+        id: string;
+        values: Partial<Record<NoteUndoableField, Note[NoteUndoableField]>>;
+      }>,
+    ) {
+      const record = state.notes[action.payload.id];
+      if (!record) return;
+      record._lastWrittenValues = {
+        ...record._lastWrittenValues,
+        ...action.payload.values,
+      };
+    },
 
     markNoteSaving(state, action: PayloadAction<string>) {
       const record = state.notes[action.payload];
@@ -1157,6 +1192,7 @@ export const {
   upsertNotesFromServer,
   resolveNoteConflict,
   removeNote,
+  recordNoteWriteAttempt,
   markNoteSaving,
   markNoteSaved,
   markNoteSaveError,
