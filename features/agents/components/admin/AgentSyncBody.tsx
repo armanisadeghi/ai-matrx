@@ -246,8 +246,19 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
     agentId: string;
     result: LinkedCounterpartResult | null;
   } | null>(null);
+  /**
+   * Keyed by ATTEMPT (`agentId|syncNonce`), not just by agent — an error
+   * describes one read, and the next read is a different question.
+   *
+   * `counterpartState` is keyed by agent alone on purpose: a successful result
+   * is still true across a recheck, so a tab-focus re-read must not blank the
+   * panel back to a skeleton. An error has the opposite lifetime — surviving
+   * into the next attempt is how a successful retry stays invisible behind a
+   * destructive error panel, which is exactly what the Retry button exists to
+   * clear.
+   */
   const [errorState, setErrorState] = useState<{
-    agentId: string;
+    attemptKey: string;
     message: string;
   } | null>(null);
   const [busy, setBusy] = useState<null | "pull" | "push" | "copy">(null);
@@ -255,7 +266,9 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
   /** Bumped after a sync so the comparison is recomputed against fresh rows. */
   const [syncNonce, setSyncNonce] = useState(0);
 
-  const error = errorState?.agentId === agentId ? errorState.message : null;
+  const attemptKey = `${agentId}|${syncNonce}`;
+  const error =
+    errorState?.attemptKey === attemptKey ? errorState.message : null;
   const counterpart =
     counterpartState?.agentId === agentId ? counterpartState.result : null;
   const loading = counterpartState?.agentId !== agentId && !error;
@@ -273,7 +286,7 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
       .catch((err: unknown) => {
         if (cancelled) return;
         setErrorState({
-          agentId,
+          attemptKey,
           message:
             err instanceof Error
               ? err.message
@@ -283,7 +296,8 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
     return () => {
       cancelled = true;
     };
-  }, [agentId, dispatch, syncNonce]);
+    // `attemptKey` carries `syncNonce`, so a recheck re-runs this read.
+  }, [agentId, attemptKey, dispatch]);
 
   /**
    * A soft-deleted agent has no honest sync story: the comparison excludes
@@ -367,8 +381,14 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
    * Re-resolve the pair AND re-run the comparison. Doubles as the retry and as
    * the user-facing "Re-check".
    */
+  /**
+   * ONE mechanism clears a stale error: bumping the nonce changes
+   * `attemptKey`, which un-keys any error from the previous attempt. No
+   * explicit reset here — a second clearing path is a path that can be
+   * forgotten, which is exactly how the focus recheck (which bumps the nonce
+   * directly) left a destructive error panel on screen over a successful read.
+   */
   const refreshAfterSync = () => {
-    setErrorState(null);
     setSyncNonce((n) => n + 1);
   };
 
