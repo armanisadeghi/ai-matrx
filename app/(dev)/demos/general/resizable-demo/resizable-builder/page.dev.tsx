@@ -126,7 +126,7 @@ const ResizableLayoutDemo = () => {
       return (
         <div
           key={currentPath.join("-")}
-          className="mb-4 p-4 border rounded-lg bg-white shadow-sm"
+          className="mb-4 p-4 border rounded-lg bg-card shadow-sm"
         >
           <h3 className="font-bold mb-2 text-gray-800">
             {section.type === "content"
@@ -375,7 +375,7 @@ const ResizableLayoutDemo = () => {
         <div className="space-y-2">{renderControlPanel(sections)}</div>
       </div>
       <div className="col-span-9 p-6">
-        <div className="w-full h-full border-4 border-gray-300 rounded-lg overflow-hidden shadow-lg bg-white">
+        <div className="w-full h-full border-4 border-border rounded-lg overflow-hidden shadow-lg bg-card">
           <NestedResizableLayout sections={sections} />
         </div>
       </div>

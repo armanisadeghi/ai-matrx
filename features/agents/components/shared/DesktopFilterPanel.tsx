@@ -409,7 +409,7 @@ export function DesktopFilterPanel({
               >
                 <span
                   className={cn(
-                    "absolute top-[1px] w-4 h-4 rounded-full bg-white shadow-sm transition-all",
+                    "absolute top-[1px] w-4 h-4 rounded-full bg-background border border-primary shadow-sm transition-all",
                     favoritesFirst ? "left-[14px]" : "left-[1px]",
                   )}
                 />

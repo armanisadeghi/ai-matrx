@@ -30,7 +30,7 @@ const HorizontalSearchLayout: React.FC<AppletInputProps> = ({
         activeContainerId={activeContainerId}
         onActiveContainerChange={setActiveContainerId}
         actionButton={actionButton}
-        className={`mx-auto max-w-4xl rounded-full bg-white ${className}`}
+        className={`mx-auto max-w-4xl rounded-full bg-card ${className}`}
       >
         {appletContainers.map((container, index) => (
           <SearchGroupField

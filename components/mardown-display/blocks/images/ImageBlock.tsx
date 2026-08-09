@@ -252,7 +252,7 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image" }) 
           onClick={() => setShowShareModal(false)}
         >
           <div
-            className="bg-white p-6 rounded-lg max-w-md w-full"
+            className="bg-card text-card-foreground border border-border p-6 rounded-lg max-w-md w-full"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold mb-4">Share this image</h3>
@@ -293,18 +293,18 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image" }) 
                 type="text"
                 value={src}
                 readOnly
-                className="flex-1 border p-2 rounded mr-2"
+                className="flex-1 border border-border bg-background p-2 rounded mr-2"
               />
               <button
                 onClick={handleCopyUrl}
-                className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+                className="bg-muted px-4 py-2 rounded hover:bg-accent"
               >
                 {showCopySuccess ? "Copied!" : "Copy"}
               </button>
             </div>
             <button
               onClick={() => setShowShareModal(false)}
-              className="mt-4 w-full bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+              className="mt-4 w-full bg-muted px-4 py-2 rounded hover:bg-accent"
             >
               Close
             </button>

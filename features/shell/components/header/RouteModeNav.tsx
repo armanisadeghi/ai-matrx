@@ -271,7 +271,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
                       }}
                       aria-current={isActive ? "page" : undefined}
                       className={cn(
-                        "flex min-h-[52px] w-full items-center border-b border-white/[0.06] px-5 text-[15px] transition-colors active:bg-white/5",
+                        "flex min-h-[52px] w-full items-center border-b border-glass-edge px-5 text-[15px] transition-colors active:bg-glass-active",
                         isActive && "font-medium text-primary",
                       )}
                     >

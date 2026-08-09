@@ -525,9 +525,9 @@ export function UserMessageTemplateManager() {
                     setFilterDetailKey(null);
                   }}
                   className={cn(
-                    "flex items-center w-full px-5 min-h-[44px] active:bg-white/5 transition-colors",
+                    "flex items-center w-full px-5 min-h-[44px] active:bg-glass-active transition-colors",
                     idx < SORT_OPTIONS.length - 1 &&
-                      "border-b border-white/[0.06]",
+                      "border-b border-glass-edge",
                   )}
                 >
                   <span
@@ -555,9 +555,9 @@ export function UserMessageTemplateManager() {
                     setFilterDetailKey(null);
                   }}
                   className={cn(
-                    "flex items-center w-full px-5 min-h-[44px] active:bg-white/5 transition-colors",
+                    "flex items-center w-full px-5 min-h-[44px] active:bg-glass-active transition-colors",
                     idx < ROLE_OPTIONS.length - 1 &&
-                      "border-b border-white/[0.06]",
+                      "border-b border-glass-edge",
                   )}
                 >
                   <span
@@ -585,9 +585,9 @@ export function UserMessageTemplateManager() {
                     setFilterDetailKey(null);
                   }}
                   className={cn(
-                    "flex items-center w-full px-5 min-h-[44px] active:bg-white/5 transition-colors",
+                    "flex items-center w-full px-5 min-h-[44px] active:bg-glass-active transition-colors",
                     idx < VISIBILITY_OPTIONS.length - 1 &&
-                      "border-b border-white/[0.06]",
+                      "border-b border-glass-edge",
                   )}
                 >
                   <span
@@ -619,9 +619,9 @@ export function UserMessageTemplateManager() {
                     key={tag}
                     onClick={() => toggleTag(tag)}
                     className={cn(
-                      "flex items-center w-full px-5 min-h-[44px] active:bg-white/5 transition-colors",
+                      "flex items-center w-full px-5 min-h-[44px] active:bg-glass-active transition-colors",
                       idx < allTags.length - 1 &&
-                        "border-b border-white/[0.06]",
+                        "border-b border-glass-edge",
                     )}
                   >
                     <span
@@ -645,7 +645,7 @@ export function UserMessageTemplateManager() {
               {/* Sort By */}
               <button
                 onClick={() => setFilterDetailKey("sort")}
-                className="flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors border-b border-white/[0.06]"
+                className="flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge"
               >
                 <span className="text-[15px] font-medium flex-1 text-left">
                   Sort By
@@ -666,7 +666,7 @@ export function UserMessageTemplateManager() {
               {/* Type / Role */}
               <button
                 onClick={() => setFilterDetailKey("role")}
-                className="flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors border-b border-white/[0.06]"
+                className="flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge"
               >
                 <span className="text-[15px] font-medium flex-1 text-left">
                   Type
@@ -687,7 +687,7 @@ export function UserMessageTemplateManager() {
               {/* Visibility */}
               <button
                 onClick={() => setFilterDetailKey("visibility")}
-                className="flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors border-b border-white/[0.06]"
+                className="flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge"
               >
                 <span className="text-[15px] font-medium flex-1 text-left">
                   Visibility
@@ -712,7 +712,7 @@ export function UserMessageTemplateManager() {
               {/* Tags */}
               <button
                 onClick={() => setFilterDetailKey("tags")}
-                className="flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors border-b border-white/[0.06]"
+                className="flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge"
               >
                 <span className="text-[15px] font-medium flex-1 text-left">
                   Tags

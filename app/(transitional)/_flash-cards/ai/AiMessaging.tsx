@@ -59,14 +59,14 @@ export default function FlashcardChat() {
 
     return (
         <div className="p-4 max-w-md mx-auto">
-            <div className="bg-gray-100 p-4 rounded-lg shadow-md mb-4">
+            <div className="bg-muted p-4 rounded-lg shadow-md mb-4">
                 <h2 className="text-lg font-semibold">AI Study Assistant</h2>
-                <div className="h-64 overflow-y-scroll bg-white p-3 rounded-lg mb-4">
+                <div className="h-64 overflow-y-scroll bg-card p-3 rounded-lg mb-4">
                     {conversation.slice(1).map((msg, index) => (
                         <div
                             key={index}
                             className={`p-2 my-2 rounded-lg ${
-                                msg.role === 'user' ? 'bg-blue-100 text-right' : 'bg-green-100'
+                                msg.role === 'user' ? 'bg-primary/10 border border-primary/20 text-right' : 'bg-muted border border-border'
                             }`}
                         >
                             <p>{msg.content}</p>

@@ -272,7 +272,7 @@ export function EntityModeHeader({
                     setSheetOpen(false);
                     router.push(m.href);
                   }}
-                  className="flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors border-b border-white/[0.06]"
+                  className="flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge"
                 >
                   {Icon && (
                     <Icon
@@ -315,7 +315,7 @@ export function EntityModeHeader({
                     }
                   }}
                   className={cn(
-                    "flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors border-b border-white/[0.06] last:border-0",
+                    "flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge last:border-0",
                     a.destructive
                       ? "text-destructive"
                       : a.warning

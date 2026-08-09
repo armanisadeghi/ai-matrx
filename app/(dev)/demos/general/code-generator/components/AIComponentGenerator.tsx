@@ -113,7 +113,7 @@ function FormComponent() {
   };
   
   return (
-    <div className="p-6 bg-white rounded-xl shadow-md">
+    <div className="p-6 bg-card rounded-xl shadow-md">
       {submitted ? (
         <div className="text-center py-8">
           <h2 className="text-2xl font-bold text-green-600 mb-2">Form Submitted!</h2>
@@ -246,7 +246,7 @@ render(<CustomComponent />);
         {/* Left Panel: Component Editor and AI Assistant */}
         <div className="w-full md:w-1/2 flex flex-col border-r border-gray-200">
           {/* AI Assistant Section */}
-          <div className="bg-white p-4 border-b border-gray-200">
+          <div className="bg-card p-4 border-b border-border">
             <h2 className="font-bold text-lg mb-2">AI Assistant</h2>
             <div className="flex space-x-2 mb-3">
               <input
@@ -305,7 +305,7 @@ render(<CustomComponent />);
           </div>
           
           {/* Save Component Section */}
-          <div className="bg-white p-4 border-t border-gray-200">
+          <div className="bg-card p-4 border-t border-border">
             <div className="flex space-x-2">
               <input
                 type="text"
@@ -331,7 +331,7 @@ render(<CustomComponent />);
             <div className="bg-gray-100 p-2">
               <h2 className="font-semibold">Live Preview</h2>
             </div>
-            <div className="flex-1 p-4 overflow-auto bg-white">
+            <div className="flex-1 p-4 overflow-auto bg-card">
               <LiveProvider code={code} noInline={true}>
                 <LiveError className="p-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md mb-4" />
                 <LivePreview className="p-4 border-border rounded-md" />
@@ -340,7 +340,7 @@ render(<CustomComponent />);
           </div>
           
           {/* Saved Components */}
-          <div className="bg-white border-t border-gray-200">
+          <div className="bg-card border-t border-border">
             <div className="bg-gray-100 p-2">
               <h2 className="font-semibold">Saved Components</h2>
             </div>

@@ -446,7 +446,7 @@ export default function WorkbooksLandingPage() {
         <BottomSheetBody>
           <button
             type="button"
-            className="flex w-full items-center gap-3 px-5 min-h-[52px] border-b border-white/[0.06] active:bg-white/5 transition-colors disabled:opacity-50"
+            className="flex w-full items-center gap-3 px-5 min-h-[52px] border-b border-glass-edge active:bg-glass-active transition-colors disabled:opacity-50"
             disabled={importing || creating || smartCommitting}
             onClick={() => {
               setMobileActionsOpen(false);
@@ -463,7 +463,7 @@ export default function WorkbooksLandingPage() {
           </button>
           <button
             type="button"
-            className="flex w-full items-center gap-3 px-5 min-h-[52px] active:bg-white/5 transition-colors disabled:opacity-50"
+            className="flex w-full items-center gap-3 px-5 min-h-[52px] active:bg-glass-active transition-colors disabled:opacity-50"
             disabled={importing || creating || smartCommitting}
             onClick={() => {
               setMobileActionsOpen(false);

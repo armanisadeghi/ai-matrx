@@ -208,7 +208,7 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
     return (
         <div className="flex items-center justify-center min-h-32">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600"></div>
-          <span className="ml-3 text-gray-700">Loading Slack data...</span>
+          <span className="ml-3 text-foreground">Loading Slack data...</span>
         </div>
     );
   }
@@ -223,7 +223,7 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
   }
 
   return (
-      <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="bg-card shadow rounded-lg overflow-hidden">
         <div className="p-4 bg-purple-600 text-white">
           <h2 className="text-xl font-semibold">Slack Integration</h2>
           {botInfo && (
@@ -235,20 +235,20 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
 
         <div className="flex flex-col md:flex-row min-h-96">
           {/* Channels sidebar */}
-          <div className="w-full md:w-64 border-r border-gray-200 bg-gray-50">
-            <div className="p-3 border-b border-gray-200">
-              <h3 className="font-medium text-gray-700 mb-2">Channels</h3>
+          <div className="w-full md:w-64 border-r border-border bg-muted/50">
+            <div className="p-3 border-b border-border">
+              <h3 className="font-medium text-foreground mb-2">Channels</h3>
               <div className="relative">
                 <input
                     type="text"
                     placeholder="Search channels..."
-                    className="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-1 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 {searchTerm && (
                     <button
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         onClick={() => setSearchTerm('')}
                     >
                       ✕
@@ -264,8 +264,8 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
                 return (
                     <div
                         key={channel.id}
-                        className={`px-4 py-2 hover:bg-gray-100 cursor-pointer ${
-                            isSelected ? 'bg-purple-50 text-purple-700 font-medium' : 'text-gray-700'
+                        className={`px-4 py-2 hover:bg-accent cursor-pointer ${
+                            isSelected ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'
                         }`}
                     >
                       <div className="flex justify-between items-center">
@@ -276,15 +276,15 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
                           <span className="mr-1">#</span>
                           <span className="truncate">{channel.name}</span>
                           {channel.is_private && (
-                              <span className="ml-1 text-xs text-gray-500">(private)</span>
+                              <span className="ml-1 text-xs text-muted-foreground">(private)</span>
                           )}
                           {!channel.is_member && (
-                              <span className="ml-1 text-xs text-gray-500">(not joined)</span>
+                              <span className="ml-1 text-xs text-muted-foreground">(not joined)</span>
                           )}
                         </div>
                         {canJoin && (
                             <button
-                                className="text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-2 py-1 rounded"
+                                className="text-xs bg-primary/10 text-primary hover:bg-primary/20 px-2 py-1 rounded"
                                 onClick={() => handleJoinChannel(channel.id)}
                                 disabled={isJoining}
                             >
@@ -301,16 +301,16 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
           {/* Chat area */}
           <div className="flex-1 flex flex-col">
             {/* Channel header */}
-            <div className="p-3 border-b border-gray-200 bg-white flex justify-between items-center">
+            <div className="p-3 border-b border-border bg-card flex justify-between items-center">
               <h3 className="font-medium">{getSelectedChannelName()}</h3>
               <button
-                  className="text-sm bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded flex items-center"
+                  className="text-sm bg-muted hover:bg-accent px-2 py-1 rounded flex items-center"
                   onClick={handleRefresh}
                   disabled={refreshing || !selectedChannel}
               >
                 {refreshing ? (
                     <span className="flex items-center">
-                  <span className="animate-spin h-3 w-3 border-b-2 border-gray-600 rounded-full mr-1"></span>
+                  <span className="animate-spin h-3 w-3 border-b-2 border-muted-foreground rounded-full mr-1"></span>
                   Refreshing...
                 </span>
                 ) : (
@@ -320,20 +320,20 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white max-h-80">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-card max-h-80">
               {isLoading && selectedChannel ? (
                   <div className="flex justify-center p-4">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
                   </div>
               ) : messages.length === 0 ? (
-                  <div className="text-center text-gray-500 py-6">
+                  <div className="text-center text-muted-foreground py-6">
                     No messages in this channel yet.
                   </div>
               ) : (
                   <>
                     {messages.map(message => (
                         <div key={message.ts} className="flex items-start">
-                          <div className="w-8 h-8 rounded-full bg-gray-300 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                          <div className="w-8 h-8 rounded-full bg-muted flex-shrink-0 flex items-center justify-center overflow-hidden">
                             {getUserAvatar(message.user) ? (
                                 <InlineMediaRef
                                     ref={getUserAvatar(message.user)!}
@@ -343,29 +343,29 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
                                     rounded="full"
                                 />
                             ) : (
-                                <span className="text-xs font-medium text-gray-600">
+                                <span className="text-xs font-medium text-muted-foreground">
                           {isBotMessage(message) ? 'Bot' : getUserName(message.user).charAt(0)}
                         </span>
                             )}
                           </div>
                           <div className="ml-2 flex-1">
                             <div className="flex items-baseline">
-                        <span className="font-medium text-gray-900">
+                        <span className="font-medium text-foreground">
                           {isBotMessage(message) ? 'Bot' : getUserName(message.user)}
                         </span>
-                              <span className="ml-2 text-xs text-gray-500">
+                              <span className="ml-2 text-xs text-muted-foreground">
                           {new Date(parseInt(message.ts) * 1000).toLocaleTimeString()}
                         </span>
                             </div>
-                            <div className="text-gray-700 whitespace-pre-wrap">{message.text}</div>
+                            <div className="text-foreground whitespace-pre-wrap">{message.text}</div>
 
                             {/* Display file attachments */}
                             {message.files && message.files.length > 0 && (
                                 <div className="mt-2">
                                   {message.files.map(file => (
-                                      <div key={file.id} className="mt-1 p-2 border-border rounded bg-gray-50">
+                                      <div key={file.id} className="mt-1 p-2 border-border rounded bg-muted/50">
                                         <div className="flex items-center">
-                                          <svg className="w-4 h-4 text-gray-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                          <svg className="w-4 h-4 text-muted-foreground mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                                           </svg>
                                           <span className="text-sm font-medium">{file.name}</span>
@@ -375,7 +375,7 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
                                               <img
                                                   src={file.thumb_360}
                                                   alt={file.name}
-                                                  className="max-w-xs rounded border border-gray-300"
+                                                  className="max-w-xs rounded border border-border"
                                                   style={{
                                                     maxWidth: '100%',
                                                     maxHeight: '200px',
@@ -398,12 +398,12 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
             </div>
 
             {/* Message input */}
-            <div className="border-t border-gray-200 p-3 bg-white">
+            <div className="border-t border-border p-3 bg-card">
               <form onSubmit={handleSendMessage} className="flex flex-col space-y-2">
                 <div className="flex">
                   <input
                       type="text"
-                      className="flex-1 border border-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="flex-1 border border-border rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                       placeholder="Type a message..."
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
@@ -411,7 +411,7 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
                   />
                   <button
                       type="submit"
-                      className="bg-purple-600 text-white px-4 py-2 rounded-r-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50"
+                      className="bg-purple-600 text-white px-4 py-2 rounded-r-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50"
                       disabled={isSending || !selectedChannel || !newMessage.trim()}
                   >
                     {isSending ? 'Sending...' : 'Send'}

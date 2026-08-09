@@ -145,7 +145,7 @@ function FilterDrawerContent({
                 setActiveFilterKey(null);
                 setSearchQuery("");
               }}
-              className="flex items-center w-full px-5 min-h-[44px] active:bg-white/5 transition-colors border-b border-white/[0.06]"
+              className="flex items-center w-full px-5 min-h-[44px] active:bg-glass-active transition-colors border-b border-glass-edge"
             >
               <span
                 className={cn(
@@ -171,9 +171,9 @@ function FilterDrawerContent({
                   setSearchQuery("");
                 }}
                 className={cn(
-                  "flex items-center w-full px-5 min-h-[44px] active:bg-white/5 transition-colors",
+                  "flex items-center w-full px-5 min-h-[44px] active:bg-glass-active transition-colors",
                   idx < filteredOptions.length - 1 &&
-                    "border-b border-white/[0.06]",
+                    "border-b border-glass-edge",
                 )}
               >
                 <span
@@ -210,8 +210,8 @@ function FilterDrawerContent({
                   key={f.key}
                   onClick={() => setActiveFilterKey(f.key)}
                   className={cn(
-                    "flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors",
-                    idx < filters.length - 1 && "border-b border-white/[0.06]",
+                    "flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors",
+                    idx < filters.length - 1 && "border-b border-glass-edge",
                   )}
                 >
                   <span className="text-[15px] font-medium flex-1 text-left">
