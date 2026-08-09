@@ -122,9 +122,10 @@ internal platform use — never a washed-down user variant beside a private one:
   `applySurfaceWrite` (`runtime/surface-writeback.ts`). Mirrored to
   `ui.ui_surface_write_target` by manifest-sync so aidream feeds them to
   surface-bound agents as a `<surface_write_targets>` block. Live adopters:
-  `matrx-user/marketing-page` (`page_meta_tags`, `page_target_keyword`,
-  `page_supporting_keywords` — handlers in
-  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`),
+  `matrx-user/marketing-page` (12 targets — intent/meta, draft body, keyword
+  attach/detach, social card, indexability, headings, links, notes, image plan,
+  and image alts — handlers in `features/marketing/components/pages/MarketingPageWriteTargets.tsx`
+  and `PageDraftContentCard`),
   `matrx-user/keyword-intelligence` (`keyword_selection`, `open_keyword`),
   `matrx-user/crm-create-party` (`party_draft` — handlers in
   `features/crm/components/PartyCreateForm.tsx`),
@@ -151,7 +152,8 @@ internal platform use — never a washed-down user variant beside a private one:
   platform refuses). **Making a surface agent-writable? Invoke the
   `surface-write-targets` skill** — judgment bar, declaration + handler
   recipe, mandatory live-agent verification, avalanche contract. Live
-  agent-writable adopters: `matrx-user/marketing-page`,
+  agent-writable adopters: `matrx-user/marketing-page` (12 ask-policy
+  targets — full authoring coverage, the richest write surface),
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
   `TaskEditorBody.tsx`), `matrx-user/crm-create-party` (ONE composite
@@ -326,7 +328,7 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 ## Change Log
 
 - **2026-08-09 — Marketing Ranks agent-writable + Keyword Intelligence `open_keyword`.** `matrx-user/marketing-ranks` declares 2 ask-policy entity targets (`track_keywords` — batch add through the SAME `usePortfolio().addTarget` aidream path as the Track form, mode ids validated against `TRACKING_MODES` with per-mode location rules; `set_tracking_active` — non-destructive pause/resume via `updateTarget`, the Active switch's path; delete stays human); handlers on `RanksWorkspace.tsx`'s provider. `matrx-user/keyword-intelligence` gained `open_keyword` (ui/ask — navigates the window through the canonical related-keyword path, recording window history; handler on `KeywordIntelPanel`'s provider). Live-verified with real Badass Agent runs on `/marketing/.../ranks`: ask dialog per target, applied add landed in `seo.rank_target`, pause flipped exactly the named row, decline returned a non-error envelope, undeclared delete refused. DB mirror rows added to `ui.ui_surface_write_target`.
-
+- **2026-08-09 — marketing-page write coverage completed (12 targets — the richest write surface).** 8 new ask-policy targets beside the existing 4: `page_remove_keywords` (canonical `removePageKeyword`, supporting role only), `page_social_card`, `page_indexability_plan`, `page_headings_plan`, `page_link_plan`, `page_plan_notes` (six note keys, one composite), `page_image_plan` (append/replace, entries minted `planned`), `page_image_alts` — all through the clobber-safe `updatePageDesiredValues` merge or the association chokepoint. Handler-side staleness fix: `MarketingPageWriteTargets` keeps the freshest RETURNED row (`rowRef`, generalizing the D5 versionRef fix) so several applies in one agent message never read one-save-stale intent/desired state. DB mirror upserted (8 `ui.ui_surface_write_target` rows). Live-verified with two real Badass Agent runs on a page workspace: 9 ask dialogs (4 then 5 targets in one message each) all applied and confirmed in `web.page.desired_values` + `platform.associations` (attach-2/remove-1 keyword cycle), zero version-guard trips; undeclared-target probe (`page_url`) refused loudly with the declared-target list echoed back; unanswered asks from an earlier run declined as non-errors and the agent continued gracefully.
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 
 - **2026-08-08 — Surface auto-adoption at launch.** `launchAgentExecution` now adopts the mounted `<SurfaceRuntimeProvider>` (deepest wins, via `getSurfaceRuntime()`) when the caller passes NEITHER `runtime.surfaceName` NOR `runtime.applicationScope` — name AND live scope together, so every one of the ~33 surface-blind direct launch call sites picks up binding layers, value mappings, write policies, and document evidence on any page with a provider (127 mounts) with zero per-site wiring. Explicit caller values always win; a scope-only launch is untouched; the route-prefix guess (`detectActiveSurface`) is deliberately NOT used here (a name without a mounted runtime has no scope and would fabricate one — it remains the tool-injection fallback only, `build-tool-injection.ts`). A throwing adopted `getScope()` logs loudly and launches surface-named but scope-less. Verified: type gate + A/B against clean main (identical behavior on the dev session whose chat send was already stalled by HMR churn); live confirmation of an adopted scope on a real launch still owed.
