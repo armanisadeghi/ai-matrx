@@ -17,13 +17,38 @@ the campaign has a checker AND a standing scoreboard, not a paragraph.
 |---|---|---|
 | **Checker** | `scripts/dead-ends/` (`pnpm check:dead-ends`) | AST rules over every `.tsx` in `features/`, `components/`, `app/`, `lib/`. Ranked report, exit 0. |
 | **Scoreboard** | `/administration/reporting/dead-ends` (`features/admin/dead-ends/`) | Renders the committed snapshot: totals, trend, worst features/files, every finding openable, one-click repair briefs. |
-| **ESLint rule** | `matrx/no-bare-id-text` (`eslint.config.mjs`, `warn`) | The narrow, near-zero-false-positive slice only: a raw id rendered as JSX text with no door above it. |
+| **ESLint rule** | `matrx/no-bare-id-text` (`eslint.config.mjs`, `warn`) | The narrow slice: a **named** id (`agentId`, `task_id`) rendered as JSX text with no door above it. |
 
 **The division of labour is deliberate.** ESLint sees one file at a time with
 no cross-file context, so it only claims the shape it can be certain about. The
 checker carries the fuzzy cases (a name whose id is in scope, a count with no
 list behind it, a surface that imports no door primitive at all) because those
 need whole-file reasoning and a read of the live entity registry.
+
+**The one thing ESLint structurally cannot do is name the entity.** The registry
+(`features/scopes/registry/entityRegistry.ts`) is a TS module the rule cannot
+read, so the rule cannot tell `{agent.id}` — a real dead end — from
+`{openItem.id}`, a detail panel printing its own row. It therefore reports
+**named ids only**; plain `id`/`uuid` is left entirely to the checker. That
+single exclusion, plus mirrored skip-tags, non-record id/root gates, the
+conditional-else skip and the "record is gone" copy gate, is what keeps the rule
+a genuine narrow slice rather than a noisier parallel checker.
+
+**Measured 2026-08-09** (`npx eslint features components app lib`, warnings
+carrying this rule id):
+
+| | Warnings | Shared with the checker's `bare-id-text` |
+|---|---|---|
+| Before those gates | 139 | 38 of 80 |
+| Shipped | **76** | 36 of 80 |
+
+Read the second row honestly: the two enforcers still disagree on about half
+their findings in each direction, and **that is expected, not a bug**. The
+checker suppresses ids whose entity it cannot resolve; the rule suppresses ids
+it cannot name. The 40 rule-only warnings are mostly the unnameable class
+(`{d.originalId}` on a chart datum) — residual noise the registry would resolve
+and ESLint cannot. Do not "fix" one enforcer to match the other's count; they
+answer different questions with different information.
 
 ## LOUD, NEVER BLOCKING
 

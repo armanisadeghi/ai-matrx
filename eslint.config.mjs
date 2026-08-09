@@ -490,7 +490,28 @@ const matrxLintPlugin = {
                 const filename = context.filename || context.getFilename?.() || '';
                 if (ALLOWED.some((p) => filename.includes(p))) return {};
 
-                const ID_NAME_RE = /^(id|uuid|.+_id|.+Id|.+Uuid|.+UUID)$/;
+                /**
+                 * NAMED ids only — `agentId`, `task_id`, `sandbox_id`.
+                 *
+                 * Plain `id` / `uuid` is deliberately NOT here, and that is the
+                 * single biggest thing keeping this rule a genuine SUBSET of
+                 * scripts/dead-ends/scan.ts. The scanner drops a bare `.id` on
+                 * an object it cannot name ("not evidence of a record") because
+                 * it can consult the entity registry to decide; ESLint cannot
+                 * read that registry, so it cannot tell `{agent.id}` (a real
+                 * dead end) from `{openItem.id}` (a detail panel's own row).
+                 * Reporting both made the rule NOISIER than the checker it was
+                 * supposed to be the confident slice of — measured 2026-08-09:
+                 * 139 warnings against the scanner's 80 bare-id findings, with
+                 * only 38 in common. Under-reporting is the contract here.
+                 */
+                const ID_NAME_RE = /^(.+_id|.+Id|.+Uuid|.+UUID)$/;
+                /** Ids that identify a UI thing, not a record — mirrors NON_RECORD_ID_RE. */
+                const NON_RECORD_ID_RE =
+                    /^(request|instance|client|tab|element|trace|correlation|render|form|input|row|cell|toast|dialog|menu|container)(_id|Id|_uuid|Uuid)$/;
+                /** Roots holding a transient runtime thing — mirrors NON_RECORD_ROOT_RE. */
+                const NON_RECORD_ROOT_RE =
+                    /^(request|instance|promise|rejection|toast|snap|snapshot|state|draft|event|err|error|ref|timer|subscription|channel)([A-Z0-9_].*)?$/;
                 const DOOR_TAGS = new Set([
                     'a',
                     'Link',
@@ -561,7 +582,95 @@ const matrxLintPlugin = {
                     'TooltipContent',
                     'pre',
                     'code',
+                    // "You are here" headings — the record's own surface. These
+                    // were missing, so `<DialogTitle>SSH Access — {t.sandbox_id}</DialogTitle>`
+                    // warned on a dialog ABOUT that record. h1/h2 only, same as
+                    // the scanner: h3/h4 are card titles inside lists as often
+                    // as they are record headings.
+                    'h1',
+                    'h2',
+                    'DialogTitle',
+                    'SheetTitle',
+                    'DrawerTitle',
+                    'AlertDialogTitle',
+                    'PageHeader',
+                    'PageTitle',
+                    'BreadcrumbPage',
+                    // Remaining selection surfaces — choosing, not referencing.
+                    'SelectValue',
+                    'DropdownMenuRadioItem',
+                    'DropdownMenuCheckboxItem',
+                    'MenubarItem',
+                    'ComboboxOption',
+                    'ToggleGroupItem',
+                    'RadioGroupItem',
+                    'TabsTrigger',
+                    'AccordionTrigger',
+                    // Chrome and prose.
+                    'title',
+                    'Toast',
+                    'ToastTitle',
+                    'HoverCardContent',
+                    'DialogDescription',
+                    'SheetDescription',
+                    'DrawerDescription',
+                    'AlertDialogDescription',
+                    'AlertDescription',
+                    'CardDescription',
+                    'FormDescription',
                 ]);
+
+                /**
+                 * Is this expression inside a branch of a conditional whose
+                 * OTHER branch renders something else? `a ? <EntityRef/> : {id}`
+                 * puts the raw id on the arm where the door does not exist.
+                 */
+                const isConditionalBranch = (node) => {
+                    for (let cur = node; cur; cur = cur.parent) {
+                        const p = cur.parent;
+                        if (!p) return false;
+                        if (
+                            p.type === 'ConditionalExpression' &&
+                            (p.consequent === cur || p.alternate === cur)
+                        ) {
+                            return true;
+                        }
+                        // Stop at the enclosing JSX element boundary above the
+                        // container — beyond that we are in unrelated markup.
+                        if (cur.type === 'JSXElement' && p.type === 'JSXElement') return false;
+                    }
+                    return false;
+                };
+
+                /**
+                 * "Sandbox Deleted … {t.sandbox_id}" — copy saying the record
+                 * is GONE. There is nothing to open, so naming its id is the
+                 * only thing the surface can do. Looks at the literal text of
+                 * the two nearest enclosing elements.
+                 */
+                const NOT_FOUND_RE =
+                    /\b(not found|no longer exists?|does ?n.t exist|missing|deleted|removed|unavailable|failed to load|expired)\b/i;
+                const isInNotFoundCopy = (node) => {
+                    let seen = 0;
+                    for (let cur = node.parent; cur && seen < 2; cur = cur.parent) {
+                        if (cur.type !== 'JSXElement') continue;
+                        seen += 1;
+                        const text = (cur.children || [])
+                            .map((c) => (c.type === 'JSXText' ? c.value : ''))
+                            .join(' ');
+                        if (NOT_FOUND_RE.test(text)) return true;
+                        // The heading is usually a SIBLING, not an ancestor.
+                        const kids = cur.children || [];
+                        for (const kid of kids) {
+                            if (kid.type !== 'JSXElement') continue;
+                            const inner = (kid.children || [])
+                                .map((c) => (c.type === 'JSXText' ? c.value : ''))
+                                .join(' ');
+                            if (NOT_FOUND_RE.test(inner)) return true;
+                        }
+                    }
+                    return false;
+                };
 
                 const tagOf = (el) => {
                     const n = el.name;
@@ -677,6 +786,15 @@ const matrxLintPlugin = {
                         }
                         const name = terminalName(node.expression);
                         if (!name || !ID_NAME_RE.test(name)) return;
+                        // A UI thing's id — a request, a tab, a DOM node. There
+                        // is nothing behind it to open.
+                        if (NON_RECORD_ID_RE.test(name)) return;
+                        // `cond ? <EntityRef …/> : <span>{row.agent_id}</span>`
+                        // — the fallback arm renders the raw id precisely
+                        // BECAUSE the door is unavailable there. Door Law
+                        // honoured, not broken. The scanner skips these too.
+                        if (isConditionalBranch(node)) return;
+                        if (isInNotFoundCopy(node)) return;
                         // The subject's OWN id only. A foreign key on the
                         // subject (`instance.agentId`) points at a DIFFERENT
                         // record and must still be reported — same rule the
@@ -693,6 +811,11 @@ const matrxLintPlugin = {
                                 .filter(Boolean)
                                 .map((part) => part.toLowerCase());
                         const root = rootName(node.expression);
+                        // A transient runtime object's id (a promise, a toast,
+                        // a snapshot) and a SCREAMING_SNAKE caption table are
+                        // not records. Mirrors the scanner's two root gates.
+                        if (root && NON_RECORD_ROOT_RE.test(root)) return;
+                        if (root && /^[A-Z][A-Z0-9_]*$/.test(root)) return;
                         const subject = root ?? name.replace(/(_id|Id)$/, '');
                         const points = segments(name.replace(/(_id|Id)$/, ''));
                         const ownIdentity =
