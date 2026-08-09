@@ -21,9 +21,22 @@
  * destroying what the user is doing. Pass `showOpen` when the surface is a plain
  * list the user can safely leave.
  *
- * Hover reveal: controls fade in on `group/entity-ref` hover. A standalone
- * caller must put `group/entity-ref` on its row (or pass `alwaysShowActions`),
- * otherwise they only appear on hover/focus of the cluster itself.
+ * Hover reveal: controls fade in on hover of EITHER the named `group/entity-ref`
+ * (what `EntityRef` puts on its own wrapper) OR a plain Tailwind `group`, which
+ * is what almost every row in this codebase already carries for its other
+ * hover-revealed affordances.
+ *
+ * Accepting both is deliberate and load-bearing. The named group alone made a
+ * silent, invisible failure the DEFAULT for standalone callers: forget the
+ * class and the doors render at `opacity-0`, so the surface looks finished, the
+ * markup is right, type-check and lint are green — and the user simply cannot
+ * see the door. That is the exact dead end this module exists to remove, and it
+ * shipped twice (the two debug-window sidebars, 2026-08-09) before Bugbot
+ * caught it. A primitive whose correct use depends on remembering an invisible
+ * convention will be misused; make the common case work instead.
+ *
+ * `alwaysShowActions` still pins them visible for surfaces with no hover at all
+ * (a window title bar, a touch-first list).
  *
  * Adding a door for a new entity type is a registry edit, never a change here:
  *   route → `hrefFor` in `features/scopes/registry/entityRegistry.ts`
@@ -97,7 +110,7 @@ export function EntityDoorControls({
         className={cn(
           "inline-flex shrink-0 items-center gap-0.5",
           !alwaysShowActions &&
-            "opacity-0 transition-opacity group-hover/entity-ref:opacity-100 focus-within:opacity-100",
+            "opacity-0 transition-opacity group-hover/entity-ref:opacity-100 group-hover:opacity-100 focus-within:opacity-100",
           className,
         )}
       >
