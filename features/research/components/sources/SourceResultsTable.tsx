@@ -26,6 +26,12 @@ import {
   SOURCE_TYPE_CONFIG,
   authorityTier,
 } from "../../constants";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+  MOBILE_TABLE_ROW,
+} from "@/components/official/mobile-table/mobileTable";
 
 /**
  * Shared tabular view of sources for the casual browsing surfaces (keyword
@@ -331,10 +337,10 @@ export function SourceResultsTable({
 
   return (
     <div className="overflow-x-auto rounded-lg border border-border/50">
-      <table className="w-full text-left">
+      <table className={cn("text-left", MOBILE_TABLE)}>
         <thead>
           <tr className="border-b border-border/40 text-[10px] uppercase tracking-wider text-muted-foreground">
-            <th className="py-1.5 pl-2 pr-1 w-10 font-medium">
+            <th className={cn("py-1.5 pl-2 pr-1 w-10 font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-0 max-sm:bg-card")}>
               {interactive ? (
                 <SortHeader
                   label="Best"
@@ -530,9 +536,12 @@ export function SourceResultsTable({
                     go();
                   }
                 }}
-                className="group border-b border-border/20 last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
+                className={cn(
+                  "group border-b border-border/20 last:border-0 sm:hover:bg-muted/40 cursor-pointer transition-colors",
+                  MOBILE_TABLE_ROW,
+                )}
               >
-                <td className="py-2 pl-2 pr-1 align-top font-mono text-[11px] tabular-nums text-muted-foreground">
+                <td className={cn("py-2 pl-2 pr-1 align-top font-mono text-[11px] tabular-nums text-muted-foreground", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-0")}>
                   {rank != null ? rank : "—"}
                 </td>
                 <td className="py-2 px-1 align-top">

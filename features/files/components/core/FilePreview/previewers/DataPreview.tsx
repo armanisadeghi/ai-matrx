@@ -37,6 +37,12 @@ import Papa from "papaparse";
 import { cn } from "@/lib/utils";
 import { extname } from "@/features/files/utils/path";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+  MOBILE_TABLE_ROW,
+} from "@/components/official/mobile-table/mobileTable";
 
 const ROWS_PER_PAGE = 25;
 
@@ -429,15 +435,18 @@ export function DataPreview({ fileId, fileName, className }: DataPreviewProps) {
             No rows.
           </div>
         ) : (
-          <table className="min-w-full border-collapse text-sm">
+          <table className={cn("border-collapse text-sm", MOBILE_TABLE)}>
             <thead className="sticky top-0 bg-muted z-10">
               <tr>
-                {headers.map((h) => {
+                {headers.map((h, colIdx) => {
                   const active = sortKey === h;
                   return (
                     <th
                       key={h}
-                      className="border-b border-border px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap"
+                      className={cn(
+                        "border-b border-border px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap",
+                        colIdx === 0 && MOBILE_TABLE_FROZEN_HEAD,
+                      )}
                     >
                       <button
                         type="button"
@@ -465,16 +474,20 @@ export function DataPreview({ fileId, fileName, className }: DataPreviewProps) {
               {pageRows.map((row, idx) => (
                 <tr
                   key={idx}
-                  className="border-b border-border/60 hover:bg-muted/40"
+                  className={cn(
+                    "border-b border-border/60 sm:hover:bg-muted/40",
+                    MOBILE_TABLE_ROW,
+                  )}
                 >
-                  {headers.map((h) => {
+                  {headers.map((h, colIdx) => {
                     const v = row[h];
                     const empty = v === null || v === undefined || v === "";
                     return (
                       <td
                         key={h}
                         className={cn(
-                          "px-3 py-1.5 align-top text-xs whitespace-nowrap max-w-[28ch] truncate",
+                          "px-3 py-1.5 align-top text-xs whitespace-nowrap sm:max-w-[28ch] sm:truncate",
+                          colIdx === 0 && MOBILE_TABLE_FROZEN_CELL,
                           empty && "text-muted-foreground",
                         )}
                         title={empty ? "—" : String(v)}

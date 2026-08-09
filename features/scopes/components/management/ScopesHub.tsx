@@ -49,6 +49,13 @@ import type {
   OrgNode,
   ScopeTypeNode,
 } from "@/features/scopes/types";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_CELL,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+  MOBILE_TABLE_ROW,
+} from "@/components/official/mobile-table/mobileTable";
 
 /** Reasonable cap on context-item columns so wide catalogs don't explode
  *  the table; overflow is announced in the header ("+N more"). */
@@ -348,13 +355,14 @@ function ScopeTypeTable({
         <div className="overflow-x-auto">
           <table
             className={cn(
-              "w-full text-sm border-collapse",
+              "text-sm border-collapse",
+              MOBILE_TABLE,
               isPending && "opacity-60 pointer-events-none",
             )}
           >
             <thead>
               <tr className="border-b border-border/50 text-left">
-                <th className="px-3 sm:px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground/75 whitespace-nowrap">
+                <th className={cn("px-3 sm:px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground/75 whitespace-nowrap", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-card")}>
                   {type.label_singular}
                 </th>
                 {columns.map((item) => (
@@ -381,8 +389,9 @@ function ScopeTypeTable({
                       )
                     }
                     className={cn(
-                      "border-b border-border/30 last:border-b-0 cursor-pointer transition-colors hover:bg-accent/60",
-                      isActive && "bg-primary/5",
+                      "border-b border-border/30 last:border-b-0 cursor-pointer transition-colors sm:hover:bg-accent/60",
+                      MOBILE_TABLE_ROW,
+                      isActive && "sm:bg-primary/5",
                     )}
                     style={
                       isActive
@@ -390,7 +399,7 @@ function ScopeTypeTable({
                         : undefined
                     }
                   >
-                    <td className="px-3 sm:px-4 py-2 whitespace-nowrap">
+                    <td className={cn("px-3 sm:px-4 py-2 whitespace-nowrap", MOBILE_TABLE_FROZEN_CELL)}>
                       <span
                         className={cn(
                           "font-medium",
@@ -406,7 +415,7 @@ function ScopeTypeTable({
                       return (
                         <td
                           key={item.id}
-                          className="px-3 py-2 max-w-[18rem]"
+                          className={cn("px-3 py-2 sm:max-w-[18rem]", MOBILE_TABLE_CELL)}
                           title={summary ?? undefined}
                         >
                           {summary ? (

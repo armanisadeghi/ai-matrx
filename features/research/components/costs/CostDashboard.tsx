@@ -32,6 +32,12 @@ import {
   type CostLedgerEntry,
   type CostPhase,
 } from "../../costs";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+  MOBILE_TABLE_ROW,
+} from "@/components/official/mobile-table/mobileTable";
 
 const PHASE_ICON: Record<CostPhase, typeof Brain> = {
   page_analyses: Brain,
@@ -104,11 +110,12 @@ function LedgerRow({ entry }: { entry: CostLedgerEntry }) {
   return (
     <tr
       className={cn(
-        "border-b border-border/30 last:border-0 hover:bg-muted/20 transition-colors",
-        !entry.succeeded && "bg-destructive/5",
+        "border-b border-border/30 last:border-0 sm:hover:bg-muted/20 transition-colors",
+        MOBILE_TABLE_ROW,
+        !entry.succeeded && "sm:bg-destructive/5",
       )}
     >
-      <td className="px-2 py-1.5 whitespace-nowrap text-muted-foreground tabular-nums text-[11px]">
+      <td className={cn("px-2 py-1.5 whitespace-nowrap text-muted-foreground tabular-nums text-[11px]", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-0")}>
         {formatTime(entry.createdAt)}
       </td>
       <td className="px-2 py-1.5">
@@ -303,10 +310,10 @@ export default function CostDashboard() {
           <h2 className="text-xs font-semibold">By pipeline phase</h2>
         </header>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs min-w-[560px]">
+          <table className={cn("text-xs", MOBILE_TABLE)}>
             <thead>
               <tr className="border-b border-border/40 text-[10px] uppercase tracking-wide text-muted-foreground">
-                <th className="px-3 py-2 text-left font-medium">Phase</th>
+                <th className={cn("px-3 py-2 text-left font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-card")}>Phase</th>
                 <th className="px-3 py-2 text-right font-medium">Calls</th>
                 <th className="px-3 py-2 text-right font-medium">In</th>
                 <th className="px-3 py-2 text-right font-medium">Cached</th>
@@ -323,10 +330,11 @@ export default function CostDashboard() {
                     key={phase.phase}
                     className={cn(
                       "border-b border-border/30 last:border-0",
+                      MOBILE_TABLE_ROW,
                       empty && "opacity-50",
                     )}
                   >
-                    <td className="px-3 py-1.5 font-medium">
+                    <td className={cn("px-3 py-1.5 font-medium", MOBILE_TABLE_FROZEN_CELL)}>
                       <div className="flex items-center gap-2">
                         <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
                         <span>{phase.label}</span>
@@ -393,10 +401,10 @@ export default function CostDashboard() {
             <h2 className="text-xs font-semibold">By model</h2>
           </header>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs min-w-[560px]">
+            <table className={cn("text-xs", MOBILE_TABLE)}>
               <thead>
                 <tr className="border-b border-border/40 text-[10px] uppercase tracking-wide text-muted-foreground">
-                  <th className="px-3 py-2 text-left font-medium">Model</th>
+                  <th className={cn("px-3 py-2 text-left font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-card")}>Model</th>
                   <th className="px-3 py-2 text-left font-medium">Provider</th>
                   <th className="px-3 py-2 text-right font-medium">Requests</th>
                   <th className="px-3 py-2 text-right font-medium">In</th>
@@ -409,9 +417,11 @@ export default function CostDashboard() {
                 {models.map((m) => (
                   <tr
                     key={m.model}
-                    className="border-b border-border/30 last:border-0"
+                    className={cn("border-b border-border/30 last:border-0", MOBILE_TABLE_ROW)}
                   >
-                    <td className="px-3 py-1.5 font-medium">{m.model}</td>
+                    <td className={cn("px-3 py-1.5 font-medium", MOBILE_TABLE_FROZEN_CELL)}>
+                      {m.model}
+                    </td>
                     <td className="px-3 py-1.5 text-muted-foreground">
                       {m.api ?? "—"}
                     </td>
@@ -486,7 +496,7 @@ export default function CostDashboard() {
             </colgroup>
             <thead className="bg-muted/60">
               <tr className="border-b border-border/50 text-[10px] uppercase tracking-wide text-muted-foreground">
-                <th className="px-2 py-2 text-left font-medium">When</th>
+                <th className={cn("px-2 py-2 text-left font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-0 max-sm:bg-muted/60")}>When</th>
                 <th className="px-2 py-2 text-left font-medium">Phase</th>
                 <th className="px-2 py-2 text-left font-medium">Subject</th>
                 <th className="px-2 py-2 text-left font-medium hidden md:table-cell">

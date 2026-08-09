@@ -52,6 +52,15 @@ import {
 import { slugifyKey } from "@/features/scope-system/utils/slugify";
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
 import { TemplateGalleryDrawer } from "@/features/scope-system/components/TemplateGalleryDrawer";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_CELL,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+  MOBILE_TABLE_ROW,
+  MOBILE_TABLE_WRAPPER,
+} from "@/components/official/mobile-table/mobileTable";
 
 // A column shown in the ghost preview. `name` becomes a context item if the
 // dimension is added; sample values are illustrative only.
@@ -335,17 +344,17 @@ function GhostDimensionCard({
       </div>
 
       {/* Mini table: rows = scopes, columns = context items, cells = values */}
-      <div className="rounded-md border border-border/70 overflow-hidden text-[11px]">
-        <table className="w-full table-fixed">
+      <div className={cn("rounded-md border border-border/70 overflow-hidden text-[11px]", MOBILE_TABLE_WRAPPER)}>
+        <table className={cn("sm:table-fixed", MOBILE_TABLE)}>
           <thead>
             <tr className="bg-muted/50 text-muted-foreground">
-              <th className="text-left font-medium px-2 py-1 w-[34%]">
+              <th className={cn("text-left font-medium px-2 py-1 sm:w-[34%]", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[120px] max-sm:bg-muted")}>
                 {dim.singular}
               </th>
               {dim.columns.map((c) => (
                 <th
                   key={c.name}
-                  className="text-left font-medium px-2 py-1 truncate"
+                  className={cn("text-left font-medium px-2 py-1 sm:truncate", MOBILE_TABLE_CELL)}
                 >
                   {c.name}
                 </th>
@@ -354,14 +363,14 @@ function GhostDimensionCard({
           </thead>
           <tbody>
             {dim.rows.map((row, rIdx) => (
-              <tr key={row} className="border-t border-border/60">
-                <td className="px-2 py-1 font-medium text-foreground truncate">
+              <tr key={row} className={cn("border-t border-border/60", MOBILE_TABLE_ROW)}>
+                <td className={cn("px-2 py-1 font-medium text-foreground sm:truncate", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[120px]")}>
                   {row}
                 </td>
                 {dim.columns.map((c) => (
                   <td
                     key={c.name}
-                    className="px-2 py-1 text-muted-foreground truncate"
+                    className={cn("px-2 py-1 text-muted-foreground sm:truncate", MOBILE_TABLE_CELL)}
                   >
                     {c.samples[rIdx]}
                   </td>

@@ -40,6 +40,13 @@ import {
   type OrgModuleSetting,
   type PermissionLevel,
 } from "../orgModuleSettings";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+  MOBILE_TABLE_ROW,
+} from "@/components/official/mobile-table/mobileTable";
 
 type ToggleField =
   "membersCanAdd" | "requiresApproval" | "isScopeable" | "autoIngest";
@@ -166,10 +173,10 @@ export function OrgModuleSettings({
               </div>
 
               <div className="rounded-lg border border-border overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className={cn("text-sm", MOBILE_TABLE)}>
                   <thead>
                     <tr className="border-b border-border bg-muted/30">
-                      <th className="text-left font-medium text-xs text-muted-foreground px-3 py-2 min-w-[160px]">
+                      <th className={cn("text-left font-medium text-xs text-muted-foreground px-3 py-2 min-w-[160px]", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-muted")}>
                         Module
                       </th>
                       {COLUMNS.map((col) => (
@@ -208,9 +215,9 @@ export function OrgModuleSettings({
                       return (
                         <tr
                           key={entry.key}
-                          className="border-b border-border last:border-0 hover:bg-accent/30"
+                          className={cn("border-b border-border last:border-0 sm:hover:bg-accent/30", MOBILE_TABLE_ROW)}
                         >
-                          <td className="px-3 py-2">
+                          <td className={cn("px-3 py-2", MOBILE_TABLE_FROZEN_CELL)}>
                             <div className="flex items-center gap-2">
                               <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
                               <span className="font-medium">

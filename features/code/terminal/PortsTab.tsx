@@ -13,6 +13,13 @@ import {
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveSandboxId } from "../redux/codeWorkspaceSlice";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_CELL,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+  MOBILE_TABLE_ROW,
+} from "@/components/official/mobile-table/mobileTable";
 
 interface PortsTabProps {
   className?: string;
@@ -157,12 +164,12 @@ export const PortsTab: React.FC<PortsTabProps> = ({ className }) => {
           </div>
         )}
         {ports && ports.length > 0 && (
-          <table className="w-full text-[12px]">
+          <table className={cn("text-[12px]", MOBILE_TABLE)}>
             <thead>
               <tr className="text-left text-[10px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-                <th className="px-2 py-1 font-medium">Port</th>
-                <th className="px-2 py-1 font-medium">Process</th>
-                <th className="px-2 py-1 font-medium">Address</th>
+                <th className={cn("px-2 py-1 font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-0 max-sm:bg-background")}>Port</th>
+                <th className={cn("px-2 py-1 font-medium", MOBILE_TABLE_CELL)}>Process</th>
+                <th className={cn("px-2 py-1 font-medium", MOBILE_TABLE_CELL)}>Address</th>
                 <th className="px-2 py-1 font-medium" aria-label="Actions" />
               </tr>
             </thead>
@@ -176,9 +183,12 @@ export const PortsTab: React.FC<PortsTabProps> = ({ className }) => {
                 return (
                   <tr
                     key={key}
-                    className="border-t border-neutral-100 hover:bg-neutral-50 dark:border-neutral-800/70 dark:hover:bg-neutral-900/60"
+                    className={cn(
+                      "border-t border-neutral-100 dark:border-neutral-800/70 sm:hover:bg-neutral-50 sm:dark:hover:bg-neutral-900/60",
+                      MOBILE_TABLE_ROW,
+                    )}
                   >
-                    <td className="px-2 py-1 font-mono">
+                    <td className={cn("px-2 py-1 font-mono", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-0")}>
                       {entry.port}
                       {entry.proto && (
                         <span className="ml-1 text-[10px] uppercase text-neutral-500">
@@ -186,7 +196,7 @@ export const PortsTab: React.FC<PortsTabProps> = ({ className }) => {
                         </span>
                       )}
                     </td>
-                    <td className="px-2 py-1 text-neutral-600 dark:text-neutral-300">
+                    <td className={cn("px-2 py-1 text-neutral-600 dark:text-neutral-300", MOBILE_TABLE_CELL)}>
                       {entry.process ?? entry.command ?? "—"}
                       {entry.pid && (
                         <span className="ml-1 text-[10px] text-neutral-500">
@@ -194,7 +204,7 @@ export const PortsTab: React.FC<PortsTabProps> = ({ className }) => {
                         </span>
                       )}
                     </td>
-                    <td className="truncate px-2 py-1 font-mono text-neutral-500">
+                    <td className={cn("px-2 py-1 font-mono text-neutral-500 sm:truncate", MOBILE_TABLE_CELL)}>
                       {hostport}
                     </td>
                     <td className="px-2 py-1 text-right">
