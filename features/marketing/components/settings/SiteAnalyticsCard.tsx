@@ -30,6 +30,10 @@ import {
   syncSiteAnalytics,
   type WebAnalyticsDailyRow,
 } from "@/features/marketing/analytics/data";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 function integer(value: number): string {
   return Intl.NumberFormat().format(Math.round(value));
@@ -183,7 +187,7 @@ export function SiteAnalyticsCard({
         ) : null}
         {days.length ? (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[420px] text-xs">
+            <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
               <thead>
                 <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
                   <th className="py-1.5 pr-3 font-medium">Date</th>

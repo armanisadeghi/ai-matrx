@@ -27,6 +27,10 @@
 // initializes the cycle in the safe order.
 import "./kind-registry";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import {
+  INVALIDATION_KEYS,
+  registerInvalidationCallback,
+} from "@/lib/invalidation/invalidation-registry";
 import type { JsonObject } from "@/types/json";
 import {
   getKindComponentBySlug,
@@ -415,3 +419,15 @@ export function refreshKindComponents(maxAgeMs?: number): Promise<void> {
 export function subscribeKindComponents(listener: () => void): () => void {
   return componentRegistry.subscribe(listener);
 }
+
+// The D115 inversion: this cluster registers its own invalidation at module
+// init (it is initialized wherever a `__kind` block can render); the
+// ubiquitous `toolStateEffects` fires it by NAME when an agent's `kindcomp_*`
+// write completes — ZERO import edge from the stream-processing chunk into
+// this registry cluster (the `await import()` edge that OOM-killed 12 builds).
+// The force refresh (maxAgeMs 0) replaces the db tier and notifies; the
+// per-kind repaint machinery + the `updated_at`-keyed compile cache do the
+// rest, so mounted blocks recompile the edited component without a refresh.
+registerInvalidationCallback(INVALIDATION_KEYS.kindComponents, () => {
+  void refreshKindComponents(0);
+});

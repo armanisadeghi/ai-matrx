@@ -243,6 +243,11 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         iconName: "Globe",
         destinations: [destination("/administration/knowledge/cms-agents")],
       },
+      {
+        name: "Growth Loop",
+        iconName: "Workflow",
+        destinations: [destination("/administration/knowledge/growth-loop")],
+      },
     ],
   },
   {

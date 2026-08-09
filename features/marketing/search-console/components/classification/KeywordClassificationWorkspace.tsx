@@ -50,12 +50,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/styles/themes/utils";
 import { extractErrorMessage } from "@/utils/errors";
@@ -849,7 +844,10 @@ export function KeywordClassificationWorkspace({
               variant="outline"
               className="h-7 gap-1.5 px-2 text-xs"
               title="The site's brand identity — every alias the brand rung matches, plus custom aliases (people, legal names, misspellings)"
-              onClick={() => setBrandOpen(true)}
+              onClick={() => {
+                setBrandOpen((open) => !open);
+                setRulesOpen(false);
+              }}
             >
               <Fingerprint className="h-3.5 w-3.5" /> Brand
             </Button>
@@ -858,7 +856,10 @@ export function KeywordClassificationWorkspace({
               size="sm"
               variant="outline"
               className="h-7 gap-1.5 px-2 text-xs"
-              onClick={() => setRulesOpen(true)}
+              onClick={() => {
+                setRulesOpen((open) => !open);
+                setBrandOpen(false);
+              }}
             >
               <ListFilter className="h-3.5 w-3.5" /> Rules
               {(rules.data?.length ?? 0) > 0
@@ -938,23 +939,37 @@ export function KeywordClassificationWorkspace({
         />
       </div>
 
-      {/* Brand identity sheet */}
-      <Sheet open={brandOpen} onOpenChange={setBrandOpen}>
-        <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle className="text-sm">Brand identity</SheetTitle>
-          </SheetHeader>
-          <BrandIdentityPanel siteId={siteId} onChanged={invalidate} />
-        </SheetContent>
-      </Sheet>
+      {/* Brand identity — non-blocking resizable panel; the table stays live */}
+      {brandOpen ? (
+        <SidePanelSurface
+          title="Brand identity"
+          description="Every alias the brand rung matches, plus custom aliases."
+          onClose={() => setBrandOpen(false)}
+          storageKey="gsc-brand-identity-panel"
+        >
+          <div className="flex h-full min-h-0 flex-col overflow-hidden px-3 pb-3">
+            <BrandIdentityPanel
+              siteId={siteId}
+              range={range}
+              onChanged={invalidate}
+              onInspectAlias={(alias) =>
+                table.onStateChange({ ...table.state, page: 1, search: alias })
+              }
+            />
+          </div>
+        </SidePanelSurface>
+      ) : null}
 
-      {/* Rules sheet */}
-      <Sheet open={rulesOpen} onOpenChange={setRulesOpen}>
-        <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle className="text-sm">Pattern rules</SheetTitle>
-          </SheetHeader>
-          <ClassRulesPanel
+      {/* Pattern rules — non-blocking resizable panel */}
+      {rulesOpen ? (
+        <SidePanelSurface
+          title="Pattern rules"
+          description="Clue templates and your rules — preview pipes matches into the table."
+          onClose={() => setRulesOpen(false)}
+          storageKey="gsc-pattern-rules-panel"
+        >
+          <div className="flex h-full min-h-0 flex-col overflow-hidden px-3 pb-3">
+            <ClassRulesPanel
             rules={rules.data ?? []}
             loading={rules.isLoading}
             currentUserId={userIdRef.current}
@@ -997,9 +1012,10 @@ export function KeywordClassificationWorkspace({
               });
               return adopted;
             }}
-          />
-        </SheetContent>
-      </Sheet>
+            />
+          </div>
+        </SidePanelSurface>
+      ) : null}
 
       {/* Notes dialog (bulk + mismatch) */}
       <Dialog

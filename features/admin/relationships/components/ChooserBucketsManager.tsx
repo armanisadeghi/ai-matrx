@@ -20,6 +20,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 interface BucketRow {
   key: string;
@@ -68,7 +72,7 @@ function BucketPanel({
         <span className="text-sm font-semibold">{title}</span>
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
-      <table className="w-full text-xs">
+      <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
         <thead>
           <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
             <th className="px-3 py-1.5 font-medium">{keyHeader}</th>

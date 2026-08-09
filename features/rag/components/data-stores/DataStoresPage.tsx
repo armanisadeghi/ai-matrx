@@ -49,6 +49,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_CELL,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+} from "@/components/official/mobile-table/mobileTable";
 import dynamic from "next/dynamic";
 import { RichMemberTable } from "@/features/rag/components/data-stores/RichMemberTable";
 import {
@@ -850,19 +856,19 @@ function MemberTable({
 }) {
   return (
     <div className="overflow-hidden rounded-md border">
-      <table className="w-full text-sm">
+      <table className={cn("text-sm", MOBILE_TABLE)}>
         <thead>
           <tr className="border-b bg-muted/40">
-            <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <th className={cn("px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
               Kind
             </th>
-            <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <th className={cn("px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_FROZEN_HEAD)}>
               Document
             </th>
-            <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <th className={cn("px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
               Notes
             </th>
-            <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <th className={cn("px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
               Added
             </th>
             <th className="w-10" />
@@ -874,17 +880,19 @@ function MemberTable({
               key={`${m.sourceKind}/${m.sourceId}`}
               className="hover:bg-muted/20"
             >
-              <td className="px-3 py-1.5 text-xs">{m.sourceKind}</td>
-              <td className="px-3 py-1.5">
+              <td className={cn("px-3 py-1.5 text-xs", MOBILE_TABLE_CELL)}>
+                {m.sourceKind}
+              </td>
+              <td className={cn("px-3 py-1.5", MOBILE_TABLE_FROZEN_CELL)}>
                 <div className="text-xs">{m.label ?? "—"}</div>
                 <div className="font-mono text-[10px] text-muted-foreground select-all truncate">
                   {m.sourceId}
                 </div>
               </td>
-              <td className="px-3 py-1.5 text-xs text-muted-foreground">
+              <td className={cn("px-3 py-1.5 text-xs text-muted-foreground", MOBILE_TABLE_CELL)}>
                 {m.notes ?? "—"}
               </td>
-              <td className="px-3 py-1.5 text-[10px] text-muted-foreground tabular-nums">
+              <td className={cn("px-3 py-1.5 text-[10px] text-muted-foreground tabular-nums", MOBILE_TABLE_CELL)}>
                 {new Date(m.addedAt).toLocaleString()}
               </td>
               <td className="px-3 py-1.5 text-right">

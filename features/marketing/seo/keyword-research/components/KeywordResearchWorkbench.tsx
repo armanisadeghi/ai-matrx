@@ -53,6 +53,10 @@ import {
   formatCpc,
   formatSearchVolume,
 } from "./KeywordMetrics";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE,
+} from "@/components/official/mobile-table/mobileTable";
 
 const EDGE_TYPE_LABELS: Record<string, string> = {
   refines: "Refines",
@@ -504,7 +508,7 @@ export default function KeywordResearchWorkbench() {
             </p>
           </div>
         ) : (
-          <table className="w-full border-collapse text-sm">
+          <table className={cn("border-collapse text-sm", MOBILE_TABLE)}>
             <thead className="sticky top-0 z-10 bg-background">
               <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                 <th className="w-8 px-2 py-2">

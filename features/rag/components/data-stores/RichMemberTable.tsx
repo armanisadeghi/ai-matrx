@@ -27,6 +27,13 @@ import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { StatusBadge } from "@/features/rag/components/library/StatusBadge";
 import type { DocStatus } from "@/features/rag/types/library";
 import type { RichMember } from "@/features/rag/hooks/useDataStores";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_CELL,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+} from "@/components/official/mobile-table/mobileTable";
 
 const FORMAT_BYTES = (n: number | null): string => {
   if (n == null) return "—";
@@ -132,28 +139,28 @@ export function RichMemberTable({
             `sm:` restores the exact desktop rendering. `min-w` (not `max-w`)
             on the frozen cell: the unlayered `* { max-width: 100% }` mobile
             rule in globals.css always beats a layered `max-w-*` utility. */}
-        <table className="w-max min-w-full max-w-none text-sm sm:w-full sm:min-w-0 sm:max-w-full">
+        <table className={cn("text-sm", MOBILE_TABLE)}>
           <thead>
             <tr className="border-b bg-muted/40">
-              <th className="max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:min-w-[160px] max-sm:bg-muted px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className={cn("px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_FROZEN_HEAD)}>
                 File
               </th>
-              <th className="max-sm:whitespace-nowrap px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className={cn("px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
                 Status
               </th>
-              <th className="max-sm:whitespace-nowrap px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className={cn("px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
                 Pages
               </th>
-              <th className="max-sm:whitespace-nowrap px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className={cn("px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
                 {RAG_VOCAB.segmentsShort}
               </th>
-              <th className="max-sm:whitespace-nowrap px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className={cn("px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
                 Size
               </th>
-              <th className="max-sm:whitespace-nowrap px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className={cn("px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
                 Added
               </th>
-              <th className="max-sm:whitespace-nowrap px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className={cn("px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
                 Actions
               </th>
             </tr>
@@ -162,9 +169,9 @@ export function RichMemberTable({
             {members.map((m) => (
               <tr
                 key={`${m.sourceKind}/${m.sourceId}`}
-                className="bg-card transition-colors max-sm:whitespace-nowrap sm:bg-transparent sm:hover:bg-muted/20"
+                className="transition-colors max-sm:whitespace-nowrap hover:bg-muted/20"
               >
-                <td className="max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:min-w-[160px] max-sm:bg-inherit px-3 py-2 max-w-md">
+                <td className={cn("px-3 py-2 max-w-md", MOBILE_TABLE_FROZEN_CELL)}>
                   <div className="font-medium truncate">{m.name}</div>
                   <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                     <Badge variant="outline" className="px-1 py-0 text-[9px]">

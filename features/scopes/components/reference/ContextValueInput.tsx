@@ -219,7 +219,7 @@ export function ContextValueInput({
         aria-labelledby={ariaLabelledBy}
         aria-describedby={ariaDescribedBy}
         className={cn(
-          "min-h-0 overflow-hidden rounded-md",
+          "flex min-h-0 flex-col overflow-hidden rounded-md",
           disabled && "opacity-60",
           className,
         )}

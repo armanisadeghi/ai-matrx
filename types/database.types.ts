@@ -23614,6 +23614,63 @@ export type Database = {
           },
         ]
       }
+      expertise_pack: {
+        Row: {
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          description: string
+          id: string
+          name: string
+          organization_id: string
+          principles: Json
+          sections: Json
+          slug: string
+          source: Json
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          name: string
+          organization_id: string
+          principles?: Json
+          sections?: Json
+          slug: string
+          source?: Json
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          principles?: Json
+          sections?: Json
+          slug?: string
+          source?: Json
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       matrx_action_ledger: {
         Row: {
           conversation_id: string | null
@@ -52599,6 +52656,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      extract_sweep_state: {
+        Row: {
+          created_at: string
+          definition_watermark: string | null
+          last_sweep_at: string | null
+          metadata: Json
+          next_eligible_at: string | null
+          proposals_created_total: number
+          sweeps_total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          definition_watermark?: string | null
+          last_sweep_at?: string | null
+          metadata?: Json
+          next_eligible_at?: string | null
+          proposals_created_total?: number
+          sweeps_total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          definition_watermark?: string | null
+          last_sweep_at?: string | null
+          metadata?: Json
+          next_eligible_at?: string | null
+          proposals_created_total?: number
+          sweeps_total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       idempotency: {
         Row: {

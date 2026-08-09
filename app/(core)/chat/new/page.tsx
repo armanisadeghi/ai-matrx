@@ -1,14 +1,36 @@
 import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { ChatNewClient } from "@/features/agents/components/chat/ChatNewClient";
-import { ChatRunHeader } from "@/features/agents/components/chat/ChatRunHeader";
+import { ChatNewHeader } from "@/features/agents/components/chat/ChatNewHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import {
-  DEFAULT_NEW_CHAT_AGENT_ID,
+  DEFAULT_NEW_CHAT_SLOT_KEY,
   PRIMARY_QUICK_ACTIONS,
   SECONDARY_QUICK_ACTIONS,
 } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { resolveAgentSlotServer } from "@/features/agents/slots/service.server";
 import { ArrowUp, ArrowUpRight, Mic, Plus } from "lucide-react";
+
+/**
+ * SSR slot resolution: which agent owns `/chat/new` for THIS user (system
+ * default → their own `chat.default_new_chat` binding). Resolving here means
+ * the header and input bar mount the right agent with no client flash. On a
+ * resolution failure we SCREAM server-side and return null — the client then
+ * re-attempts through the one client resolver and surfaces its loud error
+ * state; there is no hardcoded-agent fallback.
+ */
+async function resolveDefaultChatAgentId(): Promise<string | null> {
+  try {
+    const resolved = await resolveAgentSlotServer(DEFAULT_NEW_CHAT_SLOT_KEY);
+    return resolved.agentId;
+  } catch (error) {
+    console.error(
+      `[chat/new] slot "${DEFAULT_NEW_CHAT_SLOT_KEY}" failed to resolve at SSR — deferring to client resolution:`,
+      error,
+    );
+    return null;
+  }
+}
 
 /**
  * Single-column SSR lookup for the default agent's display name so the chat
@@ -16,31 +38,32 @@ import { ArrowUp, ArrowUpRight, Mic, Plus } from "lucide-react";
  * or a "loading" flicker). The lazy `AgentListDropdown` still defers its full
  * fetch until the user actually clicks the picker.
  */
-async function resolveDefaultAgentName(): Promise<string | null> {
+async function resolveAgentName(agentId: string): Promise<string | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .schema("agent")
     .from("definition")
     .select("name")
     .is("deleted_at", null)
-    .eq("id", DEFAULT_NEW_CHAT_AGENT_ID)
+    .eq("id", agentId)
     .maybeSingle();
   if (error || !data) return null;
   return (data.name as string | null) ?? null;
 }
 
 export default async function NewChatPage() {
-  const defaultAgentName = await resolveDefaultAgentName();
+  const agentId = await resolveDefaultChatAgentId();
+  const defaultAgentName = agentId ? await resolveAgentName(agentId) : null;
   return (
     <>
       <PageHeader>
-        <ChatRunHeader
-          activeAgentId={DEFAULT_NEW_CHAT_AGENT_ID}
+        <ChatNewHeader
+          agentId={agentId}
           initialAgentName={defaultAgentName ?? undefined}
         />
       </PageHeader>
       <Suspense fallback={<NewChatLandingFallback />}>
-        <ChatNewClient />
+        <ChatNewClient agentId={agentId} />
       </Suspense>
       {/* No conversion nudge here: the send gate is gone (guests send for
           real), so gate-attempt-driven nudges can never fire on this page. */}

@@ -7,7 +7,18 @@
 
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 
-/** Agent that powers project creation (see ProjectCreatePanel). */
+/**
+ * The project-creation agent is a SLOT — `projects.create_assistant` —
+ * resolved by ProjectCreatePanel via `useAgentSlot` (system default → the
+ * user's own binding).
+ */
+export const PROJECT_CREATE_SLOT_KEY = "projects.create_assistant";
+
+/**
+ * SEED MIRROR of the slot's system default — kept only so
+ * `isProjectCreateFlow` can still recognise legacy launches by agent id;
+ * flow detection primarily keys on `sourceFeature`. Never mount this id.
+ */
 export const PROJECT_CREATE_AGENT_ID = "917074a0-fc06-4ff4-9805-4a517e04d08b";
 
 export const PROJECT_CREATE_SOURCE_FEATURE: SourceFeature = "projects";

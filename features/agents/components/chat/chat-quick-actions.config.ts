@@ -17,14 +17,22 @@ export interface ChatQuickAction {
 }
 
 /**
- * The agent that owns the input bar when the user first lands on `/chat/new`.
- * Picked so that typing-and-submitting without choosing a chip routes through
- * a reasonable general-purpose agent. Change this to swap the "default" feel
- * of the chat surface for everyone.
- *
- * Also the default agent for the floating **Chat** window panel when opened
- * from general entry points (shell tools grid, context menu) — not when another
- * surface opens the panel with an explicit `initialAgentId`.
+ * The default new-chat agent is a SLOT — `chat.default_new_chat` — resolved at
+ * run time (system default → the user's own binding) via
+ * `features/agents/slots` (`resolveAgentSlot` / `useAgentSlot` /
+ * `resolveAgentSlotServer`). Swapping the "default feel" of the chat surface
+ * is a repin in the admin slot console (or a per-user binding on
+ * `/agents/slots`), never a code change.
+ */
+export const DEFAULT_NEW_CHAT_SLOT_KEY = "chat.default_new_chat";
+
+/**
+ * SEED MIRROR of the slot's system default — the id the slot row was seeded
+ * with, kept ONLY for static module-scope data that cannot resolve a slot
+ * (the ProTextarea "help" placeholder default). Everything on a runtime path
+ * resolves `DEFAULT_NEW_CHAT_SLOT_KEY` instead; adding a new read of this
+ * constant is a defect (see features/agents/slots/FEATURE.md — the manifest
+ * seed-mirror ruling).
  */
 export const DEFAULT_NEW_CHAT_AGENT_ID = "6b6b4e45-4699-4860-8dea-d8a60e07d69a";
 

@@ -15,7 +15,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectShowAllProjects,
   selectExpandedTasks,
-  selectOperatingTaskId,
+  selectIsTaskOperating,
   toggleTaskExpand,
 } from "@/features/tasks/redux/taskUiSlice";
 import {
@@ -41,10 +41,8 @@ export default function TaskItem({
   const dispatch = useAppDispatch();
   const showAllProjects = useAppSelector(selectShowAllProjects);
   const expandedTasks = useAppSelector(selectExpandedTasks);
-  const operatingTaskId = useAppSelector(selectOperatingTaskId);
+  const isOperating = useAppSelector(selectIsTaskOperating(task.id));
   const currentUserId = useAppSelector(selectUserId);
-
-  const isOperating = operatingTaskId === task.id;
 
   const isPastDue =
     task.dueDate && new Date(task.dueDate) < new Date() && !task.completed;
@@ -254,9 +252,7 @@ function SubtaskItem({
   parentTaskId: string;
 }) {
   const dispatch = useAppDispatch();
-  const operatingTaskId = useAppSelector(selectOperatingTaskId);
-
-  const isOperating = operatingTaskId === subtask.id;
+  const isOperating = useAppSelector(selectIsTaskOperating(subtask.id));
 
   const isPastDue =
     subtask.dueDate &&
