@@ -11,6 +11,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { GitBranch, History, Link2, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -253,7 +254,10 @@ function RepinToTwinButton({
             default_agent_version_id: null,
             use_latest: true,
           });
-          toast.success(`${slot.slot_key} repinned to ${twin.name} (latest).`);
+          // The toast names the agent it just repinned to and holds its id.
+          toast.success(`${slot.slot_key} repinned to ${twin.name} (latest).`, {
+            action: toastDoor("agent", twin.id),
+          });
           onSaved();
         } catch (error: unknown) {
           toast.error(

@@ -9,6 +9,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { Button } from "@/components/ui/button";
 import { orgAdminMemberHref } from "../routes";
 import {
@@ -88,6 +89,19 @@ export function ReassignResourcesDialog({
   const submit = async () => {
     setBusy(true);
     try {
+      // "a count is a door" — but you cannot open "5 resources": they span
+      // several types with no single destination page. What the user actually
+      // wants after a reassign is the person who now OWNS them, and that id is
+      // `target`. The org-admin member route is the correct door here, never
+      // AdminUserRef — see routes.ts for why (403 for an ordinary org owner).
+      const destinationDoor =
+        hasTarget && orgSlug
+          ? toastDoor("user", target, {
+              href: orgAdminMemberHref(orgSlug, target),
+              label: "Open member",
+            })
+          : undefined;
+
       if (mode === "remove") {
         const result = await removeMember(orgId, sourceUserId, hasTarget ? target : undefined);
         const moved = result.reassigned.reduce((s, r) => s + r.reassigned, 0);
@@ -95,13 +109,16 @@ export function ReassignResourcesDialog({
           hasTarget
             ? `Member removed; reassigned ${moved} resource${moved === 1 ? "" : "s"}.`
             : "Member removed.",
+          { action: destinationDoor },
         );
       } else {
         const types =
           selectedTypes.size === resources.length ? undefined : Array.from(selectedTypes);
         const result = await reassignMemberResources(orgId, sourceUserId, target, types);
         const moved = result.reduce((s, r) => s + r.reassigned, 0);
-        toast.success(`Reassigned ${moved} resource${moved === 1 ? "" : "s"}.`);
+        toast.success(`Reassigned ${moved} resource${moved === 1 ? "" : "s"}.`, {
+          action: destinationDoor,
+        });
       }
       onOpenChange(false);
       onDone();
