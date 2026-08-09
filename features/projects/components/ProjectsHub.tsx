@@ -1232,12 +1232,12 @@ function ProjectsTable({
                         size="icon"
                         className="h-7 w-7"
                       />
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => router.push(`/projects/${p.id}`)}
-                      >
-                        Open
+                      {/* An anchor, like the Settings button beside it — an
+                          onClick-only Open cannot be cmd- or middle-clicked,
+                          so the row's own "open in a new tab" door died at the
+                          one control most likely to be used for it. */}
+                      <Button asChild size="sm" variant="ghost">
+                        <Link href={`/projects/${p.id}`}>Open</Link>
                       </Button>
                       <Button
                         asChild
@@ -1403,9 +1403,11 @@ function ProjectHubCard({
           size="icon"
           className="h-8 w-8 shrink-0"
         />
-        <Button size="sm" onClick={() => router.push(href)} className="flex-1">
-          Open
-          <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+        <Button asChild size="sm" className="flex-1">
+          <Link href={href}>
+            Open
+            <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+          </Link>
         </Button>
         <Button asChild size="sm" variant="outline">
           <Link href={`/projects/${project.id}/settings`}>
