@@ -47,6 +47,8 @@ import {
 import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION, ADMIN_LEVEL_LABEL } from "../constants";
 import type { AdminUserRow } from "../types";
 
@@ -218,9 +220,12 @@ export function AccountsTableClient() {
                 {(row.display_name ?? row.email ?? "?").slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <span className="text-sm font-medium">
-              {row.display_name ?? <span className="text-muted-foreground">—</span>}
-            </span>
+            <AdminUserRef
+              userId={row.id}
+              name={row.display_name}
+              email={row.email}
+              hideEmail
+            />
           </div>
         ),
         width: 200,
@@ -233,35 +238,50 @@ export function AccountsTableClient() {
           row.organizations
             .map((organization) => `${organization.name} ${organization.role}`)
             .join(" "),
-        cell: (row) => (
-          <button
-            type="button"
-            className="flex max-w-[280px] items-center gap-1.5 text-left hover:text-primary"
-            onClick={(event) => {
-              event.stopPropagation();
-              router.push(
-                `/administration/users/organizations?user=${row.id}`,
-              );
-            }}
-          >
-            <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <span className="truncate text-xs">
-              {row.organizations.length > 0
-                ? row.organizations
-                    .map((organization) => organization.name)
-                    .join(", ")
-                : "No organizations"}
+        // Every organization named here is a real record with a route — each
+        // one links to itself instead of being flattened into a comma string
+        // whose only destination was a filtered list of the OTHER entity.
+        cell: (row) =>
+          row.organizations.length === 0 ? (
+            <span className="text-xs text-muted-foreground">
+              No organizations
             </span>
-            {row.organizations.length > 1 ? (
-              <Badge
-                variant="secondary"
-                className="h-5 shrink-0 px-1.5 text-[10px]"
+          ) : (
+            <div className="flex max-w-[280px] items-center gap-1.5">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-1.5">
+                {row.organizations.map((organization, index) => (
+                  <span
+                    key={organization.id}
+                    className="inline-flex min-w-0 items-center text-xs"
+                  >
+                    <EntityRef
+                      token="organization"
+                      id={organization.id}
+                      name={organization.name}
+                      showIcon={false}
+                    />
+                    {index < row.organizations.length - 1 ? (
+                      <span className="text-muted-foreground">,</span>
+                    ) : null}
+                  </span>
+                ))}
+              </div>
+              <button
+                type="button"
+                title="View this user's organizations"
+                aria-label="View this user's organizations"
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  router.push(
+                    `/administration/users/organizations?user=${row.id}`,
+                  );
+                }}
               >
-                {row.organizations.length}
-              </Badge>
-            ) : null}
-          </button>
-        ),
+                <Building2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ),
         width: 280,
       },
       {

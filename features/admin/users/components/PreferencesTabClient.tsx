@@ -22,6 +22,8 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION } from "../constants";
 
 // ── drift dashboard ────────────────────────────────────────────────────────
@@ -166,6 +168,7 @@ function DriftDashboard() {
             <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 font-medium">User</th>
+                <th className="px-3 py-2 font-medium">Organization</th>
                 <th className="px-3 py-2 font-medium">Drifted fields</th>
                 <th className="px-3 py-2 font-medium">Updated</th>
                 <th className="px-3 py-2 font-medium" />
@@ -174,7 +177,20 @@ function DriftDashboard() {
             <tbody>
               {report.rows.map((r) => (
                 <tr key={`${r.user_id}:${r.organization_id}`} className="border-t border-border">
-                  <td className="px-3 py-2 font-mono text-xs">{r.user_id}</td>
+                  <td className="px-3 py-2">
+                    <AdminUserRef userId={r.user_id} />
+                  </td>
+                  <td className="px-3 py-2">
+                    {r.organization_id ? (
+                      <MatrxUuidCell
+                        value={r.organization_id}
+                        label="Organization"
+                        token="organization"
+                      />
+                    ) : (
+                      <span className="text-muted-foreground/40">—</span>
+                    )}
+                  </td>
                   <td className="px-3 py-2 text-amber-600 dark:text-amber-400">{r.drifted_fields}</td>
                   <td className="px-3 py-2 text-muted-foreground">
                     {r.updated_at ? new Date(r.updated_at).toLocaleString() : "—"}

@@ -136,6 +136,13 @@ export function EntitlementsTableClient() {
         cell: (r) => <span className="tabular-nums">{r.used_30d}</span>,
         width: 100,
       },
+      // THE DOOR LAW says "a count is a door" — but a count only becomes a door
+      // when the records behind it are actually reachable. `events` and `users`
+      // come from the `billing.usage_admin_summary` rollup, and NOTHING in this
+      // app lists billing usage events or per-capability users: there is no
+      // route, no param, no drill-through. Wiring a link here would point at a
+      // page that does not exist, so these stay plain counts until that surface
+      // is built. Reported as a gap rather than faked.
       {
         id: "events",
         accessorKey: "events",

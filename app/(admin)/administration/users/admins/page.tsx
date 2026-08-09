@@ -26,6 +26,7 @@ import {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { AdminUserRef } from "@/features/admin/users/components/AdminUserRef";
 import type { Database } from "@/types/database.types";
 
 const PAGE_LOCATION =
@@ -268,12 +269,7 @@ export default function AdminsManagementPage() {
         header: "Email",
         accessorFn: (r) => r.email ?? r.user_id,
         width: 260,
-        cell: (r) =>
-          r.email ? (
-            <span className="font-medium text-foreground">{r.email}</span>
-          ) : (
-            <span className="text-muted-foreground">{r.user_id}</span>
-          ),
+        cell: (r) => <AdminUserRef userId={r.user_id} email={r.email} />,
       },
       {
         id: "level",
@@ -334,7 +330,9 @@ export default function AdminsManagementPage() {
         accessorFn: (e) => e.actor_email ?? "system / service-role",
         width: 220,
         cell: (e) =>
-          e.actor_email ?? (
+          e.actor_user_id ? (
+            <AdminUserRef userId={e.actor_user_id} email={e.actor_email} />
+          ) : (
             <span className="italic text-muted-foreground">system / service-role</span>
           ),
       },
@@ -355,6 +353,9 @@ export default function AdminsManagementPage() {
         header: "Target",
         accessorFn: (e) => e.target_email ?? e.target_user_id,
         width: 240,
+        cell: (e) => (
+          <AdminUserRef userId={e.target_user_id} email={e.target_email} />
+        ),
       },
       {
         id: "change",

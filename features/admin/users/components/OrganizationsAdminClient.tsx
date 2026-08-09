@@ -35,6 +35,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { AdminUserRef } from "@/features/admin/users/components/AdminUserRef";
 import { USERS_ADMIN_LOCATION } from "@/features/admin/users/constants";
 import type {
   AdminOrganizationDirectory,
@@ -310,9 +312,13 @@ export function OrganizationsAdminClient() {
             {organization.abbreviation}
           </Badge>
           <div className="min-w-0">
-            <div className="truncate text-sm font-medium">
-              {organization.name}
-            </div>
+            <EntityRef
+              token="organization"
+              id={organization.id}
+              name={organization.name}
+              showIcon={false}
+              className="text-sm font-medium"
+            />
             <div className="truncate text-[11px] text-muted-foreground">
               {organization.slug}
             </div>
@@ -360,7 +366,10 @@ export function OrganizationsAdminClient() {
       id: "id",
       accessorKey: "id",
       header: "Organization ID",
-      cellKind: "uuid",
+      cellKind: "fk",
+      // The column is named `id`, not `organization_id`, so the automatic
+      // column-name → token resolution can't fire. Declare the token.
+      fk: { token: "organization", label: "Organization" },
       sortable: false,
       filter: false,
       width: 120,
@@ -373,14 +382,11 @@ export function OrganizationsAdminClient() {
       accessorKey: "display_name",
       header: "User",
       cell: (member) => (
-        <div className="min-w-0">
-          <div className="truncate text-sm font-medium">
-            {member.display_name ?? "Unnamed user"}
-          </div>
-          <div className="truncate text-[11px] text-muted-foreground">
-            {member.email ?? member.user_id}
-          </div>
-        </div>
+        <AdminUserRef
+          userId={member.user_id}
+          name={member.display_name}
+          email={member.email}
+        />
       ),
       width: 240,
     },
@@ -448,9 +454,13 @@ export function OrganizationsAdminClient() {
         <div className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2">
           <div className="flex min-w-0 items-center gap-2 text-sm">
             <UserRound className="h-4 w-4 shrink-0 text-primary" />
-            <span className="truncate">
-              Organizations for {focusedUser?.display_name ?? focusedUser?.email ?? focusedUserId}
-            </span>
+            <span className="shrink-0">Organizations for</span>
+            <AdminUserRef
+              userId={focusedUserId}
+              name={focusedUser?.display_name}
+              email={focusedUser?.email}
+              hideEmail
+            />
             <Badge variant="secondary">{visibleOrganizations.length}</Badge>
           </div>
           <Button size="sm" variant="ghost" onClick={clearUserFocus}>
@@ -522,9 +532,20 @@ export function OrganizationsAdminClient() {
         <section className="flex min-h-0 flex-col rounded-lg border bg-card">
           <div className="flex min-h-[57px] items-center justify-between gap-3 border-b px-3 py-2">
             <div className="min-w-0">
-              <div className="truncate text-sm font-semibold">
-                {selectedOrganization?.name ?? "Select an organization"}
-              </div>
+              {selectedOrganization ? (
+                <EntityRef
+                  token="organization"
+                  id={selectedOrganization.id}
+                  name={selectedOrganization.name}
+                  showIcon={false}
+                  alwaysShowActions
+                  className="text-sm font-semibold"
+                />
+              ) : (
+                <div className="truncate text-sm font-semibold">
+                  Select an organization
+                </div>
+              )}
               {selectedOrganization ? (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span>{members.length} members</span>
