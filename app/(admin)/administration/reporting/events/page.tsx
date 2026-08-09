@@ -281,6 +281,7 @@ export default function AdminEventsPage() {
                         name={r.entity_id}
                         showIcon={false}
                         openInNewTab
+                        wrap
                       />
                     ) : (
                       (r.entity_id ?? "—")
@@ -300,6 +301,7 @@ export default function AdminEventsPage() {
                         name={r.organization_id}
                         showIcon={false}
                         openInNewTab
+                        wrap
                       />
                     ) : (
                       "—"

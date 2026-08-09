@@ -174,6 +174,7 @@ export function ReachabilityInspectorClient() {
                           name={id}
                           showIcon={false}
                           openInNewTab
+                          wrap
                         />
                       </TableCell>
                       <TableCell className="text-xs tabular-nums">

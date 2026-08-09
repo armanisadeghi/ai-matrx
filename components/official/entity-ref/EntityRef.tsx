@@ -99,6 +99,19 @@ export interface EntityRefProps {
    * new-tab control is suppressed automatically, since it would be a duplicate.
    */
   openInNewTab?: boolean;
+  /**
+   * Let the label WRAP instead of truncating.
+   *
+   * `EntityRef` truncates by default because its home is a table cell. That is
+   * wrong for a detail panel or an audit row that prints a full id — there the
+   * id IS the information, and an ellipsis silently destroys the thing the user
+   * came to copy. Set this wherever the old markup wrapped (`break-all`,
+   * `whitespace-normal`) so the conversion doesn't quietly shorten the content.
+   *
+   * A call-site `className` cannot substitute: it lands on the outer wrapper,
+   * while `truncate` is on the label element itself.
+   */
+  wrap?: boolean;
   /** Controls stay visible instead of appearing on hover/focus. */
   alwaysShowActions?: boolean;
   /** Surface-specific extra doors (open in window, jump to versions, …). */
@@ -138,6 +151,7 @@ export function EntityRef({
   disablePeek = false,
   disableNewTab = false,
   openInNewTab = false,
+  wrap = false,
   alwaysShowActions = false,
   extraActions,
   onOpen,
@@ -153,6 +167,7 @@ export function EntityRef({
   const Icon = info?.Icon ?? null;
 
   const stop = (e: React.MouseEvent) => e.stopPropagation();
+  const labelFit = wrap ? "break-all" : "truncate";
 
   return (
     <span
@@ -179,7 +194,10 @@ export function EntityRef({
             onOpen();
           }}
           title={openInNewTab ? `Open ${label} in a new tab` : `Open ${label}`}
-          className="min-w-0 truncate text-inherit underline-offset-2 hover:text-primary hover:underline"
+          className={cn(
+            "min-w-0 text-inherit underline-offset-2 hover:text-primary hover:underline",
+            labelFit,
+          )}
         >
           {label}
         </Link>
@@ -191,12 +209,15 @@ export function EntityRef({
             onOpen();
           }}
           title={`Open ${label}`}
-          className="min-w-0 truncate text-left text-inherit underline-offset-2 hover:text-primary hover:underline"
+          className={cn(
+            "min-w-0 text-left text-inherit underline-offset-2 hover:text-primary hover:underline",
+            labelFit,
+          )}
         >
           {label}
         </button>
       ) : (
-        <span className="min-w-0 truncate" title={label}>
+        <span className={cn("min-w-0", labelFit)} title={label}>
           {label}
         </span>
       )}
