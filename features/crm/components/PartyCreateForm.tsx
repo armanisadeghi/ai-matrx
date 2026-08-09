@@ -16,10 +16,21 @@ import {
   crmCreatePartyManifest,
 } from "@/features/surfaces/manifests/crm-create-party.manifest";
 import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
-import { addContactPoint, createParty } from "../service";
+import { addContactPoint, createParty, normalizeMediumValue } from "../service";
 import { PARTY_KINDS, type PartyKind } from "../types";
 
 const LABELS = surfaceValueLabels(crmCreatePartyManifest);
+
+/** Draft fields the `party_draft` write target accepts, by the kind they belong to. */
+const PERSON_FIELDS = ["first_name", "last_name", "job_title"] as const;
+const COMPANY_FIELDS = ["company_name", "primary_domain"] as const;
+const CONTACT_FIELDS = ["email", "phone"] as const;
+const DRAFT_FIELDS: readonly string[] = [
+  "party_kind",
+  ...PERSON_FIELDS,
+  ...COMPANY_FIELDS,
+  ...CONTACT_FIELDS,
+];
 
 export interface PartyCreateFormProps {
   initialKind?: PartyKind;
@@ -126,52 +137,87 @@ export function PartyCreateForm({
     }
   };
 
-  // Write half of the surface (manifest `writeTargets`): the ONE composite
-  // draft target stages through the same setters the user's typing uses.
-  // Validates and THROWS on bad shapes — the writeback seam converts throws
-  // to safe error envelopes the agent reads. Fresh closures per call.
+  // Write half of this surface (manifest `writeTargets`): ONE composite draft
+  // target. It validates the whole payload — the real `PARTY_KINDS`
+  // vocabulary, field shapes, kind coherence, and contact values through the
+  // SAME `normalizeMediumValue` the save path uses — and THROWS on anything
+  // bad, which the writeback seam turns into an error envelope the agent
+  // reads. Accepted keys land through the same setters the user's typing uses.
+  // Creating the record is deliberately NOT a target: dedup, medium linking,
+  // and ownership all happen at save, and the human presses Create record.
   const getSurfaceWriteHandlers = () => ({
-    party_fields: (value: unknown) => {
-      if (!value || typeof value !== "object" || Array.isArray(value))
+    party_draft: (value: unknown) => {
+      if (typeof value !== "object" || value === null || Array.isArray(value))
         throw new Error(
-          "party_fields expects an object of draft field values.",
+          `party_draft expects an object with any of: ${DRAFT_FIELDS.join(" | ")}.`,
         );
-      const input = value as Record<string, unknown>;
-      const stringSetters: Record<string, (next: string) => void> = {
-        first_name: setFirstName,
-        last_name: setLastName,
-        job_title: setJobTitle,
-        company_name: setCompanyName,
-        primary_domain: setDomain,
-        email: setEmail,
-        phone: setPhone,
-      };
-      const allowed = ["party_kind", ...Object.keys(stringSetters)];
-      const keys = Object.keys(input);
-      const unknown = keys.filter((key) => !allowed.includes(key));
+
+      const draft = value as Record<string, unknown>;
+      const keys = Object.keys(draft);
+      if (keys.length === 0)
+        throw new Error("party_draft needs at least one field to stage.");
+
+      const unknown = keys.filter((key) => !DRAFT_FIELDS.includes(key));
       if (unknown.length > 0)
         throw new Error(
-          `party_fields got unknown keys: ${unknown.join(", ")}. Allowed: ${allowed.join(", ")}.`,
+          `party_draft does not accept: ${unknown.join(", ")}. Allowed fields: ${DRAFT_FIELDS.join(" | ")}.`,
         );
-      if (keys.length === 0)
-        throw new Error("party_fields expects at least one field.");
-      const nextKind = input.party_kind;
-      if (
-        nextKind !== undefined &&
-        !(PARTY_KINDS as readonly string[]).includes(nextKind as string)
-      )
+
+      // Kind decides which inputs are rendered, so resolve it first and
+      // validate the rest of the payload against it.
+      let nextKind = kind;
+      if ("party_kind" in draft) {
+        const raw = draft.party_kind;
+        if (
+          typeof raw !== "string" ||
+          !(PARTY_KINDS as readonly string[]).includes(raw)
+        )
+          throw new Error(
+            `party_kind expects one of: ${PARTY_KINDS.join(" | ")}.`,
+          );
+        nextKind = raw as PartyKind;
+      }
+
+      /** Trimmed string for a present key; `undefined` when the key is absent. */
+      const field = (key: string): string | undefined => {
+        if (!(key in draft)) return undefined;
+        const raw = draft[key];
+        if (typeof raw !== "string")
+          throw new Error(`party_draft.${key} expects a string.`);
+        return raw.trim();
+      };
+
+      // A value for the wrong kind would land in an input the user cannot
+      // see. Clearing (empty string) is always allowed.
+      const wrongKind = (
+        nextKind === "person" ? COMPANY_FIELDS : PERSON_FIELDS
+      ).filter((key) => field(key));
+      if (wrongKind.length > 0)
         throw new Error(
-          `party_fields.party_kind expects one of: ${PARTY_KINDS.join(" | ")}.`,
+          nextKind === "person"
+            ? `A person draft has no ${wrongKind.join(" or ")} field — this form captures an employer as job_title, and the company as its own record.`
+            : `A company draft has no ${wrongKind.join(" or ")} field — create the person as their own record.`,
         );
-      for (const key of Object.keys(stringSetters)) {
-        if (key in input && typeof input[key] !== "string")
-          throw new Error(`party_fields.${key} expects a string.`);
+
+      // Canonical medium validation: the exact check the save path runs, so a
+      // value an agent stages can never fail only at Create time.
+      for (const channel of CONTACT_FIELDS) {
+        const next = field(channel);
+        if (next) normalizeMediumValue(channel, next);
       }
-      // Shape verified — stage every provided field through the form setters.
-      if (nextKind !== undefined) setKind(nextKind as PartyKind);
-      for (const [key, set] of Object.entries(stringSetters)) {
-        if (typeof input[key] === "string") set(input[key]);
-      }
+
+      setKind(nextKind);
+      const stage = (key: string, set: (next: string) => void) => {
+        const next = field(key);
+        if (next !== undefined) set(next);
+      };
+      stage("first_name", setFirstName);
+      stage("last_name", setLastName);
+      stage("job_title", setJobTitle);
+      stage("company_name", setCompanyName);
+      stage("primary_domain", setDomain);
+      stage("email", setEmail);
+      stage("phone", setPhone);
     },
   });
 
