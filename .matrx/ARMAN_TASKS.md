@@ -9,7 +9,18 @@ _Last updated: 2026-07-22_
 
 ## Active (ranked — quickest wins first)
 
-### 0a. Decide: should `EntityDoorControls` be VISIBLE by default? (seconds — a decision)
+### 0a. Run the agent-machine setup on your OTHER Macs (~5 min each, mostly one command)
+Done on the 16GB Mac 2026-08-09; **every other machine and account still needs it**, or agents there will crash the box with a second dev server and be unable to drive the desktop app.
+
+Full checklist + rationale: `/Users/armanisadeghi/code/common-docs/systems/agent-machine-setup/FEATURE.md`. Short form:
+1. `cd ai-matrx && pnpm setup:agent-harness` — installs the one-dev-server guard into `~/.claude` + `~/.codex` (idempotent; `pnpm check:agent-harness` to verify).
+2. System Settings → Privacy & Security → **Accessibility** → enable Claude Code (without it agents cannot click/type in desktop apps).
+3. Authorize the **Supabase MCP** via `/mcp` in an interactive session (per-account OAuth; does not travel with the repo).
+4. Optional, for desktop UI testing: the `matrx-local/desktop` E2E block in the same doc.
+
+**Agents on other machines: if you read this, run step 1 and tell Arman which of 2-4 are missing.**
+
+### 0b. Decide: should `EntityDoorControls` be VISIBLE by default? (seconds — a decision)
 
 **Evidence, all from one session (2026-08-09):** the No Dead Ends sweep shipped
 an invisible door **three times**, in the campaign whose entire subject is doors

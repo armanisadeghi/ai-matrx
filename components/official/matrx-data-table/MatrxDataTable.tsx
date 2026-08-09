@@ -21,6 +21,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem } from "@/components/agent-copy/export";
 import { cn } from "@/lib/utils";
+import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { ColumnHeaderCell } from "./ColumnHeaderCell";
 import { DataRowInspector } from "./DataRowInspector";
 import DataRowWindow from "./DataRowWindow.dynamic";
@@ -209,6 +210,14 @@ export function MatrxDataTable<T>({
   // Mobile scroll affordance: edge fades (+ chevron) show that more columns
   // exist off-screen. Recomputed on scroll/resize; desktop hides them via CSS.
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  // The table bounds itself with `h-full`, which is inert unless every
+  // ancestor is a flex column. When one is not, the table grows past the page
+  // and an `overflow-hidden` ancestor clips it: no scrollbar, unreachable
+  // rows, no error anywhere. This screams instead.
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  useClippedContentGuard(rootRef, {
+    label: copy?.listLabel ? `Table: ${copy.listLabel}` : "MatrxDataTable",
+  });
   const [scrollHintRight, setScrollHintRight] = useState(false);
   const updateScrollHint = useCallback(() => {
     const el = scrollRef.current;
@@ -418,6 +427,7 @@ export function MatrxDataTable<T>({
 
   return (
     <div
+      ref={rootRef}
       className={cn(
         "flex h-full min-h-0 flex-col gap-2 max-lg:[&_button]:min-h-11 max-lg:[&_button]:min-w-11 max-lg:[&_input]:min-h-11 max-lg:[&_table_a]:inline-flex max-lg:[&_table_a]:min-h-11 max-lg:[&_table_a]:items-center",
         className,

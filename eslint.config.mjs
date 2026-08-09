@@ -767,6 +767,8 @@ const heavyImplStaticImportBan = [
 //     (every consumer loads it via React.lazy/next/dynamic)
 //   - Pillar map: features/marketing/content-plan/components/PillarMap.tsx
 //     (gated by ContentPlanWorkbench's next/dynamic)
+//   - Growth Loop map: features/growth-loop/components/GrowthLoopCanvas.tsx wrapper
+//     → GrowthLoopCanvasImpl.tsx
 // A static value import anywhere else drags the whole flow runtime into that
 // route/server chunk: the exact build-time-leak class that ballooned the build
 // 15→24min for the context menu. `import type {...}` and dynamic `import()`

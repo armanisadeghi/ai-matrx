@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 321 active entity tokens. A token here is FK-valid for
+// 322 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -145,6 +145,7 @@ export type EntityTypeToken =
   | "dm_conversation"
   | "dm_message"
   | "dm_participant"
+  | "expertise_pack"
   | "fc_card"
   | "fc_detail"
   | "fc_set"
@@ -402,6 +403,7 @@ export type ReferencePickableEntityToken =
   | "dashboard_saved_view"
   | "data_store"
   | "dataset"
+  | "expertise_pack"
   | "fc_set"
   | "feature_doc"
   | "file"
@@ -675,6 +677,7 @@ export type ScopeableEntityToken =
   | "dm_conversation"
   | "dm_message"
   | "dm_participant"
+  | "expertise_pack"
   | "fc_card"
   | "fc_detail"
   | "fc_set"
@@ -909,6 +912,7 @@ export type ListedEntityToken =
   | "content_ir_kind_instance"
   | "crm_campaign"
   | "dataset"
+  | "expertise_pack"
   | "learn_doc"
   | "party"
   | "plan_entity"
@@ -1031,6 +1035,7 @@ export const ENTITY_TYPE_METADATA = {
   "dm_conversation": { token: "dm_conversation", schema: "communication", table: "dm_conversations", label: "Direct Conversation", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "dm_message": { token: "dm_message", schema: "communication", table: "dm_messages", label: "Direct Message", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "dm_participant": { token: "dm_participant", schema: "communication", table: "dm_conversation_participants", label: "DM Conversation Participant", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "expertise_pack": { token: "expertise_pack", schema: "platform", table: "expertise_pack", label: "Expertise Pack", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: "Knowledge", referencePickable: true, titleColumn: "name", contentRole: "source", referenceCategory: null },
   "fc_card": { token: "fc_card", schema: "education", table: "fc_card", label: "Flashcard", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "fc_detail": { token: "fc_detail", schema: "education", table: "fc_detail", label: "Flashcard Detail", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "fc_set": { token: "fc_set", schema: "education", table: "fc_set", label: "Flashcard Set", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
@@ -1356,6 +1361,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "dm_conversation",
   "dm_message",
   "dm_participant",
+  "expertise_pack",
   "fc_card",
   "fc_detail",
   "fc_set",

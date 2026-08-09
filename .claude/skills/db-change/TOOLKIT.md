@@ -205,7 +205,7 @@ FOR EACH ROW EXECUTE FUNCTION platform._version_capture('<token>');
 
 **Leftover legacy triggers are real debt.** `workflow.definition` still carries a bespoke `wf_definition_set_updated_at` alongside `_touch_row` (double-fires). Hand-rolled retrofits must `DROP TRIGGER IF EXISTS <legacy_updated_at_trigger>` when attaching `_touch_row`.
 
-**Mirror triggers** (`platform._mirror_fk_to_assoc('<token>','<fk_col>','<target_token>')`) keep a real FK column writing into `platform.associations` during the junction cutover (e.g. `chat.conversation._mirror_proj` mirrors `project_id`→`project`). Relevant when a feature's relationships move to associations.
+**FK mirror triggers are forbidden.** Never call, create, preserve, copy, or repair `platform._mirror_fk_to_assoc`. A physical FK mirror can pass a table name where the association system requires a canonical entity token and creates two competing relationship authorities. Write canonical `platform.associations` edges through the registered association path. Any discovered dependency or runtime firing is a critical alarm.
 
 ---
 
@@ -238,7 +238,7 @@ FOR EACH ROW EXECUTE FUNCTION platform._version_capture('<token>');
 ## 8. Cross-repo apply order (the finalize SOP — same for every change type)
 
 1. **DB** — apply idempotent DDL via Supabase MCP `apply_migration` (project `txzxabzwovsujtloxrus`). **Verify live** with `execute_sql` (column/policy/trigger exists). Write `migrations/<name>.sql`, sha256 it, insert `public._schema_migrations` (`source='matrx-frontend'`).
-2. **Frontend (matrx-frontend)** — `pnpm db-types` (add the schema to the `--schema` list first if it's new & FE-read). Update every usage (`.from()/.schema()`, types, RPC names). `pnpm sync-types` at the end (DB + Python API types + tsc) → fix all TS errors.
+2. **Frontend (ai-matrx)** — `pnpm db-types` (add the schema to the `--schema` list first if it's new & FE-read). Update every usage (`.from()/.schema()`, types, RPC names). `pnpm sync-types` at the end (DB + Python API types + tsc) → fix all TS errors.
 3. **Python (aidream)** — `python db/generate.py` (regenerates `db/models*.py` + managers). New schema → add to `db/matrx_orm.yaml` `additional_schemas` + a generate block. Table consumed by a sub-package (matrx-ai/graph/rag/…) → wire it in `aidream/package_integration.py` (`configure_packages()`). Drift check `python db/detect_applied.py`. Update usages. Start `python run.py`, confirm a clean boot (`Local Link: http://localhost:8000`, no ERROR/CRITICAL).
 4. **matrx-extend / matrx-local** — update references if any, but **never let them block production**.
 5. **Commit + push `main`** on both primary repos.
