@@ -61,7 +61,7 @@ so the fix is one `<EntityRef>`. Refresh the numbers with
 Re-rank with `pnpm check:dead-ends:write` before starting — the scoreboard is
 the live worklist; these counts are the snapshot it was seeded from.
 
-1. **`features/agents` — 15 findings, 10 high.** The feature the rant was about.
+1. **`features/agents` — 19 findings, 14 high.** The feature the rant was about.
    `features/agents/components/agent-listings/AgentLineageTree.tsx` names an
    agent in a LINEAGE TREE with no door — the doctrine's headline case, verbatim.
    `features/agents/components/inputs/smart-input/RunSkillPicker.tsx` has no
@@ -69,12 +69,12 @@ the live worklist; these counts are the snapshot it was seeded from.
 2. **`components/admin` — 15 findings, 7 high.** The state-analyzer slice
    viewers (`AgentDefinitionSliceViewer.tsx` + `…ViewerShadcn.tsx`) print agent
    ids as text. **Collapse the two viewers into one while you are in there.**
-3. **`app/(dev)` — 23 findings, 7 high.** Demos are explicitly in scope.
+3. **`app/(dev)` — 24 findings, 8 high.** Demos are explicitly in scope.
 4. **`features/agent-comparison` — 5 findings, all high**, and both its files
    lack a door primitive. A comparison must also **state the verdict, not a
    timestamp** (corollary 3) — check that in the same pass.
-5. **`features/surfaces` (5/4)**, **`features/notes` (4/4)**,
-   **`features/window-panels` (4/4)**, **`features/admin` (4/3)**.
+5. **`features/notes` (5/5)**, **`features/surfaces` (5/4)**,
+   **`features/window-panels` (4/4)**, **`app/(admin)` (6/3)**.
 6. **Two worth doing first because they are one-liners with obvious payoff:**
    `features/projects/components/ProjectsWorkspace.tsx:22` renders a project row
    with `cursor-pointer` and **no handler at all** — it looks clickable and does

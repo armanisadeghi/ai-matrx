@@ -216,14 +216,33 @@ function currentCommit(): string | null {
   }
 }
 
+/**
+ * Does this repo-relative file fall under `--path`?
+ *
+ * Segment-aware ON PURPOSE. A plain `startsWith` makes `--path=features/agents`
+ * also match `features/agentsBackup/…`, and this repo is full of siblings that
+ * share a prefix — `features/agent-apps`, `agent-comparison`, `agent-context`,
+ * `agent-settings`, `agent-shortcuts` all sit beside `features/agents`. A
+ * scoped run would then silently judge the wrong files, and the dashboard's
+ * repair briefs paste that same `--path` into their verify line, so a wrong
+ * scope would travel with the work order.
+ *
+ * Matches the path itself (so a full file path works) or anything beneath it.
+ */
+export function matchesPathFilter(relPath: string, prefix: string | null): boolean {
+  if (!prefix) return true;
+  const clean = prefix.replace(/\/+$/, "");
+  if (!clean) return true;
+  return relPath === clean || relPath.startsWith(`${clean}/`);
+}
+
 function main(): void {
   const args = parseArgs();
   const tokens = loadEntityTokens(ROOT);
 
-  const files = SCAN_ROOTS.flatMap((r) => walk(join(ROOT, r))).filter((abs) => {
-    if (!args.pathPrefix) return true;
-    return relative(ROOT, abs).split(sep).join("/").startsWith(args.pathPrefix);
-  });
+  const files = SCAN_ROOTS.flatMap((r) => walk(join(ROOT, r))).filter((abs) =>
+    matchesPathFilter(relative(ROOT, abs).split(sep).join("/"), args.pathPrefix),
+  );
 
   assertFilters(args.rule, files.length, args.pathPrefix);
 
