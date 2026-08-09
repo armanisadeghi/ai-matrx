@@ -82,6 +82,7 @@ export function MatrxDataTable<T>({
   selectedId: controlledSelectedId,
   onSelectedIdChange,
   rowActions,
+  rowWrapper,
   emptyState,
   pageSize: defaultPageSize = 25,
   pageSizeOptions = [10, 25, 50, 100],
@@ -694,7 +695,7 @@ export function MatrxDataTable<T>({
                 const isSelected = selectedId === id;
                 const rowEdits = edits[id];
                 const displayRow = applyRowEdits(row, rowEdits);
-                return (
+                const rowEl = (
                   <tr
                     key={id}
                     data-row-id={id}
@@ -876,6 +877,12 @@ export function MatrxDataTable<T>({
                     )}
                   </tr>
                 );
+                // THE ROW WRAPPER SEAM. `rowActions` only reaches the actions
+                // CELL, so a surface that wants the whole ROW wrapped — a
+                // right-click menu, a drag handle — had nowhere to put it and
+                // would have to fork the table. One optional prop instead;
+                // returning `children` unchanged is the no-op default.
+                return rowWrapper ? rowWrapper(row, rowEl) : rowEl;
               })
             )}
           </tbody>

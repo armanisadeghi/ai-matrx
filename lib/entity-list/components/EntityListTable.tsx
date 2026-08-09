@@ -22,7 +22,11 @@ import type {
   ColumnFiltersState,
   MatrxColumnDef,
 } from "@/components/official/matrx-data-table/types";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
+import {
+  ItemContextMenu,
+  ItemMenu,
+} from "@/components/official/item/ItemMenu";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
 import type { EntityListConfig, EntityRowActions } from "../config";
@@ -104,6 +108,7 @@ export function EntityListTable<TRow>({
   onQueryChange,
   emptyAction,
 }: Props<TRow>) {
+  const isMobile = useIsMobile();
   const { favorite } = config;
 
   // ONE star: clickable, sortable, filterable. A separate read-only "Fav"
@@ -220,6 +225,33 @@ export function EntityListTable<TRow>({
             }
           : undefined
       }
+      // RIGHT-CLICK, from the SAME `ItemMenuConfig` the kebab uses — so the two
+      // can never offer different actions. `agentActionRegistry` and
+      // `features/agents/browse/FEATURE.md` both claimed the config already
+      // drove right-click; it never did on any view, and both docs were
+      // corrected earlier in this sweep. This is the code catching up.
+      //
+      // One change reaches every consumer of the shell (`/agents/all` and
+      // `/transcripts` today). Not a fragmentation risk: the eslint ban targets
+      // `MenuContent`/`MobileMenuContent`, the heavy layer, which stays behind
+      // the shell's existing dynamic edge — `ItemMenu`/`ItemContextMenu` are
+      // the thin wrappers and are already statically imported here.
+      // DESKTOP ONLY, and not for the reason you'd guess. Right-click being a
+      // pointer gesture is the small half; the load-bearing half is that
+      // `ContextMenuV3`'s mobile branch wraps its children in a real
+      // `<div style="display:contents">` to catch long-press, and a `<div>`
+      // between `<tbody>` and `<tr>` is invalid HTML. The desktop branch uses
+      // Radix's `asChild`, which merges onto the `<tr>` and adds no node —
+      // which is the only reason a row wrapper is safe here at all. Any future
+      // `rowWrapper` consumer owes the same check.
+      rowWrapper={(row, children) => (
+        <ItemContextMenu
+          config={actions.menuFor(row)}
+          enabled={!isMobile}
+        >
+          {children}
+        </ItemContextMenu>
+      )}
       rowActions={(row) => (
         <ItemMenu config={actions.menuFor(row)} align="end">
           <button

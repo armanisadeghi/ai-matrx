@@ -636,8 +636,24 @@ these — but **not** `AgentListDropdown` (42 consumers) or `AgentActionModal`.
       `features/agents/browse/FEATURE.md` both asserted the config drives
       "table row menu, card kebab, **and right-click**". Right-click was never
       wired on any view. Both now say so and point here.
-- [ ] **Wire right-click on the canonical list shell** — one change covers BOTH
-      `/agents/all` and `/transcripts`. Scouted 2026-08-09:
+- [x] **Right-click on the canonical list shell — SHIPPED**, covering both
+      `/agents/all` and `/transcripts` from one change. `MatrxDataTable` gained
+      `rowWrapper?: (row, children) => ReactNode` (the missing seam;
+      `rowActions` only ever reached the actions CELL) and `EntityListTable`
+      passes `ItemContextMenu` with the SAME `ItemMenuConfig` the kebab uses,
+      so the two can never diverge.
+
+      **The constraint that decided the shape, and the one a future
+      `rowWrapper` consumer must re-check:** it is gated to DESKTOP, and not
+      mainly because right-click is a pointer gesture. `ContextMenuV3`'s mobile
+      branch wraps its children in a real `<div style="display:contents">` to
+      catch long-press, and a `<div>` between `<tbody>` and `<tr>` is invalid
+      HTML. The desktop branch uses Radix `asChild`, which merges onto the
+      `<tr>` and adds no node — that is the only reason wrapping a table row is
+      safe at all. `ItemContextMenu`'s existing `enabled` prop does the gating,
+      so nothing was forked.
+
+      Original scouting (kept — it was accurate):
       - `ItemContextMenu` (`components/official/item/ItemMenu.tsx:419`) already
         takes the same `ItemMenuConfig`, so no new config work.
       - **Blocker:** `MatrxDataTable` has no row-wrapper seam — `rowActions`

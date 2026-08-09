@@ -375,6 +375,19 @@ export interface MatrxDataTableProps<T> {
 
   /** Extra row actions rendered in a trailing Actions column. */
   rowActions?: (row: T) => ReactNode;
+  /**
+   * Wrap the whole `<tr>`. Return `children` unchanged for no-op.
+   *
+   * `rowActions` only reaches the actions CELL, so anything that must own the
+   * entire row — a right-click menu, a drag handle, a drop target — had no
+   * seam and would have forced a surface to fork the table. THE INVENTORY LAW:
+   * the fork is the defect, so the seam exists instead.
+   *
+   * Whatever you return must render `children` as a direct `<tbody>` child, so
+   * the wrapper has to be a component that emits the `<tr>` unchanged
+   * (`ItemContextMenu` does — it renders a Radix trigger with `asChild`).
+   */
+  rowWrapper?: (row: T, children: ReactNode) => ReactNode;
 
   emptyState?: MatrxDataTableEmptyState;
   /** Default 25. Pass 0 to show all. */
