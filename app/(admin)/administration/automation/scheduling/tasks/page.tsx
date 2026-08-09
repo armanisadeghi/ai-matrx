@@ -8,9 +8,16 @@
 //
 // SCOPE CAVEAT: `scheduler.sch_task` / `sch_run` carry only the canonical
 // std_select/std_update/std_delete policies — there is NO admin clause live
-// (the old `migrations/sch_admin_rls.sql` targeted pre-reorg `public.sch_task`
-// and was superseded by the RLS canonicalization). So this console shows the
-// VIEWER'S OWN schedules, not the fleet. See FOUND_DEFECTS D140.
+// (the old `migrations/sch_admin_rls.sql` targeted these tables back when they
+// lived in the `public` schema, and was superseded by the RLS
+// canonicalization). So this console shows the VIEWER'S OWN schedules, not the
+// fleet. See FOUND_DEFECTS D140.
+//
+// The schema name above is deliberately spelled out in prose rather than as a
+// qualified table reference: `pnpm check:dead-relations` scans comments too, so
+// writing the pre-reorg name inline made this file report a dead relation on
+// every run even though every query here goes through
+// `.schema("scheduler").from(...)`. A guard that cries wolf gets ignored.
 
 "use client";
 
