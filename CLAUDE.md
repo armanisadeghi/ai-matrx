@@ -393,6 +393,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | Research (web pipeline: search→scrape→analyze→synthesize→document; live "orchestra" + stat-square rail) | `features/research/FEATURE.md` |
 | **Marketing domain** (umbrella — five peer pillars: brands/websites, content planning, search & keywords, SEO tools, data & operations). **Every marketing surface lives under `/marketing/*` — never a root-level route**; `/seo/*` is reserved for the `(public)` anonymous analyzers. Structure declared once in `features/marketing/lib/marketing-nav.ts` | `features/marketing/FEATURE.md` — canonical pillar table; **never create a sibling `features/seo-*` / `features/content-*`** |
 | ↳ Content Plan (`plan` schema client: tree editor + node panel + pillar map at `/marketing/content-plan`; cross-repo SoR `common-docs/systems/content-planning/FEATURE.md`) | `features/marketing/content-plan/FEATURE.md` |
+| **Growth Loop** — the twelve-stage pipeline research→plan→pages→live site→crawl→findings→fixes, scored on THE THREE PIPES (code/human/AI). **`features/growth-loop/map/loop-map.ts` is the ONLY place its stage/connection/gap statuses live** — flip a gap there in the same change as the code; never restate a status in a doc. Map: `/administration/knowledge/growth-loop`. Vision + campaign: `common-docs/systems/growth-loop/` | `features/growth-loop/FEATURE.md` |
 
 ### Tier 2 — secondary features
 
