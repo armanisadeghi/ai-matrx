@@ -21,6 +21,37 @@ import type { CategoryTreeNode } from "../../redux/skl/selectors";
 import type { SklRenderDefinition } from "../../redux/skl/types";
 import { idMatchesQuery } from "@/utils/search-scoring";
 
+/**
+ * Classification badges — surfaces the block_type / visibility fidelity the
+ * 2026-08-08 `agent.context_menu_view` update delivers. Markdown + public is
+ * the baseline and stays unbadged; anything else is worth a glance.
+ */
+function ClassificationBadges({
+  def,
+  always = false,
+}: {
+  def: SklRenderDefinition;
+  always?: boolean;
+}) {
+  const showType = always || def.blockType !== "markdown";
+  const showVisibility = always || def.visibility !== "public";
+  if (!showType && !showVisibility) return null;
+  return (
+    <>
+      {showType && (
+        <span className="text-[10px] px-1 rounded bg-muted text-muted-foreground shrink-0">
+          {def.blockType === "render_kind" ? "kind" : def.blockType}
+        </span>
+      )}
+      {showVisibility && (
+        <span className="text-[10px] px-1 rounded border border-border/60 text-muted-foreground shrink-0">
+          {def.visibility}
+        </span>
+      )}
+    </>
+  );
+}
+
 export function RenderBlocksSection() {
   const dispatch = useAppDispatch();
   const selectedItemId = useAppSelector(selectSelectedItemId);
@@ -174,6 +205,7 @@ function CategoryTreeBranch({
             >
               <Blocks className="h-3 w-3 text-muted-foreground shrink-0" />
               <span className="truncate flex-1">{d.label}</span>
+              <ClassificationBadges def={d} />
               {!d.isActive && (
                 <span className="text-[10px] text-muted-foreground">
                   inactive
@@ -241,7 +273,8 @@ function UncategorizedBranch({
             )}
           >
             <Blocks className="h-3 w-3 text-muted-foreground shrink-0" />
-            <span className="truncate">{d.label}</span>
+            <span className="truncate flex-1">{d.label}</span>
+            <ClassificationBadges def={d} />
           </button>
         ))}
     </div>
@@ -266,9 +299,12 @@ function RenderBlockDetail({
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <div className="flex flex-col min-w-0">
-          <div className="text-sm font-semibold text-foreground truncate">
-            {def.label}
+        <div className="flex flex-col min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-sm font-semibold text-foreground truncate">
+              {def.label}
+            </span>
+            <ClassificationBadges def={def} always />
           </div>
           <div className="text-xs text-muted-foreground truncate font-mono">
             {def.blockId}

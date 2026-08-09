@@ -1,133 +1,151 @@
 # FEATURE.md — `agent-connections`
 
-**Status:** `scaffolded` (UI shell + route scaffold — all section data is still hardcoded mock; Preferences tab is real and synced to user prefs)
+**Status:** `live` (route family + overlay window shipped; `redux/skl` is the canonical content-block/render-definition store consumed platform-wide; 5 of 14 sections read real data, the rest are declared placeholders)
 **Tier:** `1`
-**Last updated:** `2026-05-13`
+**Last updated:** `2026-08-09` — verified against live code this date.
 
-> This is the agent-facing hub for "what can this agent reach?" — models, skills, instructions, prompts, hooks, MCP servers, plugins. It is now mounted as a **Next.js route at `/agent-connections/*`** (one subroute per section, sidebar persists across navigations) AND still surfaced as a floating window panel for the legacy overlay flow. Most sections are still presentational; the new Preferences tab is wired through `useSetting()` to the user-preferences synced cache. The broader MCP + external integrations story lives in the sibling feature `features/api-integrations/` (see forthcoming `features/api-integrations/FEATURE.md`).
+> Two things live here, and the second matters more than the first:
+> 1. **The Agent Connections hub UI** — "what can this agent reach?" (agents, skills, render blocks, MCP servers, …) at `/agent-connections/*` and as the `agentConnectionsWindow` overlay.
+> 2. **`redux/skl` — the canonical Redux store for `skill.render_definition` rows** ("render blocks" = "content blocks"; same rows). The unified agent context menu, agent-shortcuts hooks, and this hub all read and write through it. **Touching skl is touching the context menu**, not just this page.
 
 ---
 
 ## Purpose
 
-Agent Connections is the engineer-facing registry surface that governs **which tools, skills, instructions, prompts, hooks, MCP servers, and plugins an agent can reach**. Today it is a presentational shell (sidebar + sectioned body) designed to slot into the agent workspace; the connection/auth data model and runtime resolution still belong to `features/api-integrations/` and `features/agents/services/mcp.service.ts`.
+Agent Connections is the registry surface for what agents can reach — and the home of the one content-block store. The broader external-integrations story (MCP protocol, OAuth, credential storage) belongs to `features/api-integrations/` and `features/agents/services/mcp-oauth/`.
+
+---
+
+## The `skl` store — canonical content-block / render-definition state
+
+**Table:** `skill.render_definition` (schema `skill`; the old `public.content_blocks` is retired — see `scripts/dead-relations.json` and `skl-migration-guide.md`). **One slice** (`redux/skl/`, key `skl` in `lib/redux/rootReducer.ts`) holds these rows; there is no parallel copy anywhere.
+
+**Row shape** (`redux/skl/types.ts` → `SklRenderDefinition`): `blockId`, `label`, `template`, `categoryId`, plus the classification trio —
+- `blockType: "render_kind" | "xml" | "markdown"` — how the template renders (`render_kind` binds to the Shape system's `content_ir.kind_component`; this palette itself is the markdown-atom side, per SHAPE_SYSTEM R1).
+- `visibility` — the `platform.visibility` enum; `isPublic` is legacy sugar kept in sync (`visibility === "public"`).
+- `skillId` — owning skill, nullable.
+
+**Two hydration paths, one merge discipline:**
+1. **Full fetch** — `fetchRenderDefinitions` (`redux/skl/thunks.ts`): Supabase direct on `skill.render_definition`, `deleted_at IS NULL`, scope-filtered via `applyScopeFilter` (VIEW LAW satisfied in-thunk), → `renderDefinitionsReceived` (replaces the set).
+2. **Context-menu hydration** — `fetchUnifiedMenu` (`features/agents/redux/agent-shortcuts/thunks.ts`) hits `GET /api/agent-context-menu`, backed by the **`agent.context_menu_view`** DB view, and dispatches `sklActions.renderDefinitionsMerged` with partial rows. Since **2026-08-08** the view emits `block_type` / `skill_id` / `visibility`, so wire rows are near-complete. The merge is `Object.assign`-based and **partial-safe**: the thunk OMITS (never nulls) classification fields absent from a stale cached payload, and the slice's defaults (`markdown`/`public`) apply only to rows never seen by any fetch. **Never turn an omitted field into an explicit null on this path** — that would erase a fetched row's real classification.
+
+**Writes** — `createRenderDefinition` / `updateRenderDefinition` / `deleteRenderDefinition` (skl thunks), Supabase direct. `stampScopeForWrite` stamps ownership from the caller's scope and **never writes a NULL `organization_id`** (falls back to `ensureOrgId` → personal org). Converters (`redux/skl/converters.ts`) own the row↔state mapping including the `visibility`/`isPublic` reconciliation — explicit `visibility` wins.
+
+**Compat layer** — `redux/skl/content-block-compat.ts` re-exports the old `agent-content-blocks` names (`AgentContentBlockDef`, `selectAllContentBlocksArray`, `selectContentBlocksByScope`, …) as thin aliases over skl selectors. External consumers import through it or the skl modules directly:
+- `features/context-menu-v3/hooks/useUnifiedAgentContextMenu.ts` — the live context menu.
+- `features/agent-shortcuts/hooks/useAgentShortcuts.ts` + `types.ts` — shortcut surfaces (maps `"global"` scope → `"user"` before calling skl).
+- `features/agents/redux/agent-shortcuts/{thunks,selectors}.ts` — unified-menu hydration + read-through selectors.
+
+**Categories** — render blocks FK to `platform.categories` rows with `dimension='shortcut'` (shared with agent shortcuts). `fetchRenderBlockCategories` reads them (plain `select("*")`; the aliased-json select triggered TS2589), `rowToShortcutCategory` maps name→label / position→sort_order; `selectRenderBlockCategoryTree` builds the parent tree.
+
+**Resources are RETIRED here (2026-07-06).** `skill.resource` is gone; a skill's resources are `code_files`/notes attached via `platform.associations`, managed by `features/skills/` (`createSkillResourceThunk`, `SkillResourcesPanel`). `hooks/useResources.ts` and the slice's `resources` branch are inert — never populated. Migrate callers to `features/skills/`; do not add code here.
+
+**Skill definitions + skill categories are NOT here.** They moved to `features/skills/redux/` (backed by `/api/skills`) in May 2026. Do not add skill/category code to skl.
 
 ---
 
 ## Entry points
 
-**Routes**
-- **`/agent-connections`** — Overview. Mounted via `app/(a)/agent-connections/page.tsx`.
-- **`/agent-connections/<segment>`** — one subroute per section. Segments are kebab-case (`sub-agents`, `render-blocks`, `mcp-servers`); other sections use their enum value directly. The mapping is declared once in `features/agent-connections/constants.ts → SIDEBAR_SECTIONS[].urlSegment`, and the helpers in `features/agent-connections/routing.ts` (`sectionToHref`, `segmentToSection`) translate both ways.
-- `app/(a)/agent-connections/layout.tsx` is the **persistent shell**: reads the panel-layout cookie server-side, then renders `<AgentConnectionsRouteShell>` with the sidebar mounted once and `{children}` filling the right pane. This is the canonical model for window-style pages — copy it for new feature shells.
-- Also surfaced as a floating window: **`agent-connections-window`** (overlay id `agentConnectionsWindow`). Opened from the overlay controller and rendered via `features/window-panels/windows/agents/AgentConnectionsWindow.tsx`. The route and the overlay share the same sidebar and section components — the only difference is which navigation mode is active.
+**Routes** — `app/(core)/agent-connections/*` (route group `(core)`, AppShell):
+- `/agent-connections` — Overview (card grid). 13 subroutes, one per section; segments from `constants.ts → SIDEBAR_SECTIONS[].urlSegment` (kebab-case where needed: `sub-agents`, `render-blocks`, `mcp-servers`), translated by `routing.ts` (`sectionToHref` / `segmentToSection`).
+- `layout.tsx` is the persistent shell: reads the panel-layout cookie (`panels:agent-connections:v1`, versioned — bump on layout-shape changes) server-side, renders `<AgentConnectionsRouteShell>` (react-resizable-panels v4) with the sidebar mounted once. Each `page.tsx` mounts its section component directly.
+- **Every sidebar section MUST have a route directory.** The sidebar renders `<Link>`s straight from `SIDEBAR_SECTIONS`; a listed section without a `page.tsx` is a 404 (the Prompts route was exactly this gap until 2026-08-09).
 
-**Components (in `features/agent-connections/components/`)**
-- `AgentConnectionsSidebar` — left-rail section picker. **Dual-mode**: when given `basePath`, it renders Next `<Link>`s and derives `activeSection` from `usePathname()`; when given `activeSection + onSelect`, it falls back to button + callback (legacy overlay mode).
-- `AgentConnectionsBody` — Redux switch-based router for section content (used by the overlay window only — routes mount the section components directly through their `page.tsx`).
-- `AgentConnectionsRouteShell` — client shell using `react-resizable-panels` v4 (`<ClientGroup>` + `<RegisteredPanel>` + `<Handle>` from `app/(dev)/demos/resizables/_lib/`). Cookie-persisted sidebar width.
-- `AgentConnectionsNavContext` — provider exposing `navigate(section)`. `mode="route"` pushes a route; `mode="overlay"` dispatches `setActiveSection`. Used by `OverviewSection`'s card grid so the same component works in both surfaces.
-- Per-section components in `components/sections/`: `OverviewSection`, `AgentsSection`, `SubAgentsSection`, `SkillsSection`, `RenderBlocksSection`, `ResourcesSection`, `InstructionsSection`, `PromptsSection`, `CommandsSection`, `HooksSection`, `McpServersSection`, `PluginsSection`, `RegistriesSection`, `PreferencesSection`.
-- Shared primitives: `SectionToolbar`, `GroupSection`, `ListRow`, `SectionFooter`, `ScopePicker`.
+**Overlay** — `agentConnectionsWindow` (opener `features/overlays/openers/agentConnectionsWindow.tsx`, component `features/window-panels/windows/agents/AgentConnectionsWindow.tsx`). Same sidebar + section components; navigation via Redux (`ui` slice) instead of the URL.
 
-**Hooks / Services / Redux**
-- `redux/ui/slice.ts` — `activeSection`, `viewScope`, `selectedItemId`. The route view does NOT read `activeSection` (the URL is the truth) — only the overlay window does. The slice stays for the overlay, for scope/selection state, and for the overview-card click that fires through `setActiveSection` in overlay mode.
-- `redux/skl/` — skill/render/resource definition state (shared with the agents system).
-- **Preferences tab** is wired to `useSetting<T>("userPreferences.agentConnections.<key>")` — the new `agentConnections` module on `UserPreferences` (`lib/redux/slices/userPreferencesSlice.ts`). Persistence (IDB + LS + Supabase) is handled automatically by the existing user-preferences engine. **No slice-binding entry was needed** — `features/settings/slice-bindings.ts → userPreferences` already does generic `module.preference` dispatch.
+**Components** (`components/`)
+- `AgentConnectionsSidebar` — **bi-modal**: `basePath` → Next `<Link>`s + `usePathname()`-derived active section (route mode); `activeSection + onSelect` → button/callback (overlay mode). Mixing both is a bug — `basePath` wins. New surfaces always use `basePath`.
+- `AgentConnectionsBody` — Redux-switch section router, **overlay only** (routes mount sections via `page.tsx`).
+- `AgentConnectionsNavContext` — `navigate(section)` provider; `mode="route"` pushes a URL, `mode="overlay"` dispatches `setActiveSection`. `OverviewSection` requires it (both shells mount it; wrap it yourself anywhere else).
+- Shared primitives: `SectionToolbar`, `GroupSection`, `ListRow`, `SectionFooter`, `ScopePicker`, `AgentConnectionsHeaderControls`.
 
-**API endpoints**
-- None owned by this feature. Runtime tool access is resolved server-side from the agent definition (`POST /ai/agents/{id}` — see `features/agents/FEATURE.md`).
+**Section liveness** (`components/sections/`) — the old `data.ts` mock file is **deleted**; nothing renders mock data:
+| Live | Reads |
+|---|---|
+| `SkillsSection` | `features/skills/` slice (`/api/skills`); full CRUD, categories, filesystem ingest (admin) |
+| `RenderBlocksSection` | skl via `hooks/useRenderBlocks.ts` (definitions + category tree); badges block type + visibility (see below); detail view read-only, editor pending |
+| `AgentsSection` | `features/agents/redux/agent-definition/` (`fetchAgentsList` → `selectLiveAgents`) |
+| `McpServersSection` | `features/agents/redux/mcp/mcp.slice.ts` (`fetchCatalog`, `connectServer` / `disconnectServer` / `discoverServerTools`) |
+| `PreferencesSection` | `useSetting<T>("userPreferences.agentConnections.<key>")` — persistence via the user-preferences engine, no slice-binding needed |
 
----
+Placeholders (empty-state copy, no data source): `SubAgentsSection`, `ResourcesSection` (inert slice — see Resources above), `InstructionsSection`, `PromptsSection`, `CommandsSection`, `HooksSection`, `PluginsSection`, `RegistriesSection`. Prompts as a concept is superseded by agents + shortcuts + agent-apps; treat that tab as a slot to repurpose or remove.
 
-## Data model
+**Hooks** (`hooks/`)
+- `useRenderBlocks` — fetches definitions + categories for the current view scope; returns tree + byCategoryId.
+- `useViewScope` — resolves the ui slice's `viewScope` selection to a concrete scopeId from `appContextSlice` (canonical scope source; nothing mirrored).
+- `useAgents`, `useMcpCatalog` — thin adapters over the agents-system slices (no data owned here).
+- `useResources` — inert, retired (above).
 
-**Database tables**
-- None owned by this feature. No `agent_connection` / `agent_connections` table exists in the codebase. Tool and MCP configuration currently lives inside the agent definition itself (`agent_definition`, managed by `features/agents/redux/agent-definition/`) plus the MCP state in `features/agents/redux/mcp.slice.ts`.
+**Redux**
+- `redux/skl/` — the canonical store (above).
+- `redux/ui/slice.ts` (`agentConnectionsUi`) — `viewScope`, `activeSection`, `selectedItemId`. **Route mode never reads `activeSection`** (URL is truth); the slice serves the overlay, scope/selection state, and overview-card navigation in overlay mode. Scope change clears the selection.
 
-**Key types** (`features/agent-connections/types.ts`)
-- `AgentConnectionsSection` — `"overview" | "agents" | "skills" | "instructions" | "prompts" | "hooks" | "mcpServers" | "plugins"`
-- `SidebarSection`, `OverviewCard` — sidebar + overview card shapes (label, icon, count, action)
-- `SectionGroup<T>` — generic `{ key, label, items[] }` grouping used by Skills / Hooks / MCP sections
-- `SkillEntry`, `AgentEntry`, `HookEntry`, `McpServerEntry` — list-row item shapes (id, name, description/filename, optional status)
-- `McpServerStatus` — `"running" | "stopped" | "error"`
-
-**Mock data source** (`features/agent-connections/data.ts`)
-Most sections still read from hardcoded exports: `HOOK_GROUPS`, `MCP_GROUPS`, `AGENT_ENTRIES`, `AGENT_FILE_PREVIEW`. These are placeholders; nothing is fetched. **Exception — Skills:** the `SkillsSection` is live as of 2026-05-27. It reads from `features/skills/` (the canonical slice backed by `/api/skills`), supports full CRUD, filesystem ingest (admin), and category browsing. The legacy `SKILL_GROUPS` mock is no longer wired.
+**API endpoints** — none owned. Reads/writes are Supabase-direct (skl) or other features' paths; `GET /api/agent-context-menu` belongs to the agent-shortcuts system.
 
 ---
 
 ## Key flows
 
-### (a) Configuring tool access per agent
-**Not implemented here.** Today, tool/model/MCP selection for an agent happens in `features/agents/` (the Builder) and is persisted as part of the agent definition. When a user opens the Connections window there is no `agentId` prop threaded through; the sections render global/mock lists, not per-agent configurations. Wiring this up requires:
-1. A route (or prop) providing the active `agentId`.
-2. Selectors against `agentDefinition` for the agent's currently attached skills / MCP servers / hooks.
-3. Mutations through the existing agent-definition thunks (not new endpoints).
+### (a) Render-block classification reaches the UI
+`agent.context_menu_view` (2026-08-08) → `fetchUnifiedMenu` → `renderDefinitionsMerged` → `RenderBlocksSection`'s `ClassificationBadges`: list rows badge only the non-baseline (`blockType !== "markdown"`, `visibility !== "public"` — `render_kind` shows as `kind`); the detail header always shows both. Extending fidelity display elsewhere (context menu rows, shortcut pickers) reads the same skl fields — never a second fetch.
 
-### (b) Managing API keys / external auth
-**Not implemented here.** No credential storage, no key vault UI, no service calls. External tool authentication (OAuth, API keys) is the domain of `features/agents/services/mcp-oauth/` and belongs documented in `features/api-integrations/FEATURE.md`. If key management lands in this hub later, it must never surface secrets to the client — tokens are server-side only.
+### (b) Editing a render block
+`RenderBlocksSection` detail is read-only today (template `<pre>`; three-pane editor + live `BlockRenderer` preview is the declared next step). Any mutation goes through the skl thunks — they keep the context menu, shortcut hooks, and this hub consistent because all three read one slice.
 
-### (c) Runtime resolution at agent invocation
-Agent invocations hit `POST /ai/agents/{id}` with the agent ID plus per-call inputs. The server resolves the full tool/MCP/skill list from the stored agent definition and assembles the execution context. **The client never sees the complete tool list directly**, and this UI does not change that — anything it eventually mutates must round-trip through the agent-definition writes on the server. See `features/agents/FEATURE.md` → "Two invocation payloads" for the Builder-vs-Runner split.
+### (c) Per-agent connection configuration
+**Not implemented.** No `agentId` is threaded into the hub; sections show global/scope-filtered lists. Tool/model/MCP selection per agent lives in `features/agents/` (the Builder) inside the agent definition. Wiring it here means: thread `agentId`, select off `agentDefinition`, mutate via existing agent-definition thunks — no new endpoints.
 
-### (d) Current demo-only flow (what actually runs today)
-1. Overlay controller opens `AgentConnectionsWindow`.
-2. Local `useState<AgentConnectionsSection>` starts at `"overview"` (or `initialSection` prop).
-3. Sidebar click → `setActiveSection(value)`.
-4. `AgentConnectionsBody` switch renders the matching section.
-5. Section filters its hardcoded group list by search string; selecting an agent shows `AGENT_FILE_PREVIEW` as a static numbered preview.
-6. No mutations, no network calls, no persistence. Close the window — all local state gone.
+### (d) Runtime resolution at invocation
+The server resolves the full tool/skill/MCP set from the stored agent definition on `POST /ai/agents/{id}`. The client never sees the complete tool list; nothing in this hub changes that.
 
 ---
 
 ## Invariants & gotchas
 
-- **This is a shell, not a system of record.** Do not treat `data.ts` as a source of truth — any "real" Connections work must resolve through `features/agents/redux/agent-definition/` (tools/skills attached to the agent) and `features/agents/redux/mcp.slice.ts` (MCP server state).
-- **Client never sees the full tool list.** The server owns tool resolution per agent invocation. If this hub grows editing capabilities, display must be selector-driven off the already-loaded agent definition, not a separate fetch that would leak the registry.
-- **Connection auth stays server-side.** API keys, OAuth tokens, MCP server credentials are never rendered or round-tripped through client state. `features/agents/services/mcp-oauth/` owns the OAuth dance.
-- **The stated route does not exist yet.** Docs and PRDs reference `/ai/agents/[id]/connections`; the code ships a floating window instead. Do not create the route without checking with the agent-system owners — it may be intentionally a window/overlay.
-- **Sidebar contract is bi-modal.** Pass `basePath` for the route surface OR `activeSection + onSelect` for the overlay. Mixing both is a bug — `basePath` wins and `usePathname()` becomes the source of truth. New surfaces should always use `basePath`.
-- **OverviewSection must run inside `<AgentConnectionsNavProvider>`** (or it'll fall back to dispatching `setActiveSection`, which only works in the overlay world). The route shell and the overlay window both mount the provider; if you embed `OverviewSection` somewhere else, wrap it.
-- **Cookie name is versioned** (`panels:agent-connections:v1`). Bumping the panel layout's default sizes or panel ids requires bumping the version so old cookies don't clamp to invalid layouts.
-- **Prompts are dead.** The Prompts section is a placeholder row. The prompts system has been superseded by agents + shortcuts + agent-apps (see `features/agents/migration/`). A "Prompts" tab inside Connections is legacy surface by name; treat it as a slot to repurpose or remove.
-- **No permission gating lives here.** Scope (admin/user/org) is expected to apply to most sections (shortcuts, hooks, instructions are multi-scope by project rule), but nothing enforces or filters by scope in this feature yet.
+- **One content-block store.** Every consumer of `skill.render_definition` rows goes through `redux/skl` (directly or via `content-block-compat`). A second slice, local cache, or bespoke fetch of these rows is a defect.
+- **The merge path must stay partial-safe.** `renderDefinitionsMerged` may receive stale cached payloads missing the classification trio; senders omit those keys, never null them. The slice's `markdown`/`public` defaults are for never-fetched rows only.
+- **`visibility` is authoritative; `isPublic` is derived.** Converters and the unified-menu hydration both maintain `isPublic = visibility === "public"`. Never set one without the other.
+- **No NULL `organization_id` on writes** — `stampScopeForWrite` + `ensureOrgId` guarantee it; keep that guarantee on any new write path.
+- **Sidebar section ⇒ route directory** (see Entry points). Adding a section touches `types.ts`, `constants.ts`, a section component, `AgentConnectionsBody`, and a `page.tsx`.
+- **Sidebar is bi-modal; `basePath` for every new surface.** `OverviewSection` needs `AgentConnectionsNavProvider`.
+- **Connection auth stays server-side.** No credentials/tokens in client state; `features/agents/services/mcp-oauth/` owns the OAuth dance; external-integration credential UI belongs to `features/api-integrations/`.
+- **Skill/category/resource code does not come back here** — `features/skills/` owns all three now.
+- **Cookie name is versioned** (`panels:agent-connections:v1`).
+- **No permission gating in this feature** — scope filtering is a view filter (RLS is the ceiling); nothing here enforces admin tiers.
 
 ---
 
 ## Related features
 
-- **Depends on (when wired up):** `features/agents/` (agent definition + MCP state + tool registry), `features/api-integrations/` (external tool + MCP catalog, auth storage — see its forthcoming `FEATURE.md`)
-- **Depended on by:** `features/window-panels/` (registers the window + overlay), `components/overlays/OverlayController.tsx` (dynamic import + mount)
-- **Cross-links:**
-  - `features/agents/FEATURE.md` — umbrella for agent runtime, invocation, and tool resolution
-  - `features/agents/agent-system-mental-model.md` — how tools participate in an agent turn
-  - `features/agents/services/mcp.service.ts` — MCP wiring used at invocation time
-  - `features/api-integrations/FEATURE.md` *(forthcoming)* — canonical doc for external integrations, MCP protocol details, and credential storage
-  - `features/window-panels/registry/windowRegistry.ts` — registration of `agent-connections-window`
+- **`features/agents/`** — agent definitions (AgentsSection's data), MCP slice + service (McpServersSection's data), the unified-menu thunk that hydrates skl, runtime invocation.
+- **`features/agent-shortcuts/`** + **`features/context-menu-v3/`** — the main consumers of skl content blocks.
+- **`features/skills/`** — skill definitions, categories, and skill resources (all formerly here).
+- **`features/content-ir/`** — the Shape system; `render_kind` blocks bind to `content_ir.kind_component` (SHAPE_SYSTEM R1).
+- **`features/api-integrations/`** — external integrations + credential storage.
+- **`features/window-panels/` / `features/overlays/`** — the overlay surface (`agentConnectionsWindow`).
+- `skl-migration-guide.md` (this folder) — the 2026-04 `skl_` namespace migration rationale; historical context, superseded on table names by the live schema (`skill.render_definition`, `platform.categories`).
 
 ---
 
-## Current work / migration state
+## Current work / next steps
 
-Scaffolded UI only. Before adding real behavior:
-
-1. Decide surface (floating window vs. dedicated route under `app/(a)/agents/[id]/...`). Coordinate with the agents migration plan at `features/agents/migration/MASTER-PLAN.md`.
-2. Replace hardcoded `data.ts` with selectors off `agentDefinition` + `mcp` slices — no parallel local state (project rule: RTK only for new state).
-3. Thread `agentId` through the window/route; all sections become per-agent views.
-4. Defer credential / API-key UI to `features/api-integrations/` — do not implement auth storage here.
+1. **Render-block editor** — three-pane detail editor + live `BlockRenderer` preview (detail view is read-only today).
+2. **Per-agent view** — thread `agentId` so sections show one agent's attached set (flow c).
+3. **Placeholder sections** — each needs a real data source or removal; Prompts is a repurpose-or-remove candidate.
+4. **Retire `hooks/useResources.ts`** + the slice's `resources` branch once no import remains.
 
 ---
 
 ## Change log
 
+- `2026-08-09` — Full FEATURE.md rewrite against live code (doc previously described a mock-data scaffold; `data.ts` deleted, routes live under `(core)`, skl documented as the canonical content-block store). Added `ClassificationBadges` to `RenderBlocksSection` — first UI consumer of the 2026-08-08 block_type/visibility fidelity (list rows badge non-baseline; detail always). Fixed the dead Prompts sidebar link by adding the missing `app/(core)/agent-connections/prompts/page.tsx`.
 - `2026-08-08` — `agent.context_menu_view` now emits `block_type` / `skill_id` / `visibility` on content-block items (view applied live + ledger-recorded); `fetchUnifiedMenu` hydration consumes them, so `redux/skl` `renderDefinitionsMerged` no longer silently defaults unfetched personal `render_kind` blocks to public-markdown. Wire types optional to tolerate stale cached payloads.
 - `2026-07-22` — Added a `// VIEW LAW:` comment to `redux/skl/thunks.ts` `fetchRenderDefinitions` noting the scope is applied immediately below via `applyScopeFilter`, clearing THE VIEW LAW's bare-RLS guard finding (no behavior change).
 - `2026-05-27` — claude: SkillsSection promoted from a placeholder to live. Now reads `/api/skills` via the new `features/skills/` slice, supports browse / create / edit / delete / categories / filesystem ingest (admin), and reacts to sandbox auto-discovery events (`RESOURCE_CHANGED kind="skills.ingested"`). The SkillsCount selector also moved from the legacy `skl` slice to the new `skills` slice; render-blocks / resources are still served from `skl`.
-- `2026-05-13` — Promoted to a real Next.js route family under `app/(a)/agent-connections/*` (14 subroutes, persistent sidebar via `layout.tsx`, cookie-persisted resizable shell). Added the `preferences` section + new `agentConnections` module on `UserPreferences` wired through `useSetting()`. Made the sidebar dual-mode (`basePath` for routes, `activeSection + onSelect` for the overlay). Introduced `AgentConnectionsNavContext` so `OverviewSection` works in both surfaces.
+- `2026-05-13` — Promoted to a real Next.js route family (14 subroutes, persistent sidebar via `layout.tsx`, cookie-persisted resizable shell). Added the `preferences` section + new `agentConnections` module on `UserPreferences` wired through `useSetting()`. Made the sidebar dual-mode (`basePath` for routes, `activeSection + onSelect` for the overlay). Introduced `AgentConnectionsNavContext` so `OverviewSection` works in both surfaces.
 - `2026-04-25` — `AgentConnectionsWindow` imports sidebar/body from `components/*` and `AgentConnectionsSection` from `types` instead of `@/features/agent-connections` barrel.
 - `2026-04-22` — claude: initial doc.
 
 ---
 
-> **Keep-docs-live rule (CLAUDE.md):** after any substantive change to this feature — especially when mock data is replaced with real selectors, a real route is added, or this hub starts mutating agent definitions — update status, flows (a)/(b)/(c), and append to the Change log. Stale FEATURE.md cascades across parallel agents.
+> **Keep-docs-live rule (CLAUDE.md):** after any substantive change to this feature — especially when a placeholder section gains a data source, the render-block editor lands, or per-agent wiring starts — update status, flows, invariants, and append to the Change log. Stale FEATURE.md cascades across parallel agents.
