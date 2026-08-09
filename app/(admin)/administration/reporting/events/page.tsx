@@ -143,9 +143,17 @@ export default function AdminEventsPage() {
         cellKind: "uuid",
         width: 120,
         // The audit log names every record in the platform; this is what lets
-        // it open them. Per-row token — unregistered types resolve to no route
-        // and simply stay copyable.
-        fk: { token: (r) => r.entity_type },
+        // it open them. Per-row token, gated on REGISTRATION exactly like the
+        // Entity column above: `entity_type` is a mix of canonical tokens and
+        // raw producer table names, and handing an unvetted string to the door
+        // resolver would open whatever a colliding name happens to resolve to.
+        // Unregistered types stay copy-only.
+        fk: {
+          token: (r) =>
+            r.entity_type && tryGetEntityInfo(r.entity_type)
+              ? r.entity_type
+              : null,
+        },
       },
       {
         id: "actor_id",
@@ -290,7 +298,12 @@ export default function AdminEventsPage() {
                       <MatrxUuidCell
                         value={r.entity_id}
                         label="Entity"
-                        token={r.entity_type}
+                        // Registered tokens only — same gate as the chip above.
+                        token={
+                          r.entity_type && tryGetEntityInfo(r.entity_type)
+                            ? r.entity_type
+                            : null
+                        }
                       />
                     ) : (
                       "—"

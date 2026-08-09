@@ -9,7 +9,7 @@
 // any HuggingFace/Civitai URL via aidream into a prefilled entry.
 // Cross-repo system-of-record: common-docs/systems/remote-catalogs/FEATURE.md
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LibraryBig, Link2, Plus } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -56,9 +56,19 @@ interface CatalogsClientProps {
  * (the applications history timeline) must be able to open exactly that entry,
  * not just drop the operator on the tab.
  */
-function initialView(kind?: string, entryId?: string): View {
-  if (kind && entryId) return { mode: "edit", kind, entryId };
-  if (kind) return { mode: "kind", kind };
+function initialView(
+  kind: string | undefined,
+  entryId: string | undefined,
+  rows: CatalogEntryRow[],
+): View {
+  // `?entry=` alone is a complete instruction — the row knows its own kind, so
+  // requiring the caller to also pass `?kind=` would silently drop the deep
+  // link on the dashboard and never open the record it names.
+  const resolvedKind =
+    kind ?? (entryId ? rows.find((r) => r.id === entryId)?.kind : undefined);
+  if (resolvedKind && entryId)
+    return { mode: "edit", kind: resolvedKind, entryId };
+  if (resolvedKind) return { mode: "kind", kind: resolvedKind };
   return { mode: "kinds" };
 }
 
@@ -89,10 +99,23 @@ export function CatalogsClient({
   );
   const [app, setApp] = useState<string>(initialApp ?? DEFAULT_CATALOG_APP);
   const [view, setView] = useState<View>(() =>
-    initialView(initialKind, initialEntryId),
+    initialView(initialKind, initialEntryId, initialRows),
   );
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkDialogKind, setLinkDialogKind] = useState<string | null>(null);
+
+  // A client-side navigation to a NEW ?app=&kind=&entry= re-renders this same
+  // instance with new props, so seeding state once would leave the operator
+  // looking at the previous entry while the address bar names another. Re-seed
+  // whenever the link identity changes.
+  const deepLinkKey = `${initialApp ?? ""}|${initialKind ?? ""}|${initialEntryId ?? ""}`;
+  const lastDeepLink = useRef(deepLinkKey);
+  useEffect(() => {
+    if (lastDeepLink.current === deepLinkKey) return;
+    lastDeepLink.current = deepLinkKey;
+    if (initialApp) setApp(initialApp);
+    setView(initialView(initialKind, initialEntryId, rows));
+  }, [deepLinkKey, initialApp, initialKind, initialEntryId, rows]);
 
   // Distinct apps present in the table + the default app.
   const apps = Array.from(

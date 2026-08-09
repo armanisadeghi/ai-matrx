@@ -70,6 +70,13 @@ export function ReachabilityInspectorClient({
     null,
   );
 
+  // Only the LATEST lookup may write results. Two can overlap — the deep-link
+  // effect plus a manual "Look up", or a second ?mode=&type=&id= navigation
+  // before the first RPC returns — and an out-of-order finish would leave the
+  // table showing an older query's answer under the newer URL. Reporting the
+  // wrong record's containers is a wrong door.
+  const lookupSeq = useRef(0);
+
   /** Run the lookup for EXPLICIT arguments — a deep link can't wait for state. */
   async function lookupFor(
     lookupMode: ReachabilityMode,
@@ -85,6 +92,9 @@ export function ReachabilityInspectorClient({
       toast.error("Pick an entity type");
       return;
     }
+    const seq = ++lookupSeq.current;
+    const isStale = () => seq !== lookupSeq.current;
+
     setLoading(true);
     setContents(null);
     setContainers(null);
@@ -95,6 +105,7 @@ export function ReachabilityInspectorClient({
           { p_type: lookupType, p_id: id },
         );
         if (error) throw error;
+        if (isStale()) return;
         setContents(data ?? []);
       } else {
         const { data, error } = await supabase.rpc(
@@ -102,14 +113,16 @@ export function ReachabilityInspectorClient({
           { p_type: lookupType, p_id: id },
         );
         if (error) throw error;
+        if (isStale()) return;
         setContainers(data ?? []);
       }
     } catch (e) {
+      if (isStale()) return;
       toast.error(
         `Lookup failed: ${e instanceof Error ? e.message : String(e)}`,
       );
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   }
 
