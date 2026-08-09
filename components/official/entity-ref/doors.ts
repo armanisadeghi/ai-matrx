@@ -28,6 +28,30 @@ import type { LucideIcon } from "lucide-react";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { hasPeek } from "@/features/organizations/peek/kinds-list";
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * True when a value is a real uuid — the guard a surface needs BEFORE handing an
+ * id to `EntityRef` / `EntityDoorControls`.
+ *
+ * Door resolution deliberately does not validate ids (a token's `hrefFor` is
+ * free to use slugs), so any surface that DERIVES an id — parsing it out of a
+ * surface key, reading an untyped column — must check first, or it mints a link
+ * to `/agents/<junk>`: a door that opens on nothing, which the doctrine ranks
+ * worse than no door at all.
+ *
+ * It lives here, beside `resolveEntityDoors`, because this module is the one
+ * component-free entry point on the door path. It used to live only inside
+ * `MatrxUuidCell`, which meant guarding an id dragged a table cell (and its
+ * tooltip/toast/peek-host graph) into whatever chunk needed the check —
+ * THE FRAGMENTATION LAW, paid for a three-line regex. `MatrxUuidCell` now
+ * re-exports this one so existing importers are unaffected.
+ */
+export function isUuidValue(value: unknown): value is string {
+  return typeof value === "string" && UUID_RE.test(value.trim());
+}
+
 /**
  * Entity tokens whose peek is registered under a different catalogue key.
  * Keep this at zero entries wherever possible — the real fix is aligning the

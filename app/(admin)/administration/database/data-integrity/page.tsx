@@ -24,11 +24,11 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import {
   isUuidValue,
-  MatrxUuidCell,
-} from "@/components/official/matrx-data-table/MatrxUuidCell";
-import { tokenFromColumnName } from "@/components/official/entity-ref/doors";
+  tokenFromColumnName,
+} from "@/components/official/entity-ref/doors";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 
 type Severity = "error" | "warning" | "info";

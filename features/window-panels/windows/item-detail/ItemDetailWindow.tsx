@@ -42,11 +42,11 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/utils/supabase/client";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import { tokenFromColumnName } from "@/components/official/entity-ref/doors";
 import {
-  MatrxUuidCell,
   isUuidValue,
-} from "@/components/official/matrx-data-table/MatrxUuidCell";
+  tokenFromColumnName,
+} from "@/components/official/entity-ref/doors";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import {
   entityTokenForItemType,
   getItemConfig,

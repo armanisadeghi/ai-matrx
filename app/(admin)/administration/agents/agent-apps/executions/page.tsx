@@ -74,10 +74,8 @@ import {
   AgentAppRef,
   agentAppExecutionsHref,
 } from "@/features/agent-apps/components/AgentAppRef";
-import {
-  MatrxUuidCell,
-  isUuidValue,
-} from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { supabase } from "@/utils/supabase/client";
 import { appDb } from "@/utils/supabase/appDb";
 

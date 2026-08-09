@@ -27,7 +27,8 @@ import DataRowWindow from "./DataRowWindow.dynamic";
 import { DirtySavePill } from "./DirtySavePill";
 import { EditableTableCell } from "./EditableTableCell";
 import { tokenFromColumnName } from "@/components/official/entity-ref/doors";
-import { isUuidValue, MatrxUuidCell } from "./MatrxUuidCell";
+import { MatrxUuidCell } from "./MatrxUuidCell";
+import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { ToolbarFacets, resetToolbarFacets } from "./ToolbarFacets";
 import {
   applyRowEdits,

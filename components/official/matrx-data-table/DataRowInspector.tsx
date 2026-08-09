@@ -3,7 +3,8 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { isUuidValue, MatrxUuidCell } from "./MatrxUuidCell";
+import { MatrxUuidCell } from "./MatrxUuidCell";
+import { isUuidValue } from "@/components/official/entity-ref/doors";
 
 /** No field is a door unless the caller says which token it points at. */
 const noFieldToken = (): string | null => null;

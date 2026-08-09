@@ -21,10 +21,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import {
-  MatrxUuidCell,
-  isUuidValue,
-} from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { useCapturedErrors } from "@/lib/diagnostics/useCapturedErrors";
 import {
   clearCapturedErrors,

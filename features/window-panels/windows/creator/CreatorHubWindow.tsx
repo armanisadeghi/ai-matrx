@@ -39,6 +39,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { isUuidValue } from "@/components/official/entity-ref/doors";
 import {
   selectLastFocusedInputConversation,
   selectLastFocusedDisplayConversation,
@@ -148,18 +150,46 @@ function CreatorHubContextStatus() {
       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         Active
       </span>
+      {/* THE DOOR LAW: this footer exists to tell the user WHICH agent and
+          conversation the hub is acting on, and named both without letting them
+          look at either.
+
+          `activeAgentId` is sliced out of a surface key by string position, so
+          it is only an id when it parses as one — an unguarded EntityRef would
+          mint `/agents/<junk>`, a door that opens on nothing. Same guard shape
+          as ErrorInspectorWindow. */}
       <span className="text-foreground">
         Agent:{" "}
-        <span className="font-medium">
-          {activeAgentName ??
-            (activeAgentId ? `${activeAgentId.slice(0, 8)}…` : "none")}
-        </span>
+        {activeAgentId && isUuidValue(activeAgentId) ? (
+          <EntityRef
+            token="agent"
+            id={activeAgentId}
+            name={activeAgentName ?? `${activeAgentId.slice(0, 8)}…`}
+            showIcon={false}
+            nameClassName="font-medium"
+          />
+        ) : (
+          <span className="font-medium">
+            {activeAgentName ??
+              (activeAgentId ? `${activeAgentId.slice(0, 8)}…` : "none")}
+          </span>
+        )}
       </span>
       <span className="text-muted-foreground">
         Conversation:{" "}
-        <span className="font-mono">
-          {inputConvId ? `${inputConvId.slice(0, 8)}…` : "none"}
-        </span>
+        {inputConvId && isUuidValue(inputConvId) ? (
+          <EntityRef
+            token="conversation"
+            id={inputConvId}
+            name={`${inputConvId.slice(0, 8)}…`}
+            showIcon={false}
+            nameClassName="font-mono"
+          />
+        ) : (
+          <span className="font-mono">
+            {inputConvId ? `${inputConvId.slice(0, 8)}…` : "none"}
+          </span>
+        )}
       </span>
     </div>
   );

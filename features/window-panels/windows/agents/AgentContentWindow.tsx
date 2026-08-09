@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentById,
@@ -250,9 +251,21 @@ function FooterControls({
   return (
     <div className="flex w-full min-w-0 items-center justify-between gap-2">
       <div className="flex min-w-0 items-center gap-1.5">
-        <span className="max-w-[160px] truncate text-[11px] font-medium text-foreground">
-          {agentName || "Agent"}
-        </span>
+        {/* THE DOOR LAW in a window title bar: this window IS an agent, and its
+            name was a flat span with the id sitting right beside it in a
+            copy-only button. The window is a companion surface, so new-tab and
+            peek are the doors that matter — same-tab Open would throw away the
+            editing session the window exists to hold.
+
+            Safe here because WindowPanel's action zone stops pointer-down
+            propagation, so the anchor cannot be swallowed by the drag gesture. */}
+        <EntityRef
+          token="agent"
+          id={agentId}
+          name={agentName || "Agent"}
+          showIcon={false}
+          nameClassName="max-w-[160px] truncate text-[11px] font-medium text-foreground"
+        />
         <button
           type="button"
           onClick={handleCopyId}
