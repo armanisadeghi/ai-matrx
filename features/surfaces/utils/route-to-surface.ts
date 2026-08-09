@@ -59,9 +59,19 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/messages", surface: "matrx-user/messages" },
   { prefix: "/tasks", surface: "matrx-user/tasks" },
   { prefix: "/crm", surface: "matrx-user/crm" },
-  // Only the my-cloud tab renders real image rows; the other /images
-  // routes are static explainers/stubs and deliberately map to nothing.
+  // Images family. The my-cloud tab is the library; the four studio tools
+  // each carry their own surface. The static /images/studio landing maps to
+  // the studio surface it fronts (/images/convert is the live tool); the
+  // /images/ai-generate coming-soon hero maps to image-generate. The
+  // remaining /images routes are static explainers/stubs and deliberately
+  // map to nothing.
   { prefix: "/images/my-cloud", surface: "matrx-user/images" },
+  { prefix: "/images/convert", surface: "matrx-user/image-studio" },
+  { prefix: "/images/studio", surface: "matrx-user/image-studio" },
+  { prefix: "/images/generate", surface: "matrx-user/image-generate" },
+  { prefix: "/images/ai-generate", surface: "matrx-user/image-generate" },
+  { prefix: "/images/edit", surface: "matrx-user/image-edit" },
+  { prefix: "/images/annotate", surface: "matrx-user/image-annotate" },
   { prefix: "/files", surface: "matrx-user/files" },
   { prefix: "/projects", surface: "matrx-user/projects" },
   { prefix: "/lists", surface: "matrx-user/lists" },

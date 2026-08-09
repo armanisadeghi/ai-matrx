@@ -114,6 +114,10 @@ import { filePreviewManifest } from "./file-preview.manifest";
 import { imageViewerManifest } from "./image-viewer.manifest";
 import { imageUploaderManifest } from "./image-uploader.manifest";
 import { imagesManifest } from "./images.manifest";
+import { imageStudioManifest } from "./image-studio.manifest";
+import { imageGenerateManifest } from "./image-generate.manifest";
+import { imageEditManifest } from "./image-edit.manifest";
+import { imageAnnotateManifest } from "./image-annotate.manifest";
 import { galleryManifest } from "./gallery.manifest";
 import { shareManifest } from "./share.manifest";
 import { feedbackManifest } from "./feedback.manifest";
@@ -266,6 +270,10 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   imageViewerManifest,
   imageUploaderManifest,
   imagesManifest,
+  imageStudioManifest,
+  imageGenerateManifest,
+  imageEditManifest,
+  imageAnnotateManifest,
   galleryManifest,
   shareManifest,
   feedbackManifest,

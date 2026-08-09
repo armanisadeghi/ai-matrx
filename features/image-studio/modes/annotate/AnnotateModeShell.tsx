@@ -22,6 +22,11 @@ import { Loader2, Save, ShieldAlert, X, Zap } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { useImageSource } from "../shared/use-image-source";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  IMAGE_ANNOTATE_SURFACE_NAME,
+  createImageAnnotateScope,
+} from "@/features/surfaces/manifests/image-annotate.manifest";
 import { saveEditedImage } from "../shared/save-edited-image";
 import type { ModeShellProps } from "../shared/types";
 import { detectFaces } from "../../api/python";
@@ -171,7 +176,26 @@ export function AnnotateModeShell({
     );
   }
 
+  // Surface scope — built at trigger time from the live annotator state. The
+  // provider is mounted INSIDE the shell so modal mounts register too and
+  // the deepest provider wins while the annotator is open (overlay doctrine).
+  const scopeFileId =
+    cloudFileId ?? (source?.kind === "cloudFileId" ? source.cloudFileId : null);
+  const getAnnotateScope = () =>
+    createImageAnnotateScope({
+      ...(scopeFileId ? { image_file_id: scopeFileId } : {}),
+      image_file_name: filename,
+      presentation,
+      save_folder: defaultFolder,
+      is_saving: saving,
+      ...(aiBusy ? { ai_assist_running: aiBusy } : {}),
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={IMAGE_ANNOTATE_SURFACE_NAME}
+      getScope={getAnnotateScope}
+    >
     <div className="h-full min-h-0 flex flex-col">
       <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border bg-card/40 px-3 py-1.5 shrink-0">
         <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1">
@@ -254,6 +278,7 @@ export function AnnotateModeShell({
         )}
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

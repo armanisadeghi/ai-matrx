@@ -50,6 +50,8 @@ const InitialCropWindow = dynamic(
   { ssr: false, loading: () => null },
 );
 import { useImageStudio } from "../hooks/useImageStudio";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { IMAGE_STUDIO_SURFACE_NAME } from "@/features/surfaces/manifests/image-studio.manifest";
 import {
   downloadVariantsAsZip,
   type BundleEntry,
@@ -300,11 +302,15 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
   }, [studio]);
 
   return (
-    // `@container/studio` so the three columns respond to the studio's OWN
-    // available width, not the viewport. The app sidebar (and the images
-    // sub-nav) eat width outside this container — keying the side panels off
-    // viewport `md`/`lg` used to let both claim their fixed widths and crush
-    // the center work-column to zero (content overflowed / "popped out").
+    <SurfaceRuntimeProvider
+      surfaceName={IMAGE_STUDIO_SURFACE_NAME}
+      getScope={studio.buildSurfaceScope}
+    >
+    {/* `@container/studio` so the three columns respond to the studio's OWN
+        available width, not the viewport. The app sidebar (and the images
+        sub-nav) eat width outside this container — keying the side panels off
+        viewport `md`/`lg` used to let both claim their fixed widths and crush
+        the center work-column to zero (content overflowed / "popped out"). */}
     <div className="@container/studio flex h-full min-h-0">
       {/* LEFT — Preset Catalog ─────────────────────────── */}
       <div className="hidden @3xl/studio:flex flex-col w-72 @5xl/studio:w-80 @7xl/studio:w-96 border-r border-border bg-card/30 min-h-0">
@@ -623,5 +629,6 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
         </BottomSheetBody>
       </BottomSheet>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

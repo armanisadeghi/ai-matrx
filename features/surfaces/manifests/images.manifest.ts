@@ -241,7 +241,7 @@ export const imagesManifest: SurfaceManifest = {
   surfaceName: IMAGES_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "Completeness audit done against CloudImagesTab and every declared value is emitted by buildImagesScope. Remaining gaps: not yet registered in registry.ts / route-to-surface.ts (owner-gated), not DB-synced, no `data-surface-value` anchors on tiles, and no live non-matching-name binding test.",
+    "Completeness audit done against CloudImagesTab; registered, route-mapped, and DB-synced. Remaining gaps: no `data-surface-value` anchors on tiles, and no live non-matching-name binding test.",
   label: "Images Library",
   urlPattern: "/images/my-cloud",
   intro: `<surface_intro>
