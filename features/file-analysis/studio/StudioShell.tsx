@@ -276,7 +276,7 @@ export function StudioShell({ fileId }: StudioShellProps) {
               onClick={() => setMode("select")}
               icon={<MousePointer2 className="h-3 w-3" />}
               label="Select"
-              tooltip="Click an existing annotation rectangle to select + edit it. Empty clicks deselect."
+              tooltip="Click an annotation rectangle to select it, then drag to move or use the corner handles to resize. Empty clicks deselect."
             />
             <ModeButton
               active={mode === "draw"}
@@ -338,6 +338,9 @@ export function StudioShell({ fileId }: StudioShellProps) {
                     handlePageChange(a.page_number);
                   }
                 }}
+                onRegionUpdate={(id, bbox) => {
+                  void updateAnnotation(id, { bbox });
+                }}
                 onRegionClick={(id) => handleSelectAnnotation(id)}
                 onBackgroundClick={() => handleSelectAnnotation(null)}
               />
@@ -358,7 +361,7 @@ export function StudioShell({ fileId }: StudioShellProps) {
               {mode === "draw"
                 ? "Draw mode — drag a rectangle over any text to label it"
                 : mode === "select"
-                  ? "Select mode — click an existing annotation to edit"
+                  ? "Select mode — click an annotation, then drag to move or resize with the handles"
                   : "View mode — read-only · switch to Draw or Select to interact"}
             </div>
           </main>

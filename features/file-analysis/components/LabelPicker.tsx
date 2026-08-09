@@ -142,10 +142,17 @@ export function LabelPicker({
         />
       </PopoverTrigger>
       <PopoverContent
-        className="w-[420px] p-3"
+        className="w-[420px] max-w-[calc(100vw-1.5rem)] overflow-y-auto p-3"
         side="bottom"
         align="start"
         sideOffset={8}
+        collisionPadding={12}
+        // On short viewports the full form is taller than the space under
+        // (or above) the anchor — cap to Radix's measured available height
+        // so the Save row scrolls into view instead of clipping offscreen.
+        style={{
+          maxHeight: "min(var(--radix-popover-content-available-height), 40rem)",
+        }}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <div className="space-y-3">

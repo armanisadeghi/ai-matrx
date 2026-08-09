@@ -83,6 +83,16 @@ export interface AnnotatablePdfCanvasProps {
   /** Called AFTER the create succeeds (e.g. to select the new annotation). */
   onAnnotationCreated?: (annotation: AnnotationOut) => void;
 
+  /**
+   * Persist a move/resize of the selected region (select mode). Wire to
+   * `useAnnotations(fileId).update(id, { bbox })` — the layer emits once,
+   * on pointer release, with the final bbox in PDF points.
+   */
+  onRegionUpdate?: (
+    regionId: string,
+    bbox: { x0: number; y0: number; x1: number; y1: number },
+  ) => void;
+
   /** Click handlers forwarded to the layer. */
   onRegionClick?: (regionId: string) => void;
   onRegionContextMenu?: (
@@ -105,6 +115,7 @@ export function AnnotatablePdfCanvas({
   mode = "view",
   createAnnotation,
   onAnnotationCreated,
+  onRegionUpdate,
   onRegionClick,
   onRegionContextMenu,
   onBackgroundClick,
@@ -127,9 +138,13 @@ export function AnnotatablePdfCanvas({
   const handleDrawComplete = useCallback(
     async (draw: PendingDraw) => {
       if (mode !== "draw") return;
-      // Open the picker at the bottom-right of the drag so it doesn't cover
-      // the freshly-drawn rect. The user can move it; we just need an anchor.
-      const anchor = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+      // Anchor the picker at the pointer-release point (bottom-right of the
+      // drag) so it opens beside the freshly-drawn rect instead of screen
+      // center — the popover flips/shifts itself on viewport collision.
+      const anchor = {
+        x: draw.clientX ?? window.innerWidth / 2,
+        y: draw.clientY ?? window.innerHeight / 2,
+      };
       setDraft({
         page_number: draw.page_number,
         bbox: draw.bbox,
@@ -245,6 +260,7 @@ export function AnnotatablePdfCanvas({
         categoryOf={categoryOf}
         mode={mode}
         onDrawComplete={handleDrawComplete}
+        onRegionUpdate={onRegionUpdate}
         onRegionClick={(id) => onRegionClick?.(id)}
         // CONDITIONAL, and the arrow is the whole bug. The layer's contract is
         // "no handler => early-return, let the event bubble so a v3 menu can
@@ -271,6 +287,7 @@ export function AnnotatablePdfCanvas({
       categoryOf,
       mode,
       handleDrawComplete,
+      onRegionUpdate,
       onRegionClick,
       onRegionContextMenu,
       onBackgroundClick,

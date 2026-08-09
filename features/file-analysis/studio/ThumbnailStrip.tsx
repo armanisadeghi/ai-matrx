@@ -13,7 +13,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { EyeOff, Eye, Loader2 } from "lucide-react";
+import { EyeOff, Eye, Loader2, RotateCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { usePages, invalidatePages } from "@/features/file-analysis/hooks/usePages";
@@ -102,8 +102,13 @@ function ThumbnailItem({
   }, []);
 
   // Module-cached thumbnail. Survives remounts + cross-route navigation —
-  // re-entering the studio gives instant thumbnails.
-  const { png: thumbnail } = usePageThumbnail(fileId, page.id, {
+  // re-entering the studio gives instant thumbnails. Failures auto-retry
+  // with backoff; `error` only reports after retries are exhausted.
+  const {
+    png: thumbnail,
+    error: thumbnailError,
+    retry: retryThumbnail,
+  } = usePageThumbnail(fileId, page.id, {
     dpi: 50,
     enabled: visible,
   });
@@ -145,16 +150,28 @@ function ThumbnailItem({
     >
       <div className="relative aspect-[8.5/11] w-full overflow-hidden rounded">
         {thumbnail ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={thumbnail}
             alt={`Page ${page.page_index + 1}`}
             className="block h-full w-full object-contain"
           />
+        ) : thumbnailError ? (
+          /* Render exhausted its retries — offer a one-click re-render
+           * instead of a placeholder stuck forever. */
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              retryThumbnail();
+            }}
+            className="flex h-full w-full flex-col items-center justify-center gap-1 bg-muted/30 text-[9px] text-muted-foreground hover:text-foreground"
+          >
+            <RotateCw className="h-3 w-3" />
+            <span>retry preview</span>
+          </button>
         ) : (
-          <div className="flex h-full items-center justify-center bg-muted/30 text-[10px] text-muted-foreground">
-            p{page.page_index + 1}
-          </div>
+          /* Page is rendering — pulse skeleton, never a text placeholder. */
+          <div className="h-full w-full animate-pulse bg-muted/50" />
         )}
         {/* Annotation count — green badge top-right so the user can see
           * at a glance which pages have user-pinned data. */}
