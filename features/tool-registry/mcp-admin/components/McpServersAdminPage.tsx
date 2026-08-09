@@ -96,7 +96,6 @@ const PAGE_LOCATION =
 export function McpServersAdminPage() {
   const [servers, setServers] = useState<McpServerRow[]>([]);
   const [search, setSearch] = useState("");
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -113,7 +112,6 @@ export function McpServersAdminPage() {
   const deepLink = searchParams.get(MCP_SERVER_DEEP_LINK_PARAM);
 
   const selectServer = (slug: string | null) => {
-    setSelectedSlug(slug);
     const params = new URLSearchParams(searchParams.toString());
     if (slug) params.set(MCP_SERVER_DEEP_LINK_PARAM, slug);
     else params.delete(MCP_SERVER_DEEP_LINK_PARAM);
@@ -151,18 +149,19 @@ export function McpServersAdminPage() {
     );
   })();
 
-  // Derived, never an effect: an explicit click wins, and until there is one
-  // the `?server=` param picks the row. Matching id OR slug means a caller can
-  // link with whichever identifier it holds.
+  // THE URL IS THE ONLY SELECTION. `selectServer` writes `?server=`, and this
+  // reads it back — one source of truth, so a click and a link can never
+  // disagree. A parallel `selectedSlug` state used to win over the param
+  // forever once the user clicked anything, so navigating to a DIFFERENT
+  // `?server=` (the tools console's MCP column, back/forward) kept the
+  // previously-clicked server on screen while the address bar named another.
+  // Matching id OR slug means a caller can link with whichever it holds.
   const selected =
-    servers.find((s) => s.slug === selectedSlug) ??
-    (selectedSlug
-      ? null
-      : (servers.find((s) => s.slug === deepLink || s.id === deepLink) ?? null));
+    servers.find((s) => s.slug === deepLink || s.id === deepLink) ?? null;
 
   // A deep link the list cannot resolve is its own loud state — never the
   // neutral "pick a server" empty view, which would read as "nothing here".
-  const deepLinkUnresolved = Boolean(deepLink) && !selectedSlug && !selected;
+  const deepLinkUnresolved = Boolean(deepLink) && !selected;
 
   return (
     <div className="min-h-dvh flex flex-col">

@@ -61,7 +61,6 @@ export function BundlesAdminPage() {
   const [bundles, setBundles] = useState<BundleRow[]>([]);
   const [filter, setFilter] = useState<Filter>("active");
   const [search, setSearch] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -75,7 +74,6 @@ export function BundlesAdminPage() {
   const deepLink = searchParams.get(BUNDLE_DEEP_LINK_PARAM);
 
   const selectBundle = (id: string | null) => {
-    setSelectedId(id);
     const params = new URLSearchParams(searchParams.toString());
     if (id) params.set(BUNDLE_DEEP_LINK_PARAM, id);
     else params.delete(BUNDLE_DEEP_LINK_PARAM);
@@ -112,16 +110,21 @@ export function BundlesAdminPage() {
     );
   })();
 
-  // Derived, never an effect: a click wins; until then `?bundle=` picks the row.
-  const selected =
-    bundles.find((b) => b.id === selectedId) ??
-    (selectedId ? null : (bundles.find((b) => b.id === deepLink) ?? null));
+  // THE URL IS THE ONLY SELECTION. Not a mirror of it, and not a second source
+  // of truth that a click can desync: `selectBundle` writes `?bundle=`, and
+  // this reads it back. A parallel `selectedId` state used to win over the
+  // param forever once the user clicked anything, so client-side navigation to
+  // a DIFFERENT `?bundle=` (another console's link, back/forward) kept showing
+  // the previously-clicked bundle while the address bar named another one —
+  // the address bar lying about what is on screen is the dead end this sweep
+  // exists to remove.
+  const selected = bundles.find((b) => b.id === deepLink) ?? null;
 
   // An id the list cannot resolve says so, loudly. It is NOT "no bundles" and
   // it is NOT "pick one" — the caller asked for a specific record. Note the
   // list is filtered to active bundles by default, so an inactive bundle
   // resolves only after the user switches to All.
-  const deepLinkUnresolved = Boolean(deepLink) && !selectedId && !selected;
+  const deepLinkUnresolved = Boolean(deepLink) && !selected;
 
   return (
     <div className="min-h-dvh flex flex-col">
