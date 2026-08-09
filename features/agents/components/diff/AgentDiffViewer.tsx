@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { computeDiff } from "@/components/diff/engine/compute-diff";
 import { createAdapterRegistry } from "@/components/diff/adapters/registry";
 import { DiffViewerShell } from "@/components/diff/views/DiffViewerShell";
 import {
@@ -14,7 +13,7 @@ import {
 import type { ViewMode } from "@/components/diff/engine/types";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { useDiffEnrichment } from "@/features/agents/hooks/useDiffEnrichment";
-import { AGENT_DIFF_OPTIONS } from "./agent-diff-constants";
+import { compareAgentDefinitions } from "./compare-agent-definitions";
 
 import { MessagesAdapter } from "./adapters/MessagesAdapter";
 import { ModelAdapter } from "./adapters/ModelAdapter";
@@ -56,12 +55,36 @@ function buildAgentAdapterRegistry() {
   registry.register("isPublic", { ...BooleanFieldAdapter, label: "Public" });
   registry.register("isArchived", { ...BooleanFieldAdapter, label: "Archived" });
   registry.register("isFavorite", { ...BooleanFieldAdapter, label: "Favorite" });
+  registry.register("autoToolsDisabled", {
+    ...BooleanFieldAdapter,
+    label: "Automatic Tool Injection Disabled",
+  });
   registry.register("version", { ...TextFieldAdapter, label: "Version" });
   registry.register("changeNote", { ...TextFieldAdapter, label: "Change Note" });
+  registry.register("defaultRagBoost", {
+    ...TextFieldAdapter,
+    label: "Default RAG Boost",
+  });
+  registry.register("ragAwarenessMode", {
+    ...TextFieldAdapter,
+    label: "RAG Awareness Mode",
+  });
 
   // JSON fields
   registry.register("modelTiers", { ...JsonObjectAdapter, label: "Model Tiers" });
   registry.register("outputSchema", { ...JsonObjectAdapter, label: "Output Schema" });
+  registry.register("skillConfig", {
+    ...JsonObjectAdapter,
+    label: "Skill Configuration",
+  });
+  registry.register("uiGates", {
+    ...JsonObjectAdapter,
+    label: "UI Gates",
+  });
+  registry.register("matrxActions", {
+    ...JsonObjectAdapter,
+    label: "Matrx Actions",
+  });
 
   return registry;
 }
@@ -78,12 +101,7 @@ export function AgentDiffViewer({
   const adapters = useMemo(() => buildAgentAdapterRegistry(), []);
 
   const diffResult = useMemo(
-    () =>
-      computeDiff(
-        oldAgent as Record<string, unknown>,
-        newAgent as Record<string, unknown>,
-        AGENT_DIFF_OPTIONS,
-      ),
+    () => compareAgentDefinitions(oldAgent, newAgent).diffResult,
     [oldAgent, newAgent],
   );
 

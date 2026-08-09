@@ -231,6 +231,7 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     // (no boost); the column is non-nullable on agent.definition so we just
     // pass it through.
     defaultRagBoost: row.default_rag_boost ?? 0,
+    ragAwarenessMode: row.rag_awareness_mode ?? "none",
   };
 }
 
@@ -292,6 +293,7 @@ export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
     task_id: agent.taskId,
 
     default_rag_boost: agent.defaultRagBoost,
+    rag_awareness_mode: agent.ragAwarenessMode,
 
     // skill_config: send only when non-default so brand-new rows take the
     // DB's `{}` default. The server's CHECK constraint (migration 0095)
@@ -374,6 +376,8 @@ export function agentDefinitionToUpdate(
 
   if (partial.defaultRagBoost !== undefined)
     update.default_rag_boost = partial.defaultRagBoost;
+  if (partial.ragAwarenessMode !== undefined)
+    update.rag_awareness_mode = partial.ragAwarenessMode;
 
   if (partial.skillConfig !== undefined) {
     update.skill_config = skillConfigToJsonb(partial.skillConfig);
@@ -472,5 +476,6 @@ export function versionSnapshotRowToAgentDefinition(
     // the real value via dbRowToAgentDefinition.
     defaultRagBoost:
       (row as unknown as { default_rag_boost?: number }).default_rag_boost ?? 0,
+    ragAwarenessMode: row.rag_awareness_mode ?? "none",
   };
 }

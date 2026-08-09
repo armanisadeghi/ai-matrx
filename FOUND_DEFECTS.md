@@ -192,30 +192,6 @@ separate `apps/workflow-studio` Vite app. Several surfaces hard-coded `/workflow
 were shipping 404s (org workflows tile, the workflow peek, the share registry). Those are now
 door-less rather than broken, but a workflow named in this app still can't be opened. Decide:
 link out to workflow-studio with a real origin, or build a detail route here.
-### D137 — the public `/seo` analyzers' "Fetch from URL" button 401s for every anonymous visitor (2026-08-09)
-
-`/seo/metadata` and `/seo/social-preview` are anonymous marketing pages whose primary action
-scrapes the entered URL. That action calls `POST /scraper/quick-scrape`, and aidream mounts the
-**entire** `/scraper` router under `Depends(require_authenticated)`
-(`aidream/api/app.py:1358-1363`) — a guest fingerprint yields `ctx.is_authenticated == False`, so
-production returns `401 token_required` and the user gets "Authentication required. Please sign
-in." on a page that never asks them to sign in. Verified live on aimatrx.com and by curling the
-backend with BOTH `X-Guest-Fingerprint` and `X-Fingerprint-ID` (401 either way).
-
-**Pre-dates the client refactor** (v0.4.351, which deleted the `/api/scraper/content` Next
-proxy): that proxy forwarded the same guest header to the same authenticated endpoint, so it
-401'd identically. Nothing regressed; the dead end was simply invisible while an agent tested
-signed-in.
-
-Fix is an aidream authorization decision, **Arman's or the server's to make, not a frontend
-patch** — either (a) expose a guest-friendly metadata/social-tags fetch under the EXISTING
-`/seo/public` router (`aidream/api/routers/seo_public_tools.py`, mounted with
-`require_guest_or_above`, already home to structured-data/page-audit/robots-check for exactly
-these public tools), or (b) open quick-scrape to guest identities. Until then the button is a
-dead end and should either sign the user in or not render. Related: the "guest users →
-X-Fingerprint-ID" claim in `features/scraper/types/scraper-api.ts` was false for these
-endpoints and has been corrected.
-
 ### D136 — `pnpm check:hatches` is red on main: baseline drifted, ratchet no longer ratchets (2026-08-08)
 
 `scripts/type-escape-baseline.json` is far behind the tree — five categories are ABOVE baseline
@@ -655,6 +631,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 One line per fix — title, date, pointer. History lives in git.
 
+- **D137 (public /seo analyzers 401 for guests)** — both analyzers now read meta tags through the guest-friendly `/seo/public/page-audit` route via the new `features/marketing/seo/public-tools/usePublicPageMetadata.ts` (`/scraper/quick-scrape` needs a signed-in user); dead `extract-seo-from-scrape.ts` deleted. Verified signed-out on `/seo/metadata`. aidream fix in the same change: `run_streamed_command` never emitted its terminal `final_event` on a FRESH run, so every public SEO tool rendered nothing until a URL was run twice. 2026-08-09.
 - **D129 (tasks lifecycle)** — all three gaps closed: `operatingTaskId` → `operatingTaskIds` set (add/remove actions, `selectIsTaskOperating`, all thunks/consumers ported); `tasksUi.nowMinute` ticked ~60s by `useNowMinuteTick` on /tasks feeds `selectFilteredTasks`/`selectSmartViewCounts`/`buildSmartViewContext` so snooze expiry + date windows resurface without an unrelated store change; monthly recurrence keeps its month-end anchor via `BYMONTHDAY` (parsed/formatted/honored in `utils/recurrence.ts`, `-1` = last day; `completeTask` stamps it on first roll via `ensureMonthDayAnchor`) — jest suite `features/tasks/utils/__tests__/recurrence.test.ts`. 2026-08-09.
 - **D129** — Apple OAuth secret rotated and verified; hard-coded expiry replaced by live `app_config` credential metadata plus an audited admin editor and actionable Manage toast. 2026-08-07.
 - **D113** — no Cartesia key in the browser: ONE token primitive (`lib/cartesia/accessToken.ts` — lazy, cached, dedupe, refresh-retry-once) + ONE ws connector (`connection.ts`); all 8 hooks/adapters ported; voices list/clone/create moved to authed server routes (`/api/cartesia/voices*`); raw-key `client.ts`/`tts-service.ts`/`AudioPlayground` deleted; `NEXT_PUBLIC_OPENAI_API_KEY`/`NEXT_PUBLIC_GOOGLE_API_KEY` bundle refs also removed. Rotation = D114. 2026-07-28.
