@@ -194,7 +194,7 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
     which is the exact wrong-record-under-a-confident-label failure the
     row-clearing was added to prevent, arriving through the path that looks
     completely normal. Guard it with **`hooks/useLatestRequest.ts`**
-    (`const isCurrent = latest.begin()` at the top, then check before EVERY
+    (`const isCurrent = beginRequest()` at the top, then check before EVERY
     post-`await` state write) — and guard the `catch` and `finally` too: a stale
     REJECTION blanks rows the live request just loaded, and a stale
     `setLoading(false)` reports the surface settled while the real fetch is
@@ -204,6 +204,16 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
     hand-rolled `requestSeq`/`reqIdRef` copies predate the hook
     (`useServerAgentSearch`, `useRagSearch`, `useContextPreview`) — correct, but
     the evidence that this is a class; they collapse onto it when next touched.
+    ⚠️ **The hook returns the stable function itself, never an object** — the
+    first version returned `{ begin }`, a fresh reference every render, and the
+    whole point of this hook is to be named in the dependency array of the very
+    `useCallback` that fetches. That made `load` unstable, which made
+    `useEffect(…, [load])` re-run every render: an unbroken refetch loop against
+    the DB with no user input. A race guard that causes infinite fetches is
+    worse than the race. Bugbot caught it at High severity; fixed same session.
+    Any hook meant for a dependency array must return a `useCallback`/`useMemo`
+    value — **never a bare object literal, and never on the assumption that the
+    React Compiler will memoize it for you.**
   - **An unregistered token silently strips a notice of its doors.**
     `DeepLinkMissNotice`/`EntityDoorControls` resolve route + peek from the
     entity registry, so a token that is not registered (`app_category`) yields

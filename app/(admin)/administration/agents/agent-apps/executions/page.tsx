@@ -289,7 +289,7 @@ function ExecutionIdentity({ row }: { row: AgentAppExecutionRow }) {
 
 function ExecutionsTable({ appId }: { appId: string | null }) {
   const { toast } = useToast();
-  const latest = useLatestRequest();
+  const beginRequest = useLatestRequest();
   const [rows, setRows] = useState<AgentAppExecutionRow[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -305,7 +305,7 @@ function ExecutionsTable({ appId }: { appId: string | null }) {
     // banner. Clearing rows on failure (below) closes only the error half of
     // that hole; a late SUCCESS mislabels the screen just as badly and looks
     // completely normal while doing it.
-    const isCurrent = latest.begin();
+    const isCurrent = beginRequest();
     setLoading(true);
     try {
       const successVal =
@@ -340,7 +340,7 @@ function ExecutionsTable({ appId }: { appId: string | null }) {
       // Only the live attempt may declare the surface settled.
       if (isCurrent()) setLoading(false);
     }
-  }, [appId, successFilter, toast, latest]);
+  }, [appId, successFilter, toast, beginRequest]);
 
   useEffect(() => {
     void load();
@@ -610,7 +610,7 @@ function ExecutionsTable({ appId }: { appId: string | null }) {
 
 function ErrorsTable({ appId }: { appId: string | null }) {
   const { toast } = useToast();
-  const latest = useLatestRequest();
+  const beginRequest = useLatestRequest();
   const [rows, setRows] = useState<AgentAppErrorRow[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -625,7 +625,7 @@ function ErrorsTable({ appId }: { appId: string | null }) {
   const load = useCallback(async () => {
     // Same ordering hazard as the executions tab: `?app=` changes put two
     // fetches in flight and the older response can land last.
-    const isCurrent = latest.begin();
+    const isCurrent = beginRequest();
     setLoading(true);
     try {
       const r =
@@ -656,7 +656,7 @@ function ErrorsTable({ appId }: { appId: string | null }) {
     } finally {
       if (isCurrent()) setLoading(false);
     }
-  }, [appId, resolvedFilter, toast, latest]);
+  }, [appId, resolvedFilter, toast, beginRequest]);
 
   useEffect(() => {
     void load();

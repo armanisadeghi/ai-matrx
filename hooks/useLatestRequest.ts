@@ -23,10 +23,10 @@
  * final: it decides at APPLY time, which is the only moment that matters.
  *
  * ```ts
- * const latest = useLatestRequest();
+ * const beginRequest = useLatestRequest();
  *
  * const load = useCallback(async () => {
- *   const isCurrent = latest.begin();   // claim this attempt
+ *   const isCurrent = beginRequest();   // claim this attempt
  *   setLoading(true);
  *   try {
  *     const data = await fetchScopedRows(appId);
@@ -39,7 +39,7 @@
  *   } finally {
  *     if (isCurrent()) setLoading(false);
  *   }
- * }, [appId, latest]);
+ * }, [appId, beginRequest]);
  * ```
  *
  * **Guard the catch and the finally too, not just the success path.** A stale
@@ -60,22 +60,38 @@
 
 import { useCallback, useRef } from "react";
 
-export interface LatestRequest {
-  /**
-   * Marks a new attempt as the current one and returns a predicate that reports
-   * whether it still is. Call it once at the top of the async function, then
-   * check the predicate before EVERY state write that follows an `await`.
-   */
-  begin: () => () => boolean;
-}
+/**
+ * Marks a new attempt as the current one and returns a predicate reporting
+ * whether it still is. Call it once at the top of the async function, then
+ * check the predicate before EVERY state write that follows an `await`.
+ */
+export type BeginRequest = () => () => boolean;
 
-export function useLatestRequest(): LatestRequest {
+/**
+ * 🚨 RETURNS THE FUNCTION ITSELF, NOT AN OBJECT WRAPPING IT — deliberately, and
+ * this is the whole reason the signature looks like that.
+ *
+ * The first version returned `{ begin }`. That object literal is a NEW
+ * reference on every render, and the entire point of this hook is to be named
+ * in the dependency array of the very `useCallback` that performs the fetch. An
+ * unstable dependency there makes `load` unstable, which makes the
+ * `useEffect(…, [load])` that calls it re-run on every render — an unbroken
+ * refetch loop against the database with no user input at all. A guard against
+ * a fetch race that instead causes infinite fetches is worse than the bug it
+ * was written to fix, and it is a High-severity defect that shipped.
+ *
+ * Returning the `useCallback`-stable function directly removes the hazard by
+ * construction: there is no object whose identity a caller could depend on. If
+ * this ever needs to return more than one thing, it must be wrapped in
+ * `useMemo` — never a bare literal. (Do not lean on the React Compiler to
+ * memoize it for you: a primitive has to be correct on its own terms, and
+ * correctness here is the difference between one fetch and unbounded ones.)
+ */
+export function useLatestRequest(): BeginRequest {
   const seqRef = useRef(0);
 
-  const begin = useCallback(() => {
+  return useCallback(() => {
     const mySeq = ++seqRef.current;
     return () => mySeq === seqRef.current;
   }, []);
-
-  return { begin };
 }
