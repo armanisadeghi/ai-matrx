@@ -61,6 +61,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "markdown-delimiters": "Runaway delimiter in rendered markdown",
   assists: "Assist chip action failure",
   "layout-scroll-chain": "Content clipped — scroll chain broken",
+  "unsaved-work": "Unsaved user work at risk",
 };
 
 export function sourceLabel(source: CapturedErrorSource): string {

@@ -111,12 +111,18 @@ unrecoverable. Verified via `history.row_versions` (single INSERT, zero UPDATEs)
 `auth.users.last_sign_in_at`. **Fixed 2026-08-08:** `AuthSessionWatcher` now detects identity
 drift (auth events + focus/visibility/60s cookie re-reads vs the booted user id) and hard-stops
 the tab with a blocking "Account Changed" overlay; the orphaned note was re-owned to the main
-account by SQL. **Open remainder:** (a) decide whether unsaved in-memory edits can be preserved
-across the forced reload (e.g. local draft snapshot before blocking); (b) the notes autosave
-error surfacing existed but 14h of failing saves were ignorable — consider escalating a
-persistent save-failure (N consecutive failures) to a blocking banner on the editor itself;
-(c) test-account logins (oauth-review, admin@admin.com walkthroughs) should use isolated
- browser profiles/incognito by convention — document in the OAuth-verification plan.
+account by SQL.
+**Remainders (a) and (b) FIXED 2026-08-09** — see [`features/notes/FEATURE.md`](features/notes/FEATURE.md)
+and the new [`lib/local-drafts/FEATURE.md`](lib/local-drafts/FEATURE.md):
+(a) unsaved in-memory edits are snapshotted to a local draft **before** the blocking overlay
+renders (also on sign-out and unload), stamped with the account that wrote them, and offered
+back on reopen — per-note (`NoteDraftRecoveryBanner`) and, for a note that never reached the DB
+at all, from a surface-level list (`NotesDraftRecoveryList`), which is the exact case that was
+unrecoverable above; (b) three consecutive save failures escalate from a deduped toast to a
+**non-dismissible blocking banner on the editor** (`NoteSaveFailureBanner`: retry / copy /
+download / reload) plus a `captureError` scream on the new `unsaved-work` source.
+**Still open:** (c) test-account logins (oauth-review, admin@admin.com walkthroughs) should use
+isolated browser profiles/incognito by convention — document in the OAuth-verification plan.
 
 ### D130 — RESOLVED (client) 2026-08-08: headless image-gen promise now ALWAYS settles on a terminal run; server socket-hold still open
 

@@ -63,6 +63,8 @@ import { toast } from "@/lib/toast";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { NoteSaveFailureBanner } from "./NoteSaveFailureBanner";
+import { NoteDraftRecoveryBanner } from "./NoteDraftRecoveryBanner";
 import { FindReplaceBar } from "./FindReplaceBar";
 import { FindMatchOverlay } from "./FindMatchOverlay";
 import { RecentChangeOverlay } from "./RecentChangeOverlay";
@@ -769,6 +771,15 @@ export function NoteContentEditor({
                 Duplicate to edit
               </button>
             </div>
+          )}
+          {/* Loud recovery, in priority order: work that is failing to save
+              blocks first, then work we already rescued into a local draft. */}
+          <NoteSaveFailureBanner noteId={noteId} />
+          {!readOnly && (
+            <NoteDraftRecoveryBanner
+              noteId={noteId}
+              onRestore={handleChangeFlush}
+            />
           )}
           {findReplaceState?.isOpen && (
             <FindReplaceBar noteId={noteId} textareaRef={textareaRef} />

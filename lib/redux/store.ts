@@ -17,6 +17,7 @@ import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { enableMapSet } from "immer";
 import { autoSaveMiddleware } from "@/features/notes/redux/autoSaveMiddleware";
+import { registerNotesDraftSource } from "@/features/notes/utils/notesDrafts";
 import { notesRealtimeMiddleware } from "@/features/notes/redux/realtimeMiddleware";
 import { codeFilesAutoSaveMiddleware } from "@/features/code-files/redux/autoSaveMiddleware";
 // Deep imports, NOT `@/features/files`. The barrel re-exports the whole Files UI
@@ -232,6 +233,13 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
 
   const rootSagaInstance = createSlimRootSaga();
   sagaMiddleware.run(rootSagaInstance);
+
+  // Unsaved-work snapshots live as long as the STORE, never as long as a
+  // mounted editor: dirty notes survive closing the last tab and leaving
+  // /notes, and a sign-out / identity-drift / unload capture at that moment
+  // must still find them. Registering from a component would silently make
+  // the rescue depend on what happens to be on screen.
+  registerNotesDraftSource(store.getState);
 
   setStoreSingleton(storeWithSync);
   // Register this store's sagaMiddleware so `runSaga` from this module

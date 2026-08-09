@@ -98,6 +98,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { NotesInstanceProvider } from "../context/NotesInstanceContext";
 import { NotePresenceBanner } from "./NotePresenceBanner";
 import { NotesAssistStrip } from "./NotesAssistStrip";
+import { NotesDraftRecoveryList } from "./NotesDraftRecoveryList";
 import { NoteContentEditor } from "./NoteContentEditor";
 import { NoteCleanupButton } from "./cleanup/NoteCleanupButton";
 import { NoteMetadataBar } from "./NoteMetadataBar";
@@ -553,6 +554,10 @@ export function NotesView({
         {/* Page-layer assist chips (unorganized-notes pileup) — the strip
             renders nothing when there are none, so this row costs no space. */}
         <NotesAssistStrip className="shrink-0 border-b border-border/40 px-2 py-1" />
+
+        {/* Unsaved work rescued from a blocked/failed save path, including
+            drafts that never reached the database. */}
+        <NotesDraftRecoveryList instanceId={instanceId} />
 
         {/* Layer 1: Content editor (fills available space) */}
         {activeTabId ? (

@@ -31,6 +31,7 @@ import {
   noteSaveErrorMessage,
   toastNoteWriteBlocked,
   clearNoteWriteBlockedToast,
+  reportNoteSaveFailure,
   NOTE_READONLY_DELETE_MESSAGE,
 } from "../utils/writeErrors";
 import type { Note, CreateNoteInput } from "../types";
@@ -225,6 +226,28 @@ export const refreshNoteContent = createAsyncThunk<Note | null, string>(
  * - markNoteSaved gets a savedSnapshot so mid-save keystrokes stay dirty
  * - Label change: dispatch custom event "notes:labelChange"
  */
+/**
+ * Record the failure, toast once per burst, and — once the streak reaches
+ * NOTE_SAVE_FAILURE_BLOCK_THRESHOLD — snapshot the buffer to a local draft and
+ * scream. The blocking banner reads the streak from Redux.
+ */
+function failNoteSave(
+  dispatch: (action: ReturnType<typeof markNoteSaveError>) => unknown,
+  getState: () => unknown,
+  noteId: string,
+  message: string,
+): void {
+  dispatch(markNoteSaveError({ id: noteId, error: message }));
+  toastNoteWriteBlocked(noteId, message);
+  const record = (getState() as RootState).notes?.notes?.[noteId];
+  reportNoteSaveFailure({
+    noteId,
+    failureCount: record?._consecutiveSaveFailures ?? 1,
+    message,
+    label: record?.label ?? null,
+  });
+}
+
 export const saveNote = createAsyncThunk<void, string>(
   "notes/saveNote",
   async (noteId, { dispatch, getState }) => {
@@ -279,9 +302,7 @@ export const saveNote = createAsyncThunk<void, string>(
       const { data, error } = await query.select("updated_at").maybeSingle();
 
       if (error) {
-        const friendly = noteSaveErrorMessage(error);
-        dispatch(markNoteSaveError({ id: noteId, error: friendly }));
-        toastNoteWriteBlocked(noteId, friendly);
+        failNoteSave(dispatch, getState, noteId, noteSaveErrorMessage(error));
         throw error;
       }
 
@@ -295,8 +316,7 @@ export const saveNote = createAsyncThunk<void, string>(
 
         if (!stillThere) {
           const friendly = "You don't have permission to save this note.";
-          dispatch(markNoteSaveError({ id: noteId, error: friendly }));
-          toastNoteWriteBlocked(noteId, friendly);
+          failNoteSave(dispatch, getState, noteId, friendly);
           throw new Error(friendly);
         }
 
@@ -331,8 +351,7 @@ export const saveNote = createAsyncThunk<void, string>(
     } catch (error) {
       const friendly =
         error instanceof Error ? error.message : "Could not save note context.";
-      dispatch(markNoteSaveError({ id: noteId, error: friendly }));
-      toastNoteWriteBlocked(noteId, friendly);
+      failNoteSave(dispatch, getState, noteId, friendly);
       throw error;
     }
 

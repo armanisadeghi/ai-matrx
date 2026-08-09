@@ -190,6 +190,37 @@ export const selectNoteContent = (noteId: string) =>
     ),
   );
 
+/**
+ * Consecutive failed saves for one note (0 when the last save landed).
+ * Drives the blocking save-failure banner at
+ * `NOTE_SAVE_FAILURE_BLOCK_THRESHOLD`.
+ */
+export const selectNoteSaveFailureCount = (noteId: string) =>
+  cached(`noteSaveFailureCount:${noteId}`, () =>
+    createSelector(
+      selectNotesMap,
+      (notes): number => notes[noteId]?._consecutiveSaveFailures ?? 0,
+    ),
+  );
+
+/** Epoch ms of the first failure in the current streak (null when clean). */
+export const selectNoteFirstSaveFailureAt = (noteId: string) =>
+  cached(`noteFirstSaveFailureAt:${noteId}`, () =>
+    createSelector(
+      selectNotesMap,
+      (notes): number | null => notes[noteId]?._firstSaveFailureAt ?? null,
+    ),
+  );
+
+/** The last save error message for a note (null when clean / on conflict). */
+export const selectNoteSaveErrorMessage = (noteId: string) =>
+  cached(`noteSaveErrorMessage:${noteId}`, () =>
+    createSelector(selectNotesMap, (notes): string | null => {
+      const error = notes[noteId]?._error ?? null;
+      return error === "conflict" ? null : error;
+    }),
+  );
+
 export const selectNoteLabel = (noteId: string) =>
   cached(`noteLabel:${noteId}`, () =>
     createSelector(

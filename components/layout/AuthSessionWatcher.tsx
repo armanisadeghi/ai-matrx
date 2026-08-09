@@ -36,6 +36,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { supabase } from "@/utils/supabase/client";
+import { captureDrafts } from "@/lib/local-drafts/localDrafts";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 // Surface A lifecycle write: reset the global active context on sign-out so the
 // previous user's org/scope/context never bleeds into the next same-tab session.
@@ -49,6 +51,26 @@ const AuthSessionWatcherImpl = dynamic(
   { ssr: false, loading: () => null },
 );
 
+/**
+ * Persist every registered feature's unsaved buffer to the local-draft store
+ * before this tab is hard-stopped, and scream: reaching this line means real
+ * user work existed only in memory at the moment we took the tab away.
+ */
+function snapshotUnsavedWork(bootedId: string, currentId: string): number {
+  const drafts = captureDrafts("auth-identity-drift");
+  if (drafts.length === 0) return 0;
+  captureError({
+    source: "unsaved-work",
+    message: `Identity drift with ${drafts.length} unsaved item(s) in memory — snapshotted to local drafts before blocking the tab`,
+    details: `Tab booted as ${bootedId}; the auth cookie now belongs to ${currentId}. Drafts: ${drafts
+      .map((d) => d.key)
+      .join(", ")}`,
+    hint: "The drafts are offered back when the original account reopens those records. Test-account logins belong in a separate browser profile.",
+    callSite: "AuthSessionWatcher",
+  });
+  return drafts.length;
+}
+
 // How often to re-read the auth cookie while the tab is visible. Focus /
 // visibility checks are the primary cross-tab signal; this is the backstop
 // for a tab the user never blurs (long editing sessions).
@@ -57,6 +79,10 @@ const IDENTITY_RECHECK_INTERVAL_MS = 60_000;
 export default function AuthSessionWatcher() {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [driftedToEmail, setDriftedToEmail] = useState<string | null>(null);
+  // How many unsaved items we rescued into local drafts before blocking — the
+  // overlay says so, because "reload and lose everything" is what the user
+  // otherwise (correctly) fears.
+  const [rescuedDraftCount, setRescuedDraftCount] = useState(0);
   const dispatch = useAppDispatch();
 
   // The identity this tab booted as (SSR-hydrated userAuth). Captured once —
@@ -76,6 +102,11 @@ export default function AuthSessionWatcher() {
     const { data } = await supabase.auth.getSession();
     const current = data.session?.user;
     if (current && current.id !== booted) {
+      // SNAPSHOT BEFORE BLOCKING. The overlay forces a reload, which discards
+      // every in-memory buffer — that is how the last edits of D132 died. The
+      // drafts are stamped with the account that wrote them, so they are only
+      // ever offered back to that user.
+      setRescuedDraftCount(snapshotUnsavedWork(booted, current.id));
       console.error(
         "[AuthSessionWatcher] IDENTITY DRIFT: tab booted as",
         booted,
@@ -94,6 +125,9 @@ export default function AuthSessionWatcher() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
+        // Sign-out ends this tab's write path too — keep a copy of anything
+        // still unsaved before the overlay goes up.
+        captureDrafts("signed-out");
         setSessionExpired(true);
         // The store is a module-level singleton that survives a same-tab
         // sign-out → re-login. Reset the org/scope/context state so the
@@ -109,6 +143,7 @@ export default function AuthSessionWatcher() {
         const booted = bootedIdRef.current;
         const current = session?.user;
         if (booted && current && current.id !== booted) {
+          setRescuedDraftCount(snapshotUnsavedWork(booted, current.id));
           console.error(
             "[AuthSessionWatcher] IDENTITY DRIFT (auth event):",
             "tab booted as",
@@ -143,7 +178,13 @@ export default function AuthSessionWatcher() {
   }, [dispatch, checkIdentity]);
 
   if (driftedToEmail) {
-    return <AuthSessionWatcherImpl variant="identity-changed" newEmail={driftedToEmail} />;
+    return (
+      <AuthSessionWatcherImpl
+        variant="identity-changed"
+        newEmail={driftedToEmail}
+        rescuedDraftCount={rescuedDraftCount}
+      />
+    );
   }
   if (!sessionExpired) return null;
   return <AuthSessionWatcherImpl variant="expired" />;

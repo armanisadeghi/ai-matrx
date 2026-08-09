@@ -162,7 +162,9 @@ export type CapturedErrorSource =
    * `lib/layout/useClippedContentGuard.ts`; the static half is
    * `pnpm check:scroll-chain`.
    */
-  | "layout-scroll-chain";
+  | "layout-scroll-chain"
+  /** Unsaved user work existed only in a browser buffer after repeated save failure or identity drift. */
+  | "unsaved-work";
 
 /** A Supabase DML verb, or "rpc" for a function call. */
 export type CapturedOperation =
