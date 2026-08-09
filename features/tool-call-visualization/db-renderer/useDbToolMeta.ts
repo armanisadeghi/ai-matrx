@@ -19,10 +19,15 @@ import {
   loadToolRenderer,
   type ToolRendererMeta,
 } from "./toolRendererCache";
+import { useToolRendererVersion } from "./useToolRendererVersion";
 
 export function useDbToolMeta(
   toolName: string | null | undefined,
 ): ToolRendererMeta | null {
+  // Bumps when the tool's renderer row is invalidated mid-session (D115) —
+  // re-fires the fetch so the collapsed label tracks the agent's edit.
+  const version = useToolRendererVersion(toolName);
+
   // Warm first paint: the initializer reads the cache, so a prefetched tool
   // renders its label with no flash. The effect drives the cold path.
   const [meta, setMeta] = useState<ToolRendererMeta | null>(() =>
@@ -43,7 +48,7 @@ export function useDbToolMeta(
     return () => {
       cancelled = true;
     };
-  }, [toolName]);
+  }, [toolName, version]);
 
   return meta;
 }
