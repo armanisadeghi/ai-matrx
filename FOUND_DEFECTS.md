@@ -13,6 +13,45 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D139 — TWO competing definitions of "an agent's config", and version history is lossy (2026-08-09)
+
+Two live RPCs copy an agent's configuration, and **each one carries fields the other drops**:
+
+| | `agx_sync_linked_agents` (Pull/Push) | `agx_promote_version` (restore a version) |
+|---|---|---|
+| `default_rag_boost`, `rag_awareness_mode` | copied | **not copied** |
+| `ui_gates`, `matrx_actions` | **not copied** (D137) | copied |
+| `is_active` | not copied | copied |
+
+The version half is the more serious one, because it is not just an omission — the data is
+never captured:
+
+```
+agent.definition_version has NO default_rag_boost column and NO rag_awareness_mode column.
+```
+
+So, verified live:
+
+1. **Version history is lossy.** Every Builder save snapshots the agent while silently dropping
+   those two fields. Their past values are unrecoverable from any version.
+2. **"Restore version N" does not restore version N.** `agx_promote_version` leaves both fields
+   at their *current* values because there is nothing to restore from.
+3. **The version diff cannot show them.** Change RAG boost, save, and the version timeline
+   reports nothing changed — the same "the UI won't tell you what differs" class this whole
+   change set exists to kill, one layer over.
+
+Found while verifying the claim that `AGENT_SYNC_FIELDS` has exactly one authority. It does —
+`agx_update_from_source` genuinely delegates to `agx_sync_linked_agents`, and no third function
+writes these columns — but the VERSION path is a separate authority that has drifted from it.
+
+Fix (needs a decision on ordering, not just code): add `default_rag_boost` + `rag_awareness_mode`
+to `agent.definition_version` and to the snapshot trigger, add them to `agx_promote_version`, and
+resolve D137 in the same pass so the two lists finally agree. Existing version rows cannot be
+backfilled — their values were never recorded — so they should read as "not captured" rather than
+being silently defaulted to 0/'none'. Ideally both lists then derive from ONE declared field set
+the way `features/agents/sync/sync-fields.ts` does for sync, with `pnpm check:sync-fields`
+extended to cover the version path too.
+
 ### D137 — linked-agent sync silently leaves `ui_gates` and `matrx_actions` divergent forever (2026-08-09)
 
 `public.agx_sync_linked_agents` copies 18 `agent.definition` columns between a user agent and
