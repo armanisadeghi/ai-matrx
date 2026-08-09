@@ -36,6 +36,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { BrandEditorDialog } from "@/features/marketing/components/brands/BrandEditorDialog";
+import {
+  BrandWriteTargets,
+  MARKETING_BRAND_SURFACE_NAME,
+} from "@/features/marketing/components/brands/BrandWriteTargets";
 import { BrandAssetEditorDialog } from "@/features/marketing/components/brands/BrandAssetEditorDialog";
 import { BusinessFactEditorDialog } from "@/features/marketing/components/brands/BusinessFactEditorDialog";
 import { PropertyEditorDialog } from "@/features/marketing/components/brands/PropertyEditorDialog";
@@ -582,9 +586,12 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
 
   return (
     <SurfaceRuntimeProvider
-      surfaceName="matrx-user/marketing-brand"
+      surfaceName={MARKETING_BRAND_SURFACE_NAME}
       getScope={getBrandScope}
     >
+      {/* Write half of the surface — registers the brand-profile handlers the
+          manifest's writeTargets declare. Renders nothing. */}
+      <BrandWriteTargets brand={current} />
       <RouteHeader
         left={
           <div className="flex items-center gap-2">

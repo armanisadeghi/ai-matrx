@@ -19,6 +19,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -133,6 +134,91 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the other half of the `profile_author` agent role.
+ *
+ * GROUPING DECISION (the one that matters here): `brand_profile` is a NESTED
+ * object in a single `web.brand.profile` jsonb column, not flat scalars, so
+ * every handler below MERGES its sub-keys over the brand's CURRENT profile and
+ * writes the whole object back. No target ever ships a partial profile — that
+ * would silently erase the sub-fields it did not mention.
+ *
+ * On which sub-fields share a target: `audience` / `voice_tone` /
+ * `positioning` are ONE editorial act — who we speak to, how we sound, and
+ * where we stand are drafted together, sit adjacent in the one brand editor's
+ * profile section, and are meaningless apart (a voice with no audience is a
+ * style exercise). They share `brand_profile_voice`, so one authorial thought
+ * costs the user one confirm rather than three. `offerings`, `competitors`,
+ * and `content_guidelines` are INDEPENDENT decisions on different evidence —
+ * what the client sells (confirmed facts), who else is in the market (external
+ * research), and the house style rules (editorial policy) — so each gets its
+ * own target and its own accept/decline.
+ *
+ * MODE DECISION: `entity`, not the preferred `draft`. The brand cockpit has no
+ * page-level draft layer to stage into — the profile is edited only inside
+ * `BrandEditorDialog`, whose draft state is local to the modal and is
+ * remounted (keyed on brand version) every time it opens, so a staged value
+ * would be discarded before the user could ever see it. These therefore
+ * persist immediately through the SAME canonical `updateBrand` service the
+ * dialog's Save button uses, under the same optimistic version guard, with
+ * `applyPolicy: "ask"` so a human still approves every write in place.
+ *
+ * NOT declared, deliberately: the brand DISPLAY NAME. It is the client
+ * company's actual name — identity, not authored content — and this surface's
+ * intro makes confirmed truth human-owned. An agent renaming a client is never
+ * a write we want to make one dialog-click cheap.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "brand_profile_voice",
+    label: "Audience, voice & positioning",
+    description:
+      "Draft or refine the editorial core of the brand profile. Value: { audience?: string, voice_tone?: string, positioning?: string } — plain prose, a short paragraph each; supply any subset, and each supplied field REPLACES that field's current text outright (there is no append). Omitted fields keep their current value, as do all other profile fields (value_props, offerings, service_area, competitors, target_keywords, content_guidelines, notes) — read the current text from brand_profile before rewriting so you refine rather than discard. Persists immediately into web.brand.profile through updateBrand (the same service the brand editor's Save uses) under its version guard; the cockpit refetches on success.",
+    valueType: "object",
+    updatesValue: "brand_profile",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "brand_context",
+    sortOrder: 100,
+  },
+  {
+    name: "brand_profile_offerings",
+    label: "Offerings",
+    description:
+      "Set the brand's offerings — the products/services it sells. Value: { offerings: string[] }, each entry one short noun phrase (e.g. 'Emergency drain cleaning'). REPLACES the FULL set: whatever you pass becomes the entire list, so include the existing values from brand_profile.offerings that should survive, or they are dropped. Empty strings are discarded and an empty resulting list clears the field. Ground every entry in confirmed facts or crawl evidence — never invent a service the client does not offer. Persists immediately into web.brand.profile through updateBrand; all other profile fields are preserved.",
+    valueType: "object",
+    updatesValue: "brand_profile",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "brand_context",
+    sortOrder: 110,
+  },
+  {
+    name: "brand_profile_competitors",
+    label: "Competitors",
+    description:
+      "Set the brand's competitor list. Value: { competitors: string[] }, each entry one competitor's name or domain. REPLACES the FULL set: whatever you pass becomes the entire list, so include the existing values from brand_profile.competitors that should survive, or they are dropped. Empty strings are discarded and an empty resulting list clears the field. Persists immediately into web.brand.profile through updateBrand; all other profile fields are preserved.",
+    valueType: "object",
+    updatesValue: "brand_profile",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "brand_context",
+    sortOrder: 120,
+  },
+  {
+    name: "brand_profile_content_guidelines",
+    label: "Content guidelines",
+    description:
+      "Set the house content guidelines downstream content and SEO agents follow. Value: { content_guidelines: string } — prose or a markdown list of rules (terminology, tone rules, claims to avoid, formatting conventions). REPLACES the field's full text; there is no append, so carry forward anything from brand_profile.content_guidelines that still applies. Persists immediately into web.brand.profile through updateBrand; all other profile fields are preserved.",
+    valueType: "object",
+    updatesValue: "brand_profile",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "brand_context",
+    sortOrder: 130,
+  },
+];
+
 export const marketingBrandManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-brand",
   readiness: "verified",
@@ -149,6 +235,7 @@ All values except brand_id populate only after the workspace loads — treat emp
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
   agentRoles: [
     {
       name: "brand_strategist",

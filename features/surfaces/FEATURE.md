@@ -124,8 +124,14 @@ internal platform use — never a washed-down user variant beside a private one:
   surface-bound agents as a `<surface_write_targets>` block. Live adopters:
   `matrx-user/marketing-page` (`page_meta_tags`, `page_target_keyword`,
   `page_supporting_keywords` — handlers in
-  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`) and
-  `matrx-user/keyword-intelligence` (`keyword_selection`). The LSI kind
+  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`),
+  `matrx-user/marketing-brand` (`brand_profile_voice`,
+  `brand_profile_offerings`, `brand_profile_competitors`,
+  `brand_profile_content_guidelines` — sub-keys of ONE jsonb column, merged
+  over the current profile in
+  `features/marketing/components/brands/BrandWriteTargets.tsx`; live agent-run
+  verification still PENDING, see the marketing FEATURE.md 2026-08-09 entry)
+  and `matrx-user/keyword-intelligence` (`keyword_selection`). The LSI kind
   components (`meta_tag_options` / `keyword_relationship_research` /
   `keyword_search_metrics`, DB components) call
   `runAction("apply_surface_write", …)` — same seam users' agent-authored
