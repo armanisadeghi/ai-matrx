@@ -866,13 +866,63 @@ of which name a persisted record. The three discriminators above stay narrow
 precisely because they are anchored on `router.push(\`` — evidence that the code
 itself believes there is somewhere to go.
 
-To make the broad scan usable it needs **entity grounding**: intersect the
-rendered field with `titleColumn` from `types/generated/entity-types.generated.ts`
-and require the file to touch that token's table. Until someone builds that,
-`.filter(Boolean)`-style manual triage of 591 files will cost far more than it
-returns. Two spot-checks from its top hits, for calibration: `ShortcutList` was
-a REAL defect (fixed), and `DataStoresPage`'s bare `{s.id}` was NOT — it is the
-record the user is already viewing, rendered select-all for copying.
+**Entity grounding makes it usable, and it is now built** (below). Two
+spot-checks from the ungrounded run, for calibration: `ShortcutList` was a REAL
+defect (fixed), and `DataStoresPage`'s bare `{s.id}` was NOT — it is the record
+the user is already viewing, rendered select-all for copying.
+
+🚨 **THE TRAP THAT INVERTS THIS DETECTOR: a grep for a property name matches the
+comment explaining why the property is ABSENT.** The first version asked
+`\btoken:\s*\{[^}]*hrefFor` against `entityRegistry.ts` and reported 33 routed
+entities. The true number is **27**. The six false ones — `assessment`,
+`crm_campaign`, `flashcard_set`, `quiz_session`, `skill`, `workflow` — are
+precisely the entries where THIS CAMPAIGN deliberately wrote *"No hrefFor:
+…because the route is kind-discriminated / 403s for most users"*. The doctrine
+that every withheld door must explain itself is what fed the false positives,
+so the detector was wrong exactly where the reasoning was most careful. **Strip
+comments before matching, and require `hrefFor:\s*\(` — the property, not the
+word.**
+
+```bash
+python3 - <<'PY'
+import os,re
+reg=open("features/scopes/registry/entityRegistry.ts",encoding="utf-8").read()
+nc=re.sub(r'//[^\n]*','',re.sub(r'/\*.*?\*/','',reg,flags=re.S))   # comments first!
+gen=open("types/generated/entity-types.generated.ts",encoding="utf-8").read()
+row=re.compile(r'"(\w+)":\s*\{\s*token:\s*"(\w+)",\s*schema:\s*"([\w.]+)",'
+               r'\s*table:\s*"([\w.]+)",[^}]*?titleColumn:\s*("?\w+"?|null)')
+ents={}
+for m in row.finditer(gen):
+    tok,table,tc = m.group(2), m.group(4), m.group(5)
+    if tc in ("null",""): continue
+    e=re.search(r'\b'+tok+r':\s*\{(.*?)\n  \},', nc, re.S)
+    if e and re.search(r'hrefFor:\s*\(', e.group(1)): ents[tok]=(table, tc.strip('"'))
+door=re.compile(r'EntityRef|EntityDoorControls|next/link|<a\s|OverlayLaunchButton'
+                r'|hrefFor|MatrxDataTable|EntityListPage')
+for base in ("features","app","components"):
+  for root,dirs,files in os.walk(base):
+    dirs[:]=[d for d in dirs if d not in {"node_modules",".next",".git","dist"}]
+    if "/demos/" in root: continue
+    for f in files:
+        if not f.endswith(".tsx"): continue
+        p=os.path.join(root,f); s=open(p,encoding="utf-8").read()
+        if door.search(s): continue
+        for tok,(table,tc) in ents.items():
+            if not re.search(r'\.from\(\s*["\']'+re.escape(table)+r'["\']', s): continue
+            if re.search(r'\{\s*\w+\.'+re.escape(tc)+r'\s*[}\?]', s): print(p, tok)
+PY
+```
+
+**Grounding on a real `.from("<table>")` query is what makes it precise** —
+requiring only that the table NAME appear as a quoted string returns 53 files,
+badly polluted by short generic table names (`agent`, `app`, `workflow` appear
+in unrelated schema lists and dropdowns; watch for those three clustering on one
+file, which is the tell). Requiring the actual query drops it to a handful.
+
+The cost of that precision is recall: a component that receives rows as props
+never names the table, so this finds only self-fetching surfaces. It is a
+high-precision spot-check, **not** a coverage measure — do not report "N files
+left" from it.
 
 **All 8 have now been walked one by one, and 7 are false positives** —
 `AgentRunsSidebar`, `AgentImportWindow`, `AgentRoleCard`,
