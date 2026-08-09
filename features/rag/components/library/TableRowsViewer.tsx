@@ -19,6 +19,13 @@ import {
   fetchDerivativeChunks,
   type DerivativeChunkRow,
 } from "@/features/rag/api/derivations";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+  MOBILE_TABLE_ROW,
+} from "@/components/official/mobile-table/mobileTable";
 
 interface TableRowMeta {
   page_number?: number;
@@ -248,14 +255,17 @@ export function TableRowsViewer({
                   </span>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-xs">
+                  <table className={cn("border-collapse text-xs", MOBILE_TABLE)}>
                     {t.header && (
                       <thead>
                         <tr className="bg-muted/20">
                           {t.header.map((h, i) => (
                             <th
                               key={i}
-                              className="sticky top-0 border border-border/40 bg-muted/60 px-2 py-1.5 text-left align-top font-semibold"
+                              className={cn(
+                                "sticky top-0 border border-border/40 bg-muted/60 px-2 py-1.5 text-left align-top font-semibold",
+                                i === 0 && MOBILE_TABLE_FROZEN_HEAD,
+                              )}
                             >
                               {h}
                             </th>
@@ -265,11 +275,14 @@ export function TableRowsViewer({
                     )}
                     <tbody>
                       {t.rows.map((row, ri) => (
-                        <tr key={ri} className="even:bg-muted/10">
+                        <tr key={ri} className={cn("sm:even:bg-muted/10", MOBILE_TABLE_ROW)}>
                           {row.map((cell, ci) => (
                             <td
                               key={ci}
-                              className="whitespace-pre-wrap break-words border border-border/40 px-2 py-1 align-top"
+                              className={cn(
+                                "whitespace-pre-wrap break-words border border-border/40 px-2 py-1 align-top",
+                                ci === 0 && MOBILE_TABLE_FROZEN_CELL,
+                              )}
                             >
                               {cell}
                             </td>

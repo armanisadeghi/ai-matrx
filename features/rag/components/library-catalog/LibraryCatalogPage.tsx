@@ -49,6 +49,12 @@ import {
 } from "@/features/rag/components/library-catalog/EntitlementChip";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+  MOBILE_TABLE_ROW,
+} from "@/components/official/mobile-table/mobileTable";
 
 /** Canonical `ui_surface.name` this page emits — the catalog half. */
 const RAG_LIBRARY_SURFACE = "matrx-user/rag-library";
@@ -417,10 +423,10 @@ function CatalogDetailPanel({
               </div>
             ) : (
               <div className="overflow-x-auto rounded-md border">
-                <table className="w-full whitespace-nowrap text-sm">
+                <table className={cn("whitespace-nowrap text-sm", MOBILE_TABLE)}>
                   <thead>
                     <tr className="border-b bg-muted/40">
-                      <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      <th className={cn("px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_FROZEN_HEAD)}>
                         Document
                       </th>
                       <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -436,9 +442,9 @@ function CatalogDetailPanel({
                     {detail.members.map((m) => (
                       <tr
                         key={`${m.sourceKind}/${m.sourceId}`}
-                        className="hover:bg-muted/20"
+                        className={cn("sm:hover:bg-muted/20", MOBILE_TABLE_ROW)}
                       >
-                        <td className="px-3 py-1.5">
+                        <td className={cn("px-3 py-1.5", MOBILE_TABLE_FROZEN_CELL)}>
                           <div className="flex items-center gap-1.5 text-xs">
                             <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                             {m.label ?? "Untitled document"}

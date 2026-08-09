@@ -44,6 +44,14 @@ import {
   splitAroundAgentJsonBlock,
   type PartialAgentData,
 } from "../utils/agent-progressive-json-parser";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_CELL,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+  MOBILE_TABLE_ROW,
+  MOBILE_TABLE_WRAPPER,
+} from "@/components/official/mobile-table/mobileTable";
 
 export interface AgentJsonDisplayProps {
   /** Raw streamed text — may contain pre/post markdown around the json block. */
@@ -492,19 +500,19 @@ function VariablesTable({
   vars: NonNullable<PartialAgentData["variable_definitions"]>;
 }) {
   return (
-    <div className="border rounded-md overflow-hidden bg-background/40">
-      <table className="w-full text-xs">
+    <div className={cn("border rounded-md overflow-hidden bg-background/40", MOBILE_TABLE_WRAPPER)}>
+      <table className={cn("text-xs", MOBILE_TABLE)}>
         <thead>
           <tr className="bg-muted/50 border-b">
-            <th className="px-2 py-1 text-left font-semibold">Name</th>
-            <th className="px-2 py-1 text-left font-semibold">Default</th>
-            <th className="px-2 py-1 text-left font-semibold">Help</th>
+            <th className={cn("px-2 py-1 text-left font-semibold", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-muted")}>Name</th>
+            <th className={cn("px-2 py-1 text-left font-semibold", MOBILE_TABLE_CELL)}>Default</th>
+            <th className={cn("px-2 py-1 text-left font-semibold", MOBILE_TABLE_CELL)}>Help</th>
           </tr>
         </thead>
         <tbody>
           {vars.map((v, idx) => (
-            <tr key={idx} className="border-b last:border-b-0">
-              <td className="px-2 py-1.5">
+            <tr key={idx} className={cn("border-b last:border-b-0", MOBILE_TABLE_ROW)}>
+              <td className={cn("px-2 py-1.5", MOBILE_TABLE_FROZEN_CELL)}>
                 <code className="font-mono bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">
                   {v.name}
                 </code>
@@ -514,10 +522,10 @@ function VariablesTable({
                   </span>
                 )}
               </td>
-              <td className="px-2 py-1.5 text-muted-foreground">
+              <td className={cn("px-2 py-1.5 text-muted-foreground", MOBILE_TABLE_CELL)}>
                 {renderValuePreview(v.defaultValue)}
               </td>
-              <td className="px-2 py-1.5 text-muted-foreground">
+              <td className={cn("px-2 py-1.5 text-muted-foreground", MOBILE_TABLE_CELL)}>
                 {v.helpText
                   ? v.helpText.length > 60
                     ? v.helpText.slice(0, 60) + "…"
@@ -538,29 +546,29 @@ function ContextSlotsTable({
   slots: NonNullable<PartialAgentData["context_slots"]>;
 }) {
   return (
-    <div className="border rounded-md overflow-hidden bg-background/40">
-      <table className="w-full text-xs">
+    <div className={cn("border rounded-md overflow-hidden bg-background/40", MOBILE_TABLE_WRAPPER)}>
+      <table className={cn("text-xs", MOBILE_TABLE)}>
         <thead>
           <tr className="bg-muted/50 border-b">
-            <th className="px-2 py-1 text-left font-semibold">Key</th>
-            <th className="px-2 py-1 text-left font-semibold">Type</th>
-            <th className="px-2 py-1 text-left font-semibold">
+            <th className={cn("px-2 py-1 text-left font-semibold", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-muted")}>Key</th>
+            <th className={cn("px-2 py-1 text-left font-semibold", MOBILE_TABLE_CELL)}>Type</th>
+            <th className={cn("px-2 py-1 text-left font-semibold", MOBILE_TABLE_CELL)}>
               Label / Description
             </th>
           </tr>
         </thead>
         <tbody>
           {slots.map((s, idx) => (
-            <tr key={idx} className="border-b last:border-b-0">
-              <td className="px-2 py-1.5">
+            <tr key={idx} className={cn("border-b last:border-b-0", MOBILE_TABLE_ROW)}>
+              <td className={cn("px-2 py-1.5", MOBILE_TABLE_FROZEN_CELL)}>
                 <code className="font-mono bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">
                   {s.key}
                 </code>
               </td>
-              <td className="px-2 py-1.5 text-muted-foreground">
+              <td className={cn("px-2 py-1.5 text-muted-foreground", MOBILE_TABLE_CELL)}>
                 {s.type ?? "text"}
               </td>
-              <td className="px-2 py-1.5 text-muted-foreground">
+              <td className={cn("px-2 py-1.5 text-muted-foreground", MOBILE_TABLE_CELL)}>
                 {s.label || s.description || "—"}
               </td>
             </tr>

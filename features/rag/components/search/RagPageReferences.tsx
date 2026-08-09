@@ -46,6 +46,12 @@ import type {
   RagReferenceKind,
   RagReferenceRequest,
 } from "@/features/rag/components/hit-card/referenceTypes";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+  MOBILE_TABLE_ROW,
+} from "@/components/official/mobile-table/mobileTable";
 
 interface DerivativePageGroup {
   key: string;
@@ -1102,13 +1108,16 @@ function TableRowsPreview({
       </div>
       {header.length ? (
         <div className="overflow-x-auto rounded-md border border-border">
-          <table className="w-full border-collapse text-xs">
+          <table className={cn("border-collapse text-xs", MOBILE_TABLE)}>
             <thead className="bg-muted/50">
               <tr>
                 {header.map((cell, index) => (
                   <th
                     key={index}
-                    className="border-b border-r border-border px-2 py-1.5 text-left font-semibold last:border-r-0"
+                    className={cn(
+                      "border-b border-r border-border px-2 py-1.5 text-left font-semibold last:border-r-0",
+                      index === 0 && MOBILE_TABLE_FROZEN_HEAD,
+                    )}
                   >
                     {cell}
                   </th>
@@ -1117,12 +1126,15 @@ function TableRowsPreview({
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.id} className="even:bg-muted/20">
+                <tr key={row.id} className={cn("sm:even:bg-muted/20", MOBILE_TABLE_ROW)}>
                   {(row.cells.length ? row.cells : [row.fallback]).map(
                     (cell, index) => (
                       <td
                         key={index}
-                        className="border-b border-r border-border/70 px-2 py-1 align-top last:border-r-0"
+                        className={cn(
+                          "border-b border-r border-border/70 px-2 py-1 align-top last:border-r-0",
+                          index === 0 && MOBILE_TABLE_FROZEN_CELL,
+                        )}
                       >
                         {cell}
                       </td>

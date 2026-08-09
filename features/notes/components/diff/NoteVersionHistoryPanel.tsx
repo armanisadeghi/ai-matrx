@@ -38,6 +38,13 @@ import type { Note } from "@/features/notes/types";
 import { selectNoteById } from "@/features/notes/redux/selectors";
 import { analyzeDiff } from "@/features/notes/utils/diffAnalysis";
 import { NoteDiffViewer } from "./NoteDiffViewer";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_CELL,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+  MOBILE_TABLE_ROW,
+} from "@/components/official/mobile-table/mobileTable";
 
 export interface NoteVersionHistoryPanelProps {
   noteId: string;
@@ -547,16 +554,16 @@ function NoteHistoryTimeline({
 
   return (
     <div className="px-4 py-3">
-      <table className="w-full text-xs">
+      <table className={cn("text-xs", MOBILE_TABLE)}>
         <thead>
           <tr className="border-b border-border text-muted-foreground">
-            <th className="w-[70px] py-2 pr-3 text-left font-medium">
+            <th className={cn("w-[70px] py-2 pr-3 text-left font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[64px]")}>
               Version
             </th>
-            <th className="w-[140px] py-2 pr-3 text-left font-medium">Date</th>
-            <th className="w-[80px] py-2 pr-3 text-left font-medium">Source</th>
-            <th className="py-2 pr-3 text-left font-medium">Changes</th>
-            <th className="w-[140px] py-2 text-right font-medium">Compare</th>
+            <th className={cn("w-[140px] py-2 pr-3 text-left font-medium", MOBILE_TABLE_CELL)}>Date</th>
+            <th className={cn("w-[80px] py-2 pr-3 text-left font-medium", MOBILE_TABLE_CELL)}>Source</th>
+            <th className={cn("py-2 pr-3 text-left font-medium", MOBILE_TABLE_CELL)}>Changes</th>
+            <th className={cn("w-[140px] py-2 text-right font-medium", MOBILE_TABLE_CELL)}>Compare</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border/50">
@@ -570,11 +577,12 @@ function NoteHistoryTimeline({
               <tr
                 key={version.version_number}
                 className={cn(
-                  "group transition-colors hover:bg-muted/20",
-                  isLatest && "bg-primary/5",
+                  "group transition-colors sm:hover:bg-muted/20",
+                  MOBILE_TABLE_ROW,
+                  isLatest && "sm:bg-primary/5",
                 )}
               >
-                <td className="py-2.5 pr-3">
+                <td className={cn("py-2.5 pr-3", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[64px]")}>
                   <span
                     className={cn(
                       "font-mono font-medium tabular-nums",
@@ -584,14 +592,14 @@ function NoteHistoryTimeline({
                     v{version.version_number}
                   </span>
                 </td>
-                <td className="py-2.5 pr-3 text-muted-foreground">
+                <td className={cn("py-2.5 pr-3 text-muted-foreground", MOBILE_TABLE_CELL)}>
                   {date.toLocaleDateString()}{" "}
                   {date.toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
                 </td>
-                <td className="py-2.5 pr-3">
+                <td className={cn("py-2.5 pr-3", MOBILE_TABLE_CELL)}>
                   <span
                     className={cn(
                       "inline-block rounded px-1.5 py-0.5 text-[0.5625rem]",
@@ -605,7 +613,7 @@ function NoteHistoryTimeline({
                     {version.change_source}
                   </span>
                 </td>
-                <td className="py-2.5 pr-3">
+                <td className={cn("py-2.5 pr-3", MOBILE_TABLE_CELL)}>
                   {version.change_type ? (
                     <div className="mb-0.5 text-muted-foreground">
                       {version.change_type}
@@ -626,8 +634,8 @@ function NoteHistoryTimeline({
                     </span>
                   )}
                 </td>
-                <td className="py-2.5 text-right">
-                  <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <td className={cn("py-2.5 text-right", MOBILE_TABLE_CELL)}>
+                  <div className="flex items-center justify-end gap-1 transition-opacity max-sm:opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
                     {prevVersion ? (
                       <Button
                         variant="ghost"

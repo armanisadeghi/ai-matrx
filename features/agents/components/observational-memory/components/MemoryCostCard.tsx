@@ -27,6 +27,14 @@ import {
 import { fetchMemoryCost } from "@/features/agents/redux/execution-system/observational-memory/fetch-memory-cost.thunk";
 import { formatCostUsd, formatTokens } from "./format";
 import type { components } from "@/types/python-generated/api-types";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_CELL,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+  MOBILE_TABLE_ROW,
+  MOBILE_TABLE_WRAPPER,
+} from "@/components/official/mobile-table/mobileTable";
 
 type MemoryCostByEventType = components["schemas"]["MemoryCostByEventType"];
 
@@ -168,15 +176,15 @@ export function MemoryCostCard({
           <div className="text-[10px] uppercase tracking-wide text-muted-foreground/60 mb-1">
             Breakdown by event type
           </div>
-          <div className="rounded border border-border/60 overflow-hidden">
-            <table className="w-full text-[11px]">
+          <div className={cn("rounded border border-border/60 overflow-hidden", MOBILE_TABLE_WRAPPER)}>
+            <table className={cn("text-[11px]", MOBILE_TABLE)}>
               <thead className="bg-muted/30 text-muted-foreground">
                 <tr>
-                  <th className="text-left font-medium px-2 py-1">Type</th>
-                  <th className="text-right font-medium px-2 py-1">Count</th>
-                  <th className="text-right font-medium px-2 py-1">Cost</th>
-                  <th className="text-right font-medium px-2 py-1">In</th>
-                  <th className="text-right font-medium px-2 py-1">Out</th>
+                  <th className={cn("text-left font-medium px-2 py-1", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-muted/30")}>Type</th>
+                  <th className={cn("text-right font-medium px-2 py-1", MOBILE_TABLE_CELL)}>Count</th>
+                  <th className={cn("text-right font-medium px-2 py-1", MOBILE_TABLE_CELL)}>Cost</th>
+                  <th className={cn("text-right font-medium px-2 py-1", MOBILE_TABLE_CELL)}>In</th>
+                  <th className={cn("text-right font-medium px-2 py-1", MOBILE_TABLE_CELL)}>Out</th>
                 </tr>
               </thead>
               <tbody>
@@ -190,19 +198,19 @@ export function MemoryCostCard({
                   return (
                     <tr
                       key={key}
-                      className="border-t border-border/40 hover:bg-muted/20"
+                      className={cn("border-t border-border/40 sm:hover:bg-muted/20", MOBILE_TABLE_ROW)}
                     >
-                      <td className="px-2 py-1 font-mono">{key}</td>
-                      <td className="px-2 py-1 text-right font-mono">
+                      <td className={cn("px-2 py-1 font-mono", MOBILE_TABLE_FROZEN_CELL)}>{key}</td>
+                      <td className={cn("px-2 py-1 text-right font-mono", MOBILE_TABLE_CELL)}>
                         {count ?? "—"}
                       </td>
-                      <td className="px-2 py-1 text-right font-mono text-foreground">
+                      <td className={cn("px-2 py-1 text-right font-mono text-foreground", MOBILE_TABLE_CELL)}>
                         {formatCostUsd(cost, 5)}
                       </td>
-                      <td className="px-2 py-1 text-right font-mono text-muted-foreground">
+                      <td className={cn("px-2 py-1 text-right font-mono text-muted-foreground", MOBILE_TABLE_CELL)}>
                         {formatTokens(inTokens)}
                       </td>
-                      <td className="px-2 py-1 text-right font-mono text-muted-foreground">
+                      <td className={cn("px-2 py-1 text-right font-mono text-muted-foreground", MOBILE_TABLE_CELL)}>
                         {formatTokens(outTokens)}
                       </td>
                     </tr>

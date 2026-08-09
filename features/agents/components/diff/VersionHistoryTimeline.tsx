@@ -14,6 +14,13 @@ import { useSmartVersionFetch } from "@/features/agents/hooks/useSmartVersionFet
 import type { EnrichedVersion } from "@/features/agents/hooks/useSmartVersionFetch";
 import { formatChangeType } from "@/components/diff/engine/diff-utils";
 import { VersionIdBadge } from "./VersionIdBadge";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_CELL,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+  MOBILE_TABLE_ROW,
+} from "@/components/official/mobile-table/mobileTable";
 
 interface VersionHistoryTimelineProps {
   agentId: string;
@@ -113,18 +120,18 @@ export function VersionHistoryTimeline({
       </div>
 
       {/* Enriched timeline as a table */}
-      <table className="w-full text-xs">
+      <table className={cn("text-xs", MOBILE_TABLE)}>
         <thead>
           <tr className="border-b border-border text-muted-foreground">
-            <th className="text-left py-2 pr-3 font-medium w-[70px]">
+            <th className={cn("text-left py-2 pr-3 font-medium w-[70px]", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[64px]")}>
               Version
             </th>
-            <th className="text-left py-2 pr-3 font-medium w-[110px]">ID</th>
-            <th className="text-left py-2 pr-3 font-medium w-[140px]">Date</th>
-            <th className="text-left py-2 pr-3 font-medium">
+            <th className={cn("text-left py-2 pr-3 font-medium w-[110px]", MOBILE_TABLE_CELL)}>ID</th>
+            <th className={cn("text-left py-2 pr-3 font-medium w-[140px]", MOBILE_TABLE_CELL)}>Date</th>
+            <th className={cn("text-left py-2 pr-3 font-medium", MOBILE_TABLE_CELL)}>
               Changes from Previous
             </th>
-            <th className="text-right py-2 font-medium w-[140px]">Compare</th>
+            <th className={cn("text-right py-2 font-medium w-[140px]", MOBILE_TABLE_CELL)}>Compare</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border/50">
@@ -194,12 +201,13 @@ function VersionRow({
     <>
       <tr
         className={cn(
-          "group hover:bg-muted/20 transition-colors",
-          isLatest && "bg-primary/5",
+          "group sm:hover:bg-muted/20 transition-colors",
+          MOBILE_TABLE_ROW,
+          isLatest && "sm:bg-primary/5",
         )}
       >
         {/* Version */}
-        <td className="py-2.5 pr-3">
+        <td className={cn("py-2.5 pr-3", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[64px]")}>
           <div className="flex items-center gap-1.5">
             <span
               className={cn(
@@ -223,18 +231,18 @@ function VersionRow({
         </td>
 
         {/* Version ID */}
-        <td className="py-2.5 pr-3">
+        <td className={cn("py-2.5 pr-3", MOBILE_TABLE_CELL)}>
           <VersionIdBadge versionId={version.version_id} showLabel={false} />
         </td>
 
         {/* Date */}
-        <td className="py-2.5 pr-3 text-muted-foreground">
+        <td className={cn("py-2.5 pr-3 text-muted-foreground", MOBILE_TABLE_CELL)}>
           {date.toLocaleDateString()}{" "}
           {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </td>
 
         {/* Changes */}
-        <td className="py-2.5 pr-3">
+        <td className={cn("py-2.5 pr-3", MOBILE_TABLE_CELL)}>
           {version.change_note && (
             <div className="text-muted-foreground mb-1">
               {version.change_note}
@@ -273,8 +281,8 @@ function VersionRow({
         </td>
 
         {/* Compare buttons */}
-        <td className="py-2.5 text-right">
-          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <td className={cn("py-2.5 text-right", MOBILE_TABLE_CELL)}>
+          <div className="flex items-center justify-end gap-1 transition-opacity max-sm:opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
             {prevVersion && (
               <Button
                 variant="ghost"
@@ -335,15 +343,15 @@ function BasicTimeline({
   onCompare: (version: number, compareToVersion: number | "current") => void;
 }) {
   return (
-    <table className="w-full text-xs">
+    <table className={cn("text-xs", MOBILE_TABLE)}>
       <thead>
         <tr className="border-b border-border text-muted-foreground">
-          <th className="text-left py-1.5 pr-3 font-medium w-[70px]">
+          <th className={cn("text-left py-1.5 pr-3 font-medium w-[70px]", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[64px]")}>
             Version
           </th>
-          <th className="text-left py-1.5 pr-3 font-medium w-[110px]">ID</th>
-          <th className="text-left py-1.5 pr-3 font-medium">Date</th>
-          <th className="text-left py-1.5 font-medium">Note</th>
+          <th className={cn("text-left py-1.5 pr-3 font-medium w-[110px]", MOBILE_TABLE_CELL)}>ID</th>
+          <th className={cn("text-left py-1.5 pr-3 font-medium", MOBILE_TABLE_CELL)}>Date</th>
+          <th className={cn("text-left py-1.5 font-medium", MOBILE_TABLE_CELL)}>Note</th>
         </tr>
       </thead>
       <tbody className="divide-y divide-border/50">
@@ -353,10 +361,10 @@ function BasicTimeline({
           return (
             <tr
               key={v.version_number}
-              className="group hover:bg-muted/20 cursor-pointer"
+              className={cn("group sm:hover:bg-muted/20 cursor-pointer", MOBILE_TABLE_ROW)}
               onClick={() => onCompare(v.version_number, "current")}
             >
-              <td className="py-1.5 pr-3">
+              <td className={cn("py-1.5 pr-3", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[64px]")}>
                 <span
                   className={cn(
                     "font-mono tabular-nums",
@@ -366,17 +374,17 @@ function BasicTimeline({
                   v{v.version_number}
                 </span>
               </td>
-              <td className="py-1.5 pr-3" onClick={(e) => e.stopPropagation()}>
+              <td className={cn("py-1.5 pr-3", MOBILE_TABLE_CELL)} onClick={(e) => e.stopPropagation()}>
                 <VersionIdBadge versionId={v.version_id} showLabel={false} />
               </td>
-              <td className="py-1.5 pr-3 text-muted-foreground">
+              <td className={cn("py-1.5 pr-3 text-muted-foreground", MOBILE_TABLE_CELL)}>
                 {date.toLocaleDateString()}{" "}
                 {date.toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
               </td>
-              <td className="py-1.5 text-muted-foreground">
+              <td className={cn("py-1.5 text-muted-foreground", MOBILE_TABLE_CELL)}>
                 {v.change_note ?? "—"}
               </td>
             </tr>
