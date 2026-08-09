@@ -30,6 +30,9 @@ import {
 import { podcastService } from "../../service";
 import type { PcShow } from "../../types";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { PublicPageLink } from "./PublicPageLink";
+import { podcastShowAdminHref } from "../../utils";
 
 function CopyLinkButton({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
@@ -228,10 +231,19 @@ export function ShowsClient() {
                         className="shrink-0"
                         alt=""
                       />
-                      <div>
-                        <p className="font-medium truncate max-w-[200px]">
-                          {show.title}
-                        </p>
+                      <div className="min-w-0">
+                        {/* THE DOOR LAW: the title is the door (real anchor —
+                            cmd/middle-click, keyboard, context menu), plus the
+                            new-tab + registry peek EntityRef resolves from the
+                            `pc_show` token. The row click stays a convenience. */}
+                        <EntityRef
+                          token="pc_show"
+                          id={show.id}
+                          name={show.title}
+                          href={podcastShowAdminHref(show.id)}
+                          showIcon={false}
+                          className="max-w-[200px] font-medium"
+                        />
                         <p className="text-xs text-muted-foreground">
                           {show.is_published ? "Published" : "Draft"}
                         </p>
@@ -253,6 +265,11 @@ export function ShowsClient() {
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center justify-end gap-0.5">
+                      <PublicPageLink
+                        slug={show.slug}
+                        label={show.title}
+                        className="opacity-0 group-hover:opacity-100"
+                      />
                       <CopyLinkButton slug={show.slug} />
                       <button
                         onClick={(e) => {

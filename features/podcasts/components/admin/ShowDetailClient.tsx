@@ -26,10 +26,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import NextLink from "next/link";
 import { ShowForm } from "./PodcastForm";
 import { podcastService } from "../../service";
 import type { PcShow, PcEpisodeWithShow } from "../../types";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { PublicPageLink } from "./PublicPageLink";
+import { podcastEpisodeAdminHref, podcastPublicHref } from "../../utils";
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -165,13 +169,22 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
             {isNew ? "New Show" : (show?.title ?? "Loading…")}
           </h1>
           {show?.slug && (
-            <p className="text-xs text-muted-foreground font-mono truncate">
+            /* The public URL was printed as text right beside a button that
+               copies it. It is a real route — make it the door too. */
+            <NextLink
+              href={podcastPublicHref(show.slug)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`Open the public page for ${show.title}`}
+              className="block truncate font-mono text-xs text-muted-foreground underline-offset-2 hover:text-primary hover:underline"
+            >
               /podcast/{show.slug}
-            </p>
+            </NextLink>
           )}
         </div>
         {show && (
           <div className="flex items-center gap-1 shrink-0">
+            <PublicPageLink slug={show.slug} label={show.title} />
             <CopyLinkButton slug={show.slug} />
           </div>
         )}
@@ -271,7 +284,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
                     onClick={() =>
                       startTransition(() =>
                         router.push(
-                          `/administration/knowledge/podcasts/shows/${showId}/episodes/${ep.id}`,
+                          podcastEpisodeAdminHref(showId, ep.id),
                         ),
                       )
                     }
@@ -295,9 +308,18 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
                             Ep {ep.episode_number}
                           </span>
                         )}
-                        <p className="font-medium text-sm truncate">
-                          {ep.title}
-                        </p>
+                        {/* THE DOOR LAW: the episode title is the door (real
+                            anchor — cmd/middle-click, keyboard), plus the
+                            new-tab + registry peek EntityRef resolves from the
+                            `pc_episode` token. Row click stays a convenience. */}
+                        <EntityRef
+                          token="pc_episode"
+                          id={ep.id}
+                          name={ep.title}
+                          href={podcastEpisodeAdminHref(showId, ep.id)}
+                          showIcon={false}
+                          className="min-w-0 text-sm font-medium"
+                        />
                         {ep.is_published ? (
                           <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0" />
                         ) : (
@@ -325,13 +347,14 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
 
                     {/* Actions */}
                     <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <PublicPageLink slug={ep.slug} label={ep.title} />
                       <CopyLinkButton slug={ep.slug} />
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           startTransition(() =>
                             router.push(
-                              `/administration/knowledge/podcasts/shows/${showId}/episodes/${ep.id}`,
+                              podcastEpisodeAdminHref(showId, ep.id),
                             ),
                           );
                         }}
