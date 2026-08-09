@@ -196,7 +196,7 @@ audit claims were wrong; verify before acting on a number).
 |---|---|---|---|---|
 | P1 | `features/scopes/registry/entityRegistry.ts` `hrefFor` | **21 tokens** (was 13) | **strong, under-populated** | 1 ✅ |
 | P2 | `features/organizations/peek/` (19 kinds) | EntityRef + 2 org surfaces | strong, key-vocabulary mismatch fixed | 1 ✅ |
-| P3 | `components/official/entity-ref/EntityRef.tsx` | **9+** (agent-slots, association rail, 2 org surfaces, war-room, scheduling, `/documents` table, shortcut directory, + PR #74) | adopted; gained `onOpen`/`openInNewTab` | 2 ✅ |
+| P3 | `components/official/entity-ref/EntityRef.tsx` | **13 files, verified** (`git grep -l "entity-ref/EntityRef" -- '*.tsx'` minus the primitive's own dir, 2026-08-09) | adopted; gained `onOpen` / `openInNewTab` / `wrap` / pointer-events-on-hidden-controls | 2 ✅ |
 | P4 | `lib/entity-list/` (`EntityListPage`) | **2** (`/agents/all`, `/transcripts`) | strong, 26 bespoke list pages | 4 |
 | P5 | `components/official/item/` (`ItemMenuConfig`) | 30 files, mostly sidebars | strong, absent from list pages | 3 |
 | P6 | `features/agents/browse/agentActionRegistry.tsx` (23 actions) | **1 route** | strong, 3 rival agent action lists | 3 |
