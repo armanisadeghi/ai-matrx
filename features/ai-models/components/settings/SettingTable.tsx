@@ -18,6 +18,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Pencil, Trash2, Lock, Plus, Search, SlidersHorizontal } from "lucide-react";
 import type { AiSetting } from "../../types";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 function CompactRange({
   min,
@@ -180,7 +184,7 @@ export default function SettingTable({
 
       {/* Scrollable table */}
       <div className="flex-1 overflow-auto min-h-0">
-        <table className="w-full caption-bottom text-xs border-collapse">
+        <table className={cn("caption-bottom text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
           <thead className="sticky top-0 z-10 bg-card border-b border-border">
             <tr className="h-8">
               <th className="w-[220px] min-w-[160px] px-2 py-1.5 text-left align-middle text-xs font-semibold text-muted-foreground">

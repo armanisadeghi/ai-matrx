@@ -1,5 +1,4 @@
 "use client";
-import { toast } from "@/lib/toast";
 import { useState, useCallback, useRef } from "react";
 import { extractErrorMessage } from "@/utils/errors";
 import SmallCodeEditor from "./SmallCodeEditor";
@@ -7,6 +6,7 @@ import CodeBlockHeader from "@/features/code-editor/components/code-block/CodeBl
 import { languageMap } from "@/features/code-editor/components/code-block/LanguageDisplay";
 import { Folder, PanelLeftClose, PanelLeft, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { useMeasure } from "@/hooks/usehooks";
 import { useIsMobile } from "@/hooks/use-mobile";

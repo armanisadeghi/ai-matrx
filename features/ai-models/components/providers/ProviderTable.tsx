@@ -32,6 +32,10 @@ import {
   ImageOff,
 } from "lucide-react";
 import type { AiProvider } from "../../types";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 // ─── Compact link icons (docs / models / website / logo) ──────────────────
 // The full URLs aren't worth table width — the thing an admin actually needs
@@ -235,7 +239,7 @@ export default function ProviderTable({
 
       {/* Table */}
       <div className="flex-1 overflow-auto min-h-0">
-        <table className="w-full caption-bottom text-xs border-collapse">
+        <table className={cn("caption-bottom text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
           <thead className="sticky top-0 z-10 bg-card border-b border-border">
             <tr className="h-8">
               <th className="w-[200px] min-w-[160px] px-2 py-1.5 text-left text-xs font-semibold text-muted-foreground">
