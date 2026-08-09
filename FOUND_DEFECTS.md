@@ -13,6 +13,15 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D146 — 58 remaining RLS policies call `iam.has_org_access(...)` per row (2026-08-09)
+
+The SECURITY DEFINER helper cannot be inlined or hoisted, so each policy invokes it once per
+candidate row and can exceed the authenticated role's 8-second timeout at scale. The live
+`seo.search_performance_daily` example was corrected set-wise with
+`organization_id IN (SELECT iam.my_orgs())`, reducing a non-creator site query from roughly
+16.5 seconds to 200ms with equivalent visibility. Fifty-eight policies retain the latent
+shape and need an equivalence-verified security sweep.
+
 ### D145 — DB kind components documented as a bare function do not compile on the web platform (2026-08-09)
 
 The kind-component contract documents a bare top-level `function Card({ data }) { … }`,

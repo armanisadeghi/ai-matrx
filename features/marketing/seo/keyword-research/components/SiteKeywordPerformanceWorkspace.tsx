@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
+  AlertTriangle,
   Archive,
   BarChart3,
   BrainCircuit,
@@ -24,7 +25,7 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
+import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
@@ -327,18 +328,24 @@ export function SiteKeywordPerformanceWorkspace() {
     },
   ];
 
-  if (performance.isError) {
-    return (
-      <QueryError
-        error={performance.error}
-        onRetry={() => void performance.refetch()}
-      />
-    );
-  }
-
   const pageLocation = `Marketing — Organic keyword performance for ${site.domain}`;
   const rows = performance.data?.rows ?? [];
   const total = performance.data?.total ?? 0;
+
+  // A failed read must never be able to render as "there is simply no data".
+  // Two separate holes produced exactly that on 2026-08-09, when
+  // seo.v_site_keyword_performance was 500ing with a statement timeout:
+  //   1. the error state replaced the whole panel, so the operator lost the
+  //      toolbar and filters and only ever saw a bare error page; and
+  //   2. TanStack Query v5's `isLoading` is `isPending && isFetching`, so it
+  //      goes FALSE during retry backoff while `data` is still undefined —
+  //      the table fell through to its empty state and cheerfully advertised
+  //      "No search queries stored yet — Connect Google Search Console…" over
+  //      a site with 4,232 stored queries.
+  // So: the error rides ABOVE still-usable chrome, the skeleton covers every
+  // unsettled moment, and the reassuring empty state is gated on isSuccess.
+  const loadFailed = performance.isError;
+  const showSkeleton = performance.isPending && !loadFailed;
 
   const groomerSections = (): AgentCopyGroomerSection[] => [
     {
@@ -418,7 +425,7 @@ export function SiteKeywordPerformanceWorkspace() {
       tableState: table.state,
       rows,
       total,
-      loading: performance.isLoading,
+      loading: showSkeleton,
     });
 
   return (
@@ -494,6 +501,14 @@ export function SiteKeywordPerformanceWorkspace() {
         </div>
       </section>
 
+      {loadFailed ? (
+        <InlineQueryError
+          what="keyword performance"
+          error={performance.error}
+          onRetry={() => void performance.refetch()}
+        />
+      ) : null}
+
       <section className="min-h-[36rem] rounded-lg border border-border bg-card p-2">
         <MatrxDataTable<SiteKeywordPerformanceRow>
           data={rows}
@@ -501,7 +516,7 @@ export function SiteKeywordPerformanceWorkspace() {
           getRowId={(row) =>
             `${row.provider ?? "gsc"}:${row.keyword_id ?? "unmapped"}:${row.query ?? "unknown"}`
           }
-          isLoading={performance.isLoading}
+          isLoading={showSkeleton}
           isFetching={performance.isFetching}
           query={{
             mode: "controlled",
@@ -570,12 +585,23 @@ export function SiteKeywordPerformanceWorkspace() {
           window={{
             title: (row) => row.query ?? "Search query",
           }}
-          emptyState={{
-            icon: <Search className="h-8 w-8 text-muted-foreground" />,
-            title: "No search queries stored yet",
-            description:
-              "Connect Google Search Console or Bing Webmaster and run a search-performance sync to populate this site.",
-          }}
+          emptyState={
+            loadFailed
+              ? {
+                  icon: (
+                    <AlertTriangle className="h-8 w-8 text-destructive" />
+                  ),
+                  title: "Keyword performance could not be loaded",
+                  description:
+                    "This site's stored queries could not be read — this is a failed request, not an empty site. Retry above.",
+                }
+              : {
+                  icon: <Search className="h-8 w-8 text-muted-foreground" />,
+                  title: "No search queries stored yet",
+                  description:
+                    "Connect Google Search Console or Bing Webmaster and run a search-performance sync to populate this site.",
+                }
+          }
           detail={{
             title: (row) => row.query ?? "Search query",
             description: (row) =>
