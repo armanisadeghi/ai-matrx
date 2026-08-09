@@ -10,7 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { usePublicScraperContent } from "@/features/public-chat/hooks/usePublicScraperContent";
+import {
+  normalizeToolUrl,
+  toSeoMetaFields,
+  usePublicPageMetadata,
+} from "@/features/marketing/seo/public-tools/usePublicPageMetadata";
 import { SerpResult } from "./SerpResult";
 import { SerpSearchChrome } from "./SerpSearchChrome";
 import { SerpFieldBars } from "./SerpValidation";
@@ -21,10 +25,6 @@ import {
   TITLE_LIMITS,
   DESCRIPTION_LIMITS,
 } from "./metrics";
-import {
-  extractSeoFromScrapeResponse,
-  normalizeScrapeUrl,
-} from "./extract-seo-from-scrape";
 
 /**
  * MetadataAnalyzer — the canonical "metadata + search appearance" composite.
@@ -78,7 +78,11 @@ export function MetadataAnalyzer({
   const [url, setUrl] = useState(initialUrl);
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
-  const { scrapeUrl, isLoading: isFetching } = usePublicScraperContent();
+  const [isFetching, setIsFetching] = useState(false);
+  // Guest-friendly meta-tag read (`/seo/public/page-audit`) — this component
+  // renders on an anonymous marketing page, so it may never call an endpoint
+  // that requires a signed-in user (D137).
+  const { fetchPageMetadata } = usePublicPageMetadata();
 
   useEffect(() => {
     onValuesChange?.({ url, title, description });
@@ -97,20 +101,19 @@ export function MetadataAnalyzer({
   const hasData = titleEval.charCount > 0 || descEval.charCount > 0;
 
   async function handleFetchMetadata() {
-    if (!normalizeScrapeUrl(url)) {
+    const normalized = normalizeToolUrl(url);
+    if (!normalized) {
       toast.error("Enter a valid website URL");
       return;
     }
+    setIsFetching(true);
     try {
-      const result = await scrapeUrl(url.trim());
-      const extracted = extractSeoFromScrapeResponse(result.rawResponse);
+      const extracted = toSeoMetaFields(await fetchPageMetadata(normalized));
       if (extracted.url) setUrl(extracted.url);
       if (extracted.title) setTitle(extracted.title);
       if (extracted.description) setDescription(extracted.description);
       if (!extracted.title && !extracted.description) {
-        toast.warning(
-          "Page scraped, but no meta title or description was found",
-        );
+        toast.warning("Page loaded, but no meta title or description was found");
       } else {
         toast.success("Metadata loaded from page");
       }
@@ -118,6 +121,8 @@ export function MetadataAnalyzer({
       toast.error(
         err instanceof Error ? err.message : "Failed to fetch metadata",
       );
+    } finally {
+      setIsFetching(false);
     }
   }
 
@@ -318,8 +323,7 @@ export function MetadataAnalyzer({
                 Desktop
               </span>
               <span className="ml-auto text-[10px] text-muted-foreground">
-                Max {TITLE_LIMITS.maxPx}px title ·{" "}
-                {DESCRIPTION_LIMITS.maxPx}
+                Max {TITLE_LIMITS.maxPx}px title · {DESCRIPTION_LIMITS.maxPx}
                 px description
               </span>
             </div>
@@ -343,8 +347,8 @@ export function MetadataAnalyzer({
                 Mobile
               </span>
               <span className="ml-auto text-[10px] text-muted-foreground">
-                Max {TITLE_LIMITS.maxPx}px title ·{" "}
-                {DESCRIPTION_LIMITS.maxPx}px description
+                Max {TITLE_LIMITS.maxPx}px title · {DESCRIPTION_LIMITS.maxPx}px
+                description
               </span>
             </div>
             <CardContent className="border-0 p-0">
