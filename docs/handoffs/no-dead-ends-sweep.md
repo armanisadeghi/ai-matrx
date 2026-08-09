@@ -66,6 +66,21 @@ every "hover reveals peek / new-tab" affordance — hover states are exactly wha
 static analysis cannot see. The per-wave "routes to open" lists in **Done** below
 are written for that pass.
 
+Two specific questions an adversarial review raised that ONLY a browser can
+settle — both are "did we add a door that doesn't open?":
+
+1. **Does `/organizations/[orgId]` degrade gracefully for an org the user can see
+   but not open?** Shared rows carry an `organization_id` for orgs the viewer
+   may not be a member of, and several surfaces now mint a door from it
+   (`ProjectsHub`, `/agents/all` Organization cell). If that route hard-errors
+   instead of showing a "no access" state, those are NEW dead ends on the
+   shared/orgs scopes. Needs a two-account pass.
+2. **Does dnd-kit swallow clicks on the new door controls in the files table?**
+   The `<tr>` spreads `useDraggable` listeners, and the door controls are ~20px
+   targets — a few pixels of pointer drift could be captured by the drag sensor
+   before the click resolves. The pre-existing name button has the same
+   exposure, so this may be a non-issue.
+
 ## Remaining work
 
 Ordered by traffic. Each item is independently actionable.
