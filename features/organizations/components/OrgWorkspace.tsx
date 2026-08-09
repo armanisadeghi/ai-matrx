@@ -343,12 +343,21 @@ export function OrgWorkspace() {
               {/* Stats + meta */}
               <div className="flex items-center gap-5 flex-wrap mt-4">
                 {/* Each destination is one this page already navigates to
-                    elsewhere — the counts just reach them directly now. */}
+                    elsewhere — the counts just reach them directly now.
+                    MEMBERS IS ADMIN-ONLY: `OrgManage` renders the `#members`
+                    section behind `canManageMembers` (owner/admin), so for an
+                    ordinary member the anchor would land on a settings page
+                    with no member list — a door that does not reach. For them
+                    the avatar row below IS the member list, so no door. */}
                 <Stat
                   icon={<Users className="h-4 w-4" />}
                   value={members.length}
                   label={members.length === 1 ? "member" : "members"}
-                  href={`/organizations/${slug}/settings#members`}
+                  href={
+                    isAdmin
+                      ? `/organizations/${slug}/settings#members`
+                      : undefined
+                  }
                 />
                 <Stat
                   icon={<Layers3 className="h-4 w-4" />}
@@ -393,30 +402,39 @@ export function OrgWorkspace() {
                   <MemberAvatar key={member.id} member={member} />
                 ))}
               </div>
-              {/* "+N more" is a count of real member rows; it reaches them. */}
-              {members.length > 8 && (
-                <Link
-                  href={`/organizations/${slug}/settings#members`}
-                  className="text-xs text-muted-foreground hover:text-foreground hover:underline"
-                >
-                  +{members.length - 8} more
-                </Link>
-              )}
+              {/* "+N more" reaches the full member list — but only for a
+                  viewer who can actually see it (see the Stat note above). */}
+              {members.length > 8 &&
+                (isAdmin ? (
+                  <Link
+                    href={`/organizations/${slug}/settings#members`}
+                    className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    +{members.length - 8} more
+                  </Link>
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    +{members.length - 8} more
+                  </span>
+                ))}
               {/* Was `?tab=members`, which the destination never reads — that
                   page is anchored SECTIONS (`#members`), not tabs, so the old
                   link silently landed at the top of settings. An anchor rather
-                  than router.push so cmd/middle-click open a new tab. */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-auto text-muted-foreground h-7"
-                asChild
-              >
-                <Link href={`/organizations/${slug}/settings#members`}>
-                  Members
-                  <ChevronRight className="h-3.5 w-3.5 ml-1" />
-                </Link>
-              </Button>
+                  than router.push so cmd/middle-click open a new tab. Rendered
+                  only for a viewer the `#members` section actually exists for. */}
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto text-muted-foreground h-7"
+                  asChild
+                >
+                  <Link href={`/organizations/${slug}/settings#members`}>
+                    Members
+                    <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                  </Link>
+                </Button>
+              )}
             </div>
           )}
         </Card>

@@ -473,6 +473,27 @@ resolved through `entityTokenForItemType()`. **Never hand a raw `ItemType` to
 `resolveEntityDoors`.** Each mapping was matched by `schema.table`, never by
 name — a token resolving to a different table opens the WRONG record.
 
+### A door can point at a real page and STILL be wrong — check the param
+
+A third failure mode, alongside "no door" and "wrong record": **a link whose
+query param the destination never reads.** It 200s, so nothing looks broken —
+the user just lands somewhere other than what the link promised.
+
+Found 2026-08-09: `OrgWorkspace`'s "Members" button pushed
+`/organizations/<slug>/settings?tab=members`, but that page is anchored
+**sections** (`#members`), not tabs — `OrgManage` has no tab state at all, so
+the param was inert and the user landed at the top of a long settings page.
+
+✅ **Swept: every `?tab=` producer on this branch was checked against its
+destination.** All the others genuinely read it — content-ir's kind registry
+(server-side), `FileTabsBody`, `/rag/search` (which even validates unknown
+values), agent-apps' URL sync, and `database-admin`
+(`tabFromSearchParams` + `VALID_TABS`). The org one was the only liar.
+
+**The check is mechanical:** for any `?<key>=` you emit, grep the destination
+for that key. No reader → the param is decoration; find the real mechanism
+(an anchor id, a route segment) or drop it.
+
 ### 🚨 The PR review backlog is a work item, not noise
 
 **~30 unresolved review threads sit on PR #73**, accumulated across the whole

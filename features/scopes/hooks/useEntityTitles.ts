@@ -52,10 +52,24 @@ export function useEntityTitles(refs: EntityTitleRef[]): UseEntityTitlesReturn {
   const [attempted, setAttempted] = useState<Record<string, true>>({});
   const [loading, setLoading] = useState(false);
 
-  // The refs that actually need a fetch: no label, not already cached.
+  // The refs that need a fetch.
+  //
+  // 🚨 A STAMPED LABEL DOES NOT EXEMPT A REF FROM THE READ. That exemption is
+  // what made the whole unresolved-target warning inert: a labeled ref was
+  // never fetched, so its key never entered `attempted`, so `isUnresolved`
+  // below could only ever return false — and BOTH consumers stamp a label on
+  // every row (`AssociationList`, `WarRoomResourcesList`). The comment in
+  // `isUnresolved` said labels no longer clear the flag while this filter
+  // quietly guaranteed they did. Verifying that a target still exists IS a
+  // live read; the label only decides what we DISPLAY (see `titleFor`).
+  //
+  // Tokens with no registered title column are still skipped: the resolver was
+  // never going to answer for them, and `isUnresolved` returns false for that
+  // case by design, so a call would be pure waste.
   const needed = refs.filter(
     (r) =>
-      !(r.label && r.label.trim()) && getCachedEntityTitle(r.token, r.id) == null,
+      tryGetEntityInfo(r.token)?.titleColumn != null &&
+      getCachedEntityTitle(r.token, r.id) == null,
   );
   // Stable dependency for the effect — the set of unresolved keys.
   const neededKey = needed
