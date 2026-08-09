@@ -17,7 +17,7 @@ import {
 } from "@/features/surfaces/manifests/crm-create-party.manifest";
 import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
 import { addContactPoint, createParty } from "../service";
-import type { PartyKind } from "../types";
+import { PARTY_KINDS, type PartyKind } from "../types";
 
 const LABELS = surfaceValueLabels(crmCreatePartyManifest);
 
@@ -126,6 +126,55 @@ export function PartyCreateForm({
     }
   };
 
+  // Write half of the surface (manifest `writeTargets`): the ONE composite
+  // draft target stages through the same setters the user's typing uses.
+  // Validates and THROWS on bad shapes — the writeback seam converts throws
+  // to safe error envelopes the agent reads. Fresh closures per call.
+  const getSurfaceWriteHandlers = () => ({
+    party_fields: (value: unknown) => {
+      if (!value || typeof value !== "object" || Array.isArray(value))
+        throw new Error(
+          "party_fields expects an object of draft field values.",
+        );
+      const input = value as Record<string, unknown>;
+      const stringSetters: Record<string, (next: string) => void> = {
+        first_name: setFirstName,
+        last_name: setLastName,
+        job_title: setJobTitle,
+        company_name: setCompanyName,
+        primary_domain: setDomain,
+        email: setEmail,
+        phone: setPhone,
+      };
+      const allowed = ["party_kind", ...Object.keys(stringSetters)];
+      const keys = Object.keys(input);
+      const unknown = keys.filter((key) => !allowed.includes(key));
+      if (unknown.length > 0)
+        throw new Error(
+          `party_fields got unknown keys: ${unknown.join(", ")}. Allowed: ${allowed.join(", ")}.`,
+        );
+      if (keys.length === 0)
+        throw new Error("party_fields expects at least one field.");
+      const nextKind = input.party_kind;
+      if (
+        nextKind !== undefined &&
+        !(PARTY_KINDS as readonly string[]).includes(nextKind as string)
+      )
+        throw new Error(
+          `party_fields.party_kind expects one of: ${PARTY_KINDS.join(" | ")}.`,
+        );
+      for (const key of Object.keys(stringSetters)) {
+        if (key in input && typeof input[key] !== "string")
+          throw new Error(`party_fields.${key} expects a string.`);
+      }
+      // Shape verified — stage every provided field through the form setters.
+      if (nextKind !== undefined) setKind(nextKind as PartyKind);
+      for (const [key, set] of Object.entries(stringSetters)) {
+        if (typeof input[key] === "string") set(input[key]);
+      }
+    },
+  });
+
   const kindButton = (value: PartyKind, label: string, Icon: typeof User) => (
     <button
       type="button"
@@ -154,6 +203,7 @@ export function PartyCreateForm({
           is_saving: saving,
         })
       }
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
       <div className="flex h-full min-h-0 flex-col">
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">

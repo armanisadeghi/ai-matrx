@@ -8,6 +8,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 
 export const CRM_CREATE_PARTY_SURFACE_NAME = "matrx-user/crm-create-party";
@@ -186,6 +187,29 @@ const values: SurfaceValue[] = [
   },
 ];
 
+/**
+ * The WRITE half — what an agent may stage into the create form. A create
+ * form is ideal agent-write territory (nothing exists yet, nothing can be
+ * clobbered), and the fields are always filled together (an email signature,
+ * a scraped bio), so ONE composite draft target beats eight micro-targets:
+ * one ask dialog covers the whole fill. The final submit is deliberately NOT
+ * a target — the user pressing "Create record" is the natural gate.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "party_fields",
+    label: "CRM record draft fields",
+    description:
+      "Stage values into the create form's draft. Value: an object with any of { party_kind: 'person' | 'organization', first_name: string, last_name: string, job_title: string, company_name: string, primary_domain: string, email: string, phone: string }. Omitted keys keep their current draft value; pass an empty string to clear a field. first_name/last_name/job_title belong to a person record and company_name/primary_domain to an organization record — include party_kind when the current kind (read party_kind / party_draft) does not match the fields you are setting. Staged into the form only; nothing persists until the user clicks Create record.",
+    valueType: "object",
+    updatesValue: "party_draft",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "form_state",
+    sortOrder: 100,
+  },
+];
+
 export const crmCreatePartyManifest: SurfaceManifest = {
   surfaceName: CRM_CREATE_PARTY_SURFACE_NAME,
   readiness: "verified",
@@ -196,6 +220,7 @@ You are in the Create CRM Record window. The user is drafting either a person or
 </surface_intro>`,
   groups,
   values,
+  writeTargets,
   skipBaselineValues: true,
 };
 
