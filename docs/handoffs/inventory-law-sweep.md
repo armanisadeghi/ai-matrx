@@ -94,6 +94,20 @@ Before replacing hand-rolled code with a shared primitive, answer all seven.
    lives in `resolveAgentUrl`, beside the two mode-aware helpers that existed
    already.)*
 
+   **The precise rule, checked against `proxy.ts:128`** — the gate redirects to
+   `new URL(pathname + search, MAIN_HOST)`, so it **preserves the path**: the
+   record IS reached, just on the other origin. So this is not "never use a
+   registry route on an admin surface". It is:
+   - **Same-tab** navigation off a satellite is the bug — a full cross-origin
+     load that costs the console, the list, and every filter. Fix it.
+   - **`openInNewTab`** makes a registry route acceptable anywhere: the console
+     survives, the record opens on the origin that actually serves it. This is
+     why the two admin-relationship surfaces converted in the same wave are
+     fine — they pass `openInNewTab`, chosen to protect the audit, which turns
+     out to be exactly the right mitigation for the origin hop too.
+   - **An admin-side route, when the entity has one**, is better than either.
+     `agent` does; most tokens an audit lists do not.
+
 7. **Is the name you're passing ever null on the surface's DOMINANT case?**
    `EntityRef` truncates an id to 8 chars when it has no name — right for a
    record whose title just hasn't loaded, wrong when the name is *structurally*
