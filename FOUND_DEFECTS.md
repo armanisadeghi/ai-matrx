@@ -13,6 +13,25 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D137 — DB kind components documented as a bare function do NOT compile on the web platform (2026-08-09)
+
+The kindcomp_* contract (aidream `kind_shared.py::PROPS_CONTRACT`, mirrored in the tool
+descriptions agents read) documents the component shape as a bare top-level
+`function Card({ data }) { … }` — no `export default`. But the ONE shared compiler
+(`features/agent-apps/utils/compile-slot.ts::compileSlotComponent`, consumed by
+`features/content-ir/react/db-component/dbKindComponentCache.ts`) only rewrites
+`export default` → `return`; a bare-function source makes the `new Function` factory
+return `undefined` → "compile produced no component" → generic viewer. So an agent
+following the documented example authors a row the WEB platform silently can't mount.
+Found 2026-08-09 when the new `workflow_shape_component_builder` agent emitted exactly
+that shape (kind `cooking_recipe`, platform `vite`). The workflow-studio twin compiler
+(aidream `apps/workflow-studio/src/lib/content-ir/db-component/compile-kind-component.ts`)
+now falls back to returning the last PascalCase top-level binding — port that fallback
+into `compileSlotComponent` (it already collects top-level bindings via
+`collectTopLevelBindingsPlugin`), or tighten the contract text to require
+`export default` everywhere. Decide + fix in one place; the studio fallback is the
+reference implementation.
+
 ### D136 — `pnpm check:hatches` is red on main: baseline drifted, ratchet no longer ratchets (2026-08-08)
 
 `scripts/type-escape-baseline.json` is far behind the tree — five categories are ABOVE baseline
