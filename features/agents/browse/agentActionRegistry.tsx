@@ -7,8 +7,13 @@
 // THIRD, smaller-still set in AgentActionModal.tsx. Three lists that drifted —
 // rows lost "Add to set", cards lost the admin submenu, and the modal (the
 // primary click target on both) exposed 7 of ~11 actions. One builder makes
-// that class of drift impossible: table row menu, card kebab, and right-click
-// all render the same config.
+// that class of drift impossible: table row menu, card kebab, and the dense-row
+// kebab all render the same config.
+//
+// RIGHT-CLICK IS NOT WIRED YET, on any of the three views. `ItemContextMenu`
+// exists and takes this exact config, but `MatrxDataTable` has no row-wrapper
+// seam to hang it on — see docs/handoffs/inventory-law-sweep.md (Wave 3).
+// This comment used to claim right-click parity; it never shipped.
 //
 // Modelled on features/agents/components/conversation-actions/
 // conversationActionRegistry.tsx — pure menu wiring; every mutating entry

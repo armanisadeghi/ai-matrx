@@ -310,11 +310,30 @@ UUIDs) · `features/skills/components/SkillConfigPicker.tsx:486,598` ·
 these — but **not** `AgentListDropdown` (42 consumers) or `AgentActionModal`.
 
 - [ ] Point `AgentListDropdown` + `AgentActionModal` at `useAgentRowActions`.
-- [ ] **Doc lie to fix in the same change:** `agentActionRegistry.tsx:11` and
-      `features/agents/browse/FEATURE.md:110` both assert the config drives
-      "table row menu, card kebab, **and right-click**". The right-click half
-      is not wired anywhere (`EntityListTable.tsx:224` renders `ItemMenu`, never
-      `ItemContextMenu`). Either wire it or correct both docs.
+- [x] **Doc lie corrected (2026-08-09).** `agentActionRegistry.tsx` and
+      `features/agents/browse/FEATURE.md` both asserted the config drives
+      "table row menu, card kebab, **and right-click**". Right-click was never
+      wired on any view. Both now say so and point here.
+- [ ] **Wire right-click on the canonical list shell** — one change covers BOTH
+      `/agents/all` and `/transcripts`. Scouted 2026-08-09:
+      - `ItemContextMenu` (`components/official/item/ItemMenu.tsx:419`) already
+        takes the same `ItemMenuConfig`, so no new config work.
+      - **Blocker:** `MatrxDataTable` has no row-wrapper seam — `rowActions`
+        only injects into the actions CELL (`MatrxDataTable.tsx:803`). Needs a
+        `rowWrapper?: (row, children) => ReactNode` prop, then
+        `EntityListTable.tsx:223` passes `ItemContextMenu`.
+      - **NOT a fragmentation risk** (checked): the eslint ban targets
+        `MenuContent`/`MobileMenuContent`, the heavy layer, which stays behind
+        the shell's dynamic edge. `ItemMenu` already statically imports the thin
+        `NonEditableContextMenu`, and `EntityListTable` already imports
+        `ItemMenu` — so the chunk graph does not change.
+      - **THE REAL HAZARD, and why this wasn't done blind:** `MatrxDataTable`
+        has inline-editable cells (`EditableTableCell`). A row-level context
+        menu swallows the native right-click inside a text input, destroying
+        copy/paste there. Any wiring MUST exclude editable cells (and verify it
+        in a browser, which a preview URL cannot do — see constraint 1).
+      - Note while there: `ItemContextMenu` hardcodes `sourceFeature="files"`
+        for every consumer. Wrong for agents/transcripts; make it a prop.
 - [ ] `useListViewPrefs` — migrate the 4 hand-rolled localStorage copies, each
       deleting a `useState` + `useEffect` + a local type:
       `features/projects/components/ProjectsHub.tsx:93,111,116` ·
