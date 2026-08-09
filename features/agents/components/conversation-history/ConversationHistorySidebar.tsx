@@ -642,7 +642,11 @@ const DenseView: React.FC<
                     token="agent"
                     id={bucket.agentId}
                     name={bucket.label}
-                    showOpen
+                    // No same-tab Open: `EntityDoorControls` makes that opt-in
+                    // precisely because a mid-task surface shouldn't navigate
+                    // out from under the user, and /chat with a live
+                    // conversation is the definition of mid-task. Peek and
+                    // new-tab already answer "which agent is this?".
                   />
                 ) : undefined
               }
@@ -1095,7 +1099,12 @@ const Row: React.FC<RowProps> = ({
           className="max-w-[7rem] truncate text-[10px] text-muted-foreground"
           title={agentName ? `Agent: ${agentName}` : undefined}
         >
-          {agentName ?? <span className="sr-only">agent</span>}
+          {/* Falling back to a bare "agent" would leave a screen-reader user
+              with no identifier at all — worse than the uuid this replaced.
+              Keep the short id when the name hasn't resolved. */}
+          {agentName ?? (
+            <span className="sr-only">{`agent ${conv.agentId.slice(0, 8)}`}</span>
+          )}
         </span>
         {star}
       </>

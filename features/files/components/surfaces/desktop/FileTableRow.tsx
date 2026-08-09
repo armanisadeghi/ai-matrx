@@ -271,7 +271,18 @@ function FileCell({
                   {file.fileName}
                 </button>
                 <FileRagBadge fileId={file.id} className="shrink-0" />
-                {file.source.kind === "real" && (
+                {/*
+                  TWO conditions, and they are different questions.
+                  `source.kind === "real"` asks "does this row have a
+                  files.files id at all?" (adapter-backed rows do not).
+                  `!file.deletedAt` asks "is that record still live?" —
+                  /files/f/[fileId] selects `.is("deleted_at", null)` and
+                  notFound()s otherwise, so every row on /files/trash would
+                  otherwise ship a door straight to a 404. Keyed off the
+                  record, not the section, so a trashed row surfacing in
+                  search results is covered too.
+                */}
+                {file.source.kind === "real" && !file.deletedAt && (
                   <EntityDoorControls
                     token="file"
                     id={file.id}
@@ -551,7 +562,10 @@ function FolderCell({
                 </span>
               ) : null}
             </div>
-            {folder.source.kind === "real" && (
+            {/* Same two questions as the file cell above: has an id, and is
+                still live. A deleted folder's path resolves to nothing, so the
+                door would open an empty folder view rather than the record. */}
+            {folder.source.kind === "real" && !folder.deletedAt && (
               <EntityDoorControls
                 token="folder"
                 id={folder.id}

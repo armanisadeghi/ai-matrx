@@ -17,6 +17,7 @@
  */
 
 import React from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Loader2,
   ChevronRight,
@@ -75,7 +76,14 @@ export function ProjectTaskList({
   const [loading, setLoading] = React.useState(true);
   const [reloadTick, setReloadTick] = React.useState(0);
   const [busyId, setBusyId] = React.useState<string | null>(null);
-  const [showDone, setShowDone] = React.useState(false);
+  // `?done=1` opens with the Done group already expanded. A COUNT IS A DOOR:
+  // "12 done" on the projects list links here, and landing on a page where
+  // those twelve are hidden behind a collapsed disclosure means the number
+  // didn't actually reach the records it described.
+  const searchParams = useSearchParams();
+  const [showDone, setShowDone] = React.useState(
+    () => searchParams.get("done") === "1",
+  );
   const [addingSubFor, setAddingSubFor] = React.useState<string | null>(null);
   const [subTitle, setSubTitle] = React.useState("");
   const [isAddingSub, setIsAddingSub] = React.useState(false);

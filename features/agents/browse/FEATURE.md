@@ -210,8 +210,13 @@ hostile at 2,000.
   wiring. Two relationships the RPC already returned stopped being text: the
   Organization cell is an `EntityRef` (open / new tab / peek), and rows with a
   `source_agent_id` gain an "Open source agent" door in the ONE action menu.
-  `task_id` is deliberately NOT rendered — the column is 100% NULL and carries
-  no FK, so any link would be a guess.
+  `task_id` is deliberately NOT rendered — **not** for lack of a relationship:
+  it carries a live FK (`agx_agent_task_fk → workspace.tasks(id)`), which is
+  exactly the `task` token's table. It is omitted because the column is 100%
+  NULL (0 of 756 rows), so a column would be dead weight; the moment anything
+  populates it, `token: "task"` is the correct wiring. **Clicking an agent's
+  NAME now navigates to `/agents/[id]`** (the shell's `door`); the rest of the
+  row still opens the Run / Build / View chooser.
 
 - **2026-08-08 (extraction)** — Steps 2–5 of the canonical entity-list
   extraction: the generic halves (query hook, scope tabs, toolbar, filter

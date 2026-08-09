@@ -1169,7 +1169,14 @@ function ProjectsTable({
                       <EntityRef
                         token="organization"
                         id={p.organizationId}
-                        name={orgEntry(p)?.name ?? "Organization"}
+                        // NOT a fallback string. `orgMap` only holds orgs the
+                        // user is a MEMBER of, so a project reached by a
+                        // permission grant resolves to nothing here — and
+                        // printing the word "Organization" would present a
+                        // label we invented as if it were the org's name.
+                        // EntityRef already degrades to a truncated id, which
+                        // is true and still opens.
+                        name={orgEntry(p)?.name ?? null}
                         className="text-sm text-muted-foreground"
                       />
                     ) : (
@@ -1194,7 +1201,11 @@ function ProjectsTable({
                   </TableCell>
                   <TableCell className="py-2 text-right tabular-nums text-muted-foreground">
                     <Link
-                      href={`/projects/${p.id}`}
+                      // `?done=1` expands the Done group on arrival — that
+                      // section is collapsed by default, so a bare link would
+                      // land the user on a page where the tasks this number
+                      // counts are still hidden.
+                      href={`/projects/${p.id}?done=1`}
                       onClick={(e) => e.stopPropagation()}
                       title={`Open ${p.name} — ${s?.done ?? 0} completed task${
                         (s?.done ?? 0) === 1 ? "" : "s"
@@ -1295,7 +1306,9 @@ function ProjectHubCard({
                 <EntityRef
                   token="organization"
                   id={project.organizationId}
-                  name={org?.name ?? "Organization"}
+                  // Same as the table cell: never invent the name. EntityRef
+                  // falls back to a truncated id, which is honest.
+                  name={org?.name ?? null}
                 />
               ) : (
                 <>
@@ -1367,7 +1380,9 @@ function ProjectHubCard({
             open
           </Link>
           <Link
-            href={href}
+            // `?done=1` — the Done group is collapsed by default, so a bare
+            // link would hide the very tasks this count names.
+            href={`${href}?done=1`}
             title={`Open ${project.name} — ${done} completed task${done === 1 ? "" : "s"}`}
             className="flex items-center gap-1 rounded px-1 -mx-1 hover:bg-accent hover:text-foreground transition-colors"
           >

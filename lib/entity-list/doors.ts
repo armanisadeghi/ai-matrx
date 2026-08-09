@@ -46,9 +46,14 @@ function tokenForRow<TRow>(
  * The canonical route for one row, or `undefined` when this record has no door.
  *
  * `hrefFor` is honoured EXACTLY when present — a config that deliberately
- * returns `undefined` for a row (a transcripts row of kind "unsorted" with no
- * record of its own) must not fall through to the registry and send the user
- * somewhere the surface ruled out.
+ * returns `undefined` for a row must not fall through to the registry and send
+ * the user somewhere the surface ruled out.
+ *
+ * No shipped config exercises the `undefined` branch today (transcripts'
+ * `primaryRowHref` returns a route for every kind), so it lives on the unit
+ * tests. It is kept because the alternative — falling back to the registry —
+ * silently overrides a surface that said "not this row", and that is the
+ * failure this whole module exists to prevent.
  */
 export function entityListRowHref<TRow>(
   config: EntityListConfig<TRow>,

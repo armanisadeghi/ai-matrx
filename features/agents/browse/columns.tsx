@@ -61,8 +61,13 @@ export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
       header: "Name",
       filter: "text",
       editable: "string",
-      // Pencil-only: clicking the name opens AgentActionModal (row click),
-      // never navigates to Run/Build. Rename is the hover pencil only.
+      // Rename is the hover pencil ONLY — never a click on the text.
+      //
+      // The name itself is now an anchor to `/agents/[id]` (the list shell
+      // applies it from `door: { token: "agent" }` in listConfig). Clicking the
+      // name navigates; clicking anywhere else on the row still opens
+      // AgentActionModal. Do NOT point the name at Run or Build — those
+      // preempt the chooser, which is what this comment originally guarded.
       editTrigger: "pencil",
       cell: (row) => (
         <div className="flex min-w-0 items-center gap-2">

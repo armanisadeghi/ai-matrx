@@ -795,7 +795,7 @@ export function StructuredListManagerV1({
               <div
                 key={l.id}
                 className={cn(
-                  "group/list group/entity-ref mb-px flex items-center gap-0.5 rounded-md pr-1 transition-colors",
+                  "group/entity-ref mb-px flex items-center gap-0.5 rounded-md pr-1 transition-colors",
                   isActive
                     ? "bg-accent text-accent-foreground"
                     : "hover:bg-accent/50",
