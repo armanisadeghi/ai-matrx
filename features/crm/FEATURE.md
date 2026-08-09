@@ -130,7 +130,9 @@ Tools-grid, and typed openers.
 **UI surfaces:** code-first manifests declare `matrx-user/crm`,
 `matrx-user/crm-manager`, and `matrx-user/crm-create-party`. The route and
 both windows emit live scopes through `SurfaceRuntimeProvider`; DB rows and
-value metadata mirror the manifests.
+value metadata mirror the manifests. `crm-create-party` is also **agent-writable**:
+its ONE `party_fields` target (draft, `ask`) stages the whole create form through
+`PartyCreateForm`'s setters — never a second write path, and never the submit.
 
 **Frontend gotchas (paid for once):**
 
@@ -180,6 +182,13 @@ attachments = `features/files` · tags/stages = `platform.categories` · the 360
 
 ## Change log
 
+- 2026-08-09 — The create form is agent-writable. `matrx-user/crm-create-party`
+  declares ONE composite `party_fields` write target (draft mode, `ask` policy);
+  `PartyCreateForm` registers the handler on its `SurfaceRuntimeProvider` and
+  stages every field through its own setters after validating each key. The
+  Create record click stays the only save gate — no target persists. Verified
+  live with a real agent run: an email signature became a staged draft, and the
+  user's submit wrote the party + email + phone media.
 - 2026-08-08 — Repaired `/crm` review feedback: specific route metadata and
   semantic header H1, 44px mobile scope controls, concise search placeholder,
   and an explicit mobile Open affordance in each sticky identity cell.

@@ -149,7 +149,11 @@ internal platform use — never a washed-down user variant beside a private one:
   agent-writable adopters: `matrx-user/marketing-page`,
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
-  `TaskEditorBody.tsx`).
+  `TaskEditorBody.tsx`), `matrx-user/crm-create-party` (ONE composite
+  `party_fields` draft target — the whole create form staged through its own
+  setters in `PartyCreateForm.tsx`; the user's Create record click stays the
+  only save gate). A CREATE form is the campaign's easiest win: nothing
+  exists yet, so an agent fill can clobber nothing.
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -310,6 +314,8 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
 
 ## Change Log
+
+- **2026-08-09 — CRM create-party agent-writable (create-form adopter).** `matrx-user/crm-create-party` declares ONE composite `party_fields` draft target (ask policy) covering every field the form owns — kind, first/last name, job title, company name, primary domain, email, phone — staged through `PartyCreateForm`'s own setters, validated key-by-key with a throw on any unknown key or wrong type. The composite beats eight micro-targets because these fields are always filled together (a pasted signature, a scraped bio) and one ask covers the whole fill. The submit is deliberately NOT a target. Live-verified end to end: Badass Agent on `/crm` with the create window open parsed an email signature, called `apply_surface_write`, the ask dialog rendered the target description verbatim, Apply staged all seven fields (empty before, populated after), the agent refused an undeclared field (`credit_limit`) in plain language, and the user's Create record click persisted the party plus both contact media through the canonical medium/contact-point path.
 
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 
