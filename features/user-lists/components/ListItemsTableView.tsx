@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
   Layers,
@@ -42,7 +42,6 @@ function formatDate(dateStr: string | null) {
 }
 
 export function ListItemsTableView({ list, items }: ListItemsTableViewProps) {
-  const router = useRouter();
   const toast = useToastManager("user-lists");
 
   const [addOpen, setAddOpen] = useState(false);
@@ -168,14 +167,20 @@ export function ListItemsTableView({ list, items }: ListItemsTableViewProps) {
     <div className="flex flex-col gap-4">
       {/* Back navigation + list meta */}
       <div className="flex items-center gap-3 flex-wrap">
+        {/* `/lists-v2` DOES NOT EXIST — the real index is `/lists`. This Back
+            button 404'd; nobody hit it because this component currently has no
+            consumers, which is exactly why it sat broken. An anchor, not a
+            push, so it behaves like every other link. */}
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => router.push("/lists-v2")}
+          asChild
           className="gap-1.5 text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="h-4 w-4" />
-          All Lists
+          <Link href="/lists">
+            <ArrowLeft className="h-4 w-4" />
+            All Lists
+          </Link>
         </Button>
         <div className="flex items-center gap-2 ml-1">
           <Layers className="h-4 w-4 text-muted-foreground" />

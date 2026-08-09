@@ -3,6 +3,8 @@
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { List, Pencil, Trash2, Globe, Lock, Users } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { Badge } from "@/components/ui/badge";
 import GenericDataTable, {
   type ColumnConfig,
@@ -63,6 +65,17 @@ function formatDate(dateStr: string | null) {
   });
 }
 
+/**
+ * The record route comes from the entity registry, never a literal. Both call
+ * sites below used to build `/lists-v2/<id>` — a route that DOES NOT EXIST
+ * (the real ones are /lists, /lists/[id], /lists/v1..v3), so every row click
+ * and every post-create redirect went to a 404. Nobody hit it because this
+ * component currently has no consumers, which is exactly why it sat broken.
+ */
+function listHref(id: string): string {
+  return getEntityInfo("structured_list").hrefFor?.(id) ?? `/lists/${id}`;
+}
+
 export function ListsTableView({ lists }: ListsTableViewProps) {
   const router = useRouter();
   const toast = useToastManager("user-lists");
@@ -79,9 +92,18 @@ export function ListsTableView({ lists }: ListsTableViewProps) {
       key: "list_name",
       header: "Name",
       sortable: true,
+      // THE DOOR LAW: the row's onClick is a mouse convenience; the NAME is
+      // the real anchor (keyboard, middle-click, new tab, hover destination),
+      // plus peek. The registry owns the route — do not hardcode one here.
       render: (item) => (
-        <div className="flex flex-col gap-0.5">
-          <span className="font-medium text-foreground">{item.list_name}</span>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <EntityRef
+            token="structured_list"
+            id={item.id}
+            name={item.list_name}
+            showIcon={false}
+            className="font-medium text-foreground"
+          />
           {item.description && (
             <span className="text-xs text-muted-foreground line-clamp-1">
               {item.description}
@@ -177,7 +199,7 @@ export function ListsTableView({ lists }: ListsTableViewProps) {
 
   const handleRowClick = (item: UserList) => {
     startTransition(() => {
-      router.push(`/lists-v2/${item.id}`);
+      router.push(listHref(item.id));
     });
   };
 
@@ -232,7 +254,7 @@ export function ListsTableView({ lists }: ListsTableViewProps) {
       <CreateListDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        onSuccess={(id) => router.push(`/lists-v2/${id}`)}
+        onSuccess={(id) => router.push(listHref(id))}
       />
 
       {editList && (
