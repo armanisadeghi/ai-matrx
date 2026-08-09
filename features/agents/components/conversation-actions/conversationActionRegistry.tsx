@@ -33,6 +33,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import type {
   ItemMenuConfig,
   ItemMenuSection,
@@ -240,7 +241,14 @@ export function buildConversationMenu(
               if (duplicateConversation.rejected.match(result)) {
                 toast.error(result.payload?.message ?? "Duplicate failed");
               } else {
-                toast.success("Conversation duplicated");
+                // The thunk returns `newConversationId` and the toast dropped
+                // it, leaving the copy findable only by scrolling the sidebar.
+                toast.success("Conversation duplicated", {
+                  action: toastDoor(
+                    "conversation",
+                    result.payload.newConversationId,
+                  ),
+                });
               }
             },
           },

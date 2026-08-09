@@ -365,6 +365,12 @@ export function FileContextMenu({
     if (typeof window === "undefined") return;
     const ids = batchFileIds.length > 0 ? batchFileIds : [fileId];
     const { toast } = await import("@/lib/toast");
+    // Imported here rather than at module scope for the same reason `toast` is:
+    // this handler is only reachable on user action, and the file is a heavy
+    // client component.
+    const { toastDoor } = await import(
+      "@/components/official/entity-ref/toastDoor"
+    );
     const tid = toast.loading(`Reprocessing ${ids.length} files for RAG…`, {
       description: "Running serially to avoid pool saturation.",
     });
@@ -386,8 +392,12 @@ export function FileContextMenu({
           { id: tid },
         );
       } catch (err) {
+        // A truncated id the user could do nothing with — and this is the ONE
+        // file out of the batch that failed, so it is exactly the record they
+        // need to open.
         toast.error(`Failed to dispatch reprocess for ${id.slice(0, 8)}…`, {
           description: err instanceof Error ? err.message : String(err),
+          action: toastDoor("file", id),
         });
       }
     }
