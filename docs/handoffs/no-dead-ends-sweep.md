@@ -219,8 +219,33 @@ Ordered by traffic. Each item is independently actionable.
    than none. Blocked on the `user` registry decision below, not on a call-site
    patch.
 
-4. **Toasts and badges.**
-5. **`(dev)` demos** — last.
+4. **Toasts — swept 2026-08-09. The REACHABLE ones are done.** An inventory
+   found ~25 sites where a toast named a record it would not let the user open;
+   the highest-value class was structural — `duplicateAgent` returns the new
+   agent's id and **all three callers threw it away**.
+
+   Done: agent duplication (×3), the fork branch (whose toast literally said
+   "open it from the conversation sidebar"), org / project / task / party
+   creation **including both partial-failure paths**, the war-room file, the
+   system app, the podcast show, the restored CRM party, the schema-overwrite
+   agent, the created brand, the reassign destination member, the agent-slot
+   repin, the duplicated conversation, the one file that failed in a batch, the
+   new bundle, and the added marketing page.
+
+   The primitive is `toastDoor(token, id, { href?, label? })`
+   (`components/official/entity-ref/toastDoor.tsx`) — sonner renders a ReactNode
+   `action` raw, so the door is a real `<Link>`: same-tab, cmd-click and
+   middle-click all work, where an `onClick` would give one and steal the rest.
+
+   **What is left is NOT call-site work** — see the route-blocked and
+   toast-system limits recorded above. Do not "finish" this item by forcing
+   links onto entities that have no page.
+
+   **Badges were not swept.** The count-is-a-door corollary is only partly
+   covered: `ReassignResourcesDialog` got the destination-member door, and the
+   deliberately-inert counts are listed in the Blocked section. A systematic
+   badge pass has not happened.
+5. **`(dev)` demos** — audit in flight 2026-08-09.
 6. **aidream admin surfaces** — after matrx-frontend.
 7. **Collapse the `AssociationList` fork.** It has ZERO live JSX consumers;
    war-room renders `WarRoomResourcesList`, a second implementation of the same
@@ -475,7 +500,7 @@ name — a token resolving to a different table opens the WRONG record.
     opens nothing; `SkillCategoryTreeEditor` is the only place a category
     exists, and it is a mode of the admin console, not an address. A peek is the
     cheap fix (same argument as item 12).
-16. **Counts still without a destination** (deliberately left inert): a library
+24. **Counts still without a destination** (deliberately left inert): a library
     store's `N members` and the sandbox console's `Unique users` have no list to
     reach; the enum Usage tab's `schema.table` names have nowhere to go —
     `/administration/database/database-admin` reads only `?tab=`, no table
