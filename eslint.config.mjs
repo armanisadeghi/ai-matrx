@@ -506,6 +506,34 @@ const matrxLintPlugin = {
                     'onRowClick',
                     'to',
                 ]);
+                // A handler that DESTROYS or DISMISSES is never a door, however
+                // clickable the element is. `\b`-free segment matching on
+                // purpose — there is no word boundary inside `onDeleteRow`.
+                //
+                // DELIBERATE ASYMMETRY with scripts/dead-ends/scan.ts, which
+                // additionally requires the handler to NAVIGATE (handlerNavigates)
+                // before it counts as a door. That check needs whole-file context
+                // to stay accurate — the handler is usually defined far from the
+                // JSX, often in another module — so ESLint, which sees one file
+                // and must be near-zero-false-positive at `warn`, accepts any
+                // remaining handler. It therefore UNDER-reports (a toggle or an
+                // expander reads as a door here). That is the intended split:
+                // the checker carries the fuzzy cases and reports them on the
+                // scoreboard. Rejecting the closers below is the part that is
+                // unambiguous from one file, so it is done here too.
+                const CLOSING_VERBS = new Set([
+                    'delete', 'remove', 'archive', 'dismiss', 'close', 'cancel',
+                    'copy', 'duplicate', 'download', 'revoke', 'unlink', 'detach',
+                ]);
+                const isClosingHandler = (attr) => {
+                    const value = attr.value;
+                    if (!value || value.type !== 'JSXExpressionContainer') return false;
+                    const text = context.sourceCode.getText(value.expression);
+                    return text
+                        .split(/[^A-Za-z0-9]+/)
+                        .flatMap((part) => part.split(/(?=[A-Z])/))
+                        .some((part) => CLOSING_VERBS.has(part.toLowerCase()));
+                };
                 // Choosing, labelling and debugging are not referencing.
                 const SKIP_TAGS = new Set([
                     'SelectItem',
@@ -676,6 +704,7 @@ const matrxLintPlugin = {
                                     attr.name?.type === 'JSXIdentifier' &&
                                     DOOR_ATTRS.has(attr.name.name)
                                 ) {
+                                    if (isClosingHandler(attr)) continue;
                                     return;
                                 }
                             }

@@ -157,7 +157,7 @@ Additional gates, each traceable to a real false positive:
   record here. Suppressing a real entity is worse than ranking it low.
 
 Measured on the shipped ruleset: **133 findings (66 high, 67 medium) across 82
-files out of 6,805 scanned, in ~9s.**
+files out of 6,806 scanned, in ~9s.**
 
 ## Known limits — stated, not hidden
 

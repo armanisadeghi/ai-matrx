@@ -29,9 +29,16 @@ import {
 
 const REGENERATE = "pnpm check:dead-ends:write (then commit the snapshot)";
 
+/**
+ * Which committed file the current parse is reading. `fail()` used to hardcode
+ * `report.json`, so a bad `history.json` sent the operator to regenerate — and
+ * then re-read the contract of — the wrong file entirely.
+ */
+let parsingSource = "scripts/dead-ends/report.json";
+
 function fail(what: string): never {
   throw new Error(
-    `[dead-ends] scripts/dead-ends/report.json does not match the report contract: ${what}. ` +
+    `[dead-ends] ${parsingSource} does not match the report contract: ${what}. ` +
       `Regenerate it — ${REGENERATE} — or fix scripts/dead-ends/types.ts and the dashboard together.`,
   );
 }
@@ -150,6 +157,7 @@ function parseReport(raw: unknown): DeadEndReport {
 }
 
 function parseHistory(raw: unknown): DeadEndHistoryPoint[] {
+  parsingSource = "scripts/dead-ends/history.json";
   return asArray(raw, "history").map((row, index) => {
     if (typeof row !== "object" || row === null) fail(`history[${index}] is not an object`);
     const p = row as Record<string, unknown>;

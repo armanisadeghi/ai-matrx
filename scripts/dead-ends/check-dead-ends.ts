@@ -316,18 +316,59 @@ function main(): void {
   process.exitCode = args.strict && findings.length > 0 ? 1 : 0;
 }
 
+/** Does this row satisfy the contract the dashboard's `parseHistory` enforces? */
+function isHistoryPoint(row: unknown): row is DeadEndHistoryPoint {
+  if (typeof row !== "object" || row === null) return false;
+  const p = row as Record<string, unknown>;
+  const numeric = (v: unknown): boolean => typeof v === "number" && Number.isFinite(v);
+  return (
+    typeof p.generatedAt === "string" &&
+    (p.commit === null || typeof p.commit === "string") &&
+    numeric(p.findings) &&
+    numeric(p.high) &&
+    numeric(p.medium) &&
+    numeric(p.low) &&
+    numeric(p.filesWithFindings)
+  );
+}
+
+/**
+ * The CLI is the only writer of history.json, so it is also the only place that
+ * can HEAL it. The dashboard validates the same contract at import and throws —
+ * i.e. a hand-edited or drifted point takes down /administration/reporting/dead-ends
+ * on load. This used to cast the parsed array straight through, so `--write`
+ * happily rewrote the bad point back and the page stayed broken.
+ *
+ * Now every point is checked against the same contract, bad ones are dropped,
+ * and the drop SCREAMS (loud recovery — a recovery firing means a real bug got
+ * past the proactive layer). One `--write` after the warning repairs the file.
+ */
 function readHistory(): DeadEndHistoryPoint[] {
   if (!existsSync(HISTORY_PATH)) return [];
+  let parsed: unknown;
   try {
-    const parsed: unknown = JSON.parse(readFileSync(HISTORY_PATH, "utf8"));
-    return Array.isArray(parsed) ? (parsed as DeadEndHistoryPoint[]) : [];
+    parsed = JSON.parse(readFileSync(HISTORY_PATH, "utf8"));
   } catch {
-    // Corrupt history must not eat the run, but it must not be silent either.
     console.error(
       `${YELLOW}[dead-ends] history.json is unreadable — starting a new series.${NC}`,
     );
     return [];
   }
+  if (!Array.isArray(parsed)) {
+    console.error(
+      `${YELLOW}[dead-ends] history.json is not an array — starting a new series.${NC}`,
+    );
+    return [];
+  }
+  const kept = parsed.filter(isHistoryPoint);
+  if (kept.length !== parsed.length) {
+    console.error(
+      `${YELLOW}[dead-ends] history.json had ${parsed.length - kept.length} point(s) that do not ` +
+        `match the history contract — dropped. The dashboard THROWS on these, so ` +
+        `/administration/reporting/dead-ends is broken until you re-run with --write and commit.${NC}`,
+    );
+  }
+  return kept;
 }
 
 function printReport(report: DeadEndReport, limit: number): void {

@@ -56,15 +56,16 @@ Ordered by high-severity density. `high` = the entity already has an `hrefFor`,
 so the fix is one `<EntityRef>`. Refresh the numbers with
 `pnpm check:dead-ends:write` after each batch and commit the snapshot.
 
-**Baseline 2026-08-09: 133 findings · 66 high · 82 files · 6,805 scanned.**
+**Baseline 2026-08-09: 133 findings · 66 high · 82 files · 6,806 scanned.**
 (bare id as text 81 · unlinked name 40 · unlinked count 3 · no doors at all 9)
 Re-rank with `pnpm check:dead-ends:write` before starting — the scoreboard is
 the live worklist; these counts are the snapshot it was seeded from.
 
 1. **`features/agents` — 15 findings, 10 high.** The feature the rant was about.
-   `components/agent-listings/AgentLineageTree.tsx` names an agent in a LINEAGE
-   TREE with no door — the doctrine's headline case, verbatim.
-   `components/inputs/smart-input/RunSkillPicker.tsx` has no door primitive.
+   `features/agents/components/agent-listings/AgentLineageTree.tsx` names an
+   agent in a LINEAGE TREE with no door — the doctrine's headline case, verbatim.
+   `features/agents/components/inputs/smart-input/RunSkillPicker.tsx` has no
+   door primitive.
 2. **`components/admin` — 15 findings, 7 high.** The state-analyzer slice
    viewers (`AgentDefinitionSliceViewer.tsx` + `…ViewerShadcn.tsx`) print agent
    ids as text. **Collapse the two viewers into one while you are in there.**
