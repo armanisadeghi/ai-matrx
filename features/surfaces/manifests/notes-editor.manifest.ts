@@ -42,6 +42,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import type { PermissionLevel } from "@/utils/permissions/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
@@ -387,6 +388,59 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may WRITE into the open note.
+ * All targets are `mode: "draft"` + `applyPolicy: "ask"`: they stage through
+ * the exact Redux/editor paths the user's own typing uses
+ * (`handleChangeFlush` → `updateNoteContent`, `updateNoteLabel`,
+ * `updateNoteTags`), so the canonical autosave pipeline — optimistic-lock
+ * save, timestamp-monotonic echo suppression, conflict guards — persists the
+ * change exactly as it would a keystroke. NEVER a parallel write path, never
+ * raw supabase (freeze-loop doctrine, features/notes/FEATURE.md).
+ *
+ * Handlers are registered by `NoteContentEditor.tsx` on its
+ * SurfaceRuntimeProvider; they refuse loudly on read-only (viewer-level
+ * shared) notes.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "note_title",
+    label: "Title",
+    description:
+      "Stages a new title for the open note — exactly as if the user renamed it on the tab. Plain non-empty string, kept short (a few words, no markdown). The note's autosave persists it moments later.",
+    valueType: "string",
+    updatesValue: "current_note_title",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "note_identity",
+    sortOrder: 100,
+  },
+  {
+    name: "note_content",
+    label: "Note content",
+    description:
+      "Replaces the FULL markdown body of the open note in the live editor — the same path the user's own typing uses; autosave persists it moments later. ALWAYS read the current content first (resolve the current_note resource, or use active_text / content) and include every part of the existing text you intend to keep — to append, send the existing content plus your addition. Plain markdown string.",
+    valueType: "string",
+    updatesValue: "current_note",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "note_identity",
+    sortOrder: 200,
+  },
+  {
+    name: "note_tags",
+    label: "Tags",
+    description:
+      "Stages the FULL tag set of the open note (replaces, not appends — include existing tags you want kept, from current_note_tags). Array of short plain strings, no duplicates. Autosave persists moments later.",
+    valueType: "array",
+    updatesValue: "current_note_tags",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "note_identity",
+    sortOrder: 300,
+  },
+];
+
 export const notesEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/notes",
   readiness: "verified",
@@ -407,6 +461,7 @@ When shared_access is present the note belongs to someone else — respect its p
     pickBaseline("selection", "text_before", "text_after", "content"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One open-tab entry as emitted in `open_notes_summary`. */
