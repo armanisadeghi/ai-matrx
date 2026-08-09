@@ -36,6 +36,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -555,6 +556,86 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * The WRITE half — what an agent may change on the topic workspace.
+ *
+ * The judgment line here is money. Framing a topic is exactly a research
+ * agent's job: the description IS the research question, keywords ARE the
+ * search plan, and both are authored text an agent drafts better and faster
+ * than a human typing into a form. Anything that SPENDS — kicking off a
+ * search, a scrape, an analysis pass, or the document assembly that this
+ * feature's own doctrine calls its most expensive operation — is deliberately
+ * NOT a target. An agent may shape what the pipeline would research; only a
+ * human starts it.
+ *
+ * Every target is `mode: "entity"`, because the topic workspace has no draft
+ * layer to stage into: the shell (`ResearchTopicShell`) wraps `TopicProvider`,
+ * whose store holds the SERVER's topic row and exposes only `setTopic` /
+ * `setProgress`. `TopicSettingsForm`'s local form state is one sub-route's
+ * private buffer, and an agent run launches from the header on ANY of the ~20
+ * sub-routes — a "staged" value the user cannot see from where they are
+ * standing is worse than no value. So these persist through the canonical
+ * service and every one of them is `applyPolicy: "ask"`: the write lands in
+ * the database the moment it is applied, so the user confirms first, in place.
+ *
+ * `add_keywords` additionally clears the feature's quota gate BEFORE it writes
+ * (`evaluateKeywordQuota`) — `max_keywords` and `max_keyword_syntheses` are
+ * hard backend caps, and a keyword written past one is silently never
+ * researched. The handler refuses with the shortfall spelled out rather than
+ * raising a paid cap on the user's behalf; raising it stays a human decision
+ * through `KeywordQuotaDialog` on the keywords page.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "topic_description",
+    label: "Topic description",
+    description:
+      "Set the topic's description — the research question that frames every downstream prompt. Value: a plain string that REPLACES the whole description (read topic_description first and include anything worth keeping); an empty string clears it. Persists immediately to research.rs_topic through updateTopicMeta.",
+    valueType: "string",
+    updatesValue: "topic_description",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "topic_identity",
+    sortOrder: 100,
+  },
+  {
+    name: "topic_name",
+    label: "Topic name",
+    description:
+      "Rename the research topic. Value: a non-empty plain string that replaces the current title. Persists immediately to research.rs_topic through updateTopicMeta. This is the topic's display title only — it does not change the research question (topic_description) or anything the pipeline has already produced.",
+    valueType: "string",
+    updatesValue: "topic_name",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "topic_identity",
+    sortOrder: 110,
+  },
+  {
+    name: "add_keywords",
+    label: "Add keywords",
+    description:
+      "ADD one or more search keywords to the topic. Value: an array of keyword strings, in priority order. Additive — it never removes or reorders existing keywords, so send only the NEW ones (read keyword_list / keyword_count first). Blank and duplicate entries are dropped. Each keyword is created immediately under the topic through the canonical addKeywords path and inherits the topic's organization and default search provider/params. Adding a keyword does NOT search it — the pipeline is still started by the user. REFUSED, with the shortfall named, when the resulting keyword count would exceed the topic's max_keywords or max_keyword_syntheses cap: past either one the pipeline silently never researches or never writes up the extra keywords, and raising a cap is the user's decision (check quota_headroom before proposing).",
+    valueType: "array",
+    updatesValue: "keyword_list",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "material",
+    sortOrder: 120,
+  },
+  {
+    name: "autonomy_level",
+    label: "Autonomy level",
+    description:
+      'Set how much of the pipeline runs without user intervention. Value: exactly one of "auto" (every stage chains end-to-end once a run starts), "semi" (pauses at key junctions — after search, after analysis — so the user can prune sources before the next stage), or "manual" (nothing advances without an explicit click). Persists immediately to research.rs_topic through updateTopic. This sets the POLICY for a future run; it never starts one.',
+    valueType: "string",
+    updatesValue: "autonomy_level",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "pipeline_state",
+    sortOrder: 130,
+  },
+];
+
 export const researchManifest: SurfaceManifest = {
   surfaceName: "matrx-user/research",
   readiness: "verified",
@@ -572,6 +653,7 @@ current_synthesis_text is the report the user is reading when a synthesis mount 
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One generated research document, as emitted in `synthesis_documents`. */

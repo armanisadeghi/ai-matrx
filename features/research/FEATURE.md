@@ -288,6 +288,35 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-09 — **The research surface is agent-WRITABLE.** `matrx-user/research`
+  declares four `writeTargets`, all `mode: "entity"` + `applyPolicy: "ask"`:
+  `topic_description` and `topic_name` (canonical `updateTopicMeta`),
+  `add_keywords` (canonical `addKeywords`), and `autonomy_level` (canonical
+  `updateTopic`, vocabulary read from `AUTONOMY_CONFIG` — never re-typed
+  literals). Handlers live in
+  `components/shell/ResearchTopicWriteTargets.tsx`, registered from inside
+  `TopicProvider` with `useSurfaceWriteHandlers` and refreshing through the
+  store's own `refresh`/`refreshProgress` — the same write path and the same
+  refresh path a user's click takes, whoever drove it. Entity mode because the
+  topic shell owns no draft state: `topicStore` holds the server's row, and an
+  agent run launches from the header on any of the ~20 sub-routes, so a value
+  staged into `TopicSettingsForm`'s private buffer would be invisible from
+  where the user is standing.
+  **Framing is a target; spending is not.** The description IS the research
+  question and keywords ARE the search plan, so an agent drafts both. Nothing
+  that costs money — search, scrape, analysis, or the document assembly this
+  feature calls its most expensive operation — is writable: an agent may shape
+  what the pipeline WOULD research, only a human starts it.
+  **`add_keywords` honors the quota gate** (Invariants, "Quota caps are real"):
+  it evaluates `evaluateKeywordQuota` against the topic's LIVE keyword list
+  before writing a row, dedupes against the existing keywords, and THROWS with
+  the shortfall named rather than raising a paid cap — raising one stays a
+  human decision through `KeywordQuotaDialog`. Live-verified on a real topic
+  (the agent added the one keyword that fit, then was refused at 3/3 and
+  reported the caps back accurately). Per-keyword `goal` is not accepted by
+  this target yet — a natural follow-up, since the agent generating a keyword
+  is the right author of its lens.
+
 - 2026-08-08 — **Headless company quick-research.**
   `hooks/useCompanyQuickResearch.ts` — one confirmed call does create topic
   (system Company Research template) → template keywords → `runPipeline`
