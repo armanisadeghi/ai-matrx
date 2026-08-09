@@ -79,6 +79,24 @@ async function fetchThumbnail(
   }
 }
 
+/**
+ * The ONE rule mapping a cache entry to what the UI shows. A pending retry is
+ * still "loading" — `error` is only surfaced once the attempts are spent, so a
+ * transient failure never flashes the failed state at the user.
+ */
+function viewOf(entry: CacheEntry | undefined | null): {
+  png: string | null;
+  loading: boolean;
+  error: string | null;
+} {
+  const exhausted = !!entry?.error && entry.attempts >= MAX_ATTEMPTS;
+  return {
+    png: entry?.png ?? null,
+    error: exhausted ? (entry?.error ?? null) : null,
+    loading: !entry?.png && !exhausted,
+  };
+}
+
 function startFetch(key: Key, fileId: string, pageId: string, dpi: number): CacheEntry {
   let entry = cacheGet(key);
   if (!entry) {
@@ -110,12 +128,16 @@ export function usePageThumbnail(
   const dpi = options?.dpi ?? 50;
   const enabled = options?.enabled ?? true;
   const key = fileId && pageId ? k(fileId, pageId, dpi) : null;
-  const initial = key ? cacheGet(key) : null;
-  const [png, setPng] = useState<string | null>(initial?.png ?? null);
+  // Mount state and the effect's sync MUST read the cache through the same
+  // rule (`viewOf`). When they disagreed, a row mounting during a retry
+  // backoff — cached error, attempts not yet exhausted — painted the
+  // "retry preview" button for a frame before the effect corrected it.
+  const initialView = viewOf(key ? cacheGet(key) : null);
+  const [png, setPng] = useState<string | null>(initialView.png);
   const [loading, setLoading] = useState<boolean>(
-    !!key && enabled && !initial?.png && !initial?.error,
+    !!key && enabled && initialView.loading,
   );
-  const [error, setError] = useState<string | null>(initial?.error ?? null);
+  const [error, setError] = useState<string | null>(initialView.error);
   const [nonce, setNonce] = useState(0);
 
   const retry = useCallback(() => {
@@ -135,11 +157,10 @@ export function usePageThumbnail(
 
     const sync = (entry: CacheEntry | undefined) => {
       if (cancelled) return;
-      setPng(entry?.png ?? null);
-      setError(entry?.error && entry.attempts >= MAX_ATTEMPTS ? entry.error : null);
-      setLoading(
-        !entry?.png && (!entry?.error || entry.attempts < MAX_ATTEMPTS),
-      );
+      const view = viewOf(entry);
+      setPng(view.png);
+      setError(view.error);
+      setLoading(view.loading);
     };
 
     const run = () => {

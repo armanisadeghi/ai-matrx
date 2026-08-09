@@ -436,6 +436,15 @@ export function PdfAnnotationLayer({
     [onDrawComplete, pageNumber, pending, edit, pxToPdf, onRegionUpdate],
   );
 
+  // A canceled pointer (touch interrupted by a system gesture, capture lost)
+  // never delivers a pointerup. Without this the edit session stayed live and
+  // the NEXT unrelated pointerup on the layer would commit `edit.curr` —
+  // persisting a bbox the user abandoned. Cancel discards, never writes.
+  const handlePointerCancel = useCallback(() => {
+    setEdit(null);
+    setPending(null);
+  }, []);
+
   const handleBackgroundClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       const target = e.target as HTMLElement;
@@ -482,6 +491,7 @@ export function PdfAnnotationLayer({
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
       onClick={handleBackgroundClick}
     >
       {pageRegions.map((region) => {
