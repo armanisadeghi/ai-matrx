@@ -149,7 +149,11 @@ internal platform use — never a washed-down user variant beside a private one:
   agent-writable adopters: `matrx-user/marketing-page`,
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
-  `TaskEditorBody.tsx`).
+  `TaskEditorBody.tsx`), and `matrx-user/agent-builder` (4 draft targets —
+  `system_instruction` via `setAgentMessages`, `agent_name` /
+  `agent_description` / `agent_tags` via `setAgentField`, handlers in
+  `features/agents/hooks/useAgentBuilderWriteHandlers.ts`, mounted by
+  `AgentBuilderClient`).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -310,6 +314,8 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
 
 ## Change Log
+
+- **2026-08-09 — Agent-builder surface agent-writable.** `matrx-user/agent-builder` declares 4 ask-policy `draft` targets: `system_instruction` (rebuilds the system message through `setAgentMessages`, non-text blocks round-tripped, full-replacement contract that tells the agent to READ the current instruction first), plus `agent_name` / `agent_description` / `agent_tags` through `setAgentField` — the same slice actions the user's own typing dispatches. Handlers live in the new `features/agents/hooks/useAgentBuilderWriteHandlers.ts`, registered on BOTH `SurfaceRuntimeProvider` mounts in `AgentBuilderClient` (desktop + mobile). Deliberately excluded: identity/ownership, `is_public`/`is_archived`/`access_level`, version lineage, and `agent_category` (single-select catalog facet with no vocabulary constant and no read value listing valid options — an agent could only guess). NOTE: the builder has NO DB autosave (`useAgentAutoSave` is a localStorage crash backup), so every target stages into the draft and the user still presses Save (`saveAgent`). Live-verified end to end with Badass Agent on `/agents/[id]/build`: per-target ask dialogs carrying the manifest prose, 3 targets applied in one run, agent preserved a token it was told to keep (proving the read-then-replace contract lands), Save persisted to `agent.definition` (version 1→2), "Keep as is" returned `{ok:false, declined:true}` and the agent acknowledged gracefully, an undeclared field (visibility/access level) was refused, Error Inspector showed zero `surface-writeback` captures, `pnpm check:surface-drift` + `pnpm type-check` clean.
 
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 

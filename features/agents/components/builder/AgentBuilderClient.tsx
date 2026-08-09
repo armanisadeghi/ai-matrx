@@ -7,6 +7,7 @@ import { selectAgentReadyForBuilder } from "@/features/agents/redux/agent-defini
 import { useAgentAutoSave } from "@/features/agents/hooks/useAgentAutoSave";
 import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
 import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
+import { useAgentBuilderWriteHandlers } from "@/features/agents/hooks/useAgentBuilderWriteHandlers";
 import { AGENT_BUILDER_CONTEXT_MENU_PROPS } from "@/features/agents/agent-context/buildAgentBuilderContextData";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -38,6 +39,7 @@ export function AgentBuilderClient({
     selectAgentReadyForBuilder(state, agentId),
   );
   const getAgentBuilderScope = useAgentBuilderSurfaceScope(agentId);
+  const getAgentBuilderWriteHandlers = useAgentBuilderWriteHandlers(agentId);
 
   useEffect(() => {
     setMounted(true);
@@ -56,6 +58,7 @@ export function AgentBuilderClient({
         surfaceName={AGENT_BUILDER_CONTEXT_MENU_PROPS.surfaceName}
         getScope={getAgentBuilderScope}
         isEditable
+        getWriteHandlers={getAgentBuilderWriteHandlers}
       >
         <AgentBuilderMobile agentId={agentId} />
       </SurfaceRuntimeProvider>
@@ -67,6 +70,7 @@ export function AgentBuilderClient({
       surfaceName={AGENT_BUILDER_CONTEXT_MENU_PROPS.surfaceName}
       getScope={getAgentBuilderScope}
       isEditable
+      getWriteHandlers={getAgentBuilderWriteHandlers}
     >
       <DebugSessionActivator />
       {desktopContent}

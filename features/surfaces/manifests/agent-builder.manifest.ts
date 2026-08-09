@@ -30,6 +30,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -588,6 +589,80 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — the authored-content fields of the agent
+ * definition an agent may draft for the user.
+ *
+ * Every target is `mode: "draft"`: it dispatches the SAME Redux action the
+ * user's own typing dispatches (`setAgentField` / `setAgentMessages`), so the
+ * value lands in the builder's editor state, marks the record dirty, shows up
+ * in the save pill, and is undoable through the builder's own undo history.
+ * NOTHING here reaches the database on its own — the builder has no DB
+ * autosave (`useAgentAutoSave` is a localStorage crash backup), so the user
+ * still presses Save, which persists through `saveAgent`.
+ *
+ * All targets are `applyPolicy: "ask"` — an agent definition is the user's
+ * authored artifact, so each agent-originated change is confirmed in place.
+ *
+ * Deliberately NOT writable: identity/ownership (`agent_id`, owner), sharing
+ * and permission fields (`agent_is_public`, `agent_is_archived`,
+ * `agent_access_level`), version lineage, and `agent_category` — category is
+ * a single-select catalog facet with no vocabulary constant and no read value
+ * listing the valid options, so an agent could only guess and fragment the
+ * catalog. Handlers are registered by `AgentBuilderClient` (desktop + mobile)
+ * via `useAgentBuilderWriteHandlers`.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "agent_name",
+    label: "Agent name",
+    description:
+      "Stages a new name for the agent being edited into the builder's draft. Plain non-empty string, no markdown, ideally under 60 characters. The user still presses Save.",
+    valueType: "string",
+    updatesValue: "agent_name",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "agent_identity",
+    sortOrder: 310,
+  },
+  {
+    name: "agent_description",
+    label: "Agent description",
+    description:
+      "Stages a FULL replacement description into the builder's draft — the catalog blurb explaining what this agent does. Plain text (markdown-friendly), typically 1-3 sentences. Replaces the existing description entirely: read `agent_description` first and carry over anything worth keeping. The user still presses Save.",
+    valueType: "string",
+    updatesValue: "agent_description",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "agent_identity",
+    sortOrder: 320,
+  },
+  {
+    name: "agent_tags",
+    label: "Agent tags",
+    description:
+      "Stages the FULL tag set into the builder's draft (replaces, not appends — read `agent_tags` and include every existing tag you want kept). Array of short plain-text strings; free vocabulary, no fixed list. Pass an empty array to clear all tags. The user still presses Save.",
+    valueType: "array",
+    updatesValue: "agent_tags",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "agent_identity",
+    sortOrder: 335,
+  },
+  {
+    name: "system_instruction",
+    label: "System instruction",
+    description:
+      "Stages a FULL replacement of the agent's system instruction text into the builder's draft — this is the whole system prompt, not an append. READ `system_instruction` FIRST and include every part of the current instruction you intend to keep; anything you leave out is gone from the draft. Plain string (markdown-friendly); may contain `{{variable}}` placeholders, which are preserved verbatim. Non-text blocks attached to the system message (files, images) are round-tripped untouched. The user still presses Save.",
+    valueType: "string",
+    updatesValue: "system_instruction",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "agent_definition",
+    sortOrder: 340,
+  },
+];
+
 export const agentBuilderManifest: SurfaceManifest = {
   surfaceName: "matrx-user/agent-builder",
   readiness: "verified",
@@ -619,6 +694,7 @@ lives on the separate Agent Run surface.
     pickBaseline("selection", "text_before", "text_after", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 export function createAgentBuilderScope(values: {
