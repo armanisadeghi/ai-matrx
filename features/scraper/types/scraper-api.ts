@@ -8,10 +8,12 @@
  * - POST /api/scraper/search-and-scrape-limited - Search and scrape (limited)
  * - POST /api/scraper/mic-check - Test endpoint
  *
- * Authentication:
- * All scraper requests require ONE of:
- * - Authorization header (Bearer token) - for authenticated users
- * - X-Fingerprint-ID header - for guest users (FingerprintJS visitor ID)
+ * Authentication: a REAL signed-in user. aidream mounts the whole `/scraper`
+ * router under `Depends(require_authenticated)` (aidream/api/app.py), so a
+ * guest fingerprint — either header spelling — gets `401 token_required`.
+ * Guests are NOT supported here despite what this comment used to claim;
+ * the public `/seo/*` analyzers hit that 401 today (FOUND_DEFECTS D137).
+ * Guest-friendly SEO work belongs on aidream's `/seo/public` router.
  */
 
 // ============================================================================
