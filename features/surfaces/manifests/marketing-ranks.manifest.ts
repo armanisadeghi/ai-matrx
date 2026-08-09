@@ -24,6 +24,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -201,6 +202,46 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may WRITE into the rank
+ * portfolio. Both targets are `mode: "entity"` because the portfolio has no
+ * draft layer: the Track form and the Active switch persist immediately
+ * through aidream, and these targets ride the SAME `usePortfolio` paths
+ * (`addTarget` / `updateTarget` — never a parallel write). Both are
+ * `applyPolicy: "ask"` — tracked keywords cost real provider checks on a
+ * cadence, so every agent-originated change is confirmed in place. Removal is
+ * deliberately NOT a target: `removeTarget` deletes the row and its history
+ * (delete stays human); pausing via `set_tracking_active` is the
+ * non-destructive alternative. Handlers are registered by
+ * `RanksWorkspace.tsx` on its SurfaceRuntimeProvider.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "track_keywords",
+    label: "Track keywords",
+    description:
+      "Adds tracked rank targets to this site's portfolio immediately, through the same canonical add path as the Track form (aidream resolves keyword identity server-side). Value is an array of { keyword: string, mode: string, location_name?: string, cadence_days?: number } — mode is a tracking_modes id: google_national | google_location | google_local_pack | brave | ai_chat_gpt | ai_perplexity | ai_gemini | ai_claude. For ai_* modes, keyword is the PROMPT to track. google_location and google_local_pack REQUIRE location_name (e.g. \"Los Angeles, California, United States\"); the ai_* modes take an optional city; google_national and brave ignore location. cadence_days is 1-90 (default 7). Appends to the portfolio — never re-add rows already in rank_portfolio.",
+    valueType: "array",
+    updatesValue: "rank_portfolio",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "rank_portfolio",
+    sortOrder: 340,
+  },
+  {
+    name: "set_tracking_active",
+    label: "Tracking active",
+    description:
+      "Pauses or resumes tracking for existing portfolio rows — the same canonical path as each row's Active switch. Non-destructive: position history is kept and a paused target can be resumed. Value is { target_ids: string[], is_active: boolean } where every id must be a target_id from rank_portfolio.",
+    valueType: "object",
+    updatesValue: "rank_portfolio",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "rank_portfolio",
+    sortOrder: 350,
+  },
+];
+
 export const marketingRanksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-ranks",
   readiness: "verified",
@@ -219,6 +260,7 @@ The user works here on visibility: choosing what to track, reading movement, and
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
   agentRoles: [
     {
       name: "rank_analyst",

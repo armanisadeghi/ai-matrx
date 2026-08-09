@@ -124,8 +124,11 @@ internal platform use — never a washed-down user variant beside a private one:
   surface-bound agents as a `<surface_write_targets>` block. Live adopters:
   `matrx-user/marketing-page` (`page_meta_tags`, `page_target_keyword`,
   `page_supporting_keywords` — handlers in
-  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`) and
-  `matrx-user/keyword-intelligence` (`keyword_selection`). The LSI kind
+  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`),
+  `matrx-user/keyword-intelligence` (`keyword_selection`, `open_keyword`),
+  `matrx-user/tasks` (8 targets, `TaskEditorBody.tsx`), and
+  `matrx-user/marketing-ranks` (`track_keywords`, `set_tracking_active` —
+  handlers on `RanksWorkspace.tsx`'s provider). The LSI kind
   components (`meta_tag_options` / `keyword_relationship_research` /
   `keyword_search_metrics`, DB components) call
   `runAction("apply_surface_write", …)` — same seam users' agent-authored
@@ -310,6 +313,8 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
 
 ## Change Log
+
+- **2026-08-09 — Marketing Ranks agent-writable + Keyword Intelligence `open_keyword`.** `matrx-user/marketing-ranks` declares 2 ask-policy entity targets (`track_keywords` — batch add through the SAME `usePortfolio().addTarget` aidream path as the Track form, mode ids validated against `TRACKING_MODES` with per-mode location rules; `set_tracking_active` — non-destructive pause/resume via `updateTarget`, the Active switch's path; delete stays human); handlers on `RanksWorkspace.tsx`'s provider. `matrx-user/keyword-intelligence` gained `open_keyword` (ui/ask — navigates the window through the canonical related-keyword path, recording window history; handler on `KeywordIntelPanel`'s provider). Live-verified with real Badass Agent runs on `/marketing/.../ranks`: ask dialog per target, applied add landed in `seo.rank_target`, pause flipped exactly the named row, decline returned a non-error envelope, undeclared delete refused. DB mirror rows added to `ui.ui_surface_write_target`.
 
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 
