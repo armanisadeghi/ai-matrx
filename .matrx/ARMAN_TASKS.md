@@ -9,6 +9,38 @@ _Last updated: 2026-07-22_
 
 ## Active (ranked — quickest wins first)
 
+### 0a. Decide: should `EntityDoorControls` be VISIBLE by default? (seconds — a decision)
+
+**Evidence, all from one session (2026-08-09):** the No Dead Ends sweep shipped
+an invisible door **three times**, in the campaign whose entire subject is doors
+that do not open. Each time: markup right, `pnpm type-check` green, ESLint
+green, and the user simply cannot see the control. Bugbot caught all three; no
+static check can.
+
+Cause: the controls render at `opacity-0` and fade in on hover of an ancestor
+`group` class. Miss the class and the door is invisible. I already widened the
+primitive to accept a plain Tailwind `group` as well as the named
+`group/entity-ref` (`2118fda9`) — the third instance still slipped through,
+because that row had **no** group class at all.
+
+**The call:** should a standalone `<EntityDoorControls>` default to visible,
+with hover-reveal becoming the opt-in?
+
+- **For:** forgetting then produces a slightly noisier surface instead of a
+  dead end. Given the doctrine ("a door the user cannot reach is a defect"),
+  failing loud is the right direction.
+- **Against:** ~10 dense table/list surfaces currently rely on hover-reveal to
+  stay clean. Flipping the default changes how they look.
+- **Safe path if you say yes:** `EntityRef` (the majority path, which supplies
+  its own group) keeps passing hover-reveal explicitly, so only the standalone
+  callers change.
+
+**Why this is yours and not an agent's:** it is a visual density change across
+many surfaces, and **no agent on this campaign can load a page** to see the
+result (network policy blocks the app). I fixed each instance by hand rather
+than gamble the default. Say "visible by default" or "leave it" and an agent
+executes.
+
 0. **Deploy aidream to prod** (`bash scripts/release.sh` in aidream) — everything from the 2026-07-15 Content IR sweep (envelope producer, typed agent projections, enforcement machinery OFF, tool/action stamping) is on `main` but inert until deployed. The agent's session couldn't run it (permission classifier). After deploy: agents read the `tool_io` drift logs and bring you the evidence for the tools-first enforcement flip you ratified. Also still pending post-soak: drop `content_ir._backup_kind_example_20260715` + `_backup_kind_surface_20260715` (+ the two `matrx_orm.yaml` exclude lines).
    _Already ratified 2026-07-15 (recorded here for the log): tools-first flips after drift evidence; `table` stays markdown-first with click-to-convert (pattern being documented); every kind gets an example; 7 candidates being registered non-breaking; the 6 gated roots stay inactive (test kinds); integration-first is the priority._
 

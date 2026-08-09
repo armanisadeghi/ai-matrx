@@ -280,6 +280,12 @@ function ConflictRow({
                 token="file"
                 id={existing.id}
                 name={existing.fileName}
+                // Pinned visible, not hover-revealed. This row has no `group`
+                // wrapper, so the default would render the doors at opacity-0 —
+                // and a dialog is the wrong place for hover-reveal anyway: the
+                // user is being ASKED a question and the affordance that
+                // answers it must be on screen when the question is.
+                alwaysShowActions
               />
             ) : null}
           </div>
