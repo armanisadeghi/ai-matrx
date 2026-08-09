@@ -27,6 +27,7 @@ function row(overrides: Partial<ShapeDefinitionRowLite>): ShapeDefinitionRowLite
     label: "Flashcard Set",
     created_by: null,
     is_active: true,
+    is_contract_artifact: false,
     visibility: "public",
     metadata: {},
     version: 1,
@@ -56,19 +57,33 @@ describe("buildShapeStudioList", () => {
     });
   });
 
-  it("excludes generated machine-contract families (agent_io / tool_io / action_io / workflow_io)", () => {
+  it("excludes contract-artifact rows but keeps human-named workflow_io shapes", () => {
     const entries = buildShapeStudioList(
       [
-        row({ id: "1", kind: "a_out", label: "A", metadata: { family: "agent_io" } }),
-        row({ id: "2", kind: "t_out", label: "T", metadata: { family: "tool_io" } }),
-        row({ id: "3", kind: "w_out", label: "W", metadata: { family: "workflow_io" } }),
-        row({ id: "4", kind: "act", label: "Act", metadata: { family: "action_io" } }),
+        // Machine-minted contract bookkeeping rows — hidden regardless of family.
+        row({
+          id: "1",
+          kind: "agent_io_x_deadbeef_output",
+          label: "A output",
+          is_contract_artifact: true,
+          metadata: { family: "agent_io" },
+        }),
+        row({
+          id: "2",
+          kind: "tool_io_y_deadbeef_output",
+          label: "T output",
+          is_contract_artifact: true,
+          metadata: { family: "tool_io" },
+        }),
+        // Human-named shapes in the workflow_io family ARE browsable
+        // (named-shapes campaign 2026-08-09).
+        row({ id: "3", kind: "agent_result", label: "Agent Result", metadata: { family: "workflow_io" } }),
         row({ id: "5", kind: "flash", label: "Flash", metadata: { family: "render_block" } }),
         row({ id: "6", kind: "plain", label: "Plain", metadata: {} }),
       ],
       new Set(),
     );
-    expect(entries.map((e) => e.kind).sort()).toEqual(["flash", "plain"]);
+    expect(entries.map((e) => e.kind).sort()).toEqual(["agent_result", "flash", "plain"]);
   });
 
   it("treats non-object / familyless metadata as family: null", () => {

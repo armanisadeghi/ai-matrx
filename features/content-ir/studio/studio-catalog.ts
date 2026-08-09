@@ -16,7 +16,6 @@
  */
 
 import type { Json } from "@/types/database.types";
-import { GENERATED_CONTRACT_FAMILY_VALUES } from "../registry/schema-source-kind-tables";
 
 export interface ShapeListEntry {
   id: string;
@@ -47,6 +46,8 @@ export interface ShapeDefinitionRowLite {
   label: string;
   created_by: string | null;
   is_active: boolean;
+  /** Machine-minted I/O contract bookkeeping row — never a browsable shape. */
+  is_contract_artifact: boolean;
   visibility: string;
   metadata: Json;
   version: number;
@@ -67,19 +68,18 @@ function familyOf(metadata: Json): string | null {
 
 /**
  * Pure merge: definition rows + active-component definition ids → entries.
- * Machine-contract kinds (`metadata.family` in agent_io / tool_io / action_io /
- * workflow_io) are EXCLUDED — they are generated I/O contracts, not shapes a
- * user browses, previews, or tests.
+ * Machine-minted contract rows (`is_contract_artifact`, the first-class DB
+ * flag) are EXCLUDED — they are generated I/O bookkeeping, not shapes a user
+ * browses, previews, or tests. Human-named kinds in the workflow_io family
+ * (agent_result, scraped_page, json, …) ARE browsable shapes — the old
+ * family-based heuristic wrongly hid them and is gone.
  */
 export function buildShapeStudioList(
   defs: ShapeDefinitionRowLite[],
   activeComponentDefinitionIds: ReadonlySet<string>,
 ): ShapeListEntry[] {
   return defs
-    .filter((d) => {
-      const family = familyOf(d.metadata);
-      return family === null || !GENERATED_CONTRACT_FAMILY_VALUES.has(family);
-    })
+    .filter((d) => !d.is_contract_artifact)
     .map(
       (d): ShapeListEntry => ({
         id: d.id,
@@ -126,8 +126,13 @@ export async function listShapesForUser(): Promise<ShapeListEntry[]> {
     supabase
       .schema("content_ir")
       .from("kind_definition")
-      .select("id,kind,label,created_by,is_active,visibility,metadata,version,updated_at")
-      .is("deleted_at", null),
+      .select(
+        "id,kind,label,created_by,is_active,is_contract_artifact,visibility,metadata,version,updated_at",
+      )
+      .is("deleted_at", null)
+      // Machine-minted I/O contract bookkeeping rows (tool_io_*_<hash8>_*)
+      // never reach the shape gallery — real, human-named shapes only.
+      .eq("is_contract_artifact", false),
     supabase
       .schema("content_ir")
       .from("kind_component")
