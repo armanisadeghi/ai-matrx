@@ -11,6 +11,10 @@ import { Copy, Info } from "lucide-react";
 import { toast } from "@/lib/toast";
 import type { Json } from "@/types/database.types";
 import type { StoredFieldElement } from "@/features/content-ir/registry/kind-storage-transform";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 interface FieldRow {
   name: string;
@@ -118,7 +122,7 @@ export default function KindSchemaTab({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className={cn("text-sm", MOBILE_TABLE_FROZEN)}>
               <thead>
                 <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                   <th className="px-3 py-1.5 font-medium">Field</th>

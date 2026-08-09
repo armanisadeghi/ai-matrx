@@ -16,6 +16,10 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import { extractErrorMessage } from "@/utils/errors";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 const SCHEDULE_STATUS_PATH = "/seo/sites/{site_id}/schedule-status";
 
@@ -121,7 +125,7 @@ export function ScheduleStatusPanel({ siteId }: { siteId: string }) {
         ) : null}
         {data ? (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] text-xs">
+            <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
               <thead>
                 <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
                   <th className="py-1.5 pr-3 font-medium">Provider</th>

@@ -8,6 +8,12 @@
 import { cn } from "@/lib/utils";
 import type { CleanupReport } from "@/lib/content-cleanup/types";
 import { buildCleanupDebugXml } from "@/lib/content-cleanup/debug";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_CELL,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+} from "@/components/official/mobile-table/mobileTable";
 
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -48,19 +54,19 @@ export function CleanupDebugPanel({
       </div>
 
       <div className="overflow-hidden rounded-md border border-border">
-        <table className="w-full text-xs">
+        <table className={cn("text-xs", MOBILE_TABLE)}>
           <thead>
             <tr className="border-b border-border bg-muted/40 text-left text-[0.625rem] uppercase tracking-wide text-muted-foreground">
-              <th className="px-2 py-1 font-medium">Operation</th>
-              <th className="px-2 py-1 font-medium">State</th>
-              <th className="px-2 py-1 text-right font-medium">Edits</th>
+              <th className={cn("px-2 py-1 font-medium", MOBILE_TABLE_FROZEN_HEAD)}>Operation</th>
+              <th className={cn("px-2 py-1 font-medium", MOBILE_TABLE_CELL)}>State</th>
+              <th className={cn("px-2 py-1 text-right font-medium", MOBILE_TABLE_CELL)}>Edits</th>
             </tr>
           </thead>
           <tbody>
             {report.operations.map((op) => (
               <tr key={op.id} className="border-b border-border/50 last:border-0">
-                <td className="px-2 py-1 text-foreground">{op.label}</td>
-                <td className="px-2 py-1">
+                <td className={cn("px-2 py-1 text-foreground", MOBILE_TABLE_FROZEN_CELL)}>{op.label}</td>
+                <td className={cn("px-2 py-1", MOBILE_TABLE_CELL)}>
                   <span
                     className={cn(
                       "rounded px-1 py-px text-[0.5625rem] font-medium",
@@ -72,7 +78,7 @@ export function CleanupDebugPanel({
                     {op.enabled ? "on" : "off"}
                   </span>
                 </td>
-                <td className="px-2 py-1 text-right font-mono tabular-nums text-muted-foreground">
+                <td className={cn("px-2 py-1 text-right font-mono tabular-nums text-muted-foreground", MOBILE_TABLE_CELL)}>
                   {op.changes}
                 </td>
               </tr>
