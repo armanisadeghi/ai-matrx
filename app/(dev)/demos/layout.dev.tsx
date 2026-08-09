@@ -22,6 +22,7 @@ export default async function DemosLayout({
       <div
         className="h-full min-h-0"
         data-demo-content=""
+        style={{ paddingTop: "var(--shell-header-h)" }}
       >
         {children}
       </div>
