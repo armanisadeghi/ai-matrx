@@ -173,6 +173,18 @@ Ordered by traffic. Each item is independently actionable.
    **In flight:** `lib/entity-list/` shell, `/agents/all` columns, `/chat`
    history sidebar, `/rag/library`, `/war-room/all`, `/lists`, `/files`,
    `/tasks`, `/projects`, `/marketing/{brands,sites,pages}`.
+
+   ⚠️ **"In flight" here is UNVERIFIED per-surface — treat it as a to-check
+   list, not a to-do list.** The aidream item's "remaining" list turned out to
+   name three things that were already done (see item 6), so this one gets the
+   same warning. Spot-checked 2026-08-09: `/tasks`, `/projects` and
+   `/war-room` DO carry `EntityRef`; `LibraryDocDetailSheet` carries 8 door
+   references; `/lists` did NOT and is now fixed (see the route-literal section
+   — its name was a `<span>` and its only door 404'd). `features/rag/components/
+   library/*` and `features/files/components/*` show no `EntityRef` import at
+   all, but that is not proof of a defect — `ChunkList` renders chunk text, not
+   record names. **Confirm the surface actually names a record before treating
+   a missing import as a finding.**
    The agent-adjacent card/panel surfaces named here are DONE — see the
    agent-adjacent entry under **Done**. The `MatrxColumnDef` files under
    `features/marketing/**` are DONE too — see the marketing-tables entry.
