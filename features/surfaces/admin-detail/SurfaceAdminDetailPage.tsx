@@ -1206,7 +1206,7 @@ function HierarchySection({
                         <td className="px-2 py-1.5 font-mono align-middle">
                           <Link
                             href={surfaceAdminHref(child.name)}
-                            className="text-foreground hover:text-primary hover:underline truncate block max-w-[280px]"
+                            className="text-foreground hover:text-primary hover:underline sm:truncate block sm:max-w-[280px]"
                             title={child.name}
                           >
                             {child.name}
@@ -1215,7 +1215,7 @@ function HierarchySection({
                         <td className="px-2 py-1.5 text-muted-foreground align-middle">
                           {child.client_name}
                         </td>
-                        <td className="px-2 py-1.5 text-muted-foreground align-middle hidden sm:table-cell max-w-[200px] truncate">
+                        <td className="px-2 py-1.5 text-muted-foreground align-middle hidden sm:table-cell sm:max-w-[200px] sm:truncate">
                           {child.description ?? "—"}
                         </td>
                         <td className="px-2 py-1.5 text-right align-middle">

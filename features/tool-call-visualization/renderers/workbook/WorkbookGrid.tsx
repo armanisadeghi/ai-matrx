@@ -55,7 +55,7 @@ export function WorkbookGrid({
                   <td
                     key={ci}
                     className={cn(
-                      "max-w-[220px] truncate whitespace-nowrap border border-border px-2 py-1 text-foreground",
+                      "sm:max-w-[220px] sm:truncate whitespace-nowrap border border-border px-2 py-1 text-foreground",
                       ci === 0 &&
                         "max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:bg-card",
                     )}

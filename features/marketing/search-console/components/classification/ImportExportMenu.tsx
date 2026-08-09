@@ -483,7 +483,7 @@ export function ImportExportMenu({
                   };
                   return (
                     <tr key={`${row.query}-${index}`} className="border-t border-border">
-                      <td className="max-w-64 truncate px-2 py-1" title={row.query}>
+                      <td className="sm:max-w-64 sm:truncate px-2 py-1" title={row.query}>
                         {row.query}
                       </td>
                       <td className={cn("px-2 py-1", meta.tone)}>{meta.label}</td>

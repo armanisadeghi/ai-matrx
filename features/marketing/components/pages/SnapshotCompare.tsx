@@ -21,7 +21,9 @@ import { parseStoredSeoMetrics } from "@/features/marketing/seo/serp/metrics";
 import type { PageSnapshot } from "@/features/marketing/types";
 import { cn } from "@/lib/utils";
 import {
-  MOBILE_TABLE_FROZEN,
+  MOBILE_TABLE,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
 
 interface CompareField {
@@ -222,10 +224,10 @@ export function SnapshotCompare({
       anchor="snapshot_compare"
     >
       <div className="overflow-x-auto">
-        <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
+        <table className={cn("text-xs", MOBILE_TABLE)}>
           <thead>
             <tr className="border-b border-border text-left">
-              <th className="px-3 py-2 font-semibold uppercase tracking-wide text-[10px] text-muted-foreground">
+              <th className={cn("px-3 py-2 font-semibold uppercase tracking-wide text-[10px] text-muted-foreground", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[7rem]")}>
                 Field
               </th>
               <th className="px-3 py-2 font-semibold uppercase tracking-wide text-[10px] text-muted-foreground">
@@ -248,6 +250,8 @@ export function SnapshotCompare({
                 <td
                   className={cn(
                     "whitespace-nowrap px-3 py-1.5 font-medium",
+                    MOBILE_TABLE_FROZEN_CELL,
+                    "max-sm:min-w-[7rem]",
                     field.changed
                       ? "text-amber-600 dark:text-amber-400"
                       : "text-muted-foreground",
@@ -257,7 +261,7 @@ export function SnapshotCompare({
                 </td>
                 <td
                   className={cn(
-                    "max-w-xs break-words px-3 py-1.5",
+                    "break-words px-3 py-1.5 max-sm:min-w-[9rem] sm:max-w-xs",
                     field.changed
                       ? "text-foreground"
                       : "text-muted-foreground",
@@ -267,7 +271,7 @@ export function SnapshotCompare({
                 </td>
                 <td
                   className={cn(
-                    "max-w-xs break-words px-3 py-1.5",
+                    "break-words px-3 py-1.5 max-sm:min-w-[9rem] sm:max-w-xs",
                     field.changed
                       ? "font-medium text-amber-600 dark:text-amber-400"
                       : "text-muted-foreground",

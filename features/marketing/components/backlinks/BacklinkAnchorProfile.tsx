@@ -218,7 +218,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
                     key={item.anchor}
                     className="border-b border-border/60 last:border-b-0"
                   >
-                    <td className="max-w-md truncate py-1.5 pr-3 text-foreground">
+                    <td className="sm:max-w-md sm:truncate py-1.5 pr-3 text-foreground">
                       {item.anchor}
                     </td>
                     <td className="py-1.5 pr-3 text-right tabular-nums text-foreground">
@@ -253,7 +253,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
                       key={row.anchor ?? "(empty)"}
                       className="border-b border-border/60 last:border-b-0"
                     >
-                      <td className="max-w-md truncate py-1 pr-3 text-foreground">
+                      <td className="sm:max-w-md sm:truncate py-1 pr-3 text-foreground">
                         {row.anchor || "(no anchor text)"}
                       </td>
                       <td className="py-1 text-right tabular-nums text-muted-foreground">

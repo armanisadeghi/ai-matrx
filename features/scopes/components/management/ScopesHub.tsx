@@ -367,7 +367,7 @@ function ScopeTypeTable({
                 {columns.map((item) => (
                   <th
                     key={item.id}
-                    className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground/75 whitespace-nowrap max-w-[16rem] truncate"
+                    className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground/75 whitespace-nowrap sm:max-w-[16rem] sm:truncate"
                     title={item.description || item.display_name}
                   >
                     {item.display_name}

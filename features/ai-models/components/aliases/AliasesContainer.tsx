@@ -365,7 +365,7 @@ export default function AliasesContainer() {
                     </Badge>
                   </td>
                   <td className="px-3 py-1.5">{modelLabel(row.model_id)}</td>
-                  <td className="max-w-64 truncate px-3 py-1.5 text-muted-foreground">
+                  <td className="sm:max-w-64 sm:truncate px-3 py-1.5 text-muted-foreground">
                     {row.notes ?? ""}
                   </td>
                   <td className="px-3 py-1.5 text-right">
