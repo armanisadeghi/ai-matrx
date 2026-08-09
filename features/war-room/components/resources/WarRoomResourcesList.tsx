@@ -9,6 +9,7 @@
 
 import { useState, type ReactNode } from "react";
 import {
+  AlertTriangle,
   Check,
   Copy,
   ExternalLink,
@@ -152,7 +153,7 @@ export function WarRoomResourcesList({
     : adapter.rows;
   const visibleRows = rows.filter((r) => !removingKeys.has(r.key));
 
-  const { titleFor } = useEntityTitles(
+  const { titleFor, isUnresolved } = useEntityTitles(
     visibleRows.map((r) => ({
       token: r.token,
       id: r.resourceId,
@@ -388,11 +389,13 @@ export function WarRoomResourcesList({
                       <ul className="flex flex-col gap-2">
                         {tokenRows.map((row) => {
                           const busy = removingKeys.has(row.key);
-                          const title = titleFor({
+                          const titleRef = {
                             token: row.token,
                             id: row.resourceId,
                             label: labelFor(row),
-                          });
+                          };
+                          const title = titleFor(titleRef);
+                          const unresolved = isUnresolved(titleRef);
                           const idPrefix = (
                             <ResourceIdCopy id={row.resourceId} />
                           );
@@ -453,6 +456,7 @@ export function WarRoomResourcesList({
                                   token={row.token}
                                   resourceId={row.resourceId}
                                   title={title}
+                                  unresolved={unresolved}
                                   originNote={row.originNote}
                                   idPrefix={idPrefix}
                                   menu={menu}
@@ -597,11 +601,14 @@ function DefaultResourceRow({
   originNote,
   idPrefix,
   menu,
+  unresolved,
   busy,
 }: {
   token: string;
   resourceId: string;
   title: string;
+  /** The edge survives but its target doesn't resolve for this viewer. */
+  unresolved?: boolean;
   originNote?: string | null;
   idPrefix: ReactNode;
   menu: ReactNode;
@@ -615,13 +622,27 @@ function DefaultResourceRow({
       )}
     >
       <div className="min-w-0 flex-1">
-        <EntityRef
-          token={token}
-          id={resourceId}
-          name={title}
-          showIcon={false}
-          className="text-sm text-foreground"
-        />
+        {unresolved ? (
+          // The edge survives but its target does not resolve for this viewer
+          // (deleted, or no longer shared). Say it — rendering a door onto a
+          // record we could not read is the dead end this campaign exists to
+          // stop. The row menu's detach is the fix.
+          <span
+            className="inline-flex min-w-0 items-center gap-1 truncate text-sm text-destructive"
+            title="This item was deleted or is no longer shared with you. Detach it from the row menu."
+          >
+            <AlertTriangle className="h-3 w-3 shrink-0" />
+            Unresolved — deleted or no longer shared
+          </span>
+        ) : (
+          <EntityRef
+            token={token}
+            id={resourceId}
+            name={title}
+            showIcon={false}
+            className="text-sm text-foreground"
+          />
+        )}
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
           {idPrefix}
           {originNote ? (

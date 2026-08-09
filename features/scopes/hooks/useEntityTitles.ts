@@ -83,24 +83,36 @@ export function useEntityTitles(refs: EntityTitleRef[]): UseEntityTitlesReturn {
         const titles = await fetchEntityTitles(token, ids);
         return [token, titles] as const;
       }),
-    ).then((results) => {
-      if (cancelled) return;
-      setResolved((prev) => {
-        const next = { ...prev };
-        for (const [token, titles] of results) {
-          for (const [id, title] of titles) {
-            next[entityTitleCacheKey(token, id)] = title;
+    )
+      .then((results) => {
+        if (cancelled) return;
+        setResolved((prev) => {
+          const next = { ...prev };
+          for (const [token, titles] of results) {
+            for (const [id, title] of titles) {
+              next[entityTitleCacheKey(token, id)] = title;
+            }
           }
-        }
-        return next;
+          return next;
+        });
+      })
+      .catch((err) => {
+        // A FAILED lookup must still mark the refs attempted, or `loading`
+        // sticks on forever and `isUnresolved` stays false — the surface would
+        // then show fallback titles with working-looking doors and never admit
+        // it couldn't read them. Loud recovery: this is a real failure.
+        if (cancelled) return;
+        console.error("Failed to resolve entity titles", err);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setAttempted((prev) => {
+          const next = { ...prev };
+          for (const key of neededKey.split("|")) next[key] = true;
+          return next;
+        });
+        setLoading(false);
       });
-      setAttempted((prev) => {
-        const next = { ...prev };
-        for (const key of neededKey.split("|")) next[key] = true;
-        return next;
-      });
-      setLoading(false);
-    });
 
     return () => {
       cancelled = true;
@@ -118,11 +130,20 @@ export function useEntityTitles(refs: EntityTitleRef[]): UseEntityTitlesReturn {
   };
 
   const isUnresolved = (ref: EntityTitleRef): boolean => {
-    if (ref.label && ref.label.trim()) return false;
-    // No title column registered → the resolver was never going to answer.
+    // No title column registered → the resolver was never going to answer, so
+    // the edge's stamped label is the ONLY source and its absence proves
+    // nothing. (`data_store` is the live case: `rag` isn't PostgREST-exposed,
+    // which is exactly why those edges must stamp a label at attach time.)
     if (!tryGetEntityInfo(ref.token)?.titleColumn) return false;
+
     const key = entityTitleCacheKey(ref.token, ref.id);
     if (resolved[key] || getCachedEntityTitle(ref.token, ref.id)) return false;
+
+    // A stamped label does NOT clear this. It is a snapshot from attach time,
+    // so a deleted or now-inaccessible target still carries a plausible name —
+    // and treating that as proof of existence is how a dead reference renders
+    // as a normal row with working-looking doors. The live read is the truth;
+    // the label is only what we show while saying the target is unreachable.
     return attempted[key] === true;
   };
 

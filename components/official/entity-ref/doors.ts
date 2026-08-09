@@ -17,7 +17,11 @@
  *
  * Adding a door for a new entity type is a registry edit, never a change here:
  *   route → `hrefFor` in `features/scopes/registry/entityRegistry.ts`
- *   peek  → `features/organizations/peek/registry.ts` + `kinds-list.ts`
+ *   peek  → `features/organizations/peek/registry.ts` + `kinds-list.ts` for a
+ *           BESPOKE preview. Every registered entity with a readable title
+ *           column already gets the generic `RegistryPeek` for free, so a new
+ *           entity is previewable the moment it is registered — write a bespoke
+ *           one only when the kind deserves more than title/description/dates.
  */
 
 import type { LucideIcon } from "lucide-react";
@@ -33,6 +37,21 @@ const PEEK_KEY_BY_TOKEN: Record<string, string> = {
   app: "agent_app",
   structured_list: "picklist",
 };
+
+/**
+ * True when `RegistryPeek` can preview this entity even though no bespoke peek
+ * is registered — it reads the registry's own schema/table/title column, so it
+ * needs a title column and a table the BROWSER can actually read.
+ *
+ * `listCandidates` is the marker for the exception: a token only carries one
+ * because its schema isn't PostgREST-exposed (`data_store` → `rag`), and
+ * offering a preview button that always fails is its own dead end.
+ */
+function hasRegistryPeek(
+  info: ReturnType<typeof tryGetEntityInfo>,
+): boolean {
+  return Boolean(info?.titleColumn) && !info?.listCandidates;
+}
 
 export interface EntityDoors {
   /** Canonical route to the record, or null when the token has no `hrefFor`. */
@@ -72,7 +91,7 @@ export function resolveEntityDoors(
       hrefOverride !== undefined
         ? hrefOverride
         : (info?.hrefFor?.(id) ?? null),
-    canPeek: hasPeek(peekKind),
+    canPeek: hasPeek(peekKind) || hasRegistryPeek(info),
     peekKind,
     Icon: info?.Icon ?? null,
     label: info?.label ?? null,
@@ -104,5 +123,9 @@ export function tokenFromColumnName(column: string): string | null {
  */
 export function hasAnyDoor(token: string): boolean {
   const info = tryGetEntityInfo(token);
-  return Boolean(info?.hrefFor) || hasPeek(PEEK_KEY_BY_TOKEN[token] ?? token);
+  return (
+    Boolean(info?.hrefFor) ||
+    hasPeek(PEEK_KEY_BY_TOKEN[token] ?? token) ||
+    hasRegistryPeek(info)
+  );
 }
