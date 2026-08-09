@@ -2986,6 +2986,116 @@
   {
    "create": "planned",
    "delete": "planned",
+   "family": "Knowledge",
+   "identity_fields": [
+    "id"
+   ],
+   "label": "Expertise Pack",
+   "noun": "expertise_pack",
+   "reference": "yes",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "title": "Description"
+      },
+      "name": {
+       "title": "Name"
+      },
+      "principles": {
+       "default": [],
+       "title": "Principles"
+      },
+      "sections": {
+       "default": {},
+       "title": "Sections"
+      },
+      "slug": {
+       "title": "Slug"
+      },
+      "source": {
+       "default": {},
+       "title": "Source"
+      },
+      "status": {
+       "default": "active",
+       "title": "Status"
+      }
+     },
+     "required": [
+      "name",
+      "slug",
+      "description"
+     ],
+     "title": "CreateExpertisePackItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteExpertisePackItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "name": {
+       "default": null,
+       "title": "Name"
+      },
+      "principles": {
+       "default": null,
+       "title": "Principles"
+      },
+      "sections": {
+       "default": null,
+       "title": "Sections"
+      },
+      "slug": {
+       "default": null,
+       "title": "Slug"
+      },
+      "source": {
+       "default": null,
+       "title": "Source"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateExpertisePackItem",
+     "type": "object"
+    }
+   },
+   "table": "platform.expertise_pack",
+   "title_column": "name",
+   "update": "planned",
+   "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
    "family": "Outputs",
    "identity_fields": [
     "id"
@@ -4876,6 +4986,202 @@
    "title_column": "title",
    "update": "planned",
    "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "platform",
+   "identity_fields": [],
+   "label": "Assist",
+   "noun": "assist",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "action": {
+       "title": "Action"
+      },
+      "body": {
+       "default": null,
+       "title": "Body"
+      },
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "decided_at": {
+       "default": null,
+       "title": "Decided At"
+      },
+      "decided_by": {
+       "default": null,
+       "title": "Decided By"
+      },
+      "dedupe_key": {
+       "default": null,
+       "title": "Dedupe Key"
+      },
+      "entity_id": {
+       "default": null,
+       "title": "Entity Id"
+      },
+      "entity_type": {
+       "default": null,
+       "title": "Entity Type"
+      },
+      "expires_at": {
+       "default": null,
+       "title": "Expires At"
+      },
+      "priority": {
+       "default": 0,
+       "title": "Priority"
+      },
+      "reasoning": {
+       "default": null,
+       "title": "Reasoning"
+      },
+      "result": {
+       "default": null,
+       "title": "Result"
+      },
+      "source_key": {
+       "title": "Source Key"
+      },
+      "source_kind": {
+       "default": "deterministic",
+       "title": "Source Kind"
+      },
+      "status": {
+       "default": "pending",
+       "title": "Status"
+      },
+      "suppressed_until": {
+       "default": null,
+       "title": "Suppressed Until"
+      },
+      "surface_name": {
+       "default": null,
+       "title": "Surface Name"
+      },
+      "title": {
+       "title": "Title"
+      }
+     },
+     "required": [
+      "source_key",
+      "title",
+      "action"
+     ],
+     "title": "CreateAssistItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteAssistItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "action": {
+       "default": null,
+       "title": "Action"
+      },
+      "body": {
+       "default": null,
+       "title": "Body"
+      },
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "decided_at": {
+       "default": null,
+       "title": "Decided At"
+      },
+      "decided_by": {
+       "default": null,
+       "title": "Decided By"
+      },
+      "dedupe_key": {
+       "default": null,
+       "title": "Dedupe Key"
+      },
+      "entity_id": {
+       "default": null,
+       "title": "Entity Id"
+      },
+      "entity_type": {
+       "default": null,
+       "title": "Entity Type"
+      },
+      "expires_at": {
+       "default": null,
+       "title": "Expires At"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "priority": {
+       "default": null,
+       "title": "Priority"
+      },
+      "reasoning": {
+       "default": null,
+       "title": "Reasoning"
+      },
+      "result": {
+       "default": null,
+       "title": "Result"
+      },
+      "source_key": {
+       "default": null,
+       "title": "Source Key"
+      },
+      "source_kind": {
+       "default": null,
+       "title": "Source Kind"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "suppressed_until": {
+       "default": null,
+       "title": "Suppressed Until"
+      },
+      "surface_name": {
+       "default": null,
+       "title": "Surface Name"
+      },
+      "title": {
+       "default": null,
+       "title": "Title"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateAssistItem",
+     "type": "object"
+    }
+   },
+   "table": "platform.assists",
+   "title_column": "title",
+   "update": "planned",
+   "view": "no"
   },
   {
    "create": "planned",
@@ -10453,6 +10759,10 @@
        "default": false,
        "title": "Is Active"
       },
+      "is_contract_artifact": {
+       "default": false,
+       "title": "Is Contract Artifact"
+      },
       "kind": {
        "title": "Kind"
       },
@@ -10527,6 +10837,10 @@
       "is_active": {
        "default": null,
        "title": "Is Active"
+      },
+      "is_contract_artifact": {
+       "default": null,
+       "title": "Is Contract Artifact"
       },
       "kind": {
        "default": null,
@@ -19201,62 +19515,6 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
-   "identity_fields": [],
-   "label": "Crawl Preset",
-   "noun": "scraper_preset",
-   "reference": "planned",
-   "schemas": null,
-   "table": "scraper.crawl_presets",
-   "title_column": "name",
-   "update": "planned",
-   "view": "planned"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Crawl Run",
-   "noun": "scraper_run",
-   "reference": "no",
-   "schemas": null,
-   "table": "scraper.crawl_runs",
-   "title_column": null,
-   "update": "planned",
-   "view": "no"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Crawl Schedule",
-   "noun": "scraper_schedule",
-   "reference": "planned",
-   "schemas": null,
-   "table": "scraper.crawl_schedules",
-   "title_column": "name",
-   "update": "planned",
-   "view": "planned"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Tracked Website",
-   "noun": "scraper_site",
-   "reference": "planned",
-   "schemas": null,
-   "table": "scraper.sites",
-   "title_column": "display_name",
-   "update": "planned",
-   "view": "planned"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
    "identity_fields": [
     "id"
    ],
@@ -25926,6 +26184,20 @@
    "schemas": null,
    "table": "web.crawl_event",
    "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Web Crawl Preset",
+   "noun": "web_crawl_preset",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.crawl_preset",
+   "title_column": "name",
    "update": "no",
    "view": "no"
   },
