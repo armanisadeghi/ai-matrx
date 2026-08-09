@@ -41,6 +41,13 @@ interface SideState {
   versionsLoading: boolean;
   versionHistory: AgentVersionHistoryItem[];
   snapshotLoading: boolean;
+  /**
+   * Set when the agent itself could not be loaded (gone, or not visible to
+   * this account). Without it a failed deep link silently renders the empty
+   * "select an agent on each side" state, which reads as "you didn't pick
+   * anything" rather than "the link you followed did not resolve".
+   */
+  loadError: string | null;
 }
 
 /** A side, optionally already pointed at an agent (URL preselection). */
@@ -51,6 +58,7 @@ function sideFor(agentId: string | null): SideState {
     versionsLoading: !!agentId,
     versionHistory: [],
     snapshotLoading: false,
+    loadError: null,
   };
 }
 
@@ -90,7 +98,19 @@ export function AgentComparisonPage({
   /** Fetch one side's agent + version list. Only writes state from callbacks. */
   const loadSideData = (side: "left" | "right", agentId: string) => {
     const setter = side === "left" ? setLeft : setRight;
-    dispatch(fetchFullAgent(agentId));
+    dispatch(fetchFullAgent(agentId))
+      .unwrap()
+      .catch(() => {
+        setter((prev) =>
+          prev.agentId === agentId
+            ? {
+                ...prev,
+                versionsLoading: false,
+                loadError: `Could not load agent ${agentId.slice(0, 8)}… — it may have been deleted, or it isn't visible to this account.`,
+              }
+            : prev,
+        );
+      });
     dispatch(fetchAgentVersionHistory({ agentId, limit: 100 }))
       .unwrap()
       .then((data) => {
@@ -129,6 +149,8 @@ export function AgentComparisonPage({
       version: "current",
       versionsLoading: true,
       versionHistory: [],
+      // Picking a different agent clears the previous one's failure.
+      loadError: null,
     }));
     loadSideData(side, agentId);
   };
@@ -252,6 +274,19 @@ export function AgentComparisonPage({
             newLabel={rightLabel}
             className="h-full"
           />
+        </div>
+      ) : left.loadError || right.loadError ? (
+        // A deep link that failed must say so. Falling through to the "select
+        // an agent" state would blame the user for a link that didn't resolve.
+        <div className="flex-1 flex flex-col items-center justify-center gap-1 px-6 text-center text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">
+            This comparison could not be opened.
+          </span>
+          {left.loadError && <span>{left.loadError}</span>}
+          {right.loadError && <span>{right.loadError}</span>}
+          <span className="text-xs">
+            Pick an agent on each side above to compare something else.
+          </span>
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
