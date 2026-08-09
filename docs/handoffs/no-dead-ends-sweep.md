@@ -56,7 +56,7 @@ Ordered by high-severity density. `high` = the entity already has an `hrefFor`,
 so the fix is one `<EntityRef>`. Refresh the numbers with
 `pnpm check:dead-ends:write` after each batch and commit the snapshot.
 
-**Baseline 2026-08-09: 140 findings · 73 high · 82 files · 6,806 scanned.**
+**Baseline 2026-08-09: 140 findings · 73 high · 82 files · 6,809 scanned.**
 (bare id as text 81 · unlinked name 40 · unlinked count 3 · no doors at all 16)
 Re-rank with `pnpm check:dead-ends:write` before starting — the scoreboard is
 the live worklist; these counts are the snapshot it was seeded from.
