@@ -104,6 +104,20 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-09 — **Agents can fill in the generator form.** `GeneratorForm` now
+  registers write handlers for 5 new `matrx-user/podcast-studio` write targets
+  (`source_text`, the composite `episode_shape` = language/format/theme/
+  host_count, `target_audience`, `prep_instructions`, `show_blurb`), all
+  `mode: "draft"` + `applyPolicy: "ask"`. Handlers set the same `useState` the
+  user's own typing sets, validate against the real vocabulary constants
+  (`LANGUAGE_OPTIONS`, `FORMAT_OPTIONS`, `MAX_HOST_COUNT`) and THROW on a bad
+  shape — the writeback seam turns that into an error envelope the agent reads.
+  **Generate stays a human press** (it costs real money) and so do the cast,
+  the destination show, and the test/cost controls. `buildRequestBody()` is
+  untouched, so nothing about what the form SENDS changed. Also fixed a
+  read-side gap: `target_audience` has been on the form since 2026-08-08 but
+  was never emitted to the surface. Live-verified end-to-end against a real
+  agent run — see `features/surfaces/FEATURE.md` for the verification detail.
 - 2026-08-08 (later) — **Title options panel, audience re-pitch, 10-host cap.**
   (1) Run page gained `EpisodeTitlePanel` (`useEpisodeTitleOptions`,
   `podcast.title_optimizer` slot — post-episode only so the agent always sees

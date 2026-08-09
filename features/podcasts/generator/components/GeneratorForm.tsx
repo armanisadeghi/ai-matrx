@@ -20,6 +20,11 @@
 //   6. Show picker
 //   7. Advanced       (extra instruction, show blurb, Test mode)
 //
+// Surface: this component mounts `matrx-user/podcast-studio` and is both its
+// emitter (getSurfaceScope) and its write half (getSurfaceWriteHandlers) —
+// agents can fill in the source text, the show shape, the audience, the prep
+// steer, and the show blurb. Pressing Generate is NOT agent-writable.
+//
 // Request fields sent: input_data / file_urls, input_data_type, podcast_type
 // (derived from Language + Format), language, format, theme, host_count,
 // speakers (only when customized), post_prep_option, show_id,
@@ -377,6 +382,12 @@ export function GeneratorForm({
       language,
       format,
       host_count: hostCount,
+      episode_shape: {
+        language,
+        format,
+        host_count: hostCount,
+        theme: theme.trim() || undefined,
+      },
       image_mode: imageMode,
       video_mode: videoMode,
       feature_image_style: featureImageStyle,
@@ -400,6 +411,7 @@ export function GeneratorForm({
       })),
       first_show_info: firstShowInfo.trim() || undefined,
       prep_instructions: prepMessage.trim() || undefined,
+      target_audience: targetAudience.trim() || undefined,
       dictionary_entry_count:
         (dictConsumption?.resolved.entries.length ?? 0) +
         (dictConsumption?.customEntries.length ?? 0),
@@ -409,6 +421,115 @@ export function GeneratorForm({
       selection: window.getSelection()?.toString() || undefined,
     });
   };
+
+  // ── Surface write handlers (manifest `writeTargets`) ──────────────────
+  // The write half of the 360 loop. Nothing on this surface is persisted —
+  // the form IS the draft — so every handler just sets the same `useState`
+  // the user's own typing sets, and the value is on screen and editable the
+  // moment it lands. Generate stays a human press by design (it costs real
+  // money) and is deliberately not a target.
+  //
+  // Every handler validates and THROWS on a bad shape; the writeback seam
+  // (`applySurfaceWrite`) turns a throw into a safe error envelope the agent
+  // reads and can correct from. Enum checks run against the SAME constants
+  // the form's own controls render from, so the two can never drift.
+  const getSurfaceWriteHandlers = () => ({
+    source_text: (value: unknown) => {
+      if (typeof value !== "string" || !value.trim())
+        throw new Error("source_text expects a non-empty string.");
+      if (activeSource.control !== "text")
+        throw new Error(
+          `The selected source is "${activeSource.label}", which does not use the text box. source_text can only be written for the topic, rough-notes, or full-script sources — a person has to switch the source kind first.`,
+        );
+      setText(value);
+    },
+    episode_shape: (value: unknown) => {
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        throw new Error(
+          "episode_shape expects an object: { language?, format?, theme?, host_count? }.",
+        );
+      const patch = value as Record<string, unknown>;
+      const allowedKeys = ["language", "format", "theme", "host_count"];
+      const unknownKeys = Object.keys(patch).filter(
+        (k) => !allowedKeys.includes(k),
+      );
+      if (unknownKeys.length > 0)
+        throw new Error(
+          `episode_shape got unsupported key(s): ${unknownKeys.join(", ")}. Allowed keys: ${allowedKeys.join(" | ")}.`,
+        );
+      if (Object.keys(patch).length === 0)
+        throw new Error(
+          `episode_shape needs at least one of: ${allowedKeys.join(" | ")}.`,
+        );
+
+      // Validate EVERY key before applying any of them — a partial apply on a
+      // half-valid object would leave the form in a state nobody chose.
+      const apply: Array<() => void> = [];
+      if ("language" in patch) {
+        const codes = LANGUAGE_OPTIONS.filter((l) => l.enabled).map(
+          (l) => l.code as string,
+        );
+        if (typeof patch.language !== "string" || !codes.includes(patch.language))
+          throw new Error(
+            `episode_shape.language expects one of: ${codes.join(" | ")}.`,
+          );
+        const next = patch.language as PodcastLanguageCode;
+        apply.push(() => setLanguage(next));
+      }
+      if ("format" in patch) {
+        const formats = FORMAT_OPTIONS.filter((f) => f.enabled).map(
+          (f) => f.value as string,
+        );
+        if (typeof patch.format !== "string" || !formats.includes(patch.format))
+          throw new Error(
+            `episode_shape.format expects one of: ${formats.join(" | ")}.`,
+          );
+        const next = patch.format as PodcastFormat;
+        apply.push(() => setFormat(next));
+      }
+      if ("theme" in patch) {
+        if (typeof patch.theme !== "string")
+          throw new Error(
+            "episode_shape.theme expects a string (empty string clears it).",
+          );
+        const next = patch.theme;
+        apply.push(() => setTheme(next));
+      }
+      if ("host_count" in patch) {
+        if (
+          typeof patch.host_count !== "number" ||
+          !Number.isInteger(patch.host_count) ||
+          patch.host_count < 1 ||
+          patch.host_count > MAX_HOST_COUNT
+        )
+          throw new Error(
+            `episode_shape.host_count expects a whole number from 1 to ${MAX_HOST_COUNT}.`,
+          );
+        const next = patch.host_count;
+        apply.push(() => setHostCount(next));
+      }
+      for (const run of apply) run();
+    },
+    target_audience: (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error(
+          "target_audience expects a string (empty string clears it).",
+        );
+      setTargetAudience(value);
+    },
+    prep_instructions: (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error(
+          "prep_instructions expects a string (empty string clears it).",
+        );
+      setPrepMessage(value);
+    },
+    show_blurb: (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error("show_blurb expects a string (empty string clears it).");
+      setFirstShowInfo(value);
+    },
+  });
 
   /** Switch source — clear the per-source text so stale content never leaks. */
   const handleSourceChange = (kind: PodcastSourceKind) => {
@@ -421,7 +542,16 @@ export function GeneratorForm({
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/podcast-studio"
       getScope={getSurfaceScope}
+      // Stays false, and NOT because the form is read-only — agents fill it in
+      // (see getSurfaceWriteHandlers). `isEditable` is a different axis: it
+      // only adds the generic `basicEditor` DEFAULT-agent bucket to this page's
+      // Agents list (qualifyingDefaultSurfaces). Those agents are built for one
+      // focused text editor and read the `content` baseline, which this surface
+      // deliberately does not emit — the composer has no single canonical body
+      // field. Flipping it would advertise agents that would receive nothing.
+      // The writeback seam never consults this flag.
       isEditable={false}
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
     <div className="space-y-7">
       {/* ── 1. SOURCE ─────────────────────────────────────────────────── */}

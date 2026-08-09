@@ -29,6 +29,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -65,7 +66,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Production settings",
     sortOrder: 500,
     description:
-      "Advanced generation controls: extra instructions, media caps, feature-image style, dictionary, and test truncation.",
+      "Advanced generation controls: the steer handed to the prep/script agents, who the episode is pitched at, media caps, feature-image style, dictionary, and test truncation.",
   },
   {
     key: "request",
@@ -192,6 +193,17 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 380,
     group: "show_shape",
   },
+  {
+    name: "episode_shape",
+    label: "Episode shape",
+    description:
+      "The composite show-shape object: { language, format, theme, host_count }. Mirrors the four individual values above as one group value (completeness law) and is the read twin of the episode_shape write target. Always present — every field it carries has a default.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 120,
+    sortOrder: 385,
+    group: "show_shape",
+  },
 
   // ── Cast ──────────────────────────────────────────────────────────────
   {
@@ -253,7 +265,7 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "first_show_info",
-    label: "First-episode show info",
+    label: "Show intro / blurb",
     description:
       "Freeform description the user supplies when this episode creates a brand-new show — used to write the show's identity. Empty when publishing into an existing show.",
     valueType: "string",
@@ -273,6 +285,17 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 400,
     sortOrder: 450,
+    group: "production_settings",
+  },
+  {
+    name: "target_audience",
+    label: "Target audience",
+    description:
+      "Who the episode is pitched at, e.g. 'curious beginners' or 'time-pressed executives'. The server re-pitches the prepared content for this listener (podcast.audience_adapter) before the script is written. Empty when the user left it blank — the stage is then skipped entirely.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 60,
+    sortOrder: 455,
     group: "production_settings",
   },
   {
@@ -357,11 +380,109 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may fill in on the composer.
+ *
+ * This surface is a FILL-THE-WHOLE-FORM draft: nothing exists in the database
+ * until the user presses Generate. So every target is `mode: "draft"` in the
+ * literal sense — the handler sets the same `useState` the user's own typing
+ * sets, the value is visible and editable the instant it lands, and the user
+ * can walk away and lose it. There is no Save bar because there is nothing to
+ * save yet; the Generate button IS the commit, and it is deliberately NOT a
+ * write target — starting a run spends real money on TTS and image models, so
+ * the human press stays the gate.
+ *
+ * Every target is `applyPolicy: "ask"`. An agent filling a form the user is
+ * standing in front of should say what it is about to put where.
+ *
+ * WHAT IS NOT WRITABLE, on purpose:
+ *  - Generate (see above), and `show_id` — where an episode publishes is an
+ *    ownership decision, not a drafting one.
+ *  - The speaker cast, `cast_provider`, and voices — the SERVER owns provider
+ *    routing and the default cast (GET /podcast/cast-preview); the form only
+ *    layers user edits on top, and an agent inventing voices would be
+ *    re-deriving exactly what the surface intro forbids.
+ *  - `truncate_audio_for_testing`, `image_mode`, `video_mode` — cost and test
+ *    controls. Nobody asks an agent to flip these, and getting them wrong
+ *    silently makes a run expensive.
+ *  - `source_urls` / the resolved external sources — those inputs are fetched
+ *    from somewhere the user chose; an agent supplying URLs is a different
+ *    (and riskier) feature than drafting a brief.
+ *
+ * Grouping follows the trap in `surface-write-targets`: `episode_shape` is ONE
+ * object because language/format/theme/host_count are decided in a single
+ * thought ("a 3-host debate in Spanish"), while the source, the audience, the
+ * prep steer, and the show blurb are independent decisions with different
+ * consumers and get their own targets.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "source_text",
+    label: "Source text",
+    description:
+      "Replaces the text in the source box — the topic line for the 'topic' source, or the pasted body for 'rough notes' / 'full script'. Value: a non-empty string that REPLACES the whole box; to extend rather than replace, read source_text first and include the existing text. Fails when the selected source is a file-URL or an external source (website / note / YouTube / audio file), because those own their own input — a person has to switch the source kind first.",
+    valueType: "string",
+    updatesValue: "source_text",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "source_material",
+    sortOrder: 100,
+  },
+  {
+    name: "episode_shape",
+    label: "Episode shape",
+    description:
+      "Sets how the episode should sound. Value: { language?, format?, theme?, host_count? } — omitted keys keep their current value, and at least one key is required. language is a BCP-47 code the surface offers (en-US, es-ES, fr-FR, de-DE, it-IT, pt-BR, nl-NL, pl-PL, ro-RO, ru-RU, uk-UA, tr-TR, ar-EG, fa-IR, hi-IN, bn-BD, mr-IN, ta-IN, te-IN, id-ID, vi-VN, th-TH, ja-JP, ko-KR). format is one of: educational | news | interview | debate | panel | storytelling | entertainment. theme is freeform framing text such as 'skeptic vs optimist', or an empty string to clear it. host_count is a whole number from 1 to 10 and is LOAD-BEARING — it picks both the script agent and the TTS provider band. Read episode_shape first to see the current values.",
+    valueType: "object",
+    updatesValue: "episode_shape",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "show_shape",
+    sortOrder: 200,
+  },
+  {
+    name: "target_audience",
+    label: "Target audience",
+    description:
+      "Sets who the episode is pitched at, e.g. 'curious beginners' or 'senior engineers'. Value: a string that REPLACES the field, or an empty string to clear it and skip the stage. The server re-pitches the prepared content for this listener before the script is written.",
+    valueType: "string",
+    updatesValue: "target_audience",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "production_settings",
+    sortOrder: 300,
+  },
+  {
+    name: "prep_instructions",
+    label: "Extra instructions",
+    description:
+      "Sets the freeform steer handed to the research / extraction agent, e.g. 'focus on the practical takeaways'. Value: a string that REPLACES the FULL field — read prep_instructions first and include anything worth keeping, because it may already carry an entryway agent-profile note. An empty string clears it.",
+    valueType: "string",
+    updatesValue: "prep_instructions",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "production_settings",
+    sortOrder: 310,
+  },
+  {
+    name: "show_blurb",
+    label: "Show intro / blurb",
+    description:
+      "Sets the short intro describing the SHOW (the series this episode belongs to), used when this episode creates a brand-new show. Value: a string that REPLACES the field, or an empty string to clear it. Generation ignores it when the user has picked an existing show in the destination picker.",
+    valueType: "string",
+    updatesValue: "first_show_info",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "destination",
+    sortOrder: 400,
+  },
+];
+
 export const podcastStudioManifest: SurfaceManifest = {
   surfaceName: "matrx-user/podcast-studio",
   readiness: "partial",
   readinessNote:
-    "Manifest + emitter (GeneratorForm) are wired against every piece of state the compose form holds. Not yet DB-synced, not yet in route-to-surface.ts, and the declared agent roles have no default agents bound.",
+    "Manifest + emitter (GeneratorForm) are wired against every piece of state the compose form holds, and the five draft write targets are handler-backed and verified against a live agent run. Routed in route-to-surface.ts. Not yet DB-synced (the client write tool works either way), and the declared agent roles have no default agents bound.",
   label: "Podcast Studio",
   urlPattern: "/podcast/studio/create",
   intro: `<surface_intro>
@@ -370,12 +491,14 @@ Read the surface in four parts: what the episode is made FROM (source_kind plus 
 Two server-owned facts you must not re-derive: cast_provider and the default cast come from the server's cast preview, and feature_image_style's default is the server's. Propose edits on top of them; never invent provider routing or voice defaults.
 host_count is load-bearing — it selects both the script agent and the TTS provider. Changing it changes the whole production path.
 truncate_audio_for_testing = true means this run is a cheap ~1-line-per-speaker test render, not a real episode; say so rather than describing the result as a finished show.
+You can FILL THIS FORM IN: source_text, episode_shape, target_audience, prep_instructions, and show_blurb are write targets. Everything you write is staged into the form exactly as if the user typed it — and because nothing here is saved anywhere, it stays a proposal until the user presses Generate. That press is theirs alone: it spends real money, and it is not something you can do.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
   agentRoles: [
     {
       name: "source_advisor",
@@ -405,6 +528,18 @@ export interface PodcastStudioSpeakerEntry {
   gender?: string;
 }
 
+/**
+ * The composite `episode_shape` value — the read twin of the write target of
+ * the same name, so what an agent reads and what it writes are one shape.
+ */
+export interface PodcastStudioEpisodeShape {
+  language: string;
+  format: string;
+  host_count: number;
+  /** Omitted when the user hasn't set a framing theme. */
+  theme?: string;
+}
+
 /** One show entry as emitted in `available_shows`. */
 export interface PodcastStudioShowEntry {
   id: string;
@@ -422,6 +557,7 @@ export function createPodcastStudioScope(values: {
   language: string;
   format: string;
   host_count: number;
+  episode_shape: PodcastStudioEpisodeShape;
   image_mode: string;
   video_mode: string;
   feature_image_style: string;
@@ -439,6 +575,7 @@ export function createPodcastStudioScope(values: {
   available_shows?: PodcastStudioShowEntry[];
   first_show_info?: string;
   prep_instructions?: string;
+  target_audience?: string;
   dictionary_entry_count?: number;
   generate_request?: Record<string, unknown>;
   selection?: string;

@@ -149,7 +149,12 @@ internal platform use — never a washed-down user variant beside a private one:
   agent-writable adopters: `matrx-user/marketing-page`,
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
-  `TaskEditorBody.tsx`).
+  `TaskEditorBody.tsx`), `matrx-user/podcast-studio` (5 draft targets —
+  `source_text`, the composite `episode_shape`, `target_audience`,
+  `prep_instructions`, `show_blurb`; handlers in `GeneratorForm.tsx`. The
+  fill-the-whole-form pattern: nothing persists until the user presses
+  Generate, which is deliberately NOT a target because a run costs real
+  money).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -310,6 +315,8 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
 
 ## Change Log
+
+- **2026-08-09 — Podcast Studio composer agent-writable — the fill-the-whole-form shape.** `matrx-user/podcast-studio` declares 5 ask-policy `draft` targets: `source_text` (the topic/paste box), `episode_shape` (a composite `{language?, format?, theme?, host_count?}`), `target_audience`, `prep_instructions`, `show_blurb`. Handlers live on `GeneratorForm.tsx`'s existing provider (`getWriteHandlers`) and set the same `useState` the user's typing sets; enum checks run against `LANGUAGE_OPTIONS` / `FORMAT_OPTIONS` / `MAX_HOST_COUNT`, never re-typed literals, and `episode_shape` validates every key before applying any so a half-valid object can't half-land. This surface persists NOTHING until Generate, so "draft" is literal — there is no Save bar, and **Generate is deliberately not a target** (a run spends real money on TTS + image models; the human press is the gate). Also deliberately unwritable: the speaker cast and `cast_provider` (server-owned via `/podcast/cast-preview`), `show_id`, and the `truncate_audio_for_testing` / `image_mode` / `video_mode` cost controls. Composite-vs-micro call per the skill's trap: language/format/theme/host_count are one thought ("a 3-host debate in Spanish") so they share one target, while the source, audience, prep steer, and show blurb are independent decisions with different consumers and got their own. Two read-side gaps closed on the way: `target_audience` (a form field since 2026-08-08) was never emitted, and the new composite `episode_shape` read twin was added under the completeness law. `isEditable` stays `false` — it does not gate writes at all; it only adds the generic `basicEditor` default-agent bucket, whose agents read the `content` baseline this surface deliberately does not emit. **Live-verified** on a real Badass Agent run: one plain-language request staged 4 targets (topic, es-ES + debate + 3 hosts + theme, audience, prep steer) with the manifest description shown verbatim in each ask dialog; "Keep as is" declined cleanly and the agent acknowledged it without retrying; undeclared targets (test mode, image cap) were refused and the agent named the exact writable set; the source-kind guard threw and the agent relayed the handler's own sentence; Error Inspector clean (zero `surface-writeback` captures). `check:surface-drift` + `type-check` green. DB mirror not yet synced (the client tool works either way).
 
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 
