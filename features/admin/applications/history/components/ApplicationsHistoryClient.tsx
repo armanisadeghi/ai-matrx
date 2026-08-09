@@ -28,6 +28,11 @@ import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/const
 import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
 import { buildApplicationsTimeline } from "@/features/admin/applications/history/buildTimeline";
 import type { ApplicationsHistoryEntry } from "@/features/admin/applications/history/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_APPLICATIONS_SURFACE_NAME,
+  createAdminApplicationsScope,
+} from "@/features/surfaces/manifests/admin-applications.manifest";
 
 interface ApplicationsHistoryClientProps {
   initialEntries: ApplicationsHistoryEntry[];
@@ -184,6 +189,16 @@ export function ApplicationsHistoryClient({
   }, [whoLabel]);
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_APPLICATIONS_SURFACE_NAME}
+      getScope={() =>
+        createAdminApplicationsScope({
+          active_tab: "history",
+          history_entry_count: entries.length,
+          history_fetch_limit: fetchLimit,
+        })
+      }
+    >
     <div className="flex h-full flex-col gap-3 p-4">
       <p className="text-xs text-muted-foreground">
         Merged audit timeline over remote configuration and remote catalogs —{" "}
@@ -274,5 +289,6 @@ export function ApplicationsHistoryClient({
         />
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
