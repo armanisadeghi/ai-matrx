@@ -249,9 +249,15 @@ export function CatalogsClient({
   ];
 
   if (view.mode === "edit" || view.mode === "new") {
+    // Resolve within the SELECTED APPLICATION, never across all rows. `rows`
+    // holds every application's entries, so an id-only lookup would happily
+    // open another application's entry — and `CatalogEntryEditor` saves with
+    // the URL's `app`, so `admin_upsert_catalog_entry` would then rewrite that
+    // record under the wrong application namespace. Scoping the find is what
+    // turns that into the honest "belongs to another application" alert below.
     const row =
       view.mode === "edit"
-        ? (rows.find((r) => r.id === view.entryId) ?? null)
+        ? (appRows.find((r) => r.id === view.entryId) ?? null)
         : null;
     // A deep link can name an entry that was deleted, or that belongs to
     // another application. Say so — silently rendering the blank "new entry"
@@ -284,7 +290,9 @@ export function CatalogsClient({
       <div className="h-full overflow-y-auto p-4">
         <CatalogEntryEditor
           key={view.mode === "edit" ? view.entryId : `new-${view.kind}`}
-          app={app}
+          // The ROW's own app wins when editing — the save must never be able
+          // to disagree with the record being edited, whatever the URL says.
+          app={row?.app ?? app}
           row={row}
           prefill={view.mode === "new" ? view.prefill : null}
           initialKind={view.kind}
