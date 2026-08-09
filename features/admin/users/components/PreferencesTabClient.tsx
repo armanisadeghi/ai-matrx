@@ -25,7 +25,10 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { USERS_ADMIN_LOCATION } from "../constants";
 import { cn } from "@/lib/utils";
 import {
-  MOBILE_TABLE_FROZEN,
+  MOBILE_TABLE,
+  MOBILE_TABLE_CELL,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
 
 // ── drift dashboard ────────────────────────────────────────────────────────
@@ -166,21 +169,21 @@ function DriftDashboard() {
         </div>
       ) : report && report.rows.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border border-border">
-          <table className={cn("text-sm", MOBILE_TABLE_FROZEN)}>
+          <table className={cn("text-sm", MOBILE_TABLE)}>
             <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
               <tr>
-                <th className="px-3 py-2 font-medium">User</th>
+                <th className={cn("px-3 py-2 font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[9rem]")}>User</th>
                 <th className="px-3 py-2 font-medium">Drifted fields</th>
-                <th className="px-3 py-2 font-medium">Updated</th>
+                <th className={cn("px-3 py-2 font-medium", MOBILE_TABLE_CELL)}>Updated</th>
                 <th className="px-3 py-2 font-medium" />
               </tr>
             </thead>
             <tbody>
               {report.rows.map((r) => (
                 <tr key={`${r.user_id}:${r.organization_id}`} className="border-t border-border">
-                  <td className="px-3 py-2 font-mono text-xs">{r.user_id}</td>
-                  <td className="px-3 py-2 text-amber-600 dark:text-amber-400">{r.drifted_fields}</td>
-                  <td className="px-3 py-2 text-muted-foreground">
+                  <td className={cn("px-3 py-2 font-mono text-xs", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[9rem]")}>{r.user_id}</td>
+                  <td className="px-3 py-2 text-amber-600 dark:text-amber-400 break-words max-sm:min-w-[11rem]">{r.drifted_fields}</td>
+                  <td className={cn("px-3 py-2 text-muted-foreground", MOBILE_TABLE_CELL)}>
                     {r.updated_at ? new Date(r.updated_at).toLocaleString() : "—"}
                   </td>
                   <td className="px-3 py-2 text-right">

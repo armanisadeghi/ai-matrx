@@ -45,11 +45,14 @@
  * silently dropped — so a selected row stops looking selected on a phone. Tint
  * the row however the desktop design wants; only the frozen cell opts out.
  *
- * Two things it cannot do for you:
- * - A table whose first column is a checkbox or drag handle gets a useless
- *   anchor. Those need the granular constants on the identity column instead —
- *   freeze that one, and the narrow columns slide under it (or
- *   MOBILE_TABLE_FROZEN_SECOND when exactly one narrow column leads).
+ * Two things it cannot do for you — and both are judgement calls about what the
+ * cells CONTAIN, which no lint rule or grep can make for you:
+ * - The identity column is the one a person reads to answer "which row is
+ *   this?" — a name, key, token, query, file. It is frequently NOT column 1:
+ *   an index, rank, checkbox, chevron, UUID, or short enum (platform, kind,
+ *   surface type) in front of it makes a useless anchor. Freeze the identity
+ *   column with the granular constants and let the narrow ones slide under it
+ *   (or MOBILE_TABLE_FROZEN_SECOND when exactly one narrow column leads).
  * - A table whose cells hold PROSE — extracted document text, env values, a
  *   key/value pane — must keep wrapping, and the blanket nowrap here turns a
  *   paragraph into one enormous line that no amount of scrolling makes

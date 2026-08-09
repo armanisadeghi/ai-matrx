@@ -36,7 +36,11 @@ import KindAgentButton from "@/features/content-ir/studio/components/KindAgentBu
 import type { GeneratedContentBlock } from "@/features/content-ir/registry/kind-content-block-generator";
 import { cn } from "@/lib/utils";
 import {
-  MOBILE_TABLE_FROZEN,
+  MOBILE_TABLE,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+  MOBILE_TABLE_FROZEN_SECOND,
+  MOBILE_TABLE_NOWRAP_CELLS,
 } from "@/components/official/mobile-table/mobileTable";
 
 // Where each part type is edited today. Content blocks and skills have real
@@ -325,12 +329,12 @@ export default function KindAssetsTab({
             aria-label="Kind component rows"
             tabIndex={0}
           >
-            <table className={cn("p-2 text-xs", MOBILE_TABLE_FROZEN)}>
+            <table className={cn("p-2 text-xs", MOBILE_TABLE, MOBILE_TABLE_NOWRAP_CELLS)}>
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                   <th className="px-2 py-1 font-medium">Platform</th>
                   <th className="px-2 py-1 font-medium">Role</th>
-                  <th className="px-2 py-1 font-medium">Component key</th>
+                  <th className={cn("px-2 py-1 font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[9rem]")}>Component key</th>
                   <th className="px-2 py-1 font-medium">Source</th>
                   <th className="px-2 py-1 font-medium">Active</th>
                   <th className="px-2 py-1 font-medium">Default</th>
@@ -341,7 +345,7 @@ export default function KindAssetsTab({
                   <tr key={c.id} className="border-t border-border/60">
                     <td className="px-2 py-1 text-foreground">{c.platform}</td>
                     <td className="px-2 py-1 text-foreground">{c.role}</td>
-                    <td className="px-2 py-1 font-mono text-foreground">
+                    <td className={cn("px-2 py-1 font-mono text-foreground", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[9rem]")}>
                       {c.componentKey}
                     </td>
                     <td className="px-2 py-1 text-muted-foreground">
@@ -389,7 +393,7 @@ export default function KindAssetsTab({
             aria-label="Kind detection surface rows"
             tabIndex={0}
           >
-            <table className={cn("p-2 text-xs", MOBILE_TABLE_FROZEN)}>
+            <table className={cn("p-2 text-xs", MOBILE_TABLE_FROZEN_SECOND)}>
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                   <th className="px-2 py-1 font-medium">Surface type</th>

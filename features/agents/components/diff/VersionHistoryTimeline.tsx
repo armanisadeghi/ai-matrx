@@ -240,7 +240,7 @@ function VersionRow({
         </td>
 
         {/* Changes */}
-        <td className={cn("py-2.5 pr-3", MOBILE_TABLE_CELL)}>
+        <td className="py-2.5 pr-3 max-sm:min-w-[12rem]">
           {version.change_note && (
             <div className="text-muted-foreground mb-1">
               {version.change_note}

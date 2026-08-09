@@ -34,6 +34,7 @@ import {
 } from "../../costs";
 import {
   MOBILE_TABLE,
+  MOBILE_TABLE_NOWRAP_CELLS,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
@@ -113,7 +114,7 @@ function LedgerRow({ entry }: { entry: CostLedgerEntry }) {
         !entry.succeeded && "bg-destructive/5",
       )}
     >
-      <td className={cn("px-2 py-1.5 whitespace-nowrap text-muted-foreground tabular-nums text-[11px]", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-0")}>
+      <td className={cn("px-2 py-1.5 whitespace-nowrap text-muted-foreground tabular-nums text-[11px]", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[6rem]")}>
         {formatTime(entry.createdAt)}
       </td>
       <td className="px-2 py-1.5">
@@ -478,7 +479,7 @@ export default function CostDashboard() {
           </select>
         </header>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs min-w-[860px] table-fixed">
+          <table className={cn("text-xs sm:min-w-[860px] sm:table-fixed", MOBILE_TABLE, MOBILE_TABLE_NOWRAP_CELLS)}>
             <colgroup>
               <col className="w-[128px]" />
               <col className="w-[140px]" />
@@ -493,7 +494,7 @@ export default function CostDashboard() {
             </colgroup>
             <thead className="bg-muted/60">
               <tr className="border-b border-border/50 text-[10px] uppercase tracking-wide text-muted-foreground">
-                <th className={cn("px-2 py-2 text-left font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-0")}>When</th>
+                <th className={cn("px-2 py-2 text-left font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[6rem]")}>When</th>
                 <th className="px-2 py-2 text-left font-medium">Phase</th>
                 <th className="px-2 py-2 text-left font-medium">Subject</th>
                 <th className="px-2 py-2 text-left font-medium hidden md:table-cell">
