@@ -253,3 +253,22 @@ describe("ComponentRegistry — warm tier", () => {
     }
   });
 });
+
+describe("D115 inversion — module init registers the kind-components invalidation", () => {
+  it("fireInvalidation(kindComponents) forces a resolver refresh with no import edge from the firer", async () => {
+    const { fireInvalidation, INVALIDATION_KEYS } = await import(
+      "@/lib/invalidation/invalidation-registry"
+    );
+    mockList.mockClear();
+    mockList.mockResolvedValue([]);
+
+    // Importing component-registry (done at this file's top) must have
+    // registered the callback — the firer (toolStateEffects) only knows the
+    // NAME, so an unregistered name here means the repaint is silently dead.
+    expect(fireInvalidation(INVALIDATION_KEYS.kindComponents)).toBe(true);
+
+    // The callback force-refreshes (maxAgeMs 0) → one warm list re-fetch.
+    await Promise.resolve();
+    expect(mockList).toHaveBeenCalledTimes(1);
+  });
+});
