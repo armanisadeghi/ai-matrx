@@ -518,7 +518,10 @@ The full set: `js, mjs, cjs, jsx, ts, tsx, py, rb (+ Rakefile/Gemfile/Vagrantfil
 
 > **Shipped 2026-08-08:** `previewKind: "office"` + `OfficePreview` — server-side extraction via
 > aidream `GET /office/{file_id}/markdown` (matrx-files Office codec; LibreOffice bridge reads
-> legacy `.doc`/`.ppt`). Decks render slide-by-slide with titled dividers; header shows kind +
+> legacy `.doc`/`.ppt`). Decks render slide-by-slide with titled dividers — the divider owns the
+> number/title, so each portion's duplicate leading heading is stripped for display
+> (`stripDuplicatePortionHeading`); the codec keeps emitting it for the whole-document markdown.
+> Header shows kind +
 > warnings + Copy markdown. Action bar carries **Convert to PDF** (`POST /office/{file_id}/convert`
 > → new pdf asset, navigates to it). Files "New" menu has **AI document** (Word / PowerPoint /
 > Excel prompt prefill → `/chat/new`, the `office` tool generates a real file). Remaining office
