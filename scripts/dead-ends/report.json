@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-09T13:48:49.658Z",
-  "commit": "237a3dc81b0d1f2edf52c7538aa07d683182d092",
+  "generatedAt": "2026-08-09T14:52:20.738Z",
+  "commit": "a6a49efcad1fdcaed4c03ddeefd6dd26a8d20b8e",
   "totals": {
     "findings": 140,
     "high": 73,
@@ -1935,7 +1935,7 @@
     },
     {
       "file": "features/content-ir/admin/KindAssetsTab.tsx",
-      "line": 228,
+      "line": 236,
       "column": 20,
       "rule": "bare-id-text",
       "severity": "medium",
@@ -1959,7 +1959,7 @@
     },
     {
       "file": "features/flashcards/fast-fire/debug/AudioCaptureDebugPanel.tsx",
-      "line": 103,
+      "line": 107,
       "column": 48,
       "rule": "bare-id-text",
       "severity": "medium",
@@ -1995,7 +1995,7 @@
     },
     {
       "file": "features/rag/components/data-stores/DataStoresPage.tsx",
-      "line": 845,
+      "line": 853,
       "column": 20,
       "rule": "bare-id-text",
       "severity": "medium",
@@ -2043,7 +2043,7 @@
     },
     {
       "file": "features/scopes/components/management/ScopesHub.tsx",
-      "line": 316,
+      "line": 322,
       "column": 16,
       "rule": "unlinked-entity-name",
       "severity": "medium",
