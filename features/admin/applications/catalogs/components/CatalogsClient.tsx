@@ -143,11 +143,32 @@ export function CatalogsClient({
   // whenever the link identity changes.
   const deepLinkKey = `${initialApp ?? ""}|${initialKind ?? ""}|${initialEntryId ?? ""}`;
   const lastDeepLink = useRef(deepLinkKey);
+  // Whether the CURRENT link's `?entry=` has actually been found in `rows`.
+  // A link can arrive before the row that satisfies it: the first pass records
+  // the key, and without this the effect would then refuse to look again when
+  // a later `rows` refresh finally contains the entry, stranding the operator
+  // on the dashboard until they retyped the URL.
+  const deepLinkResolved = useRef(
+    !initialEntryId || Boolean(deepLinkRow(initialEntryId, initialRows)),
+  );
   useEffect(() => {
-    if (lastDeepLink.current === deepLinkKey) return;
+    const entryRow = deepLinkRow(initialEntryId, rows);
+    const linkChanged = lastDeepLink.current !== deepLinkKey;
+    const retryPending =
+      !linkChanged && Boolean(initialEntryId) && !deepLinkResolved.current;
+    // Retry only once the row has actually arrived; re-running against the same
+    // still-missing entry would just re-render the same screen every refresh.
+    if (!linkChanged && !(retryPending && entryRow)) return;
+
     lastDeepLink.current = deepLinkKey;
-    const nextApp = deepLinkRow(initialEntryId, rows)?.app ?? initialApp;
-    if (nextApp) setApp(nextApp);
+    deepLinkResolved.current = !initialEntryId || Boolean(entryRow);
+
+    // Assigned UNCONDITIONALLY, not `if (nextApp)`. Navigating to the catalogs
+    // page with the params stripped means "no application selected", and the
+    // guard left the selector pinned to the last deep-linked app while the
+    // dashboard showed the generic landing — counts and kind tables then
+    // described an app the URL no longer named.
+    setApp(entryRow?.app ?? initialApp ?? DEFAULT_CATALOG_APP);
     setView(initialView(initialKind, initialEntryId, rows));
   }, [deepLinkKey, initialApp, initialKind, initialEntryId, rows]);
 

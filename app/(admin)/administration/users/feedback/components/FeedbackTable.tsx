@@ -603,7 +603,7 @@ export default function FeedbackTable() {
       openedDeepLink.current = deepLinkId;
       toast.error("That feedback item isn't in this view", {
         description:
-          "It may have been deleted, or it's filtered out by the current status/type filters.",
+          "It isn't in the list this page loaded — it may have been deleted, or it may sit outside what this view fetches.",
       });
       setDeepLink(null);
       return;
@@ -641,7 +641,7 @@ export default function FeedbackTable() {
           {
             description: loadFailed
               ? "The feedback list failed to load. Refresh and try again."
-              : "It may have been deleted, or it's filtered out by the current status/type filters.",
+              : "It isn't in the list this page loaded — it may have been deleted, or it may sit outside what this view fetches.",
           },
         );
         return;
