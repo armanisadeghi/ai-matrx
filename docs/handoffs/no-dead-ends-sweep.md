@@ -516,8 +516,38 @@ or invalid), listed so they cannot be lost:
 | `features/war-room/.../WarRoomResourcesList.tsx` | The `isUnresolved` warning added to `AssociationList` was never mirrored here — the second implementation of the same list (see the fork item above). |
 | `features/agents/agent-sets/components/AgentSetCard.tsx` | Whole-tile `onClick` navigation with `role="button"`/`tabIndex`/Enter-Space removed: mouse-only. |
 
-**Verify before fixing.** Each needs the code opened and the finding confirmed
-against the current tree; do not fix from the description.
+✅ **Triaged 2026-08-09 — all twelve verified line-by-line against the tree.
+TEN were already fixed** by later commits without the thread being resolved
+(`ShareModalWindow` delegates to `getResourceSharePath` and returns null
+honestly · `OrgResourceList`'s peek is a SIBLING of the card link and `peekId`
+clears on `[orgId, resourceType]` · the permissions registry returns null for a
+registered-but-doorless token BEFORE the template fallback · `EntityListPage`
+hands `hrefFor` to card and dense views · title-fetch rejection is caught and
+`attempted` marked in `finally` · audit-events gates the token on
+`tryGetEntityInfo` · data-integrity suppresses the door on an empty sample and
+discloses "Showing X of Y" · `AgentSetCard` is rebuilt on real anchors).
+
+Two were live, both now fixed:
+
+- 🚨 **`useEntityTitles` — the unresolved-target warning was INERT.** An earlier
+  fix deleted the label short-circuit from `isUnresolved` and wrote a comment
+  saying a stamped label no longer clears the flag — but the FETCH FILTER still
+  excluded labeled refs, so their keys never entered `attempted` and
+  `isUnresolved` could only ever return false. Both consumers stamp a label on
+  every row, so `WarRoomResourcesList`'s "deleted or no longer shared" branch
+  had never once rendered. **The lesson is the shape of the bug, not the file:
+  the guard was moved, the thing that FEEDS the guard was not.** When a fix
+  changes a predicate, check what supplies its inputs.
+- `OrgWorkspace`'s new member doors pointed at `settings#members`, a section
+  `OrgManage` only renders for owner/admin.
+
+**`DataRowInspector`'s doorless default is DELIBERATE, not a miss** — column-name
+inference was made opt-in on purpose (`scheduler.sch_run.task_id` points at
+`scheduler.sch_task`, not the workspace `task`). Only `ExposureAuditClient` opts
+in via `tokenFromColumnName`. Whether more tables should is a product call.
+
+**Verify before fixing.** This triage found a 10:2 already-fixed ratio — fixing
+from the description would have churned ten files for nothing.
 
 ### Blocked / needs a decision
 
