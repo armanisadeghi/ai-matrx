@@ -311,7 +311,13 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
           ) : null}
         </div>
 
-        {evidence.isLoading ? (
+        {/* `isPending`, not `isLoading`: TanStack v5's isLoading drops to false
+            during retry backoff while data is still undefined, which would let
+            the sections below render their honest-absence copy ("Not
+            rank-tracked for this site yet") over a read that is actively
+            failing. Same silent-fallback class as the keyword Performance tab
+            (2026-08-09). */}
+        {evidence.isPending && !evidence.isError ? (
           <div className="h-24 animate-pulse rounded-lg border border-border bg-muted/40" />
         ) : evidence.isError ? (
           <p className="text-xs text-destructive">

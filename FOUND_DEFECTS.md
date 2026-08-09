@@ -13,6 +13,32 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D137 — 59 RLS policies call `iam.has_org_access(...)` per ROW; any of them can time out a large read (2026-08-09)
+
+`iam.has_org_access` (and its `has_org_access_for` core) is `STABLE SECURITY DEFINER` with
+`SET search_path`, so Postgres can neither inline nor hoist it: in an RLS `USING` clause it is
+**called once per candidate row**. On a table with real volume that is a guaranteed
+`57014 statement timeout` against the `authenticated` role's 8s budget — and it fails ONLY for
+users who are not the row creator, because `created_by = auth.uid()` short-circuits first, so
+the owner (usually whoever is testing) never reproduces it.
+
+Live example, now fixed: `seo.search_performance_daily`. Reading ONE site's 28-day window cost
+~140,000 function calls / 850k buffer hits / 16.5s for a non-creator — every load of the
+keywords Performance tab 500'd. Fixed in
+`migrations/seo_search_performance_daily_rls_set_based_org_lane.sql` by expressing the identical
+predicate set-wise with the existing primitive: `organization_id IN (SELECT iam.my_orgs())`
+(uncorrelated → hashed SubPlan evaluated once). 16,497 ms → ~200 ms, same rows for owner,
+org member, and outsider.
+
+`iam.my_orgs()` is provably the same check — both read `iam.organization_member` filtered by
+`auth.uid()` — so this is a plan-shape change, not a new security tier.
+
+Open remainder: **58 other policies** still carry the per-row shape
+(`select count(*) from pg_policies where qual like '%has_org_access(%'`). Each is a latent
+timeout that surfaces the moment its table gets big. Fix: sweep them onto
+`organization_id IN (SELECT iam.my_orgs())`, verifying equivalence per table first. Not done
+here — a 58-policy security sweep is its own reviewed change, not a side effect of a bug fix.
+
 ### D136 — `pnpm check:hatches` is red on main: baseline drifted, ratchet no longer ratchets (2026-08-08)
 
 `scripts/type-escape-baseline.json` is far behind the tree — five categories are ABOVE baseline
