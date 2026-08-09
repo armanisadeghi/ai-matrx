@@ -917,17 +917,34 @@ Six components render `<WindowPanel>` inline with no registry entry and no
 **An agent cannot reuse what it cannot find.** Every primitive validated by this
 sweep gets a row. Guarded by `pnpm check:reuse-index`.
 
-- [x] `EntityRef` — added
-- [ ] peek registry / `hasPeek` (+ the "import from `kinds-list`, never
-      `registry`" fragmentation rule)
-- [ ] `EntityListPage` + `EntityColumnSpec`
-- [ ] `ItemMenuConfig` / `ItemMenu` / `ItemContextMenu` / `ItemRow` / `EditableLabel`
-- [ ] `useListViewPrefs`
-- [ ] `agentActionRegistry` / `useAgentRowActions` (+ note/conversation/pdf-doc registries)
-- [ ] `EditableContextMenu` / `NonEditableContextMenu` (+ `contentSource`/`entity` unlocks)
-- [ ] window-panels registration API + `useOpen*` openers
-- [ ] `emitAssistTracked` / `makeEphemeralAssist` / `AssistChip` / `useAssistRunner`
-- [ ] `announceComingSoon` + the registry
+**Re-checked against `docs/reuse-first.md` 2026-08-09 — this list was STALE:**
+every row below except the last two had already landed and was never ticked, so
+the campaign's own tracker was under-reporting its highest-leverage output. Fixed
+by reading the file rather than trusting the boxes. `pnpm check:reuse-index` says
+108 paths, all resolving.
+
+- [x] `EntityRef` — and the six props that carry what it cannot decide
+      (`openInNewTab`, `href`, `wrap`, `fill`, `labelClassName`, children)
+- [x] peek registry / `hasPeek` + `peekKeyForToken` (+ the "import from
+      `kinds-list`, never `registry`" fragmentation rule)
+- [x] `EntityListPage` + `EntityColumnSpec` + `entityToken` on a table column
+- [x] `ItemMenuConfig` / `ItemMenu` / `ItemContextMenu` / `ItemRow` / `EditableLabel`
+- [x] `useListViewPrefs`
+- [x] `agentActionRegistry` / `useAgentRowActions` (+ note/conversation/pdf-doc registries)
+- [x] `EditableContextMenu` / `NonEditableContextMenu` (+ the `contentSource`/`entity` unlocks)
+- [x] `resolveEntityToken` — **added 2026-08-09**, the checklist-3 trap ("a
+      column named `kind` is not a token") as a findable row
+- [x] window-panels: `WindowPanel` + the typed openers were already listed;
+      **added 2026-08-09** the missing half — REGISTERING a new panel (the ~10
+      sites, and the "check for an existing twin first" warning that Wave 6's
+      seven zero-call-site openers earned)
+- [x] `emitAssistTracked` / `makeEphemeralAssist` / `AssistChip` / `useAssistRunner`
+- [x] `announceComingSoon` + the registry
+
+Still unwritten (they need the primitive to exist first, not a doc edit):
+- [ ] a row for whatever Wave 4 produces for `crm_list_*` — the third consumer
+      of the `*_list_scoped` triple is what proves the template is a primitive
+      and not two coincidences.
 
 ---
 
