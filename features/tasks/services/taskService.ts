@@ -17,7 +17,7 @@ import { commentsService } from "@/features/comments/service/commentsService";
 import type { Comment } from "@/features/comments/types";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { TaskStatus, TaskOrigin } from "../constants/status";
-import { nextOccurrence } from "../utils/recurrence";
+import { nextOccurrence, ensureMonthDayAnchor } from "../utils/recurrence";
 
 export interface CreateTaskInput {
   title: string;
@@ -759,10 +759,18 @@ export async function completeTask(
     : null;
 
   if (rolled) {
+    // First roll of a MONTHLY/YEARLY rule persists the original day-of-month
+    // anchor (BYMONTHDAY) so later rolls never lose month-end after a clamp
+    // (Jan 31 → Feb 28 → Mar 31, not Mar 28 — D129).
+    const anchoredRule = ensureMonthDayAnchor(
+      task.recurrence_rule,
+      task.due_date || todayStr,
+    );
     return updateTask(task.id, {
       status: "planned",
       due_date: rolled,
       completed_at: null,
+      ...(anchoredRule ? { recurrence_rule: anchoredRule } : {}),
     });
   }
   return updateTask(task.id, { status: "completed" });
