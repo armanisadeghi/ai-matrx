@@ -1,3 +1,6 @@
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+
 /**
  * Shareable Resource Registry — TypeScript mirror
  *
@@ -899,14 +902,43 @@ export function getResourceTypeLabel(resourceType: string): string {
 }
 
 /**
- * Build the share URL for a resource. Substitutes {id} in the registry's
- * url_path_template. Returns a relative path; the caller prepends the origin.
+ * Build the share path for a resource. Returns a relative path, or `null` when
+ * we genuinely cannot open this resource — the caller must handle null and say
+ * so honestly rather than rendering a broken link.
+ *
+ * THE DOOR LAW, and specifically the "one canonical path per operation" rule:
+ * route truth is the ENTITY REGISTRY (`features/scopes/registry`), so that is
+ * consulted first. `url_path_template` in `platform.shareable_resource_registry`
+ * is a second, DB-side route authority that drifted badly — it still advertises
+ * `/apps/{id}` (the real route is `/agent-apps/{id}`), `/skills/{id}`,
+ * `/workflows/{id}`, `/quizzes/{id}`, `/flashcards/{id}`, `/code/files/{id}`,
+ * `/runs/{id}` and `/scopes/{id}`, none of which exist. It is now the FALLBACK,
+ * used only for resources the entity registry doesn't cover.
+ *
+ * Two guesses were removed, both of which produced 404s that reached other
+ * people:
+ *   - the `/${resourceType}/${resourceId}` fabrication for unregistered types;
+ *   - templates that still contain a placeholder after substitution — either a
+ *     non-id key (`{slug}`) or a second distinct segment the template can't
+ *     express (`/workflows/{id}/triggers/{id}`).
  */
 export function getResourceSharePath(
   resourceType: string,
   resourceId: string,
-): string {
+): string | null {
+  const registryHref = resolveEntityDoors(resourceType, resourceId).href;
+  if (registryHref) return registryHref;
+
+  // A REGISTERED token with no `hrefFor` is a decision, not a gap: we looked and
+  // there is no route (`workflow` lives in workflow-studio; `skill` is
+  // admin-only). Falling through to the template here would hand back exactly
+  // the stale `/workflows/{id}` and `/skills/{id}` this function exists to stop.
+  // Only a resource type the entity registry does not know at all may fall back.
+  if (tryGetEntityInfo(resourceType)) return null;
+
   const entry = getShareableResource(resourceType);
-  if (!entry) return `/${resourceType}/${resourceId}`;
-  return entry.urlPathTemplate.replace("{id}", resourceId);
+  if (!entry?.urlPathTemplate) return null;
+
+  const path = entry.urlPathTemplate.replace("{id}", resourceId);
+  return /\{[^}]*\}/.test(path) ? null : path;
 }

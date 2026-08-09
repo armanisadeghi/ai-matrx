@@ -6,9 +6,12 @@
  * the user's personal-org resources are never touched.
  */
 import React, { useState } from "react";
+import Link from "next/link";
 import { ArrowRight, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { Button } from "@/components/ui/button";
+import { orgAdminMemberHref } from "../routes";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +39,13 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orgId: string;
+  /**
+   * The org SLUG — the segment the `(core)` org-admin routes actually use.
+   * Optional so an existing caller that has not threaded it through still
+   * compiles; when absent the member's name simply renders as text rather than
+   * pointing at a route that would not resolve.
+   */
+  orgSlug?: string;
   mode: "reassign" | "remove";
   sourceUserId: string;
   sourceLabel: string;
@@ -50,6 +60,7 @@ export function ReassignResourcesDialog({
   open,
   onOpenChange,
   orgId,
+  orgSlug,
   mode,
   sourceUserId,
   sourceLabel,
@@ -78,6 +89,19 @@ export function ReassignResourcesDialog({
   const submit = async () => {
     setBusy(true);
     try {
+      // "a count is a door" — but you cannot open "5 resources": they span
+      // several types with no single destination page. What the user actually
+      // wants after a reassign is the person who now OWNS them, and that id is
+      // `target`. The org-admin member route is the correct door here, never
+      // AdminUserRef — see routes.ts for why (403 for an ordinary org owner).
+      const destinationDoor =
+        hasTarget && orgSlug
+          ? toastDoor("user", target, {
+              href: orgAdminMemberHref(orgSlug, target),
+              label: "Open member",
+            })
+          : undefined;
+
       if (mode === "remove") {
         const result = await removeMember(orgId, sourceUserId, hasTarget ? target : undefined);
         const moved = result.reassigned.reduce((s, r) => s + r.reassigned, 0);
@@ -85,13 +109,16 @@ export function ReassignResourcesDialog({
           hasTarget
             ? `Member removed; reassigned ${moved} resource${moved === 1 ? "" : "s"}.`
             : "Member removed.",
+          { action: destinationDoor },
         );
       } else {
         const types =
           selectedTypes.size === resources.length ? undefined : Array.from(selectedTypes);
         const result = await reassignMemberResources(orgId, sourceUserId, target, types);
         const moved = result.reduce((s, r) => s + r.reassigned, 0);
-        toast.success(`Reassigned ${moved} resource${moved === 1 ? "" : "s"}.`);
+        toast.success(`Reassigned ${moved} resource${moved === 1 ? "" : "s"}.`, {
+          action: destinationDoor,
+        });
       }
       onOpenChange(false);
       onDone();
@@ -101,6 +128,30 @@ export function ReassignResourcesDialog({
       setBusy(false);
     }
   };
+
+
+  /**
+   * THE DOOR LAW on a DESTRUCTIVE dialog: this is about to move or delete this
+   * person's work, and their name was plain text with their id right there in
+   * props. Links to the member's page in THIS shell, never to the platform
+   * admin console — see routes.ts for why.
+   */
+  const memberHref = orgSlug
+    ? orgAdminMemberHref(orgSlug, sourceUserId)
+    : null;
+  const sourceName = memberHref ? (
+    <Link
+      href={memberHref}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-medium text-foreground underline-offset-2 hover:text-primary hover:underline"
+      title={`Open ${sourceLabel} in a new tab`}
+    >
+      {sourceLabel}
+    </Link>
+  ) : (
+    <span className="font-medium text-foreground">{sourceLabel}</span>
+  );
 
   const confirmDisabled =
     busy ||
@@ -115,13 +166,13 @@ export function ReassignResourcesDialog({
           <DialogDescription>
             {mode === "remove" ? (
               <>
-                Remove <span className="font-medium text-foreground">{sourceLabel}</span> from this
+                Remove {sourceName} from this
                 organization. Optionally reassign their {totalResources} org-scoped resource
                 {totalResources === 1 ? "" : "s"} to another member first.
               </>
             ) : (
               <>
-                Move <span className="font-medium text-foreground">{sourceLabel}</span>&apos;s
+                Move {sourceName}&apos;s
                 org-scoped resources to another member. Their personal resources are never affected.
               </>
             )}

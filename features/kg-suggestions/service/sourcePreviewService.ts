@@ -23,6 +23,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { filesDb } from "@/features/files/filesDb";
 
 /** Source kinds we can pop into a floating window panel from the decision UI. */
@@ -114,24 +115,29 @@ function humanSize(bytes: number | null | undefined): string | null {
  */
 export function sourceLinkFor(kind: string, id: string): string | null {
   const enc = encodeURIComponent(id);
+  // Canonical entity tokens answer from the ENTITY REGISTRY — hand-written
+  // routes here had already drifted (`/transcripts/<id>` and `/code/<id>` are
+  // not real routes). Only the non-token kinds below stay hand-written.
+  const KIND_TO_TOKEN: Record<string, string> = {
+    note: "note",
+    task: "task",
+    transcript: "transcript",
+    code_file: "code_file",
+    conversation: "conversation",
+    project: "project",
+  };
+  const token = KIND_TO_TOKEN[kind];
+  if (token) return resolveEntityDoors(token, id).href;
+
   switch (kind) {
-    case "note":
-      return `/notes/${enc}`;
-    case "task":
-      return `/tasks/${enc}`;
-    case "transcript":
-      return `/transcripts/${enc}`;
     case "cld_file":
-      return `/files/f/${enc}?tab=document`;
-    case "code_file":
-      return `/code/${enc}`;
-    case "conversation":
-      return `/chat/${enc}`;
+      // The file token's route plus this surface's document tab.
+      return `${resolveEntityDoors("file", id).href ?? `/files/f/${enc}`}?tab=document`;
     case "scraped":
       // source_id is the page URL the scraper keys results by.
       return `/scraper?url=${enc}`;
     default:
-      // project (org-scoped, no id-only route), cx_message, unknown.
+      // cx_message, unknown.
       return null;
   }
 }

@@ -67,6 +67,10 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
       accessorKey: "captured_at",
       header: "Captured",
       filter: false,
+      // THE DOOR LAW: a snapshot's capture time is how the user names it, so
+      // that cell is the real anchor to the snapshot record. Same destination
+      // as `onRowOpen`; the row click stays a mouse convenience.
+      href: (row) => `${sitePath}/pages/${pageId}/snapshots/${row.id}`,
       cell: (row) => (
         <span className="whitespace-nowrap text-xs">
           {formatCompactDate(row.captured_at)}

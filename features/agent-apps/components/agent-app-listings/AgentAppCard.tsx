@@ -36,6 +36,7 @@ import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { formatNumber, humanAgentApp } from "@/features/agent-apps/format";
 
 interface AgentAppCardProps {
@@ -133,25 +134,40 @@ export function AgentAppCard({
         </span>
       </div>
 
-      <div className="px-4 pt-12 pb-3 flex-1 flex flex-col gap-1">
-        <h3 className="text-sm font-semibold text-foreground line-clamp-2 break-words group-hover:text-primary transition-colors">
-          {app.name || "Untitled App"}
+      <div className="group/entity-ref px-4 pt-12 pb-3 flex-1 flex flex-col gap-1">
+        {/* THE DOOR LAW: the card body opens the manage page on click and
+            nothing else — the NAME is the record's own anchor, so cmd-click,
+            middle-click, new tab and keyboard focus work, and the peek answers
+            "which app is that?" without leaving the list. */}
+        <h3 className="text-sm font-semibold text-foreground break-words group-hover:text-primary transition-colors">
+          <EntityRef
+            token="app"
+            id={app.id}
+            name={app.name}
+            showIcon={false}
+            nameClassName="whitespace-normal break-words line-clamp-2"
+          />
         </h3>
         {app.tagline && (
           <p className="text-xs text-muted-foreground line-clamp-2">
             {app.tagline}
           </p>
         )}
-        <div className="mt-auto pt-2 flex items-center gap-2 text-xs text-muted-foreground">
-          <span
-            className="truncate"
-            title={`Agent: ${app.agent_name ?? app.agent_id}`}
-          >
-            <span className="opacity-70">Agent:</span>{" "}
-            <span className="text-foreground font-medium">
-              {app.agent_name ?? "—"}
-            </span>
-          </span>
+        {/* The app names the agent it runs — a record with an id, so it gets
+            its own door instead of being an unreachable string. */}
+        <div className="mt-auto pt-2 flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+          <span className="opacity-70 shrink-0">Agent:</span>
+          {app.agent_id ? (
+            <EntityRef
+              token="agent"
+              id={app.agent_id}
+              name={app.agent_name}
+              showIcon={false}
+              className="text-foreground font-medium"
+            />
+          ) : (
+            <span className="text-foreground font-medium">—</span>
+          )}
         </div>
         <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
           <span title="Total executions">

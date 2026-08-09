@@ -53,6 +53,10 @@ import {
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
+import {
+  AgentAppRef,
+  agentAppExecutionsHref,
+} from "@/features/agent-apps/components/AgentAppRef";
 
 const STATUS_VARIANT: Record<
   AgentAppAdminView["status"],
@@ -352,13 +356,17 @@ export default function AdminSystemAppsListPage() {
                       return (
                         <TableRow key={a.id} className="hover:bg-accent/30">
                           <TableCell className="font-medium">
-                            <button
-                              type="button"
-                              className="text-left hover:underline"
-                              onClick={() => handleOpenEditor(a.id)}
-                            >
-                              {a.name}
-                            </button>
+                            {/*
+                              Was an onClick-only <button>: no href meant no
+                              cmd-click, no new tab, no peek. AgentAppRef is the
+                              real door (admin editor + new tab + peek + public
+                              page) — THE DOOR LAW.
+                            */}
+                            <AgentAppRef
+                              appId={a.id}
+                              name={a.name}
+                              slug={a.slug}
+                            />
                           </TableCell>
                           <TableCell className="text-muted-foreground text-xs">
                             {a.slug}
@@ -421,8 +429,15 @@ export default function AdminSystemAppsListPage() {
                           <TableCell className="text-xs">
                             {a.category ?? "—"}
                           </TableCell>
+                          {/* A count is a door: the runs total reaches those runs. */}
                           <TableCell className="text-right text-xs">
-                            {a.total_executions ?? 0}
+                            <Link
+                              href={agentAppExecutionsHref(a.id)}
+                              title={`Open the runs and errors for ${a.name}`}
+                              className="underline-offset-2 hover:text-primary hover:underline"
+                            >
+                              {a.total_executions ?? 0}
+                            </Link>
                           </TableCell>
                           <TableCell className="text-right text-xs text-muted-foreground">
                             {a.updated_at

@@ -6,6 +6,7 @@
 // TranscriptsHubCard: same kind badge + duration/updated meta, but the row's
 // full ItemMenu (the ONE action list) instead of a bespoke action strip.
 
+import Link from "next/link";
 import { FileAudio, MoreHorizontal } from "lucide-react";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ export function TranscriptBrowseCards({
   density,
   showShared,
   actions,
+  hrefFor,
 }: EntityAltViewProps<TranscriptListRow>) {
   return (
     <div
@@ -36,6 +38,7 @@ export function TranscriptBrowseCards({
     >
       {rows.map((row) => {
         const meta = KIND_META[row.kind as TranscriptListKind];
+        const titleHref = hrefFor(row);
         return (
           <div
             key={row.id}
@@ -61,8 +64,24 @@ export function TranscriptBrowseCards({
               </span>
 
               <div className="min-w-0 flex-1">
+                {/*
+                  A real anchor on the title, so the card view is not a poorer
+                  door than the table. `hrefFor` is deliberately undefined for
+                  kinds with no record of their own (an unsorted Scribe capture)
+                  — those stay plain text rather than linking to nowhere.
+                */}
                 <p className="line-clamp-2 text-sm font-medium leading-snug">
-                  {row.title}
+                  {titleHref ? (
+                    <Link
+                      href={titleHref}
+                      onClick={(e) => e.stopPropagation()}
+                      className="rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {row.title}
+                    </Link>
+                  ) : (
+                    row.title
+                  )}
                 </p>
                 {row.description && (
                   <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">

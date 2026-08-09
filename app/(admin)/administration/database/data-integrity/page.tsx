@@ -24,6 +24,11 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import {
+  isUuidValue,
+  tokenFromColumnName,
+} from "@/components/official/entity-ref/doors";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 
 type Severity = "error" | "warning" | "info";
@@ -147,6 +152,27 @@ function fmt(v: unknown): string {
   return String(v);
 }
 
+/**
+ * THE DOOR LAW on a generic column dump: a finding that names an offending
+ * record must let the admin OPEN it, not just read a truncated uuid.
+ *
+ * `tokenFromColumnName` is opt-IN elsewhere because an unchecked guess can send
+ * the user to a DIFFERENT record. It is opted into here after auditing every
+ * `<x>_id` column the registered checks actually select (lib/integrity/checks.ts):
+ *   organization_id → iam.organizations   ✓ correct FK, `/organizations/<id>`
+ *   source_id · owner_id · user_id · parent_id · parent_folder_id ·
+ *   duplicate_of_file_id · canonical_processed_document_id · target_id ·
+ *   member_id · account_id                → no registered token, so no door
+ * The strict `<token>_id` exact match is what makes that safe.
+ *
+ * ADDING A CHECK: if its sample selects a `<token>_id` column, confirm the FK
+ * really points at that entity AND that the row actually exists — a check that
+ * finds DANGLING references must alias the column away from its token, or every
+ * finding ships a link to the record it just proved is missing. That is why the
+ * phantom-conversation check selects `a.source_id as phantom_conversation_id`
+ * and not `as conversation_id`. Every uuid that resolves to no token still gets
+ * short-form + copy, never a bare truncated cell.
+ */
 function FindingsTable({ rows }: { rows: Record<string, unknown>[] }) {
   const columns = useMemo(() => {
     const set = new Set<string>();
@@ -171,15 +197,26 @@ function FindingsTable({ rows }: { rows: Record<string, unknown>[] }) {
         <tbody>
           {rows.map((r, i) => (
             <tr key={i} className="border-t border-border">
-              {columns.map((c) => (
-                <td
-                  key={c}
-                  className="px-2 py-1 font-mono text-[11px] whitespace-nowrap max-w-[28rem] truncate"
-                  title={fmt(r[c])}
-                >
-                  {fmt(r[c])}
-                </td>
-              ))}
+              {columns.map((c) => {
+                const value = r[c];
+                return (
+                  <td
+                    key={c}
+                    className="px-2 py-1 font-mono text-[11px] whitespace-nowrap max-w-[28rem] truncate"
+                    title={isUuidValue(value) ? undefined : fmt(value)}
+                  >
+                    {isUuidValue(value) ? (
+                      <MatrxUuidCell
+                        value={value}
+                        label={c}
+                        token={tokenFromColumnName(c)}
+                      />
+                    ) : (
+                      fmt(value)
+                    )}
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>
@@ -249,6 +286,8 @@ export default function DataIntegrityPage() {
   const [error, setError] = useState<string | null>(null);
   const [runningAll, setRunningAll] = useState(false);
   const [runningId, setRunningId] = useState<string | null>(null);
+  // Controlled so the Findings count can open its own check's panel.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const loadChecks = useCallback(async () => {
     setError(null);
@@ -401,11 +440,31 @@ export default function DataIntegrityPage() {
         filter: "number",
         width: 90,
         align: "right",
-        cell: (r) => (
-          <span className="text-xs tabular-nums">
-            {r.result ? r.result.count : "—"}
-          </span>
-        ),
+        // A COUNT IS A DOOR: the offending rows exist (the check sampled them),
+        // so the number reaches them — it opens this check's panel, where the
+        // findings sample is listed with a door on every record it names.
+        cell: (r) => {
+          const count = r.result?.count;
+          if (count === undefined) {
+            return <span className="text-xs tabular-nums">—</span>;
+          }
+          if (count === 0 || (r.result?.sample.length ?? 0) === 0) {
+            return <span className="text-xs tabular-nums">{count}</span>;
+          }
+          return (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedId(r.id);
+              }}
+              title={`Show the ${r.result?.sample.length} sampled ${r.title} findings`}
+              className="text-xs tabular-nums text-primary underline-offset-2 hover:underline"
+            >
+              {count}
+            </button>
+          );
+        },
       },
       {
         id: "duration",
@@ -513,6 +572,8 @@ export default function DataIntegrityPage() {
           data={rows}
           columns={columns}
           getRowId={(r) => r.id}
+          selectedId={selectedId}
+          onSelectedIdChange={setSelectedId}
           isLoading={!checks && !error}
           isFetching={runningAll}
           pageSize={50}

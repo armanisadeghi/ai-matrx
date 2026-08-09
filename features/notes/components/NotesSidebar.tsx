@@ -557,6 +557,7 @@ export function NotesSidebar({
                 <MoveNoteDialog
                     open={moveNoteOpen}
                     onOpenChange={setMoveNoteOpen}
+                    noteId={moveNoteData.id}
                     noteName={moveNoteData.label}
                     currentFolder={moveNoteData.folder_name ?? 'Draft'}
                     availableFolders={allFolders}

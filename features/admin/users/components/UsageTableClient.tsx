@@ -13,6 +13,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import type { AdminUserUsageRow } from "../types";
 
@@ -88,7 +89,13 @@ export function UsageTableClient() {
 
   const columns = useMemo((): MatrxColumnDef<AdminUserUsageRow>[] => {
     return [
-      { id: "email", accessorKey: "email", header: "User", width: 220 },
+      {
+        id: "email",
+        accessorKey: "email",
+        header: "User",
+        width: 220,
+        cell: (r) => <AdminUserRef userId={r.user_id} email={r.email} />,
+      },
       {
         id: "total_requests",
         accessorKey: "total_requests",

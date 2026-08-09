@@ -10,7 +10,8 @@
  */
 
 import { useRef, useState } from "react";
-import { Eye, PanelTop } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, Eye, PanelTop } from "lucide-react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ import {
   gscMetricCopyLines,
 } from "@/features/marketing/search-console/lib/columns";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { getGscWatch } from "@/features/marketing/search-console/data-watch";
 import {
   useToggleWatch,
@@ -198,6 +200,25 @@ export function WatchlistTab({
           >
             {row.key}
           </span>
+          {/*
+            THE DOOR LAW: a watched PAGE is a canonical page record — its
+            `entity_id` is the page id the watch was registered against — so it
+            must be reachable. A watched QUERY is a keyword with no route yet,
+            and gets no door rather than a broken one. The door is a trailing
+            anchor because the row click is the drilldown (queries for this
+            page), which stays the row's own gesture.
+          */}
+          {row.kind === "page" && row.entity_id ? (
+            <Link
+              href={marketingRoutes.sitePage(null, siteId, row.entity_id)}
+              onClick={(event) => event.stopPropagation()}
+              title={`Open ${row.key} in the page workspace`}
+              aria-label={`Open ${row.key} in the page workspace`}
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <ArrowUpRight className="h-3 w-3" />
+            </Link>
+          ) : null}
           {row.impressions === 0 ? (
             <span className="shrink-0 text-[10px] text-muted-foreground">
               no impressions in period

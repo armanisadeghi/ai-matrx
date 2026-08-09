@@ -57,6 +57,7 @@ import {
 } from "@/features/scopes/redux/selectors/tree";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { ConversationHoverPreview } from "@/features/agents/components/previews/ConversationHoverPreview";
 import { MessageHoverPreview } from "@/features/agents/components/previews/MessageHoverPreview";
 
@@ -303,14 +304,20 @@ export function TaskQuickCreateCore({
             ? e.message
             : `Could not link ${entityTypeLabel(secondary.entity_type)}`;
         failure = failure ? `${failure} · ${message}` : message;
-        toast.error("Task created, but NOT linked", { description: message });
+        toast.error("Task created, but NOT linked", {
+          description: message,
+          action: toastDoor("task", taskId),
+        });
       }
     }
 
     dispatch(setSelectedTaskId(taskId));
     setLinkFailure(failure);
     setSavedTaskId(taskId);
-    if (!failure) toast.success("Task created");
+    // The task exists either way — on the link-failure path too, which is
+    // exactly when the user most needs to reach it.
+    if (!failure)
+      toast.success("Task created", { action: toastDoor("task", taskId) });
   }, [
     canSave,
     createAndAssociate,

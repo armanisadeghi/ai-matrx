@@ -100,6 +100,9 @@ import {
 import { cn } from "@/lib/utils";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { AdminUserDoorControls } from "@/features/admin/users/components/AdminUserRef";
+import { feedbackHref } from "../doors";
 
 interface FeedbackDetailDialogProps {
   feedback: UserFeedback;
@@ -107,6 +110,13 @@ interface FeedbackDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
   initialTab?: string;
+  /**
+   * THE DOOR LAW: swap this dialog's subject to another feedback record.
+   * Supplied by `FeedbackTable`, which owns the loaded list and the
+   * `?feedback=<id>` deep link — so the Parent edge OPENS the parent instead of
+   * copying its id and toasting a preview of the answer.
+   */
+  onOpenFeedback?: (id: string) => void;
 }
 
 const feedbackTypeIcons: Record<FeedbackType, React.ReactNode> = {
@@ -158,6 +168,7 @@ export default function FeedbackDetailDialog({
   onOpenChange,
   onUpdate,
   initialTab,
+  onOpenFeedback,
 }: FeedbackDetailDialogProps) {
   // Live local copy of the feedback item — updated from server responses
   const [item, setItem] = useState<UserFeedback>(feedback);
@@ -840,24 +851,42 @@ export default function FeedbackDetailDialog({
                 </DialogTitle>
                 <DialogDescription className="mt-1">
                   <span className="flex items-center gap-4 text-xs">
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(item.id);
-                        toast.success("ID copied to clipboard");
-                      }}
-                      className="flex items-center gap-1 font-mono text-muted-foreground hover:text-foreground transition-colors"
-                      title={`Click to copy: ${item.id}`}
-                    >
-                      <Copy className="w-3 h-3" />
-                      {item.id.slice(0, 8)}
-                    </button>
+                    {/* Short id + copy + a real new-tab link to this record. */}
+                    <MatrxUuidCell
+                      value={item.id}
+                      label="Feedback"
+                      href={feedbackHref(item.id)}
+                    />
                     <span className="flex items-center gap-1">
                       <User className="w-3 h-3" />
+                      {/* The reporter is a user — reach them. `DialogDescription`
+                          renders a <p>, so this uses the doors-only cluster
+                          (a <button> trigger, phrasing content) rather than
+                          `AdminUserRef`, whose <div> would be invalid here. */}
                       {item.username || "Anonymous"}
+                      <AdminUserDoorControls
+                        userId={item.user_id}
+                        label={item.username || "Anonymous"}
+                      />
                     </span>
                     <span className="flex items-center gap-1">
                       <MapPin className="w-3 h-3" />
-                      {item.route}
+                      {/* The route the report was filed from is a destination —
+                          open the page instead of describing it. Only in-app
+                          paths link; anything else stays plain text. */}
+                      {item.route?.startsWith("/") ? (
+                        <a
+                          href={item.route}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={`Open ${item.route} in a new tab`}
+                          className="underline-offset-2 hover:text-foreground hover:underline"
+                        >
+                          {item.route}
+                        </a>
+                      ) : (
+                        item.route
+                      )}
                     </span>
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
@@ -1150,49 +1179,90 @@ export default function FeedbackDetailDialog({
                       <GitBranch className="w-3.5 h-3.5 text-primary" />
                       Related Items
                     </div>
-                    {item.parent_id && (
-                      <div className="mb-2">
-                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">
-                          Parent
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const parentId = item.parent_id;
-                            if (!parentId) return;
-                            const parent = allFeedbackItems.find(
-                              (f) => f.id === parentId,
-                            );
-                            if (parent)
-                              toast.info(
-                                `Parent: ${parent.id.slice(0, 8)} — ${parent.description.slice(0, 60)}`,
-                              );
-                            navigator.clipboard.writeText(parentId);
-                            toast.success("Parent ID copied");
-                          }}
-                          className="flex items-center gap-2 text-xs px-2 py-1.5 rounded bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors w-full text-left"
-                        >
-                          <CornerDownRight className="w-3 h-3 text-primary flex-shrink-0 rotate-180" />
-                          <span className="font-mono text-primary">
-                            {item.parent_id.slice(0, 8)}
-                          </span>
-                          {(() => {
-                            const parent = allFeedbackItems.find(
-                              (f) => f.id === item.parent_id,
-                            );
-                            return parent ? (
-                              <span className="text-muted-foreground truncate">
-                                {parent.description.slice(0, 60)}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground italic">
-                                Loading...
-                              </span>
-                            );
-                          })()}
-                        </button>
-                      </div>
-                    )}
+                    {item.parent_id &&
+                      (() => {
+                        const parentId = item.parent_id;
+                        const parent = allFeedbackItems.find(
+                          (f) => f.id === parentId,
+                        );
+                        const parentLabel = parent
+                          ? parent.description.slice(0, 60)
+                          : null;
+                        return (
+                          <div className="mb-2">
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">
+                              Parent
+                            </div>
+                            {/* THE DOOR LAW: this dialog can already RESOLVE
+                                the parent — so it opens it. Clicking swaps the
+                                dialog's subject (and the URL); the new-tab
+                                control keeps the current record on screen.
+                                🚨 `onOpenFeedback` UPGRADES this door to an
+                                in-place swap — it does not GRANT the door.
+                                Gating the control on the prop made the primary
+                                affordance a DISABLED button still showing the
+                                parent's name, in the two of three callers that
+                                mount this dialog without the callback
+                                (CategoriesTab, WorkQueueTab). A door that only
+                                exists when a caller remembered to wire a
+                                callback is the exact dead end this campaign
+                                kills. The route always exists, so with no
+                                callback the same control is a real anchor. */}
+                            <div className="flex items-center gap-1">
+                              {(() => {
+                                const doorClass =
+                                  "flex min-w-0 flex-1 items-center gap-2 text-xs px-2 py-1.5 rounded bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors text-left";
+                                const doorTitle = `Open parent ${parentLabel ?? parentId}`;
+                                const doorContent = (
+                                  <>
+                                    <CornerDownRight className="w-3 h-3 text-primary flex-shrink-0 rotate-180" />
+                                    <span className="font-mono text-primary">
+                                      {parentId.slice(0, 8)}
+                                    </span>
+                                    {parentLabel ? (
+                                      <span className="text-muted-foreground truncate">
+                                        {parentLabel}
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground italic">
+                                        Loading...
+                                      </span>
+                                    )}
+                                  </>
+                                );
+                                return onOpenFeedback ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => onOpenFeedback(parentId)}
+                                    title={doorTitle}
+                                    className={doorClass}
+                                  >
+                                    {doorContent}
+                                  </button>
+                                ) : (
+                                  <a
+                                    href={feedbackHref(parentId)}
+                                    title={doorTitle}
+                                    className={doorClass}
+                                  >
+                                    {doorContent}
+                                  </a>
+                                );
+                              })()}
+                              <a
+                                href={feedbackHref(parentId)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Open parent in a new tab"
+                                aria-label="Open parent in a new tab"
+                                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </div>
+                          </div>
+                        );
+                      })()}
                   </div>
                 ) : null}
               </TabsContent>
@@ -1460,19 +1530,57 @@ export default function FeedbackDetailDialog({
                   </label>
                   {parentId !== "none" ? (
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 p-2 rounded-lg bg-primary/5 border border-primary/20 text-xs font-mono text-primary">
-                        {parentId.slice(0, 8)}…
+                      {/* The linked parent is an editor VALUE, so the label
+                          can't be the anchor — its doors ride beside it. */}
+                      <div className="flex min-w-0 flex-1 items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20 text-xs font-mono text-primary">
+                        <span className="shrink-0">
+                          {parentId.slice(0, 8)}…
+                        </span>
                         {(() => {
                           const parent = allFeedbackItems.find(
                             (f) => f.id === parentId,
                           );
                           return parent ? (
-                            <span className="ml-2 font-normal text-muted-foreground">
+                            <span className="truncate font-normal text-muted-foreground">
                               {parent.description.slice(0, 60)}
                             </span>
                           ) : null;
                         })()}
                       </div>
+                      {/* Same rule as the Details tab above: without the
+                          swap callback this is still a door, never a disabled
+                          arrow next to a record we can plainly resolve. */}
+                      {onOpenFeedback ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onOpenFeedback(parentId)}
+                          className="h-8 px-2"
+                          title="Open parent ticket"
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                        </Button>
+                      ) : (
+                        <a
+                          href={feedbackHref(parentId)}
+                          title="Open parent ticket"
+                          aria-label="Open parent ticket"
+                          className="inline-flex h-8 items-center justify-center rounded-md px-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                        </a>
+                      )}
+                      <a
+                        href={feedbackHref(parentId)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Open parent ticket in a new tab"
+                        aria-label="Open parent ticket in a new tab"
+                        className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
                       <Button
                         type="button"
                         variant="ghost"
@@ -1659,6 +1767,7 @@ export default function FeedbackDetailDialog({
                     <UserCheck className="w-3.5 h-3.5" />
                     Assigned to
                   </label>
+                  <div className="flex items-center gap-1">
                   <Select value={assigneeId} onValueChange={setAssigneeId}>
                     <SelectTrigger className="h-9">
                       <SelectValue>
@@ -1714,6 +1823,22 @@ export default function FeedbackDetailDialog({
                       ))}
                     </SelectContent>
                   </Select>
+                  {/* The assignee is a real user. A `<SelectItem>` can never be
+                      an anchor, so the doors ride beside the picker. */}
+                  {assigneeId !== "none" ? (
+                    <AdminUserDoorControls
+                      userId={assigneeId}
+                      label={(() => {
+                        const admin = assignableAdmins.find(
+                          (a) => a.user_id === assigneeId,
+                        );
+                        return (
+                          admin?.display_name || admin?.email || assigneeId
+                        );
+                      })()}
+                    />
+                  ) : null}
+                  </div>
                   {assigneeId !== "none" &&
                     assigneeId !== (item.assigned_to ?? "none") && (
                       <p className="mt-1 text-[11px] text-muted-foreground leading-snug">

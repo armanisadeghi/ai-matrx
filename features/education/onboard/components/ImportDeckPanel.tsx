@@ -8,9 +8,10 @@
 // GENERATES new material. Lands a native deck and links to it.
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Upload, ClipboardPaste, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,6 @@ const isAnkiFile = (file: File) => /\.(apkg|colpkg)$/i.test(file.name);
 type Mode = "file" | "paste";
 
 export function ImportDeckPanel() {
-  const router = useRouter();
   const [mode, setMode] = useState<Mode>("file");
   const [pasteText, setPasteText] = useState("");
   const [pasteName, setPasteName] = useState("");
@@ -148,18 +148,25 @@ export function ImportDeckPanel() {
 
       {result && (
         <div className="mt-3 flex items-center justify-between rounded-lg border border-border bg-muted/40 px-3 py-2">
-          <div className="flex items-center gap-2 text-sm text-foreground">
-            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-500" />
-            <span className="truncate">
-              {result.name} · {result.cardCount} cards
+          {/* The deck we JUST created is a real record with a real page, and
+              this row named it twice over without a single door: the name was
+              a <span> and Open was a router.push, so no cmd-click, no
+              middle-click, no new tab, no destination on hover. */}
+          <div className="flex min-w-0 items-center gap-2 text-sm text-foreground">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600 dark:text-green-500" />
+            <EntityRef
+              token="fc_set"
+              id={result.setId}
+              name={result.name}
+              showIcon={false}
+              className="truncate"
+            />
+            <span className="shrink-0 text-muted-foreground">
+              · {result.cardCount} cards
             </span>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => router.push(`/education/flashcards/${result.setId}`)}
-          >
-            Open
+          <Button size="sm" variant="outline" asChild>
+            <Link href={`/education/flashcards/${result.setId}`}>Open</Link>
           </Button>
         </div>
       )}

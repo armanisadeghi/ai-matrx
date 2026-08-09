@@ -25,6 +25,7 @@ import {
 } from "@/features/agents/redux/agent-consumers/selectors";
 import { DesktopFilterPanel } from "@/features/agents/components/shared/DesktopFilterPanel";
 import { AgentPeekButton } from "./AgentPeekButton";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 
 /** MIME key used to hand an agent id from the rail to the canvas drop target. */
 export const AGENT_DND_MIME = "application/x-matrx-agent-id";
@@ -158,6 +159,16 @@ export function AgentLibraryRail({ orchestratorId, memberIds, onAdd }: AgentLibr
               </div>
               <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                 <AgentPeekButton agentId={a.id} />
+                {/* Clicking this row ADDS the agent to the set, so the name
+                    cannot be the door — the door rides alongside it. New tab
+                    only: navigating away would cost the user the builder. */}
+                <EntityDoorControls
+                  token="agent"
+                  id={a.id}
+                  name={a.name || null}
+                  disablePeek
+                  alwaysShowActions
+                />
                 <Plus className="h-4 w-4 text-muted-foreground" />
               </div>
             </div>

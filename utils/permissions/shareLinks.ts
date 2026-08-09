@@ -208,8 +208,14 @@ export async function forkSharedResource(
       });
       if (error) return { success: false, error: error.message };
       const r = data as { success: boolean; error?: string; quiz_id?: string };
+      // `fork_shared_quiz` returns a new `education.quiz_sessions` id, and there
+      // is no route that opens one — `/quizzes/<id>` does not exist, and
+      // `/education/quizzes/[id]` serves `education.assessment`, a different
+      // record. Forking used to drop the user on a 404 immediately after a
+      // successful copy; land them on the list until a session route exists
+      // (FOUND_DEFECTS D139-adjacent, tracked in the no-dead-ends sweep).
       return r?.success
-        ? { success: true, path: `/quizzes/${r.quiz_id}` }
+        ? { success: true, path: `/education/quizzes` }
         : { success: false, error: r?.error };
     }
     return { success: false, error: "This type can't be copied yet" };

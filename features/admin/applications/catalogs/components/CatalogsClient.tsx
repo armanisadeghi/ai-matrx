@@ -9,9 +9,10 @@
 // any HuggingFace/Civitai URL via aidream into a prefilled entry.
 // Cross-repo system-of-record: common-docs/systems/remote-catalogs/FEATURE.md
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LibraryBig, Link2, Plus } from "lucide-react";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +47,56 @@ import {
 
 interface CatalogsClientProps {
   initialRows: CatalogEntryRow[];
+  /** Deep-link: application to select. Defaults to DEFAULT_CATALOG_APP. */
+  initialApp?: string;
+  /** Deep-link: open this kind's entry table instead of the kind dashboard. */
+  initialKind?: string;
+  /** Deep-link: open this entry's editor (needs `initialKind`). */
+  initialEntryId?: string;
+}
+
+/**
+ * Landing view for a deep link. `?kind=` opens that kind's table, `?entry=`
+ * opens one entry's editor — THE DOOR LAW: a surface that names a catalog entry
+ * (the applications history timeline) must be able to open exactly that entry,
+ * not just drop the operator on the tab.
+ */
+/**
+ * The row a `?entry=` deep link names, searched across ALL applications.
+ *
+ * Deliberately not scoped to the currently-selected app: the id identifies the
+ * record globally, and the record is what tells us which application it belongs
+ * to. Searching within the selected app instead is what made a valid link show
+ * the "belongs to another application" alert.
+ */
+function deepLinkRow(
+  entryId: string | undefined,
+  rows: CatalogEntryRow[],
+): CatalogEntryRow | undefined {
+  return entryId ? rows.find((r) => r.id === entryId) : undefined;
+}
+
+function initialView(
+  kind: string | undefined,
+  entryId: string | undefined,
+  rows: CatalogEntryRow[],
+): View {
+  // `?entry=` alone is a complete instruction — the row knows its own kind, so
+  // requiring the caller to also pass `?kind=` would silently drop the deep
+  // link on the dashboard and never open the record it names.
+  //
+  // When BOTH are present the ROW wins: `?kind=` is a caller's claim, the row's
+  // own `kind` is the fact. A stale or hand-edited link that disagrees would
+  // otherwise open the right entry under the wrong kind, and `view.kind` is what
+  // drives Back and post-delete routing — dropping the operator on a table the
+  // entry was never in. Falling back to `?kind=` still covers the case the row
+  // isn't in this page's `rows` yet.
+  const rowKind = deepLinkRow(entryId, rows)?.kind;
+  const resolvedKind = rowKind ?? kind;
+  if (resolvedKind && entryId)
+    return { mode: "edit", kind: resolvedKind, entryId };
+  if (resolvedKind) return { mode: "kind", kind: resolvedKind };
+  return { mode: "kinds" };
 }
 
 type View =
@@ -63,15 +114,68 @@ function sortRows(rows: CatalogEntryRow[]): CatalogEntryRow[] {
   );
 }
 
-export function CatalogsClient({ initialRows }: CatalogsClientProps) {
+export function CatalogsClient({
+  initialRows,
+  initialApp,
+  initialKind,
+  initialEntryId,
+}: CatalogsClientProps) {
   const { toast } = useToast();
   const [rows, setRows] = useState<CatalogEntryRow[]>(() =>
     sortRows(initialRows),
   );
-  const [app, setApp] = useState<string>(DEFAULT_CATALOG_APP);
-  const [view, setView] = useState<View>({ mode: "kinds" });
+  // The deep-linked ROW's app wins over `?app=` for the same reason its kind
+  // does: the id names one record, and that record knows which application it
+  // belongs to. Without this, `/administration/applications/catalogs?entry=<id>`
+  // (no `?app=`) left the selector on the default app, `appRows` excluded the
+  // entry, and the operator got "belongs to another application" for a record
+  // that was right there.
+  const [app, setApp] = useState<string>(
+    () =>
+      deepLinkRow(initialEntryId, initialRows)?.app ??
+      initialApp ??
+      DEFAULT_CATALOG_APP,
+  );
+  const [view, setView] = useState<View>(() =>
+    initialView(initialKind, initialEntryId, initialRows),
+  );
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkDialogKind, setLinkDialogKind] = useState<string | null>(null);
+
+  // A client-side navigation to a NEW ?app=&kind=&entry= re-renders this same
+  // instance with new props, so seeding state once would leave the operator
+  // looking at the previous entry while the address bar names another. Re-seed
+  // whenever the link identity changes.
+  const deepLinkKey = `${initialApp ?? ""}|${initialKind ?? ""}|${initialEntryId ?? ""}`;
+  const lastDeepLink = useRef(deepLinkKey);
+  // Whether the CURRENT link's `?entry=` has actually been found in `rows`.
+  // A link can arrive before the row that satisfies it: the first pass records
+  // the key, and without this the effect would then refuse to look again when
+  // a later `rows` refresh finally contains the entry, stranding the operator
+  // on the dashboard until they retyped the URL.
+  const deepLinkResolved = useRef(
+    !initialEntryId || Boolean(deepLinkRow(initialEntryId, initialRows)),
+  );
+  useEffect(() => {
+    const entryRow = deepLinkRow(initialEntryId, rows);
+    const linkChanged = lastDeepLink.current !== deepLinkKey;
+    const retryPending =
+      !linkChanged && Boolean(initialEntryId) && !deepLinkResolved.current;
+    // Retry only once the row has actually arrived; re-running against the same
+    // still-missing entry would just re-render the same screen every refresh.
+    if (!linkChanged && !(retryPending && entryRow)) return;
+
+    lastDeepLink.current = deepLinkKey;
+    deepLinkResolved.current = !initialEntryId || Boolean(entryRow);
+
+    // Assigned UNCONDITIONALLY, not `if (nextApp)`. Navigating to the catalogs
+    // page with the params stripped means "no application selected", and the
+    // guard left the selector pinned to the last deep-linked app while the
+    // dashboard showed the generic landing — counts and kind tables then
+    // described an app the URL no longer named.
+    setApp(entryRow?.app ?? initialApp ?? DEFAULT_CATALOG_APP);
+    setView(initialView(initialKind, initialEntryId, rows));
+  }, [deepLinkKey, initialApp, initialKind, initialEntryId, rows]);
 
   // Distinct apps present in the table + the default app.
   const apps = Array.from(
@@ -249,10 +353,43 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
     });
 
   if (view.mode === "edit" || view.mode === "new") {
+    // Resolve within the SELECTED APPLICATION, never across all rows. `rows`
+    // holds every application's entries, so an id-only lookup would happily
+    // open another application's entry — and `CatalogEntryEditor` saves with
+    // the URL's `app`, so `admin_upsert_catalog_entry` would then rewrite that
+    // record under the wrong application namespace. Scoping the find is what
+    // turns that into the honest "belongs to another application" alert below.
     const row =
       view.mode === "edit"
-        ? (rows.find((r) => r.id === view.entryId) ?? null)
+        ? (appRows.find((r) => r.id === view.entryId) ?? null)
         : null;
+    // A deep link can name an entry that was deleted, or that belongs to
+    // another application. Say so — silently rendering the blank "new entry"
+    // editor would claim we opened a record we never found.
+    if (view.mode === "edit" && !row) {
+      return (
+        <div className="flex h-full flex-col gap-3 p-4">
+          <Alert variant="destructive">
+            <AlertDescription className="flex flex-wrap items-center gap-2 text-sm">
+              <span>
+                No <code className="font-mono">{kindLabel(view.kind)}</code>{" "}
+                entry <code className="font-mono">{view.entryId}</code> under{" "}
+                <code className="font-mono">{app}</code> — it may have been
+                deleted, or it belongs to another application.
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setView({ mode: "kind", kind: view.kind })}
+              >
+                Show all {kindLabel(view.kind)} entries
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
+      );
+    }
     return (
       <SurfaceRuntimeProvider
         surfaceName={ADMIN_APPLICATIONS_SURFACE_NAME}
@@ -261,7 +398,9 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
       <div className="h-full overflow-y-auto p-4">
         <CatalogEntryEditor
           key={view.mode === "edit" ? view.entryId : `new-${view.kind}`}
-          app={app}
+          // The ROW's own app wins when editing — the save must never be able
+          // to disagree with the record being edited, whatever the URL says.
+          app={row?.app ?? app}
           row={row}
           prefill={view.mode === "new" ? view.prefill : null}
           initialKind={view.kind}

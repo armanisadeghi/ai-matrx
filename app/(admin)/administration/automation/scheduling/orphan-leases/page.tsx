@@ -1,5 +1,11 @@
 // Scheduling admin › Orphan leases — canonical MatrxDataTable over expired
-// claimed/running sch.run rows, with the force-fail action per row.
+// claimed/running scheduler.sch_run rows, with the force-fail action per row.
+//
+// THE DOOR LAW: `sch_run.task_id` is a SCHEDULED task (`/schedules/<id>`), not a
+// workspace `task` — the Task column names the schedule (title embedded off
+// `sch_run_task_id_fkey`) and links it explicitly, never via the `<token>_id`
+// guess. The destructive confirm carries that same door, so an admin can look
+// at what they are about to force-fail without losing the dialog.
 
 "use client";
 
@@ -15,11 +21,13 @@ import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
 import {
   fetchOrphanLeases,
   markRunFailedAdmin,
+  type AdminRunRow,
 } from "@/lib/services/scheduling-admin-service";
-import type { SchRunRow } from "@/features/scheduling/types";
+import { scheduleHref } from "@/features/scheduling/constants/routes";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 
 export default function OrphanLeasesPage() {
-  const [rows, setRows] = useState<SchRunRow[]>([]);
+  const [rows, setRows] = useState<AdminRunRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -41,10 +49,31 @@ export default function OrphanLeasesPage() {
   }, [load]);
 
   const handleKill = useCallback(
-    async (run: SchRunRow) => {
+    async (run: AdminRunRow) => {
       const ok = await confirm({
         title: "Mark run as failed",
-        description: `Force-fail run ${run.id.slice(0, 8)}… for task ${run.task_id.slice(0, 8)}…? The scanner will re-enqueue on the next tick for recurring triggers.`,
+        description: (
+          <span className="flex flex-col gap-1">
+            <span>
+              Force-fail run{" "}
+              <code className="font-mono text-xs">{run.id.slice(0, 8)}…</code>?
+              The scanner will re-enqueue on the next tick for recurring
+              triggers.
+            </span>
+            {/* The dialog names the schedule, so it opens the schedule — in a
+                new tab, because losing this dialog to answer "which one?" is
+                the dead end. */}
+            <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+              Schedule:
+              <EntityRef
+                token="scheduled_task"
+                id={run.task_id}
+                href={scheduleHref(run.task_id)}
+                alwaysShowActions
+              />
+            </span>
+          </span>
+        ),
         confirmLabel: "Mark failed",
         variant: "destructive",
       });
@@ -63,7 +92,7 @@ export default function OrphanLeasesPage() {
     [load],
   );
 
-  const columns = useMemo((): MatrxColumnDef<SchRunRow>[] => {
+  const columns = useMemo((): MatrxColumnDef<AdminRunRow>[] => {
     return [
       {
         id: "status",
@@ -73,7 +102,20 @@ export default function OrphanLeasesPage() {
         width: 110,
         cell: (r) => <StatusPill status={r.status} />,
       },
-      { id: "task_id", accessorKey: "task_id", header: "Task", cellKind: "uuid", width: 110 },
+      {
+        id: "task_id",
+        header: "Task",
+        accessorFn: (r) => r.task_title ?? r.task_id,
+        width: 240,
+        cell: (r) => (
+          <EntityRef
+            token="scheduled_task"
+            id={r.task_id}
+            name={r.task_title}
+            href={scheduleHref(r.task_id)}
+          />
+        ),
+      },
       {
         id: "surface",
         accessorKey: "surface",
@@ -142,14 +184,25 @@ export default function OrphanLeasesPage() {
             humanRow: (r) =>
               [
                 `Run: ${r.id}`,
-                `Task: ${r.task_id}`,
+                `Task: ${r.task_title ?? "(title unavailable)"} (${r.task_id})`,
                 `Status: ${r.status}`,
                 `Claimed: ${humanizeRelative(r.claimed_at)}`,
                 `Expired: ${humanizeRelative(r.claim_expires_at)}`,
               ].join("\n"),
             rowAttributes: (r) => ({ id: r.id, status: r.status }),
           }}
-          detail={{ title: (r) => `Run ${r.id.slice(0, 8)}…` }}
+          detail={{
+            title: (r) => `Run ${r.id.slice(0, 8)}…`,
+            description: (r) => (
+              <EntityRef
+                token="scheduled_task"
+                id={r.task_id}
+                name={r.task_title}
+                href={scheduleHref(r.task_id)}
+                alwaysShowActions
+              />
+            ),
+          }}
           rowActions={(r) => (
             <Button
               variant="ghost"

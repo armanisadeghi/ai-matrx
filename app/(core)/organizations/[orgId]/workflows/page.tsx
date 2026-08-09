@@ -34,7 +34,6 @@ const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => ({
   source,
 });
 
-const getHref = (id: string) => `/workflows/${id}`;
 
 export default function OrgWorkflowsPage() {
   const params = useParams();
@@ -69,7 +68,6 @@ export default function OrgWorkflowsPage() {
           selectColumns={SELECT_COLS}
           ownedQuery={fetchOwned}
           mapRow={mapRow}
-          getHref={getHref}
           emptyTitle="No shared workflows yet"
           emptyDescription="Workflows owned by this organization will appear here, along with workflows other members share."
           emptyIcon={

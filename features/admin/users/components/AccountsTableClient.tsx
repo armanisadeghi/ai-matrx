@@ -9,7 +9,7 @@
 // ?user=<id>. An admin surface hides nothing.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   BadgeCheck,
   Building2,
@@ -23,6 +23,8 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   UserCog,
+  UserRound,
+  X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -47,6 +49,8 @@ import {
 import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION, ADMIN_LEVEL_LABEL } from "../constants";
 import type { AdminUserRow } from "../types";
 
@@ -77,6 +81,11 @@ function levelBadge(level: string | null) {
 
 export function AccountsTableClient() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // `?user=<id>` is THE canonical destination for a named user (AdminUserRef's
+  // first door). Same focus-banner shape the sibling consoles already use.
+  const focusedUserId = searchParams.get("user");
   const [rows, setRows] = useState<AdminUserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -218,9 +227,12 @@ export function AccountsTableClient() {
                 {(row.display_name ?? row.email ?? "?").slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <span className="text-sm font-medium">
-              {row.display_name ?? <span className="text-muted-foreground">—</span>}
-            </span>
+            <AdminUserRef
+              userId={row.id}
+              name={row.display_name}
+              email={row.email}
+              hideEmail
+            />
           </div>
         ),
         width: 200,
@@ -233,35 +245,50 @@ export function AccountsTableClient() {
           row.organizations
             .map((organization) => `${organization.name} ${organization.role}`)
             .join(" "),
-        cell: (row) => (
-          <button
-            type="button"
-            className="flex max-w-[280px] items-center gap-1.5 text-left hover:text-primary"
-            onClick={(event) => {
-              event.stopPropagation();
-              router.push(
-                `/administration/users/organizations?user=${row.id}`,
-              );
-            }}
-          >
-            <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <span className="truncate text-xs">
-              {row.organizations.length > 0
-                ? row.organizations
-                    .map((organization) => organization.name)
-                    .join(", ")
-                : "No organizations"}
+        // Every organization named here is a real record with a route — each
+        // one links to itself instead of being flattened into a comma string
+        // whose only destination was a filtered list of the OTHER entity.
+        cell: (row) =>
+          row.organizations.length === 0 ? (
+            <span className="text-xs text-muted-foreground">
+              No organizations
             </span>
-            {row.organizations.length > 1 ? (
-              <Badge
-                variant="secondary"
-                className="h-5 shrink-0 px-1.5 text-[10px]"
+          ) : (
+            <div className="flex max-w-[280px] items-center gap-1.5">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-1.5">
+                {row.organizations.map((organization, index) => (
+                  <span
+                    key={organization.id}
+                    className="inline-flex min-w-0 items-center text-xs"
+                  >
+                    <EntityRef
+                      token="organization"
+                      id={organization.id}
+                      name={organization.name}
+                      showIcon={false}
+                    />
+                    {index < row.organizations.length - 1 ? (
+                      <span className="text-muted-foreground">,</span>
+                    ) : null}
+                  </span>
+                ))}
+              </div>
+              <button
+                type="button"
+                title="View this user's organizations"
+                aria-label="View this user's organizations"
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  router.push(
+                    `/administration/users/organizations?user=${row.id}`,
+                  );
+                }}
               >
-                {row.organizations.length}
-              </Badge>
-            ) : null}
-          </button>
-        ),
+                <Building2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ),
         width: 280,
       },
       {
@@ -356,6 +383,29 @@ export function AccountsTableClient() {
     ];
   }, [router]);
 
+  // Derived, never stored: a deep link that arrives after load and one that
+  // arrives before it resolve identically, and closing the focus cannot fight a
+  // seeding effect.
+  const focusedUser = focusedUserId
+    ? (rows.find((row) => row.id === focusedUserId) ?? null)
+    : null;
+  const visibleRows = focusedUserId
+    ? rows.filter((row) => row.id === focusedUserId)
+    : rows;
+  // The roster loaded and the requested account is not in it. Saying "no
+  // accounts match your filters" here would blame a filter for a record that
+  // simply is not in this list.
+  const focusMissed = Boolean(
+    focusedUserId && !loading && !error && focusedUser === null,
+  );
+
+  function clearUserFocus() {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("user");
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname);
+  }
+
   return (
     <div className="flex h-full flex-col gap-3 p-4">
       {error ? (
@@ -363,14 +413,61 @@ export function AccountsTableClient() {
           {error}
         </div>
       ) : null}
+
+      {focusedUserId ? (
+        <div className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2">
+          <div className="flex min-w-0 items-center gap-2 text-sm">
+            <UserRound className="h-4 w-4 shrink-0 text-primary" />
+            {focusMissed ? (
+              <span className="min-w-0">
+                No account with id{" "}
+                <code className="rounded bg-muted px-1 text-xs">
+                  {focusedUserId}
+                </code>{" "}
+                is in this roster — it may have been deleted, or it may sit
+                outside what this view loads.
+              </span>
+            ) : (
+              <>
+                <span className="shrink-0">Showing</span>
+                <AdminUserRef
+                  userId={focusedUserId}
+                  name={focusedUser?.display_name}
+                  email={focusedUser?.email}
+                  hideEmail
+                />
+              </>
+            )}
+          </div>
+          <Button size="sm" variant="ghost" onClick={clearUserFocus}>
+            <X className="mr-1 h-4 w-4" /> Show all accounts
+          </Button>
+        </div>
+      ) : null}
+
       <div className="min-h-0 flex-1">
         <MatrxDataTable
-          data={rows}
+          data={visibleRows}
           columns={columns}
           getRowId={(r) => r.id}
           isLoading={loading}
           pageSize={50}
-          emptyState={{ title: "No users", description: "No accounts match your filters." }}
+          // A focused id that is not in the roster must NOT be reported as a
+          // filter miss — that blames a control the user never touched for a
+          // record that simply is not in this list. The banner above says what
+          // actually happened; this only has to stop contradicting it.
+          emptyState={
+            focusMissed
+              ? {
+                  title: "That account isn't in this roster",
+                  description:
+                    "Clear the focus above to see every account this view loads.",
+                }
+              : {
+                  title: "No users",
+                  description: "No accounts match your filters.",
+                }
+          }
           toolbar={{
             search: true,
             searchPlaceholder: "Search name, email, id…",
@@ -409,9 +506,18 @@ export function AccountsTableClient() {
               admin_level: r.admin_level,
               onboarded: r.onboarding_completed,
             }),
-            listAttributes: (visible, all) => ({
-              visible: visible.length,
-              total: all.length,
+            // `all` is the table's DATA prop, which is the focus-filtered
+            // array — so the framework's own `total_count` reported 1 while the
+            // roster held N accounts, telling any agent reading the payload
+            // that the platform has one user. `listAttributes` is spread LAST
+            // in buildListPayload, so overriding `total_count` here corrects
+            // the canonical key rather than adding a second, truer one beside
+            // a wrong one. The focused id is named so the payload explains its
+            // own narrowness instead of silently understating the fleet.
+            listAttributes: (visible) => ({
+              visible_count: visible.length,
+              total_count: rows.length,
+              ...(focusedUserId ? { focused_user_id: focusedUserId } : {}),
             }),
           }}
           rowActions={(row) => (

@@ -126,6 +126,7 @@ export function MemberResourcesView({ orgId, organization, userId }: Props) {
         open={reassignOpen}
         onOpenChange={setReassignOpen}
         orgId={orgId}
+        orgSlug={organization.slug}
         mode="reassign"
         sourceUserId={userId}
         sourceLabel={label}

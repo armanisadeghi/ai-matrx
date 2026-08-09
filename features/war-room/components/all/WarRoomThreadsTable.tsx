@@ -159,6 +159,15 @@ export function WarRoomThreadsTable({ isLoading }: { isLoading: boolean }) {
       {
         accessorKey: "title",
         header: "Thread",
+        // THE DOOR LAW: the thread's room is right here in the row and the
+        // "Open" button 20 lines below already navigates to exactly this URL —
+        // the title was the one place it wasn't reachable by cmd-click, middle
+        // click or keyboard. An ORPHAN thread has no room yet (Open mints one),
+        // so it gets no href rather than a link that 404s.
+        href: (row) =>
+          row.roomId
+            ? `/war-room/${row.roomId}?thread=${encodeURIComponent(row.id)}`
+            : undefined,
         cell: (row) => (
           <span className="flex items-center gap-1.5 min-w-0">
             {row.isPinned ? (
@@ -175,6 +184,9 @@ export function WarRoomThreadsTable({ isLoading }: { isLoading: boolean }) {
         accessorKey: "roomTitle",
         header: "War Room",
         filter: "select",
+        // The parent room is a relationship this row RESOLVED (it holds the
+        // id and the title) — so it is a door, not a label.
+        href: (row) => (row.roomId ? `/war-room/${row.roomId}` : undefined),
         cell: (row) =>
           row.roomId ? (
             <span className="truncate">{row.roomTitle}</span>

@@ -65,6 +65,8 @@ import {
   selectAccumulatedText,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -403,13 +405,35 @@ export default function LaunchInspectorDemoPage() {
                 <AlertTriangle className="h-3 w-3 shrink-0" /> {idError}
               </p>
             )}
-            <p className="text-[11px] text-muted-foreground truncate">
-              {selectedShortcut
-                ? `${selectedShortcut.label} — id: ${selectedShortcut.id}`
-                : shortcutId
-                  ? `id: ${shortcutId}`
-                  : "No shortcut selected"}
-            </p>
+            {/* The shortcut came out of `selectAllShortcutsArray` — a real
+                row. Its label and its id are both doors rather than one
+                concatenated dead string. */}
+            {selectedShortcut ? (
+              <div className="group flex min-w-0 items-center gap-2 text-[11px]">
+                <EntityRef
+                  token="agent_shortcut"
+                  id={selectedShortcut.id}
+                  name={selectedShortcut.label}
+                />
+                <MatrxUuidCell
+                  value={selectedShortcut.id}
+                  token="agent_shortcut"
+                  label="Shortcut"
+                />
+              </div>
+            ) : shortcutId ? (
+              <div className="group text-[11px]">
+                <MatrxUuidCell
+                  value={shortcutId}
+                  token="agent_shortcut"
+                  label="Shortcut"
+                />
+              </div>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">
+                No shortcut selected
+              </p>
+            )}
           </section>
 
           {/* Scope JSON */}
@@ -537,13 +561,19 @@ export default function LaunchInspectorDemoPage() {
                   <span className="text-sm text-foreground">
                     {run.shortcutLabel}
                   </span>
-                  <span className="ml-2 font-mono text-[11px] text-muted-foreground">
-                    {run.conversationId}
-                  </span>
                   <span className="ml-2 text-[10px] text-muted-foreground">
                     {run.launchedAt}
                   </span>
                 </button>
+                {/* A real persisted conversation minted by launchShortcut's
+                    onConversationCreated. It used to be a raw uuid inside the
+                    select button — the door has to be a SIBLING, since an <a>
+                    cannot nest in a <button>. */}
+                <MatrxUuidCell
+                  value={run.conversationId}
+                  token="conversation"
+                  label="Conversation"
+                />
                 <button
                   type="button"
                   onClick={() => destroyRun(run.conversationId)}

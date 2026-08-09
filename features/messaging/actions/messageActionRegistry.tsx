@@ -86,7 +86,9 @@ function ResourceSharedCard({ data }: { data: MessageActionData }) {
         title={p.resource_title || p.resource_label || "Shared item"}
         subtitle={subtitle}
         actionLabel="Open"
-        actions={[{ label: "Open", icon: ExternalLink, href }]}
+        // No "Open" when the resource has no page — a link to nowhere in a
+        // shared-with-you card is worse than no button.
+        actions={href ? [{ label: "Open", icon: ExternalLink, href }] : []}
       />
     </div>
   );

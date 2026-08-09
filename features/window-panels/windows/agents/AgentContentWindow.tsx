@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentById,
@@ -250,9 +251,29 @@ function FooterControls({
   return (
     <div className="flex w-full min-w-0 items-center justify-between gap-2">
       <div className="flex min-w-0 items-center gap-1.5">
-        <span className="max-w-[160px] truncate text-[11px] font-medium text-foreground">
-          {agentName || "Agent"}
-        </span>
+        {/* THE DOOR LAW in this window's FOOTER bar (`footerLeft`): this window
+            IS an agent, and its name was a flat span with the id sitting right
+            beside it in a copy-only button.
+
+            All three doors, including same-tab Open on the name: the edit buffer
+            and its dirty flag live in Redux (`selectAgentIsDirty`), so a route
+            change does not discard them — the user lands on the same unsaved
+            agent. Contrast `CleanupReviewDialog`, whose decisions are local
+            state and therefore gets sibling controls instead.
+
+            Safe from the drag gesture because `WindowPanel`'s footer bar stops
+            pointer-down propagation (WindowPanel.tsx, the `footerBar` element) —
+            the footer is not itself a drag handle, but the header is, and the
+            same suppression is what keeps the anchor clickable. */}
+        <EntityRef
+          token="agent"
+          id={agentId}
+          // Not `agentName || "Agent"` — that literal is LESS identifying than
+          // EntityRef's own fallback, which shows the truncated id.
+          name={agentName}
+          showIcon={false}
+          nameClassName="max-w-[160px] truncate text-[11px] font-medium text-foreground"
+        />
         <button
           type="button"
           onClick={handleCopyId}

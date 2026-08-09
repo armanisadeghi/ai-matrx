@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import {
   Select,
   SelectContent,
@@ -166,7 +167,10 @@ export function PermissionsList({
         const secondaryLabel = getPermissionSecondaryLabel(permission);
 
         return (
-          <Card key={permission.id} className="px-2 py-2">
+          // `group` is what reveals the door controls below on hover — without
+          // it EntityDoorControls renders at opacity-0 and the door is
+          // invisible, which is the failure this campaign has hit four times.
+          <Card key={permission.id} className="group px-2 py-2">
             <div className="flex items-center gap-2">
               {/* Left: avatar for user grants, icon otherwise */}
               <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -185,6 +189,25 @@ export function PermissionsList({
                   <p className="text-sm font-semibold truncate leading-none">
                     {getPermissionLabel(permission)}
                   </p>
+                  {/* THE DOOR LAW, applied to the ONE grantee kind that has a
+                      reachable route today. An org grant names a real record
+                      with its id right here, so it opens.
+
+                      The USER branch deliberately gets no door: `user` has no
+                      registry token, and `AdminUserRef` is the WRONG door here —
+                      this is a `(core)` sharing surface reached by ordinary org
+                      members, for whom `/administration/users` is a 403. A door
+                      the viewer cannot open is worse than none, because it looks
+                      like it worked. Tracked as the `user` registry gap in
+                      docs/handoffs/no-dead-ends-sweep.md. */}
+                  {permission.grantedToOrganization && (
+                    <EntityDoorControls
+                      token="organization"
+                      id={permission.grantedToOrganization.id}
+                      name={permission.grantedToOrganization.name}
+                      className="shrink-0"
+                    />
+                  )}
                   {secondaryLabel && (
                     <p className="text-[11px] text-muted-foreground truncate leading-none">
                       {secondaryLabel}

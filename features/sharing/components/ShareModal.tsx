@@ -27,6 +27,7 @@ import {
 import type { ResourceType } from "@/utils/permissions/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, Lock } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { PermissionsList } from "./PermissionsList";
 import { ShareWithUserTab } from "./tabs/ShareWithUserTab";
 import { ShareWithOrgTab } from "./tabs/ShareWithOrgTab";
@@ -84,13 +85,26 @@ export function ShareModal({
   const [emailSent, setEmailSent] = useState(false);
   const { toast } = useToast();
 
-  const getShareUrl = () => {
+  const getShareUrl = (): string | null => {
+    const path = getResourceSharePath(resourceType, resourceId);
+    if (!path) return null;
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-    return `${baseUrl}${getResourceSharePath(resourceType, resourceId)}`;
+    return `${baseUrl}${path}`;
   };
 
   // Email link to self
   const handleEmailLink = async () => {
+    const shareUrl = getShareUrl();
+    if (!shareUrl) {
+      // Never email a link we can't build — a broken URL in someone's inbox is
+      // the worst dead end we can ship.
+      toast({
+        title: "No shareable link for this item yet",
+        description: `"${getResourceTypeLabel(resourceType)}" has no page to open. Sharing access still works; only the emailed link is unavailable.`,
+        variant: "destructive",
+      });
+      return;
+    }
     setEmailingLink(true);
     try {
       const response = await fetch("/api/sharing/email-link", {
@@ -99,7 +113,7 @@ export function ShareModal({
         body: JSON.stringify({
           resourceType: getResourceTypeLabel(resourceType),
           resourceName,
-          shareUrl: getShareUrl(),
+          shareUrl,
         }),
       });
 
@@ -213,8 +227,27 @@ export function ShareModal({
           <div className="flex items-start justify-between gap-2 pr-10">
             <div className="flex-1 min-w-0">
               <DialogTitle>Share {resourceLabel}</DialogTitle>
-              <DialogDescription className="truncate">
-                {resourceName}
+              {/* THE DOOR LAW: the most-reused share surface in the app named
+                  the record and gave no way to reach it — while already
+                  computing its canonical path for the share URL. `ResourceType`
+                  IS the entity-token vocabulary (getResourceSharePath resolves
+                  through resolveEntityDoors), so EntityRef also gets the peek
+                  and the new tab. A null path falls through to `undefined`,
+                  which defers to the registry and correctly ends in no door for
+                  a type that genuinely has no route. */}
+              <DialogDescription asChild>
+                <div className="text-sm text-muted-foreground">
+                  <EntityRef
+                    token={resourceType}
+                    id={resourceId}
+                    name={resourceName}
+                    href={
+                      getResourceSharePath(resourceType, resourceId) ??
+                      undefined
+                    }
+                    showIcon={false}
+                  />
+                </div>
               </DialogDescription>
             </div>
             <Button

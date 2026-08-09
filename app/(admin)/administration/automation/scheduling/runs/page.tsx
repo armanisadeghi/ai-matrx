@@ -1,6 +1,13 @@
-// Scheduling admin › All runs — canonical MatrxDataTable over sch.run rows.
-// Status/surface stay server-side (the 200-row window must narrow at the
+// Scheduling admin › All runs — canonical MatrxDataTable over scheduler.sch_run
+// rows. Status/surface stay server-side (the 200-row window must narrow at the
 // query, not the client); every fetched column still sorts + filters locally.
+//
+// THE DOOR LAW: `sch_run.task_id` points at a SCHEDULED task (`/schedules/<id>`,
+// FK `sch_run_task_id_fkey` → `scheduler.sch_task`), NOT at a workspace `task`
+// whose registry route is `/tasks/<id>` — a door onto a different record is
+// worse than none, so the Task column never takes the `<token>_id` guess: it
+// names the schedule (title embedded off the FK) and links it explicitly.
+// A run's OWN id opens nothing (no per-run route exists) — it stays copy-only.
 
 "use client";
 
@@ -19,8 +26,13 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { StatusPill } from "@/features/scheduling/components/shared/StatusPill";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
-import { fetchAllRunsAdmin } from "@/lib/services/scheduling-admin-service";
-import type { RunStatus, SchRunRow, Surface } from "@/features/scheduling/types";
+import {
+  fetchAllRunsAdmin,
+  type AdminRunRow,
+} from "@/lib/services/scheduling-admin-service";
+import { scheduleHref } from "@/features/scheduling/constants/routes";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import type { RunStatus, Surface } from "@/features/scheduling/types";
 import { SURFACE_VALUES } from "@/features/scheduling/constants/surfaces";
 
 const STATUSES: RunStatus[] = [
@@ -34,7 +46,7 @@ const STATUSES: RunStatus[] = [
 ];
 
 export default function AdminRunsPage() {
-  const [rows, setRows] = useState<SchRunRow[]>([]);
+  const [rows, setRows] = useState<AdminRunRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
   const [status, setStatus] = useState<"__all__" | RunStatus>("__all__");
@@ -62,7 +74,7 @@ export default function AdminRunsPage() {
     void load();
   }, [load]);
 
-  const columns = useMemo((): MatrxColumnDef<SchRunRow>[] => {
+  const columns = useMemo((): MatrxColumnDef<AdminRunRow>[] => {
     return [
       {
         id: "status",
@@ -72,7 +84,20 @@ export default function AdminRunsPage() {
         width: 110,
         cell: (r) => <StatusPill status={r.status} />,
       },
-      { id: "task_id", accessorKey: "task_id", header: "Task", cellKind: "uuid", width: 110 },
+      {
+        id: "task_id",
+        header: "Task",
+        accessorFn: (r) => r.task_title ?? r.task_id,
+        width: 240,
+        cell: (r) => (
+          <EntityRef
+            token="scheduled_task"
+            id={r.task_id}
+            name={r.task_title}
+            href={scheduleHref(r.task_id)}
+          />
+        ),
+      },
       {
         id: "surface",
         accessorKey: "surface",
@@ -182,14 +207,25 @@ export default function AdminRunsPage() {
             humanRow: (r) =>
               [
                 `Run: ${r.id}`,
-                `Task: ${r.task_id}`,
+                `Task: ${r.task_title ?? "(title unavailable)"} (${r.task_id})`,
                 `Status: ${r.status}`,
                 `Surface: ${r.surface ?? "—"}`,
                 `Summary: ${r.result_summary ?? r.error_message ?? "—"}`,
               ].join("\n"),
             rowAttributes: (r) => ({ id: r.id, status: r.status }),
           }}
-          detail={{ title: (r) => `Run ${r.id.slice(0, 8)}…` }}
+          detail={{
+            title: (r) => `Run ${r.id.slice(0, 8)}…`,
+            description: (r) => (
+              <EntityRef
+                token="scheduled_task"
+                id={r.task_id}
+                name={r.task_title}
+                href={scheduleHref(r.task_id)}
+                alwaysShowActions
+              />
+            ),
+          }}
         />
       </div>
     </div>

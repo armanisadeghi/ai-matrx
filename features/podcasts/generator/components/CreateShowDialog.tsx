@@ -8,6 +8,7 @@
 
 import { useState } from "react";
 import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { Loader2, Mic } from "lucide-react";
 import {
   Dialog,
@@ -69,7 +70,17 @@ export function CreateShowDialog({
         author: author.trim() || null,
         is_published: false,
       });
-      toast.success(`Created "${show.title}"`);
+      // `pc_show` IS a registered token (generated registry) but carries no
+      // `hrefFor`, because its canonical route is keyed by SLUG
+      // (`/podcast/[slug]`) while the overlay's `hrefFor` contract is id-keyed.
+      // Registering an id-shaped route here would bake in the wrong-token trap,
+      // so the call site passes the slug href explicitly — `resolveEntityDoors`
+      // honours an override exactly. Logged as a registry gap in the handoff.
+      toast.success(`Created "${show.title}"`, {
+        action: toastDoor("pc_show", show.id, {
+          href: `/podcast/${show.slug}`,
+        }),
+      });
       onCreated(show);
       reset();
       onOpenChange(false);

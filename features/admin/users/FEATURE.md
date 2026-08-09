@@ -23,7 +23,8 @@ not own or duplicate organization or membership data.
 - `app/(admin)/administration/users/layout.tsx` — shared tabbed shell; inherits the super-admin gate from the admin layout.
 - `app/(admin)/administration/users/page.tsx` — complete account roster, including each user's active organization memberships.
 - `app/(admin)/administration/users/organizations/page.tsx` — reciprocal organization/member directory and management surface.
-- `features/admin/users/components/AccountsTableClient.tsx` — account table and user-focused organization deep links.
+- `features/admin/users/components/AccountsTableClient.tsx` — account table and user-focused organization deep links; reads `?user=<id>` to focus one account.
+- `features/admin/users/components/AdminUserRef.tsx` — **THE door for a user.** The name links to the account; the chevron menu carries every per-user destination. Used by all 12 surfaces that name a user.
 - `features/admin/users/components/OrganizationsAdminClient.tsx` — organization list, member list, user focus, and membership controls.
 - `app/api/admin/users/route.ts` — server-only auth roster plus profile, admin-level, and organization projections.
 - `app/api/admin/users/organizations/route.ts` — super-admin-only directory and membership mutation endpoint.
@@ -76,6 +77,10 @@ No new table or Redux slice is owned by this feature.
 - An organization cannot lose or demote its last owner.
 - Removal is a soft delete. Re-adding the same user reactivates the canonical membership row.
 - Account and organization screens link to the same Organizations tab; do not build separate per-user and per-organization membership managers.
+- **A user is named through `AdminUserRef`, never a bare `<span>` or uuid.** There is still no canonical `/users/<id>` route and no `user` token in the entity registry, so `EntityRef` has nothing to resolve — `AdminUserRef` is the stand-in that declares the per-user destination set exactly once. Consume it; do not hand-roll a link list beside it. When a canonical user route exists, one edit there lights up every surface.
+- **A door is only added after reading the target route and confirming it consumes the param.** Both `?user=` destinations added on 2026-08-09 were previously broken promises: Accounts read no param at all, and the Accounts row menu advertised an "Admin level" filter that `…/users/admins` silently ignored. A link to a route that ignores its param is worse than no link, because it looks like it worked.
+- The name is a real anchor, not a click handler, so middle-click and cmd-click work. Where a user's name genuinely cannot be an anchor (inside a `<label>` or a button that means something else), render `AdminUserDoorControls` as a sibling instead — an anchor nested in interactive content is invalid DOM. All 12 call sites were verified clear on 2026-08-09.
+- **Never put `href` on a `MatrxDataTable` column whose cell renders `AdminUserRef`.** A column declaring `href` makes the table wrap the whole cell in a `<Link>` (`MatrxDataTable.tsx`), which would nest the name's anchor inside another anchor. Every current user column renders its own cell and declares no `href`; that is deliberate, not an oversight. Row-click navigation is safe alongside it — the table already ignores clicks originating inside an `<a>`.
 
 ---
 
@@ -98,6 +103,7 @@ No new table or Redux slice is owned by this feature.
 
 ## Change log
 
+- `2026-08-09` — No Dead Ends sweep: a named user is now reachable. Accounts and `…/users/admins` both honour `?user=<id>`, and `AdminUserRef` makes the name itself a link (Door #1) with "Account" and "Admin level" joining its menu. Closes FOUND_DEFECTS D138's most-hit symptom; a canonical `/users/<id>` route and a `user` registry token remain open.
 - `2026-08-08` — Codex: made the shared Users & Access shell a deliberate two-row mobile header with an independently scrollable, touch-safe tab rail; added accessible navigation/back labels so child admin routes no longer inherit the prior title/tab overlap.
 - `2026-07-23` — Codex: organization projections and the directory table now include the canonical compact abbreviation alongside name and slug.
 - `2026-07-22` — Codex: added the reciprocal user ↔ organization admin directory, inline account membership visibility, guarded membership management, and audited super-admin database mutation path.

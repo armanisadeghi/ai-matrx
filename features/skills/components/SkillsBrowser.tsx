@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 
 import { useSkills } from "../hooks/useSkills";
 import { useSkillCategories } from "../hooks/useSkillCategories";
@@ -29,6 +30,16 @@ interface SkillsBrowserProps {
   onNew: () => void;
   onCategories?: () => void;
   onIngest?: () => void;
+  /**
+   * Route that opens ONE skill on its own, for the new-tab door.
+   *
+   * The entity registry deliberately gives `skill` no `hrefFor` — the only
+   * id-addressed skill route is the super-admin admin console, and a door that
+   * 403s is its own dead end. So the surface that HAS that route passes it
+   * (the admin page → `?open=<id>`), and every other consumer gets the peek
+   * alone rather than a link most users cannot follow.
+   */
+  skillHref?: (skillId: string) => string;
 }
 
 export function SkillsBrowser({
@@ -36,6 +47,7 @@ export function SkillsBrowser({
   onNew,
   onCategories,
   onIngest,
+  skillHref,
 }: SkillsBrowserProps) {
   const isAdmin = useAppSelector(selectIsSuperAdmin);
   const { skills, loading, error } = useSkills();
@@ -182,31 +194,48 @@ export function SkillsBrowser({
                 <span className="flex-1 truncate">{g.label}</span>
                 <span className="tabular-nums">{g.items.length}</span>
               </div>
+              {/* The row's click means "show this skill in the panel beside
+                  me", so the label cannot be the anchor — an <a> inside a
+                  <button> is invalid DOM. The doors ride as a SIBLING
+                  (`EntityDoorControls`): a `skill` peek is registered, so
+                  "which one is that?" is answerable without leaving, and the
+                  admin console additionally supplies a new-tab route. */}
               {g.items.map((s) => (
-                <button
+                <div
                   key={s.id}
-                  type="button"
-                  onClick={() => onSelect(s.id)}
                   className={cn(
-                    "group flex items-start gap-3 px-4 py-2.5 text-left w-full",
+                    "group/entity-ref relative flex items-stretch",
                     "hover:bg-muted/40 transition-colors",
                     "border-b border-border/40 last:border-b-0",
                   )}
                 >
-                  <Lightbulb className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-foreground truncate flex items-center gap-1.5">
-                      {s.label}
-                      <ScopeBadge skill={s} />
+                  <button
+                    type="button"
+                    onClick={() => onSelect(s.id)}
+                    className="group flex flex-1 min-w-0 items-start gap-3 px-4 py-2.5 pr-16 text-left"
+                  >
+                    <Lightbulb className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-foreground truncate flex items-center gap-1.5">
+                        {s.label}
+                        <ScopeBadge skill={s} />
+                      </div>
+                      <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                        {s.description}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                      {s.description}
-                    </div>
-                  </div>
-                  <span className="text-xs text-muted-foreground/70 font-mono pt-0.5 truncate max-w-[160px]">
-                    {s.skillId}
-                  </span>
-                </button>
+                    <span className="text-xs text-muted-foreground/70 font-mono pt-0.5 truncate max-w-[160px]">
+                      {s.skillId}
+                    </span>
+                  </button>
+                  <EntityDoorControls
+                    token="skill"
+                    id={s.id}
+                    name={s.label}
+                    href={skillHref ? skillHref(s.id) : null}
+                    className="absolute right-2 top-2.5 rounded border border-border bg-card"
+                  />
+                </div>
               ))}
             </div>
           ))

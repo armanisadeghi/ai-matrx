@@ -18,7 +18,6 @@ import {
   Copy,
   Check,
   Server,
-  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +30,8 @@ import { ToolTestSamplesViewer } from "@/features/tool-call-visualization/admin/
 import { RegistryTab } from "@/features/tool-registry/tools-admin/components/RegistryTab";
 import { Network } from "lucide-react";
 import { SourceKindBadge } from "./source-kind-badge";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { mcpServerHref } from "@/features/tool-registry/doors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { toolBrief, toolSummary } from "./format";
 import type { Database, Json } from "@/types/database.types";
@@ -139,15 +140,14 @@ function OverviewTab({ tool }: { tool: ToolRow }) {
               icon={<Server className="h-3.5 w-3.5" />}
               label="MCP Server"
             >
-              <a
-                href={`/administration/agents/mcp-servers/${tool.managed_by_server_id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 hover:underline font-mono"
-              >
-                {tool.managed_by_server_id}
-                <ExternalLink className="h-3 w-3" />
-              </a>
+              {/* Was `/administration/agents/mcp-servers/<id>` — a route leaf
+                  that does not exist, so this link 404'd. `mcpServerHref` is
+                  the console's deep link, and MatrxUuidCell adds copy. */}
+              <MatrxUuidCell
+                value={tool.managed_by_server_id}
+                label="MCP server"
+                href={mcpServerHref(tool.managed_by_server_id)}
+              />
             </InfoRow>
           )}
           <InfoRow icon={<Tag className="h-3.5 w-3.5" />} label="Category">
@@ -180,9 +180,9 @@ function OverviewTab({ tool }: { tool: ToolRow }) {
         </div>
         <div className="space-y-3">
           <InfoRow icon={<FileCode className="h-3.5 w-3.5" />} label="ID">
-            <code className="text-xs font-mono text-muted-foreground break-all">
-              {tool.id}
-            </code>
+            {/* The record's own id — copy, no token: a preview of the page you
+                are already standing on is noise, not a door. */}
+            <MatrxUuidCell value={tool.id} label="Tool" />
           </InfoRow>
           <InfoRow icon={<Calendar className="h-3.5 w-3.5" />} label="Created">
             <span className="text-xs">

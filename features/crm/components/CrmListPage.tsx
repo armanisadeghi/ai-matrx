@@ -14,6 +14,7 @@
 
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import {
   MoreVertical,
   Plus,
@@ -154,7 +155,11 @@ export function CrmListPage({
                   try {
                     await restoreParty(row.id);
                     list.removeRow(row.id);
-                    toast.success(`${row.display_name} restored`);
+                    // The row is removed from THIS list on restore, so the
+                    // record it just restored becomes unreachable from here.
+                    toast.success(`${row.display_name} restored`, {
+                      action: toastDoor("party", row.id),
+                    });
                   } catch (e) {
                     toast.error(
                       e instanceof Error ? e.message : "Restore failed",

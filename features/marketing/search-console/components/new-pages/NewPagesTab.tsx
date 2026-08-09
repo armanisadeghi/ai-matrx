@@ -42,6 +42,7 @@ import {
 } from "@/features/marketing/lib/copy-payloads";
 import { formatCompactDate } from "@/features/marketing/components/shared/MarketingUi";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   getPageFirstDates,
   listTrackedPages,
@@ -185,6 +186,11 @@ export function NewPagesTab({
       accessorKey: "url",
       header: "Page",
       filter: false,
+      // THE DOOR LAW: every row here IS a canonical page (`row.id` is the page
+      // id the tracker was registered against), so its name is a real anchor to
+      // the page workspace. The rest of the row keeps opening the queries
+      // drilldown panel, which is a different destination, not the record.
+      href: (row) => marketingRoutes.sitePage(null, siteId, row.id),
       cell: (row) => (
         <span className="flex min-w-0 flex-col">
           <span

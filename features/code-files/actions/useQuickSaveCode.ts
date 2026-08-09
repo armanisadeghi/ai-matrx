@@ -161,6 +161,11 @@ export function useQuickSaveCode({
             tags: [],
           }),
         ).unwrap();
+        // NO DOOR YET: this hook uses `useToastManager`, whose ToastOptions
+        // action is `{label, onClick}` — not a ReactNode — so `toastDoor` does
+        // not fit, and migrating the file to @/lib/toast would drop the
+        // moduleKey-registered default messages the manager supplies. Blocked
+        // on the toast-system consolidation; logged in the no-dead-ends handoff.
         toast.success(`Saved as ${created.name}`);
         setSavedFile(created);
         return created;

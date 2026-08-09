@@ -20,6 +20,7 @@ import {
 import { useTranscriptRowActions } from "./useTranscriptRowActions";
 import {
   KIND_META,
+  primaryRowHref,
   TRANSCRIPT_LIST_SCOPES,
   type TranscriptListKind,
   type TranscriptListRow,
@@ -84,6 +85,10 @@ export const transcriptListConfig: EntityListConfig<TranscriptListRow> = {
   prefsVersion: 1,
   getRowId: (row) => row.id,
   getRowName: (row) => row.title,
+  // THE DOOR LAW: the Title cell is a real anchor. Heterogeneous rows route
+  // per kind, so the door reuses the SAME `primaryRowHref` the row click and
+  // the "…" menu use — one destination, three ways to reach it.
+  door: { hrefFor: primaryRowHref },
   useRowActions: useTranscriptRowActions,
   // No favorite / archived axes on the transcripts tables (yet).
   supportsArchived: false,

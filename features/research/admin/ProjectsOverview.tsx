@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Copy, Check, ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,9 +17,11 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import type { Json } from "@/types/database.types";
 import type { ResearchTemplate } from "../types";
-import { AGENT_CONFIG_KEYS, AGENT_CONFIG_META } from "./types";
+import { AGENT_CONFIG_KEYS } from "./types";
 import { fetchResearchTopics, fetchTemplates } from "./service";
 import { getTopicProjectLinks } from "../service";
 
@@ -39,7 +42,6 @@ export function ProjectsOverview() {
   // decoupling) — `rs_topic.project_id` is dead.
   const [projectLinks, setProjectLinks] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const { toast } = useToast();
 
@@ -70,19 +72,12 @@ export function ProjectsOverview() {
     loadData();
   }, [loadData]);
 
-  const copyId = (id: string) => {
-    navigator.clipboard.writeText(id);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const getTemplateName = (templateId: string | null) => {
-    if (!templateId) return "None";
-    return (
-      templates.find((t) => t.id === templateId)?.name ??
-      templateId.slice(0, 8) + "..."
-    );
-  };
+  /** The template's NAME when we can resolve it, else null — the caller then
+   *  renders the raw id as an openable/copyable cell rather than a stub. */
+  const getTemplateName = (templateId: string | null) =>
+    templateId
+      ? (templates.find((t) => t.id === templateId)?.name ?? null)
+      : null;
 
   const getAgentOverrideCount = (config: Json | null) => {
     if (!config || typeof config !== "object" || Array.isArray(config))
@@ -137,7 +132,8 @@ export function ProjectsOverview() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Project ID</TableHead>
+              <TableHead>Topic</TableHead>
+              <TableHead className="w-44">Project</TableHead>
               <TableHead className="w-28">Status</TableHead>
               <TableHead className="w-24">Autonomy</TableHead>
               <TableHead>Template</TableHead>
@@ -145,7 +141,6 @@ export function ProjectsOverview() {
                 Agent Overrides
               </TableHead>
               <TableHead className="w-36">Created</TableHead>
-              <TableHead className="w-16" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -162,25 +157,27 @@ export function ProjectsOverview() {
             {configs.map((config) => {
               // Association-backed: absent edge = projectless topic (valid).
               const linkedProjectId = projectLinks[config.id] ?? null;
+              const templateName = getTemplateName(config.template_id);
+              const overrideCount = getAgentOverrideCount(config.agent_config);
               return (
-              <TableRow key={config.id}>
+              <TableRow key={config.id} className="group">
+                {/* The topic's own name was fetched on every row and never
+                    rendered — the console listed research topics without ever
+                    naming one. It is the row's primary identity, so it leads. */}
+                <TableCell>
+                  <EntityRef
+                    token="research_topic"
+                    id={config.id}
+                    name={config.name}
+                  />
+                </TableCell>
                 <TableCell>
                   {linkedProjectId ? (
-                    <div className="flex items-center gap-1">
-                      <code className="text-[10px] text-muted-foreground">
-                        {linkedProjectId.slice(0, 12)}...
-                      </code>
-                      <button
-                        onClick={() => copyId(linkedProjectId)}
-                        className="p-0.5 hover:bg-muted rounded"
-                      >
-                        {copiedId === linkedProjectId ? (
-                          <Check className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <Copy className="h-3 w-3 text-muted-foreground" />
-                        )}
-                      </button>
-                    </div>
+                    <MatrxUuidCell
+                      value={linkedProjectId}
+                      token="project"
+                      label="Project"
+                    />
                   ) : (
                     <span className="text-[10px] text-muted-foreground">
                       No project
@@ -201,18 +198,43 @@ export function ProjectsOverview() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <span className="text-xs">
-                    {getTemplateName(config.template_id)}
-                  </span>
+                  {/* `research_template` has NO per-record route — but PASSING
+                      THE TOKEN DOES NOT INVENT ONE: resolveEntityDoors returns
+                      `hrefFor?.(id) ?? null`. What the token adds is the
+                      registry PEEK (titleColumn "name" on research.rs_template,
+                      which this file already reads from the browser). Omitting
+                      it would throw away the only door the record has. */}
+                  {templateName ? (
+                    <span className="text-xs">{templateName}</span>
+                  ) : config.template_id ? (
+                    <MatrxUuidCell
+                      value={config.template_id}
+                      token="research_template"
+                      label="Template"
+                    />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">None</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-center">
-                  {getAgentOverrideCount(config.agent_config) > 0 ? (
-                    <Badge
-                      variant="secondary"
-                      className="text-[10px] bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                  {/* A COUNT IS A DOOR. Every AGENT_CONFIG_KEY holds an AGENT
+                      UUID (page_summary_agent_id, …) — the sibling
+                      AgentWiringDashboard resolves those same values to agent
+                      names — so N reachable records sit behind this badge.
+                      `/research/topics/<id>/agents` is the page that lists
+                      exactly them, which makes it the count's destination. */}
+                  {overrideCount > 0 ? (
+                    <Link
+                      href={`/research/topics/${config.id}/agents`}
+                      title={`Open the ${overrideCount} agent override${overrideCount === 1 ? "" : "s"} on this topic`}
                     >
-                      {getAgentOverrideCount(config.agent_config)} overrides
-                    </Badge>
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 hover:underline"
+                      >
+                        {overrideCount} overrides
+                      </Badge>
+                    </Link>
                   ) : (
                     <span className="text-xs text-muted-foreground">None</span>
                   )}
@@ -223,22 +245,6 @@ export function ProjectsOverview() {
                       ? new Date(config.created_at).toLocaleDateString()
                       : "Unknown"}
                   </span>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-6 w-6 rounded-full"
-                    asChild
-                  >
-                    <a
-                      href={`/research/topics/${config.id}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  </Button>
                 </TableCell>
               </TableRow>
               );

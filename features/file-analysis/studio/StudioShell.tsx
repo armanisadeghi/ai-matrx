@@ -13,6 +13,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { ArrowLeft, Edit3, MousePointer2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
@@ -224,13 +225,15 @@ export function StudioShell({ fileId }: StudioShellProps) {
          * link + shell chrome above). Cleared below the glass shell header by
          * the wrapper's top padding, so no manual edge padding is needed. */}
         <div className="flex shrink-0 items-center gap-2 matrx-glass-thin-border px-3 py-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push(`/files/f/${fileId}`)}
-            className="h-7 text-xs"
-          >
-            <ArrowLeft className="h-3 w-3 mr-1" /> Back to file
+          {/* A real anchor, not a router.push. The file has its own record
+              page, and leaving the studio to reach it costs the user this
+              surface's state — exactly the case where "open in a new tab" has
+              to work. As a <Button onClick> it offered one door and stole the
+              other three. */}
+          <Button variant="ghost" size="sm" asChild className="h-7 text-xs">
+            <Link href={`/files/f/${fileId}`}>
+              <ArrowLeft className="h-3 w-3 mr-1" /> Back to file
+            </Link>
           </Button>
           <h1 className="truncate text-sm font-semibold">
             {file?.meta.fileName ?? "Document"}{" "}

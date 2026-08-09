@@ -40,6 +40,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { formatFileSize } from "@/features/files/utils/format";
@@ -255,13 +256,39 @@ function ConflictRow({
           {/* Path of the existing match — gives the user enough context
               to confirm "yes, that's the one I meant" without leaving
               the dialog. */}
-          <p
-            className="mt-1 text-[11px] text-muted-foreground truncate"
-            title={existing.filePath}
-          >
-            <span className="opacity-70">Existing:</span>{" "}
-            <span className="font-mono">{pathLabelFor(existing)}</span>
-          </p>
+          {/* THE DOOR LAW, on the dialog whose ENTIRE question is "is this the
+              same file?". Naming the match and offering no way to look at it
+              forces the user to answer from a filename alone. Peek is the
+              right door here — it answers "which one is that?" without
+              destroying the upload in progress.
+
+              Guarded on `deletedAt` even though the scan already skips trashed
+              rows (upload-duplicate-detect.ts:80): `/files/f/<id>` filters
+              deleted, so a trashed match would be a 404 door. Two independent
+              layers, because the first one silently breaking is exactly how
+              that 404 factory shipped before. */}
+          <div className="mt-1 flex min-w-0 items-center gap-1">
+            <p
+              className="min-w-0 truncate text-[11px] text-muted-foreground"
+              title={existing.filePath}
+            >
+              <span className="opacity-70">Existing:</span>{" "}
+              <span className="font-mono">{pathLabelFor(existing)}</span>
+            </p>
+            {existing.id && !existing.deletedAt ? (
+              <EntityDoorControls
+                token="file"
+                id={existing.id}
+                name={existing.fileName}
+                // Pinned visible, not hover-revealed. This row has no `group`
+                // wrapper, so the default would render the doors at opacity-0 —
+                // and a dialog is the wrong place for hover-reveal anyway: the
+                // user is being ASKED a question and the affordance that
+                // answers it must be on screen when the question is.
+                alwaysShowActions
+              />
+            ) : null}
+          </div>
         </div>
       </div>
 

@@ -20,6 +20,7 @@ import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { defaultHiddenColumns } from "../columns";
 import type { EntityListConfig } from "../config";
 import { useEntityList } from "../useEntityList";
+import { entityListRowHref } from "../doors";
 import { EntityScopeTabs } from "./EntityScopeTabs";
 import { EntityListToolbar } from "./EntityListToolbar";
 import { EntityListTable } from "./EntityListTable";
@@ -107,6 +108,10 @@ export function EntityListPage<TRow>({
     density: prefs.density,
     showShared: showSharedColumns,
     actions,
+    // The same door the table puts on the name cell, handed to every alternate
+    // view. Switching to cards or dense rows must not cost the user cmd-click,
+    // middle-click and keyboard focus on the record's name.
+    hrefFor: (row: TRow) => entityListRowHref(config, row),
   };
 
   return (

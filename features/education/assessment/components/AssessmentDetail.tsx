@@ -12,6 +12,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
   Play,
@@ -328,17 +329,14 @@ export function AssessmentDetail({
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {canEdit ? (
             <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  startTransition(() =>
-                    router.push(`${base}/${assessmentId}/edit`),
-                  )
-                }
-              >
-                <Pencil className="mr-1.5 h-4 w-4" />
-                Edit
+              {/* Edit is another UI for THIS record, so it is an anchor —
+                  cmd-click opens the editor in a new tab without losing this
+                  page. */}
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`${base}/${assessmentId}/edit`}>
+                  <Pencil className="mr-1.5 h-4 w-4" />
+                  Edit
+                </Link>
               </Button>
               <Button
                 variant="outline"
@@ -393,15 +391,14 @@ export function AssessmentDetail({
               )}
             </div>
             <div className="flex flex-col gap-1.5">
+              {/* Each row IS an attempt record with its own results page, so
+                  it is an ANCHOR. As a <button> it navigated on click and did
+                  nothing else — no cmd-click, no middle-click, no "open in new
+                  tab", no destination on hover. Same classes, same layout. */}
               {results.map((r) => (
-                <button
+                <Link
                   key={r.id}
-                  type="button"
-                  onClick={() =>
-                    startTransition(() =>
-                      router.push(`${base}/${assessmentId}/results?r=${r.id}`),
-                    )
-                  }
+                  href={`${base}/${assessmentId}/results?r=${r.id}`}
                   className={cn(
                     "flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 text-left text-sm transition-colors hover:border-primary/40 hover:bg-accent/40",
                     r.status !== "completed" && "opacity-70",
@@ -423,7 +420,7 @@ export function AssessmentDetail({
                   <span className="ml-auto text-[11px] text-muted-foreground">
                     {new Date(r.created_at).toLocaleDateString()}
                   </span>
-                </button>
+                </Link>
               ))}
             </div>
           </div>

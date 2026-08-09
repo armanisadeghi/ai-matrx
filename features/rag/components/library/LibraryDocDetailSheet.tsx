@@ -17,6 +17,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import {
   Dialog,
   DialogContent,
@@ -950,7 +951,24 @@ export function LibraryDocDetailSheet({
             <DialogDescription>
               {doc && confirmDeleteMode === "file" && (
                 <>
-                  Removes <strong>{doc.name}</strong>:
+                  {/* THE DOOR LAW on a DESTRUCTIVE confirm: this is about to
+                      delete the source file and everything derived from it, and
+                      named the document as flat text with `doc.id` right there.
+                      Sibling controls with alwaysShowActions — a same-tab link
+                      would abandon the confirm, and a dialog has no hover
+                      affordance to discover. */}
+                  Removes{" "}
+                  <strong className="inline-flex items-center gap-1 align-middle">
+                    {doc.name}
+                    <EntityDoorControls
+                      token="processed_document"
+                      id={doc.id}
+                      name={doc.name}
+                      alwaysShowActions
+                      className="shrink-0"
+                    />
+                  </strong>
+                  :
                   <ul className="list-disc ml-5 mt-2 space-y-0.5 text-xs">
                     <li>{doc.pagesPersisted} extracted pages</li>
                     <li>

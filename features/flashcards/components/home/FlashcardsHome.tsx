@@ -18,6 +18,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useRouter } from "next/navigation";
 import {
   Layers,
@@ -153,16 +154,17 @@ function SetRow({
   const metaBits = [set.topic, set.lesson, set.difficulty].filter(Boolean);
 
   return (
+    // A PLAIN div — `role="button"` + tabIndex was REMOVED when the name
+    // became an anchor. ARIA's button role takes presentational children, so
+    // a focusable <a> inside it is not required to be exposed to assistive
+    // tech: the row would have announced as one button and swallowed the very
+    // door this sweep added. The name's anchor is now the keyboard and screen
+    // reader path; this onClick is mouse convenience only. (The row cannot
+    // itself become the <Link> the way AudioStudyHome's did — it contains
+    // Study / Fast Fire buttons, and a <button> inside an <a> is equally
+    // invalid.)
     <div
-      role="button"
-      tabIndex={0}
       onClick={() => onOpen(set.id)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onOpen(set.id);
-        }
-      }}
       className={cn(
         "group flex min-h-[44px] items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 text-left transition-colors hover:border-primary/40 hover:bg-accent/40 cursor-pointer",
         busy && "pointer-events-none opacity-60",
@@ -175,8 +177,21 @@ function SetRow({
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          {/* THE DOOR LAW: the card's onClick is a mouse convenience; the
+              NAME is the real anchor. The card is a `div role="button"` — that
+              gives keyboard Enter/Space but NO anchor at all, so there was no
+              cmd-click, no middle-click, no "open in new tab" and no
+              destination on hover. `flashcard_set` carries an `hrefFor` in the
+              registry, so the route is not hardcoded here. EntityRef already
+              stops propagation on its own anchor, so clicking the name does
+              not also fire the card's onOpen. */}
           <h3 className="min-w-0 truncate text-sm font-semibold text-foreground">
-            {set.name}
+            <EntityRef
+              token="fc_set"
+              id={set.id}
+              name={set.name}
+              showIcon={false}
+            />
           </h3>
           <VisibilityChip visibility={set.visibility} />
         </div>

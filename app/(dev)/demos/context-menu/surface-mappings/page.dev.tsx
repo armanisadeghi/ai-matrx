@@ -60,6 +60,8 @@ import {
   type SurfaceBoundScopeMappingResult,
 } from "@/features/agents/utils/scope-mapping";
 import type { SurfaceValue } from "@/features/surfaces/types";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 
 // ---------------------------------------------------------------------------
 // Sample-scope seeding
@@ -346,16 +348,22 @@ export default function SurfaceMappingsDemoPage() {
                   : "border-border bg-muted/30 text-muted-foreground"
               }`}
             >
-              <span className="font-semibold">
-                {agentId
-                  ? (agentOptions.find((agent) => agent.id === agentId)?.name ??
-                    "Selected agent")
-                  : "No agent selected"}
-              </span>
-              {agentId && (
-                <span className="mt-0.5 block break-all font-mono text-[11px] text-muted-foreground">
-                  {agentId}
-                </span>
+              {/* The agent is a real row out of the Redux agent slice and its
+                  id was already in hand — name and id are both doors now. */}
+              {agentId ? (
+                <div className="group flex min-w-0 flex-col gap-0.5">
+                  <EntityRef
+                    token="agent"
+                    id={agentId}
+                    name={
+                      agentOptions.find((agent) => agent.id === agentId)?.name
+                    }
+                    nameClassName="font-semibold"
+                  />
+                  <MatrxUuidCell value={agentId} token="agent" label="Agent" />
+                </div>
+              ) : (
+                <span className="font-semibold">No agent selected</span>
               )}
             </div>
           </section>

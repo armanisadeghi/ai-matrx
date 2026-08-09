@@ -39,9 +39,11 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
+import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { ProjectPicker } from "@/features/projects/components/ProjectPicker";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { TemplatePicker } from "./TemplatePicker";
@@ -785,7 +787,14 @@ interface AiCanvasProps {
   onReorderKeywords?: (rows: KeywordRow[]) => void;
   // Final actions (only used in `review` state):
   onStart?: () => void;
-  onViewFirst?: () => void;
+  /**
+   * THE DOOR LAW: "View & Edit First" opens a topic that ALREADY EXISTS, so it
+   * is a destination, not a command — it takes an href, not a callback. As a
+   * `router.push` it could not be cmd-clicked, and this is exactly the moment
+   * a user wants a new tab: they are mid-review of AI suggestions, and
+   * navigating in place costs them that review.
+   */
+  viewFirstHref?: string | null;
   isLaunching?: boolean;
   maxKeywords?: number;
   onOpenSettings?: () => void;
@@ -807,7 +816,7 @@ function AiCanvas({
   onRenameKeyword,
   onReorderKeywords,
   onStart,
-  onViewFirst,
+  viewFirstHref,
   isLaunching,
   maxKeywords = 5,
   onOpenSettings,
@@ -1047,7 +1056,7 @@ function AiCanvas({
       )}
 
       {/* Actions — only in review */}
-      {isReview && onStart && onViewFirst && (
+      {isReview && onStart && viewFirstHref && (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-both">
           <Button
             onClick={onStart}
@@ -1067,15 +1076,23 @@ function AiCanvas({
               the cap in Pipeline settings.
             </p>
           )}
-          <Button
-            variant="outline"
-            onClick={onViewFirst}
-            disabled={isLaunching}
-            className="min-h-[44px] gap-2"
-          >
-            View &amp; Edit First
-            <ArrowRight className="h-4 w-4" />
-          </Button>
+          {/* `disabled` is not a thing on an anchor — while a launch is in
+              flight we render the plain disabled Button, and only the enabled
+              state becomes a real link. Rendering an <a> with a `disabled`
+              prop would look disabled and still navigate. */}
+          {isLaunching ? (
+            <Button variant="outline" disabled className="min-h-[44px] gap-2">
+              View &amp; Edit First
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button variant="outline" asChild className="min-h-[44px] gap-2">
+              <Link href={viewFirstHref}>
+                View &amp; Edit First
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          )}
         </div>
       )}
     </div>
@@ -1614,11 +1631,17 @@ export default function ResearchInitForm() {
     }
   };
 
-  const handleViewTopicFirst = () => {
-    if (aiPhase.status !== "reviewing" && aiPhase.status !== "error") return;
-    const topicId = aiPhase.topicId;
-    if (topicId) router.push(`/research/topics/${topicId}`);
-  };
+  /**
+   * The topic behind the review/error states already exists in `research.rs_topic`,
+   * so its route comes from the registry rather than a hand-written template —
+   * one edit there moves every door at once. `null` when there is no topic yet,
+   * which is the signal for callers to render no door at all.
+   */
+  const viewTopicHref =
+    (aiPhase.status === "reviewing" || aiPhase.status === "error") &&
+    aiPhase.topicId
+      ? (getEntityInfo("research_topic").hrefFor?.(aiPhase.topicId) ?? null)
+      : null;
 
   // ── Keyword editor — load + CRUD handlers ─────────────────────────────────
   //
@@ -2140,7 +2163,7 @@ export default function ResearchInitForm() {
                 onRenameKeyword={handleRenameKeyword}
                 onReorderKeywords={handleReorderKeywords}
                 onStart={handleStartResearch}
-                onViewFirst={handleViewTopicFirst}
+                viewFirstHref={viewTopicHref}
                 isLaunching={aiPhase.isLaunching}
                 maxKeywords={aiPhase.quotas.max_keywords}
                 onOpenSettings={() => setQuotaDialogOpen(true)}
@@ -2176,9 +2199,13 @@ export default function ResearchInitForm() {
                 >
                   Try again
                 </Button>
-                {aiPhase.topicId && (
-                  <Button onClick={handleViewTopicFirst}>
-                    View topic anyway
+                {/* The run failed but the topic survived — this is the user's
+                    only route back to it, and it was a router.push, so it
+                    could not be opened in a new tab beside the error they are
+                    still reading. */}
+                {viewTopicHref && (
+                  <Button asChild>
+                    <Link href={viewTopicHref}>View topic anyway</Link>
                   </Button>
                 )}
               </div>

@@ -13,6 +13,7 @@ import { ExternalLink, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectTreeFetchedAt } from "@/features/scopes/redux/selectors/tree";
@@ -129,9 +130,18 @@ export function ScopesSettingsPanel() {
       {activeOrg && (
         <Card className="p-4 space-y-3">
           <div className="text-sm font-medium">Current organization</div>
-          <p className="text-[11px] text-muted-foreground">
-            You're currently scoped to <strong>{activeOrg.name}</strong>. The
-            hub and manager default to this org.
+          {/* The active org is a record with a route and a peek — naming it
+              without a door is the dead end this campaign kills. */}
+          <p className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+            You&apos;re currently scoped to
+            <EntityRef
+              token="organization"
+              id={activeOrg.id}
+              name={activeOrg.name}
+              showIcon={false}
+              className="font-semibold text-foreground"
+            />
+            . The hub and manager default to this org.
           </p>
         </Card>
       )}

@@ -120,6 +120,22 @@ export interface MatrxColumnDef<T> {
    */
   fk?: {
     label?: string;
+    /**
+     * Canonical entity token this column's ids point at (`agent`, `note`, …).
+     * THE DOOR LAW made declarative: the cell resolves route + new tab + peek
+     * from the registries, so a column of ids stops being a dead end without
+     * hand-wiring a link. `href` / `onOpen` still win when both are set.
+     * A function form resolves the token per row (an audit log whose target
+     * type varies by row).
+     *
+     * `"auto"` derives the token from the COLUMN NAME (`task_id` → `task`).
+     * It is opt-in on purpose: the guess is only correct when you have checked
+     * the actual FK. `scheduler.sch_run.task_id` references `scheduler.sch_task`,
+     * not the workspace `task` the name implies, and `app_id` /
+     * `conversation_id` / `file_id` / `workflow_id` each have several candidate
+     * tables. A wrong door opens a DIFFERENT record — worse than no door.
+     */
+    token?: string | null | "auto" | ((row: T) => string | null | undefined);
     href?: (id: string, row: T) => string | null | undefined;
     onOpen?: (
       id: string,
@@ -290,6 +306,21 @@ export interface MatrxDataTableDetailConfig<T> {
   headerActions?: (row: T) => ReactNode;
   defaultWidth?: number;
   enabled?: boolean;
+  /**
+   * Maps a field name to the entity token its id points at, turning that field
+   * into a door (route + peek) in the default inspector — side panel AND row
+   * window.
+   *
+   * There is no default guess: this inspector renders whatever columns the row
+   * has, and a wrong door opens a DIFFERENT record (`sch_run.task_id` is a
+   * SCHEDULED task, not a workspace `task`). A table whose FKs you HAVE checked
+   * can pass `tokenFromColumnName` (`components/official/entity-ref/doors`) to
+   * open every `<token>_id` field at once.
+   *
+   * The ROW is passed too, because a table whose target type varies per row (an
+   * audit log, an exposure report) cannot answer from the column name alone.
+   */
+  tokenForField?: (key: string, row: T) => string | null;
 }
 
 export interface MatrxDataTableWindowConfig<T> {

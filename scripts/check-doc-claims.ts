@@ -25,7 +25,7 @@
  */
 
 import { readFileSync, existsSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -314,17 +314,68 @@ const claims: Claim[] = [
         if (rel.startsWith("http")) continue;
         if (!existsSync(join(ROOT, rel))) dead.push(rel);
       }
-      // Absolute cross-repo pointers: catch a path on a volume that no longer mounts.
+      // Absolute cross-repo pointers: catch a path on a volume that no longer
+      // mounts. These are written as the AUTHOR's machine paths
+      // (/Users/<someone>/code/<repo>/...), so a bare existsSync only ever
+      // succeeds there — in a cloud agent session it reported all 13 as dead
+      // on every run regardless of the change, and a guard that always screams
+      // is one every agent learns to skip.
+      //
+      // THREE outcomes, not two:
+      //   • target resolves (here or in a sibling checkout) → pass
+      //   • the repo IS checked out but the file is missing → DEAD, a real
+      //     failure, exactly what this check is for
+      //   • the repo isn't checked out at all → NOT VERIFIABLE, report
+      //     separately; claiming it dead would be reporting a failure for data
+      //     we could not read.
+      const unreachable: string[] = [];
       for (const m of CLAUDE_MD.matchAll(
         /`?(\/(?:Volumes|Users)\/[^\s`)]+\.md)`?/g,
       )) {
-        if (!existsSync(m[1])) dead.push(m[1]);
+        const abs = m[1];
+        if (existsSync(abs)) continue;
+
+        // "/Users/x/code/common-docs/policies/foo.md" → ["common-docs", "policies/foo.md"]
+        const afterCode = abs.split("/code/")[1];
+        if (!afterCode) {
+          unreachable.push(abs);
+          continue;
+        }
+        const [repoDir, ...restParts] = afterCode.split("/");
+        const rest = restParts.join("/");
+        const siblings = dirname(ROOT);
+        // A checkout may be named for the repo or carry the `matrx-` prefix
+        // (this session clones common-docs as matrx-common-docs).
+        const repoCandidates = [
+          join(siblings, repoDir),
+          join(siblings, `matrx-${repoDir}`),
+        ];
+        // Resolve against the first candidate that HAS THE FILE, not the first
+        // that merely exists — with both `common-docs` and `matrx-common-docs`
+        // checked out, picking the directory first would report a dead pointer
+        // for a doc sitting in the other clone.
+        if (repoCandidates.some((d) => existsSync(join(d, rest)))) continue;
+        const anyCheckout = repoCandidates.some((d) => existsSync(d));
+        if (!anyCheckout) {
+          unreachable.push(abs);
+          continue;
+        }
+        dead.push(abs);
       }
-      return dead.length
-        ? `dead pointers: ${[...new Set(dead)].join(", ")}`
-        : null;
+      const parts: string[] = [];
+      if (dead.length)
+        parts.push(`dead pointers: ${[...new Set(dead)].join(", ")}`);
+      if (unreachable.length) {
+        // Informational only — never fails the check.
+        console.log(
+          `\n  note: ${unreachable.length} cross-repo pointer(s) not verifiable here (repo not checked out): ${[
+            ...new Set(unreachable),
+          ].join(", ")}`,
+        );
+      }
+      return parts.length ? parts.join("; ") : null;
     },
-    fix: "Repoint or delete. A dead pointer silently drops a whole ruleset for every agent that follows it.",
+    fix: "Repoint or delete. A dead pointer silently drops a whole ruleset for every agent that follows it. For a CROSS-REPO pointer, check the sibling checkout is current FIRST — a checkout sitting on an older branch reports a doc that exists on main as dead. Confirm with `git -C <sibling> log --all --oneline -- <path>` before repointing anything.",
   },
 ];
 

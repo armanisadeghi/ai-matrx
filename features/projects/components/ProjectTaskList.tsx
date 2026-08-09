@@ -17,6 +17,7 @@
  */
 
 import React from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Loader2,
   ChevronRight,
@@ -75,7 +76,29 @@ export function ProjectTaskList({
   const [loading, setLoading] = React.useState(true);
   const [reloadTick, setReloadTick] = React.useState(0);
   const [busyId, setBusyId] = React.useState<string | null>(null);
-  const [showDone, setShowDone] = React.useState(false);
+  // `?done=1` opens with the Done group already expanded. A COUNT IS A DOOR:
+  // "12 done" on the projects list links here, and landing on a page where
+  // those twelve are hidden behind a collapsed disclosure means the number
+  // didn't actually reach the records it described.
+  const searchParams = useSearchParams();
+  const doneParam = searchParams.get("done") === "1";
+  const [showDone, setShowDone] = React.useState(doneParam);
+  // The initializer runs once. Navigating from one project to another keeps
+  // this component mounted, so a fresh `?done=1` would be ignored and the
+  // count link would land on a collapsed Done group again.
+  //
+  // Keyed on PROJECT + PARAM together, not the param alone: collapsing Done on
+  // project A leaves `?done=1` in the URL, so clicking "12 done" on project B
+  // carries an unchanged param and a param-only guard would leave the group
+  // shut — the very thing the link exists to open. Within ONE project the
+  // manual toggle still stands, because neither half of the key changed.
+  const doneSeedKey = `${projectId}|${doneParam}`;
+  const lastDoneSeed = React.useRef(doneSeedKey);
+  React.useEffect(() => {
+    if (lastDoneSeed.current === doneSeedKey) return;
+    lastDoneSeed.current = doneSeedKey;
+    setShowDone(doneParam);
+  }, [doneSeedKey, doneParam]);
   const [addingSubFor, setAddingSubFor] = React.useState<string | null>(null);
   const [subTitle, setSubTitle] = React.useState("");
   const [isAddingSub, setIsAddingSub] = React.useState(false);

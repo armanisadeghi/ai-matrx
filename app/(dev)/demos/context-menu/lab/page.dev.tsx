@@ -67,7 +67,14 @@
  * first time you engage the menu (right-click or icon).
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import dynamic from "next/dynamic";
 import {
   ChevronDown,
@@ -106,6 +113,10 @@ import { getAllManifests } from "@/features/surfaces/manifests/registry";
 import type { SurfaceManifest } from "@/features/surfaces/types";
 import { supabase } from "@/utils/supabase/client";
 
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { isUuidValue } from "@/components/official/entity-ref/doors";
+import { entityTokenForAgentScope } from "@/features/agent-shortcuts/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -255,33 +266,99 @@ function IdentityBanner({
   const taskId = useAppSelector(selectTaskId);
   const taskName = useAppSelector(selectTaskName);
 
+  // The token the scope picker's id ACTUALLY identifies — never the literal
+  // "scope". Null for global/user (no navigable record) or a hand-typed id
+  // that is not a uuid.
+  const scopeTokenForRef =
+    scopeRef.scopeId && isUuidValue(scopeRef.scopeId)
+      ? entityTokenForAgentScope(scopeRef.scope)
+      : null;
+
   return (
+    // THE DOOR LAW: every record this banner names is a live row the signed-in
+    // user owns, and every id was already in scope. Names are EntityRefs; ids
+    // are MatrxUuidCells (which resolve their own doors from the same
+    // registries). `user` has no registry route yet, so its id renders
+    // token-less — full value + copy, no invented destination.
     <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-[11px]">
       <Field
         label="User"
         value={userEmail ?? "(not signed in)"}
-        mono={userId ?? "—"}
+        mono={userId ? <MatrxUuidCell value={userId} label="User" /> : "—"}
         accent={isSuperAdmin ? "super_admin" : undefined}
       />
       <Field
         label="Organization"
-        value={orgName ?? "(none)"}
-        mono={orgId ?? "—"}
+        value={
+          orgId ? (
+            <EntityRef token="organization" id={orgId} name={orgName} />
+          ) : (
+            "(none)"
+          )
+        }
+        mono={
+          orgId ? (
+            <MatrxUuidCell value={orgId} token="organization" label="Org" />
+          ) : (
+            "—"
+          )
+        }
       />
       <Field
         label="Project / Task"
         value={
-          projectName
-            ? taskName
-              ? `${projectName} › ${taskName}`
-              : projectName
-            : "(none)"
+          projectId ? (
+            <span className="flex min-w-0 items-center gap-1">
+              <EntityRef token="project" id={projectId} name={projectName} />
+              {taskId && (
+                <>
+                  <span className="text-muted-foreground">›</span>
+                  <EntityRef token="task" id={taskId} name={taskName} />
+                </>
+              )}
+            </span>
+          ) : (
+            "(none)"
+          )
         }
-        mono={taskId ?? projectId ?? "—"}
+        mono={
+          taskId ? (
+            <MatrxUuidCell value={taskId} token="task" label="Task" />
+          ) : projectId ? (
+            <MatrxUuidCell value={projectId} token="project" label="Project" />
+          ) : (
+            "—"
+          )
+        }
       />
+      {/* 🚨 `scopeRef.scopeId` is NOT a `context.scopes` row — `applyScopeToFields`
+          (features/agents/redux/shared/scope.ts) writes it to
+          userId/organizationId/projectId/taskId depending on `scope`. Linking it
+          with the `scope` token would send the user to /scopes/s/<orgId>, which
+          resolves nothing and 404s. `entityTokenForAgentScope` is the declared
+          vocabulary for exactly this; `global`/`user` carry no navigable record
+          and map to null. The id is also free-typed on this page, so it must
+          pass `isUuidValue` before it can be treated as a record. */}
       <Field
         label="Scope being fetched"
-        value={`${scopeRef.scope}${scopeRef.scopeId ? ` (${scopeRef.scopeId.slice(0, 8)}…)` : ""}`}
+        value={
+          scopeRef.scopeId ? (
+            <span className="flex min-w-0 items-center gap-1">
+              <span className="shrink-0">{scopeRef.scope}</span>
+              {/* ALWAYS the uuid cell — only the TOKEN varies. Token-less still
+                  gives short id + full value on hover + one-click copy, and
+                  adds no route. Dropping to a plain span to avoid a wrong door
+                  would throw away the copy affordance too. */}
+              <MatrxUuidCell
+                value={scopeRef.scopeId}
+                token={scopeTokenForRef ?? undefined}
+                label={scopeRef.scope}
+              />
+            </span>
+          ) : (
+            scopeRef.scope
+          )
+        }
         mono={surfaceName ?? "no surface"}
         accent={surfaceName ? "surface" : undefined}
       />
@@ -296,12 +373,16 @@ function Field({
   accent,
 }: {
   label: string;
-  value: string;
-  mono?: string;
+  /** Text, or the record's doors (EntityRef / MatrxUuidCell). */
+  value: ReactNode;
+  mono?: ReactNode;
   accent?: string;
 }) {
   return (
-    <div className="rounded-md border border-border bg-muted/30 p-2">
+    // `group` is here for a STANDALONE `EntityDoorControls`, should one ever be
+    // added — `EntityRef` carries its own `group/entity-ref` and self-reveals,
+    // and `MatrxUuidCell` has no hover-hidden state at all.
+    <div className="group rounded-md border border-border bg-muted/30 p-2">
       <div className="flex items-center gap-2">
         <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
           {label}
@@ -312,9 +393,13 @@ function Field({
           </span>
         )}
       </div>
-      <div className="text-foreground truncate font-medium">{value}</div>
+      {/* `truncate` must stay: two of the four slots still hold plain strings
+          (userEmail, surfaceName), and a long one would grow the card out of
+          the shared md:grid-cols-4 baseline. Door components bring their own
+          min-w-0/truncate. */}
+      <div className="min-w-0 truncate text-foreground font-medium">{value}</div>
       {mono && (
-        <div className="font-mono text-[10px] text-muted-foreground truncate">
+        <div className="min-w-0 truncate font-mono text-[10px] text-muted-foreground">
           {mono}
         </div>
       )}

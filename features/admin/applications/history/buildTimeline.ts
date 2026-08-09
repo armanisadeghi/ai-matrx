@@ -25,6 +25,8 @@ interface Staged {
   changedAt: string;
   changedBy: string | null;
   snapshotJson: string;
+  entryId: string | null;
+  kind: string | null;
   /** Groups snapshots of the same thing across time. */
   seriesKey: string;
 }
@@ -45,6 +47,8 @@ export function buildApplicationsTimeline(
       changedAt: row.changed_at,
       changedBy: row.changed_by,
       snapshotJson: configSnapshotJson(row),
+      entryId: null,
+      kind: null,
       seriesKey: `configuration:${row.app}`,
     });
   }
@@ -59,6 +63,8 @@ export function buildApplicationsTimeline(
       changedAt: row.changed_at,
       changedBy: row.changed_by,
       snapshotJson: entrySnapshotJson(row),
+      entryId: row.entry_id,
+      kind: row.kind,
       seriesKey: `catalog:${row.entry_id}`,
     });
   }
@@ -94,6 +100,8 @@ export function buildApplicationsTimeline(
       op: item.op,
       changedAt: item.changedAt,
       changedBy: item.changedBy,
+      entryId: item.entryId,
+      kind: item.kind,
       snapshotJson: item.snapshotJson,
       previousJson: previousById.get(item.rowId) ?? "",
     }))

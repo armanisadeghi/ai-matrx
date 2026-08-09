@@ -23,6 +23,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -227,10 +229,18 @@ export function LinkAgentToShortcutModal({
 
   const body = (
     <div className="flex flex-col gap-4">
-      <div className="p-3 rounded-md border border-border bg-card">
+      {/* The agent this modal is about. Its picker rows already carry doors;
+          the header naming the subject did not. */}
+      <div className="group p-3 rounded-md border border-border bg-card">
         <div className="flex items-center gap-2 mb-1">
           <Hammer className="h-4 w-4 text-primary" />
-          <span className="font-semibold text-sm">{agent.name}</span>
+          <EntityRef
+            token="agent"
+            id={agent.id}
+            name={agent.name}
+            showIcon={false}
+            nameClassName="font-semibold text-sm"
+          />
         </div>
         {agent.description && (
           <p className="text-xs text-muted-foreground">{agent.description}</p>
@@ -369,11 +379,21 @@ export function LinkAgentToShortcutModal({
                     (c) => c.id === shortcut.categoryId,
                   );
                   return (
+                    // The row is a <button>, so the doors CANNOT live inside
+                    // it — an anchor nested in interactive content is invalid
+                    // DOM. Positioned sibling instead, the same shape the
+                    // tool-registry picker uses.
+                    <div key={shortcut.id} className="relative group">
                     <button
-                      key={shortcut.id}
                       type="button"
                       onClick={() => setSelectedShortcutId(shortcut.id)}
                       className={`w-full text-left p-3 border rounded-lg cursor-pointer transition-colors ${
+                        // Reserve room for the absolutely-positioned door
+                        // controls, ONLY on rows that have them — otherwise
+                        // they sit on top of the selection checkmark. Same
+                        // allowance the sibling pickers make.
+                        shortcut.agentId ? "pr-16" : ""
+                      } ${
                         isSelected
                           ? "bg-primary/10 border-primary"
                           : "border-border hover:bg-muted/50"
@@ -407,6 +427,24 @@ export function LinkAgentToShortcutModal({
                         )}
                       </div>
                     </button>
+                    {/* "Already linked" knew an agent was on the other end and
+                        refused to say WHICH — the corollary the doctrine calls
+                        out by name. The agent's NAME is not loaded here (this
+                        modal only holds the agent being linked), so peek is the
+                        honest door: it answers "which one is that?" without
+                        inventing a label. Pinned visible — the row's own hover
+                        is the button's, and a control the user cannot see is
+                        the dead end we are removing. */}
+                    {shortcut.agentId && (
+                      <div className="absolute right-2 top-2">
+                        <EntityDoorControls
+                          token="agent"
+                          id={shortcut.agentId}
+                          alwaysShowActions
+                        />
+                      </div>
+                    )}
+                    </div>
                   );
                 })}
               </div>

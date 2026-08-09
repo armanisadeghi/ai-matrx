@@ -12,15 +12,24 @@
  *   - `tableName` is the canonical Postgres table for hydrating shared rows.
  *   - `selectColumns` is the projection used by both queries.
  *   - `mapRow` turns a row into a `ResourceCardData` for rendering.
- *   - `getHref` builds the per-card destination URL.
  *
  * Rows that appear in both owned and shared queries are de-duped by id;
  * `source` reflects whichever query found them first ("owned" wins).
+ *
+ * THE DOOR LAW: the card's destination comes from the ENTITY REGISTRY, keyed by
+ * `resourceType` (which is the canonical token for every consumer). Each page
+ * used to carry its own `getHref` one-liner; those drifted — the workflows tile
+ * linked every row to `/workflows/<id>`, a route that does not exist. Cards are
+ * real anchors (cmd/middle-click opens a new tab) and offer a peek when one is
+ * registered, so a resource with no detail route is still readable instead of
+ * being a fake button that goes nowhere.
  */
 
 import React from "react";
-import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import { Eye, Loader2 } from "lucide-react";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
+import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/utils/supabase/client";
@@ -51,7 +60,12 @@ export interface OrgResourceListProps {
     row: Record<string, unknown>,
     source: "owned" | "shared",
   ) => ResourceCardData;
-  getHref: (id: string) => string;
+  /**
+   * Route override. Omit it — the registry answers for every canonical token,
+   * and a local copy is exactly what drifts. Only set it when this surface
+   * genuinely opens a different shell than the entity's canonical route.
+   */
+  getHref?: (id: string) => string;
   emptyTitle: string;
   emptyDescription: string;
   emptyIcon: React.ReactNode;
@@ -69,7 +83,13 @@ export function OrgResourceList({
   emptyDescription,
   emptyIcon,
 }: OrgResourceListProps) {
-  const router = useRouter();
+  const [peekId, setPeekId] = React.useState<string | null>(null);
+
+  // Switching org or resource tab reuses this component instance, so an open
+  // peek would keep showing a record from the grid the user just left.
+  React.useEffect(() => {
+    setPeekId(null);
+  }, [orgId, resourceType]);
   const [items, setItems] = React.useState<ResourceCardData[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -166,50 +186,104 @@ export function OrgResourceList({
     );
   }
 
+  const CARD_CLASS =
+    "text-left p-4 rounded-lg border bg-card transition-all flex flex-col gap-2 min-h-[6rem]";
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      {items.map((item) => (
-        <button
-          type="button"
-          key={item.id}
-          onClick={() => router.push(getHref(item.id))}
-          className="text-left p-4 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/30 transition-all cursor-pointer flex flex-col gap-2 min-h-[6rem]"
-        >
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="text-sm font-medium line-clamp-2 flex-1">
-              {item.title || "Untitled"}
-            </h3>
-            <Badge
-              variant={item.source === "owned" ? "secondary" : "outline"}
-              className="text-[10px] shrink-0"
-            >
-              {item.source === "owned" ? "Org" : "Shared"}
-            </Badge>
+      {items.map((item) => {
+        const doors = resolveEntityDoors(resourceType, item.id);
+        const href = getHref?.(item.id) ?? doors.href;
+
+        const body = (
+          <>
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="text-sm font-medium line-clamp-2 flex-1">
+                {item.title || "Untitled"}
+              </h3>
+              <Badge
+                variant={item.source === "owned" ? "secondary" : "outline"}
+                className="text-[10px] shrink-0"
+              >
+                {item.source === "owned" ? "Org" : "Shared"}
+              </Badge>
+            </div>
+            {item.subtitle && (
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                {item.subtitle}
+              </p>
+            )}
+            {item.tags && item.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {item.tags.slice(0, 3).map((t) => (
+                  <Badge key={t} variant="outline" className="text-[10px]">
+                    {t}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            <div className="mt-auto flex items-end justify-between gap-2">
+              <span className="text-xs text-muted-foreground">
+                {item.updatedAt
+                  ? `Updated ${formatDistanceToNow(new Date(item.updatedAt), {
+                      addSuffix: true,
+                    })}`
+                  : ""}
+              </span>
+            </div>
+          </>
+        );
+
+        // The peek control is a SIBLING of the card link, never a child — an
+        // interactive control inside an anchor is invalid HTML and makes the
+        // click target ambiguous.
+        const peekControl = doors.canPeek ? (
+          <button
+            type="button"
+            aria-label={`Quick look at ${item.title || "record"}`}
+            title={`Quick look at ${item.title || "record"}`}
+            onClick={() => setPeekId(item.id)}
+            className="absolute bottom-2 right-2 inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <Eye className="h-3.5 w-3.5" />
+          </button>
+        ) : null;
+
+        // A card with no route and no peek is NOT rendered as a button — a
+        // clickable-looking tile that goes nowhere is the dead end this fixes.
+        const card = href ? (
+          <Link
+            href={href}
+            className={`${CARD_CLASS} h-full cursor-pointer hover:bg-accent/50 hover:border-primary/30`}
+          >
+            {body}
+          </Link>
+        ) : doors.canPeek ? (
+          <button
+            type="button"
+            onClick={() => setPeekId(item.id)}
+            className={`${CARD_CLASS} h-full w-full cursor-pointer hover:bg-accent/50 hover:border-primary/30`}
+          >
+            {body}
+          </button>
+        ) : (
+          <div className={`${CARD_CLASS} h-full`}>{body}</div>
+        );
+
+        return (
+          <div key={item.id} className="relative">
+            {card}
+            {peekControl}
           </div>
-          {item.subtitle && (
-            <p className="text-xs text-muted-foreground line-clamp-2">
-              {item.subtitle}
-            </p>
-          )}
-          {item.tags && item.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {item.tags.slice(0, 3).map((t) => (
-                <Badge key={t} variant="outline" className="text-[10px]">
-                  {t}
-                </Badge>
-              ))}
-            </div>
-          )}
-          {item.updatedAt && (
-            <div className="text-xs text-muted-foreground mt-auto">
-              Updated{" "}
-              {formatDistanceToNow(new Date(item.updatedAt), {
-                addSuffix: true,
-              })}
-            </div>
-          )}
-        </button>
-      ))}
+        );
+      })}
+      {peekId && (
+        <ResourcePeekHost
+          kind={resolveEntityDoors(resourceType, peekId).peekKind}
+          id={peekId}
+          onClose={() => setPeekId(null)}
+        />
+      )}
     </div>
   );
 }

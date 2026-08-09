@@ -54,6 +54,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
 import {
   Table,
@@ -1166,7 +1167,7 @@ function ProjectsTable({
               return (
                 <TableRow
                   key={p.id}
-                  className="cursor-pointer"
+                  className="group/entity-ref cursor-pointer"
                   onClick={() => router.push(`/projects/${p.id}`)}
                 >
                   <TableCell className="py-2">
@@ -1174,22 +1175,69 @@ function ProjectsTable({
                       <span className="h-7 w-7 rounded-md flex items-center justify-center shrink-0 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
                         <FolderKanban className="h-4 w-4" />
                       </span>
-                      <span className="font-medium text-foreground truncate">
-                        {p.name}
-                      </span>
+                      {/* THE DOOR LAW: the whole-row click is a mouse
+                          convenience; the NAME is the real anchor (keyboard,
+                          screen reader, middle-click), plus new tab + peek. */}
+                      <EntityRef
+                        token="project"
+                        id={p.id}
+                        name={p.name}
+                        showIcon={false}
+                        className="font-medium text-foreground"
+                      />
                     </div>
                   </TableCell>
                   <TableCell className="py-2">
-                    <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <Building2 className="h-3.5 w-3.5 shrink-0" />
-                      {orgEntry(p)?.name ?? "—"}
-                    </span>
+                    {/* A resolvable relationship is rendered AND linked. */}
+                    {p.organizationId ? (
+                      <EntityRef
+                        token="organization"
+                        id={p.organizationId}
+                        // NOT a fallback string. `orgMap` only holds orgs the
+                        // user is a MEMBER of, so a project reached by a
+                        // permission grant resolves to nothing here — and
+                        // printing the word "Organization" would present a
+                        // label we invented as if it were the org's name.
+                        // EntityRef already degrades to a truncated id, which
+                        // is true and still opens.
+                        name={orgEntry(p)?.name ?? null}
+                        className="text-sm text-muted-foreground"
+                      />
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Building2 className="h-3.5 w-3.5 shrink-0" />—
+                      </span>
+                    )}
                   </TableCell>
+                  {/* A COUNT IS A DOOR: /projects/[id] lists this project's
+                      tasks grouped Open / Done (ProjectTaskList). */}
                   <TableCell className="py-2 text-right tabular-nums">
-                    {s?.open ?? 0}
+                    <Link
+                      href={`/projects/${p.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      title={`Open ${p.name} — ${s?.open ?? 0} open task${
+                        (s?.open ?? 0) === 1 ? "" : "s"
+                      }`}
+                      className="rounded px-1 hover:bg-accent hover:underline"
+                    >
+                      {s?.open ?? 0}
+                    </Link>
                   </TableCell>
                   <TableCell className="py-2 text-right tabular-nums text-muted-foreground">
-                    {s?.done ?? 0}
+                    <Link
+                      // `?done=1` expands the Done group on arrival — that
+                      // section is collapsed by default, so a bare link would
+                      // land the user on a page where the tasks this number
+                      // counts are still hidden.
+                      href={`/projects/${p.id}?done=1`}
+                      onClick={(e) => e.stopPropagation()}
+                      title={`Open ${p.name} — ${s?.done ?? 0} completed task${
+                        (s?.done ?? 0) === 1 ? "" : "s"
+                      }`}
+                      className="rounded px-1 hover:bg-accent hover:underline"
+                    >
+                      {s?.done ?? 0}
+                    </Link>
                   </TableCell>
                   <TableCell className="py-2 text-sm text-muted-foreground whitespace-nowrap">
                     <span title={formatAbsoluteDate(p.updatedAt)}>
@@ -1208,12 +1256,12 @@ function ProjectsTable({
                         size="icon"
                         className="h-7 w-7"
                       />
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => router.push(`/projects/${p.id}`)}
-                      >
-                        Open
+                      {/* An anchor, like the Settings button beside it — an
+                          onClick-only Open cannot be cmd- or middle-clicked,
+                          so the row's own "open in a new tab" door died at the
+                          one control most likely to be used for it. */}
+                      <Button asChild size="sm" variant="ghost">
+                        <Link href={`/projects/${p.id}`}>Open</Link>
                       </Button>
                       <Button
                         asChild
@@ -1256,7 +1304,7 @@ function ProjectHubCard({
   const href = `/projects/${project.id}`;
 
   return (
-    <Card className="relative overflow-hidden flex flex-col hover:border-primary/40 hover:shadow-sm transition-all">
+    <Card className="group/entity-ref relative overflow-hidden flex flex-col hover:border-primary/40 hover:shadow-sm transition-all">
       <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-500 opacity-80" />
       <div className="p-5 flex flex-col gap-3 flex-1">
         <div className="flex items-start gap-3">
@@ -1267,17 +1315,30 @@ function ProjectHubCard({
             <FolderKanban className="h-5 w-5" />
           </button>
           <div className="min-w-0 flex-1">
-            <button
-              onClick={() => router.push(href)}
-              className="text-left block max-w-full group/title"
-            >
-              <h3 className="font-semibold text-base truncate group-hover/title:text-primary transition-colors">
+            {/* THE DOOR LAW: the title is a real anchor (was a router.push
+                button — no middle-click, no keyboard link, no copy-address). */}
+            <h3 className="font-semibold text-base">
+              <Link
+                href={href}
+                className="block max-w-full truncate hover:text-primary transition-colors"
+              >
                 {project.name}
-              </h3>
-            </button>
+              </Link>
+            </h3>
             <div className="flex items-center gap-1.5 flex-wrap mt-0.5 text-xs text-muted-foreground">
-              <Building2 className="h-3 w-3 shrink-0" />
-              {org?.name ?? "—"}
+              {project.organizationId ? (
+                <EntityRef
+                  token="organization"
+                  id={project.organizationId}
+                  // Same as the table cell: never invent the name. EntityRef
+                  // falls back to a truncated id, which is honest.
+                  name={org?.name ?? null}
+                />
+              ) : (
+                <>
+                  <Building2 className="h-3 w-3 shrink-0" />—
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -1305,33 +1366,56 @@ function ProjectHubCard({
                   className="flex items-center gap-2 text-xs text-muted-foreground px-1 py-0.5"
                 >
                   <Circle className="h-3 w-3 shrink-0 opacity-50" />
-                  <span className="truncate">{t.title}</span>
+                  {/* Named tasks with ids in hand — each one opens. */}
+                  <EntityRef
+                    token="task"
+                    id={t.id}
+                    name={t.title}
+                    showIcon={false}
+                  />
                 </li>
               ))}
               {open > preview.length && (
                 <li className="text-[11px] text-muted-foreground/70 px-1 pt-0.5">
-                  +{open - preview.length} more
+                  <Link
+                    href={href}
+                    className="hover:text-foreground hover:underline"
+                  >
+                    +{open - preview.length} more
+                  </Link>
                 </li>
               )}
             </ul>
           )}
         </div>
 
+        {/* A COUNT IS A DOOR: /projects/[id] lists this project's tasks
+            grouped Open / Done (ProjectTaskList). */}
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
+          <Link
+            href={href}
+            title={`Open ${project.name} — ${open} open task${open === 1 ? "" : "s"}`}
+            className="flex items-center gap-1 rounded px-1 -mx-1 hover:bg-accent hover:text-foreground transition-colors"
+          >
             <Circle className="h-3.5 w-3.5" />
             <span className="font-semibold text-foreground tabular-nums">
               {open}
             </span>{" "}
             open
-          </span>
-          <span className="flex items-center gap-1">
+          </Link>
+          <Link
+            // `?done=1` — the Done group is collapsed by default, so a bare
+            // link would hide the very tasks this count names.
+            href={`${href}?done=1`}
+            title={`Open ${project.name} — ${done} completed task${done === 1 ? "" : "s"}`}
+            className="flex items-center gap-1 rounded px-1 -mx-1 hover:bg-accent hover:text-foreground transition-colors"
+          >
             <CircleCheck className="h-3.5 w-3.5" />
             <span className="font-semibold text-foreground tabular-nums">
               {done}
             </span>{" "}
             done
-          </span>
+          </Link>
         </div>
       </div>
 
@@ -1343,9 +1427,11 @@ function ProjectHubCard({
           size="icon"
           className="h-8 w-8 shrink-0"
         />
-        <Button size="sm" onClick={() => router.push(href)} className="flex-1">
-          Open
-          <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+        <Button asChild size="sm" className="flex-1">
+          <Link href={href}>
+            Open
+            <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+          </Link>
         </Button>
         <Button asChild size="sm" variant="outline">
           <Link href={`/projects/${project.id}/settings`}>

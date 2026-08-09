@@ -30,6 +30,8 @@ import {
   CircleOff,
 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { ObservationalMemoryCore } from "@/features/agents/components/observational-memory/ObservationalMemoryCore";
@@ -51,6 +53,8 @@ import type { RootState } from "@/lib/redux/store";
 interface SidebarRowData {
   conversationId: string;
   label: string;
+  /** The agent behind this conversation — carried so the name can be a door. */
+  agentId: string | null;
   agentName: string | null;
   isEnabled: boolean;
   degraded: boolean;
@@ -138,10 +142,36 @@ function SidebarRow({
               <Copy className="h-3 w-3" />
             )}
           </button>
+          {/* THE DOOR LAW: the label IS a conversation id, and copying it was
+              the only thing you could do with it. Doors are SIBLINGS, never an
+              anchor around the label — the row is a `role="button"` selector, so
+              a nested link would both be an a11y trap and cost the user the
+              inspector on a stray click. The row already carries `group`, which
+              is what reveals these on hover. */}
+          <EntityDoorControls
+            token="conversation"
+            id={row.conversationId}
+            name={row.label}
+            className="shrink-0"
+          />
         </div>
-        {row.agentName && (
-          <div className="text-[10px] text-muted-foreground truncate pl-4">
-            {row.agentName}
+        {/* Gated on the ID, not the name. The name comes from a selector that
+            may not have hydrated yet, and gating on it meant a KNOWN agent got
+            no door at all whenever its name was still loading — the corollary
+            this sweep exists to kill, inverted. */}
+        {row.agentId && (
+          <div className="flex min-w-0 items-center gap-1 pl-4">
+            {row.agentName && (
+              <span className="truncate text-[10px] text-muted-foreground">
+                {row.agentName}
+              </span>
+            )}
+            <EntityDoorControls
+              token="agent"
+              id={row.agentId}
+              name={row.agentName}
+              className="shrink-0"
+            />
           </div>
         )}
         <div className="flex items-center gap-2 pl-4 mt-0.5">
@@ -190,6 +220,7 @@ function MemorySidebarRowConnector({
   const row: SidebarRowData = {
     conversationId,
     label: conversationId.slice(0, 8) + "…",
+    agentId: instance?.agentId ?? null,
     agentName,
     isEnabled,
     degraded,
@@ -371,14 +402,44 @@ function ObservationalMemoryWindowInner({
     selectMemoryDegraded(selectedConversationId),
   );
 
+  const titleSuffix = `${selectedMetadata?.model ? ` · ${selectedMetadata.model}` : ""}${selectedDegraded ? " · degraded" : ""}`;
+
+  // `title` stays a plain string — it is what the tray and the minimized
+  // window show, and neither can render a node.
   const title = selectedConversationId
-    ? `Memory — ${selectedConversationId.slice(0, 8)}…${selectedMetadata?.model ? ` · ${selectedMetadata.model}` : ""}${selectedDegraded ? " · degraded" : ""}`
+    ? `Memory — ${selectedConversationId.slice(0, 8)}…${titleSuffix}`
     : "Memory Inspector";
+
+  // THE DOOR LAW: the window is titled after a conversation the user cannot
+  // open. `titleNode` is the established rich-title path (5 sibling windows use
+  // it) and WindowPanel gives it `pointer-events-auto` with drag suppressed, so
+  // the anchor is not swallowed by the drag gesture.
+  //
+  // The name is a same-tab link as well as peek/new-tab: this inspector holds no
+  // local state worth protecting (every value it shows is a Redux selector over
+  // the conversation), so navigating costs the user nothing they cannot get back
+  // by reopening the window.
+  const titleNode = selectedConversationId ? (
+    <span className="flex min-w-0 items-center gap-1">
+      <span className="shrink-0">Memory —</span>
+      <EntityRef
+        token="conversation"
+        id={selectedConversationId}
+        name={`${selectedConversationId.slice(0, 8)}…`}
+        showIcon={false}
+        nameClassName="font-mono"
+      />
+      {titleSuffix ? (
+        <span className="truncate text-muted-foreground">{titleSuffix}</span>
+      ) : null}
+    </span>
+  ) : undefined;
 
   return (
     <WindowPanel
       id="observational-memory-window"
       title={title}
+      titleNode={titleNode}
       onClose={onClose}
       width={1080}
       height={720}

@@ -80,6 +80,33 @@ export const AGENT_SCOPES = {
 
 export type AgentScope = (typeof AGENT_SCOPES)[keyof typeof AGENT_SCOPES];
 
+/**
+ * Which canonical entity a shortcut's `scopeId` actually identifies.
+ *
+ * THE TRAP this closes: the field is called `scopeId`, but it is NOT a
+ * `context.scopes` row — `useAgentShortcutCrud.applyScopeToRowFields` writes it
+ * to `organizationId` / `projectId` / `taskId` depending on `scope`. Reading the
+ * name and linking it with the `scope` token sends the user to `/scopes/s/<orgId>`,
+ * which resolves nothing. A door that opens on the wrong record is worse than no
+ * door, because it looks like it worked.
+ *
+ * `global` and `user` carry no id at all (`requiresId: false` in SCOPE_OPTIONS),
+ * so they map to null rather than to a token — a shortcut scoped to a person is
+ * scoped to the viewer, not to a record anyone navigates to.
+ */
+export function entityTokenForAgentScope(scope: AgentScope): string | null {
+  switch (scope) {
+    case AGENT_SCOPES.ORGANIZATION:
+      return "organization";
+    case AGENT_SCOPES.PROJECT:
+      return "project";
+    case AGENT_SCOPES.TASK:
+      return "task";
+    default:
+      return null;
+  }
+}
+
 export interface ScopeOption {
   value: AgentScope;
   label: string;

@@ -77,6 +77,14 @@ export function CrossSiteRanksHub() {
       id: "keyword",
       accessorKey: "keyword",
       header: "Keyword",
+      // THE DOOR LAW: the keyword names a tracked target that lives on one
+      // site's Ranks workspace. Same destination as `onRowOpen`, built by the
+      // canonical route builder — this makes it a real anchor. A target whose
+      // site could not be resolved gets no href rather than a broken one.
+      href: (row) =>
+        row.site_id
+          ? marketingRoutes.site(row.brand_id, row.site_id, "/ranks")
+          : undefined,
       cell: (row) => (
         <span className="text-xs font-medium text-foreground">
           {row.keyword}
@@ -87,6 +95,12 @@ export function CrossSiteRanksHub() {
       id: "site_name",
       accessorKey: "site_name",
       header: "Site",
+      // The owning site is a resolvable relationship with its own route —
+      // render it AND link it, to the site itself rather than its Ranks tab.
+      href: (row) =>
+        row.site_id
+          ? marketingRoutes.site(row.brand_id, row.site_id)
+          : undefined,
       cell: (row) => (
         <div className="min-w-0">
           <p className="truncate text-xs font-medium">

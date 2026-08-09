@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Brain, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -78,9 +79,11 @@ export function MemoryHome() {
         <ul className="space-y-2">
           {rows.map((row) => (
             <li key={row.id}>
-              <button
-                type="button"
-                onClick={() => router.push(`/education/memory/${row.id}`)}
+              {/* A record with its own page — an anchor, not a <button>.
+                  As a button the card navigated on click and offered nothing
+                  else: no cmd-click, no middle-click, no new tab. */}
+              <Link
+                href={`/education/memory/${row.id}`}
                 className="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-accent"
               >
                 <Brain className="h-5 w-5 shrink-0 text-muted-foreground" />
@@ -94,7 +97,7 @@ export function MemoryHome() {
                     </div>
                   )}
                 </div>
-              </button>
+              </Link>
             </li>
           ))}
         </ul>

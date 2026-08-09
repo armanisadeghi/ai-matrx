@@ -19,7 +19,10 @@ import { toast } from "@/lib/toast";
 
 import { createClient } from "@/utils/supabase/client";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
-import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";
+import {
+  EntityTypeChip,
+  entityTypeHref,
+} from "@/components/entity-types/EntityTypeChip";
 import { EntityTypeCombobox } from "@/components/entity-types/EntityTypeCombobox";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Badge } from "@/components/ui/badge";
@@ -172,7 +175,6 @@ export function ShareableRegistryPanel({
       onPendingTokenConsumed();
     });
     sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-     
   }, [pendingToken]);
 
   function openCreate() {
@@ -362,6 +364,15 @@ export function ShareableRegistryPanel({
         accessorKey: "display_label",
         header: "Label",
         editable: "string",
+        // THE DOOR LAW: this label NAMES an entity type that has a canonical
+        // page (the entity explorer). `href` renders a real next/link anchor —
+        // keyboard-reachable, cmd-clickable — and turns the inline editor into
+        // the hover pencil rather than click-to-edit. An unregistered token has
+        // no explorer page (it 404s), so it gets no link — never a dead door.
+        href: (row) =>
+          tryGetEntityInfo(row.resource_type)
+            ? entityTypeHref(row.resource_type)
+            : undefined,
         cell: (row) => <span className="text-sm">{row.display_label}</span>,
         width: 140,
       },

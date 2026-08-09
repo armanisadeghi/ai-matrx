@@ -30,7 +30,6 @@ const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => ({
   source,
 });
 
-const getHref = (id: string) => `/agent-apps/${id}`;
 
 export default function OrgAgentAppsPage() {
   const params = useParams();
@@ -65,7 +64,6 @@ export default function OrgAgentAppsPage() {
           selectColumns={SELECT_COLS}
           ownedQuery={fetchOwned}
           mapRow={mapRow}
-          getHref={getHref}
           emptyTitle="No shared agent apps yet"
           emptyDescription="Agent apps you publish under this organization will appear here, along with apps other members share with this organization."
           emptyIcon={<LayoutGrid className="h-8 w-8 text-rose-600 dark:text-rose-400" />}

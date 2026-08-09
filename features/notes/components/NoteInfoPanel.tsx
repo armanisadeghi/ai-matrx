@@ -45,6 +45,7 @@ import { CreateFolderDialog } from "./CreateFolderDialog";
 import { createFolder } from "../service/notesService";
 import { notesEditorManifest } from "@/features/surfaces/manifests/notes-editor.manifest";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
 
 interface NoteInfoPanelProps {
@@ -91,6 +92,31 @@ function StatTile({ value, label }: { value: string; label: string }) {
         {value}
       </span>
       <span className="text-[0.625rem] text-muted-foreground">{label}</span>
+    </div>
+  );
+}
+
+/**
+ * An FK identifier row. THE DOOR LAW: "never render an id you can't open" —
+ * `MatrxUuidCell` keeps the copy affordance and adds the doors the registry
+ * knows about for that token (route, new tab, peek). Ids with no token (the
+ * note's own id, an owner with no canonical user route) stay `CopyableRow`.
+ */
+function EntityIdRow({
+  label,
+  value,
+  token,
+}: {
+  label: string;
+  value: string;
+  token: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 px-3 py-1">
+      <span className="text-[0.6875rem] text-muted-foreground shrink-0">
+        {label}
+      </span>
+      <MatrxUuidCell value={value} label={label} token={token} />
     </div>
   );
 }
@@ -340,14 +366,26 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
       <SectionHeader icon={Hash} label="Identifiers" />
       <div className="pb-3">
         <CopyableRow label="Note ID" value={note.id} />
+        {/* No canonical user route exists yet (FOUND_DEFECTS D138), so the
+            owner stays copy-only rather than linking somewhere wrong. */}
         <CopyableRow label="Owner ID" value={note.created_by} />
         {note.organization_id && (
-          <CopyableRow label="Org ID" value={note.organization_id} />
+          <EntityIdRow
+            label="Org ID"
+            value={note.organization_id}
+            token="organization"
+          />
         )}
         {note.project_id && (
-          <CopyableRow label="Project ID" value={note.project_id} />
+          <EntityIdRow
+            label="Project ID"
+            value={note.project_id}
+            token="project"
+          />
         )}
-        {note.task_id && <CopyableRow label="Task ID" value={note.task_id} />}
+        {note.task_id && (
+          <EntityIdRow label="Task ID" value={note.task_id} token="task" />
+        )}
       </div>
 
       <CreateFolderDialog

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AdminUserDoorControls } from "@/features/admin/users/components/AdminUserRef";
 
 interface EmailTemplate {
   id: string;
@@ -257,24 +258,36 @@ export default function AdminEmailPage() {
                   ) : (
                     <div className="border rounded-lg max-h-48 overflow-y-auto">
                       {users.map((user) => (
-                        <label
+                        // THE DOOR LAW: every name here is a real account.
+                        // The name can't be the anchor — it labels a checkbox
+                        // that selects the recipient — so the user's admin
+                        // doors ride beside it as a SIBLING of the label.
+                        <div
                           key={user.id}
-                          className="flex items-center gap-3 px-3 py-2 hover:bg-muted cursor-pointer border-b last:border-b-0"
+                          className="flex items-center gap-3 px-3 py-2 hover:bg-muted border-b last:border-b-0"
                         >
                           <Checkbox
+                            id={`email-recipient-${user.id}`}
                             checked={selectedUserIds.includes(user.id)}
                             onCheckedChange={() => toggleUserSelection(user.id)}
                             className="shrink-0"
                           />
-                          <div className="flex-1 min-w-0">
+                          <label
+                            htmlFor={`email-recipient-${user.id}`}
+                            className="flex-1 min-w-0 cursor-pointer"
+                          >
                             <p className="text-sm font-medium truncate">
                               {user.display_name || "No name"}
                             </p>
                             <p className="text-xs text-muted-foreground truncate">
                               {user.email}
                             </p>
-                          </div>
-                        </label>
+                          </label>
+                          <AdminUserDoorControls
+                            userId={user.id}
+                            label={user.display_name || user.email}
+                          />
+                        </div>
                       ))}
                       {users.length === 0 && (
                         <p className="text-sm text-muted-foreground py-4 text-center">

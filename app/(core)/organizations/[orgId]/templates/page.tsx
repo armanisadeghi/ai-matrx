@@ -29,7 +29,6 @@ const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => ({
   source,
 });
 
-const getHref = (id: string) => `/settings/message-templates/${id}`;
 
 export default function OrgTemplatesPage() {
   const params = useParams();
@@ -64,7 +63,6 @@ export default function OrgTemplatesPage() {
           selectColumns={SELECT_COLS}
           ownedQuery={fetchOwned}
           mapRow={mapRow}
-          getHref={getHref}
           emptyTitle="No shared message templates yet"
           emptyDescription="Message templates you create under this organization will appear here, along with templates other members share."
           emptyIcon={<ClipboardType className="h-8 w-8 text-purple-600 dark:text-purple-400" />}

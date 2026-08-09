@@ -12,7 +12,10 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useSharing, useIsOwner } from "@/utils/permissions/hooks";
-import { getResourceTypeLabel } from "@/utils/permissions/registry";
+import {
+  getResourceSharePath,
+  getResourceTypeLabel,
+} from "@/utils/permissions/registry";
 import type { ResourceType } from "@/utils/permissions/types";
 import { PermissionsList } from "@/features/sharing/components/PermissionsList";
 import { ShareWithUserTab } from "@/features/sharing/components/tabs/ShareWithUserTab";
@@ -56,34 +59,32 @@ export default function ShareModalWindow({
     [resourceId, resourceName, resourceType],
   );
 
-  const getShareUrl = () => {
+  /**
+   * A share URL is the highest-stakes door we build: the user sends it to
+   * someone else, and a 404 lands in a stranger's inbox. `getResourceSharePath`
+   * is the ONE resolver (entity registry first, share-registry template as
+   * fallback, no guessing) and returns null when the resource genuinely has no
+   * page — which we say out loud rather than emailing a broken link.
+   */
+  const getShareUrl = (): string | null => {
+    const path = getResourceSharePath(resourceType, resourceId);
+    if (!path) return null;
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-    const resourcePaths: Record<string, string> = {
-      canvas: `/canvas/${resourceId}`,
-      prompt: `/ai/prompts/edit/${resourceId}`,
-      collection: `/collections/${resourceId}`,
-      workflow: `/workflows/${resourceId}`,
-      note: `/notes/${resourceId}`,
-      task: `/tasks/${resourceId}`,
-      tasks: `/tasks/${resourceId}`,
-      cx_conversation: `/chat/${resourceId}`,
-      canvas_items: `/canvas/${resourceId}`,
-      udt_datasets: `/data/${resourceId}`,
-      structured_list: `/lists/${resourceId}`,
-      transcripts: `/transcripts/${resourceId}`,
-      quiz_sessions: `/quizzes/${resourceId}`,
-      sandbox_instances: `/sandbox/${resourceId}`,
-      cld_files: `/files/f/${resourceId}`,
-      prompt_actions: `/ai/prompts/actions/${resourceId}`,
-      flashcard_data: `/flashcards/${resourceId}`,
-      flashcard_sets: `/flashcards/sets/${resourceId}`,
-    };
-    const path =
-      resourcePaths[resourceType] || `/${resourceType}/${resourceId}`;
     return `${baseUrl}${path}`;
   };
 
   const handleEmailLink = async () => {
+    const shareUrl = getShareUrl();
+    if (!shareUrl) {
+      // Never email a link we can't build — a broken URL in someone else's
+      // inbox is the worst possible dead end.
+      toast({
+        title: "No shareable link for this item yet",
+        description: `"${getResourceTypeLabel(resourceType)}" has no page to open. Sharing access still works; only the emailed link is unavailable.`,
+        variant: "destructive",
+      });
+      return;
+    }
     setEmailingLink(true);
     try {
       const response = await fetch("/api/sharing/email-link", {
@@ -92,7 +93,7 @@ export default function ShareModalWindow({
         body: JSON.stringify({
           resourceType: getResourceTypeLabel(resourceType),
           resourceName,
-          shareUrl: getShareUrl(),
+          shareUrl,
         }),
       });
 

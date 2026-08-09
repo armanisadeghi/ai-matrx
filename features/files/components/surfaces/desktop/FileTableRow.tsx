@@ -20,6 +20,16 @@
  * Folders gracefully degrade to em-dash for file-only columns
  * (Extension, MIME, Size, Version) so the row stays aligned with no
  * empty gaps.
+ *
+ * THE DOOR LAW (common-docs/policies/no-dead-ends.md): the name itself
+ * stays a `<button>` because its click means "preview here", not
+ * "navigate" — so the doors ride alongside it as `<EntityDoorControls>`
+ * (Open + new tab), the sanctioned sibling form. Peek is deliberately
+ * off: single-clicking the row already opens the full preview pane, so a
+ * peek button would be a strictly worse duplicate of this surface's own
+ * answer to "which one is that?". Only REAL rows get doors — a virtual
+ * file/folder (a feature-backed adapter row) has no `/files/f/<id>` row
+ * and no stable `folder_path`, and a link that 404s is worse than none.
  */
 
 "use client";
@@ -38,6 +48,8 @@ import {
   formatFileSize,
   formatRelativeTime,
 } from "@/features/files/utils/format";
+import { buildFilesAllFolderUrl } from "@/features/files/utils/url-state";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import { FileRagBadge } from "@/features/files/components/core/FileBadges/FileRagBadge";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
@@ -159,7 +171,7 @@ function FileRow({
       <tr
         ref={mergeRef}
         className={cn(
-          "group cursor-pointer border-b text-sm transition-colors",
+          "group/entity-ref group cursor-pointer border-b text-sm transition-colors",
           isPreviewActive
             ? "bg-primary/10 border-l-2 border-l-primary"
             : isFocused
@@ -265,6 +277,26 @@ function FileCell({
                   className="min-w-0 font-medium text-foreground"
                 />
                 <FileRagBadge fileId={file.id} className="shrink-0" />
+                {/*
+                  TWO conditions, and they are different questions.
+                  `source.kind === "real"` asks "does this row have a
+                  files.files id at all?" (adapter-backed rows do not).
+                  `!file.deletedAt` asks "is that record still live?" —
+                  /files/f/[fileId] selects `.is("deleted_at", null)` and
+                  notFound()s otherwise, so every row on /files/trash would
+                  otherwise ship a door straight to a 404. Keyed off the
+                  record, not the section, so a trashed row surfacing in
+                  search results is covered too.
+                */}
+                {file.source.kind === "real" && !file.deletedAt && (
+                  <EntityDoorControls
+                    token="file"
+                    id={file.id}
+                    name={file.fileName}
+                    showOpen
+                    disablePeek
+                  />
+                )}
               </span>
               {parentPath ? (
                 <span
@@ -438,7 +470,7 @@ function FolderRow({
       <tr
         ref={setMergedRef}
         className={cn(
-          "group cursor-pointer border-b text-sm transition-colors",
+          "group/entity-ref group cursor-pointer border-b text-sm transition-colors",
           isFocused
             ? "bg-primary/15 ring-1 ring-inset ring-primary/40"
             : selected
@@ -536,6 +568,23 @@ function FolderCell({
                 </span>
               ) : null}
             </div>
+            {/* Same two questions as the file cell above: has an id, and is
+                still live. A deleted folder's path resolves to nothing, so the
+                door would open an empty folder view rather than the record. */}
+            {folder.source.kind === "real" && !folder.deletedAt && (
+              <EntityDoorControls
+                token="folder"
+                id={folder.id}
+                name={folder.folderName}
+                // `folder` has no registry `hrefFor` — folders are addressed by
+                // PATH, not id. `buildFilesAllFolderUrl` is the canonical
+                // builder the shell itself navigates with, so this is the same
+                // destination the row click reaches (and now middle-clickable).
+                href={buildFilesAllFolderUrl(folder.folderPath, "")}
+                showOpen
+                disablePeek
+              />
+            )}
             <FolderRowActions
               visible={hovered}
               onShare={onShare}

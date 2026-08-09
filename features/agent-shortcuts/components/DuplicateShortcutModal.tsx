@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   Drawer,
   DrawerContent,
@@ -30,7 +31,11 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, ChevronRight, Copy, Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getPlacementTypeMeta, PLACEMENT_TYPES } from "../constants";
+import {
+  entityTokenForAgentScope,
+  getPlacementTypeMeta,
+  PLACEMENT_TYPES,
+} from "../constants";
 import type { PlacementType } from "../constants";
 import { useAgentShortcutCrud } from "../hooks/useAgentShortcutCrud";
 import type {
@@ -58,6 +63,7 @@ export function DuplicateShortcutModal({
 }: DuplicateShortcutModalProps) {
   const isMobile = useIsMobile();
   const crud = useAgentShortcutCrud({ scope, scopeId });
+  const containerToken = entityTokenForAgentScope(scope);
 
   const sourceCategory = useMemo(
     () => categories.find((c) => c.id === shortcut.categoryId) ?? null,
@@ -135,7 +141,14 @@ export function DuplicateShortcutModal({
             </>
           )}
           <ChevronRight className="h-3 w-3 text-muted-foreground" />
-          <span className="text-sm font-medium">{shortcut.label}</span>
+          {/* THE DOOR LAW: the identity card names the shortcut being copied
+              and had no way to open it, with shortcut.id right there. */}
+          <EntityRef
+            token="agent_shortcut"
+            id={shortcut.id}
+            name={shortcut.label}
+            showIcon={false}
+          />
         </div>
       </div>
 
@@ -211,11 +224,28 @@ export function DuplicateShortcutModal({
 
       {selectedCategoryId && (
         <div className="p-3 rounded-md border border-border bg-card">
-          <p className="text-sm text-foreground">
-            The duplicate will copy label, description, agent reference, scope
-            mappings, and all other settings. It will be created in the current
-            scope ({scope}{scopeId ? ` · ${scopeId.slice(0, 8)}…` : ""}).
-          </p>
+          <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-sm text-foreground">
+            <span>
+              The duplicate will copy label, description, agent reference, scope
+              mappings, and all other settings. It will be created in the
+              current scope ({scope}
+              {scopeId && containerToken ? " · " : ""}
+            </span>
+            {/* Was a hand-truncated bare uuid — unopenable and uncopyable. The
+                container this copy lands in is now reachable before the user
+                commits to it. The token comes from `scope`, never a literal:
+                `scopeId` is an org/project/task id, NOT a context.scopes row
+                (see entityTokenForAgentScope). */}
+            {scopeId && containerToken ? (
+              <EntityRef
+                token={containerToken}
+                id={scopeId}
+                name={null}
+                showIcon={false}
+              />
+            ) : null}
+            <span>).</span>
+          </div>
         </div>
       )}
 

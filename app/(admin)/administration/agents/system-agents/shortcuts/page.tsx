@@ -86,6 +86,9 @@ export default function AdminShortcutsPage() {
   return (
     <div className="h-full flex flex-col overflow-hidden bg-textured">
       <ShortcutList
+        doorHrefFor={(s) =>
+          `/administration/agents/system-agents/edit/${s.id}`
+        }
         scope={SCOPE}
         onCreate={handleCreate}
         onEdit={handleEdit}

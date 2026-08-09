@@ -17,6 +17,7 @@
 import React, { useCallback, useState } from "react";
 import { Activity, MessageSquare, Copy, Check, Radio } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { StreamDebugPanel } from "@/features/agents/components/debug/StreamDebugPanel";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -96,7 +97,7 @@ function ConversationSidebarRow({
         if (e.key === "Enter" || e.key === " ") onSelect();
       }}
       className={cn(
-        "flex items-start gap-1.5 w-full px-2 py-2 cursor-pointer select-none transition-colors border-l-2 group text-left",
+        "flex items-start gap-1.5 w-full px-2 py-2 cursor-pointer select-none transition-colors border-l-2 group group/entity-ref text-left",
         isSelected
           ? "border-primary bg-primary/8"
           : "border-transparent hover:bg-muted/40",
@@ -159,6 +160,19 @@ function ConversationSidebarRow({
             </span>
           )}
         </div>
+      </div>
+      {/* THE DOOR LAW: the row's only identity was a truncated uuid, and the
+          only affordance was "copy it and go find it yourself". The row itself
+          is a role="button" that selects the conversation in this window, so
+          the doors render as a SIBLING — an anchor nested inside interactive
+          content is invalid DOM and a stray click would cost the operator the
+          panel they are standing in. */}
+      <div
+        className="shrink-0 mt-0.5"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <EntityDoorControls token="conversation" id={conversationId} />
       </div>
       <button
         type="button"

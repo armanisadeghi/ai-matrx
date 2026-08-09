@@ -39,6 +39,9 @@ import {
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { isUuidValue } from "@/components/official/entity-ref/doors";
+import { entityFromSurfaceKey } from "@/features/agents/utils/surface-key";
 import {
   selectLastFocusedInputConversation,
   selectLastFocusedDisplayConversation,
@@ -131,11 +134,13 @@ function HubEmptyConversation() {
 function CreatorHubContextStatus() {
   const inputConvId = useAppSelector(selectLastFocusedInputConversation);
   const surfaceKey = useAppSelector(selectLastFocusedSurfaceKey);
-  // Run / chat surface keys embed the agentId after the ":".
+  // What the surface key actually points at. NOT "everything after the colon
+  // is an agent" — 17 of the 22 live prefixes embed a conversation, shortcut,
+  // app, topic or session id instead, and a uuid check cannot tell them apart.
+  // See features/agents/utils/surface-key.ts.
+  const surfaceEntity = entityFromSurfaceKey(surfaceKey);
   const activeAgentId =
-    surfaceKey && surfaceKey.includes(":")
-      ? surfaceKey.slice(surfaceKey.indexOf(":") + 1)
-      : null;
+    surfaceEntity?.token === "agent" ? surfaceEntity.id : null;
   const activeAgentName = useAppSelector((state) =>
     activeAgentId ? selectAgentName(state, activeAgentId) : null,
   );
@@ -148,19 +153,55 @@ function CreatorHubContextStatus() {
       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         Active
       </span>
+      {/* THE DOOR LAW: this footer exists to tell the user WHICH agent and
+          conversation the hub is acting on, and named both without letting them
+          look at either. `entityFromSurfaceKey` decides whether the key's id is
+          an agent at all — see that module for why a uuid check is not enough. */}
       <span className="text-foreground">
         Agent:{" "}
-        <span className="font-medium">
-          {activeAgentName ??
-            (activeAgentId ? `${activeAgentId.slice(0, 8)}…` : "none")}
-        </span>
+        {activeAgentId ? (
+          <EntityRef
+            token="agent"
+            id={activeAgentId}
+            name={activeAgentName ?? `${activeAgentId.slice(0, 8)}…`}
+            showIcon={false}
+            nameClassName="font-medium"
+          />
+        ) : (
+          <span className="font-medium">none</span>
+        )}
       </span>
       <span className="text-muted-foreground">
         Conversation:{" "}
-        <span className="font-mono">
-          {inputConvId ? `${inputConvId.slice(0, 8)}…` : "none"}
-        </span>
+        {inputConvId && isUuidValue(inputConvId) ? (
+          <EntityRef
+            token="conversation"
+            id={inputConvId}
+            name={`${inputConvId.slice(0, 8)}…`}
+            showIcon={false}
+            nameClassName="font-mono"
+          />
+        ) : (
+          <span className="font-mono">
+            {inputConvId ? `${inputConvId.slice(0, 8)}…` : "none"}
+          </span>
+        )}
       </span>
+      {/* When the focused surface is NOT an agent (a shortcut, an app, an
+          editor conversation), that record was previously visible only as a raw
+          string in a tooltip. It has an identity, so it gets a door. */}
+      {surfaceEntity && surfaceEntity.token !== "agent" && (
+        <span className="text-muted-foreground">
+          Surface:{" "}
+          <EntityRef
+            token={surfaceEntity.token}
+            id={surfaceEntity.id}
+            name={`${surfaceEntity.id.slice(0, 8)}…`}
+            showIcon={false}
+            nameClassName="font-mono"
+          />
+        </span>
+      )}
     </div>
   );
 }

@@ -60,6 +60,20 @@ export interface ItemTypeConfig {
    */
   enrich?: (supabase: SupabaseClient, id: string) => Promise<EnrichedItem>;
   /**
+   * The canonical entity-registry token for this item type, when it DIFFERS
+   * from `type`. THE DOOR LAW: doors resolve from the entity registry
+   * (`features/scopes/registry/entityRegistry.ts`), and most item types are
+   * already spelled the same there — but a few are not, and a mismatch means
+   * the record silently gets no route and no peek.
+   *
+   * Only set this when the two vocabularies genuinely name the SAME table.
+   * Every entry below was matched by `schema.table` against
+   * `types/generated/entity-types.generated.ts`, never by name similarity: a
+   * token that resolves to a different table would open the WRONG record,
+   * which is worse than offering no door at all.
+   */
+  entityToken?: string;
+  /**
    * How this item opens in a window panel. The renderer maps this discriminant
    * to the matching overlay opener hook. Omit when no panel exists yet — the
    * card stays informative and the action button is hidden.
@@ -451,6 +465,8 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
   },
   table: {
     type: "table",
+    // workbench.udt_datasets — same table as the `dataset` token.
+    entityToken: "dataset",
     label: "Table",
     icon: Table2,
     accent: {
@@ -500,6 +516,9 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
   // New payloads use "structured_list". See common-docs/projects/structured-lists-rename.
   picklist: {
     type: "picklist",
+    // workbench.udt_structured_lists — the pre-rename spelling of the
+    // `structured_list` token, reading the identical table.
+    entityToken: "structured_list",
     label: "Structured List",
     icon: ListChecks,
     accent: {
@@ -547,6 +566,8 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
   },
   document: {
     type: "document",
+    // workbench.udt_documents — same table as the `udt_document` token.
+    entityToken: "udt_document",
     label: "Document",
     icon: FileText,
     accent: {
@@ -657,6 +678,24 @@ export const FALLBACK_CONFIG: ItemTypeConfig = {
  * raw type echoed as the label) for anything not in the registry — so a brand
  * new or misspelled enum still renders a clean card.
  */
+/**
+ * The canonical entity token to resolve doors with for an item type.
+ *
+ * Most item types ARE their token, so this returns the type itself; the few
+ * that diverge declare `entityToken` on their registry entry. Consumers should
+ * never hand a raw `ItemType` to `resolveEntityDoors` — that is what silently
+ * cost `table` / `document` / `picklist` their route and peek.
+ *
+ * Unknown types pass through unchanged and simply resolve to no doors.
+ */
+export function entityTokenForItemType(
+  type: ItemType | null | undefined,
+): string | null {
+  if (typeof type !== "string" || !type) return null;
+  const { config, recognized } = getItemConfig(type);
+  return recognized ? (config.entityToken ?? type) : type;
+}
+
 export function getItemConfig(type: ItemType | null | undefined): {
   config: ItemTypeConfig;
   recognized: boolean;

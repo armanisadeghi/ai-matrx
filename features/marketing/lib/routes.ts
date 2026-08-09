@@ -35,6 +35,8 @@ export const marketingRoutes = {
   /** In-app index of the PUBLIC SEO utilities (they live under `/seo/*`). */
   tools: () => "/marketing/tools",
   batches: () => "/marketing/batches",
+  /** One batch job's detail workspace (`/marketing/batches/[batchId]`). */
+  batch: (batchId: string) => `/marketing/batches/${batchId}`,
   cost: () => "/marketing/cost",
 
   // ── Reserved routes ────────────────────────────────────────────────────
@@ -77,6 +79,22 @@ export const marketingRoutes = {
     brandId
       ? `/marketing/brands/${brandId}/sites/${siteId}${sub}`
       : `/marketing/sites/${siteId}${sub}`,
+  /**
+   * One canonical page's workspace. THE DOOR LAW's most-linked marketing
+   * destination: every surface that resolves a `page_id` (GSC breakdowns, dig
+   * results, insights, the watchlist, crawl ledgers, cost rollups) reaches the
+   * page through this ONE builder. `brandId` is optional because those rows
+   * usually carry only `site_id` — the `/marketing/sites/[siteId]/[...rest]`
+   * shim resolves the brand and replaces the URL with the nested canonical one.
+   */
+  sitePage: (
+    brandId: string | null | undefined,
+    siteId: string,
+    pageId: string,
+  ) =>
+    brandId
+      ? `/marketing/brands/${brandId}/sites/${siteId}/pages/${pageId}`
+      : `/marketing/sites/${siteId}/pages/${pageId}`,
   crawlReports: (
     brandId: string | null | undefined,
     siteId: string,

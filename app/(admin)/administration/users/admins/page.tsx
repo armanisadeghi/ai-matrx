@@ -10,7 +10,8 @@
 // mutations still go through the SECURITY DEFINER admin RPCs via
 // /api/admin/admins/* (protected-resources single path of resistance).
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Loader2, Search, ShieldAlert, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { toast } from "@/lib/toast";
 
@@ -26,6 +27,13 @@ import {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import {
+  AdminUserRef,
+  accountHrefFor,
+} from "@/features/admin/users/components/AdminUserRef";
+import { DeepLinkMissNotice } from "@/components/official/deep-link/DeepLinkMissNotice";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { useDeepLinkParam } from "@/components/official/deep-link/useDeepLinkParam";
 import type { Database } from "@/types/database.types";
 
 const PAGE_LOCATION =
@@ -111,10 +119,41 @@ function auditChange(entry: AuditEntry): string {
   return `was ${before?.level ? LEVEL_LABEL[before.level] : "admin"}`;
 }
 
-export default function AdminsManagementPage() {
+function AdminsManagementPageContent() {
+  // `?user=<id>` — the door every surface that names a user now offers
+  // ("Admin level"). Accounts linked here for months while this page read no
+  // param at all, landing the user on an unfiltered roster while promising a
+  // filtered one. The admins search matches user id, so seeding it honours the
+  // link with the table's own primitive rather than a second filter.
+  const searchParams = useSearchParams();
+  const focusedUserId = searchParams.get("user") ?? "";
+  const [adminSearch, setAdminSearch] = useState(focusedUserId);
+  // Re-seed only when the PARAM changes — never on every render, so typing in
+  // the box (or clearing it) is not fought by the deep link that opened it.
+  const lastSeededUserId = useRef(focusedUserId);
+  useEffect(() => {
+    if (lastSeededUserId.current === focusedUserId) return;
+    lastSeededUserId.current = focusedUserId;
+    setAdminSearch(focusedUserId);
+  }, [focusedUserId]);
+
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [auditFailed, setAuditFailed] = useState(false);
+
+  // The roster loaded and the linked person holds no admin row. Checked against
+  // the FULL `admins` list, not the table's filtered view, so a search the user
+  // typed themselves can never be mistaken for a missing record.
+  const focusMissed = Boolean(
+    focusedUserId &&
+      !loading &&
+      !loadFailed &&
+      !admins.some((row) => row.user_id === focusedUserId),
+  );
+
+  const { clear: clearUserFocus } = useDeepLinkParam("user");
 
   // Add-admin form state
   const [emailQuery, setEmailQuery] = useState("");
@@ -127,26 +166,71 @@ export default function AdminsManagementPage() {
   // Per-row update state
   const [rowBusy, setRowBusy] = useState<Record<string, boolean>>({});
 
+  // The whole body is guarded, not just the !res.ok branch: a rejected fetch
+  // (offline, DNS) or a malformed body throws, and an unguarded throw would
+  // leave `loadFailed` false while `loading` still ends false — so the deep-link
+  // notice would report "this person is not an admin" about a roster we never
+  // read. A definitive negative is only earned by a successful read.
   const fetchAdmins = useCallback(async () => {
-    const res = await fetch("/api/admin/admins");
-    if (!res.ok) {
-      const { error } = await res.json().catch(() => ({ error: res.statusText }));
-      toast.error(`Failed to load admins: ${error}`);
-      return;
+    try {
+      const res = await fetch("/api/admin/admins");
+      if (!res.ok) {
+        const { error } = await res
+          .json()
+          .catch(() => ({ error: res.statusText }));
+        toast.error(`Failed to load admins: ${error}`);
+        setLoadFailed(true);
+        return;
+      }
+      const { admins: rows } = (await res.json()) as { admins: AdminRow[] };
+      setAdmins(rows);
+      setLoadFailed(false);
+    } catch (err) {
+      toast.error(
+        `Failed to load admins: ${err instanceof Error ? err.message : "network error"}`,
+      );
+      setLoadFailed(true);
     }
-    const { admins: rows } = (await res.json()) as { admins: AdminRow[] };
-    setAdmins(rows);
   }, []);
 
+  // This used to be `if (!res.ok) return;` — a bare swallow. The audit log then
+  // rendered as an EMPTY, successfully-loaded table titled "Audit log (0)", on
+  // the one surface whose entire purpose is proving that every admin change was
+  // recorded. "No admin changes have been logged" and "we could not read the
+  // log" are opposite statements, and the swallow published the reassuring one.
   const fetchAudit = useCallback(async () => {
-    const res = await fetch("/api/admin/admins/audit?limit=50");
-    if (!res.ok) return;
-    const { entries } = (await res.json()) as { entries: AuditEntry[] };
-    setAudit(entries);
+    try {
+      const res = await fetch("/api/admin/admins/audit?limit=50");
+      if (!res.ok) {
+        const { error } = await res
+          .json()
+          .catch(() => ({ error: res.statusText }));
+        toast.error(`Failed to load audit log: ${error}`);
+        setAuditFailed(true);
+        return;
+      }
+      const { entries } = (await res.json()) as { entries: AuditEntry[] };
+      setAudit(entries);
+      setAuditFailed(false);
+    } catch (err) {
+      toast.error(
+        `Failed to load audit log: ${err instanceof Error ? err.message : "network error"}`,
+      );
+      setAuditFailed(true);
+    }
   }, []);
 
   useEffect(() => {
     Promise.all([fetchAdmins(), fetchAudit()]).finally(() => setLoading(false));
+  }, [fetchAdmins, fetchAudit]);
+
+  // The failed read owns its own recovery — without this the only way out of a
+  // stale roster is reloading the page, which is not a fix we should make a
+  // super-admin discover on their own.
+  const [retrying, setRetrying] = useState(false);
+  const retryLoad = useCallback(() => {
+    setRetrying(true);
+    Promise.all([fetchAdmins(), fetchAudit()]).finally(() => setRetrying(false));
   }, [fetchAdmins, fetchAudit]);
 
   async function handleLookup() {
@@ -268,12 +352,7 @@ export default function AdminsManagementPage() {
         header: "Email",
         accessorFn: (r) => r.email ?? r.user_id,
         width: 260,
-        cell: (r) =>
-          r.email ? (
-            <span className="font-medium text-foreground">{r.email}</span>
-          ) : (
-            <span className="text-muted-foreground">{r.user_id}</span>
-          ),
+        cell: (r) => <AdminUserRef userId={r.user_id} email={r.email} />,
       },
       {
         id: "level",
@@ -334,7 +413,9 @@ export default function AdminsManagementPage() {
         accessorFn: (e) => e.actor_email ?? "system / service-role",
         width: 220,
         cell: (e) =>
-          e.actor_email ?? (
+          e.actor_user_id ? (
+            <AdminUserRef userId={e.actor_user_id} email={e.actor_email} />
+          ) : (
             <span className="italic text-muted-foreground">system / service-role</span>
           ),
       },
@@ -355,6 +436,9 @@ export default function AdminsManagementPage() {
         header: "Target",
         accessorFn: (e) => e.target_email ?? e.target_user_id,
         width: 240,
+        cell: (e) => (
+          <AdminUserRef userId={e.target_user_id} email={e.target_email} />
+        ),
       },
       {
         id: "change",
@@ -466,8 +550,36 @@ export default function AdminsManagementPage() {
         {/* Admin list */}
         <section className="space-y-2">
           <h2 className="text-sm font-medium text-foreground">
-            Current admins ({admins.length})
+            {/* The count is a factual claim about the database. After a failed
+                read it would be a claim about a cache, so it is withheld
+                rather than quietly restated. */}
+            Current admins{loadFailed ? "" : ` (${admins.length})`}
           </h2>
+
+          {/* A toast fades; the stale roster does not. Without this the last
+              successful read keeps rendering as though it were current. */}
+          {loadFailed && (
+            <StaleDataNotice
+              hasData={admins.length > 0}
+              what="the admin roster"
+              onRetry={retryLoad}
+              retrying={retrying}
+            />
+          )}
+          {/* `AdminUserRef` advertises this route as the "Admin level" door, so
+              it is reached constantly for people who are NOT admins. Seeding the
+              search then leaves an empty table and says nothing — the link looks
+              broken. The notice names what happened and still offers the
+              account door, since "not an admin" is not "unreachable". */}
+          {focusMissed && (
+            <DeepLinkMissNotice
+              token="user"
+              id={focusedUserId}
+              href={accountHrefFor(focusedUserId)}
+              containerLabel="admin roster"
+              onClear={clearUserFocus}
+            />
+          )}
           <div className="h-[480px]">
             <MatrxDataTable
               data={admins}
@@ -475,10 +587,31 @@ export default function AdminsManagementPage() {
               getRowId={(r) => r.user_id}
               isLoading={loading}
               pageSize={25}
-              emptyState={{ title: "No admins." }}
+              // Must not contradict the notice above: with a missed deep link
+              // the table is empty because that person is not an admin, not
+              // because there are no admins at all.
+              emptyState={
+                loadFailed
+                  ? {
+                      // "No admins." after a failed read is a lie about the
+                      // database — and on THIS table an alarming one.
+                      title: "Roster not loaded",
+                      description:
+                        "The read failed, so this list is empty for that reason alone. Use Try again above.",
+                    }
+                  : focusMissed
+                    ? {
+                        title: "That person isn't an admin",
+                        description:
+                          "Clear the link above to see every admin on this roster.",
+                      }
+                    : { title: "No admins." }
+              }
               toolbar={{
                 search: true,
                 searchPlaceholder: "Search email, level, user id…",
+                searchValue: adminSearch,
+                onSearchChange: setAdminSearch,
               }}
               copy={{
                 label: "Admin",
@@ -544,12 +677,20 @@ export default function AdminsManagementPage() {
         <section className="space-y-2">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-medium text-foreground">
-              Audit log ({audit.length})
+              Audit log{auditFailed ? "" : ` (${audit.length})`}
             </h2>
             <p className="text-xs text-muted-foreground">
               Every admin change is logged at the DB layer, including any made via direct SQL.
             </p>
           </div>
+          {auditFailed && (
+            <StaleDataNotice
+              hasData={audit.length > 0}
+              what="the audit log"
+              onRetry={retryLoad}
+              retrying={retrying}
+            />
+          )}
           <div className="h-[440px]">
             <MatrxDataTable
               data={audit}
@@ -557,7 +698,18 @@ export default function AdminsManagementPage() {
               getRowId={(e) => e.id}
               isLoading={loading}
               pageSize={25}
-              emptyState={{ title: "No audit entries yet." }}
+              emptyState={
+                auditFailed
+                  ? {
+                      // "No audit entries yet." on an unread log is the most
+                      // dangerous empty state on this page: it reads as proof
+                      // that nothing happened.
+                      title: "Audit log not loaded",
+                      description:
+                        "The read failed. This is not evidence that no admin changes were made — use Try again above.",
+                    }
+                  : { title: "No audit entries yet." }
+              }
               toolbar={{
                 search: true,
                 searchPlaceholder: "Search actor, action, target…",
@@ -583,5 +735,14 @@ export default function AdminsManagementPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+export default function AdminsManagementPage() {
+  // useSearchParams needs a Suspense boundary under the App Router.
+  return (
+    <Suspense fallback={null}>
+      <AdminsManagementPageContent />
+    </Suspense>
   );
 }

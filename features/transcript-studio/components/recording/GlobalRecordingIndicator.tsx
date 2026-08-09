@@ -1,7 +1,7 @@
 "use client";
 
-import { useTransition } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { Loader2, Mic, Pause, Play, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -28,9 +28,7 @@ function formatClock(totalSec: number): string {
  * would be redundant clutter (the user's explicit ask).
  */
 export function GlobalRecordingIndicator() {
-  const router = useRouter();
   const pathname = usePathname();
-  const [, startTransition] = useTransition();
   const recording = useGlobalRecordingOptional();
 
   const isRecording = useAppSelector((s) => s.recordings.isRecording);
@@ -49,13 +47,12 @@ export function GlobalRecordingIndicator() {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
       <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-border bg-card/95 py-1.5 pl-3 pr-1.5 shadow-lg backdrop-blur">
-        <button
-          type="button"
-          onClick={() =>
-            startTransition(() =>
-              router.push(`/transcripts/scribe/${context.sessionId}`),
-            )
-          }
+        {/* This names a live recording session that has its own page, so it is
+            an anchor — cmd-click opens the session in a new tab instead of
+            abandoning whatever the user is doing. The startTransition here was
+            ceremony: the component discards isPending. */}
+        <Link
+          href={`/transcripts/scribe/${context.sessionId}`}
           className="flex items-center gap-2 text-sm font-medium text-foreground"
           aria-label="Return to the recording session"
         >
@@ -77,7 +74,7 @@ export function GlobalRecordingIndicator() {
           <span className="text-xs text-muted-foreground">
             {isPaused ? "Paused" : "Recording"}
           </span>
-        </button>
+        </Link>
 
         <button
           type="button"

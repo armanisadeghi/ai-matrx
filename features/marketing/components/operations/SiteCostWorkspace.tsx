@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { CircleDollarSign } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -31,6 +30,7 @@ import {
   humanLines,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 const SITE_COST_MODES = [
   { value: "page", label: "By page" },
@@ -64,35 +64,24 @@ export function SiteCostWorkspace() {
       filter: false,
       sortable: false,
       cellKind: "text",
-      cell: (row) => {
-        if (row.page_id) {
-          return (
-            <Link
-              href={`${sitePath}/pages/${row.page_id}`}
-              className="block min-w-72 max-w-3xl truncate font-mono text-xs text-primary"
-              title={row.label}
-            >
-              {row.label}
-            </Link>
-          );
-        }
-        if (row.batch_id) {
-          return (
-            <Link
-              href={`/marketing/batches/${row.batch_id}`}
-              className="block min-w-72 max-w-3xl truncate font-mono text-xs text-primary"
-              title={row.label}
-            >
-              {row.label}
-            </Link>
-          );
-        }
-        return (
-          <span className="block min-w-72 max-w-3xl truncate font-mono text-xs">
-            {row.label}
-          </span>
-        );
-      },
+      // THE DOOR LAW: a cost rollup is named by whatever it rolls up, so the
+      // WHOLE dimension cell is the anchor to that record (page or batch),
+      // built by the canonical route builders. A provider/model rollup names no
+      // record and stays plain text rather than linking nowhere.
+      href: (row) =>
+        row.page_id
+          ? `${sitePath}/pages/${row.page_id}`
+          : row.batch_id
+            ? marketingRoutes.batch(row.batch_id)
+            : undefined,
+      cell: (row) => (
+        <span
+          className="block min-w-72 max-w-3xl truncate font-mono text-xs"
+          title={row.label}
+        >
+          {row.label}
+        </span>
+      ),
     },
     {
       id: "run_id",
@@ -109,7 +98,7 @@ export function SiteCostWorkspace() {
       filter: false,
       sortable: false,
       cellKind: "uuid",
-      fk: { href: (id) => `/marketing/batches/${id}` },
+      fk: { href: (id) => marketingRoutes.batch(id) },
     },
     {
       id: "cost",

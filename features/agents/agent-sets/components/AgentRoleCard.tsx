@@ -18,6 +18,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { accentClasses } from "./accents";
 import { AgentPeekButton } from "./AgentPeekButton";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import type { SetAccent } from "../constants";
 
 export interface AgentRoleCardProps {
@@ -79,6 +80,18 @@ export function AgentRoleCard({
       {/* floating hover actions over a backdrop, so they never eat name width */}
       <div className="absolute right-1 top-1 z-10 flex items-center gap-0.5 rounded-md bg-card/85 opacity-0 backdrop-blur transition-opacity group-hover/role:opacity-100">
         <AgentPeekButton agentId={agentId} />
+        {/* THE DOOR LAW: the card names a member AGENT and only ever offered a
+            peek — the record itself was unreachable. New tab is the door that
+            costs the builder nothing; same-tab Open only on the grid tile,
+            because leaving the canvas would discard the layout in progress. */}
+        <EntityDoorControls
+          token="agent"
+          id={agentId}
+          name={agent?.name ?? null}
+          disablePeek
+          showOpen={!isNode}
+          alwaysShowActions
+        />
         {onEdit && (
           <button
             type="button"

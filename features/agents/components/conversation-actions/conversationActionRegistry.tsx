@@ -16,6 +16,7 @@
  */
 
 import {
+  Webhook,
   Pin,
   PinOff,
   Pencil,
@@ -32,6 +33,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import type {
   ItemMenuConfig,
   ItemMenuSection,
@@ -82,6 +84,15 @@ export interface ConversationMenuContext {
   href: string;
   /** Agent-run focus key — when set, Duplicate jumps focus to the new copy. */
   surfaceKey?: string;
+  /**
+   * The agent that owns this conversation. THE DOOR LAW: every conversation
+   * row already knows its `agentId`, so the agent is a relationship we
+   * RESOLVED — a list that names conversations and offers no way to reach the
+   * agent behind them is the dead end the doctrine names. Pass it and the menu
+   * grows an "Open agent" door; omit it (a surface with no agent id) and no
+   * entry renders at all, never a broken one.
+   */
+  agent?: { id: string; name?: string | null };
   /**
    * Provenance (`source_app` / `source_feature`) + optional filter actions.
    * When set, the menu header shows WHERE the conversation came from
@@ -178,6 +189,19 @@ export function buildConversationMenu(
             href: ctx.href,
             target: "_blank",
           },
+          ...(ctx.agent
+            ? [
+                {
+                  id: "open-agent",
+                  kind: "link" as const,
+                  label: ctx.agent.name
+                    ? `Open agent — ${ctx.agent.name}`
+                    : "Open agent",
+                  icon: Webhook,
+                  href: `/agents/${ctx.agent.id}`,
+                },
+              ]
+            : []),
           {
             id: "copy-link",
             label: "Copy link",
@@ -217,7 +241,14 @@ export function buildConversationMenu(
               if (duplicateConversation.rejected.match(result)) {
                 toast.error(result.payload?.message ?? "Duplicate failed");
               } else {
-                toast.success("Conversation duplicated");
+                // The thunk returns `newConversationId` and the toast dropped
+                // it, leaving the copy findable only by scrolling the sidebar.
+                toast.success("Conversation duplicated", {
+                  action: toastDoor(
+                    "conversation",
+                    result.payload.newConversationId,
+                  ),
+                });
               }
             },
           },

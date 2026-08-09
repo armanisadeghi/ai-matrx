@@ -25,6 +25,7 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { Input } from "@/components/ui/input";
 import { cn } from "@/styles/themes/utils";
 import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   GscDeltaSpan,
   buildGscKeyColumn,
@@ -333,7 +334,13 @@ function CtrGapTable({
         />
       ),
     },
-    buildGscKeyColumn<GscCtrGapRow>(dimension, columnLabel),
+    // THE DOOR LAW: a page-dimension row names a canonical page the RPC
+    // already resolved (`page_id`) — render the relationship AND link it.
+    buildGscKeyColumn<GscCtrGapRow>(dimension, columnLabel, (row) =>
+      dimension === "page" && row.page_id
+        ? marketingRoutes.sitePage(null, siteId, row.page_id)
+        : null,
+    ),
     {
       id: "missed_clicks",
       accessorKey: "missed_clicks",
@@ -714,7 +721,12 @@ function TrendTable({
         />
       ),
     },
-    buildGscKeyColumn<GscTrendRow>(dimension, columnLabel),
+    // Same door as the CTR-gap table: a page row reaches its page workspace.
+    buildGscKeyColumn<GscTrendRow>(dimension, columnLabel, (row) =>
+      dimension === "page" && row.page_id
+        ? marketingRoutes.sitePage(null, siteId, row.page_id)
+        : null,
+    ),
     {
       id: "change_clicks",
       accessorKey: "change_clicks",

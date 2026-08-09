@@ -22,6 +22,12 @@
 // List surface: canonical MatrxDataTable (per-column sort+filter, search,
 // Copy for AI, side-panel detail). Categories are a toolbar facet; selecting
 // one exposes its scoped Add-item / Delete-category actions.
+//
+// THE DOOR LAW (common-docs/policies/no-dead-ends.md): a feed POINTS at a real
+// record — the dataset it queries, the agent it runs — so that record opens
+// (`EntityRef`, routes from the entity registry). The Category cell reaches the
+// items in its category. The toolbar's `Label · count` facets are already
+// doors: clicking one narrows the table to exactly those rows.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -46,6 +52,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ContextValueDisplay } from "@/features/scopes/components/reference/ContextValueDisplay";
 import type {
   SystemContextCategory,
@@ -72,16 +79,44 @@ import {
   valueTypeTone,
 } from "./shared";
 
+/**
+ * The record a feed points at, as a token + id + name — or null when the feed
+ * has no external source (manual value, ambient compute, or a definition whose
+ * executor hasn't landed and therefore carries no id yet).
+ *
+ * THE DOOR LAW: this is what turns "→ AMA Guides" from a label into the store
+ * itself. Tokens resolve their own route + peek through the entity registry
+ * (`data_store` → /rag/data-stores?store_id=, `agent` → /agents/[id]), so this
+ * function never writes a URL.
+ */
+function feedTarget(
+  item: SystemContextItem,
+): { token: string; id: string; name: string | null } | null {
+  const cfg = asFeedConfig(item.feed_config);
+  const str = (key: string): string | null =>
+    typeof cfg[key] === "string" && cfg[key] ? (cfg[key] as string) : null;
+  if (item.feed_type === "dataset") {
+    const id = str("data_store_id");
+    return id ? { token: "data_store", id, name: str("data_store_name") } : null;
+  }
+  if (item.feed_type === "agent") {
+    const id = str("agent_id");
+    return id ? { token: "agent", id, name: str("agent_name") } : null;
+  }
+  return null;
+}
+
 // The Feed cell — how the item is populated, with live status.
 function FeedCell({ item }: { item: SystemContextItem }) {
   const meta = feedTypeMeta(item.feed_type);
   const Icon = meta.icon;
   const cfg = asFeedConfig(item.feed_config);
-  const datasetName =
-    typeof cfg.data_store_name === "string" ? cfg.data_store_name : null;
-  const sourceLink = feedSourceLink(item.feed_type, cfg);
+  const target = feedTarget(item);
+  // Only fall back to the bare "Open source" link when there is no id to hang a
+  // real EntityRef on — a link with no record behind it is the dead end.
+  const sourceLink = target ? null : feedSourceLink(item.feed_type, cfg);
   return (
-    <div className="space-y-0.5">
+    <div className="group/entity-ref space-y-0.5">
       <span
         className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium ${feedTypeTone(
           item.feed_type,
@@ -89,9 +124,17 @@ function FeedCell({ item }: { item: SystemContextItem }) {
       >
         <Icon className="h-3 w-3" /> {meta.label}
       </span>
-      {item.feed_type === "dataset" && datasetName && (
-        <div className="max-w-[180px] truncate text-[11px] text-muted-foreground">
-          → {datasetName}
+      {target && (
+        <div className="flex max-w-[180px] items-center gap-1 text-[11px] text-muted-foreground">
+          <span className="shrink-0">→</span>
+          <EntityRef
+            token={target.token}
+            id={target.id}
+            name={target.name}
+            showIcon={false}
+            alwaysShowActions
+            className="min-w-0"
+          />
         </div>
       )}
       {sourceLink && <OpenSourceLink link={sourceLink} />}
@@ -363,11 +406,25 @@ export function SystemContextConsole() {
         header: "Category",
         filter: "select",
         width: 140,
+        // A category is a `context.scope_types` row with no record route of its
+        // own — this console IS its home. So the door is the one destination
+        // that exists: narrow the table to that category (the same state the
+        // toolbar facet drives, which then exposes its Add-item / Delete
+        // actions). Naming a category without reaching its items was the dead
+        // end.
         cell: (r) => (
-          <span className="inline-flex items-center gap-1 text-xs text-foreground">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setScopeFilter(r.scope_type_id);
+            }}
+            title={`Show only ${r.scope_type_label} items`}
+            className="inline-flex items-center gap-1 rounded px-1 py-0.5 text-xs text-foreground transition-colors hover:bg-accent hover:text-primary"
+          >
             <Layers className="h-3 w-3 text-muted-foreground" />
             {r.scope_type_label}
-          </span>
+          </button>
         ),
       },
       {
@@ -418,6 +475,10 @@ export function SystemContextConsole() {
           </span>
         ),
       },
+      // No `fk.token`: `context_item` is a registered entity token but has no
+      // `hrefFor` and no peek, so a token here would resolve to nothing. The id
+      // stays a copy-only uuid cell until the registry gains a door — the row
+      // itself opens through the detail panel. Reported as a registry gap.
       { id: "id", accessorKey: "id", header: "ID", cellKind: "uuid", width: 110 },
     ];
   }, []);

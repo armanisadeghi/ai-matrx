@@ -47,6 +47,7 @@ import { useRowWatch } from "@/features/marketing/search-console/hooks/useWatchS
 import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
 import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type {
   GscBreakdownRow,
   GscCompareMode,
@@ -220,7 +221,14 @@ export function GscDimensionTable({
           } satisfies MatrxColumnDef<GscBreakdownRow>,
         ]
       : []),
-    buildGscKeyColumn<GscBreakdownRow>(dimension, labels.column),
+    // THE DOOR LAW: a page-dimension row names a canonical page the breakdown
+    // already resolved (`page_id`) — so it gets a door to that page's
+    // workspace. Query/country/device rows name no record we own.
+    buildGscKeyColumn<GscBreakdownRow>(dimension, labels.column, (row) =>
+      dimension === "page" && row.page_id
+        ? marketingRoutes.sitePage(null, siteId, row.page_id)
+        : null,
+    ),
     ...buildGscMetricColumns<GscBreakdownRow>(hasCompare, "clicks-only"),
   ];
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import {
   Loader2,
@@ -34,6 +35,7 @@ import {
 } from "@/components/ui/dialog";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import {
   listBundles,
   listBundleMembers,
@@ -46,6 +48,14 @@ import {
   type BundleRow,
   type BundleMemberWithTool,
 } from "@/features/tool-registry/bundles/services/bundles.service";
+import {
+  BUNDLE_DEEP_LINK_PARAM,
+  bundleHref,
+  toolHref,
+} from "@/features/tool-registry/doors";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 
 type Filter = "active" | "all";
 
@@ -53,10 +63,27 @@ export function BundlesAdminPage() {
   const [bundles, setBundles] = useState<BundleRow[]>([]);
   const [filter, setFilter] = useState<Filter>("active");
   const [search, setSearch] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+
+  // THE DOOR LAW: the bundle a tool belongs to had no address — selection lived
+  // in React state only, so nothing outside this file could link to a bundle.
+  // `?bundle=<id>` is the same deep-link shape the feedback console uses.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const deepLink = searchParams.get(BUNDLE_DEEP_LINK_PARAM);
+
+  const selectBundle = (id: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (id) params.set(BUNDLE_DEEP_LINK_PARAM, id);
+    else params.delete(BUNDLE_DEEP_LINK_PARAM);
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
+  };
 
   const loadList = async () => {
     setLoading(true);
@@ -85,7 +112,21 @@ export function BundlesAdminPage() {
     );
   })();
 
-  const selected = bundles.find((b) => b.id === selectedId) ?? null;
+  // THE URL IS THE ONLY SELECTION. Not a mirror of it, and not a second source
+  // of truth that a click can desync: `selectBundle` writes `?bundle=`, and
+  // this reads it back. A parallel `selectedId` state used to win over the
+  // param forever once the user clicked anything, so client-side navigation to
+  // a DIFFERENT `?bundle=` (another console's link, back/forward) kept showing
+  // the previously-clicked bundle while the address bar named another one —
+  // the address bar lying about what is on screen is the dead end this sweep
+  // exists to remove.
+  const selected = bundles.find((b) => b.id === deepLink) ?? null;
+
+  // An id the list cannot resolve says so, loudly. It is NOT "no bundles" and
+  // it is NOT "pick one" — the caller asked for a specific record. Note the
+  // list is filtered to active bundles by default, so an inactive bundle
+  // resolves only after the user switches to All.
+  const deepLinkUnresolved = Boolean(deepLink) && !selected;
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -162,11 +203,11 @@ export function BundlesAdminPage() {
             )}
             <ul>
               {filtered.map((b) => {
-                const isSel = b.id === selectedId;
+                const isSel = b.id === selected?.id;
                 return (
                   <li key={b.id}>
                     <button
-                      onClick={() => setSelectedId(b.id)}
+                      onClick={() => selectBundle(b.id)}
                       className={`w-full text-left px-3 py-2 border-b border-border/50 hover:bg-muted/40 transition-colors ${isSel ? "bg-muted" : ""} ${b.is_active ? "" : "opacity-60"}`}
                     >
                       <div className="flex items-center gap-2 min-w-0">
@@ -198,6 +239,19 @@ export function BundlesAdminPage() {
               bundle={selected}
               onChanged={() => void loadList()}
             />
+          ) : deepLinkUnresolved ? (
+            <div className="h-full flex flex-col items-center justify-center gap-2 p-12 text-center">
+              <AlertCircle className="h-5 w-5 text-warning" />
+              <p className="text-xs text-muted-foreground">
+                No bundle in this list matches{" "}
+                <code className="font-mono">{deepLink}</code>
+                {loading
+                  ? " yet — still loading."
+                  : filter === "active"
+                    ? " — it may be inactive. Switch to All."
+                    : "."}
+              </p>
+            </div>
           ) : (
             <div className="h-full flex items-center justify-center text-xs text-muted-foreground p-12">
               {filtered.length === 0
@@ -213,7 +267,7 @@ export function BundlesAdminPage() {
           onClose={() => setCreating(false)}
           onCreated={(newId) => {
             setCreating(false);
-            void loadList().then(() => setSelectedId(newId));
+            void loadList().then(() => selectBundle(newId));
           }}
         />
       )}
@@ -256,7 +310,16 @@ function NewBundleDialog({
       // executor, and links it — every bundle is born with its lister, so it
       // reduces to one tool the model expands on demand. See
       // migrations/tool_bundle_lister_enforcement.sql.
-      toast.success(`Bundle ${name} created`);
+      // `bundleHref` (features/tool-registry/doors.ts) is this feature's own
+      // route builder — `tool_bundle` has no registry hrefFor, and its page sits
+      // behind the super-admin layout, so the registry default would be wrong
+      // for anyone else anyway. The viewer here IS an admin: they are standing
+      // in this console.
+      toast.success(`Bundle ${name} created`, {
+        action: toastDoor("tool_bundle", result.bundle_id, {
+          href: bundleHref(result.bundle_id),
+        }),
+      });
       onCreated(result.bundle_id);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Create failed");
@@ -474,8 +537,16 @@ function BundleDetail({
             </Badge>
           </span>
           {bundle.lister_tool_id && (
-            <span className="font-mono">
-              Lister tool ID: <code className="bg-muted px-1 py-0.5 rounded">{bundle.lister_tool_id}</code>
+            // The lister IS a tool with a detail page — it was printed as a
+            // bare uuid in a <code> block with nothing to click.
+            <span className="inline-flex items-center gap-1">
+              Lister tool:
+              <MatrxUuidCell
+                value={bundle.lister_tool_id}
+                label="Lister tool"
+                token="tool"
+                href={toolHref(bundle.lister_tool_id)}
+              />
             </span>
           )}
           {!bundle.lister_tool_id && (
@@ -579,7 +650,29 @@ function MemberRow({
   return (
     <TableRow className={item.tool?.is_active === false ? "opacity-60" : ""}>
       <TableCell className="text-xs">
-        <div className="font-mono">{item.tool?.name ?? <em>unknown</em>}</div>
+        {/* A bundle member IS a tool. It was rendered as plain text next to the
+            alias editor, so the console that manages membership could not open
+            a single thing it managed. */}
+        <div className="font-mono">
+          {item.tool ? (
+            <EntityRef
+              token="tool"
+              id={item.tool.id}
+              name={item.tool.name}
+              href={toolHref(item.tool.id)}
+              showIcon={false}
+              className="font-mono"
+            />
+          ) : (
+            // The join returned no tool row — say that, never invent a name.
+            <MatrxUuidCell
+              value={item.member.tool_id}
+              label="Tool"
+              token="tool"
+              href={toolHref(item.member.tool_id)}
+            />
+          )}
+        </div>
         {item.tool?.description && (
           <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
             {item.tool.description}
@@ -726,27 +819,56 @@ function AddMemberDialog({
                     No tools match (or all matches are already in this bundle).
                   </div>
                 )}
+                {/* The row's click means "pick this tool", so the name cannot
+                    be the anchor (an <a> inside a <button> is invalid DOM and a
+                    stray click would cost the user this dialog). The doors ride
+                    as a SIBLING: preview + new tab answer "which one is that?"
+                    without leaving the picker. */}
                 {results.map((r) => (
-                  <button
+                  <div
                     key={r.id}
-                    onClick={() => onPick({ id: r.id, name: r.name })}
-                    className="w-full text-left px-3 py-2 hover:bg-muted/40 transition-colors"
+                    className="group/entity-ref relative hover:bg-muted/40 transition-colors"
                   >
-                    <div className="font-mono text-xs">{r.name}</div>
-                    {r.description && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
-                        {r.description}
-                      </p>
-                    )}
-                  </button>
+                    <button
+                      onClick={() => onPick({ id: r.id, name: r.name })}
+                      className="w-full text-left px-3 py-2 pr-16"
+                    >
+                      <div className="font-mono text-xs">{r.name}</div>
+                      {r.description && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
+                          {r.description}
+                        </p>
+                      )}
+                    </button>
+                    <EntityDoorControls
+                      token="tool"
+                      id={r.id}
+                      name={r.name}
+                      href={toolHref(r.id)}
+                      className="absolute right-2 top-1.5 rounded border border-border bg-card"
+                    />
+                  </div>
                 ))}
               </div>
             </>
           )}
           {selectedTool && (
             <div className="space-y-3">
-              <div className="rounded-md border border-border bg-muted/30 px-3 py-2 flex items-center justify-between">
-                <code className="font-mono text-xs">{selectedTool.name}</code>
+              <div className="group/entity-ref rounded-md border border-border bg-muted/30 px-3 py-2 flex items-center justify-between">
+                <span className="inline-flex min-w-0 items-center gap-1">
+                  <code className="font-mono text-xs truncate">
+                    {selectedTool.name}
+                  </code>
+                  {/* "Is this the right tool?" answered without losing the
+                      dialog — preview + new tab, never same-tab open. */}
+                  <EntityDoorControls
+                    token="tool"
+                    id={selectedTool.id}
+                    name={selectedTool.name}
+                    href={toolHref(selectedTool.id)}
+                    alwaysShowActions
+                  />
+                </span>
                 <Button variant="ghost" size="sm" onClick={() => setSelectedTool(null)} className="h-6 text-xs">
                   Change
                 </Button>

@@ -14,7 +14,7 @@
  */
 
 import React from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
   Dialog,
@@ -61,7 +61,6 @@ export function PromoteToSiteDialog({
   htmlPage,
   onOpenChange,
 }: PromoteToSiteDialogProps) {
-  const router = useRouter();
   // SUMMARY rows — only id/name/slug/domain are read here.
   const [sites, setSites] = React.useState<ClientSiteSummary[] | null>(null);
   const [sitesError, setSitesError] = React.useState<string | null>(null);
@@ -182,14 +181,25 @@ export function PromoteToSiteDialog({
                   Preview draft
                 </Button>
               )}
-              <Button
-                onClick={() => {
-                  onOpenChange(false);
-                  router.push(`/cms/${result.page.client_id}/pages/${result.page.id}`);
-                }}
-              >
-                <PencilRuler className="h-4 w-4 mr-1.5" />
-                Open in editor
+              {/* Names the page we just created, so it is an anchor. A PLAIN
+                  click navigates and closes the dialog; a MODIFIED click
+                  (cmd/ctrl/shift, or middle-click) opens the editor in a new
+                  tab and deliberately leaves this dialog open, because the
+                  user did not ask to leave it. Closing unconditionally in
+                  onClick would dismiss it on cmd-click too — same guard
+                  `SessionsBrowser` uses. */}
+              <Button asChild>
+                <Link
+                  href={`/cms/${result.page.client_id}/pages/${result.page.id}`}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1)
+                      return;
+                    onOpenChange(false);
+                  }}
+                >
+                  <PencilRuler className="h-4 w-4 mr-1.5" />
+                  Open in editor
+                </Link>
               </Button>
             </DialogFooter>
           </div>

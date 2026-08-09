@@ -19,6 +19,7 @@ import { AgentMobileSubView } from "@/features/agents/components/agent-listings/
 import { SearchInput } from "@/features/agents/components/agent-listings/core/primitives";
 import type { RightPanel } from "@/features/agents/components/agent-listings/core/types";
 import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import {
   Drawer,
   DrawerTrigger,
@@ -658,6 +659,11 @@ function DetailCardDemo() {
 // Debug helper
 // ---------------------------------------------------------------------------
 
+/**
+ * Every call site passes a real agent id out of `useAgentListCore` (the Redux
+ * agent-definition slice) — so this prints an identity, and by THE DOOR LAW it
+ * must be reachable. One `MatrxUuidCell` here lights up all four panels.
+ */
 function SelectedDebug({
   label,
   value,
@@ -666,15 +672,15 @@ function SelectedDebug({
   value: string | null;
 }) {
   return (
-    <div className="p-2 bg-muted/30 rounded-md border border-border/50">
-      <p className="text-[9px] font-mono text-muted-foreground">
+    <div className="group p-2 bg-muted/30 rounded-md border border-border/50">
+      <div className="flex items-center gap-1 text-[9px] font-mono text-muted-foreground">
         {label}:{" "}
         {value ? (
-          <span className="text-foreground">{value}</span>
+          <MatrxUuidCell value={value} token="agent" label="Agent" />
         ) : (
           <span className="italic">none</span>
         )}
-      </p>
+      </div>
     </div>
   );
 }

@@ -27,7 +27,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/utils/supabase/client";
-import { getShareableResource } from "@/utils/permissions/registry";
+import {
+  getResourceSharePath,
+  getShareableResource,
+} from "@/utils/permissions/registry";
 import {
   listOrgShareGrants,
   reviewOrgShare,
@@ -217,9 +220,8 @@ export function OrgShareReviewCard({
           {grants.map((grant) => {
             const Icon = grant.entry?.icon;
             const rejected = grant.status === "rejected";
-            const shareable = getShareableResource(grant.resourceTable);
-            const href = shareable
-              ? shareable.urlPathTemplate.replace("{id}", grant.resourceId)
+            const href = grant.resourceTable
+              ? getResourceSharePath(grant.resourceTable, grant.resourceId)
               : null;
             return (
               <li

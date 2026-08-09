@@ -29,7 +29,6 @@ const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => ({
   source,
 });
 
-const getHref = (id: string) => `/data/${id}`;
 
 export default function OrgTablesPage() {
   const params = useParams();
@@ -64,7 +63,6 @@ export default function OrgTablesPage() {
           selectColumns={SELECT_COLS}
           ownedQuery={fetchOwned}
           mapRow={mapRow}
-          getHref={getHref}
           emptyTitle="No shared tables yet"
           emptyDescription="Data tables owned by this organization will appear here, along with tables other members share."
           emptyIcon={

@@ -59,6 +59,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import { agentShortcutRecordSummary } from "../format";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 
 type SortField =
   | "label"
@@ -82,6 +83,30 @@ export interface ShortcutListProps extends ScopeProps {
   toolbarSlot?: React.ReactNode;
   /** (core) route consumers render title + primary actions in the shell PageHeader instead — set true to suppress this component's own title/action row. */
   hideTitleBar?: boolean;
+  /**
+   * Where this row's doors go — **the same place clicking the row goes.**
+   *
+   * 🚨 THE DESTINATION IS SURFACE-DISCRIMINATED, SO THE ID ALONE CANNOT PICK
+   * IT. One `agent.shortcut` row is edited at `/agents/shortcuts/edit/<id>`,
+   * `/organizations/<orgId>/shortcuts/edit/<id>`, or
+   * `/administration/agents/system-agents/edit/<id>` depending on which
+   * console you are standing in. That is why it cannot come from the entity
+   * registry's `hrefFor`, whose only argument is an id.
+   *
+   * **This takes the URL, not a mode.** A two-value `"user" | "admin"` enum was
+   * tried first and shipped a wrong door: the org console had no third value to
+   * pass, so `"user"` sent org shortcuts into the PERSONAL editor — where 2 live
+   * rows (org-scoped, no agent) hard dead-end on "this shortcut doesn't exist in
+   * your personal shortcuts", and the other 28 opened an editor whose back
+   * button leaves the org entirely. An enum that cannot express a caller's
+   * answer makes the wrong answer the only available one.
+   *
+   * Pass the SAME url the row's `onEdit` navigates to, so the door and the click
+   * can never disagree about which surface owns the record. Omit it and the
+   * row's link doors are withheld (a registered peek still renders, minus its
+   * Open) — a missing door is a gap, a wrong one is a bug.
+   */
+  doorHrefFor?: (shortcut: AgentShortcutRecord) => string | null;
 }
 
 export function ShortcutList({
@@ -96,6 +121,7 @@ export function ShortcutList({
   placementFilter: placementFilterProp,
   toolbarSlot,
   hideTitleBar = false,
+  doorHrefFor,
 }: ShortcutListProps) {
   const isMobile = useIsMobile();
   const { toast } = useToast();
@@ -454,14 +480,34 @@ export function ShortcutList({
                           )}
                         </div>
                       </div>
-                      <Switch
-                        checked={shortcut.isActive}
-                        onCheckedChange={() =>
-                          !readonly && handleToggleActive(shortcut)
-                        }
-                        onClick={(e) => e.stopPropagation()}
-                        disabled={readonly}
-                      />
+                      <div className="flex shrink-0 items-center gap-1">
+                        {/* THE DOOR LAW: the card's click means EDIT — which
+                            NAVIGATES on the user and org consoles and opens a
+                            form in place elsewhere — so the name cannot be the
+                            anchor. The doors ride alongside, pointing at the
+                            same URL the click uses (`doorHrefFor`), so the two
+                            can never disagree about which console owns the
+                            record.
+                            Pinned visible: these cards carry no hover group, and
+                            a door revealed by a hover that never comes does not
+                            exist on touch. The controls stop propagation
+                            internally, so they never trigger the card's edit. */}
+                        <EntityDoorControls
+                          token="agent_shortcut"
+                          id={shortcut.id}
+                          name={shortcut.label}
+                          href={doorHrefFor?.(shortcut) ?? null}
+                          alwaysShowActions
+                        />
+                        <Switch
+                          checked={shortcut.isActive}
+                          onCheckedChange={() =>
+                            !readonly && handleToggleActive(shortcut)
+                          }
+                          onClick={(e) => e.stopPropagation()}
+                          disabled={readonly}
+                        />
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {cat && (
@@ -846,6 +892,20 @@ export function ShortcutList({
                         <div className="flex items-center gap-2">
                           <MousePointerClick className="h-4 w-4 text-primary" />
                           <div className="font-medium">{shortcut.label}</div>
+                          {/* The DESKTOP table is the primary view — the card
+                              layout is the `isMobile` branch ABOVE (the early
+                              return at the top of this component). Doors added
+                              only there would have fixed the minority path and
+                              left the main one a dead end. Pinned visible: this
+                              row's hover group is NAMED (`group/x`), which the
+                              controls' plain `group-hover:` cannot see. */}
+                          <EntityDoorControls
+                            token="agent_shortcut"
+                            id={shortcut.id}
+                            name={shortcut.label}
+                            href={doorHrefFor?.(shortcut) ?? null}
+                            alwaysShowActions
+                          />
                         </div>
                       </TableCell>
                       <TableCell>
@@ -1026,9 +1086,13 @@ export function ShortcutList({
             )}
           </ScrollArea>
         </div>
-        <div className="sr-only">
-          Scope: {scope} {scopeId ?? ""}
-        </div>
+        {/* Screen-reader-only status. It used to read the raw container uuid
+            aloud, character by character — noise, not identity, and it was the
+            only place this list mentioned its scope at all. The scope LEVEL is
+            the part a listener can actually use.
+            (Sighted users get no scope indicator here whatsoever; that gap is a
+            design question, tracked in the no-dead-ends handoff.) */}
+        <div className="sr-only">Scope: {scope}</div>
       </div>
     </TooltipProvider>
   );

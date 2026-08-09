@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Boxes, Loader2 } from "lucide-react";
@@ -16,6 +15,7 @@ import {
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useBatches } from "@/features/marketing/data/operations-hooks";
 import type { OperationsBatchRow } from "@/features/marketing/data/operations-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
@@ -51,18 +51,18 @@ export function BatchesTable() {
       accessorKey: "created_at",
       header: "Created",
       filter: false,
+      // THE DOOR LAW: this cell is the job's identity (when it ran + its id),
+      // so the WHOLE cell is the anchor, not just the id fragment inside it.
+      // Same destination as `onRowOpen`, built by the canonical route builder.
+      href: (row) => marketingRoutes.batch(row.id),
       cell: (row) => (
         <div className="whitespace-nowrap">
           <p className="text-xs font-medium">
             {formatCompactDate(row.created_at)}
           </p>
-          <Link
-            href={`/marketing/batches/${row.id}`}
-            onClick={(event) => event.stopPropagation()}
-            className="font-mono text-[10px] text-primary"
-          >
+          <p className="font-mono text-[10px] text-muted-foreground">
             {row.id.slice(0, 12)}
-          </Link>
+          </p>
         </div>
       ),
     },
@@ -71,19 +71,19 @@ export function BatchesTable() {
       header: "Site",
       filter: false,
       sortable: false,
+      // The owning site is a resolvable relationship with a canonical route.
+      // These rows carry only `site_id`, so the builder emits the id-only path
+      // and its shim resolves the brand.
+      href: (row) => marketingRoutes.site(null, row.site_id),
       cell: (row) => (
-        <Link
-          href={`/marketing/sites/${row.site_id}`}
-          onClick={(event) => event.stopPropagation()}
-          className="block min-w-44 max-w-64 hover:text-primary"
-        >
+        <div className="block min-w-44 max-w-64">
           <span className="block truncate text-xs font-medium">
             {row.site?.name ?? row.site_id}
           </span>
           <span className="block truncate text-[10px] text-muted-foreground">
             {row.site?.domain ?? "Site details"}
           </span>
-        </Link>
+        </div>
       ),
     },
     {
@@ -167,7 +167,7 @@ export function BatchesTable() {
 
   const openBatch = (row: OperationsBatchRow) => {
     if (isNavigating) return;
-    startNavigation(() => router.push(`/marketing/batches/${row.id}`));
+    startNavigation(() => router.push(marketingRoutes.batch(row.id)));
   };
 
   // Surface scope — assembled at trigger time from the already-loaded list

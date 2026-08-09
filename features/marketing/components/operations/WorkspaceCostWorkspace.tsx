@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { CircleDollarSign } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -28,6 +27,7 @@ import {
   humanLines,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 const WORKSPACE_COST_MODES = [
   { value: "site", label: "By site" },
@@ -66,19 +66,21 @@ export function WorkspaceCostWorkspace() {
       filter: false,
       sortable: false,
       cellKind: "text",
+      // THE DOOR LAW: a site rollup names a site that has a canonical route, so
+      // the WHOLE cell is the anchor. A client-org rollup names an org whose id
+      // the next column already opens through the registry.
+      href: (row) =>
+        row.site_id ? marketingRoutes.site(null, row.site_id) : undefined,
       cell: (row) =>
         row.site_id ? (
-          <Link
-            href={`/marketing/sites/${row.site_id}`}
-            className="block min-w-64 max-w-2xl hover:text-primary"
-          >
+          <div className="block min-w-64 max-w-2xl">
             <span className="block truncate text-xs font-medium">
               {row.label}
             </span>
             <span className="block truncate text-[10px] text-muted-foreground">
               {row.detail ?? row.site_id}
             </span>
-          </Link>
+          </div>
         ) : (
           <span className="block min-w-64 max-w-2xl truncate font-mono text-xs">
             {row.label}
@@ -92,6 +94,9 @@ export function WorkspaceCostWorkspace() {
       filter: false,
       sortable: false,
       cellKind: "uuid",
+      // Never render an id you can't open: `organization` is a registered
+      // token, so this bare uuid becomes route + new tab + peek for free.
+      fk: { token: "organization" },
     },
     {
       id: "site_id",
@@ -100,7 +105,7 @@ export function WorkspaceCostWorkspace() {
       filter: false,
       sortable: false,
       cellKind: "uuid",
-      fk: { href: (id) => `/marketing/sites/${id}` },
+      fk: { href: (id) => marketingRoutes.site(null, id) },
     },
     {
       id: "cost",

@@ -7,7 +7,8 @@ import { Plus, Search, Webhook, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { toast } from "@/lib/toast-service";
+import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AgentCard } from "./AgentCard";
 import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
@@ -124,8 +125,12 @@ export function SystemAgentsGrid() {
       // a super admin (the page is gated by the admin layout). Pass the
       // explicit flag so the RPC inserts the copy as a builtin instead of
       // silently downgrading it to a personal user agent.
-      await dispatch(duplicateAgent({ agentId: id, asSystem: true })).unwrap();
-      toast.success("System agent duplicated.");
+      const newAgentId = await dispatch(
+        duplicateAgent({ agentId: id, asSystem: true }),
+      ).unwrap();
+      toast.success("System agent duplicated", {
+        action: toastDoor("agent", newAgentId),
+      });
     } catch (err) {
       toast.error(
         err instanceof Error

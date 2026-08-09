@@ -1,9 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  ArrowUpRight,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  ExternalLink,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import { ColumnFilterMenu, type ColumnFilterOption } from "./ColumnFilterMenu";
@@ -520,8 +528,8 @@ export function SourceResultsTable({
             const video = identityFor(src);
             const dataSize = dataSizeFor ? dataSizeFor(src) : null;
             const analysis = analysisFor ? (analysisFor(src) ?? "none") : null;
-            const go = () =>
-              router.push(`/research/topics/${topicId}/sources/${src.id}`);
+            const detailHref = `/research/topics/${topicId}/sources/${src.id}`;
+            const go = () => router.push(detailHref);
             const scores = sourceScoreValues(src, rank);
             return (
               <tr
@@ -544,15 +552,39 @@ export function SourceResultsTable({
                   <div className="flex items-start gap-1.5 min-w-0">
                     <SourceTypeIcon type={sourceTypeFromDb(src.source_type)} />
                     <div className="min-w-0">
-                      <div className="text-xs font-medium truncate max-w-[20rem]">
-                        {src.title || src.hostname || src.url}
-                      </div>
-                      {(src.hostname || src.redundancy_group) && (
+                      {/* The title is the door: a real anchor (cmd/middle-click
+                          → new tab, keyboard-reachable) plus a peek, instead of
+                          a row that only reacts to a plain mouse click. */}
+                      <EntityRef
+                        token="research_source"
+                        id={src.id}
+                        name={src.title || src.hostname || src.url}
+                        href={detailHref}
+                        showIcon={false}
+                        className="text-xs font-medium max-w-[20rem]"
+                      />
+                      {(src.hostname || src.redundancy_group || src.url) && (
                         <div className="mt-0.5 flex items-center gap-1.5 flex-wrap">
                           {src.hostname && (
                             <span className="text-[10px] text-muted-foreground truncate max-w-[20rem]">
                               {src.hostname}
                             </span>
+                          )}
+                          {/* The page this row is ABOUT. The table named it and
+                              gave no way to read it — the outbound link is the
+                              other door this row owes the user. */}
+                          {src.url && (
+                            <a
+                              href={src.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              title={`Open ${src.url} in a new tab`}
+                              aria-label={`Open the original page for ${src.title || src.hostname || src.url} in a new tab`}
+                              className="inline-flex items-center text-muted-foreground/70 hover:text-foreground"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
                           )}
                           <RedundancyGroupBadge group={src.redundancy_group} />
                         </div>
@@ -643,7 +675,19 @@ export function SourceResultsTable({
                   </td>
                 )}
                 <td className="py-2 pr-2 align-top">
-                  <ArrowUpRight className="h-3 w-3 text-muted-foreground/40 group-hover:text-foreground" />
+                  {/* Was a decorative glyph that looked like the row's "open"
+                      affordance and did nothing. It is now the new-tab door. */}
+                  <Link
+                    href={detailHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    title="Open this source in a new tab"
+                    aria-label={`Open ${src.title || src.hostname || src.url} in a new tab`}
+                    className="inline-flex text-muted-foreground/40 group-hover:text-foreground"
+                  >
+                    <ArrowUpRight className="h-3 w-3" />
+                  </Link>
                 </td>
               </tr>
             );

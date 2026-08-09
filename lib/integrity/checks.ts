@@ -501,7 +501,7 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
       "container a user opens.",
     sql: `
       select a.id,
-             a.source_id as conversation_id,
+             a.source_id as phantom_conversation_id,
              a.target_type,
              a.target_id,
              a.created_at,

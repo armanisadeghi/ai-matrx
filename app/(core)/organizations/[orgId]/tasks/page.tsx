@@ -32,7 +32,6 @@ const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => ({
   source,
 });
 
-const getHref = (id: string) => `/tasks/${id}`;
 
 export default function OrgTasksPage() {
   const params = useParams();
@@ -67,7 +66,6 @@ export default function OrgTasksPage() {
           selectColumns={SELECT_COLS}
           ownedQuery={fetchOwned}
           mapRow={mapRow}
-          getHref={getHref}
           emptyTitle="No shared tasks yet"
           emptyDescription="Tasks owned by this organization will appear here, along with tasks other members share."
           emptyIcon={<ListTodo className="h-8 w-8 text-green-600 dark:text-green-400" />}

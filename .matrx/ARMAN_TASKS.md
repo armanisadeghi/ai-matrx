@@ -20,6 +20,38 @@ Full checklist + rationale: `/Users/armanisadeghi/code/common-docs/systems/agent
 
 **Agents on other machines: if you read this, run step 1 and tell Arman which of 2-4 are missing.**
 
+### 0b. Decide: should `EntityDoorControls` be VISIBLE by default? (seconds — a decision)
+
+**Evidence, all from one session (2026-08-09):** the No Dead Ends sweep shipped
+an invisible door **three times**, in the campaign whose entire subject is doors
+that do not open. Each time: markup right, `pnpm type-check` green, ESLint
+green, and the user simply cannot see the control. Bugbot caught all three; no
+static check can.
+
+Cause: the controls render at `opacity-0` and fade in on hover of an ancestor
+`group` class. Miss the class and the door is invisible. I already widened the
+primitive to accept a plain Tailwind `group` as well as the named
+`group/entity-ref` (`2118fda9`) — the third instance still slipped through,
+because that row had **no** group class at all.
+
+**The call:** should a standalone `<EntityDoorControls>` default to visible,
+with hover-reveal becoming the opt-in?
+
+- **For:** forgetting then produces a slightly noisier surface instead of a
+  dead end. Given the doctrine ("a door the user cannot reach is a defect"),
+  failing loud is the right direction.
+- **Against:** ~10 dense table/list surfaces currently rely on hover-reveal to
+  stay clean. Flipping the default changes how they look.
+- **Safe path if you say yes:** `EntityRef` (the majority path, which supplies
+  its own group) keeps passing hover-reveal explicitly, so only the standalone
+  callers change.
+
+**Why this is yours and not an agent's:** it is a visual density change across
+many surfaces, and **no agent on this campaign can load a page** to see the
+result (network policy blocks the app). I fixed each instance by hand rather
+than gamble the default. Say "visible by default" or "leave it" and an agent
+executes.
+
 0. **Deploy aidream to prod** (`bash scripts/release.sh` in aidream) — everything from the 2026-07-15 Content IR sweep (envelope producer, typed agent projections, enforcement machinery OFF, tool/action stamping) is on `main` but inert until deployed. The agent's session couldn't run it (permission classifier). After deploy: agents read the `tool_io` drift logs and bring you the evidence for the tools-first enforcement flip you ratified. Also still pending post-soak: drop `content_ir._backup_kind_example_20260715` + `_backup_kind_surface_20260715` (+ the two `matrx_orm.yaml` exclude lines).
    _Already ratified 2026-07-15 (recorded here for the log): tools-first flips after drift evidence; `table` stays markdown-first with click-to-convert (pattern being documented); every kind gets an example; 7 candidates being registered non-breaking; the 6 gated roots stay inactive (test kinds); integration-first is the priority._
 
@@ -49,6 +81,42 @@ The **code is built and live-verified** (card auth-and-void via Stripe test). To
 
 ### 7. SMS integration — Twilio console setup (manual, ~15 min)
 The SMS code is in place; the remaining steps are dashboard/console work only you can do (Messaging Service creation, phone-number config, env vars, webhooks). Full runbook: `.matrx/arman-sms-setup.md` (moved from the repo root 2026-07-22).
+
+### 8. Patrol candidate — "the id is not what its NAME says it is" (wrong-record doors)
+
+**Nominating this as a Pattern Patrol** per the CLAUDE.md standing duty. It is a
+CLASS, not three mistakes, and it produces the one thing the doctrine ranks
+worse than a missing door: **a door that opens the wrong record, which looks
+like it worked.**
+
+Three occurrences inside the no-dead-ends campaign alone, all 2026-08-09:
+1. `agent.shortcut.scopeId` — named like a `context.scopes` row; actually an
+   org/project/task id (`applyScopeToRowFields`). Caught by Bugbot.
+2. A surface key sliced into `<prefix>:<uuid>` and guarded only by `isUuidValue`
+   — but a shortcut id is also a uuid, so the "agent" door opened a shortcut.
+   Caught by an adversarial agent.
+3. `ScopeRef.scopeId` in the context-menu lab — same trap as (1), in a file
+   whose sibling module carries a docblock **describing this exact trap**. I
+   wrote it anyway. Caught by an adversarial agent.
+
+Why a patrol and not a rule: the type system cannot see it (every id is
+`string`), lint cannot see it, and a reviewer sees a plausible pairing. The only
+reliable detection is a targeted pass that, for each of the **172** `token=`
+door usages, traces where the id came from — the selector, the API field, the
+slice — rather than trusting the variable name. Scale of the naming hazard:
+**1180** `scopeId` occurrences across `features/`, `components/`, `app/`.
+
+Two mitigations already exist and should be the patrol's fix template:
+`entityTokenForAgentScope` (`features/agent-shortcuts/constants.ts`) and
+`entityFromSurfaceKey` (`features/agents/utils/surface-key.ts`) — declared
+vocabularies mapping an ambiguous field to the token it ACTUALLY identifies.
+Each hit resolves to either "route it through a vocabulary" or "this id has no
+navigable record; render it token-less".
+
+A branch-wide sweep of `token="scope"` (8 sites) was run when (3) was found: all
+the others are genuine `context.scopes` rows.
+
+**Your call:** add to `common-docs/systems/pattern-patrols/PATROL_REGISTRY.md`?
 
 ## Pending Arman review
 

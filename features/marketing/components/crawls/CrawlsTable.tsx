@@ -135,6 +135,11 @@ export function CrawlsTable() {
       accessorKey: "started_at",
       header: "Started",
       filter: false,
+      // THE DOOR LAW: this cell IS the session's identity (its timestamp and
+      // its id), so it is the real anchor — keyboard, screen reader,
+      // cmd/middle-click. Same destination as `onRowOpen`, which stays a mouse
+      // convenience.
+      href: (row) => `${sitePath}/crawls/${row.id}`,
       cell: (row) => (
         <div className="whitespace-nowrap">
           <p className="text-xs font-medium">

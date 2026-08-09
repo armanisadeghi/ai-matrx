@@ -195,6 +195,9 @@ this section exists to stop. Campaign: `docs/handoffs/inventory-law-sweep.md`.
 
 | If you need to… | Use | Located at |
 | --- | --- | --- |
+| Stop a superseded async response from applying (refetch on a changing scope/query/id) | `useLatestRequest` | `hooks/useLatestRequest.ts` |
+| Say a read FAILED rather than render its rows as fresh | `StaleDataNotice` | `components/official/stale-data/StaleDataNotice.tsx` |
+| Render a count derived from a read that may have failed | `UntrustedCount` | `components/official/stale-data/UntrustedCount.tsx` |
 | Invalidate a heavy chunk's cache from a ubiquitous module with NO import edge (D115) | `registerInvalidationCallback` / `fireInvalidation` | `lib/invalidation/invalidation-registry.ts` |
 | Humanize labels (snake/kebab → Title Case, acronyms) | `formatText` / `formatTitleCase` | `utils/text/text-case-converter.ts` |
 | Slugify to kebab-case | `convertToKebabCase` | `utils/text/stringUtils.ts` |

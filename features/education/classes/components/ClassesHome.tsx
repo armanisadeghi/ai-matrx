@@ -9,6 +9,7 @@
 
 import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { GraduationCap, Plus, CalendarClock, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,7 +37,6 @@ function ClassRow({
   settings: ClassSettings;
   statusChip?: ReactNode;
 }) {
-  const router = useRouter();
   const today = todayIso();
   const next = nextExamDate(settings, today);
   const meta = [settings.teacher, settings.term, settings.period && `Period ${settings.period}`]
@@ -44,9 +44,12 @@ function ClassRow({
     .join(" · ");
 
   return (
-    <button
-      type="button"
-      onClick={() => router.push(`/education/classes/${slug ?? id}`)}
+    // A class is a real record with its own page, so the card is an ANCHOR, not
+    // a <button>. As a button it navigated on click and nothing else — no
+    // cmd-click, no middle-click, no "open in new tab", no visible destination
+    // on hover. Same layout, all four doors back.
+    <Link
+      href={`/education/classes/${slug ?? id}`}
       className="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-accent"
     >
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -73,7 +76,7 @@ function ClassRow({
           {next.title} in {Math.max(0, daysUntil(next.date, today))}d
         </span>
       )}
-    </button>
+    </Link>
   );
 }
 

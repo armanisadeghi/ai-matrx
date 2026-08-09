@@ -7,9 +7,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChevronDown, ChevronRight, Loader2, RotateCw, Send, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2, RotateCw, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
@@ -135,18 +136,17 @@ export function UsageRow({ row, scope, showOwner, onNotify }: UsageRowProps) {
               Notify
             </Button>
           )}
-          {row.usageType === "workflow_node" && (
-            <a
-              href={`/workflows/${(row.config?.workflow_id as string) ?? ""}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex h-7 items-center gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
-              title="Open the workflow to update this node"
-            >
-              <ExternalLink className="h-3 w-3" />
-              Open
-            </a>
-          )}
+          {row.usageType === "workflow_node" && row.config?.workflow_id ? (
+            // `/workflows/<id>` does not exist in this app (workflow editing
+            // lives in aidream's workflow-studio), so this was a guaranteed
+            // 404. `token="workflow"` gives what we CAN offer — the peek, which
+            // names the workflow — plus a copyable id. See FOUND_DEFECTS D139.
+            <MatrxUuidCell
+              value={row.config.workflow_id as string}
+              label="Workflow"
+              token="workflow"
+            />
+          ) : null}
         </div>
       </div>
       {expanded && hasDetail && <UsageRowDetail row={row} />}

@@ -15,6 +15,7 @@ import {
   Columns2,
   ListChecks,
 } from "lucide-react";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import {
   Dialog,
   DialogContent,
@@ -166,8 +167,26 @@ export function CleanupReviewDialog({
         {/* pr-14 clears the Dialog's built-in close (X) button */}
         <DialogHeader className="shrink-0 flex-row items-center gap-2 space-y-0 border-b border-border px-4 py-3 pr-14">
           <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
-          <DialogTitle className="min-w-0 truncate text-sm">
-            Review changes — {noteLabel}
+          {/* THE DOOR LAW: this dialog is about to rewrite a specific note and
+              named it as flat text with `noteId` sitting right beside it in
+              props.
+
+              Doors are SIBLINGS here, not an anchor on the name — and that is
+              not stylistic. Every accept/reject decision in this review is local
+              `useState`; a same-tab navigation unmounts the dialog and destroys
+              all of it with no way back. Peek and new tab answer "which note is
+              this?" without costing the user the review. `alwaysShowActions`
+              because a dialog header has no hover affordance to discover. */}
+          <DialogTitle className="flex min-w-0 items-center gap-1 text-sm">
+            <span className="shrink-0">Review changes —</span>
+            <span className="truncate">{noteLabel}</span>
+            <EntityDoorControls
+              token="note"
+              id={noteId}
+              name={noteLabel}
+              alwaysShowActions
+              className="shrink-0"
+            />
           </DialogTitle>
         </DialogHeader>
 

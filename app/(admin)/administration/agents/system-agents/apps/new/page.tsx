@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { toast } from "@/lib/toast-service";
+import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectBuiltinAgents,
@@ -69,7 +70,15 @@ export default function AdminNewSystemAppPage() {
           slug: string;
           name: string;
         };
-        toast.success("System app created!");
+        // href override, not the registry default: `app`'s canonical route is
+        // `/agent-apps/<id>`, the OWNER's overview. The operator who just
+        // created a system app from the admin console wants the admin editor —
+        // right record, wrong door for this viewer.
+        toast.success("System app created", {
+          action: toastDoor("app", app.id, {
+            href: `/administration/agents/agent-apps/edit/${app.id}`,
+          }),
+        });
         setCreated({ id: app.id, slug: app.slug, name: app.name });
       } catch (err) {
         throw err;

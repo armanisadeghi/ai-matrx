@@ -41,6 +41,10 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import Link from "next/link";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/slices/userSlice";
+import { AdminUserRef } from "@/features/admin/users/components/AdminUserRef";
 import { sandboxInstanceSummary } from "@/lib/sandbox/format";
 import { toast } from "@/lib/toast";
 import type {
@@ -101,6 +105,13 @@ Active: ${stats.active} · Total: ${stats.total} · Unique users: ${stats.unique
 }
 
 export default function AdminSandboxManagementPage() {
+  // THE DOOR LAW, with a hard limit this console must respect: `/sandbox/[id]`
+  // reads `/api/sandbox/[id]`, which filters `.eq("user_id", user.id)`. This
+  // table is FLEET-WIDE, so linking every row there would 404 for every
+  // sandbox the viewing admin doesn't own — a wrong door is worse than none.
+  // The door is therefore offered only for the viewer's own instances; every
+  // row's OWNER is reachable through `AdminUserRef` regardless.
+  const viewerUserId = useAppSelector(selectUserId);
   const [instances, setInstances] = useState<SandboxInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -461,10 +472,28 @@ export default function AdminSandboxManagementPage() {
                           )}
                         </TableCell>
                         <TableCell className="font-mono text-xs">
-                          {instance.sandbox_id}
+                          {instance.user_id === viewerUserId ? (
+                            <Link
+                              href={`/sandbox/${instance.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              title={`Open ${instance.sandbox_id} in a new tab`}
+                              className="underline-offset-2 hover:text-primary hover:underline"
+                            >
+                              {instance.sandbox_id}
+                            </Link>
+                          ) : (
+                            instance.sandbox_id
+                          )}
                         </TableCell>
-                        <TableCell className="font-mono text-xs truncate max-w-[120px]">
-                          {instance.user_id.slice(0, 8)}...
+                        <TableCell
+                          className="max-w-[160px] text-xs"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {/* The owner is a real user — reach their admin
+                              surfaces instead of printing 8 hex characters. */}
+                          <AdminUserRef userId={instance.user_id} />
                         </TableCell>
                         <TableCell>
                           <Badge variant={statusConfig.variant}>
@@ -556,11 +585,9 @@ export default function AdminSandboxManagementPage() {
                               </div>
                               <div>
                                 <span className="text-xs font-medium text-muted-foreground block mb-0.5">
-                                  Full User ID
+                                  Owner
                                 </span>
-                                <code className="text-xs font-mono break-all">
-                                  {instance.user_id}
-                                </code>
+                                <AdminUserRef userId={instance.user_id} />
                               </div>
                               {instance.container_id && (
                                 <div>

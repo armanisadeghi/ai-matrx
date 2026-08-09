@@ -12,8 +12,28 @@
 import { createClient } from "@/utils/supabase/server";
 import { CatalogsClient } from "@/features/admin/applications/catalogs/components/CatalogsClient";
 
-export default async function ApplicationsCatalogsPage() {
+interface ApplicationsCatalogsPageProps {
+  /**
+   * THE DOOR LAW: `?app=&kind=&entry=` open straight onto a kind table or one
+   * entry's editor, so every surface that NAMES a catalog entry (the merged
+   * history timeline, an operator's bookmark, a link pasted into chat) can
+   * actually open it. Mirrors the Configuration tab's `?app=&credential=`.
+   */
+  searchParams: Promise<{
+    app?: string | string[];
+    kind?: string | string[];
+    entry?: string | string[];
+  }>;
+}
+
+const one = (v: string | string[] | undefined): string | undefined =>
+  typeof v === "string" && v.trim() ? v : undefined;
+
+export default async function ApplicationsCatalogsPage({
+  searchParams,
+}: ApplicationsCatalogsPageProps) {
   const supabase = await createClient();
+  const query = await searchParams;
 
   const { data, error } = await supabase
     .from("catalog_entries")
@@ -27,5 +47,12 @@ export default async function ApplicationsCatalogsPage() {
     throw new Error(`Catalog entries failed to load: ${error.message}`);
   }
 
-  return <CatalogsClient initialRows={data ?? []} />;
+  return (
+    <CatalogsClient
+      initialRows={data ?? []}
+      initialApp={one(query.app)}
+      initialKind={one(query.kind)}
+      initialEntryId={one(query.entry)}
+    />
+  );
 }

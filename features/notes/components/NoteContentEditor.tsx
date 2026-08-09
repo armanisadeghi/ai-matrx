@@ -939,6 +939,7 @@ export function NoteContentEditor({
         open={moveDialogOpen}
         onOpenChange={setMoveDialogOpen}
         onConfirm={handleMoveConfirm}
+        noteId={noteId}
         noteName={noteLabel}
         currentFolder={currentFolder}
         availableFolders={allFolders}

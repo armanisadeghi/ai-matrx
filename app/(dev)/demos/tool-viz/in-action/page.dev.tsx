@@ -75,6 +75,7 @@ import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 
 // ─── Curated scenario scripts ───────────────────────────────────────────────
 // The surrounding "around" content for a turn — intro markdown the agent
@@ -358,6 +359,8 @@ interface Sample {
 
 interface RealRun {
   callId: string;
+  /** The conversation this call happened in — the row's door. */
+  conversationId: string | null;
   toolName: string;
   toolNameAsCalled: string | null;
   label: string; // friendly tool display name
@@ -372,6 +375,7 @@ interface RealRun {
 // lifecycle-relevant subset, so unread fields get harmless defaults below.
 interface CxToolCallRow {
   call_id: string | null;
+  conversation_id: string | null;
   tool_name: string;
   tool_name_as_called: string | null;
   arguments: unknown;
@@ -391,7 +395,7 @@ interface CxToolCallRow {
 function rowToRecord(row: CxToolCallRow): CxToolCallRecord {
   return {
     id: row.call_id ?? "db-sample",
-    conversationId: "",
+    conversationId: row.conversation_id ?? "",
     userRequestId: null,
     messageId: null,
     userId: "",
@@ -618,7 +622,9 @@ async function fetchRunsForTool(
       .schema("chat")
       .from("tool_call")
       .select(
-        "call_id, tool_name, tool_name_as_called, arguments, output, output_preview, is_error, error_type, error_message, started_at, completed_at, execution_events, status, created_at",
+        // `conversation_id` is read ONLY so each run row can open the
+        // conversation it came from — the converter ignores it.
+        "call_id, conversation_id, tool_name, tool_name_as_called, arguments, output, output_preview, is_error, error_type, error_message, started_at, completed_at, execution_events, status, created_at",
       )
       .eq("user_id", userId)
       .eq("tool_name", toolName)
@@ -654,6 +660,7 @@ async function fetchRunsForTool(
         : {};
     runs.push({
       callId: record.callId,
+      conversationId: row.conversation_id ?? null,
       toolName: row.tool_name,
       toolNameAsCalled: row.tool_name_as_called,
       label: getToolDisplayName(row.tool_name),
@@ -1316,22 +1323,37 @@ function RealRunsPanel({
                 toolRuns.map((run) => {
                   const selected = run.callId === selectedCallId;
                   return (
-                    <button
+                    // Each row is a REAL `chat.tool_call` the signed-in user
+                    // made, and it happened inside a real conversation. The
+                    // conversation door sits BESIDE the select button, never
+                    // inside it — an <a> nested in a <button> is invalid HTML.
+                    <div
                       key={run.callId}
-                      type="button"
-                      onClick={() => handleRunSelect(run)}
                       className={
-                        "flex w-full items-center gap-3 border-b border-border px-3 py-2 text-left last:border-b-0 transition-colors " +
+                        "group flex w-full items-center gap-2 border-b border-border pr-2 last:border-b-0 transition-colors " +
                         (selected ? "bg-accent" : "hover:bg-muted")
                       }
                     >
-                      <span className="flex-1 truncate text-xs text-muted-foreground">
-                        {run.snippet}
-                      </span>
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {relativeTime(run.createdAt)}
-                      </span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRunSelect(run)}
+                        className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left"
+                      >
+                        <span className="flex-1 truncate text-xs text-muted-foreground">
+                          {run.snippet}
+                        </span>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {relativeTime(run.createdAt)}
+                        </span>
+                      </button>
+                      {run.conversationId && (
+                        <MatrxUuidCell
+                          value={run.conversationId}
+                          token="conversation"
+                          label="Conversation"
+                        />
+                      )}
+                    </div>
                   );
                 })
               )}

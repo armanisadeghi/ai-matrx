@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
@@ -230,7 +231,7 @@ function BrandEditorDialogBody({
           toast.error("Choose an owning organization for this brand.");
           return;
         }
-        await createMutation.mutateAsync({
+        const createdBrand = await createMutation.mutateAsync({
           organizationId: selectedOrgId,
           name,
           industry: draft.industry.trim() || null,
@@ -244,7 +245,11 @@ function BrandEditorDialogBody({
           visibility: draft.visibility,
           profile: brandProfileToJson(profileFromDraft(draft)),
         });
-        toast.success("Brand created");
+        // `createBrand` returns the MarketingBrand; the mutation result was
+        // being thrown away, so a new brand had no way in from the toast.
+        toast.success("Brand created", {
+          action: toastDoor("web_brand", createdBrand.id),
+        });
       }
       onOpenChange(false);
     } catch (error) {

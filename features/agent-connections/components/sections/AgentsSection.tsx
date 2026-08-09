@@ -7,6 +7,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SectionToolbar } from "../SectionToolbar";
 import { SectionFooter } from "../SectionFooter";
 import { ListRow } from "../ListRow";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { useAgents } from "../../hooks/useAgents";
 import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";
 import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
@@ -66,6 +68,16 @@ export function AgentsSection() {
               title={agent.name || "Untitled"}
               subtitle={agent.description ?? "No description"}
               onClick={() => dispatch(setSelectedItemId(agent.id))}
+              // The row's click shows the agent in THIS panel; the doors open
+              // the actual record (peek + new tab) without costing the user
+              // the panel they are standing in.
+              door={
+                <EntityDoorControls
+                  token="agent"
+                  id={agent.id}
+                  name={agent.name}
+                />
+              }
             />
           ))
         )}
@@ -100,9 +112,16 @@ function AgentDetail({
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <div className="flex flex-col min-w-0">
+        <div className="group/entity-ref flex flex-col min-w-0">
+          {/* The detail pane names the agent — so it opens it. */}
           <div className="text-sm font-semibold text-foreground truncate">
-            {agent.name || "Untitled"}
+            <EntityRef
+              token="agent"
+              id={agent.id}
+              name={agent.name}
+              showIcon={false}
+              alwaysShowActions
+            />
           </div>
           <div className="text-xs text-muted-foreground truncate">
             {agent.description ?? agent.id}

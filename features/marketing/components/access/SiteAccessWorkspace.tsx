@@ -134,6 +134,15 @@ export function SiteAccessWorkspace() {
       accessorKey: "grantee_id",
       header: "Grantee ID",
       cellKind: "uuid",
+      // Never render an id you can't open. An organization grantee IS a
+      // registered entity with a route, so the cell resolves route + new tab +
+      // peek from the registries. A user grantee has no canonical account route
+      // yet (FOUND_DEFECTS D138) — returning null keeps it copy-only instead of
+      // sending the user to a page that does not exist.
+      fk: {
+        token: (row) =>
+          row.grantee_type === "organization" ? "organization" : null,
+      },
     },
     {
       id: "permission_level",

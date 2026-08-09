@@ -24,6 +24,7 @@ import {
   Search,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import { useScopeTypeTables } from "@/features/scopes/hooks/useScopeTypeTables";
@@ -318,8 +319,16 @@ function ScopeTypeTable({
           {type.scopes.length}
         </span>
         {showOrg && (
-          <span className="text-[11px] text-muted-foreground/70 truncate">
-            · {org.name}
+          /* The org OWNS these scopes — it has a route and a peek, so it is a
+             door, not a caption (THE DOOR LAW). */
+          <span className="flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground/70">
+            ·
+            <EntityRef
+              token="organization"
+              id={org.id}
+              name={org.name}
+              showIcon={false}
+            />
           </span>
         )}
         <span className="ml-auto flex items-center gap-1 shrink-0">
@@ -397,15 +406,27 @@ function ScopeTypeTable({
                         : undefined
                     }
                   >
-                    <td className={cn("px-3 sm:px-4 py-2 whitespace-nowrap", MOBILE_TABLE_FROZEN_CELL)}>
-                      <span
+                    {/* Main added the mobile frozen-cell class; this branch
+                        made the name a door. Both survive: the name is a real
+                        anchor (cmd/middle-click, keyboard, screen readers) with
+                        peek + new-tab, inside the frozen first column. */}
+                    <td
+                      className={cn(
+                        "px-3 sm:px-4 py-2 whitespace-nowrap",
+                        MOBILE_TABLE_FROZEN_CELL,
+                      )}
+                    >
+                      <EntityRef
+                        token="scope"
+                        id={scope.id}
+                        name={scope.name}
+                        href={`${typeHref}/${scope.id}`}
+                        showIcon={false}
                         className={cn(
                           "font-medium",
                           isActive && "font-semibold",
                         )}
-                      >
-                        {scope.name}
-                      </span>
+                      />
                     </td>
                     {columns.map((item) => {
                       const cell = cells?.[item.id];

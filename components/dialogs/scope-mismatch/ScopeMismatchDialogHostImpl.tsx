@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type {
   ScopeMismatchChoice,
   ScopeMismatchDisplayItem,
@@ -56,10 +57,31 @@ function ScopeSetList({
         <div className="text-sm text-muted-foreground">None</div>
       ) : (
         <ul className="flex flex-col gap-0.5">
+          {/* THE DOOR LAW: this dialog asks the user to CHOOSE between two
+              scope sets, and named every scope as flat text — deciding without
+              being able to look at either option. `item.id` is the real scope
+              id (scopeMismatch.ts builds it from the scope tree), so EntityRef
+              resolves the route and the peek.
+
+              Linked even when the tree could not resolve the name: the
+              fallback keeps the REAL id and only the label is unknown, and
+              `/scopes/s/<id>` exists precisely to resolve a scope from its id
+              alone — so the door is most valuable exactly where the client
+              knows least. */}
           {items.map((item) => (
-            <li key={item.id} className="text-sm text-foreground">
-              <span className="text-muted-foreground">{item.typeLabel}:</span>{" "}
-              {item.name}
+            <li
+              key={item.id}
+              className="flex min-w-0 items-center gap-1 text-sm text-foreground"
+            >
+              <span className="shrink-0 text-muted-foreground">
+                {item.typeLabel}:
+              </span>
+              <EntityRef
+                token="scope"
+                id={item.id}
+                name={item.name}
+                showIcon={false}
+              />
             </li>
           ))}
         </ul>

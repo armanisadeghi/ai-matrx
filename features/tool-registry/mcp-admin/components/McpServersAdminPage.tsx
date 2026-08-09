@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import {
   Loader2,
@@ -68,6 +69,11 @@ import {
   type McpTestResult,
 } from "@/features/tool-registry/mcp-admin/services/mcpAdmin.service";
 import { AddMcpServerDialog } from "@/features/tool-registry/mcp-admin/components/AddMcpServerDialog";
+import {
+  MCP_SERVER_DEEP_LINK_PARAM,
+  toolHref,
+} from "@/features/tool-registry/doors";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import {
@@ -90,10 +96,30 @@ const PAGE_LOCATION =
 export function McpServersAdminPage() {
   const [servers, setServers] = useState<McpServerRow[]>([]);
   const [search, setSearch] = useState("");
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+
+  // THE DOOR LAW: this console owns its selection in React state, so an MCP
+  // server had no address at all — every surface that named one (the tool
+  // registry's "MCP Server" column, a managed tool's overview) pointed at
+  // `/administration/agents/mcp-servers/<id>`, a route leaf that does not
+  // exist, and 404'd. `?server=` makes the server itself linkable; the param
+  // accepts the id OR the slug because callers hold whichever they were given.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const deepLink = searchParams.get(MCP_SERVER_DEEP_LINK_PARAM);
+
+  const selectServer = (slug: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (slug) params.set(MCP_SERVER_DEEP_LINK_PARAM, slug);
+    else params.delete(MCP_SERVER_DEEP_LINK_PARAM);
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
+  };
 
   const load = async () => {
     setLoading(true);
@@ -123,7 +149,19 @@ export function McpServersAdminPage() {
     );
   })();
 
-  const selected = servers.find((s) => s.slug === selectedSlug) ?? null;
+  // THE URL IS THE ONLY SELECTION. `selectServer` writes `?server=`, and this
+  // reads it back — one source of truth, so a click and a link can never
+  // disagree. A parallel `selectedSlug` state used to win over the param
+  // forever once the user clicked anything, so navigating to a DIFFERENT
+  // `?server=` (the tools console's MCP column, back/forward) kept the
+  // previously-clicked server on screen while the address bar named another.
+  // Matching id OR slug means a caller can link with whichever it holds.
+  const selected =
+    servers.find((s) => s.slug === deepLink || s.id === deepLink) ?? null;
+
+  // A deep link the list cannot resolve is its own loud state — never the
+  // neutral "pick a server" empty view, which would read as "nothing here".
+  const deepLinkUnresolved = Boolean(deepLink) && !selected;
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -235,7 +273,7 @@ export function McpServersAdminPage() {
             <ul>
               {filtered.map((s) => {
                 const fresh = computeFreshness(s);
-                const isSel = s.slug === selectedSlug;
+                const isSel = s.slug === selected?.slug;
                 return (
                   <li key={s.slug} className="relative group/srv">
                     {/* Sibling overlay, not a child of the row button — nested
@@ -257,7 +295,7 @@ export function McpServersAdminPage() {
                       })}
                     />
                     <button
-                      onClick={() => setSelectedSlug(s.slug)}
+                      onClick={() => selectServer(s.slug)}
                       className={`w-full text-left px-3 py-2 border-b border-border/50 hover:bg-muted/40 transition-colors ${isSel ? "bg-muted" : ""}`}
                     >
                       <div className="flex items-center gap-2 min-w-0">
@@ -289,6 +327,15 @@ export function McpServersAdminPage() {
               server={selected}
               onRefreshed={() => void load()}
             />
+          ) : deepLinkUnresolved ? (
+            <div className="h-full flex flex-col items-center justify-center gap-2 p-12 text-center">
+              <AlertCircle className="h-5 w-5 text-warning" />
+              <p className="text-xs text-muted-foreground">
+                No registered MCP server matches{" "}
+                <code className="font-mono">{deepLink}</code>
+                {loading ? " yet — still loading the list." : "."}
+              </p>
+            </div>
           ) : (
             <div className="h-full flex items-center justify-center text-xs text-muted-foreground p-12">
               Pick a server to view configs, connected users, and tools.
@@ -302,7 +349,7 @@ export function McpServersAdminPage() {
           onClose={() => setAdding(false)}
           onCreated={(slug) => {
             setAdding(false);
-            void load().then(() => setSelectedSlug(slug));
+            void load().then(() => selectServer(slug));
           }}
         />
       )}
@@ -612,12 +659,17 @@ function ToolsTab({ slug }: { slug: string }) {
                 className={`group/tool ${t.is_active === false ? "opacity-60" : ""}`}
               >
                 <TableCell className="font-mono text-xs">
-                  <a
-                    href={`/administration/agents/mcp-tools/${t.id}`}
-                    className="text-foreground hover:text-primary hover:underline"
-                  >
-                    {t.name}
-                  </a>
+                  {/* Was a raw <a> — a full page load, no new-tab control and
+                      no preview. EntityRef adds both from the registries
+                      (`tool` → tool.definition, title column `name`). */}
+                  <EntityRef
+                    token="tool"
+                    id={t.id}
+                    name={t.name}
+                    href={toolHref(t.id)}
+                    showIcon={false}
+                    className="font-mono"
+                  />
                 </TableCell>
                 <TableCell className="text-xs">{t.description}</TableCell>
                 <TableCell>

@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -22,6 +23,8 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import { cn } from "@/lib/utils";
 import {
@@ -46,7 +49,6 @@ interface DriftReport {
 }
 
 function DriftDashboard() {
-  const router = useRouter();
   const [report, setReport] = useState<DriftReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [healing, setHealing] = useState(false);
@@ -172,7 +174,16 @@ function DriftDashboard() {
           <table className={cn("text-sm", MOBILE_TABLE)}>
             <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
               <tr>
-                <th className={cn("px-3 py-2 font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[9rem]")}>User</th>
+                <th
+                  className={cn(
+                    "px-3 py-2 font-medium",
+                    MOBILE_TABLE_FROZEN_HEAD,
+                    "max-sm:min-w-[9rem]",
+                  )}
+                >
+                  User
+                </th>
+                <th className="px-3 py-2 font-medium">Organization</th>
                 <th className="px-3 py-2 font-medium">Drifted fields</th>
                 <th className={cn("px-3 py-2 font-medium", MOBILE_TABLE_CELL)}>Updated</th>
                 <th className="px-3 py-2 font-medium" />
@@ -181,21 +192,53 @@ function DriftDashboard() {
             <tbody>
               {report.rows.map((r) => (
                 <tr key={`${r.user_id}:${r.organization_id}`} className="border-t border-border">
-                  <td className={cn("px-3 py-2 font-mono text-xs", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[9rem]")}>{r.user_id}</td>
-                  <td className="px-3 py-2 text-amber-600 dark:text-amber-400 break-words max-sm:min-w-[11rem]">{r.drifted_fields}</td>
+                  {/* Main added the mobile frozen/wrapping classes; this
+                      branch replaced the raw user_id with a door and added the
+                      Organization column. Both survive — `font-mono text-xs`
+                      is dropped because this cell now renders a NAME, not a
+                      uuid. */}
+                  <td
+                    className={cn(
+                      "px-3 py-2",
+                      MOBILE_TABLE_FROZEN_CELL,
+                      "max-sm:min-w-[9rem]",
+                    )}
+                  >
+                    <AdminUserRef userId={r.user_id} />
+                  </td>
+                  <td className="px-3 py-2">
+                    {r.organization_id ? (
+                      <MatrxUuidCell
+                        value={r.organization_id}
+                        label="Organization"
+                        token="organization"
+                      />
+                    ) : (
+                      <span className="text-muted-foreground/40">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-amber-600 dark:text-amber-400 break-words max-sm:min-w-[11rem]">
+                    {r.drifted_fields}
+                  </td>
                   <td className={cn("px-3 py-2 text-muted-foreground", MOBILE_TABLE_CELL)}>
                     {r.updated_at ? new Date(r.updated_at).toLocaleString() : "—"}
                   </td>
                   <td className="px-3 py-2 text-right">
+                    {/* The row names a user whose preferences this same page
+                        can focus (`?user=` is read at the `focusUser` line
+                        below — verified, not assumed). An anchor, so the row
+                        can be opened in a new tab beside the current list. */}
                     <Button
                       size="sm"
                       variant="ghost"
+                      asChild
                       className="h-6 text-xs"
-                      onClick={() =>
-                        router.push(`/administration/users/preferences?user=${r.user_id}`)
-                      }
                     >
-                      View
+                      <Link
+                        href={`/administration/users/preferences?user=${r.user_id}`}
+                      >
+                        View
+                      </Link>
                     </Button>
                   </td>
                 </tr>

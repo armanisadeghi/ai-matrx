@@ -31,6 +31,16 @@ import { SkillCategoryTreeEditor } from "@/features/skills/components/SkillCateg
 
 type Mode = "list" | "detail" | "create" | "ingest" | "categories";
 
+/**
+ * THE DOOR LAW: the ONE id-addressed route a skill has. `skill` carries no
+ * `hrefFor` in the entity registry on purpose (this console is super-admin
+ * only, and a door that 403s is its own dead end), so the console that owns the
+ * route hands it to the shared components instead — they show the peek alone
+ * everywhere else.
+ */
+const skillHref = (skillId: string) =>
+  `/administration/agents/skills?open=${encodeURIComponent(skillId)}`;
+
 export default function SkillsAdminPage() {
   return (
     <Suspense fallback={null}>
@@ -146,6 +156,7 @@ function SkillsAdminPageInner() {
 
             <div className="flex-1 overflow-hidden mt-3 border-t border-border/60">
               <SkillsBrowser
+                skillHref={skillHref}
                 onSelect={(id) => {
                   setSelectedId(id);
                   setMode("detail");
@@ -159,7 +170,11 @@ function SkillsAdminPageInner() {
         )}
 
         {mode === "detail" && selectedId && (
-          <SkillDetailEditor skillId={selectedId} onBack={goList} />
+          <SkillDetailEditor
+            skillId={selectedId}
+            onBack={goList}
+            skillHref={skillHref}
+          />
         )}
 
         {mode === "create" && (
@@ -169,6 +184,7 @@ function SkillsAdminPageInner() {
         {mode === "ingest" && (
           <SkillIngestPanel
             onBack={goList}
+            skillHref={skillHref}
             onViewSkill={(skillId) => {
               setSelectedId(skillId);
               setMode("detail");

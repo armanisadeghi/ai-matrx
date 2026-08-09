@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { TablesUpdate } from "@/types/database.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +65,7 @@ import {
   Cpu,
   RefreshCw,
 } from "lucide-react";
+import { DeepLinkMissNotice } from "@/components/official/deep-link/DeepLinkMissNotice";
 import {
   ContentBlockDB,
   ContentBlockBlockType,
@@ -71,6 +73,8 @@ import {
   CreateContentBlockInput,
 } from "@/types/content-blocks-db";
 import { createClient } from "@/utils/supabase/client";
+import { CONTENT_BLOCK_PARAM } from "@/components/admin/content-blocks-route";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -195,7 +199,48 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
   const [skills, setSkills] = useState<SkillOption[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  // ─── Selection + the ?block=<uuid|block_id> deep link (THE DOOR LAW) ─────
+  // A content block is an addressable record: `?block=` opens ONE, so a surface
+  // that names a block (the Kind Registry's Assets tab) reaches that block
+  // instead of dumping the user on a list of all of them.
+  //
+  // THE URL IS THE ONLY SELECTION — `?block=<id|block_id>`. Both routes wrap
+  // this manager in Suspense, which is what `useSearchParams` needs; reading
+  // `window.location` in a `useState` initializer instead was a real bug on the
+  // main entry path: a server-rendered page computes that initializer with no
+  // `window`, so it stayed null through hydration and the deep link NEVER
+  // resolved — and the sync effect below then read "no selection" and stripped
+  // `?block=` back out of the URL, destroying the shared link the user arrived
+  // with. A parallel `explicitSelection` also outranked the param forever after
+  // the first click, so back/forward and a second link were ignored.
+  //
+  // Deriving from the param alone fixes all three: it survives hydration, it
+  // reacts to navigation, and a click cannot disagree with the address bar
+  // because `setSelectedBlockId` writes the param and this reads it back. A
+  // `?block=` that matches nothing selects nothing; the manager opens on its
+  // normal empty state rather than faking a record.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const deepLinkRef = searchParams.get(CONTENT_BLOCK_PARAM);
+  const selectedBlockId = deepLinkRef
+    ? (contentBlocks.find(
+        (b) => b.id === deepLinkRef || b.block_id === deepLinkRef,
+      )?.id ?? null)
+    : null;
+  // `router.replace`, not `window.history.replaceState`: a raw history write
+  // does NOT notify `useSearchParams`, so the click would update the address
+  // bar and nothing else. Same call the bundles and MCP consoles use.
+  const setSelectedBlockId = (id: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (id) params.set(CONTENT_BLOCK_PARAM, id);
+    else params.delete(CONTENT_BLOCK_PARAM);
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
+  };
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -477,8 +522,13 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
       setSkills(
         (skillData ?? []).map((s) => ({ id: s.id, label: s.label ?? s.id })),
       );
+      setLoadFailed(false);
     } catch (error) {
       console.error("Error loading data:", error);
+      // The roster was never read. Without this the deep-link notice would
+      // state a definitive negative ("not in this list") about data we could
+      // not load at all.
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -487,6 +537,11 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
   useEffect(() => {
     loadData();
   }, []);
+
+  // No URL-sync effect: `setSelectedBlockId` writes the param and the selection
+  // is read back from it, so the two can never drift. The effect this replaced
+  // stripped `?block=` whenever the selection read as empty — which, before the
+  // hydration fix above, was every server-rendered load of a shared link.
 
   // Filtered and searched content blocks
   const categoryMatches = contentBlocks.filter(
@@ -1370,7 +1425,26 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                         </Select>
                       </div>
                       <div>
-                        <Label htmlFor="edit-skill">Skill</Label>
+                        <div className="flex items-center gap-1">
+                          <Label htmlFor="edit-skill">Skill</Label>
+                          {/* THE DOOR LAW: the picker names a real skill record
+                              and gave no way to see it. A name inside a
+                              <Select> cannot be an anchor, so the doors go
+                              beside it — peek only, deliberately: this is a
+                              form with unsaved changes, and navigating away
+                              would discard them. */}
+                          {editData.skill_id && (
+                            <EntityDoorControls
+                              token="skill"
+                              id={editData.skill_id}
+                              name={
+                                skills.find((s) => s.id === editData.skill_id)
+                                  ?.label ?? null
+                              }
+                              alwaysShowActions
+                            />
+                          )}
+                        </div>
                         <Select
                           value={editData.skill_id ?? "__none__"}
                           onValueChange={(value) =>
@@ -1620,7 +1694,19 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
             </ScrollArea>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-4">
+            {/* A shared `?block=` that matches neither `id` nor `block_id`
+                selected nothing and said nothing — the link looked valid and
+                opened no editor. */}
+            {deepLinkRef && !loading && !loadFailed && !selectedBlockId && (
+              <DeepLinkMissNotice
+                token="content_block"
+                entityLabel="content block"
+                id={deepLinkRef}
+                onClear={() => setSelectedBlockId(null)}
+                className="w-full max-w-xl"
+              />
+            )}
             <div className="text-center text-gray-500 dark:text-gray-400">
               <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-medium mb-2">No Block Selected</h3>

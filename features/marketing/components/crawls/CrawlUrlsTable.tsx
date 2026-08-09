@@ -51,7 +51,7 @@ const DISCOVERY_SOURCE_OPTIONS = [
 ];
 
 export function CrawlUrlsTable({ crawlId }: { crawlId: string }) {
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "sequence", direction: "asc" },
     defaultPageSize: 50,
@@ -77,6 +77,12 @@ export function CrawlUrlsTable({ crawlId }: { crawlId: string }) {
       header: "Run URL",
       filter: "text",
       cellKind: "text",
+      // A run URL is the crawl's own ledger entry, not a canonical page — but
+      // when the crawler DID resolve it to one (`page_id`), that relationship
+      // is knowable and must be reachable. Rows that resolved to nothing
+      // (excluded, external, invalid) stay plain text rather than link nowhere.
+      href: (row) =>
+        row.page_id ? `${sitePath}/pages/${row.page_id}` : undefined,
       cell: (row) => (
         <div className="min-w-80 max-w-3xl">
           <p className="truncate font-mono text-xs text-foreground">

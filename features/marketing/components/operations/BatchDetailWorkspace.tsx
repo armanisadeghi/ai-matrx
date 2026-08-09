@@ -31,6 +31,7 @@ import {
 } from "@/features/marketing/data/operations-hooks";
 import type { OperationsBatchItemRow } from "@/features/marketing/data/operations-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 const ITEM_STATUS_OPTIONS = [
   { value: "queued", label: "Queued" },
@@ -119,9 +120,11 @@ export function BatchDetailWorkspace({ batchId }: { batchId: string }) {
       sortable: false,
       cellKind: "uuid",
       fk: {
+        // Only a `page` subject has a route; a `site`/`snapshot` subject id
+        // stays copy-only rather than opening someone else's record.
         href: (id, row) =>
           row.subject_type === "page" && batch.data
-            ? `/marketing/sites/${batch.data.site_id}/pages/${id}`
+            ? marketingRoutes.sitePage(null, batch.data.site_id, id)
             : null,
       },
     },
@@ -336,7 +339,7 @@ export function BatchDetailWorkspace({ batchId }: { batchId: string }) {
         <section className="grid shrink-0 grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-4 lg:grid-cols-7">
           <HeaderDatum label="Site">
             <Link
-              href={`/marketing/sites/${job.site_id}`}
+              href={marketingRoutes.site(null, job.site_id)}
               className="hover:text-primary"
             >
               {job.site?.name ?? job.site_id}

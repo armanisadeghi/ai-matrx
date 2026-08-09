@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/use-toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { createClient } from "@/utils/supabase/client";
 import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
@@ -177,10 +178,22 @@ export function InstallationsClient({
         width: 180,
       },
       {
+        // THE DOOR LAW, honestly: there is no `user` entity token and no
+        // `/users/<id>` route to open, so the owning user's id is rendered
+        // copyable beside the email instead of as an unopenable string. When a
+        // user record route lands, this column becomes an EntityRef.
         id: "user_email",
         accessorKey: "user_email",
         header: "User",
-        width: 210,
+        cell: (row) => (
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="min-w-0 truncate text-sm" title={row.user_email}>
+              {row.user_email}
+            </span>
+            <MatrxUuidCell value={row.user_id} label="User id" />
+          </span>
+        ),
+        width: 240,
       },
       {
         id: "app_version",

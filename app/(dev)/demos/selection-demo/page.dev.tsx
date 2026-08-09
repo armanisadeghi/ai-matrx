@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { HierarchyTree } from "@/features/agent-context/components/hierarchy-selection/HierarchyTree";
 import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
 import { HierarchyPills } from "@/features/agent-context/components/hierarchy-selection/HierarchyPills";
@@ -36,38 +38,60 @@ function SelectionDebug({
       <p className="text-[9px] font-mono text-muted-foreground mb-1">
         {label}:
       </p>
-      <div className="flex flex-wrap gap-1">
-        {value.organizationName && (
+      {/* These come from `get_user_full_context` (real rows, cached in Redux)
+          and every id is destructured above — so each badge carries the
+          record's doors instead of a name you cannot act on. The scope badges
+          used to show a truncated id and nothing else. */}
+      <div className="group flex flex-wrap items-center gap-1">
+        {value.organizationId && (
           <Badge
             variant="outline"
-            className="text-[9px] h-4 px-1 border-violet-500/30 text-violet-600 dark:text-violet-400"
+            className="text-[9px] h-auto py-0.5 px-1 border-violet-500/30 text-violet-600 dark:text-violet-400"
           >
-            org: {value.organizationName}
+            org:{" "}
+            <EntityRef
+              token="organization"
+              id={value.organizationId}
+              name={value.organizationName}
+              showIcon={false}
+            />
           </Badge>
         )}
         {scopeIds.map((scopeId) => (
           <Badge
             key={scopeId}
             variant="outline"
-            className="text-[9px] h-4 px-1 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+            className="text-[9px] h-auto py-0.5 px-1 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
           >
-            scope: {scopeId.slice(0, 8)}…
+            scope: <MatrxUuidCell value={scopeId} token="scope" label="Scope" />
           </Badge>
         ))}
-        {value.projectName && (
+        {value.projectId && (
           <Badge
             variant="outline"
-            className="text-[9px] h-4 px-1 border-amber-500/30 text-amber-600 dark:text-amber-400"
+            className="text-[9px] h-auto py-0.5 px-1 border-amber-500/30 text-amber-600 dark:text-amber-400"
           >
-            proj: {value.projectName}
+            proj:{" "}
+            <EntityRef
+              token="project"
+              id={value.projectId}
+              name={value.projectName}
+              showIcon={false}
+            />
           </Badge>
         )}
-        {value.taskName && (
+        {value.taskId && (
           <Badge
             variant="outline"
-            className="text-[9px] h-4 px-1 border-sky-500/30 text-sky-600 dark:text-sky-400"
+            className="text-[9px] h-auto py-0.5 px-1 border-sky-500/30 text-sky-600 dark:text-sky-400"
           >
-            task: {value.taskName}
+            task:{" "}
+            <EntityRef
+              token="task"
+              id={value.taskId}
+              name={value.taskName}
+              showIcon={false}
+            />
           </Badge>
         )}
         {isEmpty && (

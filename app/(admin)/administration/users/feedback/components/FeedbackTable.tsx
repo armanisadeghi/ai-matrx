@@ -67,7 +67,6 @@ import {
   ClipboardCheck,
   Archive,
   ChevronDown,
-  Copy,
   UserCheck,
   XCircle,
   MinusCircle,
@@ -78,7 +77,14 @@ import {
   CornerDownRight,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import FeedbackDetailDialog from "./FeedbackDetailDialog";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import {
+  AdminUserDoorControls,
+  AdminUserRef,
+} from "@/features/admin/users/components/AdminUserRef";
+import { FEEDBACK_DEEP_LINK_PARAM, feedbackHref } from "../doors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
@@ -87,6 +93,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { idMatchesQuery } from "@/utils/search-scoring";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 const statusOptions: { value: FeedbackStatus; label: string; color: string }[] =
   [
@@ -354,6 +362,8 @@ function ImagePreviewModal({
 export default function FeedbackTable() {
   const [feedback, setFeedback] = useState<UserFeedback[]>([]);
   const [loading, setLoading] = useState(true);
+  /** True when the last load FAILED — distinct from "loaded and empty". */
+  const [loadFailed, setLoadFailed] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState<UserFeedback | null>(
     null,
   );
@@ -421,6 +431,28 @@ export default function FeedbackTable() {
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
+  // ── THE DOOR LAW: one feedback record, one URL ────────────────────────────
+  // `?feedback=<id>` opens that row's detail dialog, so a feedback item can be
+  // linked to, opened in a new tab, and reached from its child/parent instead
+  // of only being copied to the clipboard. See ../doors.ts.
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const deepLinkId = searchParams.get(FEEDBACK_DEEP_LINK_PARAM);
+
+  const setDeepLink = useCallback(
+    (id: string | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (id) params.set(FEEDBACK_DEEP_LINK_PARAM, id);
+      else params.delete(FEEDBACK_DEEP_LINK_PARAM);
+      const query = params.toString();
+      router.replace(`${pathname}${query ? `?${query}` : ""}`, {
+        scroll: false,
+      });
+    },
+    [searchParams, router, pathname],
+  );
+
   useEffect(() => {
     loadFeedback();
     fetch("/api/admin/feedback/categories")
@@ -445,12 +477,23 @@ export default function FeedbackTable() {
     const result = await getAllFeedback();
     if (result.success && result.data) {
       const { data } = result;
+      setLoadFailed(false);
       setFeedback(data);
       // Keep selectedFeedback fresh from the reloaded list
       setSelectedFeedback((prev) => {
         if (!prev) return prev;
         const fresh = data.find((f) => f.id === prev.id);
         return fresh ?? prev;
+      });
+    } else {
+      // The failure used to be swallowed: `feedback` stayed empty, `loading`
+      // went false, and everything downstream read that as "there is nothing
+      // here". The deep-link effect then blamed the ID ("deleted, or filtered
+      // out") for what was actually a failed read. An empty list we could not
+      // fetch is not an empty list.
+      setLoadFailed(true);
+      toast.error("Couldn't load feedback", {
+        description: result.error ?? "The list may be incomplete or empty.",
       });
     }
     setLoading(false);
@@ -517,10 +560,101 @@ export default function FeedbackTable() {
     }
   };
 
-  const handleViewDetails = (item: UserFeedback) => {
+  const handleViewDetails = useCallback(
+    (item: UserFeedback) => {
+      setSelectedFeedback(item);
+      setDetailDialogOpen(true);
+      setDeepLink(item.id);
+    },
+    [setDeepLink],
+  );
+
+  // Open whatever `?feedback=<id>` names, once the row is loaded. This is what
+  // makes every feedback link — the id cell, a parent edge, a pasted URL —
+  // actually arrive somewhere.
+  //
+  // Opens each id EXACTLY ONCE. Depending on `detailDialogOpen` here would race
+  // the close handler (closing clears the param through `router.replace`, which
+  // lands a tick later), but keying on the URL + rows alone had the same bug
+  // from the other side: while the param is still set, any `loadFeedback()`
+  // refresh gives `feedback` a new identity and the effect springs the dialog
+  // back open under a user who just closed it. The ref records what we already
+  // acted on, and clears when the param does, so re-opening the same record
+  // later still works.
+  const openedDeepLink = useRef<string | null>(null);
+  useEffect(() => {
+    if (!deepLinkId) {
+      openedDeepLink.current = null;
+      return;
+    }
+    if (openedDeepLink.current === deepLinkId) return;
+    const item = feedback.find((f) => f.id === deepLinkId);
+    if (!item) {
+      // Still fetching — the row may yet arrive, so say nothing.
+      if (loading) return;
+      // The load FAILED. We cannot tell whether this id exists, so claiming it
+      // was deleted or filtered would be inventing a verdict from data we
+      // never read — and dropping the param would destroy the deep link the
+      // user arrived with. loadFeedback already reported the failure; leave
+      // the URL intact so a retry can still resolve it.
+      if (loadFailed) return;
+      // Loaded, and the id is not here. Saying nothing would leave the address
+      // bar naming a record the page never showed, which reads as "this link
+      // worked" — the dead end this whole sweep exists to remove. Tell the
+      // operator and drop the param so the URL stops making the claim.
+      openedDeepLink.current = deepLinkId;
+      toast.error("That feedback item isn't in this view", {
+        description:
+          "It isn't in the list this page loaded — it may have been deleted, or it may sit outside what this view fetches.",
+      });
+      setDeepLink(null);
+      return;
+    }
+    openedDeepLink.current = deepLinkId;
     setSelectedFeedback(item);
     setDetailDialogOpen(true);
-  };
+  }, [deepLinkId, feedback, loading, loadFailed, setDeepLink]);
+
+  const handleDetailOpenChange = useCallback(
+    (open: boolean) => {
+      setDetailDialogOpen(open);
+      if (!open && deepLinkId) setDeepLink(null);
+    },
+    [deepLinkId, setDeepLink],
+  );
+
+  // The detail dialog asks to jump to a related record (its parent). Swap the
+  // dialog's subject in place and keep the URL truthful.
+  // A door must reach the record it names. If the related id isn't loaded, the
+  // old code still pointed the URL at it and left the dialog open on the
+  // PREVIOUS record — the address bar naming one item while the screen showed
+  // another. Refuse the jump and say why instead.
+  const handleOpenFeedbackById = useCallback(
+    (id: string) => {
+      const item = feedback.find((f) => f.id === id);
+      if (!item) {
+        // Same distinction the deep-link effect makes: if the list never
+        // loaded, we cannot tell whether this id exists, so "deleted or
+        // filtered" would be a verdict invented from data we never read.
+        toast.error(
+          loadFailed
+            ? "Can't open that related item"
+            : "That related item isn't in this view",
+          {
+            description: loadFailed
+              ? "The feedback list failed to load. Refresh and try again."
+              : "It isn't in the list this page loaded — it may have been deleted, or it may sit outside what this view fetches.",
+          },
+        );
+        return;
+      }
+      openedDeepLink.current = id;
+      setSelectedFeedback(item);
+      setDetailDialogOpen(true);
+      setDeepLink(id);
+    },
+    [feedback, loadFailed, setDeepLink],
+  );
 
   const handleViewImages = (
     e: React.MouseEvent,
@@ -530,6 +664,12 @@ export default function FeedbackTable() {
     setImagePreviewUrls(urls ?? []);
     setImagePreviewOpen(true);
   };
+
+  // A count derived from `feedback` is a statement about the QUEUE. After a
+  // failed read `feedback` is a cache, so every badge on the stage bar would be
+  // asserting something nobody verified — the same reason the admins roster
+  // withholds its count. Declared here, next to the numbers it governs.
+  const countsTrustworthy = !loadFailed;
 
   // Count items per pipeline stage
   const stageCounts = useMemo(() => {
@@ -718,11 +858,31 @@ export default function FeedbackTable() {
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
           )}
+          {/* The failed read already stops the deep-link path from inventing a
+              verdict, but the TABLE kept rendering the last good list — and the
+              stage counts below it kept totalling that stale list as though
+              they were current. A toast fades; this does not. */}
+          {loadFailed && (
+            <StaleDataNotice
+              hasData={feedback.length > 0}
+              what="feedback"
+              onRetry={() => void loadFeedback()}
+              retrying={loading}
+              className="mb-3"
+            />
+          )}
           {/* Pipeline Stage Selector */}
           <div className="mb-4">
             <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg">
               {pipelineStages.map((stage, index) => {
-                const count = stageCounts[stage.key];
+                // Every number on this bar is derived from `feedback`, so after
+                // a failed read they are claims about a cache, not the queue —
+                // the same reason the admins roster withholds its count. The
+                // STAGE BUTTONS stay live (they filter, they assert nothing);
+                // only the counts are suppressed. The pulse dot is the one that
+                // matters most: it tells an admin work is waiting for them, and
+                // saying that off stale rows is how a real queue gets missed.
+                const count = countsTrustworthy ? stageCounts[stage.key] : 0;
                 const isActive = activeStage === stage.key;
                 const isAdminTurn = stage.owner === "admin";
 
@@ -760,8 +920,17 @@ export default function FeedbackTable() {
                       {stage.icon}
                       <span className="hidden sm:inline">{stage.label}</span>
                       <span className="sm:hidden">{stage.shortLabel}</span>
-                      {count > 0 && (
-                        <span
+                      {/* An ABSENT badge means "this stage is empty" — so
+                          hiding it on a failed read makes the same reassuring
+                          claim the number would have. Render an em dash
+                          instead, matching the "All" badge below; a bar that
+                          says "—" everywhere and a number nowhere is honest,
+                          a bar that silently empties itself is not. */}
+                      {(!countsTrustworthy || count > 0) && (
+                        <UntrustedCount
+                          value={count}
+                          trustworthy={countsTrustworthy}
+                          label={`${stage.label} count`}
                           className={cn(
                             "min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold leading-none px-1",
                             isActive
@@ -770,9 +939,7 @@ export default function FeedbackTable() {
                                 ? "bg-amber-500/20 text-amber-700 dark:text-amber-400"
                                 : "bg-muted-foreground/10 text-muted-foreground",
                           )}
-                        >
-                          {count}
-                        </span>
+                        />
                       )}
                       {/* "Your turn" indicator for admin stages with items */}
                       {!isActive && isAdminTurn && count > 0 && (
@@ -798,16 +965,17 @@ export default function FeedbackTable() {
                 )}
               >
                 All
-                <span
+                <UntrustedCount
+                  value={feedback.length}
+                  trustworthy={countsTrustworthy}
+                  label="Total count"
                   className={cn(
                     "min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold leading-none px-1",
                     activeStage === "all"
                       ? "bg-white/25 text-white dark:bg-black/25 dark:text-black"
                       : "bg-muted-foreground/10 text-muted-foreground",
                   )}
-                >
-                  {feedback.length}
-                </span>
+                />
               </button>
             </div>
           </div>
@@ -1274,7 +1442,22 @@ export default function FeedbackTable() {
                       className="text-center py-12 text-muted-foreground"
                     >
                       <div className="flex flex-col items-center gap-1">
-                        {activeStage === "untriaged" && (
+                        {/* 🚨 Every branch below is a REASSURANCE — "All
+                            feedback has been analyzed", "Nothing needs your
+                            decision", under a green check. Each is only true
+                            if the read succeeded. After a failed load the rows
+                            are empty for a reason that has nothing to do with
+                            the queue being clear, and telling an admin their
+                            queue is clear when we never read it is the worst
+                            possible failure of this table. The notice above
+                            carries the retry; here we only refuse to lie. */}
+                        {loadFailed ? (
+                          <span className="text-sm">
+                            Couldn&apos;t load feedback — this is not an empty
+                            queue.
+                          </span>
+                        ) : null}
+                        {!loadFailed && activeStage === "untriaged" && (
                           <>
                             <Component className="w-6 h-6 opacity-30 mb-1" />
                             <span className="text-sm">No untriaged items</span>
@@ -1283,7 +1466,7 @@ export default function FeedbackTable() {
                             </span>
                           </>
                         )}
-                        {activeStage === "your_decision" && (
+                        {!loadFailed && activeStage === "your_decision" && (
                           <>
                             <CheckCircle2 className="w-6 h-6 opacity-30 mb-1" />
                             <span className="text-sm">
@@ -1294,7 +1477,7 @@ export default function FeedbackTable() {
                             </span>
                           </>
                         )}
-                        {activeStage === "agent_working" && (
+                        {!loadFailed && activeStage === "agent_working" && (
                           <>
                             <Component className="w-6 h-6 opacity-30 mb-1" />
                             <span className="text-sm">
@@ -1305,7 +1488,7 @@ export default function FeedbackTable() {
                             </span>
                           </>
                         )}
-                        {activeStage === "test_results" && (
+                        {!loadFailed && activeStage === "test_results" && (
                           <>
                             <ClipboardCheck className="w-6 h-6 opacity-30 mb-1" />
                             <span className="text-sm">Nothing to test</span>
@@ -1314,7 +1497,7 @@ export default function FeedbackTable() {
                             </span>
                           </>
                         )}
-                        {activeStage === "user_review" && (
+                        {!loadFailed && activeStage === "user_review" && (
                           <>
                             <UserCheck className="w-6 h-6 opacity-30 mb-1" />
                             <span className="text-sm">
@@ -1325,7 +1508,7 @@ export default function FeedbackTable() {
                             </span>
                           </>
                         )}
-                        {(activeStage === "done" || activeStage === "all") && (
+                        {!loadFailed && (activeStage === "done" || activeStage === "all") && (
                           <span className="text-sm">No items found</span>
                         )}
                       </div>
@@ -1379,18 +1562,14 @@ export default function FeedbackTable() {
                                 child
                               </span>
                             )}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigator.clipboard.writeText(item.id);
-                                toast.success("ID copied to clipboard");
-                              }}
-                              className="flex items-center gap-1 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors group"
-                              title={`Click to copy full ID: ${item.id}`}
-                            >
-                              <span>{item.id.slice(0, 8)}</span>
-                              <Copy className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </button>
+                            {/* Short id + copy + a REAL new-tab door to this
+                                record (?feedback=<id>), instead of a button
+                                that only ever copied. */}
+                            <MatrxUuidCell
+                              value={item.id}
+                              label="Feedback"
+                              href={feedbackHref(item.id)}
+                            />
                             {childCount > 0 && (
                               <button
                                 onClick={(e) =>
@@ -1609,8 +1788,17 @@ export default function FeedbackTable() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs">
-                          {item.username || "Anonymous"}
+                        <TableCell
+                          className="text-xs"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {/* The reporter is a real user — reach their admin
+                              surfaces, don't just print their handle. */}
+                          <AdminUserRef
+                            userId={item.user_id}
+                            name={item.username || "Anonymous"}
+                            hideEmail
+                          />
                         </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           {item.assigned_to ? (
@@ -1622,14 +1810,25 @@ export default function FeedbackTable() {
                                 admin?.email ||
                                 assignedTo.slice(0, 8);
                               return (
-                                <button
-                                  onClick={() => setFilterAssignee(assignedTo)}
-                                  className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded border bg-primary/5 text-primary border-primary/20 hover:bg-primary/10 transition-colors max-w-[120px]"
-                                  title={`Filter by ${label}`}
-                                >
-                                  <UserCheck className="w-2.5 h-2.5 flex-shrink-0" />
-                                  <span className="truncate">{label}</span>
-                                </button>
+                                <span className="inline-flex max-w-[150px] items-center gap-1">
+                                  <button
+                                    onClick={() => setFilterAssignee(assignedTo)}
+                                    className="inline-flex min-w-0 items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded border bg-primary/5 text-primary border-primary/20 hover:bg-primary/10 transition-colors"
+                                    title={`Filter by ${label}`}
+                                  >
+                                    <UserCheck className="w-2.5 h-2.5 flex-shrink-0" />
+                                    <span className="truncate">{label}</span>
+                                  </button>
+                                  {/* Filtering the list is NOT reaching the
+                                      person. The doors ride as a SIBLING of the
+                                      filter chip — a menu inside that button
+                                      would be invalid DOM and would filter on
+                                      every click. */}
+                                  <AdminUserDoorControls
+                                    userId={assignedTo}
+                                    label={label}
+                                  />
+                                </span>
                               );
                             })()
                           ) : (
@@ -1693,9 +1892,10 @@ export default function FeedbackTable() {
         <FeedbackDetailDialog
           feedback={selectedFeedback}
           open={detailDialogOpen}
-          onOpenChange={setDetailDialogOpen}
+          onOpenChange={handleDetailOpenChange}
           onUpdate={loadFeedback}
           initialTab={stageToDialogTab[activeStage]}
+          onOpenFeedback={handleOpenFeedbackById}
         />
       )}
 
