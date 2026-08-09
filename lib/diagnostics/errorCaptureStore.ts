@@ -146,7 +146,14 @@ export type CapturedErrorSource =
    * the message still renders — but the producer emitting broken delimiters is
    * a real defect to find. See `lib/markdown/delimiter-guard.ts`.
    */
-  | "markdown-delimiters";
+  | "markdown-delimiters"
+  /**
+   * The Assists system (features/assists): an assist chip's action failed —
+   * unregistered action kind, handler failure, or a decide/receipt write
+   * failing after the action ran. Every firing is a real defect in the
+   * producer's action binding or the registry wiring.
+   */
+  | "assists";
 
 /** A Supabase DML verb, or "rpc" for a function call. */
 export type CapturedOperation =

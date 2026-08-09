@@ -24,7 +24,8 @@ import {
   Shapes,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { produceMissingComponentAssists } from "@/features/content-ir/studio/shape-assists-producer";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -183,6 +184,19 @@ export default function ShapesListClient() {
       cancelled = true;
     };
   }, [reloadKey]);
+
+  // Assists producer: shapes YOU own with no custom component get a chip
+  // ("AI can build a custom UI for this") — deduped + dismissal-durable
+  // inside the producer, so re-visits never stack or resurrect chips.
+  const dispatch = useAppDispatch();
+  useEffect(() => {
+    if (state.status !== "ready" || !currentUserId) return;
+    void produceMissingComponentAssists(
+      state.entries,
+      currentUserId,
+      dispatch,
+    );
+  }, [state, currentUserId, dispatch]);
 
   const navigate = (href: string) => {
     if (busyHref) return;

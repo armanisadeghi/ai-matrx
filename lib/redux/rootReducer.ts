@@ -60,6 +60,7 @@ import audioPlaybackReducer from "@/lib/redux/slices/audioPlaybackSlice";
 import audioSessionsReducer from "@/lib/redux/slices/audioSessionsSlice";
 import transcriptsReducer from "@/features/transcripts/redux/transcriptsSlice";
 import kgSuggestionsReducer from "@/lib/redux/slices/kgSuggestionsSlice";
+import assistsReducer from "@/features/assists/redux/assistsSlice";
 import { codeFilesReducer } from "@/features/code-files/redux/slice";
 import codeWorkspaceReducer from "@/features/code/redux/codeWorkspaceSlice";
 import codeTabsReducer from "@/features/code/redux/tabsSlice";
@@ -379,6 +380,7 @@ export const slimReducerMap = {
   pdfBatchExtractDebug: pdfBatchExtractDebugReducer,
 
   kgSuggestions: kgSuggestionsReducer,
+  assists: assistsReducer,
 
   agentComparison: agentComparisonReducer,
   agentComparisonSettings: agentComparisonSettingsReducer,

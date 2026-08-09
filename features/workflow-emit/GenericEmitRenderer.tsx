@@ -16,12 +16,59 @@
  *   summary | full | restructured → the title (markdown) + the full payload.
  */
 
-import React from "react";
+import React, { useMemo } from "react";
 import { CheckCircle2 } from "lucide-react";
 
 import MarkdownStream from "@/components/MarkdownStream";
 import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
+import { AssistChip } from "@/features/assists/components/AssistChip";
+import { makeEphemeralAssist, type Assist } from "@/features/assists/types";
+import { shapeCreatorAgentId } from "@/features/content-ir/studio/constants";
 import type { EmitRendererProps } from "./types";
+
+/** Cap for the inlined payload JSON — enough context, never a mega-prompt. */
+const SURPRISE_UI_PAYLOAD_MAX = 6_000;
+
+/**
+ * The "Surprise-me UI" assist (ephemeral): this structured output rendered
+ * through the GENERIC viewer, which means no purpose-built component exists
+ * for its shape yet — exactly the moment the AI can build one. The chip
+ * opens the shape-creator agent pre-filled with the payload; the user
+ * reviews and sends. No ledger row: the chip exists while the output does.
+ */
+function surpriseUiAssist(
+  value: unknown,
+  title: string | null | undefined,
+  nodeId: string,
+): Assist | null {
+  if (!value || typeof value !== "object") return null;
+  const creatorId = shapeCreatorAgentId();
+  if (!creatorId) return null;
+  let json: string;
+  try {
+    json = JSON.stringify(value, null, 2);
+  } catch {
+    return null;
+  }
+  if (json.length > SURPRISE_UI_PAYLOAD_MAX) {
+    json = `${json.slice(0, SURPRISE_UI_PAYLOAD_MAX)}\n… (truncated)`;
+  }
+  const label = title?.trim() || nodeId;
+  return makeEphemeralAssist({
+    sourceKey: "workflow.surprise_ui",
+    title: "Build a beautiful UI for this output",
+    body: "An AI agent creates a Shape and a purpose-built component for this output's structure, so future runs render with a real UI instead of the generic viewer.",
+    action: {
+      kind: "launch_agent",
+      agentId: creatorId,
+      agentName: "Shape Creator",
+      draftText:
+        `Create a new Shape (kind) for this recurring workflow output ("${label}"), ` +
+        `with a purpose-built output component, then activate it. ` +
+        `Design the schema from this real payload:\n\n\`\`\`json\n${json}\n\`\`\``,
+    },
+  });
+}
 
 /** Pull a human confirmation line from the payload's `message`, if present. */
 function extractMessage(payload: unknown): string | null {
@@ -55,8 +102,14 @@ export const GenericEmitRenderer: React.FC<EmitRendererProps> = ({
   mode,
   payload,
   title,
+  nodeId,
 }) => {
   const value = unwrapValue(payload);
+  const assist = useMemo(
+    () =>
+      mode === "confirmation" ? null : surpriseUiAssist(value, title, nodeId),
+    [mode, value, title, nodeId],
+  );
 
   // ─── Confirmation ─────────────────────────────────────────────────────────
   // A single, calm inline line. Prefer the node's title, then payload.message.
@@ -90,6 +143,11 @@ export const GenericEmitRenderer: React.FC<EmitRendererProps> = ({
         </div>
       )}
       <ResultValue value={value} density="full" />
+      {assist && (
+        <div className="flex justify-end">
+          <AssistChip assist={assist} className="max-w-full" />
+        </div>
+      )}
     </div>
   );
 };

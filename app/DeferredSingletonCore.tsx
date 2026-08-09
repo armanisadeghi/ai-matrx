@@ -23,6 +23,7 @@ import AnnouncementProvider from "@/components/layout/AnnouncementProvider";
 import AdminFeatureProvider from "@/features/admin/AdminFeatureProvider";
 import LazyMessagingIsland from "@/features/shell/islands/LazyMessagingIsland";
 import KgNewSuggestionNotifier from "@/features/kg-suggestions/components/KgNewSuggestionNotifier";
+import AssistsDock from "@/features/assists/components/AssistsDock";
 import LiveCaptureIndicator from "@/features/media-capture/components/LiveCaptureIndicator";
 import ErrorInspectorBadge from "@/features/admin/error-inspector/ErrorInspectorBadge";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
@@ -95,6 +96,7 @@ export default function DeferredSingletonCore() {
       <OverlayController />
       <LazyMessagingIsland />
       <KgNewSuggestionNotifier />
+      <AssistsDock />
       <AuthSessionWatcher />
       <AnnouncementProvider />
       <AdminFeatureProvider />

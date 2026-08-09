@@ -279,6 +279,10 @@ Track bugs/gaps you can't fully fix in [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (t
 
 Same doctrine, server side: aidream's `../aidream/CLAUDE.md` §"A new env var fails SILENTLY in production."
 
+## Assists — AI assists everywhere (Arman's standing ruling, 2026-08-08)
+
+**The system uses its own AI on itself.** Every friction point, error state, or gap gets asked *"could an AI button/chip do this for the user?"* BEFORE a manual affordance is designed. The primitive is **`features/assists/`**: producers (deterministic code, background agents, sweeps) write `platform.assists` rows or render ephemeral chips; the user one-clicks; the assist action registry runs a REAL action (launch a pre-filled agent, apply a surface write, navigate). **Building any feature? Look for its assist.** Rules + producer contract: [`features/assists/FEATURE.md`](./features/assists/FEATURE.md); cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/assists/FEATURE.md`. Never fork a second chip component, suggestion table, or accept handler — that disease is what this primitive killed.
+
 ## "Coming Soon" is a promise — track it like a found defect
 
 We deliberately advertise actions we intend to build so users see where the product is going and engineers feel the debt. **Growing the list is encouraged.** That only works if every promise is declared in ONE registry — `lib/coming-soon/registry.ts` — and handled with the same reflex as [FOUND_DEFECTS.md](./FOUND_DEFECTS.md): **report it, and ask to solve it.**
@@ -341,6 +345,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | Tool call visualization | `features/tool-call-visualization/FEATURE.md` |
 | Streaming system | `features/agents/docs/STREAMING_SYSTEM.md` |
 | **Content-IR / Shape System** — canonical structured-content platform (`__kind` kinds, streaming JSON→IR envelopes, kind registry + `kind_surface`/`kind_component`/`kind_example`, render routing; workflow node I/O speaks kinds). **Read BEFORE touching stream/DB block parsing, `__kind`, `metadata.__ir`, or any kind asset** | `features/content-ir/FEATURE.md` → `features/content-ir/docs/SHAPE_SYSTEM.md` |
+| Assists (AI assists everywhere — one-click AI chips) | `features/assists/FEATURE.md` |
 | Artifacts + Canvas | `features/artifacts/FEATURE.md` |
 | Chat + Conversation | **Live `/chat` route:** `features/agents/components/chat/FEATURE.md` (the real route, on `features/agents/`). Unified shell (future) + legacy surfaces: `features/conversation/FEATURE.md` |
 | Notes | `features/notes/FEATURE.md` |

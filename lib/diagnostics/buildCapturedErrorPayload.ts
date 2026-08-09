@@ -59,6 +59,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "content-ir": "Content IR parse/parity failure",
   "surface-writeback": "Surface writeback contract break",
   "markdown-delimiters": "Runaway delimiter in rendered markdown",
+  assists: "Assist chip action failure",
 };
 
 export function sourceLabel(source: CapturedErrorSource): string {

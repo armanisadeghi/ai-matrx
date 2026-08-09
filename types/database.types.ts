@@ -7832,6 +7832,7 @@ export type Database = {
           emitted_json_schema: Json | null
           id: string
           is_active: boolean
+          is_contract_artifact: boolean
           kind: string
           label: string
           metadata: Json
@@ -7855,6 +7856,7 @@ export type Database = {
           emitted_json_schema?: Json | null
           id?: string
           is_active?: boolean
+          is_contract_artifact?: boolean
           kind: string
           label: string
           metadata?: Json
@@ -7878,6 +7880,7 @@ export type Database = {
           emitted_json_schema?: Json | null
           id?: string
           is_active?: boolean
+          is_contract_artifact?: boolean
           kind?: string
           label?: string
           metadata?: Json
@@ -23066,6 +23069,99 @@ export type Database = {
           metadata?: Json
           occurred_at?: string
           organization_id?: string
+        }
+        Relationships: []
+      }
+      assists: {
+        Row: {
+          action: Json
+          body: string | null
+          confidence: number | null
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by: string | null
+          dedupe_key: string | null
+          deleted_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          expires_at: string | null
+          id: string
+          organization_id: string | null
+          priority: number
+          reasoning: string | null
+          result: Json | null
+          source_key: string
+          source_kind: string
+          status: string
+          suppressed_until: string | null
+          surface_name: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          action: Json
+          body?: string | null
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          dedupe_key?: string | null
+          deleted_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          expires_at?: string | null
+          id?: string
+          organization_id?: string | null
+          priority?: number
+          reasoning?: string | null
+          result?: Json | null
+          source_key: string
+          source_kind?: string
+          status?: string
+          suppressed_until?: string | null
+          surface_name?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          action?: Json
+          body?: string | null
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          dedupe_key?: string | null
+          deleted_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          expires_at?: string | null
+          id?: string
+          organization_id?: string | null
+          priority?: number
+          reasoning?: string | null
+          result?: Json | null
+          source_key?: string
+          source_kind?: string
+          status?: string
+          suppressed_until?: string | null
+          surface_name?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
