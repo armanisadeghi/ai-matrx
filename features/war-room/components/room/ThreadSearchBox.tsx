@@ -38,7 +38,9 @@ export function ThreadSearchBox() {
       placeholder="Search threads by title…"
       ariaLabel="Search threads by title"
       className="h-7 pl-2 pr-1"
-      inputClassName="w-36 @5xl:w-48 text-[13px]"
+      // Narrow on a phone-width header (the expanded field competes with the
+      // room title there); widens as the injected header row does.
+      inputClassName="w-24 @2xl:w-36 @5xl:w-48 text-[13px]"
       autoFocus={open}
       onEscape={() => {
         setThreadQuery("");

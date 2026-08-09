@@ -15,9 +15,13 @@
 // row is its own `@container`, so the label-hiding behavior the old in-body
 // header used (@max-xl labels, @2xl meter) keys off the real injected width.
 //
-// Mobile (<sm): back + title + ONE "⋯" tap target → bottom sheet holding
-// everything (modes, agent, density, projector, details, resources, project,
-// delete) — per the core-route-headers mobile doctrine.
+// Mobile (<sm): back + title + search + context chip + ONE "⋯" tap target →
+// bottom sheet holding everything else (modes, agent, density, projector,
+// details, resources, project, delete) — per the core-route-headers mobile
+// doctrine. Search and the lens chip stay INLINE rather than moving into the
+// sheet: search must show the rail filtering as you type, and the chip is
+// rendered at every breakpoint on /chat and opens its own ContextSheet on
+// mobile, so sheet-nesting it would stack sheet-on-sheet.
 //
 // Every control here acts on the WHOLE room (cockpit rule) — the one
 // deliberate exception is ActiveContextLensChip, which is global by design.
@@ -183,9 +187,11 @@ export function RoomHeader({
       <PageHeader>
         <div className="@container flex w-full min-w-0 items-center gap-1.5">
           <ChevronLeftTapButton href="/war-room/all" ariaLabel="Back" />
+          {/* Decorative identity mark — hidden on a phone-width header so the
+              TITLE (which actually names the room) keeps the space. */}
           <span
             className={cn(
-              "grid place-items-center size-7 shrink-0 rounded-lg",
+              "hidden sm:grid place-items-center size-7 shrink-0 rounded-lg",
               roomColor.tint,
               roomColor.text,
             )}
@@ -223,14 +229,23 @@ export function RoomHeader({
 
           {session ? (
             <>
-              {/* Desktop actions — the primaries stay inline; everything else
-                  lives in the "⋯" menu. */}
-              <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+              {/* Primaries that stay inline at EVERY width. Each one is either
+                  useless in a sheet (search — you must see the rail filter as
+                  you type) or already mobile-aware and canonical elsewhere
+                  (the lens chip renders at all breakpoints on /chat and opens
+                  its own ContextSheet on mobile, so nesting it in our sheet
+                  would stack sheet-on-sheet). Copy-for-AI only renders when
+                  the room has a project. */}
+              <div className="flex min-w-0 items-center gap-1.5">
                 {ready ? <ThreadSearchBox /> : null}
                 <RoomProjectCopyForAiButton sessionId={sessionId} />
                 {/* Same working-context control as /chat — writes
                     appContextSlice (Surface A). Global by design. */}
-                <ActiveContextLensChip align="end" className="shrink-0" />
+                <ActiveContextLensChip align="end" className="min-w-0" />
+              </div>
+
+              {/* Desktop-only: everything else lives in the "⋯" menu. */}
+              <div className="hidden sm:flex items-center gap-1.5 shrink-0">
                 <RoomAgentToggle
                   open={roomAgentOpen}
                   onToggle={onToggleRoomAgent}

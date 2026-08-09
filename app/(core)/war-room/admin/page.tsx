@@ -41,7 +41,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       url: "/war-room/[id]",
       label: "The room (cockpit)",
       description:
-        "Mission-control chrome injected into the SHELL glass via RoomHeader (<PageHeader>): title + live meter + Stage⇄Grid + thread search + ActiveContextLensChip + Room Agent inline; projector, density, room details, resources, project, and delete live in the ONE '…' menu (mobile: back + title + one '…' bottom sheet). Over Stage view (rail + driven thread) or Grid view (bento gallery). Hydrates the session, tiles, audio links, and linked tasks. The 'Room Agent' button opens the TIER-2 per-room agent (RoomAgentPanel) in an inline non-modal WindowPanel; the shared MasterWatchLayer is mounted here too so messaging a thread pops a live-watch window in the room.",
+        "Mission-control chrome injected into the SHELL glass via RoomHeader (<PageHeader>): title + live meter + Stage⇄Grid + thread search + ActiveContextLensChip + Room Agent inline; projector, density, room details, resources, project, and delete live in the ONE '…' menu (mobile: back + title + search + context chip inline, plus one '…' bottom sheet). Over Stage view (rail + driven thread) or Grid view (bento gallery). Hydrates the session, tiles, audio links, and linked tasks. The 'Room Agent' button opens the TIER-2 per-room agent (RoomAgentPanel) in an inline non-modal WindowPanel; the shared MasterWatchLayer is mounted here too so messaging a thread pops a live-watch window in the room.",
       filePath: "features/war-room/components/room/WarRoomShell.tsx",
       status: "Live",
     },
