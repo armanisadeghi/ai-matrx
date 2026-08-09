@@ -1,5 +1,6 @@
 'use client';
 import { useEffect } from 'react';
+import { confirm as confirmDialog } from '@/components/dialogs/confirm/ConfirmDialogHost';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { idMatchesQuery } from "@/utils/search-scoring";
@@ -89,7 +90,13 @@ export default function FieldComponentsList({
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this field component?')) return;
+    const ok = await confirmDialog({
+      title: 'Delete this field component?',
+      description: 'Applets using this component will lose it.',
+      confirmLabel: 'Delete',
+      variant: 'destructive',
+    });
+    if (!ok) return;
     
     try {
       // If parent provided delete handler, call it first

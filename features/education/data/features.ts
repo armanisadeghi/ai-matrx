@@ -207,7 +207,7 @@ export const FEATURES: AxisEntry[] = [
             icon: Lock,
             title: "Private by default",
             description:
-              "Uploads and generated study kits are visible only to you until you choose to share or publish them.",
+              "Uploads and generated study kits stay within your account until you choose to share or publish them.",
           },
           {
             icon: Ban,
@@ -233,7 +233,7 @@ export const FEATURES: AxisEntry[] = [
           },
           {
             q: "Who can see what I upload?",
-            a: "Only you, until you explicitly share a link or publish a resource. Sharing is always an action you take, never a default.",
+            a: "Your uploads stay within your own account — and any organization workspace you deliberately add them to — until you share a link or publish a resource. Sharing is always an action you take, never a default.",
           },
         ],
       },

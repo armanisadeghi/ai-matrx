@@ -363,8 +363,11 @@ function ShareFormContent({
                       <div className="font-medium text-sm leading-none">
                         Private
                       </div>
+                      {/* Honest claim only: this setting controls publication
+                          of the share record, not every access path to the
+                          underlying content (D106b) — never "Only you". */}
                       <div className="text-xs text-muted-foreground mt-1">
-                        Only you can view
+                        Not published — no public page or link access
                       </div>
                     </div>
                   </div>

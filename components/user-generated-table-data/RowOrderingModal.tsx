@@ -9,6 +9,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { GripVertical, ArrowUp, ArrowDown, Save, X } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import {
@@ -232,11 +233,16 @@ export default function RowOrderingModal({
   };
 
   // Handle close with unsaved changes
-  const handleClose = () => {
+  const handleClose = async () => {
     if (hasChanges) {
-      if (
-        confirm("You have unsaved changes. Are you sure you want to close?")
-      ) {
+      const ok = await confirmDialog({
+        title: "Discard unsaved changes?",
+        description:
+          "You have unsaved row-order changes. Closing will lose them.",
+        confirmLabel: "Discard",
+        variant: "destructive",
+      });
+      if (ok) {
         setHasChanges(false);
         onClose();
       }

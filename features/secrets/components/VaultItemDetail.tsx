@@ -1503,7 +1503,12 @@ function SharePanel({
               </p>
             ) : grants.length === 0 ? (
               <p className="rounded border border-dashed border-border p-2 text-xs text-muted-foreground">
-                Only you. Add someone above to share this credential.
+                {/* Honest claim only: this panel knows the grant list, not
+                    every access path (org admins, org-wide mode), so it
+                    reports the list — never "Only you" (D106b). */}
+                {isOrg
+                  ? "No individual members granted yet. Add someone above. Organization admins always retain access."
+                  : "No one has been granted access yet. Add someone above to share this credential."}
               </p>
             ) : (
               grants.map((grant) => (

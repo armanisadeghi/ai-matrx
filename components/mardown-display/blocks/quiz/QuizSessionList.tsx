@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { Trash2, Play, Clock, Trophy, CheckCircle, AlertCircle } from 'lucide-react';
 import { getUserQuizSessions, deleteQuizSession, type QuizSession } from '@/actions/quiz.actions';
+import { confirm as confirmDialog } from '@/components/dialogs/confirm/ConfirmDialogHost';
+import { toast } from '@/lib/toast';
 import { formatTime } from './quiz-utils';
 
 interface QuizSessionListProps {
@@ -41,15 +43,19 @@ export const QuizSessionList: React.FC<QuizSessionListProps> = ({
   }, [filter]);
 
   const handleDelete = async (sessionId: string) => {
-    if (!confirm('Are you sure you want to delete this quiz?')) {
-      return;
-    }
+    const ok = await confirmDialog({
+      title: 'Delete this quiz?',
+      description: 'This removes the quiz session and its results.',
+      confirmLabel: 'Delete',
+      variant: 'destructive',
+    });
+    if (!ok) return;
 
     const result = await deleteQuizSession(sessionId);
     if (result.success) {
       setSessions(sessions.filter(s => s.id !== sessionId));
     } else {
-      alert(result.error || 'Failed to delete quiz');
+      toast.error(result.error || 'Failed to delete quiz');
     }
   };
 

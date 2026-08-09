@@ -4,6 +4,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { extractErrorMessage } from "@/utils/errors";
+import { toast } from "@/lib/toast";
 import {
   X,
   Copy,
@@ -382,12 +383,12 @@ ${wordPressCSS}
   // HTML Page save handlers
   const handleSavePage = async () => {
     if (!pageTitle.trim()) {
-      alert("Please enter a page title before saving");
+      toast.error("Please enter a page title before saving");
       return;
     }
 
     if (!user?.id) {
-      alert("You must be logged in to save HTML pages");
+      toast.error("You must be logged in to save HTML pages");
       return;
     }
 
@@ -434,7 +435,7 @@ ${wordPressCSS}
       console.log("Page saved successfully:", result);
     } catch (err) {
       console.error("Save failed:", err);
-      alert(`Save failed: ${extractErrorMessage(err)}`);
+      toast.error(`Save failed: ${extractErrorMessage(err)}`);
     }
   };
 
