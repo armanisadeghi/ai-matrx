@@ -61,6 +61,14 @@ function num(value: unknown, where: string): number {
   return value;
 }
 
+function bool(value: unknown, where: string): boolean {
+  // NOT `Boolean(value)` — the JSON string "false" is truthy, so a drifted
+  // snapshot would silently mark unrouted entities as routed and skew every
+  // badge, registry hint and repair brief downstream. Reject instead.
+  if (typeof value !== "boolean") fail(`${where} is not a boolean`);
+  return value;
+}
+
 function nullableStr(value: unknown, where: string): string | null {
   if (value === null || value === undefined) return null;
   return str(value, where);
@@ -77,7 +85,7 @@ function toFinding(row: unknown, index: number): DeadEndFinding {
     rule: asRule(f.rule, where),
     severity: asSeverity(f.severity, where),
     entity: str(f.entity, `${where}.entity`),
-    entityHasRoute: Boolean(f.entityHasRoute),
+    entityHasRoute: bool(f.entityHasRoute, `${where}.entityHasRoute`),
     expression: str(f.expression, `${where}.expression`),
     feature: str(f.feature, `${where}.feature`),
     route: nullableStr(f.route, `${where}.route`),

@@ -49,7 +49,12 @@ export function describeFinding(f: DescribableFinding): string {
         `Names a \`${f.entity}\` record (\`${f.expression}\`) as plain text while its id is in scope in this file — ` +
         (f.entityHasRoute
           ? `the registry already has a route for \`${f.entity}\`. Replace with <EntityRef token="${f.entity}" id={…} name={${f.expression}} /> (Open + new tab + peek, free).`
-          : `\`${f.entity}\` has no hrefFor yet. Add one in ${REGISTRY}, then render <EntityRef token="${f.entity}" … /> — fix the registry, not the call site.`)
+          : isRegistryToken(f.entity)
+            ? `\`${f.entity}\` has no hrefFor yet. Add one in ${REGISTRY}, then render <EntityRef token="${f.entity}" … /> — fix the registry, not the call site.`
+            // Unreachable from the scanner today (the name rule requires a
+            // resolved token), but describeFinding is public and the invariant
+            // is not visible from here — never emit "register `(file)`".
+            : `The detector could not name this entity — identify which record it is, then render it through <EntityRef>.`)
       );
     case "unlinked-count":
       return (

@@ -206,7 +206,7 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              title={`Open ${f.file}:${f.line} at the scanned commit`}
+              title={`Open ${f.file}:${f.line} on main (line is from the scan — see the snapshot age)`}
               className="min-w-0 truncate font-mono text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
             >
               {f.file}:{f.line}

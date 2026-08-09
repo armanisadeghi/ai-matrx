@@ -618,15 +618,26 @@ const matrxLintPlugin = {
                         // subject (`instance.agentId`) points at a DIFFERENT
                         // record and must still be reported — same rule the
                         // checker applies, minus the token registry.
+                        //
+                        // Compared as WHOLE camel/underscore segments, never as
+                        // substrings: `storage`.includes('org') is true, which
+                        // would have read `storage.orgId` as the storage's own
+                        // id and silenced a real foreign-key finding.
+                        const segments = (text) =>
+                            text
+                                .split(/[^A-Za-z0-9]+/)
+                                .flatMap((part) => part.split(/(?=[A-Z])/))
+                                .filter(Boolean)
+                                .map((part) => part.toLowerCase());
                         const root = rootName(node.expression);
                         const subject = root ?? name.replace(/(_id|Id)$/, '');
-                        const points = name.replace(/(_id|Id)$/, '').toLowerCase();
+                        const points = segments(name.replace(/(_id|Id)$/, ''));
                         const ownIdentity =
                             name === 'id' ||
                             name === 'uuid' ||
                             root === null ||
-                            points === '' ||
-                            (root ?? '').toLowerCase().includes(points);
+                            points.length === 0 ||
+                            points.every((word) => segments(root).includes(word));
                         if (ownIdentity && isSelfSubject(node, subject)) return;
 
                         for (let cur = node.parent; cur; cur = cur.parent) {
