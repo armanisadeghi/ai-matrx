@@ -108,7 +108,39 @@ Ordered by traffic. Each item is independently actionable.
    `features/content-ir` four (`/administration/knowledge/{podcasts/shows,
    kg-inspector}`, `/administration/utilities/{kind-registry,content-blocks}`)
    — see the podcasts / KG / kind-registry entry under **Done**.
-3. **Dialogs / drawers / warnings** that name an entity.
+3. **Dialogs / drawers / warnings — audited 2026-08-09, in progress.** 13 HIGH
+   and 16 MED across `components/dialogs/**`, `features/overlays/**`,
+   `features/window-panels/windows/**` and every `*Dialog`/`*Drawer`/`*Sheet`.
+   **Landed:** `ItemDetailWindow` (the generic fallback window — the record's
+   own doors in the title bar, and every `<token>_id` column now openable via
+   `tokenFromColumnName` → `MatrxUuidCell`; item types whose token diverges now
+   declare `entityToken` in `features/item-presentation/registry.tsx`) ·
+   `ManifestDriftDialog` (it claimed "Everything is in sync" while holding
+   uncounted `surfaceLabelDrifts` / `valueGroupsDrifts` — a **false green**).
+   **Next, highest value first:**
+   - `features/sharing/components/ShareModal.tsx:230` — names the record and
+     never opens it, though `getResourceSharePath(resourceType, resourceId)` is
+     already computed at `:88`. The most-reused share surface in the app.
+   - `features/admin/error-inspector/ErrorInspectorWindow.tsx:378` +
+     `features/window-panels/windows/agents/AgentDebugWindow.tsx` (5 bare ids)
+     + `StreamDebugHistoryWindow.tsx:85` — `conversation` and `agent` both have
+     `hrefFor`; these print truncated uuids as the only identity.
+   - `features/organizations/admin/components/ReassignResourcesDialog.tsx:173`
+     — a destructive bulk reassign showing counts with no way to see WHICH
+     records change owner.
+   - `features/files/components/core/DuplicateUploadDialog/` — the dialog whose
+     whole question is "is this the same file?" offers no peek, though
+     `existing.id` is already passed to `InlineMediaRef` two lines above.
+   - `features/agents/components/usages/NotifyOwnerDialog.tsx` — names the agent
+     unlinked with `drift.agentId` in the same object; "Failed for N recipients"
+     names nobody.
+   - The `agent-shortcuts` modal family (`LinkAgentToShortcutModal`,
+     `DuplicateShortcutModal`, `PromoteToGlobalModal`) — labels plain, ids in
+     scope; `LinkAgentToShortcutModal:398` resolves "already linked to an agent"
+     and refuses to say which.
+   - `components/dialogs/scope-mismatch/ScopeMismatchDialogHostImpl.tsx:60` —
+     asks the user to choose between two scope sets with no way to look at
+     either; `ScopeMismatchDisplayItem.id` IS the scope id.
 4. **Toasts and badges.**
 5. **`(dev)` demos** — last.
 6. **aidream admin surfaces** — after matrx-frontend.
@@ -127,6 +159,42 @@ Ordered by traffic. Each item is independently actionable.
 
    Also scoped-out deliberately: this is a Tier-1 refactor, not door work. It
    stays tracked here rather than being folded into a doors wave.
+
+### Registry gaps — the highest-leverage open work
+
+**One registry edit lights up every surface at once, so these outrank any
+per-surface patch.** Consolidated from three independent audits on 2026-08-09;
+each was verified against `entityRegistry.ts` and the generated entity types,
+not assumed.
+
+**No token at all** (nothing to resolve — the name is unavoidably plain text):
+
+| Token | Where it bites |
+|---|---|
+| **`user`** | THE most frequent gap in the whole campaign. Every actor/owner/assignee/recipient column in `(admin)`, `ShareModal`, `PermissionsList`, `ReassignResourcesDialog`, `NotifyOwnerDialog`, `FeedbackWindow`. Worked around by `AdminUserRef` (admin-only). See item 8. |
+| **`ai_model`** | `ModelSwitchConflictDialog` — both model ids are in state and neither resolves. |
+| **`ui_surface`** | `ManifestDriftDialog` (every drift row names a `surfaceName`), `SurfaceContextWindow`. |
+| **`mcp_server`** | `McpServersSection`, the tools manager. A route now exists (`?server=`), so this is just the registration. |
+| **KG entity** (`rag.kg_entities`) | KG inspector. |
+| **Content block** (`skill.render_definition`) | Kind assets, content-blocks manager. |
+| **`industries`** | Every "Industry — X" grant label. |
+| **`skill_category`** | Every category header in the skills browser is inert text. |
+
+**Registered but no `hrefFor`** (peek may still work; the route does not):
+`pc_show`, `pc_episode`, `content_ir_kind` (routes exist — three surfaces pass
+an `href` override today and could drop it) · `folder` · `scope_type` (also no
+resolver route and no peek) · `context_item` (no peek either) · `tool`,
+`tool_bundle`, `skill`, `user_feedback` (routes exist but sit behind the
+super-admin layout — the "403 door" question, item 11/16) · `workflow` (lives in
+aidream's workflow-studio, D139).
+
+**Item-type vocabulary drift — FIXED 2026-08-09, and worth knowing about.**
+`KnownItemType` is *mostly* the token vocabulary but not entirely: `table` →
+`dataset`, `document` → `udt_document`, `picklist` → `structured_list`. These
+are now declared as `entityToken` on the item-presentation registry entries and
+resolved through `entityTokenForItemType()`. **Never hand a raw `ItemType` to
+`resolveEntityDoors`.** Each mapping was matched by `schema.table`, never by
+name — a token resolving to a different table opens the WRONG record.
 
 ### Blocked / needs a decision
 
