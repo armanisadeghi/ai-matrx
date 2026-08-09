@@ -10,13 +10,7 @@
 // mode simply ships fewer options for that question — never a hard blocker.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { FC_AGENTS } from "../agents";
 
 export interface MakeQuizItemsArgs {
@@ -35,25 +29,6 @@ export interface MakeQuizItemsResult {
   explanation: string;
 }
 
-async function waitForObject(
-  getState: () => RootState,
-  requestId: string,
-  timeoutMs = 45_000,
-): Promise<unknown | null> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const state = getState();
-    if (selectJsonExtractionComplete(requestId)(state)) {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    if (selectRequestStatus(requestId)(state) === "error") {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    await new Promise((r) => setTimeout(r, 150));
-  }
-  return null;
-}
-
 /** Returns AI-generated distractors for one card, or null on any skip/failure. */
 export function makeQuizItems(args: MakeQuizItemsArgs) {
   return async (
@@ -63,34 +38,21 @@ export function makeQuizItems(args: MakeQuizItemsArgs) {
     const agentId = args.agentId ?? FC_AGENTS.makeQuizItems;
     if (!agentId) return null;
 
-    let conversationId: string | null = null;
     try {
-      const launch = await dispatch(
-        launchAgentExecution({
-          agentId,
-          surfaceKey: "flashcards-quiz-items",
-          sourceFeature: "education-flashcards",
-          isEphemeral: false,
-          runtime: {
-            variables: {
-              front: args.front,
-              back: args.back,
-              topic: args.topic ?? "",
-              distractor_count: args.distractorCount,
-            },
-          },
-          config: {
-            autoRun: true,
-            displayMode: "direct",
-          },
-          jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
-        }),
-      ).unwrap();
-      conversationId = launch.conversationId;
-      const requestId = launch.requestId;
-      if (!requestId) return null;
-
-      const raw = await waitForObject(getState, requestId);
+      const result = await runHeadlessAgentJson(dispatch, getState, {
+        agentId,
+        surfaceKey: "flashcards-quiz-items",
+        sourceFeature: "education-flashcards",
+        variables: {
+          front: args.front,
+          back: args.back,
+          topic: args.topic ?? "",
+          distractor_count: args.distractorCount,
+        },
+        timeoutMs: 45_000,
+        pollIntervalMs: 150,
+      });
+      const raw = result.data;
       if (!raw || typeof raw !== "object") return null;
       const r = raw as Record<string, unknown>;
       const question = typeof r.question === "string" ? r.question : "";
@@ -108,8 +70,6 @@ export function makeQuizItems(args: MakeQuizItemsArgs) {
     } catch (err) {
       console.error("[flashcards.makeQuizItems] failed:", err);
       return null;
-    } finally {
-      if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     }
   };
 }

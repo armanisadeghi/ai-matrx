@@ -10,20 +10,12 @@
 // keeping it in one primitive means every new "speak your answer" surface inherits
 // the hardening (no-audio guard, durable upload, robust extraction) for free.
 //
-// (FastFire's own `gradeCard.thunk` predates this and keeps its inline copy for
-// now to avoid churn on the just-stabilized drill; it can adopt this later.)
+// The agent round-trip runs through the canonical headless primitive
+// (`runHeadlessAgentJson`, D126) with the audio clip as a message part.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { fileHandler } from "@/features/files/handler/handler";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
-import { setUserInputMessageParts } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import {
   audioExtensionForType,
   normalizeAudioContentType,
@@ -143,27 +135,6 @@ export function coerceSpokenGrade(raw: unknown): SpokenGrade | null {
   };
 }
 
-/** Poll the JSON extractor until it finalizes (or the stream errors). */
-async function waitForExtraction(
-  getState: () => RootState,
-  requestId: string,
-  timeoutMs = 120_000,
-  intervalMs = 200,
-): Promise<unknown | null> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const state = getState();
-    if (selectJsonExtractionComplete(requestId)(state)) {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    if (selectRequestStatus(requestId)(state) === "error") {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    await new Promise((r) => setTimeout(r, intervalMs));
-  }
-  return null;
-}
-
 /** Upload a response clip → durable file_id (or null on missing/failed). Never throws. */
 export async function uploadResponseClip(
   clip: Blob | null,
@@ -203,56 +174,42 @@ export interface RunSpokenGraderArgs {
 }
 
 /**
- * Drive the grader agent for ONE spoken answer and return the structured grade.
- * Launches (autoRun:false), attaches the audio as a message part, executes, waits
- * for the JSON, and coerces. Returns null on any failure. Never records anything
- * or touches a slice — the caller owns persistence + UI.
+ * Drive the grader agent for ONE spoken answer and return the structured grade
+ * via the canonical headless primitive (`runHeadlessAgentJson`, D126) with the
+ * audio attached as a message part. Returns null on any failure. Never records
+ * anything or touches a slice — the caller owns persistence + UI.
  */
 export function runSpokenGrader(args: RunSpokenGraderArgs) {
   return async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<SpokenGrade | null> => {
-    let conversationId: string | null = null;
     try {
-      const launch = await dispatch(
-        launchAgentExecution({
-          agentId: args.agentId,
-          surfaceKey: args.surfaceKey,
-          // Persisted (not ephemeral — that path 404s the v2 gate) but kept out of
-          // the user's normal chats via the system-marked source_feature.
-          sourceFeature: args.sourceFeature,
-          isEphemeral: false,
-          runtime: {
-            variables: {
-              front: args.front,
-              back: args.back,
-              seconds_allowed: args.secondsAllowed,
-              ...(args.rubric ? { rubric: args.rubric } : {}),
-            },
-          },
-          config: { autoRun: false, displayMode: "background" },
-          jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
-        }),
-      ).unwrap();
-      conversationId = launch.conversationId;
-
       const part = await fileHandler.toContentPart({
         kind: "file_id",
         fileId: args.responseAudioFileId,
       });
-      dispatch(setUserInputMessageParts({ conversationId, parts: [part] }));
-
-      const exec = await dispatch(executeInstance({ conversationId })).unwrap();
-      const requestId = exec.requestId;
-      if (!requestId) throw new Error("grader returned no request id");
-
-      return coerceSpokenGrade(await waitForExtraction(getState, requestId));
+      const result = await runHeadlessAgentJson(dispatch, getState, {
+        agentId: args.agentId,
+        surfaceKey: args.surfaceKey,
+        // Persisted (not ephemeral — that path 404s the v2 gate) but kept out of
+        // the user's normal chats via the system-marked source_feature.
+        sourceFeature: args.sourceFeature,
+        variables: {
+          front: args.front,
+          back: args.back,
+          seconds_allowed: args.secondsAllowed,
+          ...(args.rubric ? { rubric: args.rubric } : {}),
+        },
+        // Two-step attach path: the answer clip rides as a message part.
+        messageParts: [part],
+        timeoutMs: 120_000,
+        pollIntervalMs: 200,
+      });
+      return coerceSpokenGrade(result.data);
     } catch (err) {
       console.error(`[grading-core] runSpokenGrader (${args.surfaceKey}):`, err);
       return null;
-    } finally {
-      if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     }
   };
 }
