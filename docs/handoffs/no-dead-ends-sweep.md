@@ -54,15 +54,14 @@ Ordered by traffic. Each item is independently actionable.
    **In flight:** `lib/entity-list/` shell, `/agents/all` columns, `/chat`
    history sidebar, `/rag/library`, `/war-room/all`, `/lists`, `/files`,
    `/tasks`, `/projects`, `/marketing/{brands,sites,pages}`.
-   **Still open after that:** `features/research/components/sources/SourceResultsTable.tsx`
-   (`router.push` only), `features/notes/components/GlobalSearchResults.tsx:147`,
+   **Still open after that:**
    `features/agents/components/agent-listings/AgentCard.tsx:184` (hand-rolled
    `window.open` on cmd-click instead of an anchor),
    `features/agents/components/shortcuts/AgentShortcutsPanel.tsx:83`,
    `features/agent-apps/components/agent-app-listings/AgentAppCard.tsx:138`,
    `features/agents/agent-sets/components/AgentSetCard.tsx` (member agents
    rendered as anonymous glyphs — neither named nor linked),
-   `/documents`, `/workbooks`, `/scopes`, and the ~35 remaining
+   and the ~35 remaining
    `MatrxColumnDef` files under `features/marketing/**` (NONE declare `href`).
    Already correct, do not redo: `features/crm/components/record/*`,
    `features/dashboard/**`, `components/user-generated-table-data/TableCards.tsx`,
@@ -88,6 +87,26 @@ Ordered by traffic. Each item is independently actionable.
    Logged in `.matrx/PATROL_SIGHTINGS.md` (P2).
 
 ### Blocked / needs a decision
+
+0. **`scope` still has no registry `hrefFor`.** `/scopes/s/[scopeId]` now
+   resolves a scope from its id alone, so the blocker in item 14 is gone — the
+   registry edit is a one-liner (`hrefFor: (id) => scopeShortHref(id)`) that was
+   deliberately NOT made here to avoid a concurrent-edit conflict in
+   `entityRegistry.ts`. Until it lands, call sites pass `scopeShortHref(id)` as
+   an `href` override to `EntityRef`; registering it changes no call site.
+   `scope_type` has the same gap and no resolver route yet.
+0b. **`ContextSummaryChips` cannot carry doors yet.** It is THE context-selection
+   display (file rows, note footers, chat header, transcripts sidebar) and every
+   chip names a record with an id — org, scope, project, task, all four of which
+   have routes. It renders INSIDE a `<button>` in `ActiveContextButton`, so
+   anchors are invalid DOM there. **Needs** an opt-in `withDoors` prop that the
+   four non-button consumers (`FileInfoTab`, `FileContextSection`,
+   `ProjectContextSection`, `TaskContextSection`) turn on.
+0c. **`ContextValueDisplay` renders a legacy `value_reference_id` as
+   `→ <uuid>`** — a bare id with no copy and no door. The docblock says zero
+   current rows use the pre-fence column, so this is a restored-old-version
+   path only; the cell shape would need `value_reference_type` to resolve a
+   token.
 
 8. **No canonical user-account route** (FOUND_DEFECTS D138) — the most common
    remaining dead end in `(admin)`; every actor column. The stand-in is
@@ -122,12 +141,10 @@ Ordered by traffic. Each item is independently actionable.
     fix** — the picker is where "which one is that?" actually bites.
 13. **Scheduling admin consoles show only the viewer's own rows** (D140) — they
     present as fleet-wide and are not.
-14. **`scope` has a real route the registry doesn't know.**
-    `/organizations/<org>/scopes/<typeId>/<scopeId>` exists and `ScopesHub`
-    builds it by hand, but `scope` has no `hrefFor` and no peek. It needs org +
-    type as well as the id, so `hrefFor(id)` alone can't express it — decide
-    whether to add a resolver route (`/scopes/<id>` → redirect) or leave scope
-    doors surface-local. Same shape for `scope_type`.
+14. ~~**`scope` has a real route the registry doesn't know.**~~ RESOLVED — the
+    resolver route was built (`/scopes/s/[scopeId]`, `scopeShortHref`). All that
+    remains is the registry one-liner; see item 0. `scope_type` still has no
+    resolver and no peek.
 15. **`brand` and marketing `site` are not registered tokens at all**, though
     `marketingRoutes.brand()` / `.site()` exist. Registering them would let
     `EntityRef` serve the ~35 marketing tables instead of each hand-rolling.
@@ -205,3 +222,25 @@ Ordered by traffic. Each item is independently actionable.
 - **Count-doors**: an enum's `{usage_count} tables` opens the detail's Usage tab
   (which lists those tables); an org's member count opens
   `/administration/users/organizations?org=<id>`.
+- **`/scopes` surfaces**: the hub table's scope name is an `EntityRef` anchor and
+  its owning org is a door; `AssignedScopesDisplay` (the read-only "what is this
+  tagged with" display, used on project workspaces) links every scope chip/row
+  and the org; the settings panel's active org is reachable. Backed by a new
+  **`/scopes/s/[scopeId]` server resolver** (org + type lookup → redirect to the
+  canonical `/organizations/{org}/scopes/{type}/{scope}` route), exposed as
+  `scopeShortHref()` in `features/scope-system/utils/scopeRoutes.ts` — the same
+  shape as `/marketing/pages/[pageId]`. This is what makes a scope openable from
+  its id alone anywhere in the app.
+- **`/documents` + `/workbooks`**: workbook cards are real anchors (they were
+  `<button onClick={router.push}>`), the documents table name cell is an
+  `EntityRef`, and both surfaces put `EntityDoorControls` on `original_file_id`
+  so an imported file's ORIGINAL upload is reachable (it was persisted and
+  emitted to the agent context, but no UI ever linked it).
+- **Notes**: global-search hit groups carry `EntityDoorControls` beside the
+  collapse button (peek + new tab; same-tab open deliberately off mid-search),
+  and the info panel's Org / Project / Task ids render through `MatrxUuidCell`
+  instead of as bare uuids.
+- **Research sources**: `SourceResultsTable` titles are `EntityRef`s
+  (`research_source`), `SourceList`'s desktop rows got the anchor its mobile
+  cards already had, the decorative `ArrowUpRight` became the real new-tab door,
+  and the source's own URL is reachable without opening the overflow menu.
