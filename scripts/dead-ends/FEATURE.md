@@ -41,18 +41,29 @@ carrying this rule id):
 |---|---|---|
 | Before the gates | 139 | 38 of 80 |
 | Gates added, first cut | 76 | 36 of 80 |
-| Shipped | **87** | 38 of 80 |
+| Shipped | 87 | 38 of 80 |
+| Same-field id guard | **87** | not re-measured |
 
-The count went back UP on the last row, and that is the right direction: two of
-the new gates were **over**-suppressing. The ternary skip silenced either arm of
+The count went back UP on the **Shipped** row, and that is the right direction:
+two of the new gates were **over**-suppressing. The ternary skip silenced either arm of
 any conditional, not just an id-guarded fallback's false arm — so
 `{show ? <span>{row.taskId}</span> : null}` stopped warning. And the transient-root
 gate ran before the own-id test, so `{instance.agentId}` — a foreign key naming
 a real agent — was never linted at all, which is exactly what the comment above
 it said must never happen. Both now mirror `scan.ts`; +11 warnings.
 
-Read the last row honestly: the two enforcers still disagree on about half their
-findings in each direction, and **that is expected, not a bug**. The checker
+The last row moved **nothing**, and that is worth recording rather than
+quietly dropping: narrowing the id-guard to the same field closed the same
+reachable hole the scanner had, but no file in this repo currently guards a
+bare **named** id behind a display flag, so the count held at 87. A guard fix
+that changes no number is still a fix — the alternative is discovering the
+hole the day someone writes `showAgentId ? … : {row.agentId}`. (The overlap
+column is left unmeasured rather than guessed: re-deriving it means another
+full ESLint pass, and the checker's `bare-id-text` denominator has since moved
+from 80 to 81.)
+
+Read the overlap column honestly: the two enforcers still disagree on about half
+their findings in each direction, and **that is expected, not a bug**. The checker
 suppresses ids whose entity it cannot resolve; the rule suppresses ids it cannot
 name. The rule-only warnings are mostly the unnameable class (`{d.originalId}`
 on a chart datum) — residual noise the registry would resolve and ESLint cannot.
@@ -355,5 +366,6 @@ new one.
   graph**. 140 → **142** findings (both new ones hand-checked as true positives:
   `TranscriptsSidebar` and the context-lab demo), 0 removed, and `no-doors-in-file`
   held at 16 — no file in the tree was actually excusing itself by comment, but
-  the hole was reachable. Surfaced a registry gap worth its own line: `transcript`
-  has a live route and no `hrefFor`.
+  the hole was reachable, and the ESLint half held at **87** for the same reason.
+  Surfaced a registry gap worth its own line: `transcript` has a live route and
+  no `hrefFor`.
