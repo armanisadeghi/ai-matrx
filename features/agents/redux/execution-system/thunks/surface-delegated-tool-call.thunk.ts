@@ -61,6 +61,8 @@ import { isScribeToolName } from "@/features/agents/scribe-tools/tools/names";
 import { dispatchScribeTool } from "@/features/agents/scribe-tools/dispatcher/dispatch-scribe-tool.thunk";
 import { isDeclaredSurfaceClientToolName } from "@/features/surfaces/runtime/surface-client-tools";
 import { dispatchSurfaceClientTool } from "./dispatch-surface-client-tool.thunk";
+import { SURFACE_WRITE_TOOL_NAME } from "@/features/surfaces/runtime/surface-writeback";
+import { dispatchSurfaceWrite } from "./dispatch-surface-write.thunk";
 import { getLiveDesktopInstance } from "../client-capabilities/desktop-presence";
 import { watchDesktopDelegation } from "./watch-desktop-delegation.thunk";
 
@@ -212,6 +214,26 @@ export const surfaceDelegatedToolCall = (
       // no approval pause (playing the user's own recording is non-destructive).
       dispatch(
         dispatchScribeTool({
+          conversationId,
+          requestId,
+          callId,
+          toolName,
+          args: (data?.arguments as Record<string, unknown>) ?? {},
+        }),
+      );
+      return;
+    }
+
+    if (toolName === SURFACE_WRITE_TOOL_NAME) {
+      // The SURFACE WRITE tool (`apply_surface_write`) — injected by
+      // build-tool-injection whenever the mounted surface stack has
+      // agent-writable write targets. The dispatcher routes the call through
+      // the ONE writeback seam with `origin: "agent"`, so the target's apply
+      // policy (ask → in-place confirm, manual → loud refusal, per-binding
+      // overrides) governs the write; the result posts through the single
+      // submitToolResult funnel so the suspended loop always resumes.
+      dispatch(
+        dispatchSurfaceWrite({
           conversationId,
           requestId,
           callId,

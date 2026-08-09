@@ -130,6 +130,20 @@ internal platform use — never a washed-down user variant beside a private one:
   `keyword_search_metrics`, DB components) call
   `runAction("apply_surface_write", …)` — same seam users' agent-authored
   components get.
+- **Agent-origin writes (the stream side)** — a run launched on a surface with
+  agent-writable targets (declared + handled + resolving to ask/auto) is
+  offered ONE inline delegated tool, **`apply_surface_write`**
+  (`SURFACE_WRITE_TOOL_NAME` in `runtime/surface-writeback.ts`;
+  `listAgentWritableTargets()` builds the per-turn spec in
+  `build-tool-injection.ts` — target enum + per-target contract in the
+  description). The `tool_delegated` call routes through
+  `dispatch-surface-write.thunk.ts` → `applySurfaceWrite(…, {origin:
+  "agent", actorLabel: <agent name>})`, so `ask` shows the in-place confirm
+  and `manual` refuses loudly. A user DECLINE posts a non-error tool result
+  (`{ok:false, declined:true}`) — an error would invite the model to retry
+  the write the user just refused. `manual`-only surfaces offer no tool
+  (mirrors aidream's `_write_targets_block`: never advertise a write the
+  platform refuses).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -290,6 +304,8 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
 
 ## Change Log
+
+- **2026-08-08 — Agent-origin surface writes live (first real caller of `origin:"agent"`).** `apply_surface_write` inline delegated tool injected per turn when `listAgentWritableTargets()` is non-empty (new export beside `listLiveWriteTargets`; policy-resolved, manual never offered); routed in `surface-delegated-tool-call.thunk.ts` → new `dispatch-surface-write.thunk.ts` → `applySurfaceWrite(origin:"agent")`. Decline = non-error tool result; instance `paused` while an ask-confirm awaits the user.
 
 - **2026-08-07 — Header Agents popover lists role-bound agents (Arman's ruling, over card-promotion).** `SurfaceBoundAgentsList` now renders a "Surface roles" section (`includeRoles`, default true) from `useSurfaceAgentRoles` — role label + agent name, Run + Settings, no detach (roles are surface config, not ad-hoc binds). Definition-tier agents need NO `agent.card` row or `platform.associations` edge to appear; works platform-wide for every surface with `ui.ui_surface_agent_role` rows. Agent names resolve via the new shared `hooks/useAgentNames.ts` (module-cached `agent.definition` id→name read; RLS-hidden ids fall back to the role label), which also replaced `SurfaceRolesSection`'s inline copy of the same fetch. Verified live on `/marketing/content-plan` (base + setup child surface).
 
