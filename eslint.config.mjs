@@ -621,23 +621,29 @@ const matrxLintPlugin = {
                 ]);
 
                 /**
-                 * Is this expression inside a branch of a conditional whose
-                 * OTHER branch renders something else? `a ? <EntityRef/> : {id}`
-                 * puts the raw id on the arm where the door does not exist.
+                 * `row.agentId ? <EntityRef …/> : <span>{row.agent_id}</span>`
+                 * — the FALSE arm renders the raw id precisely because there was
+                 * no id to open with. Door Law honoured, not broken.
+                 *
+                 * Two conditions, both required, exactly as scan.ts's
+                 * `isIdGuardedFallback`: the expression sits in the **false**
+                 * arm, AND the condition tests an **id**. A first cut skipped
+                 * either arm of any conditional, which silenced
+                 * `{show ? <span>{agentId}</span> : null}` — a perfectly
+                 * reachable bare id whose conditional has nothing to do with
+                 * identity.
                  */
-                const isConditionalBranch = (node) => {
-                    for (let cur = node; cur; cur = cur.parent) {
-                        const p = cur.parent;
-                        if (!p) return false;
+                const ID_CONDITION_RE = /\b(id|uuid)\b|_id\b|Id\b/;
+                const isIdGuardedFallback = (node) => {
+                    let child = node;
+                    for (let cur = node.parent; cur; child = cur, cur = cur.parent) {
                         if (
-                            p.type === 'ConditionalExpression' &&
-                            (p.consequent === cur || p.alternate === cur)
+                            cur.type === 'ConditionalExpression' &&
+                            cur.alternate === child &&
+                            ID_CONDITION_RE.test(context.sourceCode.getText(cur.test))
                         ) {
                             return true;
                         }
-                        // Stop at the enclosing JSX element boundary above the
-                        // container — beyond that we are in unrelated markup.
-                        if (cur.type === 'JSXElement' && p.type === 'JSXElement') return false;
                     }
                     return false;
                 };
@@ -793,7 +799,7 @@ const matrxLintPlugin = {
                         // — the fallback arm renders the raw id precisely
                         // BECAUSE the door is unavailable there. Door Law
                         // honoured, not broken. The scanner skips these too.
-                        if (isConditionalBranch(node)) return;
+                        if (isIdGuardedFallback(node)) return;
                         if (isInNotFoundCopy(node)) return;
                         // The subject's OWN id only. A foreign key on the
                         // subject (`instance.agentId`) points at a DIFFERENT
@@ -811,11 +817,6 @@ const matrxLintPlugin = {
                                 .filter(Boolean)
                                 .map((part) => part.toLowerCase());
                         const root = rootName(node.expression);
-                        // A transient runtime object's id (a promise, a toast,
-                        // a snapshot) and a SCREAMING_SNAKE caption table are
-                        // not records. Mirrors the scanner's two root gates.
-                        if (root && NON_RECORD_ROOT_RE.test(root)) return;
-                        if (root && /^[A-Z][A-Z0-9_]*$/.test(root)) return;
                         const subject = root ?? name.replace(/(_id|Id)$/, '');
                         const points = segments(name.replace(/(_id|Id)$/, ''));
                         const ownIdentity =
@@ -824,6 +825,19 @@ const matrxLintPlugin = {
                             root === null ||
                             points.length === 0 ||
                             points.every((word) => segments(root).includes(word));
+                        // The two root gates apply ONLY to the root's OWN id.
+                        // They ran unconditionally in a first cut, which meant
+                        // `{instance.agentId}` — a FOREIGN key naming a real
+                        // agent — was never linted, contradicting the comment
+                        // directly above. Same shape as the `storage.orgId`
+                        // substring bug: a suppression meant for the container
+                        // swallowing a pointer to something else.
+                        if (ownIdentity && root) {
+                            // A transient runtime object's id (a promise, a
+                            // toast, a snapshot); a SCREAMING_SNAKE caption map.
+                            if (NON_RECORD_ROOT_RE.test(root)) return;
+                            if (/^[A-Z][A-Z0-9_]*$/.test(root)) return;
+                        }
                         if (ownIdentity && isSelfSubject(node, subject)) return;
 
                         for (let cur = node.parent; cur; cur = cur.parent) {

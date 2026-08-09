@@ -39,16 +39,25 @@ carrying this rule id):
 
 | | Warnings | Shared with the checker's `bare-id-text` |
 |---|---|---|
-| Before those gates | 139 | 38 of 80 |
-| Shipped | **76** | 36 of 80 |
+| Before the gates | 139 | 38 of 80 |
+| Gates added, first cut | 76 | 36 of 80 |
+| Shipped | **87** | 38 of 80 |
 
-Read the second row honestly: the two enforcers still disagree on about half
-their findings in each direction, and **that is expected, not a bug**. The
-checker suppresses ids whose entity it cannot resolve; the rule suppresses ids
-it cannot name. The 40 rule-only warnings are mostly the unnameable class
-(`{d.originalId}` on a chart datum) — residual noise the registry would resolve
-and ESLint cannot. Do not "fix" one enforcer to match the other's count; they
-answer different questions with different information.
+The count went back UP on the last row, and that is the right direction: two of
+the new gates were **over**-suppressing. The ternary skip silenced either arm of
+any conditional, not just an id-guarded fallback's false arm — so
+`{show ? <span>{row.taskId}</span> : null}` stopped warning. And the transient-root
+gate ran before the own-id test, so `{instance.agentId}` — a foreign key naming
+a real agent — was never linted at all, which is exactly what the comment above
+it said must never happen. Both now mirror `scan.ts`; +11 warnings.
+
+Read the last row honestly: the two enforcers still disagree on about half their
+findings in each direction, and **that is expected, not a bug**. The checker
+suppresses ids whose entity it cannot resolve; the rule suppresses ids it cannot
+name. The rule-only warnings are mostly the unnameable class (`{d.originalId}`
+on a chart datum) — residual noise the registry would resolve and ESLint cannot.
+Do not "fix" one enforcer to match the other's count; they answer different
+questions with different information.
 
 ## LOUD, NEVER BLOCKING
 
