@@ -474,10 +474,29 @@ are now deleted.**
       already a real `<Link>`. What it actually lacks is a peek control; that
       means composing `ResourcePeekHost` on the card, not replacing the card
       body with `EntityRef`. Re-rank it accordingly.
-- [ ] **The two `editable` name columns** (`features/agents/browse/columns.tsx`,
-      `features/transcripts/browse/columns.tsx`) need the inline-edit interplay
-      checked before conversion — both are `editable: "string"` with
-      `editTrigger: "pencil"`. `/agents/all` additionally opens
+- [ ] **The two `editable` name columns — INVESTIGATED, and the answer is NOT
+      "drop in an `EntityRef`".** `MatrxDataTable` already owns a door
+      mechanism: a column takes `href?: (row) => string | undefined`
+      (`components/official/matrx-data-table/types.ts:77`), the shell wraps the
+      cell display in a `<Link>` when it resolves (`MatrxDataTable.tsx:735,770`),
+      and `EditableTableCell` **forces `editTrigger: "pencil"` whenever an
+      `href` is present** (`EditableTableCell.tsx:110`) so the link and the
+      inline edit cannot fight. That is precisely the interplay this entry was
+      blocked on, already solved, in the shell.
+
+      **So the real finding is a TWO-AUTHORITY problem, not a conversion:** the
+      table's `href` gives Open and nothing else, while `EntityRef` gives Open +
+      new tab + peek. Every `MatrxDataTable` column that names a record
+      currently picks one and loses the other half. Putting `EntityRef` inside a
+      `cell` renderer would ALSO bypass the shell's pencil-forcing and
+      reintroduce the fight.
+
+      **The primitive move (do this before converting either column):** make the
+      shell's `href` path render through `EntityRef` — column declares
+      `entityToken` (+ optional `href` override), shell renders the doors and
+      keeps forcing the pencil. One edit, and every table column that names a
+      record gains the same three doors. Grep `href?: (row)` for the blast
+      radius first, and check `MatrxDataTable.controlled.test.tsx`. `/agents/all` additionally opens
       `AgentActionModal` on row click ON PURPOSE (an agent has four UIs, so
       there is no single "the" route); converting its name to a plain link would
       REPLACE that chooser. The additive form is `onOpen={openActionModal}` plus
