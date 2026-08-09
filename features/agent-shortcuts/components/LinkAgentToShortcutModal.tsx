@@ -379,6 +379,12 @@ export function LinkAgentToShortcutModal({
                       type="button"
                       onClick={() => setSelectedShortcutId(shortcut.id)}
                       className={`w-full text-left p-3 border rounded-lg cursor-pointer transition-colors ${
+                        // Reserve room for the absolutely-positioned door
+                        // controls, ONLY on rows that have them — otherwise
+                        // they sit on top of the selection checkmark. Same
+                        // allowance the sibling pickers make.
+                        shortcut.agentId ? "pr-16" : ""
+                      } ${
                         isSelected
                           ? "bg-primary/10 border-primary"
                           : "border-border hover:bg-muted/50"

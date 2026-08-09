@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   Drawer,
   DrawerContent,
@@ -169,7 +170,13 @@ export function PromoteToGlobalModal({
             </>
           )}
           <ChevronRight className="h-3 w-3 text-muted-foreground" />
-          <span className="text-sm font-medium">{shortcut.label}</span>
+          {/* THE DOOR LAW: the shortcut being promoted, openable. */}
+          <EntityRef
+            token="agent_shortcut"
+            id={shortcut.id}
+            name={shortcut.label}
+            showIcon={false}
+          />
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
           Creates a new system-owned copy. The original stays untouched.

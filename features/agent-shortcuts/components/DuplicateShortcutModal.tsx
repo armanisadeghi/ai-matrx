@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   Drawer,
   DrawerContent,
@@ -135,7 +136,14 @@ export function DuplicateShortcutModal({
             </>
           )}
           <ChevronRight className="h-3 w-3 text-muted-foreground" />
-          <span className="text-sm font-medium">{shortcut.label}</span>
+          {/* THE DOOR LAW: the identity card names the shortcut being copied
+              and had no way to open it, with shortcut.id right there. */}
+          <EntityRef
+            token="agent_shortcut"
+            id={shortcut.id}
+            name={shortcut.label}
+            showIcon={false}
+          />
         </div>
       </div>
 
@@ -211,11 +219,26 @@ export function DuplicateShortcutModal({
 
       {selectedCategoryId && (
         <div className="p-3 rounded-md border border-border bg-card">
-          <p className="text-sm text-foreground">
-            The duplicate will copy label, description, agent reference, scope
-            mappings, and all other settings. It will be created in the current
-            scope ({scope}{scopeId ? ` · ${scopeId.slice(0, 8)}…` : ""}).
-          </p>
+          <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-sm text-foreground">
+            <span>
+              The duplicate will copy label, description, agent reference, scope
+              mappings, and all other settings. It will be created in the
+              current scope ({scope}
+              {scopeId ? " · " : ""}
+            </span>
+            {/* Was a hand-truncated bare uuid — unopenable and uncopyable. The
+                `scope` token now has an hrefFor (/scopes/s/<id>), so the scope
+                this copy lands in is reachable before the user commits to it. */}
+            {scopeId ? (
+              <EntityRef
+                token="scope"
+                id={scopeId}
+                name={null}
+                showIcon={false}
+              />
+            ) : null}
+            <span>).</span>
+          </div>
         </div>
       )}
 
