@@ -2,12 +2,10 @@
 
 // features/flashcards/data/useGenerateCards.ts
 //
-// The reusable "run the generateCards agent → get structured cards back" hook.
-// Mirrors the production consumer pattern in
-// features/image-studio/hooks/useImageStudio.ts (launchAgentExecution +
-// waitForExtraction): dispatch a direct, auto-running agent launch with JSON
-// extraction on, poll the active-requests slice until extraction finalizes,
-// then read the first extracted object.
+// The reusable "run the generateCards agent → get structured cards back" hook,
+// built on the canonical `useHeadlessAgentJson` primitive (D126): a direct,
+// auto-running agent launch with JSON extraction on; this hook owns only the
+// variables and the card-set coercion.
 //
 // Returns the RAW agent JSON ({ title, cards[] } for FC_AGENTS.generateCards;
 // the OLD set_title key is tolerated as a transition alias) coerced into a
@@ -22,17 +20,7 @@
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
-import { useState } from "react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import {
-  selectConversationRequestIds,
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestError,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import type { RootState } from "@/lib/redux/store";
+import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import type { NewCardInput } from "./types";
 
@@ -209,130 +197,49 @@ function coerceGeneratedSet(value: unknown): GeneratedCardSet {
 }
 
 export function useGenerateCards(): GenerateCardsResult {
-  const dispatch = useAppDispatch();
-  const store = useAppStore();
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  // The in-flight generation's conversation id — set by onConversationCreated
-  // BEFORE the stream starts (the launch thunk itself only resolves after the
-  // direct-mode stream fully completes; see the activeRequestId doc above).
-  const [activeConversationId, setActiveConversationId] = useState<
-    string | null
-  >(null);
-
-  // Live derivation: executeInstance dispatches createRequest at connection
-  // time, which pushes the requestId onto byConversationId — this selector
-  // fires the moment that happens, mid-stream. Last id wins (a re-generate on
-  // the same conversation tracks its newest turn). Primitive return — safe
-  // without createSelector.
-  const activeRequestId = useAppSelector((state) => {
-    if (!activeConversationId) return null;
-    const ids = selectConversationRequestIds(activeConversationId)(state);
-    return ids.length > 0 ? ids[ids.length - 1] : null;
-  });
-
-  /**
-   * Poll the active-requests slice until JSON extraction finalizes, then read
-   * the first extracted object. Mirrors useImageStudio's `waitForExtraction`,
-   * with an added fast-fail on a fatal request error so a dead stream doesn't
-   * burn the full timeout.
-   */
-  async function waitForExtraction(
-    requestId: string,
-  ): Promise<GeneratedCardSet> {
-    const start = Date.now();
-    while (Date.now() - start < EXTRACTION_TIMEOUT_MS) {
-      const state = store.getState() as RootState;
-
-      if (selectJsonExtractionComplete(requestId)(state)) {
-        const snapshot = selectFirstExtractedObject(requestId)(state);
-        if (!snapshot) {
-          throw new Error("Agent finished but produced no structured JSON");
-        }
-        return coerceGeneratedSet(snapshot.value);
-      }
-
-      // Fatal stream error — bail out loudly instead of waiting the full window.
-      const status = selectRequestStatus(requestId)(state);
-      if (status === "error") {
-        const reqError = selectRequestError(requestId)(state);
-        throw new Error(
-          reqError?.user_message ??
-            reqError?.message ??
-            "The flashcard agent failed before returning any cards",
-        );
-      }
-
-      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-    }
-    throw new Error("Timed out waiting for the flashcard agent to respond");
-  }
+  const { run, isRunning, error, activeRequestId } = useHeadlessAgentJson();
 
   async function generate(
     agentId: string,
     vars: GenerateCardsVariables | GenerateFromSourceVariables,
   ): Promise<GeneratedCardSet> {
-    setIsGenerating(true);
-    setError(null);
-    setActiveConversationId(null); // a fresh run must not feed off the last one
-    try {
-      const fromSource = isFromSourceVars(vars);
-      const { requestId } = await dispatch(
-        launchAgentExecution({
-          surfaceKey: fromSource
-            ? "flashcards-create-from-source"
-            : "flashcards-create-from-topic",
-          agentId,
-          sourceFeature: "education-flashcards",
-          // The agent already has its response schema baked in — extraction is
-          // enabled here so the streaming JSON tracker captures the object (the
-          // direct-agentId launch path does NOT inherit extraction from the
-          // agent definition the way a shortcut row would).
-          jsonExtraction: { enabled: true },
-          // Fires BEFORE the stream runs — this is what lets consumers watch
-          // the request (and its content-ir envelopes) LIVE. The awaited
-          // unwrap below only resolves after the direct-mode stream fully
-          // completes, so it can never drive streaming UI.
-          onConversationCreated: (conversationId) =>
-            setActiveConversationId(conversationId),
-          runtime: {
-            surfaceName: "matrx-user/education-flashcards",
-            variables: fromSource
-              ? {
-                  source_content: vars.source_content,
-                  document_id: vars.document_id,
-                  count: String(vars.count),
-                  difficulty: vars.difficulty,
-                }
-              : {
-                  topic: vars.topic,
-                  count: String(vars.count),
-                  difficulty: vars.difficulty,
-                  grade_level: vars.grade_level ?? "",
-                  user_request: vars.user_request ?? "",
-                },
+    const fromSource = isFromSourceVars(vars);
+    return run<GeneratedCardSet>({
+      agentId,
+      surfaceKey: fromSource
+        ? "flashcards-create-from-source"
+        : "flashcards-create-from-topic",
+      sourceFeature: "education-flashcards",
+      surfaceName: "matrx-user/education-flashcards",
+      // Live streaming preview owns the conversation — keep the instance so
+      // consumers of activeRequestId (selectKindEnvelope readers) can render
+      // the cards AS THEY STREAM and after completion.
+      displayMode: "direct",
+      keepInstance: true,
+      variables: fromSource
+        ? {
+            source_content: vars.source_content,
+            document_id: vars.document_id,
+            count: String(vars.count),
+            difficulty: vars.difficulty,
+          }
+        : {
+            topic: vars.topic,
+            count: String(vars.count),
+            difficulty: vars.difficulty,
+            grade_level: vars.grade_level ?? "",
+            user_request: vars.user_request ?? "",
           },
-          config: {
-            autoRun: true,
-            displayMode: "direct",
-          },
-        }),
-      ).unwrap();
-
-      if (!requestId) {
-        throw new Error("Agent launch did not return a request id");
-      }
-
-      return await waitForExtraction(requestId);
-    } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "Failed to generate flashcards";
-      setError(message);
-      throw e instanceof Error ? e : new Error(message);
-    } finally {
-      setIsGenerating(false);
-    }
+      timeoutMs: EXTRACTION_TIMEOUT_MS,
+      pollIntervalMs: POLL_INTERVAL_MS,
+      failureMessages: {
+        streamError: "The flashcard agent failed before returning any cards",
+        noJson: "Agent finished but produced no structured JSON",
+        timeout: "Timed out waiting for the flashcard agent to respond",
+      },
+      coerce: coerceGeneratedSet,
+    });
   }
 
-  return { generate, isGenerating, error, activeRequestId };
+  return { generate, isGenerating: isRunning, error, activeRequestId };
 }

@@ -154,32 +154,34 @@ then fix what breaks. Companion aidream-side entry exists in aidream/FOUND_DEFEC
 `(popup)` becomes the branded OAuth-return page (see docs/handoffs/google-oauth-product-build.md)
 or gets deleted.
 
-### D126 — 22 hand-rolled copies of the headless "launch agent → poll → extract JSON" loop (2026-08-04)
+### D126 — RESOLVED 2026-08-09 (one small remainder): hand-rolled "launch agent → poll → extract JSON" loops consolidated
 
-The canonical primitive EXISTS and is almost unused: `executeBuiltinWithJsonExtraction` /
-`executeBuiltinWithCodeExtraction`
-([features/agents/redux/execution-system/thunks/execute-builtin-with-extraction.thunks.ts](features/agents/redux/execution-system/thunks/execute-builtin-with-extraction.thunks.ts))
-has exactly ONE consumer (`features/agent-apps/hooks/useAutoCreateApp.ts`). Meanwhile **22
-files** re-implement its body inline — `launchAgentExecution` + a `useAppStore()` + a
-`while (Date.now() - start < TIMEOUT)` poll on `selectJsonExtractionComplete` +
-`setTimeout(POLL_INTERVAL_MS)` — each with its own timeout, poll interval, error mapping, and
-instance cleanup (or lack of it):
+**Fixed 2026-08-09:** built the ONE primitive — `runHeadlessAgentJson`
+([features/agents/redux/execution-system/thunks/run-headless-agent-json.ts](features/agents/redux/execution-system/thunks/run-headless-agent-json.ts),
+plain `(dispatch, getState)` for thunk-style code) + `useHeadlessAgentJson`
+([features/agents/hooks/useHeadlessAgentJson.ts](features/agents/hooks/useHeadlessAgentJson.ts),
+React) — and converted every listed call site: education (15 files: tutor ×3, memory,
+assessment ×4, convert, trust, study ×2, mindmap, spoken-practice ×2), flashcards (5:
+useGenerateCards, enhanceCard, makeQuizItems, grading-core, gradeCard.thunk),
+content-ir `useKindRequest`, marketing content-plan `setup/ai.ts`.
+`executeBuiltinWithJsonExtraction` now delegates to the core. The primitive also fixes the
+shared latent bugs: bounded settle window + fuzzy fallback after a dead stream (instead of
+burning the full timeout), consistent partial-object tolerance on stream error, and instance
+cleanup by default (`keepInstance: true` only where live streaming UI owns the conversation).
+Registered in the reuse-first Primitives Index.
 
-`features/education/**` (13: assessment ×4, convert, media/mindmap, spoken-practice ×2,
-tutor ×3, trust, study ×2, memory) · `features/flashcards/**` (5) · `features/content-ir/react/actions/useKindRequest.ts` ·
-`features/marketing/content-plan/setup/ai.ts`.
+**Verified live (dev server + real agent runs):** flashcards create-from-topic (set persisted
+to `education.fc_set` with cards) and assessment create-from-topic (navigated to the created
+quiz). The other converted lanes (tutor/memory/spoken-practice/trust/planner/analytics/
+mindmap/convert, content-ir kind requests, content-plan setup) are behavior-preserving
+conversions verified by type-check + code review, not exercised end-to-end — exercise each on
+first touch.
 
-This is the "duplicated hook logic" anti-pattern from [docs/reuse-first.md](docs/reuse-first.md) at
-scale. Every copy is a place a timeout tweak, an abort-on-unmount fix, or an instance leak has to
-be made 22 times — and each new feature copies the nearest neighbour, so it grows on its own.
-
-**Fix:** one hook (`useHeadlessAgentJson(agentId, variables)`) over the existing thunk, then
-convert the 22 call sites in batches per feature area. Not a rewrite of behaviour — the loops are
-already near-identical; the differences are the accidental ones. **Nobody should convert these
-blind:** each area needs its feature's tests/manual path exercised, so batch it per owner.
-
-Filed while merging the content-plan branch (which is copy #22 and correctly followed the local
-exemplar `useGenerateQuiz.ts` — the pattern, not that change, is the defect).
+**Open remainder:** `features/image-studio/hooks/useImageStudio.ts` `describeFile` — a partial
+copy launched via a SHORTCUT (`useShortcutTrigger` + resource attach + `executeInstance`), not
+`launchAgentExecution`, so the primitive doesn't cover it yet; it also polls only
+`selectJsonExtractionComplete` (an errored stream burns its full 120s). Either extend the
+primitive with a shortcut-launch variant or fix its poll loop when next in that file.
 
 ### D125 — stale `platform.entity_types` rows → SILENT access denial (2026-08-04; 13 of 18 FIXED, 5 open)
 

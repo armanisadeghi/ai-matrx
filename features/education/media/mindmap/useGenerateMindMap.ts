@@ -2,24 +2,14 @@
 
 // features/education/media/mindmap/useGenerateMindMap.ts
 //
-// Run the Study Mind Map Generator agent → get a `diagram_spec` envelope back.
-// Mirrors flashcards' useGenerateCards (launchAgentExecution direct/autoRun +
-// waitForExtraction), but the structured payload is a diagram_spec (nodes +
-// edges) instead of a card set. The caller persists the result to study_media
+// Run the Study Mind Map Generator agent → get a `diagram_spec` envelope back,
+// via the canonical `useHeadlessAgentJson` primitive (D126). The structured
+// payload is a diagram_spec (nodes + edges) instead of a card set. The caller persists the result to study_media
 // and renders it via the content-IR diagram renderer.
 //
 // React Compiler is on: no manual memo.
 
-import { useState } from "react";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestError,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import type { RootState } from "@/lib/redux/store";
+import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
 import { EDU_MEDIA_AGENTS } from "./agents";
 
 const EXTRACTION_TIMEOUT_MS = 90_000;
@@ -57,65 +47,36 @@ function isDiagramSpec(v: unknown): v is DiagramSpecEnvelope {
 }
 
 export function useGenerateMindMap(): GenerateMindMapResult {
-  const dispatch = useAppDispatch();
-  const store = useAppStore();
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function waitForExtraction(requestId: string): Promise<DiagramSpecEnvelope> {
-    const start = Date.now();
-    while (Date.now() - start < EXTRACTION_TIMEOUT_MS) {
-      const state = store.getState() as RootState;
-      if (selectJsonExtractionComplete(requestId)(state)) {
-        const snapshot = selectFirstExtractedObject(requestId)(state);
-        if (!snapshot || !isDiagramSpec(snapshot.value)) {
-          throw new Error("The mind-map agent finished but produced no valid diagram");
-        }
-        return snapshot.value;
-      }
-      const status = selectRequestStatus(requestId)(state);
-      if (status === "error") {
-        const reqError = selectRequestError(requestId)(state);
-        throw new Error(
-          reqError?.user_message ?? reqError?.message ?? "The mind-map agent failed",
-        );
-      }
-      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-    }
-    throw new Error("Timed out waiting for the mind-map agent");
-  }
+  const { run, isRunning, error } = useHeadlessAgentJson();
 
   async function generate(vars: MindMapVariables): Promise<DiagramSpecEnvelope> {
-    setIsGenerating(true);
-    setError(null);
-    try {
-      const { requestId } = await dispatch(
-        launchAgentExecution({
-          surfaceKey: "education-mindmap-create",
-          agentId: EDU_MEDIA_AGENTS.mindMap,
-          sourceFeature: "education-mindmap",
-          jsonExtraction: { enabled: true },
-          runtime: {
-            variables: {
-              source_content: vars.source_content,
-              title: vars.title,
-              focus: vars.focus ?? "",
-            },
-          },
-          config: { autoRun: true, displayMode: "direct" },
-        }),
-      ).unwrap();
-
-      if (!requestId) throw new Error("Agent launch did not return a request id");
-      return await waitForExtraction(requestId);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to generate mind map";
-      setError(message);
-      throw e instanceof Error ? e : new Error(message);
-    } finally {
-      setIsGenerating(false);
-    }
+    return run<DiagramSpecEnvelope>({
+      agentId: EDU_MEDIA_AGENTS.mindMap,
+      surfaceKey: "education-mindmap-create",
+      sourceFeature: "education-mindmap",
+      displayMode: "direct",
+      variables: {
+        source_content: vars.source_content,
+        title: vars.title,
+        focus: vars.focus ?? "",
+      },
+      timeoutMs: EXTRACTION_TIMEOUT_MS,
+      pollIntervalMs: POLL_INTERVAL_MS,
+      failureMessages: {
+        streamError: "The mind-map agent failed",
+        noJson: "The mind-map agent finished but produced no valid diagram",
+        timeout: "Timed out waiting for the mind-map agent",
+      },
+      coerce: (value) => {
+        if (!isDiagramSpec(value)) {
+          throw new Error(
+            "The mind-map agent finished but produced no valid diagram",
+          );
+        }
+        return value;
+      },
+    });
   }
 
-  return { generate, isGenerating, error };
+  return { generate, isGenerating: isRunning, error };
 }

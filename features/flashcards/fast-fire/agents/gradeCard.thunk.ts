@@ -3,14 +3,12 @@
 // FIRE-AND-FORGET grading (REQUIREMENTS §7, hard-requirement #4). The drill loop
 // NEVER awaits this. For each card, the moment its window closes we:
 //   1. upload the per-card clip → durable file_id (fileHandler.upload),
-//   2. launch the grader agent (autoRun:false) → conversationId,
-//   3. seed the audio as a message part (toContentPart + setUserInputMessageParts),
-//   4. executeInstance → requestId,
-//   5. poll selectFirstExtractedObject(requestId) for the json_schema object,
-//   6. dispatch `gradeResolved` INTO Redux (the grade reaches the UI ONLY this
+//   2. run the grader through the canonical headless primitive
+//      (`runHeadlessAgentJson`, D126) with the audio as a message part,
+//   3. dispatch `gradeResolved` INTO Redux (the grade reaches the UI ONLY this
 //      way — never a same-tick re-read of state set elsewhere; the §5.3 killer
 //      bug is structurally impossible),
-//   7. record the attempt on the study spine (study_record_attempt).
+//   4. record the attempt on the study spine (study_record_attempt).
 //
 // GRADER-OPTIONAL (hard-requirement #6): if no grader agent id is configured, we
 // STILL upload the clip + record a result-less attempt (so the mechanics are
@@ -23,15 +21,7 @@
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { fileHandler } from "@/features/files/handler/handler";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
-import { setUserInputMessageParts } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { studyService } from "@/features/education/study/service/studyService";
 import {
   audioExtensionForType,
@@ -64,31 +54,6 @@ export interface GradeCardArgs {
 // (grading-core) — the ONE spoken-grade coercer. (This thunk carried a
 // byte-for-byte inline copy as deliberate tech debt; deleted at the trust
 // unification. FastFire's flat slice payload is built from the adapter below.)
-
-/** Wait for the json extractor to finalize, then read the first object. */
-async function waitForGrade(
-  getState: () => RootState,
-  requestId: string,
-  timeoutMs = 120_000,
-  intervalMs = 200,
-): Promise<unknown | null> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const state = getState();
-    const status = selectRequestStatus(requestId)(state);
-    if (selectJsonExtractionComplete(requestId)(state)) {
-      const snap = selectFirstExtractedObject(requestId)(state);
-      return snap?.value ?? null;
-    }
-    if (status === "error") {
-      // Stream errored without producing JSON — try one last read, else give up.
-      const snap = selectFirstExtractedObject(requestId)(state);
-      return snap?.value ?? null;
-    }
-    await new Promise((r) => setTimeout(r, intervalMs));
-  }
-  return null;
-}
 
 /**
  * Grade one card. Returns nothing the drill needs — its whole job is the Redux
@@ -158,63 +123,44 @@ export function gradeCard(args: GradeCardArgs) {
 
     dispatch(gradePending({ cardId, responseAudioFileId, runId: sessionId }));
 
-    let conversationId: string | null = null;
     try {
-      // 2. Launch the grader (autoRun:false so we can attach audio first).
-      const launch = await dispatch(
-        launchAgentExecution({
-          agentId: config.graderAgentId,
-          surfaceKey: `fastfire-grade-${cardId}`,
-          // NOT ephemeral: the platform's ephemeral path is half-built and
-          // 404s against the v2 conversation gate (see docs/EPHEMERAL_AGENT_RUNS_SPEC.md).
-          // We persist instead, and keep these out of the user's normal chats
-          // via a distinct, system-marked source_feature (source-registry.ts).
-          sourceFeature: "education-fastfire",
-          isEphemeral: false,
-          runtime: {
-            surfaceName: "matrx-user/education-fastfire",
-            variables: {
-              front,
-              back,
-              seconds_allowed: secondsAllowed,
-            },
-          },
-          config: {
-            autoRun: false,
-            displayMode: "background",
-            // No response_format override: the grader is OUR agent — its output
-            // schema lives in its DB definition (edit it there via agent_author,
-            // never a call-time override, which also wrecks the prod agent cache).
-          },
-          jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
-        }),
-      ).unwrap();
-      conversationId = launch.conversationId;
+      // 2. Attach the audio as a message part (NOT userInput — that's a string)
+      //    and run the grader through the headless primitive.
+      const part = await fileHandler.toContentPart({
+        kind: "file_id",
+        fileId: responseAudioFileId,
+      });
+      const runResult = await runHeadlessAgentJson(dispatch, getState, {
+        agentId: config.graderAgentId,
+        surfaceKey: `fastfire-grade-${cardId}`,
+        // NOT ephemeral: the platform's ephemeral path is half-built and
+        // 404s against the v2 conversation gate (see docs/EPHEMERAL_AGENT_RUNS_SPEC.md).
+        // We persist instead, and keep these out of the user's normal chats
+        // via a distinct, system-marked source_feature (source-registry.ts).
+        sourceFeature: "education-fastfire",
+        surfaceName: "matrx-user/education-fastfire",
+        variables: {
+          front,
+          back,
+          seconds_allowed: secondsAllowed,
+        },
+        // No response_format override: the grader is OUR agent — its output
+        // schema lives in its DB definition (edit it there via agent_author,
+        // never a call-time override, which also wrecks the prod agent cache).
+        messageParts: [part],
+        timeoutMs: 120_000,
+        pollIntervalMs: 200,
+      });
 
-      // 3. Seed the audio clip as a message part (NOT userInput — that's a string).
-      if (responseAudioFileId) {
-        const part = await fileHandler.toContentPart({
-          kind: "file_id",
-          fileId: responseAudioFileId,
-        });
-        dispatch(setUserInputMessageParts({ conversationId, parts: [part] }));
-      }
-
-      // 4. Run it and capture the requestId.
-      const exec = await dispatch(executeInstance({ conversationId })).unwrap();
-      const requestId = exec.requestId;
-      if (!requestId) throw new Error("grader returned no request id");
-
-      // 5. Poll for the structured grade + coerce via the shared spoken coercer.
-      const raw = await waitForGrade(getState, requestId);
-      const grade = coerceSpokenGrade(raw);
+      // 3. Coerce via the shared spoken coercer (partial-tolerant on error).
+      const grade = coerceSpokenGrade(runResult.data);
       if (!grade) throw new Error("grader did not return a structured grade");
       // Flatten the SpokenGrade adapter onto the slice's per-card wire shape:
       // the verdict's result token + explanation, plus the spoken extras.
       const result = verdictResult(grade.verdict);
       const feedback = grade.verdict.explanation;
 
-      // 6. Into Redux — the ONLY way the grade reaches the UI.
+      // 4. Into Redux — the ONLY way the grade reaches the UI.
       dispatch(
         gradeResolved({
           cardId,
@@ -228,7 +174,7 @@ export function gradeCard(args: GradeCardArgs) {
         }),
       );
 
-      // 7. Record the attempt on the study spine (score jsonb shape unchanged:
+      // 5. Record the attempt on the study spine (score jsonb shape unchanged:
       //    { rubric, missing, feedback }).
       await recordAttempt({
         cardId,
@@ -260,8 +206,6 @@ export function gradeCard(args: GradeCardArgs) {
         transcript: null,
         gradedBy: config.graderAgentId,
       });
-    } finally {
-      if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     }
   };
 }

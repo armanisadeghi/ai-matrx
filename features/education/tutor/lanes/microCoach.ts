@@ -11,15 +11,11 @@
 // Deliberately tiny + fire-and-forget: a wrong answer shouldn't wait on an
 // LLM round-trip before the learner can move to the next card, so callers
 // should NOT await this before advancing — read the result when it resolves.
+// The round-trip itself runs through the canonical headless primitive
+// (`runHeadlessAgentJson`, D126).
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { ReviewResult } from "@/features/flashcards/types";
 import { getFcTutorAgentConfig } from "./config";
 
@@ -32,25 +28,6 @@ export interface MicroCoachContext {
   agentId?: string | null;
 }
 
-async function waitForObject(
-  getState: () => RootState,
-  requestId: string,
-  timeoutMs = 20_000,
-): Promise<unknown | null> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const state = getState();
-    if (selectJsonExtractionComplete(requestId)(state)) {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    if (selectRequestStatus(requestId)(state) === "error") {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    await new Promise((r) => setTimeout(r, 100));
-  }
-  return null;
-}
-
 /** One-line coaching tip after a grade, or null when unconfigured / no-signal. */
 export function microCoach(ctx: MicroCoachContext) {
   return async (
@@ -60,42 +37,28 @@ export function microCoach(ctx: MicroCoachContext) {
     const agentId = ctx.agentId ?? getFcTutorAgentConfig().microCoachAgentId;
     if (!agentId) return null; // optional lane — no agent authored yet
 
-    let conversationId: string | null = null;
     try {
-      const launch = await dispatch(
-        launchAgentExecution({
-          agentId,
-          surfaceKey: "flashcards-micro-coach",
-          sourceFeature: "education-flashcards",
-          isEphemeral: false,
-          runtime: {
-            variables: {
-              front: ctx.front,
-              back: ctx.back,
-              result: ctx.result,
-              prior_attempts: ctx.priorAttempts ?? [],
-            },
-          },
-          config: {
-            autoRun: true,
-            displayMode: "direct",
-          },
-          jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
-        }),
-      ).unwrap();
-      conversationId = launch.conversationId;
-      const requestId = launch.requestId;
-      if (!requestId) return null;
+      const result = await runHeadlessAgentJson(dispatch, getState, {
+        agentId,
+        surfaceKey: "flashcards-micro-coach",
+        sourceFeature: "education-flashcards",
+        variables: {
+          front: ctx.front,
+          back: ctx.back,
+          result: ctx.result,
+          prior_attempts: ctx.priorAttempts ?? [],
+        },
+        timeoutMs: 20_000,
+        pollIntervalMs: 100,
+      });
 
-      const raw = await waitForObject(getState, requestId);
+      const raw = result.data;
       if (!raw || typeof raw !== "object") return null;
       const tip = (raw as Record<string, unknown>).tip;
       return typeof tip === "string" && tip.trim().length > 0 ? tip : null;
     } catch (err) {
       console.error("[flashcards.microCoach] failed:", err);
       return null;
-    } finally {
-      if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     }
   };
 }

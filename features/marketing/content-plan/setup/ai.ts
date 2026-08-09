@@ -12,23 +12,14 @@
  *     family (services, locations, guides…) so nobody types them by hand.
  *
  * Both are DB platform agents (agx_agent, created via the AI Dream MCP) with
- * a json_schema output contract. They run HEADLESS through the canonical
- * execution system (`launchAgentExecution` + JSON extraction) — the exact
- * pattern of features/education/assessment/data/useGenerateQuiz.ts. Results
+ * a json_schema output contract. They run HEADLESS through the
+ * canonical `useHeadlessAgentJson` primitive (D126). Results
  * stage into the Setup view's existing state setters (the same funnel the
  * surface writeTargets use); the USER still commits.
  */
 import { useRef, useState } from "react";
 
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestError,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
+import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
 
 import type { MarketingSite } from "@/features/marketing/types";
 
@@ -700,43 +691,12 @@ export function buildCurrentPlanSummary(
   return parts.join(". ");
 }
 
-async function waitForExtraction<T>(
-  getState: () => RootState,
-  requestId: string,
-  coerce: (value: unknown) => T,
-  timeoutMs: number = EXTRACTION_TIMEOUT_MS,
-): Promise<T> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const state = getState();
-    if (selectJsonExtractionComplete(requestId)(state)) {
-      const snapshot = selectFirstExtractedObject(requestId)(state);
-      if (!snapshot) {
-        throw new Error("The agent finished but produced no structured JSON");
-      }
-      return coerce(snapshot.value);
-    }
-    const status = selectRequestStatus(requestId)(state);
-    if (status === "error") {
-      const requestError = selectRequestError(requestId)(state);
-      throw new Error(
-        requestError?.user_message ??
-          requestError?.message ??
-          "The agent run failed before returning a result",
-      );
-    }
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-  }
-  throw new Error("Timed out waiting for the agent to respond");
-}
-
 /**
  * Run the two Setup agents headlessly and hand back coerced results. One
  * in-flight run at a time per kind — the busy flags drive the buttons.
  */
 export function useSetupAgents(siteId: string | null) {
-  const dispatch = useAppDispatch();
-  const store = useAppStore();
+  const { run: runHeadless } = useHeadlessAgentJson();
   const [shapeBusy, setShapeBusy] = useState(false);
   /** The family key currently being named, or null. */
   const [namingFamilyKey, setNamingFamilyKey] = useState<string | null>(null);
@@ -755,23 +715,23 @@ export function useSetupAgents(siteId: string | null) {
   ): Promise<T> {
     // Which agent runs this step is a SLOT, never a hardcoded id: the system
     // default is managed in the admin console and any user may bind their own
-    // agent at /agents/slots. The launch thunk resolves the slot itself and
-    // applies BOTH halves of the binding — the agent AND its config_overrides
-    // (a settings-only binding changes the model here too). Resolution is loud
-    // — an unresolvable slot throws rather than silently running the wrong
-    // agent.
-    const { requestId } = await dispatch(
-      launchAgentExecution({
-        slotKey,
-        surfaceKey: `content-plan-setup:${siteId ?? "none"}:${slotKey}`,
-        sourceFeature: "marketing",
-        jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
-        runtime: { variables },
-        config: { autoRun: true, displayMode: "background" },
-      }),
-    ).unwrap();
-    if (!requestId) throw new Error("Agent launch did not return a request id");
-    return waitForExtraction(store.getState, requestId, coerce, timeoutMs);
+    // agent at /agents/slots. Resolution is loud — an unresolvable slot throws
+    // here rather than silently running the wrong agent. The round-trip itself
+    // is the canonical headless primitive (useHeadlessAgentJson, D126).
+    return runHeadless<T>({
+      slotKey,
+      surfaceKey: `content-plan-setup:${siteId ?? "none"}:${slotKey}`,
+      sourceFeature: "marketing",
+      variables,
+      timeoutMs: timeoutMs ?? EXTRACTION_TIMEOUT_MS,
+      pollIntervalMs: POLL_INTERVAL_MS,
+      failureMessages: {
+        streamError: "The agent run failed before returning a result",
+        noJson: "The agent finished but produced no structured JSON",
+        timeout: "Timed out waiting for the agent to respond",
+      },
+      coerce,
+    });
   }
 
   async function recommendShape(

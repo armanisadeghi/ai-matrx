@@ -7,13 +7,8 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { extractFirstJson } from "@/utils/json/extract-json";
 import { getBuiltinId } from "@/features/agents/constants/system-agent-registry";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import {
   selectLatestAnswerText,
   selectLatestRequestId,
@@ -21,6 +16,7 @@ import {
   type StreamPhase,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { launchAgentExecution } from "./launch-agent-execution.thunk";
+import { runHeadlessAgentJson } from "./run-headless-agent-json";
 
 interface BaseExtractionPayload {
   /** System agent key (e.g. `prompt-app-auto-create`) or UUID */
@@ -76,47 +72,6 @@ async function waitForAgentCompletion(
         fullResponse: selectLatestAnswerText(conversationId)(state),
         requestId: selectLatestRequestId(conversationId)(state),
         phase,
-      };
-    }
-  }
-
-  const elapsed = Math.round((Date.now() - startTime) / 1000);
-  throw new Error(
-    `AI response timed out after ${elapsed} seconds. ` +
-      "If you switched browser tabs during this process, that may have caused the connection to be suspended. " +
-      "Please keep this tab active and try again.",
-  );
-}
-
-async function waitForJsonExtraction(
-  conversationId: string,
-  requestId: string,
-  getState: () => RootState,
-  timeoutMs: number,
-  pollingIntervalMs: number,
-): Promise<{ data: unknown | null; fullResponse: string }> {
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < timeoutMs) {
-    await new Promise((resolve) =>
-      setTimeout(resolve, Math.max(pollingIntervalMs, 500)),
-    );
-
-    const state = getState();
-    const complete = selectJsonExtractionComplete(requestId)(state);
-    if (complete) {
-      const snapshot = selectFirstExtractedObject(requestId)(state);
-      return {
-        data: snapshot?.value ?? null,
-        fullResponse: selectLatestAnswerText(conversationId)(state),
-      };
-    }
-
-    const phase = selectStreamPhase(conversationId)(state);
-    if (phase === "error") {
-      return {
-        data: null,
-        fullResponse: selectLatestAnswerText(conversationId)(state),
       };
     }
   }
@@ -247,80 +202,31 @@ export const executeBuiltinWithJsonExtraction = createAsyncThunk<
 >(
   "agentExecution/executeBuiltinWithJsonExtraction",
   async (payload, { dispatch, getState }) => {
-    const { timeoutMs = 120000, pollingIntervalMs = 100 } = payload;
+    // Delegates to the ONE headless JSON primitive (D126) — this thunk only
+    // resolves the builtin key and adapts the legacy result field names.
+    const result = await runHeadlessAgentJson(dispatch, getState, {
+      agentId: getBuiltinId(payload.builtinKey),
+      surfaceKey: `programmatic-extraction:${payload.builtinKey}`,
+      sourceFeature: "agent-app",
+      variables: payload.variables,
+      isEphemeral: true,
+      autoClearConversation: true,
+      timeoutMs: payload.timeoutMs ?? 120000,
+      pollIntervalMs: payload.pollingIntervalMs ?? 100,
+      onRequestId: payload.onTaskId,
+      failureMessages: {
+        noJson:
+          "No valid JSON found in AI response. Full response provided for debugging.",
+      },
+    });
 
-    let conversationId: string | null = null;
-
-    try {
-      const launch = await runBuiltinAgent(payload, dispatch, getState, true);
-      conversationId = launch.conversationId;
-
-      const requestId =
-        launch.requestId ?? selectLatestRequestId(conversationId)(getState());
-
-      if (!requestId) {
-        throw new Error("Agent launch did not produce a request id");
-      }
-
-      const { data, fullResponse } = await waitForJsonExtraction(
-        conversationId,
-        requestId,
-        getState,
-        timeoutMs,
-        pollingIntervalMs,
-      );
-
-      if (data == null) {
-        const fuzzy = extractFirstJson(fullResponse, { allowFuzzy: true });
-        const fallback = fuzzy?.value ?? null;
-        if (fallback == null) {
-          return {
-            success: false,
-            fullResponse,
-            error:
-              "No valid JSON found in AI response. Full response provided for debugging.",
-            taskId: requestId,
-            runId: conversationId,
-          };
-        }
-        return {
-          success: true,
-          data: fallback,
-          fullResponse,
-          taskId: requestId,
-          runId: conversationId,
-        };
-      }
-
-      return {
-        success: true,
-        data,
-        fullResponse,
-        taskId: requestId,
-        runId: conversationId,
-      };
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "An unknown error occurred during AI JSON generation.";
-      const fullResponse = conversationId
-        ? selectLatestAnswerText(conversationId)(getState())
-        : "";
-      const requestId = conversationId
-        ? selectLatestRequestId(conversationId)(getState())
-        : undefined;
-      return {
-        success: false,
-        fullResponse,
-        error: message,
-        taskId: requestId,
-        runId: conversationId ?? undefined,
-      };
-    } finally {
-      if (conversationId) {
-        dispatch(destroyInstanceIfAllowed(conversationId));
-      }
-    }
+    return {
+      success: result.success,
+      data: result.success ? result.data ?? undefined : undefined,
+      fullResponse: result.fullResponse,
+      error: result.error,
+      taskId: result.requestId,
+      runId: result.conversationId,
+    };
   },
 );

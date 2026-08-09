@@ -27,13 +27,13 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { isJsonObject } from "@/types/json";
-import type { LLMParamsBody } from "@/lib/api/call-api";
+import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import { toLlmParams } from "./llm-params";
 
 export interface ResolvedClientSlot {
   slotKey: string;
   agentId: string;
-  configOverrides: LLMParamsBody | null;
+  configOverrides: Partial<FeLlmParams> | null;
   provenance: "system" | "user";
 }
 
@@ -87,7 +87,7 @@ export async function resolveAgentSlot(slotKey: string): Promise<ResolvedClientS
 
   let agentId = slot.default_agent_id;
   let provenance: ResolvedClientSlot["provenance"] = "system";
-  let configOverrides: LLMParamsBody | null = null;
+  let configOverrides: Partial<FeLlmParams> | null = null;
 
   // The caller's own user binding (RLS-scoped; other principals' rows are
   // invisible so no explicit user filter is needed beyond principal_type).

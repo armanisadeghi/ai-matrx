@@ -7,10 +7,10 @@
  */
 
 import type { JsonObject } from "@/types/json";
-import type { LLMParamsBody } from "@/lib/api/call-api";
+import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 
-export function toLlmParams(obj: JsonObject): LLMParamsBody {
-  const out: LLMParamsBody = {};
+export function toLlmParams(obj: JsonObject): Partial<FeLlmParams> {
+  const out: Partial<FeLlmParams> = {};
   if (typeof obj.model === "string") out.model = obj.model;
   if (typeof obj.offering_id === "string") out.offering_id = obj.offering_id;
   if (typeof obj.temperature === "number") out.temperature = obj.temperature;

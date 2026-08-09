@@ -24,7 +24,7 @@ import type {
   ManagedAgentOptions,
   ResultDisplayMode,
 } from "@/features/agents/types/instance.types";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import { resolveAgentSlot } from "@/features/agents/slots/service";
 import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
@@ -353,7 +353,7 @@ export const launchAgentExecution = createAsyncThunk<
   // carries them as `config_overrides`. Resolution is LOUD: an unresolvable
   // slot throws here and nothing launches — never a hardcoded fallback.
   let agentId = providedAgentId;
-  let slotLlmOverrides: Partial<LLMParams> | null = null;
+  let slotLlmOverrides: Partial<FeLlmParams> | null = null;
   if (slotKey) {
     if (providedAgentId || shortcutId) {
       throw new Error(

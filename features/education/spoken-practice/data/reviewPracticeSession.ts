@@ -15,18 +15,11 @@
 // a real transcript, so the review is coherent and on-topic. Output is the SAME
 // `ReviewSessionResult` shape the summary renderer already consumes.
 //
-// Same execution discipline as generateSession: launch (autoRun:false/background),
-// executeInstance, poll the JSON extractor, coerce, clean up. Never throws.
+// Same execution discipline as generateSession: the canonical headless
+// primitive (`runHeadlessAgentJson`, D126). Never throws.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { studyService } from "@/features/education/study/service/studyService";
 import type {
   ReviewAggregate,
@@ -41,25 +34,6 @@ export interface ReviewPracticeSessionArgs {
   mode: SpokenPracticeMode;
   attempts: ReviewAttempt[];
   aggregate: ReviewAggregate;
-}
-
-async function waitForObject(
-  getState: () => RootState,
-  requestId: string,
-  timeoutMs = 120_000,
-): Promise<unknown | null> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const state = getState();
-    if (selectJsonExtractionComplete(requestId)(state)) {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    if (selectRequestStatus(requestId)(state) === "error") {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    await new Promise((r) => setTimeout(r, 200));
-  }
-  return null;
 }
 
 /**
@@ -90,32 +64,21 @@ export function reviewPracticeSession(args: ReviewPracticeSessionArgs) {
   ): Promise<ReviewSessionResult | null> => {
     if (args.attempts.length === 0) return null; // nothing to review
 
-    let conversationId: string | null = null;
     try {
-      const launch = await dispatch(
-        launchAgentExecution({
-          agentId: SPOKEN_PRACTICE_AGENTS.reviewSession,
-          surfaceKey: "education-spoken-practice-review",
-          sourceFeature: "education-tutor",
-          isEphemeral: false,
-          runtime: {
-            variables: {
-              mode: args.mode,
-              transcript: buildTranscript(args.attempts),
-              aggregate: `total: ${args.aggregate.total}, graded: ${args.aggregate.graded}, correct: ${args.aggregate.correct}, accuracy: ${args.aggregate.accuracy.toFixed(2)}`,
-            },
-          },
-          config: { autoRun: false, displayMode: "background" },
-          jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
-        }),
-      ).unwrap();
-      conversationId = launch.conversationId;
+      const result = await runHeadlessAgentJson(dispatch, getState, {
+        agentId: SPOKEN_PRACTICE_AGENTS.reviewSession,
+        surfaceKey: "education-spoken-practice-review",
+        sourceFeature: "education-tutor",
+        variables: {
+          mode: args.mode,
+          transcript: buildTranscript(args.attempts),
+          aggregate: `total: ${args.aggregate.total}, graded: ${args.aggregate.graded}, correct: ${args.aggregate.correct}, accuracy: ${args.aggregate.accuracy.toFixed(2)}`,
+        },
+        timeoutMs: 120_000,
+        pollIntervalMs: 200,
+      });
 
-      const exec = await dispatch(executeInstance({ conversationId })).unwrap();
-      const requestId = exec.requestId;
-      if (!requestId) return null;
-
-      const raw = await waitForObject(getState, requestId);
+      const raw = result.data;
       if (!raw || typeof raw !== "object") return null;
       const r = raw as Record<string, unknown>;
       const summary = typeof r.summary === "string" ? r.summary : "";
@@ -139,8 +102,6 @@ export function reviewPracticeSession(args: ReviewPracticeSessionArgs) {
     } catch (err) {
       console.error("[spoken-practice.reviewPracticeSession] failed:", err);
       return null;
-    } finally {
-      if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     }
   };
 }

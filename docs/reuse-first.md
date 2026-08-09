@@ -112,6 +112,7 @@ delete yours and extend ours.
 | **Name another record anywhere** (cell, row, dialog, badge) — open / new tab / peek. THE DOOR LAW: never a bare `<span>` or UUID | `EntityRef` | `components/official/entity-ref/EntityRef.tsx` |
 | Ask whether a kind has a registered peek (without pulling all 19 peeks into your chunk) | `hasPeek` + `ResourcePeekHost` | `features/organizations/peek/kinds-list.ts`, `features/organizations/peek/ResourcePeekHost.tsx` |
 | An agent's parent / children / system twin (derived, no query) | `selectAgentLineageIndex` / `selectAgentLineage` | `features/agents/redux/agent-definition/selectors.ts` |
+| Run an agent headlessly and get its extracted JSON (one-shot, optional file/audio message parts) — NEVER hand-roll launch+poll (D126) | `useHeadlessAgentJson` (React) / `runHeadlessAgentJson` (thunk-style) | `features/agents/hooks/useHeadlessAgentJson.ts`, `features/agents/redux/execution-system/thunks/run-headless-agent-json.ts` |
 | Resolve Lucide / custom icon by name | `IconResolver` | `components/official/icons/IconResolver.tsx` |
 | 44×44 icon tap targets | `TapTargetButton` + `tap-buttons` | `components/icons/TapTargetButton.tsx`, `components/icons/tap-buttons.tsx` |
 | Single-value picker over a `platform.categories` dimension (FK columns) | `CategorySelect` | `features/scopes/components/CategorySelect.tsx` |

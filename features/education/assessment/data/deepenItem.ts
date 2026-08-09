@@ -3,16 +3,11 @@
 // The per-item "make this deeper" action (depth-on-demand). Drives the
 // `deepenItem` agent for ONE question and returns a single insert/patch-ready
 // question at the next depth up. Redux thunk mirroring makeQuizItems.ts; returns
-// null on any skip/failure (the caller shows a toast, never a hard block).
+// null on any skip/failure (the caller shows a toast, never a hard block). The
+// agent round-trip runs through the canonical `runHeadlessAgentJson` (D126).
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { ASSESSMENT_AGENTS } from "./agents";
 import { asDepth, isDepth } from "./types";
@@ -79,25 +74,6 @@ function coerceOne(raw: unknown): NewAssessmentItemInput | null {
   };
 }
 
-async function waitForObject(
-  getState: () => RootState,
-  requestId: string,
-  timeoutMs = 60_000,
-): Promise<unknown | null> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const state = getState();
-    if (selectJsonExtractionComplete(requestId)(state)) {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    if (selectRequestStatus(requestId)(state) === "error") {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    await new Promise((r) => setTimeout(r, 150));
-  }
-  return null;
-}
-
 /** The depth one level above the given item's current depth (caps at 'exam'). */
 export function deeperThan(depth: Depth | null | undefined): Depth {
   return nextDepth[depth ?? "recall"];
@@ -122,40 +98,29 @@ export function deepenItem(args: {
   ): Promise<NewAssessmentItemInput | null> => {
     const agentId = ASSESSMENT_AGENTS.deepenItem;
     const target = deeperThan(asDepth(args.item.depth));
-    let conversationId: string | null = null;
     try {
-      const launch = await dispatch(
-        launchAgentExecution({
-          agentId,
-          surfaceKey: "assessment-deepen-item",
-          sourceFeature: "education-assessment",
-          isEphemeral: false,
-          runtime: {
-            surfaceName: "matrx-user/education-assessment",
-            variables: {
-              prompt: args.item.prompt,
-              correct_answer: args.item.correct_answer ?? "",
-              question_type: args.item.question_type,
-              current_depth: args.item.depth ?? "recall",
-              target_depth: target,
-              topic: args.item.topic ?? "",
-              exam_type: args.examType ?? "",
-              source_content: args.sourceContent ?? "",
-            },
-          },
-          config: { autoRun: true, displayMode: "direct" },
-          jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
-        }),
-      ).unwrap();
-      conversationId = launch.conversationId;
-      const requestId = launch.requestId;
-      if (!requestId) return null;
-      return coerceOne(await waitForObject(getState, requestId));
+      const result = await runHeadlessAgentJson(dispatch, getState, {
+        agentId,
+        surfaceKey: "assessment-deepen-item",
+        sourceFeature: "education-assessment",
+        surfaceName: "matrx-user/education-assessment",
+        variables: {
+          prompt: args.item.prompt,
+          correct_answer: args.item.correct_answer ?? "",
+          question_type: args.item.question_type,
+          current_depth: args.item.depth ?? "recall",
+          target_depth: target,
+          topic: args.item.topic ?? "",
+          exam_type: args.examType ?? "",
+          source_content: args.sourceContent ?? "",
+        },
+        timeoutMs: 60_000,
+        pollIntervalMs: 150,
+      });
+      return coerceOne(result.data);
     } catch (err) {
       console.error("[assessment.deepenItem] failed:", err);
       return null;
-    } finally {
-      if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     }
   };
 }

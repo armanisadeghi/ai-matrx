@@ -9,23 +9,15 @@
 //
 // This is the image twin of the spoken crown jewel
 // (features/flashcards/fast-fire/agents/grading-core.ts): upload the media →
-// durable file_id, attach it as a message part on a launched (autoRun:false)
-// instance, execute, wait for the JSON, coerce. Never grade an image without an
+// durable file_id, then run the canonical headless primitive
+// (`runHeadlessAgentJson`, D126) with the photo attached as a message part. Never grade an image without an
 // uploaded file_id. The grader is authored + tuned in-system (agent id in
 // data/agents.ts); the tolerant coercer absorbs prompt-driven key drift.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { fileHandler } from "@/features/files/handler/handler";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
-import { setUserInputMessageParts } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import {
   coerceStepGradeVerdict,
@@ -70,27 +62,6 @@ export async function uploadWorkPhoto(
   }
 }
 
-/** Poll the JSON extractor until it finalizes (or the stream errors). */
-async function waitForExtraction(
-  getState: () => RootState,
-  requestId: string,
-  timeoutMs = 120_000,
-  intervalMs = 200,
-): Promise<unknown | null> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const state = getState();
-    if (selectJsonExtractionComplete(requestId)(state)) {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    if (selectRequestStatus(requestId)(state) === "error") {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    await new Promise((r) => setTimeout(r, intervalMs));
-  }
-  return null;
-}
-
 export interface RunVisionGraderArgs {
   agentId: string;
   /** The problem statement / question the learner was solving. */
@@ -101,19 +72,13 @@ export interface RunVisionGraderArgs {
   responseImageFileId: string;
   surfaceKey: string;
   sourceFeature: SourceFeature;
-  /**
-   * Canonical `ui_surface.name` to launch under — CALLER-supplied because this
-   * core is shared across lanes (assessment take vs standalone grade-work),
-   * and only the caller knows which surface the run belongs to.
-   */
   surfaceName?: string;
 }
 
 /**
  * Drive the vision grader agent for ONE photographed answer and return the
- * structured step-level grade. Launches (autoRun:false), attaches the photo as a
- * message part, executes, waits for the JSON, and coerces. Returns null on any
- * failure. Never records anything or touches a slice — the caller owns
+ * structured step-level grade via the headless primitive (photo attached as a
+ * message part). Returns null on any failure. Never records anything or touches a slice — the caller owns
  * persistence + UI.
  */
 export function runVisionGrader(args: RunVisionGraderArgs) {
@@ -121,45 +86,31 @@ export function runVisionGrader(args: RunVisionGraderArgs) {
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<StepGradeVerdict | null> => {
-    let conversationId: string | null = null;
     try {
-      const launch = await dispatch(
-        launchAgentExecution({
-          agentId: args.agentId,
-          surfaceKey: args.surfaceKey,
-          // Persisted (not ephemeral — that path 404s the v2 gate) but kept out
-          // of the user's normal chats via the system-marked source_feature.
-          sourceFeature: args.sourceFeature,
-          isEphemeral: false,
-          runtime: {
-            ...(args.surfaceName ? { surfaceName: args.surfaceName } : {}),
-            variables: {
-              question: args.question,
-              expected_answer: args.expected,
-            },
-          },
-          config: { autoRun: false, displayMode: "background" },
-          jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
-        }),
-      ).unwrap();
-      conversationId = launch.conversationId;
-
       const part = await fileHandler.toContentPart({
         kind: "file_id",
         fileId: args.responseImageFileId,
       });
-      dispatch(setUserInputMessageParts({ conversationId, parts: [part] }));
-
-      const exec = await dispatch(executeInstance({ conversationId })).unwrap();
-      const requestId = exec.requestId;
-      if (!requestId) throw new Error("vision grader returned no request id");
-
-      return coerceStepGradeVerdict(await waitForExtraction(getState, requestId));
+      const result = await runHeadlessAgentJson(dispatch, getState, {
+        agentId: args.agentId,
+        surfaceKey: args.surfaceKey,
+        // Persisted (not ephemeral — that path 404s the v2 gate) but kept out
+        // of the user's normal chats via the system-marked source_feature.
+        sourceFeature: args.sourceFeature,
+        ...(args.surfaceName ? { surfaceName: args.surfaceName } : {}),
+        variables: {
+          question: args.question,
+          expected_answer: args.expected,
+        },
+        // Two-step attach path: the photo rides as a message part.
+        messageParts: [part],
+        timeoutMs: 120_000,
+        pollIntervalMs: 200,
+      });
+      return coerceStepGradeVerdict(result.data);
     } catch (err) {
       console.error(`[imageGrading] runVisionGrader (${args.surfaceKey}):`, err);
       return null;
-    } finally {
-      if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     }
   };
 }

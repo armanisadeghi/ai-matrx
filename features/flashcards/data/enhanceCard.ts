@@ -2,9 +2,8 @@
 //
 // "Make this deeper" — the depth-on-demand consumer surface for flashcards.
 // Two Redux thunks driving the LIVE enrichCard / expandCard agents (ids in
-// data/agents.ts), mirroring the assessment `deepenItem` pattern
-// (launchAgentExecution → wait for extracted JSON → destroy the ephemeral
-// instance). Each returns a coerced, persist-ready result or null on any
+// data/agents.ts), running through the canonical headless primitive
+// (`runHeadlessAgentJson`, D126). Each returns a coerced, persist-ready result or null on any
 // skip/failure (the caller shows a toast, never a hard block).
 //
 //   • enrichCard → adds fc_detail LAYERS (helper / example / mnemonic / …) to
@@ -19,13 +18,7 @@
 // expand: struggle_signal).
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { Depth } from "@/features/education/assessment/data/types";
 import { FC_AGENTS } from "./agents";
 import type { CardWithDetails } from "./types";
@@ -133,25 +126,6 @@ function coerceSubCards(raw: unknown): ExpandedSubCard[] {
   return out;
 }
 
-async function waitForObject(
-  getState: () => RootState,
-  requestId: string,
-  timeoutMs = 60_000,
-): Promise<unknown | null> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const state = getState();
-    if (selectJsonExtractionComplete(requestId)(state)) {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    if (selectRequestStatus(requestId)(state) === "error") {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    await new Promise((r) => setTimeout(r, 150));
-  }
-  return null;
-}
-
 /**
  * Enrich ONE card with new detail layers at the chosen depth tier. Returns the
  * generated details (empty array if the agent produced none), or null on
@@ -163,39 +137,28 @@ export function enrichCard(args: { card: CardWithDetails; depth: Depth }) {
     getState: () => RootState,
   ): Promise<EnrichedDetail[] | null> => {
     const { card, depth } = args;
-    let conversationId: string | null = null;
     try {
       const existing = card.details.map((d) => ({ kind: d.kind, text: d.text }));
-      const launch = await dispatch(
-        launchAgentExecution({
-          agentId: FC_AGENTS.enrichCard,
-          surfaceKey: "flashcards-enrich-card",
-          sourceFeature: "education-flashcards",
-          isEphemeral: false,
-          runtime: {
-            surfaceName: "matrx-user/education-flashcards",
-            variables: {
-              front: card.front,
-              back: card.back,
-              topic: card.topic ?? "",
-              difficulty: DIFFICULTY_BY_DEPTH[depth],
-              kinds: KINDS_BY_DEPTH[depth],
-              existing_details: existing,
-            },
-          },
-          config: { autoRun: true, displayMode: "direct" },
-          jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
-        }),
-      ).unwrap();
-      conversationId = launch.conversationId;
-      const requestId = launch.requestId;
-      if (!requestId) return null;
-      return coerceDetails(await waitForObject(getState, requestId));
+      const result = await runHeadlessAgentJson(dispatch, getState, {
+        agentId: FC_AGENTS.enrichCard,
+        surfaceKey: "flashcards-enrich-card",
+        sourceFeature: "education-flashcards",
+        surfaceName: "matrx-user/education-flashcards",
+        variables: {
+          front: card.front,
+          back: card.back,
+          topic: card.topic ?? "",
+          difficulty: DIFFICULTY_BY_DEPTH[depth],
+          kinds: KINDS_BY_DEPTH[depth],
+          existing_details: existing,
+        },
+        timeoutMs: 60_000,
+        pollIntervalMs: 150,
+      });
+      return coerceDetails(result.data);
     } catch (err) {
       console.error("[flashcards.enrichCard] failed:", err);
       return null;
-    } finally {
-      if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     }
   };
 }
@@ -212,36 +175,25 @@ export function expandCard(args: { card: CardWithDetails; depth: Depth }) {
     getState: () => RootState,
   ): Promise<ExpandedSubCard[] | null> => {
     const { card, depth } = args;
-    let conversationId: string | null = null;
     try {
-      const launch = await dispatch(
-        launchAgentExecution({
-          agentId: FC_AGENTS.expandCard,
-          surfaceKey: "flashcards-expand-card",
-          sourceFeature: "education-flashcards",
-          isEphemeral: false,
-          runtime: {
-            surfaceName: "matrx-user/education-flashcards",
-            variables: {
-              front: card.front,
-              back: card.back,
-              topic: card.topic ?? "",
-              struggle_signal: EXPAND_SIGNAL_BY_DEPTH[depth],
-            },
-          },
-          config: { autoRun: true, displayMode: "direct" },
-          jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
-        }),
-      ).unwrap();
-      conversationId = launch.conversationId;
-      const requestId = launch.requestId;
-      if (!requestId) return null;
-      return coerceSubCards(await waitForObject(getState, requestId));
+      const result = await runHeadlessAgentJson(dispatch, getState, {
+        agentId: FC_AGENTS.expandCard,
+        surfaceKey: "flashcards-expand-card",
+        sourceFeature: "education-flashcards",
+        surfaceName: "matrx-user/education-flashcards",
+        variables: {
+          front: card.front,
+          back: card.back,
+          topic: card.topic ?? "",
+          struggle_signal: EXPAND_SIGNAL_BY_DEPTH[depth],
+        },
+        timeoutMs: 60_000,
+        pollIntervalMs: 150,
+      });
+      return coerceSubCards(result.data);
     } catch (err) {
       console.error("[flashcards.expandCard] failed:", err);
       return null;
-    } finally {
-      if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     }
   };
 }

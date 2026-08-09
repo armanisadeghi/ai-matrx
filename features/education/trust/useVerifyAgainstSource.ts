@@ -8,20 +8,11 @@
 // source edit or a manual card change. Drives the `verifyAgainstSource` agent
 // and returns a typed VerifyResult.
 //
-// Mirrors the production launch+extract pattern (useGenerateCards): launch a
-// background auto-run with JSON extraction on, poll the active-requests slice
-// until extraction finalizes, coerce. React Compiler is on — no manual memo.
+// Runs through the canonical headless primitive (`useHeadlessAgentJson`,
+// D126). React Compiler is on — no manual memo.
 
 import { useState } from "react";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestError,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import type { RootState } from "@/lib/redux/store";
+import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
 import { FC_AGENTS } from "@/features/flashcards/data/agents";
 import { coerceVerifyResult, type SourceCitation, type VerifyResult } from "./types";
 
@@ -52,83 +43,57 @@ export function excerptFromCitations(citations: SourceCitation[]): string {
 }
 
 export function useVerifyAgainstSource(): UseVerifyAgainstSource {
-  const dispatch = useAppDispatch();
-  const store = useAppStore();
-  const [isVerifying, setIsVerifying] = useState(false);
+  const { run, isRunning, error, reset: resetRun } = useHeadlessAgentJson();
   const [result, setResult] = useState<VerifyResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function waitForExtraction(requestId: string): Promise<VerifyResult | null> {
-    const start = Date.now();
-    while (Date.now() - start < EXTRACTION_TIMEOUT_MS) {
-      const state = store.getState() as RootState;
-      if (selectJsonExtractionComplete(requestId)(state)) {
-        const snapshot = selectFirstExtractedObject(requestId)(state);
-        return coerceVerifyResult(snapshot?.value ?? null);
-      }
-      if (selectRequestStatus(requestId)(state) === "error") {
-        const reqError = selectRequestError(requestId)(state);
-        throw new Error(
-          reqError?.user_message ??
-            reqError?.message ??
-            "Verification failed before returning a result",
-        );
-      }
-      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-    }
-    throw new Error("Timed out verifying against the source");
-  }
 
   async function verify(
     args: VerifyAgainstSourceArgs,
   ): Promise<VerifyResult | null> {
-    setIsVerifying(true);
-    setError(null);
     setResult(null);
+    // Clear any prior run's error too — the early "unverifiable" return below
+    // never enters run(), which is where the hook clears its own error state.
+    resetRun();
+    if (!args.sourceExcerpt.trim()) {
+      // No cited passage to check against — an honest "can't verify", not an error.
+      const unverifiable: VerifyResult = {
+        status: "unverifiable",
+        explanation: "This card has no cited source passage to verify against.",
+        suggestedFix: null,
+      };
+      setResult(unverifiable);
+      return unverifiable;
+    }
     try {
-      if (!args.sourceExcerpt.trim()) {
-        // No cited passage to check against — an honest "can't verify", not an error.
-        const unverifiable: VerifyResult = {
-          status: "unverifiable",
-          explanation: "This card has no cited source passage to verify against.",
-          suggestedFix: null,
-        };
-        setResult(unverifiable);
-        return unverifiable;
-      }
-      const { requestId } = await dispatch(
-        launchAgentExecution({
-          agentId: FC_AGENTS.verifyAgainstSource,
-          surfaceKey: "education-trust-verify",
-          sourceFeature: "education-flashcards",
-          jsonExtraction: { enabled: true },
-          runtime: {
-            variables: {
-              front: args.front,
-              back: args.back,
-              source_excerpt: args.sourceExcerpt,
-            },
-          },
-          config: { autoRun: true, displayMode: "background" },
-        }),
-      ).unwrap();
-      if (!requestId) throw new Error("Verification launch returned no request id");
-      const verdict = await waitForExtraction(requestId);
+      const verdict = await run<VerifyResult | null>({
+        agentId: FC_AGENTS.verifyAgainstSource,
+        surfaceKey: "education-trust-verify",
+        sourceFeature: "education-flashcards",
+        variables: {
+          front: args.front,
+          back: args.back,
+          source_excerpt: args.sourceExcerpt,
+        },
+        timeoutMs: EXTRACTION_TIMEOUT_MS,
+        pollIntervalMs: POLL_INTERVAL_MS,
+        failureMessages: {
+          streamError: "Verification failed before returning a result",
+          noJson: "Verification finished but returned no structured result",
+          timeout: "Timed out verifying against the source",
+        },
+        coerce: (value) => coerceVerifyResult(value),
+      });
       setResult(verdict);
       return verdict;
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Verification failed";
-      setError(message);
+    } catch {
+      // The hook already mirrored the message into `error`.
       return null;
-    } finally {
-      setIsVerifying(false);
     }
   }
 
   function reset() {
     setResult(null);
-    setError(null);
+    resetRun();
   }
 
-  return { verify, isVerifying, result, error, reset };
+  return { verify, isVerifying: isRunning, result, error, reset };
 }

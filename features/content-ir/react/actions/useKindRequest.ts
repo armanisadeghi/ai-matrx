@@ -3,10 +3,9 @@
 /**
  * useKindRequest — the run engine behind "ask an agent for a typed value".
  *
- * Generalizes the proven headless-run pattern (features/flashcards/data/
- * useGenerateCards.ts, itself mirroring image-studio): launch the agent in
- * `direct` + `autoRun` mode with JSON extraction on, wait for the extraction to
- * finalize, and return the structured object the agent emitted. Presentation
+ * Built on the canonical `useHeadlessAgentJson` primitive (D126): launch the
+ * agent in `direct` + `autoRun` mode with JSON extraction on, wait for the
+ * extraction to finalize, and return the structured object the agent emitted. Presentation
  * (a dialog, a window panel, inline) and SELECTION (rendering the result kind
  * component and waiting for the user to pick) are the caller's job — this hook
  * owns only the agent round-trip, so the same primitive serves every
@@ -17,16 +16,7 @@
  * to the right component. A skipped/failed run rejects — never a silent empty.
  */
 
-import { useCallback, useState } from "react";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestError,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import type { RootState } from "@/lib/redux/store";
+import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
 import { KIND_KEY } from "../../core/kind-schema.types";
 
 export interface KindRequestInput {
@@ -76,90 +66,33 @@ function readKind(value: unknown, fallback?: string): string | null {
 }
 
 export function useKindRequest(): UseKindRequest {
-  const dispatch = useAppDispatch();
-  const store = useAppStore();
-  const [isRunning, setIsRunning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [conversationId, setConversationId] = useState<string | null>(null);
-
-  async function waitForResult(
-    requestId: string,
-    expectedKind?: string,
-  ): Promise<KindRequestResult> {
-    const start = Date.now();
-    while (Date.now() - start < EXTRACTION_TIMEOUT_MS) {
-      const state = store.getState() as RootState;
-
-      if (selectJsonExtractionComplete(requestId)(state)) {
-        const snapshot = selectFirstExtractedObject(requestId)(state);
-        if (!snapshot) {
-          throw new Error("The agent finished but produced no structured result.");
-        }
-        return {
-          value: snapshot.value,
-          kind: readKind(snapshot.value, expectedKind),
-        };
-      }
-
-      const status = selectRequestStatus(requestId)(state);
-      if (status === "error") {
-        const reqError = selectRequestError(requestId)(state);
-        throw new Error(
-          reqError?.user_message ??
-            reqError?.message ??
-            "The agent failed before returning a result.",
-        );
-      }
-
-      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-    }
-    throw new Error("Timed out waiting for the agent to respond.");
-  }
+  const { run: runHeadless, isRunning, error, conversationId, reset } =
+    useHeadlessAgentJson();
 
   async function run(input: KindRequestInput): Promise<KindRequestResult> {
-    setIsRunning(true);
-    setError(null);
-    setConversationId(null);
-    try {
-      const { requestId: launchedId } = await dispatch(
-        launchAgentExecution({
-          surfaceKey: `kind-request:${input.agentId}`,
-          agentId: input.agentId,
-          sourceFeature: "ai-results",
-          // The direct-agentId path does not inherit extraction from the agent
-          // row, so enable it explicitly to capture the streamed object.
-          jsonExtraction: { enabled: true },
-          runtime: { variables: input.variables },
-          config: { autoRun: true, displayMode: "direct" },
-          // Fires EARLY — before the stream is awaited — so the surface gets a
-          // live handle mid-run to render the stream. The thunk's own
-          // resolution (below) is too late: it only settles once the whole run
-          // has finished.
-          onConversationCreated: (cid) => setConversationId(cid),
-        }),
-      ).unwrap();
-
-      if (!launchedId) {
-        throw new Error("The agent launch did not return a request id.");
-      }
-      return await waitForResult(launchedId, input.expectedKind);
-    } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "Failed to run the agent.";
-      setError(message);
-      throw e instanceof Error ? e : new Error(message);
-    } finally {
-      setIsRunning(false);
-    }
+    return runHeadless<KindRequestResult>({
+      agentId: input.agentId,
+      surfaceKey: `kind-request:${input.agentId}`,
+      sourceFeature: "ai-results",
+      // The surface renders the stream live off `conversationId` and reads the
+      // result kind component after completion — keep the instance alive; the
+      // presenting surface owns cleanup on reset/unmount.
+      displayMode: "direct",
+      keepInstance: true,
+      variables: input.variables,
+      timeoutMs: EXTRACTION_TIMEOUT_MS,
+      pollIntervalMs: POLL_INTERVAL_MS,
+      failureMessages: {
+        streamError: "The agent failed before returning a result.",
+        noJson: "The agent finished but produced no structured result.",
+        timeout: "Timed out waiting for the agent to respond.",
+      },
+      coerce: (value) => ({
+        value,
+        kind: readKind(value, input.expectedKind),
+      }),
+    });
   }
-
-  // Stable identity — consumers put `reset` in effect deps (e.g. the dialog's
-  // open/seed effect). A fresh function each render would make that effect
-  // re-run on every render, setState, re-render → "Maximum update depth".
-  const reset = useCallback(() => {
-    setError(null);
-    setConversationId(null);
-  }, []);
 
   return { run, isRunning, error, conversationId, reset };
 }
