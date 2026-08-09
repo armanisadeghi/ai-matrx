@@ -141,6 +141,7 @@ function AdminsManagementPageContent() {
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [auditFailed, setAuditFailed] = useState(false);
 
   // The roster loaded and the linked person holds no admin row. Checked against
   // the FULL `admins` list, not the table's filtered view, so a search the user
@@ -192,11 +193,31 @@ function AdminsManagementPageContent() {
     }
   }, []);
 
+  // This used to be `if (!res.ok) return;` — a bare swallow. The audit log then
+  // rendered as an EMPTY, successfully-loaded table titled "Audit log (0)", on
+  // the one surface whose entire purpose is proving that every admin change was
+  // recorded. "No admin changes have been logged" and "we could not read the
+  // log" are opposite statements, and the swallow published the reassuring one.
   const fetchAudit = useCallback(async () => {
-    const res = await fetch("/api/admin/admins/audit?limit=50");
-    if (!res.ok) return;
-    const { entries } = (await res.json()) as { entries: AuditEntry[] };
-    setAudit(entries);
+    try {
+      const res = await fetch("/api/admin/admins/audit?limit=50");
+      if (!res.ok) {
+        const { error } = await res
+          .json()
+          .catch(() => ({ error: res.statusText }));
+        toast.error(`Failed to load audit log: ${error}`);
+        setAuditFailed(true);
+        return;
+      }
+      const { entries } = (await res.json()) as { entries: AuditEntry[] };
+      setAudit(entries);
+      setAuditFailed(false);
+    } catch (err) {
+      toast.error(
+        `Failed to load audit log: ${err instanceof Error ? err.message : "network error"}`,
+      );
+      setAuditFailed(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -656,12 +677,20 @@ function AdminsManagementPageContent() {
         <section className="space-y-2">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-medium text-foreground">
-              Audit log ({audit.length})
+              Audit log{auditFailed ? "" : ` (${audit.length})`}
             </h2>
             <p className="text-xs text-muted-foreground">
               Every admin change is logged at the DB layer, including any made via direct SQL.
             </p>
           </div>
+          {auditFailed && (
+            <StaleDataNotice
+              hasData={audit.length > 0}
+              what="the audit log"
+              onRetry={retryLoad}
+              retrying={retrying}
+            />
+          )}
           <div className="h-[440px]">
             <MatrxDataTable
               data={audit}
@@ -669,7 +698,18 @@ function AdminsManagementPageContent() {
               getRowId={(e) => e.id}
               isLoading={loading}
               pageSize={25}
-              emptyState={{ title: "No audit entries yet." }}
+              emptyState={
+                auditFailed
+                  ? {
+                      // "No audit entries yet." on an unread log is the most
+                      // dangerous empty state on this page: it reads as proof
+                      // that nothing happened.
+                      title: "Audit log not loaded",
+                      description:
+                        "The read failed. This is not evidence that no admin changes were made — use Try again above.",
+                    }
+                  : { title: "No audit entries yet." }
+              }
               toolbar={{
                 search: true,
                 searchPlaceholder: "Search actor, action, target…",

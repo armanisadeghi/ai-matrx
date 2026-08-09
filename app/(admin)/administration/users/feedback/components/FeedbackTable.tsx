@@ -664,6 +664,12 @@ export default function FeedbackTable() {
     setImagePreviewOpen(true);
   };
 
+  // A count derived from `feedback` is a statement about the QUEUE. After a
+  // failed read `feedback` is a cache, so every badge on the stage bar would be
+  // asserting something nobody verified — the same reason the admins roster
+  // withholds its count. Declared here, next to the numbers it governs.
+  const countsTrustworthy = !loadFailed;
+
   // Count items per pipeline stage
   const stageCounts = useMemo(() => {
     const counts: Record<PipelineStage, number> = {
@@ -868,7 +874,14 @@ export default function FeedbackTable() {
           <div className="mb-4">
             <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg">
               {pipelineStages.map((stage, index) => {
-                const count = stageCounts[stage.key];
+                // Every number on this bar is derived from `feedback`, so after
+                // a failed read they are claims about a cache, not the queue —
+                // the same reason the admins roster withholds its count. The
+                // STAGE BUTTONS stay live (they filter, they assert nothing);
+                // only the counts are suppressed. The pulse dot is the one that
+                // matters most: it tells an admin work is waiting for them, and
+                // saying that off stale rows is how a real queue gets missed.
+                const count = countsTrustworthy ? stageCounts[stage.key] : 0;
                 const isActive = activeStage === stage.key;
                 const isAdminTurn = stage.owner === "admin";
 
@@ -952,7 +965,7 @@ export default function FeedbackTable() {
                       : "bg-muted-foreground/10 text-muted-foreground",
                   )}
                 >
-                  {feedback.length}
+                  {countsTrustworthy ? feedback.length : "—"}
                 </span>
               </button>
             </div>
