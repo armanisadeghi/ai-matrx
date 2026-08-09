@@ -164,19 +164,31 @@ function AdminsManagementPageContent() {
   // Per-row update state
   const [rowBusy, setRowBusy] = useState<Record<string, boolean>>({});
 
+  // The whole body is guarded, not just the !res.ok branch: a rejected fetch
+  // (offline, DNS) or a malformed body throws, and an unguarded throw would
+  // leave `loadFailed` false while `loading` still ends false — so the deep-link
+  // notice would report "this person is not an admin" about a roster we never
+  // read. A definitive negative is only earned by a successful read.
   const fetchAdmins = useCallback(async () => {
-    const res = await fetch("/api/admin/admins");
-    if (!res.ok) {
-      const { error } = await res.json().catch(() => ({ error: res.statusText }));
-      toast.error(`Failed to load admins: ${error}`);
-      // A roster we could not read must not be reported as "this person is not
-      // an admin" — that is a definitive negative about data we never saw.
+    try {
+      const res = await fetch("/api/admin/admins");
+      if (!res.ok) {
+        const { error } = await res
+          .json()
+          .catch(() => ({ error: res.statusText }));
+        toast.error(`Failed to load admins: ${error}`);
+        setLoadFailed(true);
+        return;
+      }
+      const { admins: rows } = (await res.json()) as { admins: AdminRow[] };
+      setAdmins(rows);
+      setLoadFailed(false);
+    } catch (err) {
+      toast.error(
+        `Failed to load admins: ${err instanceof Error ? err.message : "network error"}`,
+      );
       setLoadFailed(true);
-      return;
     }
-    const { admins: rows } = (await res.json()) as { admins: AdminRow[] };
-    setAdmins(rows);
-    setLoadFailed(false);
   }, []);
 
   const fetchAudit = useCallback(async () => {

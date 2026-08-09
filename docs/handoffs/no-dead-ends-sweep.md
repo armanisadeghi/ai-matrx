@@ -192,23 +192,22 @@ Ordered by traffic. Each item is independently actionable.
    scope. Note `:388` is a picker `<button>` — that one needs
    `EntityDoorControls` as a SIBLING, not an anchor.
 
-   The scattered MED set is now **done except three**: `ObservationalMemoryWindow`,
+   The scattered MED set is **DONE**: `ObservationalMemoryWindow`,
    `AgentContentWindow`, `CreatorHubWindow`, `AgentExecutionTestModal`,
    `CleanupReviewDialog`, `MoveNoteDialog` (`noteId` is now a REQUIRED prop, so
-   all four callers were forced rather than grepped) and `AddToSetDialog` all
-   carry doors.
+   all four callers were forced rather than grepped), `AddToSetDialog`,
+   `ApplySchemaDialog`, `LibraryDocDetailSheet` and `PermissionsList` all carry
+   doors.
 
-   **Still open:** `PermissionsList` · `LibraryDocDetailSheet` (delete confirm
-   only) · `ApplySchemaDialog`.
-
-   ⚠️ `features/sharing/components/PermissionsList.tsx` is NOT a simple one.
+   ⚠️ `PermissionsList` is only **partly** done, deliberately. Its
    `getPermissionLabel` returns a person's name, an org name, or "Everyone" from
-   three different branches. The org branch can link (`organization` token). The
-   USER branch cannot: `user` has no registry token, and `AdminUserRef` is the
+   three branches. The ORG branch links. The USER branch has **no door and must
+   not get one yet**: `user` has no registry token, and `AdminUserRef` is the
    wrong door here for the same reason it is wrong in org-admin — this is a
-   `(core)` sharing surface reached by ordinary members, and
-   `/administration/users` is a 403 for them. It needs the `user` registry
-   decision below, not a call-site patch.
+   `(core)` sharing surface reached by ordinary members, for whom
+   `/administration/users` is a 403, and a door the viewer cannot open is worse
+   than none. Blocked on the `user` registry decision below, not on a call-site
+   patch.
 
 4. **Toasts and badges.**
 5. **`(dev)` demos** — last.
