@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
@@ -615,13 +616,17 @@ export function PagesTable() {
         }}
         onConfirm={async (value) => {
           try {
-            await createMutation.mutateAsync({
+            // `createManualPage` returns the MarketingPage; the mutation
+            // result was discarded, so a page the user just added had no way in
+            // from the toast that announced it.
+            const createdPage = await createMutation.mutateAsync({
               siteId: site.id,
               organizationId: site.organization_id,
               url: value,
             });
             toast.success("Page added", {
               description: "Fetching its first capture now…",
+              action: toastDoor("web_page", createdPage.id),
             });
             setAdding(false);
             // First capture kicks off immediately — non-blocking so the
