@@ -857,6 +857,24 @@ PY
    `FlashcardsHome`. (`/lists` came from a different pass — it is NOT a
    discriminator-3 hit; that discriminator never saw it.)
 
+🚨 **A COMPONENT WITH AN `isMobile` BRANCH HAS TWO RENDER PATHS, AND A DOOR
+ADDED TO ONE IS A DOOR MISSING FROM THE OTHER.** `ShortcutList` renders cards on
+mobile and a TABLE on desktop; doors landed inside `if (isMobile) { … }` and the
+surface was reported closed while the primary desktop view still printed the
+name with nothing to click (caught by Bugbot, fixed 2026-08-09). Before claiming
+a surface, grep it for `isMobile` and check BOTH trees.
+
+⚠️ **But do NOT try to detect this by splitting on the branch — it is almost all
+false positives.** A scan for "doors on one side of `if (isMobile)` only"
+returns 5 files; **all 5 are fine.** The dominant React pattern here is a shared
+JSX variable — `{body}`, `{footer}`, `{folderList}`, `{actions}` — built once
+ABOVE the branch and rendered by both (`MoveNoteDialog`, `PromoteToGlobalModal`,
+`LinkAgentToShortcutModal`, `DuplicateShortcutModal`, `SidePanelSurface`). The
+doors are in the shared variable, so they reach mobile fine; the scan just can't
+see it. `ShortcutList` was the rarer shape: two fully independent JSX trees.
+**Verify by reading the branch, never by counting matches inside it** — and do
+not file these five as defects, which is exactly what the raw count invites.
+
 ⚠️ **A FOURTH DISCRIMINATOR WAS TRIED AND IS NOT USABLE AS-IS — do not burn a
 wave on it.** "File renders `{x.name|title|label}` from a row, has `.id` in
 scope, and contains no door capability of any spelling" returns **591 files**
