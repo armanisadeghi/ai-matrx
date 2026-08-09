@@ -93,6 +93,9 @@ import {
 const PAGE_LOCATION =
   "AI Matrx Admin — Tool Registry · MCP Tools (/administration/agents/mcp-tools)";
 
+const PAGE_LOCATION =
+  "AI Matrx Admin — Tool Registry · MCP Tools (/administration/agents/mcp-tools)";
+
 type Tool = Omit<
   DatabaseTool,
   "parameters" | "output_schema" | "annotations" | "gating"
