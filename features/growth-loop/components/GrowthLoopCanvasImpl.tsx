@@ -35,21 +35,52 @@ import {
     type PipeState,
 } from "../map/loop-map";
 
-/** Serpentine layout: forward row left-to-right, return row right-to-left. */
+/**
+ * Boustrophedon layout, 4 columns x 3 rows. Deliberately squarer than a long
+ * 6-wide strip: fitView then lands near 1:1 zoom, so the node text stays
+ * READABLE instead of being shrunk to nothing on a normal screen.
+ */
+const COL = 376;
+const ROW = 232;
 const POSITIONS: Record<string, { x: number; y: number }> = {
+    // row 0 →
     research: { x: 0, y: 0 },
-    plan: { x: 320, y: 0 },
-    brief: { x: 640, y: 0 },
-    realize: { x: 960, y: 0 },
-    fill: { x: 1280, y: 0 },
-    publish: { x: 1600, y: 0 },
-    serve: { x: 1600, y: 360 },
-    crawl: { x: 1280, y: 360 },
-    measure: { x: 960, y: 360 },
-    analyze: { x: 640, y: 360 },
-    suggest: { x: 320, y: 360 },
-    writeback: { x: 0, y: 360 },
+    plan: { x: COL, y: 0 },
+    brief: { x: COL * 2, y: 0 },
+    realize: { x: COL * 3, y: 0 },
+    // row 1 ←
+    fill: { x: COL * 3, y: ROW },
+    publish: { x: COL * 2, y: ROW },
+    serve: { x: COL, y: ROW },
+    crawl: { x: 0, y: ROW },
+    // row 2 →
+    measure: { x: 0, y: ROW * 2 },
+    analyze: { x: COL, y: ROW * 2 },
+    suggest: { x: COL * 2, y: ROW * 2 },
+    writeback: { x: COL * 3, y: ROW * 2 },
 };
+
+/**
+ * Pick the handle pair that makes an edge leave and enter on the facing sides.
+ * Without explicit ids React Flow grabs the first handle of each type, which
+ * on a serpentine sends right-to-left edges out the wrong side and through
+ * their own node.
+ */
+function handlesFor(fromId: string, toId: string): { sourceHandle: string; targetHandle: string } {
+    const a = POSITIONS[fromId];
+    const b = POSITIONS[toId];
+    if (!a || !b) return { sourceHandle: "s-right", targetHandle: "t-left" };
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    if (Math.abs(dx) >= Math.abs(dy)) {
+        return dx >= 0
+            ? { sourceHandle: "s-right", targetHandle: "t-left" }
+            : { sourceHandle: "s-left", targetHandle: "t-right" };
+    }
+    return dy >= 0
+        ? { sourceHandle: "s-bottom", targetHandle: "t-top" }
+        : { sourceHandle: "s-top", targetHandle: "t-bottom" };
+}
 
 const PIPE_CLASSES: Record<PipeState, string> = {
     live: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40",
@@ -65,6 +96,13 @@ const EDGE_STROKE: Record<PipeState, string> = {
     "n/a": "hsl(215 16% 47%)",
 };
 
+const HANDLE_SIDES = [
+    { id: "top", position: Position.Top },
+    { id: "right", position: Position.Right },
+    { id: "bottom", position: Position.Bottom },
+    { id: "left", position: Position.Left },
+] as const;
+
 interface StageNodeData extends Record<string, unknown> {
     stage: LoopStage;
     openGaps: number;
@@ -76,28 +114,35 @@ function StageNode({ data }: NodeProps) {
     return (
         <div
             className={cn(
-                "w-[268px] rounded-lg border bg-card px-3 py-2.5 shadow-sm transition-colors",
+                "w-[244px] rounded-lg border bg-card px-3 py-2.5 shadow-sm transition-colors",
                 selected ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary/50",
             )}
         >
-            <Handle type="target" position={Position.Left} className="!h-2 !w-2 !border-0 !bg-muted-foreground/50" />
-            <Handle type="target" position={Position.Top} className="!h-2 !w-2 !border-0 !bg-muted-foreground/50" />
+            {HANDLE_SIDES.map(({ id, position }) => (
+                <Handle
+                    key={`t-${id}`}
+                    id={`t-${id}`}
+                    type="target"
+                    position={position}
+                    className="!h-1.5 !w-1.5 !border-0 !bg-muted-foreground/40"
+                />
+            ))}
             <div className="flex items-start justify-between gap-2">
-                <span className="text-sm font-semibold text-foreground">{stage.label}</span>
+                <span className="text-[15px] font-semibold leading-tight text-foreground">{stage.label}</span>
                 {openGaps > 0 && (
-                    <span className="shrink-0 rounded border border-rose-500/40 bg-rose-500/15 px-1.5 text-[10px] font-medium text-rose-700 dark:text-rose-300">
+                    <span className="shrink-0 rounded border border-rose-500/40 bg-rose-500/15 px-1.5 py-0.5 text-[11px] font-medium text-rose-700 dark:text-rose-300">
                         {openGaps} gap{openGaps > 1 ? "s" : ""}
                     </span>
                 )}
             </div>
-            <p className="mt-1 text-[11px] leading-snug text-muted-foreground">{stage.blurb}</p>
-            <div className="mt-2 flex gap-1">
+            <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-muted-foreground">{stage.blurb}</p>
+            <div className="mt-2 flex gap-1.5">
                 {PIPES.map((pipe) => (
                     <span
                         key={pipe}
                         title={`${PIPE_LABEL[pipe]}: ${stage.pipes[pipe].note}`}
                         className={cn(
-                            "flex-1 rounded border px-1 py-0.5 text-center text-[10px] font-medium",
+                            "flex-1 rounded border px-1 py-1 text-center text-[11px] font-medium",
                             PIPE_CLASSES[stage.pipes[pipe].state],
                         )}
                     >
@@ -105,8 +150,15 @@ function StageNode({ data }: NodeProps) {
                     </span>
                 ))}
             </div>
-            <Handle type="source" position={Position.Right} className="!h-2 !w-2 !border-0 !bg-muted-foreground/50" />
-            <Handle type="source" position={Position.Bottom} className="!h-2 !w-2 !border-0 !bg-muted-foreground/50" />
+            {HANDLE_SIDES.map(({ id, position }) => (
+                <Handle
+                    key={`s-${id}`}
+                    id={`s-${id}`}
+                    type="source"
+                    position={position}
+                    className="!h-1.5 !w-1.5 !border-0 !bg-muted-foreground/40"
+                />
+            ))}
         </div>
     );
 }
@@ -152,20 +204,25 @@ function GrowthLoopCanvasInner() {
             EDGES.map((edge) => {
                 const health = edgeHealth(edge);
                 const stroke = EDGE_STROKE[health];
+                const { sourceHandle, targetHandle } = handlesFor(edge.from, edge.to);
                 return {
                     id: edge.id,
                     source: edge.from,
                     target: edge.to,
+                    sourceHandle,
+                    targetHandle,
                     label: edge.label,
                     type: "smoothstep",
                     animated: health === "live",
                     style: {
                         stroke,
-                        strokeWidth: selectedEdge === edge.id ? 3.5 : 2,
-                        strokeDasharray: health === "missing" ? "6 4" : undefined,
+                        strokeWidth: selectedEdge === edge.id ? 4 : 2.25,
+                        strokeDasharray: health === "missing" ? "7 5" : undefined,
                     },
-                    labelStyle: { fontSize: 10, fill: stroke },
-                    labelBgStyle: { fill: "hsl(var(--card))", fillOpacity: 0.9 },
+                    labelStyle: { fontSize: 12, fontWeight: 500, fill: stroke },
+                    labelBgStyle: { fill: "hsl(var(--card))", fillOpacity: 0.95 },
+                    labelBgPadding: [5, 3] as [number, number],
+                    labelBgBorderRadius: 4,
                     markerEnd: { type: MarkerType.ArrowClosed, color: stroke },
                 } satisfies Edge;
             }),
@@ -200,7 +257,11 @@ function GrowthLoopCanvasInner() {
                     onNodeClick={onNodeClick}
                     onEdgeClick={onEdgeClick}
                     fitView
-                    fitViewOptions={{ padding: 0.12 }}
+                    /* maxZoom 1 is the readability guarantee: fitView may zoom OUT to fit,
+                       never IN past 1:1, and the map never renders below legible size. */
+                    fitViewOptions={{ padding: 0.08, maxZoom: 1 }}
+                    minZoom={0.4}
+                    maxZoom={1.75}
                     proOptions={{ hideAttribution: true }}
                     className="bg-textured"
                 >

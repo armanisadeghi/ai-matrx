@@ -408,7 +408,7 @@ export const EDGES: LoopEdge[] = [
         id: "research->plan",
         from: "research",
         to: "plan",
-        label: "report becomes a site shape",
+        label: "site shape",
         pipes: {
             code: {
                 state: "live",
@@ -431,7 +431,7 @@ export const EDGES: LoopEdge[] = [
         id: "plan->brief",
         from: "plan",
         to: "brief",
-        label: "each page gets its instructions",
+        label: "briefs",
         pipes: {
             code: { state: "live", note: "Bulk sweep dispatches every empty-brief node.", ref: "useContentPlanAi.ts#usePlanBulkDeepen" },
             human: { state: "live", note: "Open a node, write the brief.", ref: "NodePanel.tsx" },
@@ -442,7 +442,7 @@ export const EDGES: LoopEdge[] = [
         id: "brief->realize",
         from: "brief",
         to: "realize",
-        label: "plan becomes real pages",
+        label: "real pages",
         gaps: ["G-TEMPLATE"],
         pipes: {
             code: {
@@ -458,7 +458,7 @@ export const EDGES: LoopEdge[] = [
         id: "realize->fill",
         from: "realize",
         to: "fill",
-        label: "pages get written",
+        label: "content",
         pipes: {
             code: { state: "live", note: "Durable job/item queue with cancel + status.", ref: "cms_fill.py" },
             human: { state: "live", note: "Preview one page, then start the fill.", ref: "SetupBridgeSection.tsx" },
@@ -469,7 +469,7 @@ export const EDGES: LoopEdge[] = [
         id: "fill->publish",
         from: "fill",
         to: "publish",
-        label: "content goes live",
+        label: "goes live",
         pipes: {
             code: { state: "live", note: "publish_many over linked nodes.", ref: "content_plan.py POST /cms-publish" },
             human: { state: "live", note: "Publish button.", ref: "useCmsPages.ts#publishDraft" },
@@ -480,7 +480,7 @@ export const EDGES: LoopEdge[] = [
         id: "publish->serve",
         from: "publish",
         to: "serve",
-        label: "visitors can reach it",
+        label: "reachable",
         gaps: ["G-SITEMAP", "G-COLLECTIONS"],
         pipes: {
             code: {
@@ -496,7 +496,7 @@ export const EDGES: LoopEdge[] = [
         id: "serve->crawl",
         from: "serve",
         to: "crawl",
-        label: "we look at what shipped",
+        label: "what shipped",
         gaps: ["G-PUBLISH-CRAWL", "G-CRAWL-SCHEDULE"],
         pipes: {
             code: {
@@ -511,7 +511,7 @@ export const EDGES: LoopEdge[] = [
         id: "crawl->measure",
         from: "crawl",
         to: "measure",
-        label: "pages get their numbers",
+        label: "the numbers",
         gaps: ["G-CMS-IDENTITY"],
         pipes: {
             code: {
@@ -527,7 +527,7 @@ export const EDGES: LoopEdge[] = [
         id: "measure->analyze",
         from: "measure",
         to: "analyze",
-        label: "numbers become findings",
+        label: "findings",
         pipes: {
             code: { state: "live", note: "Analysis runs automatically after each full crawl; GSC insight rules run client-side.", ref: "analysis-service.ts" },
             human: { state: "live", note: "Run analysis on demand.", ref: "CatalogueAnalysisPanel.tsx" },
@@ -538,7 +538,7 @@ export const EDGES: LoopEdge[] = [
         id: "analyze->suggest",
         from: "analyze",
         to: "suggest",
-        label: "findings become offers",
+        label: "offers",
         gaps: ["G-FINDING-ASSIST", "G-SUGGEST-FORK"],
         pipes: {
             code: {
@@ -557,7 +557,7 @@ export const EDGES: LoopEdge[] = [
         id: "suggest->writeback",
         from: "suggest",
         to: "writeback",
-        label: "accepted work gets applied",
+        label: "applied",
         gaps: ["G-FINDING-FIX"],
         pipes: {
             code: {
@@ -573,7 +573,7 @@ export const EDGES: LoopEdge[] = [
         id: "writeback->fill",
         from: "writeback",
         to: "fill",
-        label: "the page is corrected",
+        label: "page fixed",
         pipes: {
             code: { state: "live", note: "Writes land in draft columns only; publishing stays a separate, deliberate act.", ref: "push-to-cms.ts#executeCmsPush" },
             human: { state: "live", note: "Review the draft, then publish.", ref: "ai-matrx/app/(core)/cms/[siteId]/pages/[pageId]" },
@@ -584,7 +584,7 @@ export const EDGES: LoopEdge[] = [
         id: "writeback->plan",
         from: "writeback",
         to: "plan",
-        label: "the plan learns",
+        label: "plan learns",
         gaps: ["G-STALENESS", "G-PLAN-STATUS"],
         pipes: {
             code: {
@@ -600,7 +600,7 @@ export const EDGES: LoopEdge[] = [
         id: "analyze->plan",
         from: "analyze",
         to: "plan",
-        label: "reality corrects the plan",
+        label: "reality check",
         gaps: ["G-RECONCILE-UI"],
         pipes: {
             code: {
