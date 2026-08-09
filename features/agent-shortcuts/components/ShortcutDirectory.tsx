@@ -57,6 +57,7 @@ import {
   resolveShortcutEditUrl,
   scopeTypeLabel,
 } from "../utils/shortcut-directory-rows";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
@@ -382,9 +383,22 @@ export function ShortcutDirectory({
         </div>
       </TableCell>
       <TableCell>
-        {row.agentName || row.agentId ? (
+        {/* This column printed `agentName ?? agentId` — so a shortcut whose
+            agent name had not resolved rendered a bare UUID you could not
+            click, the Door Law's named worst case. `EntityRef` opens the
+            agent, offers the new tab and the peek, and falls back to a
+            truncated id rather than a full one when the name is missing. */}
+        {row.agentId ? (
+          <EntityRef
+            token="agent"
+            id={row.agentId}
+            name={row.agentName}
+            showIcon={false}
+            className="max-w-[180px] text-sm"
+          />
+        ) : row.agentName ? (
           <span className="text-sm truncate block max-w-[180px]">
-            {row.agentName ?? row.agentId}
+            {row.agentName}
           </span>
         ) : (
           <span className="text-xs text-muted-foreground">—</span>

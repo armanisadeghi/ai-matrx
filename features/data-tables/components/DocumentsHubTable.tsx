@@ -1,13 +1,11 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   ChevronUp,
   ChevronsUpDown,
-  Eye,
   ListFilter,
   Trash,
 } from "lucide-react";
@@ -27,6 +25,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { cn } from "@/lib/utils";
 import {
   compareTimestamps,
@@ -510,19 +510,30 @@ export function DocumentsHubTable({
             </TableRow>
           ) : (
             sorted.map((doc) => {
-              const href = `/documents/${doc.id}`;
+              // ONE route authority: the same registry entry the name's
+              // `EntityRef` resolves, not a second copy of the path.
+              const href = tryGetEntityInfo("udt_document")?.hrefFor?.(doc.id);
               return (
                 <TableRow
                   key={doc.id}
-                  className="cursor-pointer hover:bg-muted/30"
-                  onClick={() => router.push(href)}
+                  className={cn(href && "cursor-pointer", "hover:bg-muted/30")}
+                  onClick={href ? () => router.push(href) : undefined}
                 >
                   <TableCell className="py-2 max-w-[280px]">
-                    <div className="min-w-0">
-                      <span className="block text-sm font-medium truncate">
-                        {doc.document_name}
-                      </span>
-                    </div>
+                    {/* THE DOOR LAW: the row already navigated here on click,
+                        but the name was a plain <span> — so cmd-click and
+                        middle-click, the two ways a user opens a document
+                        without losing this list, did nothing. `EntityRef`
+                        resolves `/documents/{id}` from the entity registry
+                        (the same route this row pushes) and adds the explicit
+                        new-tab door. */}
+                    <EntityRef
+                      token="udt_document"
+                      id={doc.id}
+                      name={doc.document_name}
+                      showIcon={false}
+                      className="text-sm font-medium"
+                    />
                   </TableCell>
                   <TableCell className="py-2 text-xs text-muted-foreground max-w-[240px]">
                     <span className="line-clamp-2 break-words">
@@ -552,12 +563,6 @@ export function DocumentsHubTable({
                       className="flex justify-end gap-0.5"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <Button asChild size="sm" variant="ghost">
-                        <Link href={href}>
-                          <Eye className="h-3.5 w-3.5 mr-1" />
-                          Open
-                        </Link>
-                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"
