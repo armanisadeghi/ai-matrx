@@ -96,8 +96,14 @@ function basePathFor(ref: LinkedAgentRef): string {
 }
 
 /**
- * Resolve the (userSide, systemSide) pair around the viewed agent, plus the
- * derived side's last-reconciled timestamp.
+ * Resolve the (userSide, systemSide) pair around the viewed agent.
+ *
+ * `otherLinked` is everything else this agent is demonstrably linked to but
+ * which is NOT the system twin — most often a personal duplicate of a personal
+ * agent. This panel only syncs a user↔system pair, but the relationship is
+ * still resolved, and THE DOOR LAW says a relationship you can resolve must be
+ * rendered and reachable. Saying "this isn't linked to a system agent" while
+ * silently holding three linked relatives is the dead end that rule exists for.
  */
 function resolvePair(
   selfType: "user" | "builtin",
@@ -105,6 +111,7 @@ function resolvePair(
 ): {
   userSide: LinkedAgentRef | null;
   systemSide: LinkedAgentRef | null;
+  otherLinked: LinkedAgentRef[];
 } {
   const { self, source, derived } = counterpart;
   const candidates = [source, ...derived].filter(Boolean) as LinkedAgentRef[];
@@ -115,12 +122,66 @@ function resolvePair(
       candidates.find((c) => c.agentType === "user" && c.isOwnedByMe) ??
       candidates.find((c) => c.agentType === "user") ??
       null;
-    return { userSide, systemSide: self };
+    return {
+      userSide,
+      systemSide: self,
+      otherLinked: candidates.filter((c) => c.id !== userSide?.id),
+    };
   }
 
   // self is a user agent — find its system twin.
   const systemSide = candidates.find((c) => c.agentType === "builtin") ?? null;
-  return { userSide: self, systemSide };
+  return {
+    userSide: self,
+    systemSide,
+    otherLinked: candidates.filter((c) => c.id !== systemSide?.id),
+  };
+}
+
+/**
+ * Linked agents this panel cannot sync, rendered as doors rather than withheld.
+ */
+function LinkedRelatives({ refs }: { refs: LinkedAgentRef[] }) {
+  if (refs.length === 0) return null;
+  return (
+    <div className="space-y-1.5">
+      <div className="text-[11px] text-muted-foreground">
+        Still linked to {refs.length} other agent
+        {refs.length === 1 ? "" : "s"} this panel does not sync:
+      </div>
+      <div className="rounded-md border border-border bg-card divide-y divide-border">
+        {refs.map((ref) => (
+          <div key={ref.id} className="flex items-center gap-2 px-3 py-1.5">
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-[10px] shrink-0",
+                ref.agentType === "builtin"
+                  ? "border-primary/40 text-primary"
+                  : "text-muted-foreground",
+              )}
+            >
+              {ref.agentType === "builtin" ? "System" : "User"}
+            </Badge>
+            <EntityRef
+              token="agent"
+              id={ref.id}
+              name={ref.name}
+              href={`${basePathFor(ref)}/${ref.id}/build`}
+              showIcon={false}
+              alwaysShowActions
+              className="flex-1 text-xs"
+            />
+            {ref.isOwnedByMe && (
+              <Badge variant="outline" className="text-[10px] shrink-0">
+                mine
+              </Badge>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /** One changed field, named and quantified. */
@@ -208,6 +269,7 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
   const userSide = pair?.userSide ?? null;
   const systemSide = pair?.systemSide ?? null;
   const hasPair = !!userSide && !!systemSide;
+  const otherLinked = pair?.otherLinked ?? [];
 
   const userSideId = userSide?.id ?? null;
   const systemSideId = systemSide?.id ?? null;
@@ -366,7 +428,15 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
   // ─── No twin: user agent, super-admin → convert-create flow ──────────────
 
   if (!hasPair && selfType === "user" && isSuperAdmin) {
-    return <ConvertAgentToSystemBody agentId={agentId} onClose={onClose} />;
+    if (otherLinked.length === 0) {
+      return <ConvertAgentToSystemBody agentId={agentId} onClose={onClose} />;
+    }
+    return (
+      <div className="space-y-4">
+        <LinkedRelatives refs={otherLinked} />
+        <ConvertAgentToSystemBody agentId={agentId} onClose={onClose} />
+      </div>
+    );
   }
 
   // ─── No twin: builtin → create my personal copy ──────────────────────────
@@ -385,6 +455,7 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
             admin) push your changes back.
           </div>
         </div>
+        <LinkedRelatives refs={otherLinked} />
         <div className="flex justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel
@@ -410,9 +481,11 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
         <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
           <Unlink className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
           <div className="text-xs leading-relaxed text-muted-foreground">
-            This agent isn&apos;t linked to a system agent.
+            This agent isn&apos;t linked to a system agent
+            {otherLinked.length > 0 ? ", so there is nothing to push or pull here." : "."}
           </div>
         </div>
+        <LinkedRelatives refs={otherLinked} />
         <div className="flex justify-end">
           <Button variant="ghost" size="sm" onClick={onClose}>
             Close
