@@ -52,7 +52,7 @@ import {
 import AiModelFilterBar from "./AiModelFilterBar";
 import { cn } from "@/lib/utils";
 import {
-  MOBILE_TABLE_FROZEN,
+  MOBILE_TABLE_FROZEN_SECOND,
 } from "@/components/official/mobile-table/mobileTable";
 
 // ─── Provider Colors ──────────────────────────────────────────────────────────
@@ -988,7 +988,7 @@ export default function AiModelTable({
 
       {/* Scrollable table — single scroll container, thead is sticky within it */}
       <div className="flex-1 overflow-auto min-h-0">
-        <table className={cn("caption-bottom text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
+        <table className={cn("caption-bottom text-xs border-collapse", MOBILE_TABLE_FROZEN_SECOND)}>
           <thead className="sticky top-0 z-10 bg-card border-b border-border">
             <tr className="h-8">
               {COLUMNS.map((col) => (
