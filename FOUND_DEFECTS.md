@@ -13,6 +13,41 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D140 — `public.__dump_schema_routines` lets ANYONE with the publishable key read every function body in any schema (2026-08-09)
+
+Verified live against `txzxabzwovsujtloxrus`:
+
+```
+proname                  = __dump_schema_routines
+prosecdef                = false            -- runs as the CALLER
+args                     = p_schema text    -- caller picks the schema
+EXECUTE grants           = PUBLIC, anon, authenticated, service_role, postgres
+```
+
+Its body does `pg_get_functiondef(p.oid)` for every function/procedure in
+`p_schema`, plus `pg_get_triggerdef` for every trigger, with **no ownership check
+and no auth check** — and `pg_proc` is world-readable in Postgres, so running as
+`anon` does not restrict it.
+
+The publishable key is public by design (it ships in the frontend bundle). So
+anyone can `POST /rest/v1/rpc/__dump_schema_routines {"p_schema":"iam"}` — or
+`admin`, `auth`, `platform`, `agent` — and read the complete source of every
+`SECURITY DEFINER` function, every RLS helper (`iam.has_access_for`,
+`is_super_admin`), and every trigger. That is not data disclosure, but it is a
+full map of the authorization logic, which is exactly what an attacker wants
+before probing it.
+
+**Pre-existing — already on `main`, not introduced by the linked-agent-sync
+work.** Found while verifying that PR's drift guard.
+
+**Wrinkle before anyone locks it down:** `scripts/check-agent-sync-fields.ts`
+`--live` / `--refresh` consumes this RPC through the publishable key. Revoking
+`anon`/`authenticated` EXECUTE breaks that gate's live pull (it degrades loudly
+to the committed snapshot rather than failing, so nothing explodes — but the
+gate stops catching DB-side drift). Fix them together: make the routine
+`SECURITY DEFINER` restricted to `service_role` (or drop it entirely and have
+the guard pull via the Supabase MCP / a service key), then re-point the script.
+
 ### D139 — TWO competing definitions of "an agent's config", and version history is lossy (2026-08-09)
 
 Two live RPCs copy an agent's configuration, and **each one carries fields the other drops**:
