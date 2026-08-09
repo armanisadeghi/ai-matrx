@@ -94,7 +94,8 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectActiveAgentId } from "@/lib/redux/slices/agent-settings/selectors";
 import { selectOwnedAgents } from "@/features/agents/redux/agent-definition/selectors";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
-import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { DEFAULT_NEW_CHAT_SLOT_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { resolveAgentSlot } from "@/features/agents/slots/service";
 
 /**
  * Grid-tab buckets. "admin" is gated on `isAdmin`; the rest show for every
@@ -156,13 +157,24 @@ function seedInitialAgentId(
   return id ? { initialAgentId: id } : undefined;
 }
 
-/** Default agent for the Chat window panel — mirrors `/chat/new`. */
-function seedDefaultChatWindowAgent(): {
-  initialAgentId: string;
+/** Default agent for the Chat window panel — mirrors `/chat/new`: the
+ * `chat.default_new_chat` slot, resolved at click time so the user's own
+ * binding wins. Loud on failure; degrades to the window's agent picker. */
+async function seedDefaultChatWindowAgent(): Promise<{
+  initialAgentId: string | null;
   initialSelectedConversationId: null;
-} {
+}> {
+  let initialAgentId: string | null = null;
+  try {
+    initialAgentId = (await resolveAgentSlot(DEFAULT_NEW_CHAT_SLOT_KEY)).agentId;
+  } catch (error) {
+    console.error(
+      `[ToolsGrid] slot "${DEFAULT_NEW_CHAT_SLOT_KEY}" failed to resolve — opening the Chat window with the agent picker:`,
+      error,
+    );
+  }
   return {
-    initialAgentId: DEFAULT_NEW_CHAT_AGENT_ID,
+    initialAgentId,
     initialSelectedConversationId: null,
   };
 }
@@ -191,8 +203,14 @@ export interface ToolsGridTile {
    * for multi overlays (auto-detected from registry).
    */
   instanceStrategy?: "singleton-default" | "fresh-per-click";
-  /** Optional data seed for the openOverlay payload. */
-  seedData?: (ctx: TileContext) => Record<string, unknown> | undefined;
+  /** Optional data seed for the openOverlay payload. May be async (e.g. an
+   *  agent-slot resolution) — activation awaits it before dispatching. */
+  seedData?: (
+    ctx: TileContext,
+  ) =>
+    | Record<string, unknown>
+    | undefined
+    | Promise<Record<string, unknown> | undefined>;
   /**
    * OR imperative — escape hatch for tiles that don't open an overlay
    * (e.g. "Image Studio" routes to /image-studio).

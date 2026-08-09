@@ -191,6 +191,7 @@ this section exists to stop. Campaign: `docs/handoffs/inventory-law-sweep.md`.
 
 | If you need to… | Use | Located at |
 | --- | --- | --- |
+| Invalidate a heavy chunk's cache from a ubiquitous module with NO import edge (D115) | `registerInvalidationCallback` / `fireInvalidation` | `lib/invalidation/invalidation-registry.ts` |
 | Humanize labels (snake/kebab → Title Case, acronyms) | `formatText` / `formatTitleCase` | `utils/text/text-case-converter.ts` |
 | Slugify to kebab-case | `convertToKebabCase` | `utils/text/stringUtils.ts` |
 | Markdown → speakable plain text (TTS) | `parseMarkdownToText` | `utils/markdown-processors/parse-markdown-for-speech.ts` |

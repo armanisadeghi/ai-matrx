@@ -14,7 +14,8 @@ import { PencilRuler } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
-import { shapeCreatorAgentId } from "@/features/content-ir/studio/constants";
+import { KIND_CREATOR_SLOT_KEY } from "@/features/content-ir/studio/constants";
+import { resolveAgentSlot } from "@/features/agents/slots/service";
 import {
   composeKindAgentIntent,
   type KindAgentIntentInput,
@@ -39,20 +40,26 @@ export default function KindAgentButton({
   const openRun = useOpenAgentRunWindow();
 
   function launch() {
-    const agentId = shapeCreatorAgentId();
-    if (!agentId) {
-      toast.error("The Shape creator agent is not configured", {
-        description:
-          "Set SHAPE_CREATOR_AGENT_ID in features/content-ir/studio/constants.ts.",
+    // Resolve the `content_ir.kind_creator` slot at click time (the user's
+    // own binding wins), then open the creator agent in a floating window on
+    // this page, pre-loaded with the composed brief. The user reviews and
+    // sends; the run streams in-place. Loud on failure — never a silent no-op.
+    void resolveAgentSlot(KIND_CREATOR_SLOT_KEY)
+      .then((resolved) => {
+        openRun({
+          initialAgentId: resolved.agentId,
+          initialDraftText: composeKindAgentIntent(intent),
+        });
+      })
+      .catch((error: unknown) => {
+        console.error(
+          `[KindAgentButton] slot "${KIND_CREATOR_SLOT_KEY}" failed to resolve:`,
+          error,
+        );
+        toast.error("The Shape creator agent is unavailable", {
+          description: error instanceof Error ? error.message : String(error),
+        });
       });
-      return;
-    }
-    // Open the creator agent in a floating window on this page, pre-loaded with
-    // the composed brief. The user reviews and sends; the run streams in-place.
-    openRun({
-      initialAgentId: agentId,
-      initialDraftText: composeKindAgentIntent(intent),
-    });
   }
 
   return (
