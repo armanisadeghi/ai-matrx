@@ -8,9 +8,13 @@
  * the site-specific keyword workflow status, with the strongest matched page
  * per query.
  *
- * This is a READ surface. Collection (GSC/Bing sync) and market enrichment are
- * explicit compute operations elsewhere; nothing here fetches provider data.
- * It inherits brand + site context from `matrx-user/marketing-site`.
+ * The EVIDENCE here is read-only. Collection (GSC/Bing sync) and market
+ * enrichment are explicit compute operations elsewhere; nothing here fetches
+ * provider data. What IS agent-writable is the site's judgment ABOUT the
+ * evidence — library membership, the site traffic-class ruling, and which
+ * page a query belongs to — declared as `writeTargets` below (handlers:
+ * `SiteKeywordsWriteTargets.tsx`). It inherits brand + site context from
+ * `matrx-user/marketing-site`.
  *
  * Runtime scope assembly: `features/marketing/lib/scopes/site-keywords-scope.ts`
  * (emitter in `SiteKeywordPerformanceWorkspace.tsx`).
@@ -21,6 +25,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -111,14 +116,62 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * The WRITE half — the site's judgment about its query evidence. Every target
+ * persists immediately through a CANONICAL chokepoint the keyword plane
+ * already uses (`ensureKeywordId` → `seo.fn_upsert_keyword`,
+ * `setGscKeywordClass` → `seo.gsc_set_keyword_class`,
+ * `addPageSupportingKeywords`), so every entity write defaults to `ask` — an
+ * agent triaging the site's queries is welcome, an agent silently rewriting
+ * site rulings is not. Handlers: `SiteKeywordsWriteTargets.tsx` (mounted by
+ * `SiteKeywordPerformanceWorkspace`).
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "library_keywords",
+    label: "Add to keyword library",
+    description:
+      "Add keyword phrases to the canonical keyword library so this site's matching query rows become mapped (keyword_id, archive, intelligence, and market enrichment all need a library row). Value: { keywords: string[] } — plain phrases, typically queries from visible_keyword_rows that show no workflow status or market data yet. Each phrase is upserted through the ONE canonical seo.fn_upsert_keyword (deduped by normalized phrase); already-present phrases are a no-op and archived phrases are restored. Persists immediately.",
+    valueType: "object",
+    updatesValue: "visible_keyword_rows",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "query_evidence",
+    sortOrder: 100,
+  },
+  {
+    name: "keyword_traffic_class",
+    label: "Traffic class ruling",
+    description:
+      "Apply this SITE's traffic-class ruling to one or more keywords — the 'not all traffic is created equal' judgment that drives Traffic quality / Shifts / Juice. Value: { keywords: string[], traffic_class: 'money' | 'educational' | 'brand' | 'mismatch' | 'clear', notes?: string }. keywords are plain phrases (queries from visible_keyword_rows); notes is REQUIRED for 'mismatch' (server-enforced) and explains why the traffic is mis-matched; 'clear' removes the site ruling so the machine rungs (brand match, AI intent) decide again. Persists immediately through seo.gsc_set_keyword_class with AI provenance; a 'mismatch' ruling also suppresses the keyword's workflow_status on this table.",
+    valueType: "object",
+    updatesValue: "visible_keyword_rows",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "query_evidence",
+    sortOrder: 110,
+  },
+  {
+    name: "attach_page_keywords",
+    label: "Attach keywords to page",
+    description:
+      "Attach keyword phrases to ONE canonical page of this site as supporting keywords (the page's keyword batch). Value: { page_id: string, keywords: string[] } — page_id is a web.page id, typically a row's top_page_id (the page already ranking for the query). Each phrase is upserted into the keyword library and associated through the canonical chokepoint (addPageSupportingKeywords); duplicates are deduplicated and already-attached phrases are a no-op. Persists immediately; the batch shows on that page's workspace, not on this table.",
+    valueType: "object",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "query_evidence",
+    sortOrder: 120,
+  },
+];
+
 export const marketingSiteKeywordsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-site-keywords",
   label: "Organic Keyword Performance",
   urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/keywords",
   inheritsFrom: "matrx-user/marketing-site",
-  readiness: "partial",
+  readiness: "verified",
   readinessNote:
-    "Manifest + emitter complete for everything this read surface loads. Not yet registered in registry.ts / route-to-surface.ts / ui_surface (registration is the owner's call).",
+    "Registered (registry.ts + route-to-surface.ts) and live-agent verified end-to-end, including all three write targets (apply, decline, undeclared-target refusal).",
   intro: `<surface_intro>
 Read brand_context and site_context first — they tell you whose site this is and what it sells.
 You are on the organic keyword performance workspace for ONE managed website: the search queries it has ACTUALLY earned impressions and clicks for, as persisted from Google Search Console and Bing Webmaster over a rolling 28-day window, enriched with stored keyword-market metrics (volume, CPC, competition) and the site's own keyword workflow status.
@@ -127,6 +180,7 @@ Every metric here is stored provider evidence. Trust it as given, never re-deriv
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
+  writeTargets,
   agentRoles: [
     {
       name: "keyword_strategist",
