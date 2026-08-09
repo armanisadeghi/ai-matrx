@@ -31,8 +31,8 @@ read, so the rule cannot tell `{agent.id}` — a real dead end — from
 `{openItem.id}`, a detail panel printing its own row. It therefore reports
 **named ids only**; plain `id`/`uuid` is left entirely to the checker. That
 single exclusion, plus mirrored skip-tags, non-record id/root gates, the
-conditional-else skip and the "record is gone" copy gate, is what keeps the rule
-a genuine narrow slice rather than a noisier parallel checker.
+id-guarded-fallback skip and the "record is gone" copy gate, is what keeps the
+rule a genuine narrow slice rather than a noisier parallel checker.
 
 **Measured 2026-08-09** (`npx eslint features components app lib`, warnings
 carrying this rule id):
@@ -123,7 +123,7 @@ because it launders the class as "already covered". The rules therefore:
 - **Require the id in scope** before flagging a name. This is the load-bearing
   gate and it is the doctrine's own test.
 
-**Precision was measured, not assumed — three times.** Each cut was audited
+**Precision was measured, not assumed — four times.** Each cut was audited
 finding-by-finding against the source by an independent adversarial reviewer,
 and none of the audited versions shipped as-is:
 
@@ -134,9 +134,14 @@ and none of the audited versions shipped as-is:
 | 3 | ~50% | the id-prop + selector detail-surface shape (`function X({ agentId })` → `const agent = useAppSelector(…)`), which no parameter check could see |
 | 4 (PR review) | — | the self-subject walk stopped at the first enclosing function; the extracted-row-with-callsite-`key` idiom was silently suppressed; `onActivate` was not recognised as a door |
 
-Against the union of all three audits' hand-checked samples, the shipped version
-keeps **14/14** confirmed true positives and drops **28/28** confirmed false
-positives.
+Against the union of the hand-checked samples, the shipped version keeps
+**14/14** confirmed true positives and drops **20/20** confirmed false positives.
+
+Treat those tallies as *sample* results at a moment in time, not a precision
+figure for the whole report. The denominators moved between rounds because the
+rules moved — an earlier revision of this file claimed 28/28 against a rule set
+that no longer exists. If you need a current number, re-audit a fresh sample;
+do not cite this line as if it were a standing measurement.
 
 Additional gates, each traceable to a real false positive:
 
@@ -275,7 +280,17 @@ new one.
 
 - **2026-08-09** — Built. Checker (4 rules), scoreboard at
   `/administration/reporting/dead-ends`, `matrx/no-bare-id-text` ESLint rule,
-  advisory wiring in `run-release-gates.sh`. Retuned after each of three
-  finding-by-finding adversarial audits (~31% → ~55% → ~50% → shipped);
-  against the union of their samples, 14/14 true positives kept and 28/28 false
+  advisory wiring in `run-release-gates.sh`. Retuned after each of four
+  finding-by-finding adversarial audits (~31% → ~55% → ~50% → PR review);
+  against the union of their samples, 14/14 true positives kept and 20/20 false
   positives dropped. Baseline: 133 findings / 66 high across 82 files.
+  Post-merge review then caught six more defects in the ESLint half — see the
+  2026-08-09 (later) entry.
+- **2026-08-09 (later)** — `matrx/no-bare-id-text` measured for the first time:
+  139 warnings against the checker's 80 `bare-id-text` findings, i.e. the
+  "narrow slice" was the noisier of the two. Gated down to 76 (named ids only,
+  the missing "you are here" skip tags, non-record ids/roots, id-guarded
+  fallback, "record is gone" copy), then back up to **87** when review found
+  two of those gates over-suppressing (the ternary skip covered both arms of
+  any conditional; the transient-root gate ran before the own-id test and hid
+  every foreign key). Checker output unchanged throughout.
