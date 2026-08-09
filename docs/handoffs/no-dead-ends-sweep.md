@@ -43,6 +43,29 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
 - Worked reference: `features/admin/agent-slots/` (FEATURE.md § THE DOOR LAW)
 - Test login: `/login` → `admin@admin.com` / `Password1234#`
 
+## 🚨 NOTHING IN THIS CAMPAIGN HAS BEEN SEEN IN A BROWSER
+
+**Every door landed so far is verified by reading route files, route builders,
+live function definitions, `pnpm type-check`, ESLint and unit tests — never by
+loading a page.** No agent on this campaign has run a browser, and the ones that
+tried could not.
+
+This is not laziness to be scolded out of the next agent: **a cloud agent session
+cannot reach the app.** The network policy refuses `aimatrx.com`, both Vercel
+preview hosts, and `db.matrxserver.com` outright (403 at CONNECT — check it with
+`curl -sS "$HTTPS_PROXY/__agentproxy/status"` before spending a wave on it). No
+page loads, and no Supabase read succeeds, so the `/login` credentials above are
+useless from here. Do not burn a wave rediscovering this, and do not claim a
+surface is "verified" on the strength of a type-check.
+
+What that leaves unverified, and what a human or a session that CAN reach the app
+should look at: layout under the new anchors (a name that became a link inside a
+truncating flex row), the `/chat` sidebar agent chip at narrow widths, the two
+structured-list sidebars after their `<button>` → `<div>` + controls split, and
+every "hover reveals peek / new-tab" affordance — hover states are exactly what
+static analysis cannot see. The per-wave "routes to open" lists in **Done** below
+are written for that pass.
+
 ## Remaining work
 
 Ordered by traffic. Each item is independently actionable.
