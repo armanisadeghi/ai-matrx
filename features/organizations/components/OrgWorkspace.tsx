@@ -342,16 +342,23 @@ export function OrgWorkspace() {
 
               {/* Stats + meta */}
               <div className="flex items-center gap-5 flex-wrap mt-4">
+                {/* Each destination is one this page already navigates to
+                    elsewhere — the counts just reach them directly now. */}
                 <Stat
                   icon={<Users className="h-4 w-4" />}
                   value={members.length}
                   label={members.length === 1 ? "member" : "members"}
+                  href={`/organizations/${slug}/settings#members`}
                 />
                 <Stat
                   icon={<Layers3 className="h-4 w-4" />}
                   value={totalScopes}
                   label="scopes"
+                  href={`/organizations/${slug}/scopes`}
                 />
+                {/* No href: `/organizations/[orgId]/resources` has only a
+                    `[kind]` segment and NO index page, so a link here would
+                    404. The per-kind cards below are the real doors. */}
                 <Stat
                   icon={<Boxes className="h-4 w-4" />}
                   value={countsLoading ? "…" : totalResources}
@@ -386,21 +393,29 @@ export function OrgWorkspace() {
                   <MemberAvatar key={member.id} member={member} />
                 ))}
               </div>
+              {/* "+N more" is a count of real member rows; it reaches them. */}
               {members.length > 8 && (
-                <span className="text-xs text-muted-foreground">
+                <Link
+                  href={`/organizations/${slug}/settings#members`}
+                  className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                >
                   +{members.length - 8} more
-                </span>
+                </Link>
               )}
+              {/* Was `?tab=members`, which the destination never reads — that
+                  page is anchored SECTIONS (`#members`), not tabs, so the old
+                  link silently landed at the top of settings. An anchor rather
+                  than router.push so cmd/middle-click open a new tab. */}
               <Button
                 variant="ghost"
                 size="sm"
                 className="ml-auto text-muted-foreground h-7"
-                onClick={() =>
-                  router.push(`/organizations/${slug}/settings?tab=members`)
-                }
+                asChild
               >
-                Members
-                <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                <Link href={`/organizations/${slug}/settings#members`}>
+                  Members
+                  <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                </Link>
               </Button>
             </div>
           )}
@@ -579,23 +594,42 @@ export function OrgWorkspace() {
   );
 }
 
+/**
+ * A COUNT IS A DOOR. Each of these squares counts real rows — members, scopes,
+ * resources — and this page already knows where each set lives. Pass `href` and
+ * the number becomes the way in; omit it only when no destination exists.
+ */
 function Stat({
   icon,
   value,
   label,
+  href,
 }: {
   icon: React.ReactNode;
   value: React.ReactNode;
   label: string;
+  href?: string;
 }) {
-  return (
-    <div className="flex items-center gap-1.5">
+  const body = (
+    <>
       <span className="text-muted-foreground">{icon}</span>
       <span className="text-sm font-semibold text-foreground tabular-nums">
         {value}
       </span>
       <span className="text-xs text-muted-foreground">{label}</span>
-    </div>
+    </>
+  );
+  if (!href) {
+    return <div className="flex items-center gap-1.5">{body}</div>;
+  }
+  return (
+    <Link
+      href={href}
+      title={`View ${label}`}
+      className="flex items-center gap-1.5 rounded-md px-1 -mx-1 hover:bg-muted/60 hover:underline"
+    >
+      {body}
+    </Link>
   );
 }
 
