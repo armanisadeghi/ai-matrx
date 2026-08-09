@@ -568,12 +568,28 @@ function SourceRow({
         {/* Source: Title + URL + Description + hostname + tags + scrape */}
         <td className={cn("px-2 py-2.5 w-full max-w-0 align-top", cellBase)}>
           <div className="min-w-0 overflow-hidden">
-            <div className="font-medium text-sm leading-snug line-clamp-2 break-words group-hover:text-primary transition-colors">
+            {/* The title is a real anchor, so this row is cmd/middle-clickable
+                into a new tab and keyboard-reachable — the mobile card already
+                was, the desktop table only answered a plain mouse click. */}
+            <Link
+              href={`/research/topics/${topicId}/sources/${source.id}`}
+              onClick={(e) => !anyNavigating && onNavigate(source.id, e)}
+              className="block font-medium text-sm leading-snug line-clamp-2 break-words group-hover:text-primary transition-colors"
+            >
               {source.title || source.url}
-            </div>
-            <div className="text-xs text-muted-foreground break-all line-clamp-1 mt-0.5">
+            </Link>
+            {/* The page this row is ABOUT — the outbound door, previously only
+                reachable through the row's overflow menu. */}
+            <a
+              href={source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              title={`Open ${source.url} in a new tab`}
+              className="mt-0.5 block text-xs text-muted-foreground break-all line-clamp-1 hover:text-foreground hover:underline"
+            >
               {source.url}
-            </div>
+            </a>
             {source.description && (
               <div className="text-xs text-muted-foreground/80 mt-0.5 line-clamp-2 leading-relaxed break-words">
                 {source.description}

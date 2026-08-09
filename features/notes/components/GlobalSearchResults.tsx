@@ -17,6 +17,7 @@
 import React, { useCallback, useState, useMemo } from "react";
 import { ChevronDown, ChevronRight, FileText, Folder } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   addInstanceTab,
@@ -132,11 +133,19 @@ export function GlobalSearchResults({
               const isCollapsed = collapsed[note.noteId];
               return (
                 <div key={note.noteId} className="mb-0.5">
+                  <div className="group/entity-ref flex items-center gap-1 pr-2 transition-colors hover:bg-muted/60">
+                  {/* THE DOOR LAW: this row NAMES a note. The name itself can't
+                      be an anchor — the button's click means "collapse this
+                      group", and an <a> inside a <button> is invalid DOM — so
+                      the doors ride beside it (the documented EntityDoorControls
+                      case). Same-tab open is deliberately off: the user is
+                      mid-search inside the editor, and peek / new tab answer
+                      "which note is that?" without costing them the search. */}
                   <button
                     type="button"
                     onMouseDown={handleMouseDown}
                     onClick={() => toggleCollapsed(note.noteId)}
-                    className="w-full flex items-center gap-1 px-2 py-0.5 text-xs text-foreground hover:bg-muted/60 transition-colors"
+                    className="min-w-0 flex flex-1 items-center gap-1 px-2 py-0.5 text-xs text-foreground"
                   >
                     {isCollapsed ? (
                       <ChevronRight className="w-3 h-3 shrink-0" />
@@ -149,6 +158,12 @@ export function GlobalSearchResults({
                       {note.hits.length}
                     </span>
                   </button>
+                    <EntityDoorControls
+                      token="note"
+                      id={note.noteId}
+                      name={note.label}
+                    />
+                  </div>
                   {!isCollapsed && (
                     <ul className="pl-7">
                       {note.hits.map((hit) => (
