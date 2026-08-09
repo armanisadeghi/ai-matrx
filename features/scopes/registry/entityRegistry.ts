@@ -371,10 +371,26 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   flashcard_set: {
     Icon: Layers,
     labelPlural: "Flashcard Sets",
+    // users.user_flashcard_sets — verified: /education/flashcards/[setId]
+    // renders SetDetailView, which loads that exact table by id.
+    hrefFor: (id) => `/education/flashcards/${id}`,
+  },
+  assessment: {
+    Icon: ListChecks,
+    labelPlural: "Quizzes",
+    // education.assessment — verified: /education/quizzes/[id] renders
+    // AssessmentDetail over `.from("assessment")`.
+    hrefFor: (id) => `/education/quizzes/${id}`,
   },
   quiz_session: {
     Icon: ListChecks,
-    labelPlural: "Quizzes",
+    labelPlural: "Quiz Sessions",
+    // 🚨 NO hrefFor, deliberately. `quiz_session` is education.quiz_sessions —
+    // a TAKING of a quiz, not the quiz. /education/quizzes/[id] loads
+    // education.assessment (see the `assessment` entry above), so pointing
+    // this token there would open a different record that happens to have a
+    // page: a wrong-record door, worse than no door because it looks like it
+    // worked. Its old `labelPlural: "Quizzes"` said the same untruth in words.
   },
 
   // ─── Workspaces (containers — also valid as cards) ─────────────────────────
