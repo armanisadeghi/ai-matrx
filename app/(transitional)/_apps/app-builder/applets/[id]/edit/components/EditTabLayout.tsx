@@ -91,7 +91,7 @@ export default function EditTabLayout({ title, subtitle, tabs, id, onSave, hasCh
     };
 
     return (
-        <div className="space-y-6 pb-20">
+        <div className="space-y-6 pb-[calc(4rem+max(1rem,env(safe-area-inset-bottom)))]">
             {/* Fullscreen preview component */}
             <FullScreenAppletPreview
                 appletId={id}
