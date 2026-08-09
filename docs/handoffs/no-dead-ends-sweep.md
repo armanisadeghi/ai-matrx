@@ -266,12 +266,30 @@ explicit `href` instead (`CreateShowDialog`). Either the overlay grows a
 slug-aware form, or these routes gain id resolvers like `/scopes/s/<id>` — an
 owner's call, not a per-surface patch.
 
-**The registry route is not always the RIGHT door for the viewer.** `app`
-resolves to `/agent-apps/<id>` — the owner's overview — which is wrong for an
-operator who just created a system app from the admin console; that flow's
-editor is `/administration/agents/agent-apps/edit/<id>`. Pass an `href`
-override. Same shape as the org-admin 403 reasoning: right record, wrong door
-for who is looking. (Bugbot, 2026-08-09.)
+🚨 **The registry route is not always the RIGHT door for the viewer — and this
+needs a CHECK, not a rule.** `app` resolves to `/agent-apps/<id>`, the owner's
+overview, which is wrong for an operator who just created a system app from the
+admin console (`/administration/agents/agent-apps/edit/<id>`). Same shape as the
+org-admin 403 reasoning: right record, wrong door for who is looking.
+
+I wrote that as a prose rule and then committed **the identical defect one
+commit later** in `AgentSlotsConsole`, whose repin toast used `/agents/<id>`
+while the other five links on the page all call the file's own
+`agentHref(id, agentType)`. Both caught by Bugbot, not by me. So the rule is
+now mechanical:
+
+> **Before adding a door in any `(admin)` / `features/admin/**` file, grep that
+> file for an existing href helper** — `grep -oE "[a-zA-Z]+Href\(" <file>`. If
+> one exists and covers this entity, pass it as the `href` override. The
+> surrounding page is the authority on where its own records open.
+
+Swept the whole branch this way on 2026-08-09: 15 admin-path files carry doors,
+`AgentSlotsConsole` was the only miss. `scheduling/runs` and
+`ExposureAuditClient` already route through their local helpers;
+`KgInspector`'s `mentionHref` takes a mention row, not an org, so the registry
+route there is correct. `agent-apps/categories` deliberately has no door on its
+deep-link miss — `categoryHref` would link back to the same page with the same
+unresolvable param.
 
 **Not every "created" toast needs a door — check what the surface already
 does.** `PromoteToSiteDialog` looked like a textbook case, but the CMS lives in

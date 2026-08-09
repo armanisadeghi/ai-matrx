@@ -255,8 +255,15 @@ function RepinToTwinButton({
             use_latest: true,
           });
           // The toast names the agent it just repinned to and holds its id.
+          // Routed through this console's own `agentHref`, NOT the `agent`
+          // registry default: that default is `/agents/<id>`, the user shell,
+          // and every other link on this page sends an operator to the
+          // system-agent admin route instead. `twin.agentType` is what decides
+          // which — the same call the five sibling links make.
           toast.success(`${slot.slot_key} repinned to ${twin.name} (latest).`, {
-            action: toastDoor("agent", twin.id),
+            action: toastDoor("agent", twin.id, {
+              href: agentHref(twin.id, twin.agentType),
+            }),
           });
           onSaved();
         } catch (error: unknown) {
