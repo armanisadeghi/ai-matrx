@@ -14,6 +14,10 @@ Every task is a probe exposing what the platform is missing. Build (or extend) t
 
 **Before writing ANY new function, component, hook, slice, service, or table, read [docs/reuse-first.md](./docs/reuse-first.md)** — the ladder (**Reuse → Extend → Compose → Create**, exhaust each rung), the mandatory search gate (concept + synonyms + the Primitives Index; "found nothing" names the queries you ran), the importable-code rules (pure core, thin shell, no speculative abstraction), and the new-table bar (exceptional — same entity, new variant → column/flag/JSONB on the existing table). Its Primitives Index is guarded by `pnpm check:reuse-index` — fix or delete a row when a file moves. Your summary states what you searched, what you found, and what you reused or extended.
 
+## The user — a brilliant, absolutely NON-technical Subject Matter Expert
+
+**Our core user is world-best at something (a doctor, lawyer, researcher, SEO expert, opera singer) and here to turn that knowledge into AI-integrated systems — and they do not code, do not prompt-engineer, do not know AI, and never will.** A surface that needs technical intuition is broken for our user regardless of its power: zero jargon, zero developer concepts, a UX that just flows. **THE MISMATCH RULE:** never assume the person inside a topic UI is an expert in that topic — the SEO expert is most likely here building their own SEO systems; the opera singer may be the one inside our SEO tools. Build **topic surfaces** for a smart novice (the system supplies the expert reflexes, per the Canvas Doctrine); build **builder surfaces** (workflows, agents, scopes, apps) for a genius in something else who is a total novice at building. Canonical (Arman's words, 2026-08-08): `/Users/armanisadeghi/code/common-docs/systems/ai-dream-platform/USER.md`.
+
 ## 🚨 NO DEAD ENDS — every identity is a door, every capability is on the table
 
 > **THE DOOR LAW.** If the UI names a thing that has an identity in our system, the UI must let the user reach it.
