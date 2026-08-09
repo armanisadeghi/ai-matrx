@@ -627,20 +627,31 @@ const matrxLintPlugin = {
                  *
                  * Two conditions, both required, exactly as scan.ts's
                  * `isIdGuardedFallback`: the expression sits in the **false**
-                 * arm, AND the condition tests an **id**. A first cut skipped
-                 * either arm of any conditional, which silenced
+                 * arm, AND the condition tests **the very field being
+                 * rendered**. A first cut skipped either arm of any
+                 * conditional, which silenced
                  * `{show ? <span>{agentId}</span> : null}` — a perfectly
                  * reachable bare id whose conditional has nothing to do with
-                 * identity.
+                 * identity. The second cut then tested only for "the condition
+                 * mentions an id", which let display flags (`showAgentId`,
+                 * `hasTaskId`) suppress a real finding in their false arm.
+                 *
+                 * Whole-identifier and case-SENSITIVE, which is exactly what
+                 * separates them: `taskId` does not occur inside `hasTaskId`
+                 * (capital `T`), and `task_id` does not occur inside
+                 * `has_task_id` (`_` is a word character, so the boundary
+                 * fails) — while `row.taskId` and `!taskId` both match.
                  */
-                const ID_CONDITION_RE = /\b(id|uuid)\b|_id\b|Id\b/;
-                const isIdGuardedFallback = (node) => {
+                const isIdGuardedFallback = (node, name) => {
+                    const sameField = new RegExp(
+                        `\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`,
+                    );
                     let child = node;
                     for (let cur = node.parent; cur; child = cur, cur = cur.parent) {
                         if (
                             cur.type === 'ConditionalExpression' &&
                             cur.alternate === child &&
-                            ID_CONDITION_RE.test(context.sourceCode.getText(cur.test))
+                            sameField.test(context.sourceCode.getText(cur.test))
                         ) {
                             return true;
                         }
@@ -799,7 +810,7 @@ const matrxLintPlugin = {
                         // — the fallback arm renders the raw id precisely
                         // BECAUSE the door is unavailable there. Door Law
                         // honoured, not broken. The scanner skips these too.
-                        if (isIdGuardedFallback(node)) return;
+                        if (isIdGuardedFallback(node, name)) return;
                         if (isInNotFoundCopy(node)) return;
                         // The subject's OWN id only. A foreign key on the
                         // subject (`instance.agentId`) points at a DIFFERENT

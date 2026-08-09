@@ -56,8 +56,8 @@ Ordered by high-severity density. `high` = the entity already has an `hrefFor`,
 so the fix is one `<EntityRef>`. Refresh the numbers with
 `pnpm check:dead-ends:write` after each batch and commit the snapshot.
 
-**Baseline 2026-08-09: 140 findings · 73 high · 82 files · 6,809 scanned.**
-(bare id as text 81 · unlinked name 40 · unlinked count 3 · no doors at all 16)
+**Baseline 2026-08-09: 142 findings · 73 high · 83 files · 6,809 scanned.**
+(bare id as text 81 · unlinked name 42 · unlinked count 3 · no doors at all 16)
 Re-rank with `pnpm check:dead-ends:write` before starting — the scoreboard is
 the live worklist; these counts are the snapshot it was seeded from.
 
@@ -90,7 +90,7 @@ Each one is a registry line, not a per-call-site fix:
 
 | Token | Findings | Note |
 |---|---|---|
-| `scope` | 11 | Needs a canonical scope route decision first. |
+| `scope` | 12 | Needs a canonical scope route decision first. |
 | `organization` | 10 | `/administration/users/organizations` is admin-only; a user-facing org route may not exist yet. |
 | `skill` | 3 | |
 | `app` | 2 | Agent apps — `/apps/{id}` exists in the transitional group; confirm the target before wiring. |
@@ -98,8 +98,9 @@ Each one is a registry line, not a per-call-site fix:
 | `folder` | 1 | |
 | `project` | 1 | |
 | `quiz_session` | 1 | |
+| `transcript` | 1 | **The cheapest one here.** `/transcripts` is a live Tier 1 feature with a detail route, but its registry entry carries only `Icon` + `labelPlural` — no `hrefFor` (`entityRegistry.ts:246`). Add the line and `TranscriptsSidebar` becomes a one-`<EntityRef>` fix. |
 
-Counts are from the 2026-08-09 snapshot (140 findings). Re-derive after any
+Counts are from the 2026-08-09 snapshot (142 findings). Re-derive after any
 scan with `pnpm check:dead-ends --json` rather than trusting this table —
 tightening a rule moves these numbers.
 
@@ -134,11 +135,13 @@ real damage lives (doctrine §Corollaries):
 
 ## Decisions needed
 
-**Situation.** Eight entity types are named across the UI but have no canonical
-route in the entity registry, so 31 findings cannot be fixed at the call site
-— the biggest are `scope` (11), `organization` (10) and `skill` (3). Some have
+**Situation.** Nine entity types are named across the UI but have no canonical
+route in the entity registry, so 33 findings cannot be fixed at the call site
+— the biggest are `scope` (12), `organization` (10) and `skill` (3). Some have
 a page today in a transitional route group; some (a user-facing organization
-page, a scope detail page) may not be intended to exist at all.
+page, a scope detail page) may not be intended to exist at all. `transcript` is
+not one of those questions: the route exists, the registry line is simply
+missing, so it needs no decision — just the line.
 
 **Decide.** For each: is there a canonical route we should point `hrefFor` at
 today, is one worth building, or should that entity deliberately have no door

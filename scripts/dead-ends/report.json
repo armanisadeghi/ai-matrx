@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-08-09T18:07:39.976Z",
-  "commit": "6cdd5a06e6f67145499b7563c177d39b02c58a2f",
+  "generatedAt": "2026-08-09T18:15:30.912Z",
+  "commit": "03364062c580a391849d13942cd6ddbb011057c3",
   "totals": {
-    "findings": 140,
+    "findings": 142,
     "high": 73,
-    "medium": 67,
+    "medium": 69,
     "low": 0,
-    "filesWithFindings": 82,
+    "filesWithFindings": 83,
     "filesScanned": 6809,
     "allowlisted": 0
   },
   "byRule": {
     "bare-id-text": 81,
-    "unlinked-entity-name": 40,
+    "unlinked-entity-name": 42,
     "unlinked-count": 3,
     "no-doors-in-file": 16
   },
@@ -124,7 +124,7 @@
     },
     {
       "key": "app/(dev)/demos/scopes/context-lab/page.dev.tsx",
-      "count": 5,
+      "count": 6,
       "high": 1
     },
     {
@@ -276,7 +276,7 @@
     },
     {
       "key": "app/(dev)",
-      "count": 24,
+      "count": 25,
       "high": 8
     },
     {
@@ -1455,6 +1455,18 @@
     },
     {
       "file": "app/(dev)/demos/scopes/context-lab/page.dev.tsx",
+      "line": 853,
+      "column": 20,
+      "rule": "unlinked-entity-name",
+      "severity": "medium",
+      "entity": "scope",
+      "entityHasRoute": false,
+      "expression": "r.scope.name",
+      "feature": "app/(dev)",
+      "route": "/demos/scopes/context-lab"
+    },
+    {
+      "file": "app/(dev)/demos/scopes/context-lab/page.dev.tsx",
       "line": 1014,
       "column": 27,
       "rule": "unlinked-entity-name",
@@ -2099,6 +2111,18 @@
       "entityHasRoute": false,
       "expression": "row.tool_id",
       "feature": "features/tool-registry",
+      "route": null
+    },
+    {
+      "file": "features/transcripts/components/TranscriptsSidebar.tsx",
+      "line": 296,
+      "column": 30,
+      "rule": "unlinked-entity-name",
+      "severity": "medium",
+      "entity": "transcript",
+      "entityHasRoute": false,
+      "expression": "transcript.title",
+      "feature": "features/transcripts",
       "route": null
     }
   ],

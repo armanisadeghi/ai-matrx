@@ -312,7 +312,17 @@ export function scanFile(
    * on names alone missed every id-only list.
    */
   let sawNamedId = false;
-  let importsDoor = DOOR_IMPORT_MARKERS.some((m) => src.includes(m));
+  /**
+   * Does this file own a door mechanism? Decided from the IMPORT GRAPH, never
+   * from raw file text.
+   *
+   * `src.includes("next/link")` also matched the word inside a comment, a
+   * string literal, or dead code — so a genuinely door-less surface that merely
+   * *mentioned* `hrefFor` or `getEntityInfo` (in a TODO, say) excused itself
+   * from the Inventory Law rule entirely. Now every marker is matched against
+   * the module specifiers and imported bindings the AST reports.
+   */
+  let importsDoor = false;
   let importsEntitySource = false;
 
   /**
@@ -334,8 +344,13 @@ export function scanFile(
     if (ts.isImportDeclaration(node)) {
       const spec = node.moduleSpecifier.getText(sf);
       if (ENTITY_SOURCE_IMPORT_RE.test(spec)) importsEntitySource = true;
-      if (!importsDoor && importedBindings(node).some((b) => DOOR_BINDING_RE.test(b))) {
-        importsDoor = true;
+      if (!importsDoor) {
+        const bindings = importedBindings(node);
+        const declaresDoor =
+          DOOR_IMPORT_MARKERS.some(
+            (m) => spec.includes(m) || bindings.some((b) => b === m),
+          ) || bindings.some((b) => DOOR_BINDING_RE.test(b));
+        if (declaresDoor) importsDoor = true;
       }
     }
 
@@ -421,7 +436,7 @@ function classifyExpression(
   // `{row.agentId ? <EntityRef …/> : <span>{row.agentName}</span>}` — the
   // fallback arm renders the name precisely BECAUSE there is no id to open.
   // That is the Door Law honoured, not broken.
-  if (isIdGuardedFallback(node)) return null;
+  if (isIdGuardedFallback(node, property)) return null;
 
   // A name inside a loading/empty placeholder is not the real surface.
   if (isInPlaceholder(node, sf)) return null;
@@ -1312,20 +1327,30 @@ function unwrap(expr: ts.Expression): ts.Node {
 
 /**
  * True when this expression sits in the FALSE arm of a conditional whose test
- * is the very id that would have opened the door — the honest "we have no id,
- * so there is no door" fallback. The reference implementation
- * (`AgentSlotsConsole`) writes exactly this shape, and flagging it would teach
- * agents to delete a correct guard.
+ * is THE VERY FIELD being rendered — the honest "we have no id, so there is no
+ * door" fallback. The reference implementation (`AgentSlotsConsole`) writes
+ * exactly this shape, and flagging it would teach agents to delete a correct
+ * guard.
+ *
+ * It must be the same field, not merely an id-ish condition. Testing the
+ * condition for "contains an Id suffix" also matched display flags —
+ * `showAgentId`, `hasTaskId`, `includeOrgId` — which decide whether to RENDER
+ * the id, not whether one exists. A real bare id in that arm then vanished from
+ * both enforcers with nothing logged.
+ *
+ * The match is a whole-identifier, case-SENSITIVE one, which is what separates
+ * the two cases: `taskId` does not occur in `hasTaskId` (the capital `T` breaks
+ * it), and `task_id` does not occur in `has_task_id` (`_` is a word character,
+ * so the boundary fails) — while `row.taskId` and `!taskId` both match.
  */
-function isIdGuardedFallback(node: ts.Node): boolean {
+function isIdGuardedFallback(node: ts.Node, property: string): boolean {
+  const sameField = new RegExp(`\\b${property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
   let child: ts.Node = node;
   let cur: ts.Node | undefined = node.parent;
   while (cur) {
     if (ts.isConditionalExpression(cur)) {
       const inFalseArm = isAncestorOf(cur.whenFalse, child);
-      if (inFalseArm && /\b(id|uuid)\b|_id\b|Id\b/.test(cur.condition.getText())) {
-        return true;
-      }
+      if (inFalseArm && sameField.test(cur.condition.getText())) return true;
     }
     child = cur;
     cur = cur.parent;

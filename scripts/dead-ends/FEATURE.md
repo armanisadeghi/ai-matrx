@@ -124,7 +124,7 @@ to be walked back from.
 | `bare-id-text` | high when the token has a route | An id-shaped expression (`x.id`, `r.agent_id`, `fileId`) is rendered as JSX text with no door ancestor. |
 | `unlinked-entity-name` | high when the token has a route | A name-shaped expression (`x.name`, `agentName`, `noteTitle`) is rendered as text **and the same object's id is in scope in that file** — the surface provably knows the identity and withheld the door. |
 | `unlinked-count` | medium | `{n} agents` / `{x.length} members` with no navigation — a count is a door. |
-| `no-doors-in-file` | high | A file reads records (imports a service/slice/selector), **presents** them — by name, or by an id whose entity resolves — and imports **no** door mechanism at all. Debug panels, diagnostics and test clients are excluded from **both** triggers: they display raw records by design, and their individual `bare-id-text` / `unlinked-entity-name` findings still report. |
+| `no-doors-in-file` | high | A file reads records (imports a service/slice/selector), **presents** them — by name, or by an id whose entity resolves — and imports **no** door mechanism at all. "Owns a door" is read from the **import graph**, never raw file text: a `next/link` or `hrefFor` mentioned in a comment, a string or dead code used to excuse a genuinely door-less surface. Debug panels, diagnostics and test clients are excluded from **both** triggers: they display raw records by design, and their individual `bare-id-text` / `unlinked-entity-name` findings still report. |
 
 `high` means "the entity already has an `hrefFor`, so the fix is one
 `<EntityRef>`". `medium` means "real, but needs a judgment call" — usually the
@@ -148,7 +148,12 @@ because it launders the class as "already covered". The rules therefore:
   including a whole-row click (the canonical `lib/entity-list` pattern).
 - **Skip the id-guarded fallback** — `{x.id ? <EntityRef/> : <span>{x.name}</span>}`
   renders the name precisely *because* there is no id. Flagging it would teach
-  agents to delete a correct guard.
+  agents to delete a correct guard. The condition must test **the very field
+  being rendered**, matched whole-identifier and case-sensitively: a display
+  flag (`showAgentId`, `hasTaskId`) decides whether to *render* the id, not
+  whether one exists, and letting it suppress its own false arm silenced real
+  findings. `taskId` does not occur inside `hasTaskId`, and `task_id` does not
+  occur inside `has_task_id` — that is exactly what keeps the two apart.
 - **Require the id in scope** before flagging a name. This is the load-bearing
   gate and it is the doctrine's own test.
 
@@ -224,7 +229,7 @@ Additional gates, each traceable to a real false positive:
   suppressed `brokerId`, `call_id`, `nodeId`, `blockId` — every one a real
   record here. Suppressing a real entity is worse than ranking it low.
 
-Measured on the shipped ruleset: **140 findings (73 high, 67 medium) across 82
+Measured on the shipped ruleset: **142 findings (73 high, 69 medium) across 83
 files out of 6,809 scanned, in ~9s.**
 
 ## Known limits — stated, not hidden
@@ -339,3 +344,16 @@ new one.
   half-committed `report.json` would print a total the rows could not support —
   `reconcileReport` now names every disagreement in a red alert on the page
   (shown, not thrown). Committed snapshot reconciles clean; counts unchanged.
+- **2026-08-09 (later, evening)** — two suppression gates were wider than their
+  own comments claimed, and both hid real findings. (1) The id-guarded-fallback
+  skip fired when the condition merely *contained* an id-ish token, so a display
+  flag — `showAgentId`, `hasTaskId` — silenced a genuine bare id in its false
+  arm; it now requires the condition to test **the very field being rendered**,
+  matched whole-identifier and case-sensitively. (2) `no-doors-in-file` decided
+  "this file owns a door" from raw file TEXT, so `next/link` or `hrefFor` in a
+  comment or a string excused a door-less surface; it now reads the **import
+  graph**. 140 → **142** findings (both new ones hand-checked as true positives:
+  `TranscriptsSidebar` and the context-lab demo), 0 removed, and `no-doors-in-file`
+  held at 16 — no file in the tree was actually excusing itself by comment, but
+  the hole was reachable. Surfaced a registry gap worth its own line: `transcript`
+  has a live route and no `hrefFor`.
