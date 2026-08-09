@@ -92,15 +92,9 @@ Ordered by traffic. Each item is independently actionable.
    **In flight:** `lib/entity-list/` shell, `/agents/all` columns, `/chat`
    history sidebar, `/rag/library`, `/war-room/all`, `/lists`, `/files`,
    `/tasks`, `/projects`, `/marketing/{brands,sites,pages}`.
-   **Still open after that:**
-   `features/agents/components/agent-listings/AgentCard.tsx:184` (hand-rolled
-   `window.open` on cmd-click instead of an anchor),
-   `features/agents/components/shortcuts/AgentShortcutsPanel.tsx:83`,
-   `features/agent-apps/components/agent-app-listings/AgentAppCard.tsx:138`,
-   `features/agents/agent-sets/components/AgentSetCard.tsx` (member agents
-   rendered as anonymous glyphs — neither named nor linked),
-   and the ~35 remaining
-   `MatrxColumnDef` files under `features/marketing/**` (NONE declare `href`).
+   The agent-adjacent card/panel surfaces named here are DONE — see the
+   agent-adjacent entry under **Done**. The `MatrxColumnDef` files under
+   `features/marketing/**` are DONE too — see the marketing-tables entry.
    Already correct, do not redo: `features/crm/components/record/*`,
    `features/dashboard/**`, `components/user-generated-table-data/TableCards.tsx`,
    `features/research/components/landing/TopicList.tsx`,
@@ -222,6 +216,24 @@ Ordered by traffic. Each item is independently actionable.
     `/administration/compute/sandbox` can only link the viewer's OWN instances —
     the rest would 404. Needs a super-admin read path (or an admin-side sandbox
     detail route) before every row can open. Same family as item 13.
+19. **Agent-set MEMBERS cannot be linked from the set CARD.** `/agents/sets`
+    renders each member as an anonymous glyph because `AgentSetSummary` (the
+    `agent_set_list()` RPC) carries only `memberCount` — no member ids, no
+    names. The count is now a door to the builder, where every member IS named
+    and linked, which is the honest fix without a per-card fetch. Naming them on
+    the card needs `agent_set_list()` to return the first N member
+    `(id, name)` pairs.
+20. **An agent app's `N runs` has no user-side destination.** `AgentAppCard`
+    shows `total_executions`; the only executions console is
+    `/administration/agents/agent-apps/executions?app=<id>`, behind the
+    super-admin `(admin)` layout — the same "403 door" question as item 11. A
+    `/agent-apps/[id]/executions` route would light up the count for owners.
+21. **MCP servers have no entity token.** `features/agent-connections`'
+    `McpServersSection` lists real `McpCatalogEntry` records (and the admin
+    console at `/administration/agents/mcp-tools` exists), but there is no
+    registered token, so `ListRow`'s new `door` slot has nothing to resolve and
+    those rows stay panel-only. Registering `mcp_server` with an `hrefFor` would
+    serve that section and the tools manager at once.
 16. **Counts still without a destination** (deliberately left inert): a library
     store's `N members` and the sandbox console's `Unique users` have no list to
     reach; the enum Usage tab's `schema.table` names have nowhere to go —
@@ -292,3 +304,41 @@ Ordered by traffic. Each item is independently actionable.
   (`research_source`), `SourceList`'s desktop rows got the anchor its mobile
   cards already had, the decorative `ArrowUpRight` became the real new-tab door,
   and the source's own URL is reachable without opening the overflow menu.
+- **Agent-adjacent cards + panels** (`features/agents` outside `browse/` and
+  `conversation-*`, `features/agent-shortcuts`, `features/agent-apps`,
+  `features/agent-connections`). The recurring shape was a card or row whose
+  ONLY way in was a JS click — `AgentCard` / `AgentListItem` even hand-rolled
+  `window.open` on cmd-click, which is not an anchor and gives nothing to
+  middle-click, keyboard or the context menu:
+  - names became `EntityRef` anchors: the agent on `AgentCard` /
+    `AgentListItem` (registry route, `basePath`-aware so an admin card stays in
+    the system-agents shell), the app AND **the agent it runs** on
+    `AgentAppCard` (that line was `Agent: <name>` with the id right there and
+    no door), the shortcut label + the agent column in `ShortcutDirectory` (it
+    printed a raw uuid when the join missed), and the agent in the
+    agent-connections detail pane.
+  - `AgentShortcutsPanel`'s shortcut rows were `<button onClick={router.push}>`
+    → whole-row anchors.
+  - `AgentSetCard` — see the dedicated commit; the tile's four doors plus a
+    mouse-only overlay link that replaces the old `role="button"` + `onClick`.
+  - agent-sets member surfaces (`AgentRoleCard`, `AgentLibraryRail`,
+    `SetMemberGrid`, `MemberInspector`, `OrchestratorInspector`) had a peek and
+    nothing else — a member agent could be previewed but never opened. They now
+    carry `EntityDoorControls` beside the peek (new tab always; same-tab Open
+    only where leaving does not discard a canvas in progress), and the invented
+    fallback labels (`"Member"`, `"Orchestrator"`, `"Agent"` for an agent the
+    slice had not loaded) were replaced with `null` so the id shows instead.
+  - **Primitives extended, not forked:** `EntityRef` gained `nameClassName` so a
+    CARD title can wrap (`line-clamp-2/3`) instead of being forced onto one
+    truncated line — the reason card surfaces were hand-rolling name anchors.
+    `features/agent-connections/components/ListRow` split into a button + a
+    `door` slot rendered as its SIBLING (the row's click means "show in this
+    panel", so the name cannot be the anchor and `<a>`-inside-`<button>` is
+    invalid DOM).
+  - Verified by `pnpm type-check`, ESLint on every changed file, and reading
+    each destination route on disk (`app/(core)/agents/[id]`, `…/sets/
+    [orchestratorId]`, `…/[id]/shortcuts/[shortcutId]`, `app/(core)/agent-apps/
+    [id]`, `app/(admin)/administration/agents/system-agents/agents/[id]`).
+    `getAgent`/`getAgentApp` both filter `deleted_at is null`, and neither list
+    surface has a trash view, so no door lands on a soft-deleted row. **No
+    browser** — see the banner above.
