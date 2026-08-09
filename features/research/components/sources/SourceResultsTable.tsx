@@ -30,7 +30,6 @@ import {
   MOBILE_TABLE,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 /**
@@ -536,10 +535,7 @@ export function SourceResultsTable({
                     go();
                   }
                 }}
-                className={cn(
-                  "group border-b border-border/20 last:border-0 sm:hover:bg-muted/40 cursor-pointer transition-colors",
-                  MOBILE_TABLE_ROW,
-                )}
+                className="group border-b border-border/20 last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
               >
                 <td className="py-2 pl-2 pr-1 align-top font-mono text-[11px] tabular-nums text-muted-foreground">
                   {rank != null ? rank : "—"}

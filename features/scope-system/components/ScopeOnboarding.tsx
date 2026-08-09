@@ -58,7 +58,6 @@ import {
   MOBILE_TABLE_CELL,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 // A column shown in the ghost preview. `name` becomes a context item if the
@@ -362,7 +361,7 @@ function GhostDimensionCard({
           </thead>
           <tbody>
             {dim.rows.map((row, rIdx) => (
-              <tr key={row} className={cn("border-t border-border/60", MOBILE_TABLE_ROW)}>
+              <tr key={row} className="border-t border-border/60">
                 <td className={cn("px-2 py-1 font-medium text-foreground sm:truncate", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[120px]")}>
                   {row}
                 </td>

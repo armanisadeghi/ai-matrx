@@ -33,7 +33,6 @@ import {
   MOBILE_TABLE_CELL,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 const FORMAT_BYTES = (n: number | null): string => {
@@ -170,7 +169,7 @@ export function RichMemberTable({
             {members.map((m) => (
               <tr
                 key={`${m.sourceKind}/${m.sourceId}`}
-                className={cn("transition-colors max-sm:whitespace-nowrap sm:hover:bg-muted/20", MOBILE_TABLE_ROW)}
+                className="transition-colors max-sm:whitespace-nowrap hover:bg-muted/20"
               >
                 <td className={cn("px-3 py-2 max-w-md", MOBILE_TABLE_FROZEN_CELL)}>
                   <div className="font-medium truncate">{m.name}</div>

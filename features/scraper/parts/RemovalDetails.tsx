@@ -3,6 +3,10 @@ import { detailsMap, typeMap } from "@/features/scraper/constants";
 import { Checkbox } from "@/features/scraper/reusable/checkbox";
 import { Button } from "@/components/ui/button";
 import React, { useState, useMemo } from "react";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 type FilterColumn = "type" | "details" | "remover";
 type SortColumn = "text" | FilterColumn;
@@ -162,7 +166,7 @@ const RemovalDetails = ({ allRemovals }: RemovalDetailsProps) => {
       </div>
 
       <div className="w-full overflow-x-auto">
-        <table className="w-full border-collapse table-fixed">
+        <table className={cn("border-collapse sm:table-fixed", MOBILE_TABLE_FROZEN)}>
           <thead>
             <tr>
               <th

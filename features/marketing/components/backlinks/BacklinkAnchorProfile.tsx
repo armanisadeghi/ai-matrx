@@ -153,7 +153,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
                     <tr
                       key={entry.key}
                       className={cn(
-                        "cursor-pointer border-b border-border/60 transition-colors last:border-b-0 sm:hover:bg-accent/60",
+                        "cursor-pointer border-b border-border/60 transition-colors last:border-b-0 hover:bg-accent/60",
                         selected && "bg-accent",
                       )}
                       onClick={() =>

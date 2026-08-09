@@ -19,7 +19,6 @@ import {
   MOBILE_TABLE_CELL,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 interface VersionHistoryTimelineProps {
@@ -201,9 +200,8 @@ function VersionRow({
     <>
       <tr
         className={cn(
-          "group sm:hover:bg-muted/20 transition-colors",
-          MOBILE_TABLE_ROW,
-          isLatest && "sm:bg-primary/5",
+          "group hover:bg-muted/20 transition-colors",
+          isLatest && "bg-primary/5",
         )}
       >
         {/* Version */}
@@ -361,7 +359,7 @@ function BasicTimeline({
           return (
             <tr
               key={v.version_number}
-              className={cn("group sm:hover:bg-muted/20 cursor-pointer", MOBILE_TABLE_ROW)}
+              className="group hover:bg-muted/20 cursor-pointer"
               onClick={() => onCompare(v.version_number, "current")}
             >
               <td className={cn("py-1.5 pr-3", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[64px]")}>

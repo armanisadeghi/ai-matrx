@@ -32,7 +32,6 @@ import {
   MOBILE_TABLE_CELL,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 type MemoryCostByEventType = components["schemas"]["MemoryCostByEventType"];
@@ -179,7 +178,7 @@ export function MemoryCostCard({
             <table className={cn("text-[11px]", MOBILE_TABLE)}>
               <thead className="bg-muted/30 text-muted-foreground">
                 <tr>
-                  <th className={cn("text-left font-medium px-2 py-1", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-muted/30")}>Type</th>
+                  <th className={cn("text-left font-medium px-2 py-1", MOBILE_TABLE_FROZEN_HEAD, "max-bg-muted/30")}>Type</th>
                   <th className={cn("text-right font-medium px-2 py-1", MOBILE_TABLE_CELL)}>Count</th>
                   <th className={cn("text-right font-medium px-2 py-1", MOBILE_TABLE_CELL)}>Cost</th>
                   <th className={cn("text-right font-medium px-2 py-1", MOBILE_TABLE_CELL)}>In</th>
@@ -197,7 +196,7 @@ export function MemoryCostCard({
                   return (
                     <tr
                       key={key}
-                      className={cn("border-t border-border/40 sm:hover:bg-muted/20", MOBILE_TABLE_ROW)}
+                      className="border-t border-border/40 hover:bg-muted/20"
                     >
                       <td className={cn("px-2 py-1 font-mono", MOBILE_TABLE_FROZEN_CELL)}>{key}</td>
                       <td className={cn("px-2 py-1 text-right font-mono", MOBILE_TABLE_CELL)}>

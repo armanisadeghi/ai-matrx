@@ -25,7 +25,6 @@ import {
   MOBILE_TABLE,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 export interface ResultTableProps {
@@ -281,7 +280,7 @@ export const ResultTable: React.FC<ResultTableProps> = ({
                             </tr>
                         ) : (
                             shown.map((row, ri) => (
-                                <tr key={ri} className={cn("border-b border-border/60 last:border-0 sm:hover:bg-muted/30", MOBILE_TABLE_ROW)}>
+                                <tr key={ri} className="border-b border-border/60 last:border-0 hover:bg-muted/30">
                                     {columns.map((col, colIdx) => (
                                         <td
                                             key={col.key}

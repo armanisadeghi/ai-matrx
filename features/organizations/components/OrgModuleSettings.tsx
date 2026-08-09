@@ -45,7 +45,6 @@ import {
   MOBILE_TABLE,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 type ToggleField =
@@ -215,7 +214,7 @@ export function OrgModuleSettings({
                       return (
                         <tr
                           key={entry.key}
-                          className={cn("border-b border-border last:border-0 sm:hover:bg-accent/30", MOBILE_TABLE_ROW)}
+                          className="border-b border-border last:border-0 hover:bg-accent/30"
                         >
                           <td className={cn("px-3 py-2", MOBILE_TABLE_FROZEN_CELL)}>
                             <div className="flex items-center gap-2">

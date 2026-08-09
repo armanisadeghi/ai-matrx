@@ -241,8 +241,8 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
                     <tr
                       key={row.query}
                       className={cn(
-                        "sm:hover:bg-accent/50",
-                        isTarget && "sm:bg-primary/5",
+                        "hover:bg-accent/50",
+                        isTarget && "bg-primary/5",
                       )}
                     >
                       <td

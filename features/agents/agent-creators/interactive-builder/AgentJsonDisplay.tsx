@@ -49,7 +49,6 @@ import {
   MOBILE_TABLE_CELL,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 export interface AgentJsonDisplayProps {
@@ -510,7 +509,7 @@ function VariablesTable({
         </thead>
         <tbody>
           {vars.map((v, idx) => (
-            <tr key={idx} className={cn("border-b last:border-b-0", MOBILE_TABLE_ROW)}>
+            <tr key={idx} className="border-b last:border-b-0">
               <td className={cn("px-2 py-1.5", MOBILE_TABLE_FROZEN_CELL)}>
                 <code className="font-mono bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">
                   {v.name}
@@ -558,7 +557,7 @@ function ContextSlotsTable({
         </thead>
         <tbody>
           {slots.map((s, idx) => (
-            <tr key={idx} className={cn("border-b last:border-b-0", MOBILE_TABLE_ROW)}>
+            <tr key={idx} className="border-b last:border-b-0">
               <td className={cn("px-2 py-1.5", MOBILE_TABLE_FROZEN_CELL)}>
                 <code className="font-mono bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">
                   {s.key}

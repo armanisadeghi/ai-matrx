@@ -13,7 +13,6 @@ import {
   MOBILE_TABLE_CELL,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
@@ -65,7 +64,7 @@ export function CleanupDebugPanel({
           </thead>
           <tbody>
             {report.operations.map((op) => (
-              <tr key={op.id} className={cn("border-b border-border/50 last:border-0", MOBILE_TABLE_ROW)}>
+              <tr key={op.id} className="border-b border-border/50 last:border-0">
                 <td className={cn("px-2 py-1 text-foreground", MOBILE_TABLE_FROZEN_CELL)}>{op.label}</td>
                 <td className={cn("px-2 py-1", MOBILE_TABLE_CELL)}>
                   <span

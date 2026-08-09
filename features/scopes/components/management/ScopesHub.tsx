@@ -54,7 +54,6 @@ import {
   MOBILE_TABLE_CELL,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 /** Reasonable cap on context-item columns so wide catalogs don't explode
@@ -389,9 +388,8 @@ function ScopeTypeTable({
                       )
                     }
                     className={cn(
-                      "border-b border-border/30 last:border-b-0 cursor-pointer transition-colors sm:hover:bg-accent/60",
-                      MOBILE_TABLE_ROW,
-                      isActive && "sm:bg-primary/5",
+                      "border-b border-border/30 last:border-b-0 cursor-pointer transition-colors hover:bg-accent/60",
+                      isActive && "bg-primary/5",
                     )}
                     style={
                       isActive

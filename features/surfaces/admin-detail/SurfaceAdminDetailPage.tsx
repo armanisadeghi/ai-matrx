@@ -1202,7 +1202,7 @@ function HierarchySection({
                   </thead>
                   <tbody className="divide-y divide-border">
                     {children.map((child) => (
-                      <tr key={child.name} className="sm:hover:bg-muted/30">
+                      <tr key={child.name} className="hover:bg-muted/30">
                         <td className="px-2 py-1.5 font-mono align-middle">
                           <Link
                             href={surfaceAdminHref(child.name)}

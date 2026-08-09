@@ -24,7 +24,6 @@ import {
   MOBILE_TABLE,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 interface TableRowMeta {
@@ -275,7 +274,7 @@ export function TableRowsViewer({
                     )}
                     <tbody>
                       {t.rows.map((row, ri) => (
-                        <tr key={ri} className={cn("sm:even:bg-muted/10", MOBILE_TABLE_ROW)}>
+                        <tr key={ri} className="even:bg-muted/10">
                           {row.map((cell, ci) => (
                             <td
                               key={ci}

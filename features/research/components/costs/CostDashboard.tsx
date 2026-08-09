@@ -36,7 +36,6 @@ import {
   MOBILE_TABLE,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 const PHASE_ICON: Record<CostPhase, typeof Brain> = {
@@ -110,9 +109,8 @@ function LedgerRow({ entry }: { entry: CostLedgerEntry }) {
   return (
     <tr
       className={cn(
-        "border-b border-border/30 last:border-0 sm:hover:bg-muted/20 transition-colors",
-        MOBILE_TABLE_ROW,
-        !entry.succeeded && "sm:bg-destructive/5",
+        "border-b border-border/30 last:border-0 hover:bg-muted/20 transition-colors",
+        !entry.succeeded && "bg-destructive/5",
       )}
     >
       <td className={cn("px-2 py-1.5 whitespace-nowrap text-muted-foreground tabular-nums text-[11px]", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-0")}>
@@ -330,7 +328,6 @@ export default function CostDashboard() {
                     key={phase.phase}
                     className={cn(
                       "border-b border-border/30 last:border-0",
-                      MOBILE_TABLE_ROW,
                       empty && "opacity-50",
                     )}
                   >
@@ -417,7 +414,7 @@ export default function CostDashboard() {
                 {models.map((m) => (
                   <tr
                     key={m.model}
-                    className={cn("border-b border-border/30 last:border-0", MOBILE_TABLE_ROW)}
+                    className="border-b border-border/30 last:border-0"
                   >
                     <td className={cn("px-3 py-1.5 font-medium", MOBILE_TABLE_FROZEN_CELL)}>
                       {m.model}

@@ -21,6 +21,9 @@ import type {
   StatelessRatingResponse,
   WcImpairmentDefinitionRead,
 } from "../../api/types";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 interface RatingBreakdownTableProps {
   result: StatelessRatingResponse;
@@ -306,7 +309,7 @@ export function RatingBreakdownTable({
           California WC professionals expect to see end-to-end:
           WPI → +Pain → ×FEC → ×Variant → AgeAdj → ×Industrial → Final PD */}
       <div className="w-full overflow-x-auto rounded-lg border border-border bg-background/40">
-        <table className="w-full border-collapse text-sm">
+        <table className={cn("border-collapse text-sm", MOBILE_TABLE_FROZEN)}>
           <thead className="bg-muted/40">
             <tr className="text-[11px] uppercase tracking-wider text-muted-foreground">
               <Th className="w-10 pl-4 text-left">#</Th>

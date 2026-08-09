@@ -12,6 +12,9 @@ import {
 } from "@/components/ui/tooltip";
 import type { InjuryDraft } from "../../state/types";
 import type { WcImpairmentDefinitionRead } from "../../api/types";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 const SIDE_LABELS: Record<string, string> = {
   left: "Left",
@@ -94,7 +97,7 @@ export function InjuriesTable({
         className,
       )}
     >
-      <table className="w-full border-collapse text-sm">
+      <table className={cn("border-collapse text-sm", MOBILE_TABLE_FROZEN)}>
         <thead className="bg-muted/40">
           <tr className="text-[11px] uppercase tracking-wider text-muted-foreground">
             <Th className="w-10 pl-4 text-left">#</Th>

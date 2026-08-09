@@ -19,6 +19,9 @@ import {
   type TablePayload,
   type TablesPayload,
 } from "./utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 interface Props {
   results: FileAnalysisResultRow[];
@@ -96,7 +99,7 @@ function TableCard({
       </div>
       <div className="max-h-[420px] overflow-auto">
         {grid.length ? (
-          <table className="w-full table-fixed border-collapse text-[11px]">
+          <table className={cn("sm:table-fixed border-collapse text-[11px]", MOBILE_TABLE_FROZEN)}>
             <tbody>
               {grid.map((row, ri) => (
                 <tr

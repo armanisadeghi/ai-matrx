@@ -43,7 +43,6 @@ import {
   MOBILE_TABLE_CELL,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 export interface NoteVersionHistoryPanelProps {
@@ -577,9 +576,8 @@ function NoteHistoryTimeline({
               <tr
                 key={version.version_number}
                 className={cn(
-                  "group transition-colors sm:hover:bg-muted/20",
-                  MOBILE_TABLE_ROW,
-                  isLatest && "sm:bg-primary/5",
+                  "group transition-colors hover:bg-muted/20",
+                  isLatest && "bg-primary/5",
                 )}
               >
                 <td className={cn("py-2.5 pr-3", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[64px]")}>

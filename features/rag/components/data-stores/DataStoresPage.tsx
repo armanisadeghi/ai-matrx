@@ -54,7 +54,6 @@ import {
   MOBILE_TABLE_CELL,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 import dynamic from "next/dynamic";
 import { RichMemberTable } from "@/features/rag/components/data-stores/RichMemberTable";
@@ -843,7 +842,7 @@ function MemberTable({
           {members.map((m) => (
             <tr
               key={`${m.sourceKind}/${m.sourceId}`}
-              className={cn("sm:hover:bg-muted/20", MOBILE_TABLE_ROW)}
+              className="hover:bg-muted/20"
             >
               <td className={cn("px-3 py-1.5 text-xs", MOBILE_TABLE_CELL)}>
                 {m.sourceKind}

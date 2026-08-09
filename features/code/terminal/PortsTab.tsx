@@ -18,7 +18,6 @@ import {
   MOBILE_TABLE_CELL,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 interface PortsTabProps {
@@ -183,10 +182,7 @@ export const PortsTab: React.FC<PortsTabProps> = ({ className }) => {
                 return (
                   <tr
                     key={key}
-                    className={cn(
-                      "border-t border-neutral-100 dark:border-neutral-800/70 sm:hover:bg-neutral-50 dark:sm:hover:bg-neutral-900/60",
-                      MOBILE_TABLE_ROW,
-                    )}
+                    className="border-t border-neutral-100 dark:border-neutral-800/70 hover:bg-neutral-50 dark:hover:bg-neutral-900/60"
                   >
                     <td className={cn("px-2 py-1 font-mono", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-0")}>
                       {entry.port}

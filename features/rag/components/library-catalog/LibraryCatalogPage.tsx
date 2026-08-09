@@ -53,7 +53,6 @@ import {
   MOBILE_TABLE,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 /** Canonical `ui_surface.name` this page emits — the catalog half. */
@@ -442,7 +441,7 @@ function CatalogDetailPanel({
                     {detail.members.map((m) => (
                       <tr
                         key={`${m.sourceKind}/${m.sourceId}`}
-                        className={cn("sm:hover:bg-muted/20", MOBILE_TABLE_ROW)}
+                        className="hover:bg-muted/20"
                       >
                         <td className={cn("px-3 py-1.5", MOBILE_TABLE_FROZEN_CELL)}>
                           <div className="flex items-center gap-1.5 text-xs">

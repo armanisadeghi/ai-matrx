@@ -41,7 +41,6 @@ import {
   MOBILE_TABLE,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 const ROWS_PER_PAGE = 25;
@@ -474,10 +473,7 @@ export function DataPreview({ fileId, fileName, className }: DataPreviewProps) {
               {pageRows.map((row, idx) => (
                 <tr
                   key={idx}
-                  className={cn(
-                    "border-b border-border/60 sm:hover:bg-muted/40",
-                    MOBILE_TABLE_ROW,
-                  )}
+                  className="border-b border-border/60 hover:bg-muted/40"
                 >
                   {headers.map((h, colIdx) => {
                     const v = row[h];

@@ -226,8 +226,8 @@ export function QualityView({
               <tr
                 key={row.traffic_class}
                 className={cn(
-                  "cursor-pointer border-t border-border sm:hover:bg-accent/50",
-                  trafficClass === row.traffic_class && "sm:bg-accent/60",
+                  "cursor-pointer border-t border-border hover:bg-accent/50",
+                  trafficClass === row.traffic_class && "bg-accent/60",
                 )}
                 onClick={() =>
                   setTrafficClass(

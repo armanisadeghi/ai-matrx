@@ -20,6 +20,10 @@ import {
   subscribeDebug,
   type CaptureDebugSnapshot,
 } from "../audio/continuousCapture";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 function fmtSec(s: number): string {
   return `${s.toFixed(2)}s`;
@@ -87,7 +91,7 @@ export function AudioCaptureDebugPanel({ className }: { className?: string }) {
       </div>
 
       {snap.cards.length > 0 && (
-        <table className="mt-2 w-full table-fixed">
+        <table className={cn("mt-2 sm:table-fixed", MOBILE_TABLE_FROZEN)}>
           <thead className="text-muted-foreground">
             <tr className="text-left">
               <th className="font-normal">Card</th>

@@ -59,7 +59,6 @@ import {
   MOBILE_TABLE_CELL,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 type DiagCheck = {
@@ -914,7 +913,7 @@ export function SandboxDiagnosticsPanel({
                       return filtered.map((kv) => (
                         <tr
                           key={kv.key}
-                          className={cn("border-t border-border align-top", MOBILE_TABLE_ROW)}
+                          className="border-t border-border align-top"
                         >
                           <td className={cn("p-2 break-all", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[120px]")}>
                             {kv.key}

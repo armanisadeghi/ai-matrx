@@ -135,7 +135,7 @@ export default function KindSchemaTab({
                 {fieldRows.map((row) => (
                   <tr
                     key={row.name}
-                    className="border-b border-border/60 last:border-0 sm:hover:bg-accent/30"
+                    className="border-b border-border/60 last:border-0 hover:bg-accent/30"
                   >
                     <td
                       className="px-3 py-1.5 font-mono text-xs text-foreground"

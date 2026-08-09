@@ -50,7 +50,6 @@ import {
   MOBILE_TABLE,
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_ROW,
 } from "@/components/official/mobile-table/mobileTable";
 
 interface DerivativePageGroup {
@@ -1126,7 +1125,7 @@ function TableRowsPreview({
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.id} className={cn("sm:even:bg-muted/20", MOBILE_TABLE_ROW)}>
+                <tr key={row.id} className="even:bg-muted/20">
                   {(row.cells.length ? row.cells : [row.fallback]).map(
                     (cell, index) => (
                       <td
