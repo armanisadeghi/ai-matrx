@@ -97,7 +97,7 @@ function ConversationSidebarRow({
         if (e.key === "Enter" || e.key === " ") onSelect();
       }}
       className={cn(
-        "flex items-start gap-1.5 w-full px-2 py-2 cursor-pointer select-none transition-colors border-l-2 group text-left",
+        "flex items-start gap-1.5 w-full px-2 py-2 cursor-pointer select-none transition-colors border-l-2 group group/entity-ref text-left",
         isSelected
           ? "border-primary bg-primary/8"
           : "border-transparent hover:bg-muted/40",

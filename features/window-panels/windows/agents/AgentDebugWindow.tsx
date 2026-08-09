@@ -788,7 +788,7 @@ function InstanceSidebarRow({
         if (e.key === "Enter" || e.key === " ") onSelect();
       }}
       className={cn(
-        "flex items-center gap-1.5 w-full px-2 py-1.5 cursor-pointer select-none transition-colors border-l-2 group",
+        "flex items-center gap-1.5 w-full px-2 py-1.5 cursor-pointer select-none transition-colors border-l-2 group group/entity-ref",
         isSelected
           ? "border-primary bg-primary/8"
           : "border-transparent hover:bg-muted/40",

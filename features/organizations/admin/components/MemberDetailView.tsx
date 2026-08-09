@@ -16,7 +16,7 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -232,6 +232,7 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
         open={reassignOpen}
         onOpenChange={setReassignOpen}
         orgId={orgId}
+        orgSlug={organization.slug}
         mode="reassign"
         sourceUserId={userId}
         sourceLabel={label}
@@ -243,6 +244,7 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
         open={removeOpen}
         onOpenChange={setRemoveOpen}
         orgId={orgId}
+        orgSlug={organization.slug}
         mode="remove"
         sourceUserId={userId}
         sourceLabel={label}

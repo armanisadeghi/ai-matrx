@@ -6,9 +6,11 @@
  * the user's personal-org resources are never touched.
  */
 import React, { useState } from "react";
+import Link from "next/link";
 import { ArrowRight, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { orgAdminMemberHref } from "../routes";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +38,13 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orgId: string;
+  /**
+   * The org SLUG — the segment the `(core)` org-admin routes actually use.
+   * Optional so an existing caller that has not threaded it through still
+   * compiles; when absent the member's name simply renders as text rather than
+   * pointing at a route that would not resolve.
+   */
+  orgSlug?: string;
   mode: "reassign" | "remove";
   sourceUserId: string;
   sourceLabel: string;
@@ -50,6 +59,7 @@ export function ReassignResourcesDialog({
   open,
   onOpenChange,
   orgId,
+  orgSlug,
   mode,
   sourceUserId,
   sourceLabel,
@@ -102,6 +112,30 @@ export function ReassignResourcesDialog({
     }
   };
 
+
+  /**
+   * THE DOOR LAW on a DESTRUCTIVE dialog: this is about to move or delete this
+   * person's work, and their name was plain text with their id right there in
+   * props. Links to the member's page in THIS shell, never to the platform
+   * admin console — see routes.ts for why.
+   */
+  const memberHref = orgSlug
+    ? orgAdminMemberHref(orgSlug, sourceUserId)
+    : null;
+  const sourceName = memberHref ? (
+    <Link
+      href={memberHref}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-medium text-foreground underline-offset-2 hover:text-primary hover:underline"
+      title={`Open ${sourceLabel} in a new tab`}
+    >
+      {sourceLabel}
+    </Link>
+  ) : (
+    <span className="font-medium text-foreground">{sourceLabel}</span>
+  );
+
   const confirmDisabled =
     busy ||
     (mode === "reassign" && (!hasTarget || selectedTypes.size === 0)) ||
@@ -115,13 +149,13 @@ export function ReassignResourcesDialog({
           <DialogDescription>
             {mode === "remove" ? (
               <>
-                Remove <span className="font-medium text-foreground">{sourceLabel}</span> from this
+                Remove {sourceName} from this
                 organization. Optionally reassign their {totalResources} org-scoped resource
                 {totalResources === 1 ? "" : "s"} to another member first.
               </>
             ) : (
               <>
-                Move <span className="font-medium text-foreground">{sourceLabel}</span>&apos;s
+                Move {sourceName}&apos;s
                 org-scoped resources to another member. Their personal resources are never affected.
               </>
             )}
