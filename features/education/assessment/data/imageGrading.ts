@@ -101,6 +101,12 @@ export interface RunVisionGraderArgs {
   responseImageFileId: string;
   surfaceKey: string;
   sourceFeature: SourceFeature;
+  /**
+   * Canonical `ui_surface.name` to launch under — CALLER-supplied because this
+   * core is shared across lanes (assessment take vs standalone grade-work),
+   * and only the caller knows which surface the run belongs to.
+   */
+  surfaceName?: string;
 }
 
 /**
@@ -126,6 +132,7 @@ export function runVisionGrader(args: RunVisionGraderArgs) {
           sourceFeature: args.sourceFeature,
           isEphemeral: false,
           runtime: {
+            ...(args.surfaceName ? { surfaceName: args.surfaceName } : {}),
             variables: {
               question: args.question,
               expected_answer: args.expected,

@@ -197,6 +197,7 @@ export function gradeAnswerAI(args: {
           sourceFeature: "education-assessment",
           isEphemeral: false,
           runtime: {
+            surfaceName: "matrx-user/education-assessment",
             variables: {
               question: args.question,
               expected_answer: args.expected,
@@ -266,6 +267,12 @@ export function gradeAnswerImage(args: {
   itemId?: string;
   agentId?: string;
   surfaceKey?: string;
+  /**
+   * Canonical `ui_surface.name` for the grading run — caller-supplied because
+   * this path is shared across lanes (assessment take vs standalone
+   * grade-work); passed through to the shared vision grader core.
+   */
+  surfaceName?: string;
 }) {
   return async (dispatch: AppDispatch): Promise<GradedAnswer> => {
     const agentId = args.agentId ?? ASSESSMENT_AGENTS.gradeHandwritten;
@@ -297,6 +304,7 @@ export function gradeAnswerImage(args: {
         responseImageFileId: fileId,
         surfaceKey: args.surfaceKey ?? "assessment-grade-image",
         sourceFeature: "education-assessment",
+        ...(args.surfaceName ? { surfaceName: args.surfaceName } : {}),
       }),
     );
     if (!verdict) return { ...fallback, responseImageFileId: fileId };

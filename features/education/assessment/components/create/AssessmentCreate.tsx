@@ -48,6 +48,8 @@ import type { LibraryDocSummary } from "@/features/rag/types/library";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
 import { attachSourceRefs } from "@/features/education/trust/grounding";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createEducationAssessmentScope } from "@/features/surfaces/manifests/education-assessment.manifest";
 import { assessmentService } from "../../data/assessmentService";
 import { ASSESSMENT_AGENTS } from "../../data/agents";
 import { useGenerateQuiz } from "../../data/useGenerateQuiz";
@@ -297,7 +299,35 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
     });
   };
 
+  // Live surface scope for the Agents chrome (matrx-user/education-assessment,
+  // create view). Plain function reading the live render values at Run time.
+  const getScope = () =>
+    createEducationAssessmentScope({
+      assessment_kind: config.kind,
+      view: "create",
+      source_mode: mode,
+      ...(topic.trim() ? { topic: topic.trim() } : {}),
+      question_count: count,
+      difficulty,
+      depth,
+      question_types: Array.from(types),
+      ...(examType.trim() ? { exam_type: examType.trim() } : {}),
+      ...(config.timed ? { time_limit_minutes: timeLimitMin } : {}),
+      ...(userRequest.trim() ? { user_request: userRequest.trim() } : {}),
+      ...(selectedDeck
+        ? { selected_deck: { id: selectedDeck.id, name: selectedDeck.name } }
+        : {}),
+      ...(selectedDoc
+        ? { selected_document: { id: selectedDoc.id, name: selectedDoc.name } }
+        : {}),
+      is_generating: isGenerating,
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/education-assessment"
+      getScope={getScope}
+    >
     <div className="min-h-full w-full bg-textured">
       <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
         {/* Header */}
@@ -614,6 +644,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
         )}
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

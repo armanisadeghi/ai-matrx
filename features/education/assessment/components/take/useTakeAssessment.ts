@@ -142,6 +142,7 @@ export function useTakeAssessment(
             photo,
             itemId: item.id,
             surfaceKey: "assessment-grade-image",
+            surfaceName: "matrx-user/education-assessment",
           }),
         );
       } else if (isObjectiveType(type)) {

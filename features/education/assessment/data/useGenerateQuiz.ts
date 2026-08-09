@@ -255,6 +255,7 @@ export function useGenerateQuiz(): UseGenerateQuizResult {
           onConversationCreated: (conversationId) =>
             setActiveConversationId(conversationId),
           runtime: {
+            surfaceName: "matrx-user/education-assessment",
             variables: fromSource
               ? {
                   source_content: vars.source_content,

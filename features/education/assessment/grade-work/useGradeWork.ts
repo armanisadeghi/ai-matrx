@@ -56,6 +56,7 @@ export function useGradeWork() {
           expected: input.expected.trim() || NO_MODEL_ANSWER,
           photo: input.photo,
           surfaceKey: "grade-work",
+          surfaceName: "matrx-user/education-grade-work",
         }),
       );
 

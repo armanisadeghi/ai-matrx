@@ -30,6 +30,8 @@ import { useEntitlementGuard } from "@/features/entitlements/components/useEntit
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import type { GradeResult } from "@/features/education/trust/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createEducationGradeWorkScope } from "@/features/surfaces/manifests/education-grade-work.manifest";
 import { HandwrittenWorkInput } from "../components/HandwrittenWorkInput";
 import { StepBreakdown } from "../components/StepBreakdown";
 import { useGradeWork } from "./useGradeWork";
@@ -99,7 +101,34 @@ export function GradeWorkSurface() {
   const style = graded ? RESULT_STYLE[graded.result] : null;
   const StyleIcon = style?.icon ?? ScanText;
 
+  // Live surface scope for the Agents chrome (matrx-user/education-grade-work).
+  // Plain function reading the live render values at Run time — React Compiler
+  // handles memoization, and the provider refs `getScope`.
+  const getScope = () =>
+    createEducationGradeWorkScope({
+      problem_text: problem,
+      expected_answer: expected,
+      photo_attached: !!photo,
+      grading_status: grader.status,
+      ...(graded ? { grade_result: graded.result } : {}),
+      ...(graded?.explanation ? { grade_explanation: graded.explanation } : {}),
+      ...(graded?.misconception
+        ? { grade_misconception: graded.misconception }
+        : {}),
+      ...(graded?.steps && graded.steps.length > 0
+        ? { grade_steps: graded.steps }
+        : {}),
+      ...(graded?.transcription
+        ? { work_transcription: graded.transcription }
+        : {}),
+      ...(grader.error ? { grade_error: grader.error } : {}),
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/education-grade-work"
+      getScope={getScope}
+    >
     <div className="mx-auto max-w-2xl px-3 pb-16 pt-6 sm:px-6">
       {/* Header */}
       <div className="mb-5">
@@ -237,5 +266,6 @@ export function GradeWorkSurface() {
       <guard.Paywall />
       <coppa.Gate />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

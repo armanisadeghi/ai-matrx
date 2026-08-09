@@ -24,6 +24,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createEducationAssessmentScope,
+  type AssessmentListSummary,
+} from "@/features/surfaces/manifests/education-assessment.manifest";
 import { assessmentService } from "../data/assessmentService";
 import type { AssessmentKind, AssessmentRow } from "../data/types";
 import { KIND_CONFIG, type KindConfig } from "./kindConfig";
@@ -219,7 +224,41 @@ export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
   );
   const Icon = config.icon;
 
+  // Live surface scope for the Agents chrome (matrx-user/education-assessment,
+  // list view). Plain function reading the live render values at Run time —
+  // React Compiler handles memoization, and the provider refs `getScope`.
+  const toSummary = (r: AssessmentRow): AssessmentListSummary => ({
+    id: r.id,
+    title: r.title,
+    topic: r.topic,
+    exam_type: r.exam_type,
+    depth: r.depth,
+    status: r.status,
+    visibility: r.visibility,
+    updated_at: r.updated_at,
+  });
+  const getScope = () =>
+    createEducationAssessmentScope({
+      assessment_kind: config.kind,
+      view: "list",
+      assessments_loaded: !loading && rows !== null && !error,
+      ...(rows !== null && !error ? { assessment_count: rows.length } : {}),
+      ...(rows !== null && !error
+        ? {
+            assessments: rows.map(toSummary),
+            visible_assessments: visible.map(toSummary),
+          }
+        : {}),
+      ...(q ? { search_query: q } : {}),
+      visibility_filter: visibility,
+      ...(error ? { list_error: error } : {}),
+    });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/education-assessment"
+      getScope={getScope}
+    >
     <div className="min-h-full w-full bg-textured">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-5 sm:py-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -323,5 +362,6 @@ export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
         </div>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

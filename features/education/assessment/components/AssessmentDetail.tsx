@@ -33,6 +33,8 @@ import { cn } from "@/lib/utils";
 import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
 import { GeneratedFromChips } from "@/features/education/convert/GeneratedFromChips";
 import type { TargetKind } from "@/features/education/convert/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createEducationAssessmentScope } from "@/features/surfaces/manifests/education-assessment.manifest";
 import { assessmentService } from "../data/assessmentService";
 import { serializeAssessment } from "../data/serializeAssessment";
 import { newGainGroupId } from "../data/learningGain";
@@ -124,14 +126,83 @@ export function AssessmentDetail({
   const base = `/education/${config.base}`;
   const Icon = config.icon;
 
+  // Live surface scope for the Agents chrome (matrx-user/education-assessment,
+  // detail/take views). Mounted only after the row loads — the loading/error
+  // states cannot honestly promise `assessment_kind`. Plain function reading
+  // the live render values at Run time.
+  const getScope = () =>
+    createEducationAssessmentScope({
+      assessment_kind: assessment.assessment_kind,
+      view: start ? "take" : "detail",
+      assessment_id: assessment.id,
+      assessment_title: assessment.title,
+      ...(assessment.description
+        ? { assessment_description: assessment.description }
+        : {}),
+      assessment_status: assessment.status,
+      ...(assessment.topic ? { assessment_topic: assessment.topic } : {}),
+      ...(assessment.exam_type
+        ? { assessment_exam_type: assessment.exam_type }
+        : {}),
+      ...(assessment.depth ? { assessment_depth: assessment.depth } : {}),
+      ...(assessment.time_limit_seconds && assessment.time_limit_seconds > 0
+        ? { assessment_time_limit_seconds: assessment.time_limit_seconds }
+        : {}),
+      item_count: items.length,
+      items: items.map((it) => ({
+        id: it.id,
+        question_type: it.question_type,
+        prompt: it.prompt,
+        options: Array.isArray(it.options)
+          ? it.options.filter((o): o is string => typeof o === "string")
+          : null,
+        correct_answer: it.correct_answer,
+        depth: it.depth,
+        points: Number(it.points ?? 1),
+      })),
+      ...(access.isOwner
+        ? { access_level: "owner" }
+        : access.level !== "none"
+          ? { access_level: access.level }
+          : {}),
+      result_count: results.length,
+      ...(() => {
+        const best = results
+          .filter((r) => r.status === "completed" && r.score_value != null)
+          .reduce<number | null>(
+            (b, r) =>
+              b === null || Number(r.score_value) > b ? Number(r.score_value) : b,
+            null,
+          );
+        return best !== null
+          ? { best_score_pct: Math.round(best * 100) }
+          : {};
+      })(),
+      results: results.map((r) => ({
+        id: r.id,
+        status: r.status,
+        phase: r.phase,
+        score_value: r.score_value != null ? Number(r.score_value) : null,
+        correct_count: r.correct_count,
+        total_count: r.total_count,
+        created_at: r.created_at,
+      })),
+      is_taking: start,
+    });
+
   // The shareable take URL renders the runner directly.
   if (start) {
     return (
-      <AssessmentTaker
-        assessment={assessment}
-        items={items}
-        options={{ phase, gainGroupId }}
-      />
+      <SurfaceRuntimeProvider
+        surfaceName="matrx-user/education-assessment"
+        getScope={getScope}
+      >
+        <AssessmentTaker
+          assessment={assessment}
+          items={items}
+          options={{ phase, gainGroupId }}
+        />
+      </SurfaceRuntimeProvider>
     );
   }
 
@@ -180,6 +251,10 @@ export function AssessmentDetail({
     );
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/education-assessment"
+      getScope={getScope}
+    >
     <div className="min-h-full w-full bg-textured">
       <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
         {/* Header */}
@@ -381,5 +456,6 @@ export function AssessmentDetail({
         onConverted={() => setLineageKey((k) => k + 1)}
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
