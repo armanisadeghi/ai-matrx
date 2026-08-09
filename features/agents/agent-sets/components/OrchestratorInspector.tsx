@@ -18,6 +18,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import { AgentPeekButton } from "./AgentPeekButton";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AgentIODetails } from "./AgentIODetails";
 import { accentClasses } from "./accents";
 import type { SetAccent } from "../constants";
@@ -50,9 +51,17 @@ export function OrchestratorInspector({
         <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg shadow-sm", a.glyph)}>
           <Network className="h-4 w-4" />
         </div>
-        <div className="min-w-0 flex-1">
+        <div className="group/entity-ref min-w-0 flex-1">
+          {/* THE DOOR LAW: the orchestrator is an agent with a route — name it
+              and open it. An unloaded row shows its id, never a made-up label. */}
           <div className="truncate text-sm font-semibold text-foreground">
-            {agent?.name ?? "Orchestrator"}
+            <EntityRef
+              token="agent"
+              id={orchestratorId}
+              name={agent?.name ?? null}
+              showIcon={false}
+              disablePeek
+            />
           </div>
           <div className="text-[11px] text-muted-foreground">Orchestrator</div>
         </div>

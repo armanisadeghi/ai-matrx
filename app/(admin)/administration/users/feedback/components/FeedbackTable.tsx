@@ -631,10 +631,19 @@ export default function FeedbackTable() {
     (id: string) => {
       const item = feedback.find((f) => f.id === id);
       if (!item) {
-        toast.error("That related item isn't in this view", {
-          description:
-            "It may have been deleted, or it's filtered out by the current status/type filters.",
-        });
+        // Same distinction the deep-link effect makes: if the list never
+        // loaded, we cannot tell whether this id exists, so "deleted or
+        // filtered" would be a verdict invented from data we never read.
+        toast.error(
+          loadFailed
+            ? "Can't open that related item"
+            : "That related item isn't in this view",
+          {
+            description: loadFailed
+              ? "The feedback list failed to load. Refresh and try again."
+              : "It may have been deleted, or it's filtered out by the current status/type filters.",
+          },
+        );
         return;
       }
       openedDeepLink.current = id;
@@ -642,7 +651,7 @@ export default function FeedbackTable() {
       setDetailDialogOpen(true);
       setDeepLink(id);
     },
-    [feedback, setDeepLink],
+    [feedback, loadFailed, setDeepLink],
   );
 
   const handleViewImages = (

@@ -31,6 +31,7 @@ import { selectAgentById } from "@/features/agents/redux/agent-definition/select
 import { removeAgentFromSet, reorderSetMembers } from "@/features/agents/redux/agent-sets/thunks";
 import { AgentRoleCard } from "./AgentRoleCard";
 import { AgentPeekButton } from "./AgentPeekButton";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { useMemberRunState } from "../run/SetRunStatusContext";
 import { accentClasses } from "./accents";
 import type { SetAccent } from "../constants";
@@ -75,6 +76,15 @@ function OrchestratorTile({
       {/* Hover toolbar — mirrors the canvas hub node. */}
       <div className="absolute right-1.5 top-1.5 z-10 flex items-center gap-0.5 rounded-md bg-card/85 opacity-0 backdrop-blur transition-opacity group-hover/orch:opacity-100">
         <AgentPeekButton agentId={orchestratorId} />
+        {/* The tile's click opens the inspector, so the orchestrator AGENT
+            itself gets its own door here rather than being peek-only. */}
+        <EntityDoorControls
+          token="agent"
+          id={orchestratorId}
+          name={agent?.name ?? null}
+          disablePeek
+          alwaysShowActions
+        />
         <button
           type="button"
           aria-label="Orchestrator details"

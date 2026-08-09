@@ -108,6 +108,10 @@ export function SiteAnalysisTable() {
       header: "Analysis item",
       filter: "text",
       cellKind: "text",
+      // THE DOOR LAW: the item key names the queued work, so it is the real
+      // anchor to the findings this row stands for. Same destination as
+      // `onRowOpen`, built by the same helper so the two cannot drift.
+      href: (row) => filteredFindingsHref(sitePath, row),
       cell: (row) => (
         <span className="block min-w-56 max-w-md truncate font-mono text-[11px] font-medium">
           {row.item_key || "Unknown item"}
@@ -142,6 +146,10 @@ export function SiteAnalysisTable() {
       header: "Affected page",
       filter: false,
       sortable: false,
+      // The affected page is a resolvable relationship — render it AND link
+      // it. Site-level rows name no page, so they get no href.
+      href: (row) =>
+        row.page_id ? `${sitePath}/pages/${row.page_id}` : undefined,
       cell: (row) => (
         <div className="min-w-52 max-w-lg">
           <p className="truncate font-mono text-[11px]">

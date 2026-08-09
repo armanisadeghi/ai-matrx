@@ -94,6 +94,10 @@ export function FindingsTable() {
       header: "Finding",
       filter: "text",
       cellKind: "text",
+      // THE DOOR LAW: the item key is how the user names this finding, so it
+      // is the real anchor (keyboard, screen reader, cmd/middle-click). Same
+      // destination as `onRowOpen`; the row click stays a mouse convenience.
+      href: (row) => `${sitePath}/findings/${row.id}`,
       cell: (row) => (
         <div className="min-w-64 max-w-xl">
           <p className="truncate font-mono text-[11px] font-medium text-foreground">
@@ -138,19 +142,15 @@ export function FindingsTable() {
       header: "Page",
       filter: false,
       sortable: false,
+      // A relationship the row can resolve gets a REAL door, not a button that
+      // fakes one: this was a `<button onClick={router.push}>`, so cmd-click,
+      // middle-click and "open in new tab" all did nothing. Site-level findings
+      // name no page, so they get no href rather than a link to nowhere.
+      href: (row) =>
+        row.page_id ? `${sitePath}/pages/${row.page_id}` : undefined,
       cell: (row) =>
         row.page_id ? (
-          // Interactive cell: drills straight into the page workspace (the
-          // row itself opens the finding detail).
-          <button
-            type="button"
-            className="block min-w-48 max-w-lg cursor-pointer text-left hover:underline"
-            title="Open the page workspace"
-            onClick={(event) => {
-              event.stopPropagation();
-              navigate(`${sitePath}/pages/${row.page_id}`);
-            }}
-          >
+          <div className="min-w-48 max-w-lg">
             <p className="truncate font-mono text-[11px]">
               {row.page_path || row.page_id.slice(0, 12)}
             </p>
@@ -159,7 +159,7 @@ export function FindingsTable() {
                 {row.page_url}
               </p>
             ) : null}
-          </button>
+          </div>
         ) : (
           <div className="min-w-48 max-w-lg">
             <p className="truncate font-mono text-[11px]">Site-level</p>

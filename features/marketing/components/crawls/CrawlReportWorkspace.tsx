@@ -595,7 +595,7 @@ function snapshotReportColumns(
   }
 }
 
-function responseColumns(): MatrxColumnDef<CrawlUrl>[] {
+function responseColumns(sitePath: string): MatrxColumnDef<CrawlUrl>[] {
   return [
     {
       id: "sequence",
@@ -610,7 +610,13 @@ function responseColumns(): MatrxColumnDef<CrawlUrl>[] {
       header: "Encountered URL",
       filter: "text",
       cellKind: "text",
-      cell: (row) => urlCell(row.raw_url),
+      // The sibling snapshot reports already open their canonical page; this
+      // ledger knew the same `page_id` and printed the URL as plain text.
+      cell: (row) =>
+        urlCell(
+          row.raw_url,
+          row.page_id ? `${sitePath}/pages/${row.page_id}` : undefined,
+        ),
     },
     {
       id: "http_status",
@@ -1080,7 +1086,7 @@ export function CrawlReportWorkspace({
         ) : isResponseReport ? (
           <MatrxDataTable<CrawlUrl>
             data={urls.data?.rows ?? []}
-            columns={responseColumns()}
+            columns={responseColumns(sitePath)}
             getRowId={(row) => row.id}
             isLoading={urls.isLoading}
             isFetching={urls.isFetching}

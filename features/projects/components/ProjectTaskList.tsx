@@ -85,15 +85,20 @@ export function ProjectTaskList({
   const [showDone, setShowDone] = React.useState(doneParam);
   // The initializer runs once. Navigating from one project to another keeps
   // this component mounted, so a fresh `?done=1` would be ignored and the
-  // count link would land on a collapsed Done group again. Re-seed only when
-  // the PARAM ITSELF changes, so a user who manually toggled the group
-  // doesn't have it yanked back on an unrelated re-render.
-  const lastDoneParam = React.useRef(doneParam);
+  // count link would land on a collapsed Done group again.
+  //
+  // Keyed on PROJECT + PARAM together, not the param alone: collapsing Done on
+  // project A leaves `?done=1` in the URL, so clicking "12 done" on project B
+  // carries an unchanged param and a param-only guard would leave the group
+  // shut — the very thing the link exists to open. Within ONE project the
+  // manual toggle still stands, because neither half of the key changed.
+  const doneSeedKey = `${projectId}|${doneParam}`;
+  const lastDoneSeed = React.useRef(doneSeedKey);
   React.useEffect(() => {
-    if (lastDoneParam.current === doneParam) return;
-    lastDoneParam.current = doneParam;
+    if (lastDoneSeed.current === doneSeedKey) return;
+    lastDoneSeed.current = doneSeedKey;
     setShowDone(doneParam);
-  }, [doneParam]);
+  }, [doneSeedKey, doneParam]);
   const [addingSubFor, setAddingSubFor] = React.useState<string | null>(null);
   const [subTitle, setSubTitle] = React.useState("");
   const [isAddingSub, setIsAddingSub] = React.useState(false);

@@ -51,6 +51,9 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
       accessorKey: "page_id",
       header: "URL",
       filter: false,
+      // THE DOOR LAW: every row here names a canonical page that has a route.
+      // Same destination as `onRowOpen`; this makes it a real anchor.
+      href: (row) => `${sitePath}/pages/${row.page_id}`,
       cell: (row) => (
         <div className="min-w-64 max-w-2xl">
           <p className="truncate font-mono text-xs font-medium text-foreground">

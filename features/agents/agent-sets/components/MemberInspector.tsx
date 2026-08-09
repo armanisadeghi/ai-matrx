@@ -17,6 +17,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { removeAgentFromSet, saveMemberMeta } from "@/features/agents/redux/agent-sets/thunks";
 import { AgentPeekButton } from "./AgentPeekButton";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AgentIODetails } from "./AgentIODetails";
 import { accentClasses } from "./accents";
 import type { SetAccent } from "../constants";
@@ -62,8 +63,19 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
         <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg shadow-sm", a.glyph)}>
           <Webhook className="h-4 w-4" />
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold text-foreground">{agent?.name ?? "Member"}</div>
+        <div className="group/entity-ref min-w-0 flex-1">
+          {/* THE DOOR LAW: the inspector names the member agent, so it opens
+              it. No invented label — an unloaded agent shows its id, not the
+              word "Member". */}
+          <div className="truncate text-sm font-semibold text-foreground">
+            <EntityRef
+              token="agent"
+              id={member.agentId}
+              name={agent?.name ?? null}
+              showIcon={false}
+              disablePeek
+            />
+          </div>
           <div className="text-[11px] text-muted-foreground">Member role</div>
         </div>
         <AgentPeekButton agentId={member.agentId} />
