@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-08-09T08:02:32.863Z",
-  "commit": "81cc46114e758e96e3cc8142129486b95f319543",
+  "generatedAt": "2026-08-09T08:08:38.592Z",
+  "commit": "4781167e2c64b666d9291222937633312667441d",
   "totals": {
     "findings": 133,
     "high": 66,
     "medium": 67,
     "low": 0,
     "filesWithFindings": 82,
-    "filesScanned": 6805,
+    "filesScanned": 6806,
     "allowlisted": 0
   },
   "byRule": {
@@ -1923,7 +1923,7 @@
     },
     {
       "file": "features/rag/components/search/RagSearchExperience.tsx",
-      "line": 683,
+      "line": 685,
       "column": 14,
       "rule": "unlinked-count",
       "severity": "medium",
