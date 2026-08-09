@@ -195,15 +195,6 @@ export function WarRoomResourcesList({
     if (href) window.open(href, "_blank", "noopener,noreferrer");
   };
 
-  /**
-   * Whether `openRow` can actually do anything. Peek-only tokens (skill,
-   * workflow, canvas_item…) have no registry route, so the handler no-ops —
-   * and handing a no-op to `EntityRef.onOpen` renders a link-styled title that
-   * does nothing, a dead end with extra steps.
-   */
-  const canOpenRow = (row: ContainerResourceRow) =>
-    Boolean(tryGetEntityInfo(row.token)?.hrefFor);
-
   const deleteEntity = async (row: ContainerResourceRow) => {
     const info = tryGetEntityInfo(row.token);
     if (!info || !DELETABLE_TOKENS.has(row.token)) {
@@ -459,11 +450,6 @@ export function WarRoomResourcesList({
                                   token={row.token}
                                   id={row.resourceId}
                                   title={title}
-                                  onOpen={
-                                    canOpenRow(row)
-                                      ? () => openRow(row)
-                                      : undefined
-                                  }
                                   originNote={row.originNote}
                                   idPrefix={idPrefix}
                                   menu={menu}
@@ -598,7 +584,6 @@ function DefaultResourceRow({
   token,
   id,
   title,
-  onOpen,
   originNote,
   idPrefix,
   menu,
@@ -607,7 +592,6 @@ function DefaultResourceRow({
   token: string;
   id: string;
   title: string;
-  onOpen: (() => void) | undefined;
   originNote?: string | null;
   idPrefix: ReactNode;
   menu: ReactNode;
@@ -617,14 +601,18 @@ function DefaultResourceRow({
     <div className={cn("flex items-start gap-2", busy && "opacity-50")}>
       <div className="min-w-0 flex-1">
         {/* The token group header already carries the entity icon, so the row
-            shows the name only. `onOpen` keeps this rail's existing behaviour —
-            a new tab, never replacing the war room the user is working in. */}
+            shows the name only. `openInNewTab` keeps this rail's behaviour —
+            never replacing the war room the user is working in — as a real
+            `target="_blank"` anchor rather than the `window.open` this
+            replaced, so middle-click and cmd-click work and no popup blocker
+            can eat it. A token with no registry route renders as plain text,
+            so the title can never look openable and no-op. */}
         <EntityRef
           token={token}
           id={id}
           name={title}
           showIcon={false}
-          onOpen={onOpen}
+          openInNewTab
           className="text-sm text-foreground"
         />
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">

@@ -11,7 +11,6 @@
 "use client";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { OutputRef } from "../../types";
 
 interface Props {
@@ -21,22 +20,18 @@ interface Props {
 export function OutputRefLink({ outputRef }: Props) {
   if (!outputRef) return null;
 
-  // This sits inside an expandable run row on the schedule detail page — the
-  // old hand-rolled link opened a new tab, and opening the output must not cost
-  // the user the run history they are reading.
-  const href = tryGetEntityInfo(outputRef.kind)?.hrefFor?.(outputRef.id);
-
+  // This sits inside an expandable run row on the schedule detail page, so
+  // opening the output must not cost the user the run history they are reading:
+  // `openInNewTab` is a real `target="_blank"` anchor, which also keeps
+  // middle-click and cmd-click working — the hand-rolled `window.open` this
+  // replaces had neither, and popup blockers can eat it.
   return (
     <EntityRef
       token={outputRef.kind}
       id={outputRef.id}
       name={labelFor(outputRef)}
       alwaysShowActions
-      onOpen={
-        href
-          ? () => window.open(href, "_blank", "noopener,noreferrer")
-          : undefined
-      }
+      openInNewTab
       className="text-xs text-muted-foreground"
     />
   );

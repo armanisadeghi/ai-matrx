@@ -205,15 +205,6 @@ export function AssociationList(props: AssociationListProps) {
     if (href) window.open(href, "_blank", "noopener,noreferrer");
   };
 
-  /**
-   * Whether `openRow` can actually do anything for this row. Peek-only tokens
-   * (skill, workflow, canvas_item…) have no registry route, so without a
-   * container-supplied `openEntity` the handler is a no-op — and handing a
-   * no-op to `EntityRef.onOpen` renders a link-styled title that does nothing.
-   */
-  const canOpenRow = (row: ContainerResourceRow) =>
-    Boolean(props.openEntity || tryGetEntityInfo(row.token)?.hrefFor);
-
   // role → token → rows, in registry role order.
   const grouped = groupRows(visibleRows);
   const isLoading = adapter.status === "loading" || adapter.status === "idle";
@@ -382,14 +373,18 @@ export function AssociationList(props: AssociationListProps) {
                                   new tab + peek, all resolved from the
                                   registries.
 
-                                  `onOpen` is ALWAYS bound to `openRow` — this
-                                  is a rail that lives inside a workspace (org
-                                  page, project page, war-room thread), so
-                                  following a record must never replace the
-                                  container the user is working in. `openRow`
-                                  keeps the surface's contract: the container's
-                                  `openEntity` when it has one, a new tab
-                                  otherwise. */}
+                                  This is a rail inside a workspace (org page,
+                                  project page, war-room thread), so following a
+                                  record must never replace the container the
+                                  user is working in — hence the surface's two
+                                  contracts, expressed on the primitive rather
+                                  than through a hand-rolled `window.open`:
+                                  the container's `openEntity` when it has one,
+                                  a real `target="_blank"` anchor otherwise
+                                  (which also restores middle-click). A row with
+                                  neither — a peek-only token in a container
+                                  with no opener — renders as plain text, so a
+                                  link-styled title can never no-op. */}
                               <EntityRef
                                 token={row.token}
                                 id={row.resourceId}
@@ -400,10 +395,11 @@ export function AssociationList(props: AssociationListProps) {
                                 })}
                                 showIcon={Boolean(Icon)}
                                 onOpen={
-                                  canOpenRow(row)
+                                  props.openEntity
                                     ? () => openRow(row)
                                     : undefined
                                 }
+                                openInNewTab={!props.openEntity}
                                 className="min-w-0 flex-1 text-foreground"
                               />
                               {row.originNote && (

@@ -528,6 +528,30 @@ sweep gets a row. Guarded by `pnpm check:reuse-index`.
 
 ## Change log
 
+- **2026-08-09** — Two review findings on the Wave 3 migrations, both closed
+  with no code change, both checked against the code first:
+  - *"Cloud gallery ignores invalid view"* — **refuted.** The claim was that a
+    stored `view: "table"` could leave all three toggles inactive. It cannot:
+    `isActiveViewOption` splits on `view === "rows"` vs `view !== "rows"` — the
+    **same** partition the render uses (`isListView ? list : gridDensity`). Both
+    sides treat `table` as "not rows", so the highlight and the grid can never
+    disagree, and no third state exists. Narrowing on read (the `ProjectsHub`
+    fix) was needed there because that surface compared against `"table"`
+    directly; here the projection already covers the full union.
+  - *"Legacy view prefs discarded"* — **real, deliberately not fixed.** The four
+    surfaces' device-local keys (`projects-view`, `tasks-list-view`,
+    `documents-hub-view`, `image-manager:cloud-images-view`) are not imported, so
+    a user who had actively changed one toggle on one device sees that surface's
+    default once more. Defaults themselves are unchanged (verified per surface in
+    `8dc4d7d9`), so a user who never touched a toggle loses nothing. The cost of
+    the fix is a `legacyImport` option on `useListViewPrefs` that must be deleted
+    later and that nothing tracks; the loss it prevents is one click of a style
+    toggle, after which the choice syncs to every device — which is the upgrade
+    this wave shipped. **If Arman wants it anyway it is ~25 safe lines**: gate the
+    one-time write on `state.userPreferences._meta.loadedPreferences !== null`
+    (the real hydration signal — the slice has no `isHydrated` flag, but
+    `loadedPreferences` is `null` until the load lands), then write only when
+    `listViews[surfaceKey]` is still absent and delete the legacy key.
 - **2026-08-09** — Wave 2 in progress: AssociationList + ContainerResourceSheet
   converted, `peekHref` fixed 6 peeks that shipped a 404 Open door, catalogue
   gained the canonical token. D138 filed (sharing registry = a 2nd route
