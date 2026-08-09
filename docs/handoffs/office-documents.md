@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-08
+updated: 2026-08-09
 repos: [matrx-frontend, aidream, matrx-local]
 ---
 
@@ -57,7 +57,13 @@ first real user surfaces shipped: **Word/PowerPoint preview in Files, Convert-to
    `thumbnail_backfill --office --force-rerender`.
 4. **Visual-fidelity preview (optional next rung).** Today's preview is extracted text. A
    LibreOffice→PDF render lane (reusing the convert endpoint) could show true layout — decide if
-   fidelity matters before building.
+   fidelity matters before building. **The cheap half is already within reach:** Office gets the
+   three small SOCIAL_BASELINE thumbs but **no `page1_url`**, so there is no full-res readable
+   page-1 the way PDFs have one. `_mime_family` classifies Office as `document`, and
+   `render_kind_specific_variants_sync` (`specific_handlers/thumbnail_source.py`) only emits
+   `page1_url` for `family == "pdf"` — even though the Office lane already renders a PDF
+   internally for the thumbnail. Confirmed live 2026-08-09: all 23 Office masters carry exactly
+   `og_url` / `thumbnail_url` / `tiny_url`, zero `page1_url`.
 5. **xlsx "extract" parity note:** xlsx previews client-side via SheetJS (good); the office
    markdown endpoint also handles xlsx if a text view is ever wanted.
 6. **Polish nit (prod-observed 2026-08-08):** pptx preview shows the slide title twice — the
