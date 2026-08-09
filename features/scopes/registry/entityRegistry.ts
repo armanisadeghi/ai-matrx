@@ -59,6 +59,7 @@ import {
   ListTodo,
   MessagesSquare,
   Mic,
+  Microscope,
   NotebookText,
   Sheet,
   Sparkles,
@@ -304,6 +305,15 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: FileSearch,
     labelPlural: "Processed Documents",
     hrefFor: (id) => `/rag/library/${id}/preview`,
+  },
+  // A research topic (`research.rs_topic`) — the record the whole research
+  // pipeline hangs off. `/research/topics/[topicId]` is its canonical page;
+  // the research admin console had been hand-rolling a bare ExternalLink to
+  // exactly this path, which is the signal that it belonged in the registry.
+  research_topic: {
+    Icon: Microscope,
+    labelPlural: "Research Topics",
+    hrefFor: (id) => `/research/topics/${id}`,
   },
   // ─── Marketing (web.*) ────────────────────────────────────────────────────
   // `Landmark` matches the brand icon `marketing-nav.ts` already declares.

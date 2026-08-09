@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Copy, Check, ExternalLink } from "lucide-react";
+import { RefreshCw, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,6 +16,8 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import type { Json } from "@/types/database.types";
 import type { ResearchTemplate } from "../types";
 import { AGENT_CONFIG_KEYS, AGENT_CONFIG_META } from "./types";
@@ -39,7 +41,6 @@ export function ProjectsOverview() {
   // decoupling) — `rs_topic.project_id` is dead.
   const [projectLinks, setProjectLinks] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const { toast } = useToast();
 
@@ -70,19 +71,12 @@ export function ProjectsOverview() {
     loadData();
   }, [loadData]);
 
-  const copyId = (id: string) => {
-    navigator.clipboard.writeText(id);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const getTemplateName = (templateId: string | null) => {
-    if (!templateId) return "None";
-    return (
-      templates.find((t) => t.id === templateId)?.name ??
-      templateId.slice(0, 8) + "..."
-    );
-  };
+  /** The template's NAME when we can resolve it, else null — the caller then
+   *  renders the raw id as an openable/copyable cell rather than a stub. */
+  const getTemplateName = (templateId: string | null) =>
+    templateId
+      ? (templates.find((t) => t.id === templateId)?.name ?? null)
+      : null;
 
   const getAgentOverrideCount = (config: Json | null) => {
     if (!config || typeof config !== "object" || Array.isArray(config))
@@ -137,7 +131,8 @@ export function ProjectsOverview() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Project ID</TableHead>
+              <TableHead>Topic</TableHead>
+              <TableHead className="w-44">Project</TableHead>
               <TableHead className="w-28">Status</TableHead>
               <TableHead className="w-24">Autonomy</TableHead>
               <TableHead>Template</TableHead>
@@ -152,7 +147,7 @@ export function ProjectsOverview() {
             {configs.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="text-center text-muted-foreground py-12"
                 >
                   No research projects found.
@@ -162,25 +157,26 @@ export function ProjectsOverview() {
             {configs.map((config) => {
               // Association-backed: absent edge = projectless topic (valid).
               const linkedProjectId = projectLinks[config.id] ?? null;
+              const templateName = getTemplateName(config.template_id);
               return (
-              <TableRow key={config.id}>
+              <TableRow key={config.id} className="group">
+                {/* The topic's own name was fetched on every row and never
+                    rendered — the console listed research topics without ever
+                    naming one. It is the row's primary identity, so it leads. */}
+                <TableCell>
+                  <EntityRef
+                    token="research_topic"
+                    id={config.id}
+                    name={config.name}
+                  />
+                </TableCell>
                 <TableCell>
                   {linkedProjectId ? (
-                    <div className="flex items-center gap-1">
-                      <code className="text-[10px] text-muted-foreground">
-                        {linkedProjectId.slice(0, 12)}...
-                      </code>
-                      <button
-                        onClick={() => copyId(linkedProjectId)}
-                        className="p-0.5 hover:bg-muted rounded"
-                      >
-                        {copiedId === linkedProjectId ? (
-                          <Check className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <Copy className="h-3 w-3 text-muted-foreground" />
-                        )}
-                      </button>
-                    </div>
+                    <MatrxUuidCell
+                      value={linkedProjectId}
+                      token="project"
+                      label="Project"
+                    />
                   ) : (
                     <span className="text-[10px] text-muted-foreground">
                       No project
@@ -201,9 +197,21 @@ export function ProjectsOverview() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <span className="text-xs">
-                    {getTemplateName(config.template_id)}
-                  </span>
+                  {/* `research_template` is a registered token with NO
+                      per-record route, so an unresolved template id gets the
+                      canonical uuid cell (full value + copy) rather than a
+                      silently truncated string. Forcing an `hrefFor` here
+                      would invent a page that does not exist. */}
+                  {templateName ? (
+                    <span className="text-xs">{templateName}</span>
+                  ) : config.template_id ? (
+                    <MatrxUuidCell
+                      value={config.template_id}
+                      label="Template"
+                    />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">None</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-center">
                   {getAgentOverrideCount(config.agent_config) > 0 ? (
