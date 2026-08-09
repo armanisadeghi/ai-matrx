@@ -165,7 +165,22 @@ export default function SqlFunctionsList({
                   onClick={() => handleRowClick(func)}
                   aria-selected={isSelected}
                 >
-                  <TableCell className="font-medium text-slate-800 dark:text-slate-200">{func.name}</TableCell>
+                  <TableCell className="font-medium text-slate-800 dark:text-slate-200">
+                    {/* THE DOOR LAW: the name IS the door. A real button, so
+                        the detail is reachable by keyboard and announced as an
+                        action — the row-level click stays a mouse shortcut. */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewDetails(func);
+                      }}
+                      title={`Open ${func.schema}.${func.name}`}
+                      className="rounded text-left underline-offset-2 hover:text-primary hover:underline"
+                    >
+                      {func.name}
+                    </button>
+                  </TableCell>
                   <TableCell className="text-slate-600 dark:text-slate-400">{func.schema}</TableCell>
                   <TableCell>
                     {func.security_type === 'SECURITY DEFINER' ? (

@@ -6,8 +6,15 @@
 // from the user hub — the natural home alongside DMs and accounts. Canonical
 // MatrxDataTable + the existing announcement CRUD. NOT feedback (that's the
 // separate bug tracker).
+//
+// THE DOOR LAW (common-docs/policies/no-dead-ends.md): `created_by` is a real
+// user this table already loads and never rendered — "a relationship you can
+// resolve must be rendered AND linked". It is now an Author column carrying
+// `AdminUserRef`, the console's one user door. The announcement itself has no
+// record route; its door is the detail panel the row opens.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AdminUserRef } from "./AdminUserRef";
 import { Megaphone, Plus, Power, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
@@ -113,6 +120,18 @@ export function AnnouncementsTableClient() {
         align: "center",
         cell: (r) => <span className="text-xs">{r.is_active ? "Yes" : "No"}</span>,
         width: 80,
+      },
+      {
+        id: "created_by",
+        accessorKey: "created_by",
+        header: "Author",
+        cell: (r) =>
+          r.created_by ? (
+            <AdminUserRef userId={r.created_by} />
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          ),
+        width: 150,
       },
       {
         id: "created_at",

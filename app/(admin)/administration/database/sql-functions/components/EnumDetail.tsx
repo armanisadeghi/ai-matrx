@@ -23,16 +23,29 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { useEnums } from '@/lib/hooks/useEnums';
 
+/** The detail panel's tabs — a caller can open straight onto one. */
+export type EnumDetailTab = 'details' | 'values' | 'usage';
+
 interface EnumDetailProps {
   enumType: DatabaseEnum;
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  /**
+   * THE DOOR LAW: the tab to land on. A caller that clicked "12 tables" passes
+   * `'usage'`, so the count arrives at the list of those tables instead of
+   * dumping the user on a generic detail view.
+   */
+  initialTab?: EnumDetailTab;
 }
 
-export default function EnumDetail({ enumType, onClose, onEdit, onDelete }: EnumDetailProps) {
+export default function EnumDetail({ enumType, onClose, onEdit, onDelete, initialTab }: EnumDetailProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState('details');
+  // The caller re-targets this panel by remounting it (it keys on
+  // enum + requested tab), so `initialTab` only has to seed the state.
+  const [activeTab, setActiveTab] = useState<EnumDetailTab>(
+    initialTab ?? 'details',
+  );
   const [isCopied, setIsCopied] = useState(false);
   const [enumUsage, setEnumUsage] = useState<EnumUsage[]>([]);
   const [loadingUsage, setLoadingUsage] = useState(false);
@@ -119,23 +132,33 @@ export default function EnumDetail({ enumType, onClose, onEdit, onDelete }: Enum
             {enumType.values.length} values
           </Badge>
           {enumType.usage_count !== undefined && (
-            <Badge 
-              variant={enumType.usage_count > 0 ? "default" : "secondary"}
-              className={enumType.usage_count > 0 
-                ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800" 
-                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700"
-              }
+            // A COUNT IS A DOOR: this panel already owns the list those tables
+            // live in — send the user to it.
+            <button
+              type="button"
+              onClick={() => setActiveTab('usage')}
+              title={`Show the ${enumType.usage_count} table(s) using ${enumType.name}`}
+              className="rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              {enumType.usage_count} tables
-            </Badge>
+              <Badge
+                variant={enumType.usage_count > 0 ? "default" : "secondary"}
+                className={
+                  enumType.usage_count > 0
+                    ? "cursor-pointer bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800 hover:underline"
+                    : "cursor-pointer bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700 hover:underline"
+                }
+              >
+                {enumType.usage_count} tables
+              </Badge>
+            </button>
           )}
         </div>
       </CardHeader>
       <CardContent className="p-0">
         <Tabs 
           defaultValue="details" 
-          value={activeTab} 
-          onValueChange={setActiveTab} 
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as EnumDetailTab)}
           className="w-full"
         >
           <TabsList className="w-full justify-start px-4 pt-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">

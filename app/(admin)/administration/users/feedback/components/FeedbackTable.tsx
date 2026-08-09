@@ -67,7 +67,6 @@ import {
   ClipboardCheck,
   Archive,
   ChevronDown,
-  Copy,
   UserCheck,
   XCircle,
   MinusCircle,
@@ -78,7 +77,14 @@ import {
   CornerDownRight,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import FeedbackDetailDialog from "./FeedbackDetailDialog";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import {
+  AdminUserDoorControls,
+  AdminUserRef,
+} from "@/features/admin/users/components/AdminUserRef";
+import { FEEDBACK_DEEP_LINK_PARAM, feedbackHref } from "../doors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
@@ -421,6 +427,28 @@ export default function FeedbackTable() {
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
+  // ── THE DOOR LAW: one feedback record, one URL ────────────────────────────
+  // `?feedback=<id>` opens that row's detail dialog, so a feedback item can be
+  // linked to, opened in a new tab, and reached from its child/parent instead
+  // of only being copied to the clipboard. See ../doors.ts.
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const deepLinkId = searchParams.get(FEEDBACK_DEEP_LINK_PARAM);
+
+  const setDeepLink = useCallback(
+    (id: string | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (id) params.set(FEEDBACK_DEEP_LINK_PARAM, id);
+      else params.delete(FEEDBACK_DEEP_LINK_PARAM);
+      const query = params.toString();
+      router.replace(`${pathname}${query ? `?${query}` : ""}`, {
+        scroll: false,
+      });
+    },
+    [searchParams, router, pathname],
+  );
+
   useEffect(() => {
     loadFeedback();
     fetch("/api/admin/feedback/categories")
@@ -517,10 +545,50 @@ export default function FeedbackTable() {
     }
   };
 
-  const handleViewDetails = (item: UserFeedback) => {
+  const handleViewDetails = useCallback(
+    (item: UserFeedback) => {
+      setSelectedFeedback(item);
+      setDetailDialogOpen(true);
+      setDeepLink(item.id);
+    },
+    [setDeepLink],
+  );
+
+  // Open whatever `?feedback=<id>` names, once the row is loaded. This is what
+  // makes every feedback link — the id cell, a parent edge, a pasted URL —
+  // actually arrive somewhere.
+  //
+  // Deliberately keyed on the URL + the loaded rows ONLY. Depending on
+  // `detailDialogOpen` here would race the close handler: closing clears the
+  // param through `router.replace`, which lands a tick later, and the effect
+  // would re-fire in between and spring the dialog back open.
+  useEffect(() => {
+    if (!deepLinkId) return;
+    const item = feedback.find((f) => f.id === deepLinkId);
+    if (!item) return;
     setSelectedFeedback(item);
     setDetailDialogOpen(true);
-  };
+  }, [deepLinkId, feedback]);
+
+  const handleDetailOpenChange = useCallback(
+    (open: boolean) => {
+      setDetailDialogOpen(open);
+      if (!open && deepLinkId) setDeepLink(null);
+    },
+    [deepLinkId, setDeepLink],
+  );
+
+  // The detail dialog asks to jump to a related record (its parent). Swap the
+  // dialog's subject in place and keep the URL truthful.
+  const handleOpenFeedbackById = useCallback(
+    (id: string) => {
+      const item = feedback.find((f) => f.id === id);
+      if (item) setSelectedFeedback(item);
+      setDetailDialogOpen(true);
+      setDeepLink(id);
+    },
+    [feedback, setDeepLink],
+  );
 
   const handleViewImages = (
     e: React.MouseEvent,
@@ -1379,18 +1447,14 @@ export default function FeedbackTable() {
                                 child
                               </span>
                             )}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigator.clipboard.writeText(item.id);
-                                toast.success("ID copied to clipboard");
-                              }}
-                              className="flex items-center gap-1 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors group"
-                              title={`Click to copy full ID: ${item.id}`}
-                            >
-                              <span>{item.id.slice(0, 8)}</span>
-                              <Copy className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </button>
+                            {/* Short id + copy + a REAL new-tab door to this
+                                record (?feedback=<id>), instead of a button
+                                that only ever copied. */}
+                            <MatrxUuidCell
+                              value={item.id}
+                              label="Feedback"
+                              href={feedbackHref(item.id)}
+                            />
                             {childCount > 0 && (
                               <button
                                 onClick={(e) =>
@@ -1609,8 +1673,17 @@ export default function FeedbackTable() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs">
-                          {item.username || "Anonymous"}
+                        <TableCell
+                          className="text-xs"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {/* The reporter is a real user — reach their admin
+                              surfaces, don't just print their handle. */}
+                          <AdminUserRef
+                            userId={item.user_id}
+                            name={item.username || "Anonymous"}
+                            hideEmail
+                          />
                         </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           {item.assigned_to ? (
@@ -1622,14 +1695,25 @@ export default function FeedbackTable() {
                                 admin?.email ||
                                 assignedTo.slice(0, 8);
                               return (
-                                <button
-                                  onClick={() => setFilterAssignee(assignedTo)}
-                                  className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded border bg-primary/5 text-primary border-primary/20 hover:bg-primary/10 transition-colors max-w-[120px]"
-                                  title={`Filter by ${label}`}
-                                >
-                                  <UserCheck className="w-2.5 h-2.5 flex-shrink-0" />
-                                  <span className="truncate">{label}</span>
-                                </button>
+                                <span className="inline-flex max-w-[150px] items-center gap-1">
+                                  <button
+                                    onClick={() => setFilterAssignee(assignedTo)}
+                                    className="inline-flex min-w-0 items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded border bg-primary/5 text-primary border-primary/20 hover:bg-primary/10 transition-colors"
+                                    title={`Filter by ${label}`}
+                                  >
+                                    <UserCheck className="w-2.5 h-2.5 flex-shrink-0" />
+                                    <span className="truncate">{label}</span>
+                                  </button>
+                                  {/* Filtering the list is NOT reaching the
+                                      person. The doors ride as a SIBLING of the
+                                      filter chip — a menu inside that button
+                                      would be invalid DOM and would filter on
+                                      every click. */}
+                                  <AdminUserDoorControls
+                                    userId={assignedTo}
+                                    label={label}
+                                  />
+                                </span>
                               );
                             })()
                           ) : (
@@ -1693,9 +1777,10 @@ export default function FeedbackTable() {
         <FeedbackDetailDialog
           feedback={selectedFeedback}
           open={detailDialogOpen}
-          onOpenChange={setDetailDialogOpen}
+          onOpenChange={handleDetailOpenChange}
           onUpdate={loadFeedback}
           initialTab={stageToDialogTab[activeStage]}
+          onOpenFeedback={handleOpenFeedbackById}
         />
       )}
 

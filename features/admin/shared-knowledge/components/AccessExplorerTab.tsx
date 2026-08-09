@@ -9,8 +9,18 @@
 // `rag.fn_list_data_store_grants` per store (the super-admin gate makes the
 // full list visible here); caller-scoped provenance for tenant surfaces uses
 // P3's `library_grant_provenance` family instead — never duplicated here.
+//
+// THE DOOR LAW (common-docs/policies/no-dead-ends.md): every organization and
+// every library store named here is a real record, so every one of them opens.
+// A `<SelectItem>` cannot be an anchor, so the CHOSEN record gets the doors as
+// a sibling of the picker (`EntityRef`), and every organization/store named in
+// a result row is an `EntityRef` in place. Doors come from the registries —
+// `organization` → /organizations/[orgId], `data_store` →
+// /rag/data-stores?store_id= — never hand-written here.
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -212,10 +222,17 @@ export function AccessExplorerTab({
     return (
       <ul className="divide-y divide-border overflow-hidden rounded-md border border-border">
         {rows.map((r, idx) => (
-          <li key={`${r.storeId}-${r.grant.id}-${idx}`} className="px-3 py-2">
+          <li
+            key={`${r.storeId}-${r.grant.id}-${idx}`}
+            className="group/entity-ref px-3 py-2"
+          >
             <div className="flex items-center gap-2 text-sm text-foreground">
-              <Library className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <span className="truncate font-medium">{r.storeName}</span>
+              <EntityRef
+                token="data_store"
+                id={r.storeId}
+                name={r.storeName}
+                className="min-w-0 font-medium"
+              />
               <Badge variant="outline" className="shrink-0 text-[10px]">
                 read
               </Badge>
@@ -266,17 +283,41 @@ export function AccessExplorerTab({
           </Select>
           {orgId ? (
             <>
+              {/* The picked organization is a record — give it its doors as a
+                  SIBLING of the Select (a `<SelectItem>` can never be an
+                  anchor). */}
+              <div className="group/entity-ref flex items-center gap-2 text-sm text-foreground">
+                <EntityRef
+                  token="organization"
+                  id={orgId}
+                  name={orgNameById.get(orgId) ?? orgId}
+                  className="min-w-0 font-medium"
+                  alwaysShowActions
+                />
+              </div>
               <div className="text-xs text-muted-foreground">
                 Industries:{" "}
                 {(industriesByOrg.get(orgId) ?? []).length === 0
                   ? "none assigned"
                   : (industriesByOrg.get(orgId) ?? []).length}
-                {" · "}Members:{" "}
-                {
-                  directory.memberships.filter(
-                    (m) => m.organization_id === orgId,
-                  ).length
-                }
+                {" · "}
+                {/* A count is a door: the members list lives on the org
+                    directory, which selects an org from `?org=<id>`
+                    (OrganizationsAdminClient reads searchParams.get("org")). */}
+                <Link
+                  href={`/administration/users/organizations?org=${encodeURIComponent(orgId)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline-offset-2 hover:text-foreground hover:underline"
+                  title="Open this organization's members"
+                >
+                  Members:{" "}
+                  {
+                    directory.memberships.filter(
+                      (m) => m.organization_id === orgId,
+                    ).length
+                  }
+                </Link>
               </div>
               {renderEntitlements(
                 entitlementsForOrg(orgId),
@@ -322,13 +363,22 @@ export function AccessExplorerTab({
           ) : null}
           {lookedUpUser ? (
             <div className="space-y-3">
-              <div className="text-xs text-muted-foreground">
-                {lookedUpUser.email} · member of{" "}
-                {userOrgIds.length === 0
-                  ? "no organizations"
-                  : userOrgIds
-                      .map((id) => orgNameById.get(id) ?? id)
-                      .join(", ")}
+              <div className="group/entity-ref flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                <span>{lookedUpUser.email} · member of</span>
+                {userOrgIds.length === 0 ? (
+                  <span>no organizations</span>
+                ) : (
+                  userOrgIds.map((id) => (
+                    <EntityRef
+                      key={id}
+                      token="organization"
+                      id={id}
+                      name={orgNameById.get(id) ?? id}
+                      className="text-foreground"
+                      alwaysShowActions
+                    />
+                  ))
+                )}
               </div>
               {userOrgIds.length === 0 ? (
                 <div className="rounded-md border border-dashed border-border px-3 py-4 text-center text-sm text-muted-foreground">
@@ -339,8 +389,14 @@ export function AccessExplorerTab({
               ) : (
                 userOrgIds.map((oid) => (
                   <div key={oid} className="space-y-1.5">
-                    <div className="text-sm font-medium text-foreground">
-                      Via membership in {orgNameById.get(oid) ?? oid}
+                    <div className="group/entity-ref flex items-center gap-1.5 text-sm font-medium text-foreground">
+                      <span>Via membership in</span>
+                      <EntityRef
+                        token="organization"
+                        id={oid}
+                        name={orgNameById.get(oid) ?? oid}
+                        alwaysShowActions
+                      />
                     </div>
                     {renderEntitlements(
                       entitlementsForOrg(oid),
@@ -368,6 +424,20 @@ export function AccessExplorerTab({
               ))}
             </SelectContent>
           </Select>
+          {storeId ? (
+            <div className="group/entity-ref flex items-center gap-2 text-sm text-foreground">
+              <EntityRef
+                token="data_store"
+                id={storeId}
+                name={
+                  directory.stores.find((s) => s.id === storeId)?.name ??
+                  storeId
+                }
+                className="min-w-0 font-medium"
+                alwaysShowActions
+              />
+            </div>
+          ) : null}
           {storeId ? (
             grantsLoading ? (
               <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
@@ -397,28 +467,55 @@ export function AccessExplorerTab({
                         key={g.id}
                         className="rounded-md border border-border px-3 py-2"
                       >
-                        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <div className="group/entity-ref flex items-center gap-2 text-sm font-medium text-foreground">
                           {g.audience === "global" ? (
                             <Globe className="h-3.5 w-3.5 text-muted-foreground" />
                           ) : g.audience === "industry" ? (
                             <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+                          ) : null}
+                          {g.audience === "global" ? (
+                            "Everyone (global grant)"
+                          ) : g.audience === "industry" ? (
+                            // No route exists for an industry — the taxonomy
+                            // lives in the Industries tab with no deep link.
+                            <span>
+                              Industry —{" "}
+                              {g.industryName ?? g.industrySlug ?? "unknown"}
+                            </span>
+                          ) : g.organizationId ? (
+                            <>
+                              <span>Organization —</span>
+                              <EntityRef
+                                token="organization"
+                                id={g.organizationId}
+                                name={g.organizationName ?? g.organizationId}
+                              />
+                            </>
                           ) : (
-                            <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span>Organization — unknown</span>
                           )}
-                          {g.audience === "global"
-                            ? "Everyone (global grant)"
-                            : g.audience === "industry"
-                              ? `Industry — ${g.industryName ?? g.industrySlug ?? "unknown"}`
-                              : `Organization — ${g.organizationName ?? g.organizationId}`}
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground">
-                          {g.audience === "global"
-                            ? "Every organization on the platform can read this store."
-                            : reachedOrgIds.length === 0
-                              ? "Reaches no organizations today (the industry has no assigned orgs)."
-                              : `Reaches: ${reachedOrgIds
-                                  .map((id) => orgNameById.get(id) ?? id)
-                                  .join(", ")}`}
+                          {g.audience === "global" ? (
+                            "Every organization on the platform can read this store."
+                          ) : reachedOrgIds.length === 0 ? (
+                            "Reaches no organizations today (the industry has no assigned orgs)."
+                          ) : (
+                            // Every organization this grant reaches is a
+                            // record — name it AND open it.
+                            <span className="group/entity-ref flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <span>Reaches:</span>
+                              {reachedOrgIds.map((id) => (
+                                <EntityRef
+                                  key={id}
+                                  token="organization"
+                                  id={id}
+                                  name={orgNameById.get(id) ?? id}
+                                  showIcon={false}
+                                />
+                              ))}
+                            </span>
+                          )}
                         </div>
                       </div>
                     );

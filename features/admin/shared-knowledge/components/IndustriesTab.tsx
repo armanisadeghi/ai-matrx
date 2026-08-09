@@ -7,8 +7,15 @@
 // soft-delete/reactivate via `industry_set_active`, and per-industry
 // organization assignment via `industry_assign_org` / `industry_unassign_org`.
 // All writes go through `features/industries/service.ts` — never raw table writes.
+//
+// THE DOOR LAW (common-docs/policies/no-dead-ends.md): every organization named
+// on the right-hand assignment list is a real record, so it opens — `EntityRef`
+// resolves `organization` → /organizations/[orgId] + its peek from the
+// registries. Industries themselves have no record route (this console IS their
+// home; the left list selects one), so they stay plain by design.
 
 import { useMemo, useState } from "react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,7 +37,6 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Archive,
   ArchiveRestore,
-  Building2,
   Loader2,
   Pencil,
   Plus,
@@ -395,11 +401,15 @@ export function IndustriesTab({
                 {assignedOrgs.map((a) => (
                   <li
                     key={a.orgId}
-                    className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
+                    className="group/entity-ref flex items-center justify-between gap-2 px-3 py-2 text-sm"
                   >
                     <span className="flex min-w-0 items-center gap-2 text-foreground">
-                      <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      <span className="truncate">{a.orgName}</span>
+                      <EntityRef
+                        token="organization"
+                        id={a.orgId}
+                        name={a.orgName}
+                        className="min-w-0"
+                      />
                       {a.isPrimary ? (
                         <Badge
                           variant="outline"

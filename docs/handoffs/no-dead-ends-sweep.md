@@ -51,13 +51,7 @@ Ordered by traffic. Each item is independently actionable.
    `/tasks`, `/transcripts`, `/marketing/*`, `/crm`, `/research`. Highest user
    traffic and NOT yet audited. Start with a census like the admin one: find
    names rendered as `<span>`, bare uuids, and counts.
-2. **Remaining admin consoles.** Not yet swept: `/administration/shared-knowledge`
-   (Access Explorer, Stores & Grants, Industries — names live only as
-   `<SelectItem>`), `/administration/scopes-context/system-context`,
-   `/administration/users/feedback` (feedback id, parent_id, assignee),
-   `/administration/database/sql-functions` (`{usage_count} tables`),
-   `/administration/compute/sandbox`, `/administration/users/email`,
-   `/administration/users/{announcements,invitations}`. Plus routes rendering
+2. **Remaining admin consoles.** Routes rendering
    from `features/agents` / `features/skills` / `features/podcasts` /
    `features/content-ir` rather than `features/admin`:
    `/administration/agents/system-agents/agents`, `…/shortcuts/all`,
@@ -109,6 +103,30 @@ Ordered by traffic. Each item is independently actionable.
     fix** — the picker is where "which one is that?" actually bites.
 13. **Scheduling admin consoles show only the viewer's own rows** (D140) — they
     present as fleet-wide and are not.
+14. **Registry entries the admin sweep wanted and could not add** (they need an
+    owner's call, not a call-site patch):
+    - `user_feedback` — now HAS a working route
+      (`/administration/users/feedback?feedback=<id>`, see `Done`). Registering
+      `hrefFor` would light up every feedback reference at once, but the route
+      sits behind the super-admin `(admin)` layout, so it is the same
+      "403 door" question as `skill` in item 11.
+    - `context_item` / `scope_type` — registered tokens, no `hrefFor` and no
+      peek. The System Context console falls back to an in-surface filter for a
+      category and a copy-only uuid for the item. A peek on each is the cheap
+      fix (same argument as item 12).
+    - Industries have **no token at all** (`public.industries`), so every
+      "Industry — X" grant label in shared-knowledge is plain text.
+15. **`/sandbox/[id]` is owner-only.** `/api/sandbox/[id]` filters
+    `.eq("user_id", user.id)`, so the FLEET-WIDE admin console at
+    `/administration/compute/sandbox` can only link the viewer's OWN instances —
+    the rest would 404. Needs a super-admin read path (or an admin-side sandbox
+    detail route) before every row can open. Same family as item 13.
+16. **Counts still without a destination** (deliberately left inert): a library
+    store's `N members` and the sandbox console's `Unique users` have no list to
+    reach; the enum Usage tab's `schema.table` names have nowhere to go —
+    `/administration/database/database-admin` reads only `?tab=`, no table
+    param. An invitation request has no user FK and Accounts reads no deep-link
+    param, so an applicant's email cannot reach an account.
 
 ## Done
 
@@ -134,4 +152,20 @@ Ordered by traffic. Each item is independently actionable.
 - **Consoles done**: Agent Slots (`features/admin/agent-slots/FEATURE.md`, the
   worked reference) · Users & Access · Relationships hub · reporting/events
   audit log · agent-apps · scheduling · applications · every association surface
-  (`features/scopes/components/associations/`) + war-room resource lists.
+  (`features/scopes/components/associations/`) + war-room resource lists ·
+  shared-knowledge (Access Explorer / Stores & Grants / Industries) ·
+  scopes-context/system-context · users/feedback · database/{enums,sql-functions}
+  · compute/sandbox · users/{email,announcements,invitations}.
+- **`AdminUserDoorControls`** (`features/admin/users/components/AdminUserRef.tsx`)
+  — the user doors WITHOUT the name, the `EntityDoorControls` half of the user
+  stand-in. For a name that labels a checkbox, sits in a `<SelectItem>`, or
+  lives inside a "filter by this assignee" button. `AdminUserRef` composes it,
+  so the verified destination list is still declared exactly once.
+- **Feedback records became linkable** — `?feedback=<id>` on the console route
+  (`app/(admin)/administration/users/feedback/doors.ts`) opens that row's detail
+  dialog, so the id cell, the parent edge and a pasted URL all arrive somewhere.
+  The parent edge used to copy the parent's id and toast a preview of the answer
+  it already had.
+- **Count-doors**: an enum's `{usage_count} tables` opens the detail's Usage tab
+  (which lists those tables); an org's member count opens
+  `/administration/users/organizations?org=<id>`.

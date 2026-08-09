@@ -28,7 +28,9 @@ import {
 } from "@/components/ui/pagination";
 import { List, Search, RefreshCw, Plus, X } from "lucide-react";
 import EnumsList from "../../sql-functions/components/EnumsList";
-import EnumDetail from "../../sql-functions/components/EnumDetail";
+import EnumDetail, {
+  type EnumDetailTab,
+} from "../../sql-functions/components/EnumDetail";
 import EnumForm from "../../sql-functions/components/EnumForm";
 import { DEFAULT_DATABASE_SCHEMA } from "../../config";
 
@@ -47,6 +49,8 @@ export default function EnumsContainer({
   );
   const [customSchemaSearch, setCustomSchemaSearch] = useState(false);
   const [nameSearch, setNameSearch] = useState("");
+  // Which detail tab the last "open" asked for (a count-door sends 'usage').
+  const [detailTab, setDetailTab] = useState<EnumDetailTab | undefined>();
 
   // Use the Enums hook
   const {
@@ -115,8 +119,11 @@ export default function EnumsContainer({
     return success;
   };
 
-  // Handle viewing enum details
-  const handleViewDetails = (enumType: DatabaseEnum) => {
+  // Handle viewing enum details.
+  // THE DOOR LAW: `tab` carries the question the user clicked — "12 tables"
+  // opens the detail already on Usage, where those tables are listed.
+  const handleViewDetails = (enumType: DatabaseEnum, tab?: EnumDetailTab) => {
+    setDetailTab(tab);
     selectEnum(enumType);
   };
 
@@ -503,7 +510,12 @@ export default function EnumsContainer({
       {selectedEnum && activeTab === "list" && (
         <div className="mt-6 px-6 pb-6">
           <EnumDetail
+            // Remount when the target enum OR the requested tab changes, so a
+            // usage-count click always lands on Usage — even when the panel is
+            // already open on another enum.
+            key={`${selectedEnum.schema}.${selectedEnum.name}:${detailTab ?? "details"}`}
             enumType={selectedEnum}
+            initialTab={detailTab}
             onClose={() => selectEnum(null)}
             onEdit={() => handleEditEnum(selectedEnum)}
             onDelete={() =>

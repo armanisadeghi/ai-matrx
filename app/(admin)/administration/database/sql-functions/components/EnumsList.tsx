@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { DatabaseEnum, EnumSort } from '@/types/enum-types';
+import type { EnumDetailTab } from './EnumDetail';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +31,12 @@ import {
 interface EnumsListProps {
   enums: DatabaseEnum[];
   loading: boolean;
-  onViewDetails: (enumType: DatabaseEnum) => void;
+  /**
+   * THE DOOR LAW: `tab` lets a cell open the detail ON the answer it names —
+   * "12 tables" lands on the Usage tab, which lists those exact tables and
+   * columns, instead of stating a number nothing can reach.
+   */
+  onViewDetails: (enumType: DatabaseEnum, tab?: EnumDetailTab) => void;
   onEditEnum: (enumType: DatabaseEnum) => void;
   onDeleteEnum: (schema: string, name: string) => Promise<boolean>;
   onSortChange: (field: EnumSort['field']) => void;
@@ -156,10 +162,21 @@ export default function EnumsList({
                   onClick={() => handleRowClick(enumType)}
                 >
                   <TableCell className="font-medium text-slate-800 dark:text-slate-200">
-                    <div className="flex items-center gap-2">
+                    {/* The name is the door — as a real button, so it is
+                        keyboard-reachable and announced. The row-level click
+                        stays as a mouse convenience. */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewDetails(enumType);
+                      }}
+                      title={`Open ${enumType.schema}.${enumType.name}`}
+                      className="flex items-center gap-2 rounded text-left underline-offset-2 hover:text-primary hover:underline"
+                    >
                       <List className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                       {enumType.name}
-                    </div>
+                    </button>
                   </TableCell>
                   <TableCell className="text-slate-600 dark:text-slate-400">
                     <div className="flex items-center gap-1">
@@ -179,15 +196,33 @@ export default function EnumsList({
                   </TableCell>
                   <TableCell className="text-slate-600 dark:text-slate-400">
                     {enumType.usage_count !== undefined ? (
-                      <Badge 
-                        variant={enumType.usage_count > 0 ? "default" : "secondary"}
-                        className={enumType.usage_count > 0 
-                          ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800" 
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700"
+                      // A COUNT IS A DOOR: open the detail's Usage tab, which
+                      // lists exactly these tables and columns. A count above
+                      // zero that reached nothing was the dead end.
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewDetails(enumType, 'usage');
+                        }}
+                        title={
+                          enumType.usage_count > 0
+                            ? `Show the ${enumType.usage_count} table(s) using ${enumType.name}`
+                            : `No table uses ${enumType.name} — open usage`
                         }
+                        className="rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        {enumType.usage_count} tables
-                      </Badge>
+                        <Badge
+                          variant={enumType.usage_count > 0 ? "default" : "secondary"}
+                          className={
+                            enumType.usage_count > 0
+                              ? "cursor-pointer bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800 hover:underline"
+                              : "cursor-pointer bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700 hover:underline"
+                          }
+                        >
+                          {enumType.usage_count} tables
+                        </Badge>
+                      </button>
                     ) : (
                       <span className="text-slate-400 dark:text-slate-500">Unknown</span>
                     )}

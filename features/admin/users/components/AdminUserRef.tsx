@@ -31,6 +31,17 @@
  *
  * Composes, never duplicates: when no name/email is loaded it falls back to
  * `MatrxUuidCell`, which already owns short-id display + copy + tooltip.
+ *
+ * Two exports, the same split `EntityRef` / `EntityDoorControls` uses:
+ *   `AdminUserRef`         — the NAME with its doors (the default; prefer it)
+ *   `AdminUserDoorControls` — the doors WITHOUT the name, for a surface whose
+ *      name genuinely cannot be an anchor: it lives inside a `<label>` that
+ *      toggles a checkbox, or inside a button that means something else (a
+ *      "filter by this assignee" chip). Those render it as a SIBLING of the
+ *      name — an interactive control inside a label/button is invalid DOM and
+ *      a stray click would cost the user the surface they are standing in.
+ * `AdminUserRef` composes the cluster, so the destination list below is
+ * declared exactly once.
  */
 
 import Link from "next/link";
@@ -99,6 +110,64 @@ function doorsFor(userId: string): UserDoor[] {
   ];
 }
 
+export interface AdminUserDoorControlsProps {
+  userId: string;
+  /** Display name/email — used only for the control labels and menu heading. */
+  label?: string | null;
+  className?: string;
+}
+
+/**
+ * The per-user admin destinations as a standalone control cluster. Every item
+ * is a real `<Link>`, so middle-click / cmd-click opens a new tab without
+ * costing the user the surface they are standing in.
+ */
+export function AdminUserDoorControls({
+  userId,
+  label,
+  className,
+}: AdminUserDoorControlsProps) {
+  const heading = label?.trim() || userId;
+  const doors = doorsFor(userId);
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          title={`Open admin surfaces for ${heading}`}
+          aria-label={`Open admin surfaces for ${heading}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            event.preventDefault();
+          }}
+          className={cn(
+            "flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+            className,
+          )}
+        >
+          <ChevronDown className="h-3 w-3" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        className="w-52"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <DropdownMenuLabel className="truncate">{heading}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {doors.map(({ href, label: doorLabel, Icon }) => (
+          <DropdownMenuItem key={href} asChild>
+            <Link href={href}>
+              <Icon className="mr-2 h-4 w-4" /> {doorLabel}
+            </Link>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function AdminUserRef({
   userId,
   name,
@@ -108,7 +177,6 @@ export function AdminUserRef({
 }: AdminUserRefProps) {
   const primary = name?.trim() || email?.trim() || null;
   const secondary = !hideEmail && primary !== email ? email?.trim() : null;
-  const doors = doorsFor(userId);
 
   return (
     <div className={cn("flex min-w-0 items-center gap-1", className)}>
@@ -125,36 +193,7 @@ export function AdminUserRef({
         ) : null}
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            title={`Open admin surfaces for ${primary ?? userId}`}
-            aria-label={`Open admin surfaces for ${primary ?? userId}`}
-            onClick={(event) => event.stopPropagation()}
-            className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            <ChevronDown className="h-3 w-3" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="start"
-          className="w-52"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <DropdownMenuLabel className="truncate">
-            {primary ?? userId}
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {doors.map(({ href, label, Icon }) => (
-            <DropdownMenuItem key={href} asChild>
-              <Link href={href}>
-                <Icon className="mr-2 h-4 w-4" /> {label}
-              </Link>
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <AdminUserDoorControls userId={userId} label={primary ?? userId} />
     </div>
   );
 }

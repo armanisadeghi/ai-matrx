@@ -8,8 +8,18 @@
 // publish/revoke via the extended DataStorePublishPanel — the ONE grant
 // mutation path (`rag.library_grant_publish` / `_revoke`). Revoke here
 // confirms through ConfirmDialog before firing.
+//
+// THE DOOR LAW (common-docs/policies/no-dead-ends.md): the store rows select
+// (they are the left half of a master/detail), so the store NAME cannot also be
+// an anchor — `EntityDoorControls` rides beside it as a sibling, exactly like
+// the association picker does. Owning organizations and organization-audience
+// grants are full `EntityRef`s. Routes come from the entity registry
+// (`data_store` → /rag/data-stores?store_id=, `organization` →
+// /organizations/[orgId]); nothing is hand-written here.
 
 import { useMemo, useState } from "react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -92,7 +102,7 @@ export function StoresGrantsTab({
             {directory.stores.map((s) => (
               <li
                 key={s.id}
-                className={`cursor-pointer px-3 py-2 text-sm transition-colors hover:bg-muted/60 ${
+                className={`group/entity-ref cursor-pointer px-3 py-2 text-sm transition-colors hover:bg-muted/60 ${
                   s.id === selectedStoreId ? "bg-accent" : ""
                 }`}
                 onClick={() => setSelectedStoreId(s.id)}
@@ -101,6 +111,15 @@ export function StoresGrantsTab({
                   <span className="truncate font-medium text-foreground">
                     {s.name}
                   </span>
+                  {/* Sibling of the name, never wrapping it: clicking the row
+                      SELECTS the store (this is the detail pane's master), so
+                      the name itself must not navigate. */}
+                  <EntityDoorControls
+                    token="data_store"
+                    id={s.id}
+                    name={s.name}
+                    showOpen
+                  />
                   {!s.isActive ? (
                     <Badge variant="secondary" className="shrink-0 text-[10px]">
                       inactive
@@ -112,10 +131,22 @@ export function StoresGrantsTab({
                     </Badge>
                   ) : null}
                 </div>
-                <div className="truncate text-xs text-muted-foreground">
-                  {s.organizationName ?? "No owning org"} · {s.memberCount}{" "}
-                  member{s.memberCount === 1 ? "" : "s"}
-                  {s.shortCode ? ` · ${s.shortCode}` : ""}
+                <div className="flex min-w-0 items-center gap-1 truncate text-xs text-muted-foreground">
+                  {s.organizationId ? (
+                    <EntityRef
+                      token="organization"
+                      id={s.organizationId}
+                      name={s.organizationName ?? s.organizationId}
+                      showIcon={false}
+                    />
+                  ) : (
+                    <span>No owning org</span>
+                  )}
+                  <span>
+                    {" · "}
+                    {s.memberCount} member{s.memberCount === 1 ? "" : "s"}
+                    {s.shortCode ? ` · ${s.shortCode}` : ""}
+                  </span>
                 </div>
               </li>
             ))}
@@ -126,8 +157,21 @@ export function StoresGrantsTab({
       {/* Right: grants for the selected store */}
       <div className="min-w-0">
         <div className="mb-2 flex items-center justify-between">
-          <div className="text-sm font-medium text-foreground">
-            {selectedStore ? `Grants — ${selectedStore.name}` : "Grants"}
+          <div className="group/entity-ref flex min-w-0 items-center gap-1 text-sm font-medium text-foreground">
+            {selectedStore ? (
+              <>
+                <span className="shrink-0">Grants —</span>
+                <EntityRef
+                  token="data_store"
+                  id={selectedStore.id}
+                  name={selectedStore.name}
+                  showIcon={false}
+                  alwaysShowActions
+                />
+              </>
+            ) : (
+              "Grants"
+            )}
           </div>
           <Button
             size="sm"
@@ -159,17 +203,29 @@ export function StoresGrantsTab({
             {grants.map((g) => (
               <li
                 key={g.id}
-                className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
+                className="group/entity-ref flex items-center justify-between gap-2 px-3 py-2 text-sm"
               >
                 <span className="flex min-w-0 items-center gap-2 text-foreground">
-                  {g.audience === "global" ? (
-                    <Globe className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  ) : g.audience === "industry" ? (
-                    <Layers className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  {g.audience === "organization" && g.organizationId ? (
+                    // The audience IS an organization record — open it.
+                    <EntityRef
+                      token="organization"
+                      id={g.organizationId}
+                      name={grantLabel(g)}
+                      className="min-w-0"
+                    />
                   ) : (
-                    <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <>
+                      {g.audience === "global" ? (
+                        <Globe className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      ) : g.audience === "industry" ? (
+                        <Layers className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      ) : (
+                        <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      )}
+                      <span className="truncate">{grantLabel(g)}</span>
+                    </>
                   )}
-                  <span className="truncate">{grantLabel(g)}</span>
                   <Badge variant="outline" className="shrink-0 text-[10px]">
                     {g.audience}
                   </Badge>

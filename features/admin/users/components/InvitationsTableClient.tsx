@@ -3,8 +3,19 @@
 // Users & Access › Invitations — canonical MatrxDataTable over access requests.
 // Sort/filter every column + Copy-for-AI; the approve/reject review flow lives
 // in the side-panel detail. Data via /api/admin/invitation-requests.
+//
+// THE DOOR LAW (common-docs/policies/no-dead-ends.md): a request row names a
+// person who does NOT yet have an account — `users.invitation_requests` has no
+// user FK, and `/administration/users` (Accounts) reads no deep-link param — so
+// the applicant's name and email genuinely have no record to open, and the
+// request's own door is the detail panel the row opens. What IS resolvable is
+// `reviewed_by`: the admin who approved or rejected it. The API already
+// returned that column and the UI dropped it on the floor — a relationship you
+// can resolve must be RENDERED and LINKED, so it is now a Reviewer column
+// carrying `AdminUserRef`.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AdminUserRef } from "./AdminUserRef";
 import { CheckCircle, Loader2, XCircle } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +41,9 @@ interface InvitationRequest {
   status: "pending" | "approved" | "rejected" | "invited" | "converted";
   notes?: string;
   created_at: string;
+  /** The admin who approved/rejected this request (written by the PATCH route). */
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
 }
 
 const STATUS_CLASS: Record<string, string> = {
@@ -134,6 +148,18 @@ export function InvitationsTableClient() {
         width: 110,
       },
       {
+        id: "reviewed_by",
+        accessorKey: "reviewed_by",
+        header: "Reviewer",
+        cell: (r) =>
+          r.reviewed_by ? (
+            <AdminUserRef userId={r.reviewed_by} />
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          ),
+        width: 150,
+      },
+      {
         id: "created_at",
         accessorKey: "created_at",
         header: "Submitted",
@@ -205,6 +231,20 @@ export function InvitationsTableClient() {
                   <dd>{r.phone || "—"}</dd>
                   <dt className="text-muted-foreground">Submitted</dt>
                   <dd>{new Date(r.created_at).toLocaleString()}</dd>
+                  {r.reviewed_by ? (
+                    <>
+                      <dt className="text-muted-foreground">Reviewed by</dt>
+                      <dd>
+                        <AdminUserRef userId={r.reviewed_by} />
+                      </dd>
+                    </>
+                  ) : null}
+                  {r.reviewed_at ? (
+                    <>
+                      <dt className="text-muted-foreground">Reviewed</dt>
+                      <dd>{new Date(r.reviewed_at).toLocaleString()}</dd>
+                    </>
+                  ) : null}
                 </dl>
                 <div>
                   <p className="mb-1 text-xs font-medium text-muted-foreground">Use case</p>
