@@ -351,7 +351,9 @@ export function RateLimitsClient() {
       getScope={() =>
         createAdminAgentAppsScope({
           admin_section: 'rate_limits',
-          rate_limits_rows: rateLimits.map((r) => ({
+          // Mirror the grid: rows are what the admin actually sees after
+          // column filters; stats stay over the full fetch (the stat tiles).
+          rate_limits_rows: filteredAndSortedRateLimits.map((r) => ({
             app_name: r.app_name ?? '',
             app_slug: r.app_slug ?? '',
             user_id: r.user_id ?? null,

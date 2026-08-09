@@ -371,7 +371,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "executions_rows",
     label: "Execution rows",
     description:
-      "Loaded execution log rows: success, app_name/slug, task_id, user/fingerprint/ip identifier, tokens_used, cost, execution_time_ms, created_at. Bindable rather than auto-context; up to 500 rows. Absent outside the Executions tab.",
+      "Execution log rows currently VISIBLE in the grid (after the app/outcome filters): success, app_name/slug, task_id, user/fingerprint/ip identifier, tokens_used, cost, execution_time_ms, created_at. Bindable rather than auto-context; up to 500 rows. Note executions_stats counts ALL loaded rows, not just these. Absent outside the Executions tab.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 5000,
@@ -383,7 +383,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "executions_stats",
     label: "Execution stats",
     description:
-      "total/success/failed counts over the currently loaded execution rows. Absent outside the Executions tab.",
+      "total/success/failed counts over ALL loaded execution rows (the stat tiles) — NOT the filtered subset in executions_rows. Absent outside the Executions tab.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 40,
@@ -416,7 +416,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "errors_rows",
     label: "Error rows",
     description:
-      "Loaded app-execution error rows: resolved, error_type, app_name/slug, error_message, created_at. Bindable rather than auto-context; up to 500 rows. Absent outside the Errors tab.",
+      "App-execution error rows currently VISIBLE in the grid (after the type/app filters): resolved, error_type, app_name/slug, error_message, created_at. Bindable rather than auto-context; up to 500 rows. Note errors_stats counts ALL loaded rows, not just these. Absent outside the Errors tab.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 4000,
@@ -428,7 +428,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "errors_stats",
     label: "Error stats",
     description:
-      "total/resolved/unresolved counts over the currently loaded error rows. Absent outside the Errors tab.",
+      "total/resolved/unresolved counts over ALL loaded error rows (the stat tiles) — NOT the filtered subset in errors_rows. Absent outside the Errors tab.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 40,
@@ -500,7 +500,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "rate_limits_rows",
     label: "Rate limit rows",
     description:
-      "Loaded rate-limit rows: app_name/slug, identifier (user_id/ip_address/fingerprint), is_blocked, execution_count, first/last_execution_at, blocked_until, blocked_reason. Bindable rather than auto-context; up to 500 rows. Absent outside the rate-limits section.",
+      "Rate-limit rows currently VISIBLE in the grid (after the app/identifier/type/blocked column filters, sorted): app_name/slug, identifier (user_id/ip_address/fingerprint), is_blocked, execution_count, first/last_execution_at, blocked_until, blocked_reason. Bindable rather than auto-context; up to 500 rows. Note rate_limits_stats counts the FULL fetch, not just these. Absent outside the rate-limits section.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 5000,
@@ -512,7 +512,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "rate_limits_stats",
     label: "Rate limit stats",
     description:
-      "total/blocked/active/users/ips counts over the currently loaded rate-limit rows. Absent outside the rate-limits section.",
+      "total/blocked/active/users/ips counts over the FULL rate-limit fetch (the stat tiles) — NOT the filtered subset in rate_limits_rows. Absent outside the rate-limits section.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 60,

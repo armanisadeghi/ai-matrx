@@ -61,10 +61,37 @@ import {
   type AgentAppExecutionRow,
 } from "@/lib/services/agent-apps-admin-service";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
   createAdminAgentAppsScope,
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
+
+/**
+ * The shared TabsContent wrapper hardcodes `forceMount`, so BOTH tables stay
+ * mounted regardless of the active tab. Registering both providers would let
+ * the later registration shadow the active tab's scope (same surface, same
+ * depth) — so each table registers its provider ONLY while its tab is active.
+ */
+function SurfaceScopeWhenActive({
+  active,
+  getScope,
+  children,
+}: {
+  active: boolean;
+  getScope: () => SurfaceScopePayload;
+  children: React.ReactNode;
+}) {
+  if (!active) return <>{children}</>;
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
+      getScope={getScope}
+    >
+      {children}
+    </SurfaceRuntimeProvider>
+  );
+}
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
@@ -106,6 +133,9 @@ const ERROR_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function AgentAppsExecutionsAdminPage() {
+  const [activeTab, setActiveTab] = useState<"executions" | "errors">(
+    "executions",
+  );
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full bg-textured">
@@ -119,7 +149,8 @@ export default function AgentAppsExecutionsAdminPage() {
           </p>
         </div>
         <Tabs
-          defaultValue="executions"
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as "executions" | "errors")}
           className="flex-1 flex flex-col overflow-hidden"
         >
           <div className="border-b border-border px-4 bg-card">
@@ -145,13 +176,13 @@ export default function AgentAppsExecutionsAdminPage() {
               value="executions"
               className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col"
             >
-              <ExecutionsTable />
+              <ExecutionsTable active={activeTab === "executions"} />
             </TabsContent>
             <TabsContent
               value="errors"
               className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col"
             >
-              <ErrorsTable />
+              <ErrorsTable active={activeTab === "errors"} />
             </TabsContent>
           </div>
         </Tabs>
@@ -160,7 +191,7 @@ export default function AgentAppsExecutionsAdminPage() {
   );
 }
 
-function ExecutionsTable() {
+function ExecutionsTable({ active }: { active: boolean }) {
   const { toast } = useToast();
   const [rows, setRows] = useState<AgentAppExecutionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -222,8 +253,8 @@ function ExecutionsTable() {
   }
 
   return (
-    <SurfaceRuntimeProvider
-      surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
+    <SurfaceScopeWhenActive
+      active={active}
       getScope={() =>
         createAdminAgentAppsScope({
           admin_section: "executions",
@@ -457,11 +488,11 @@ function ExecutionsTable() {
         )}
       </ScrollArea>
     </div>
-    </SurfaceRuntimeProvider>
+    </SurfaceScopeWhenActive>
   );
 }
 
-function ErrorsTable() {
+function ErrorsTable({ active }: { active: boolean }) {
   const { toast } = useToast();
   const [rows, setRows] = useState<AgentAppErrorRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -578,8 +609,8 @@ function ErrorsTable() {
   }
 
   return (
-    <SurfaceRuntimeProvider
-      surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
+    <SurfaceScopeWhenActive
+      active={active}
       getScope={() =>
         createAdminAgentAppsScope({
           admin_section: "executions",
@@ -1008,6 +1039,6 @@ function ErrorsTable() {
         </DialogContent>
       </Dialog>
     </div>
-    </SurfaceRuntimeProvider>
+    </SurfaceScopeWhenActive>
   );
 }
