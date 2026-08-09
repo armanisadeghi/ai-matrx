@@ -92,13 +92,18 @@ spend output deciding what to do with yours. An earlier revision of this doc
 told the next agent to treat the work as pending a ship decision — that was
 wrong, and it was written before the doctrine landed (`2b4e7854`). Corrected.
 
-The one true observation underneath it: **a Vercel PREVIEW never builds for a
-branch here.** The release-prefix gate (`scripts/vercel-ignore-build.sh`) marks
-every non-release-prefixed commit `Ignored`, previews included (verified
+The one true observation underneath it: **a Vercel PREVIEW never COMPLETES for
+a branch here.** The release-prefix gate (`scripts/vercel-ignore-build.sh`)
+marks every non-release-prefixed commit `Ignored`, previews included (verified
 2026-08-09 across all three projects). So "browser-verified" cannot mean a
 preview URL — use a local `pnpm dev`, or verify the LIVE app after the merge
-lands. Never claim a surface is verified on the strength of a preview that
-never built.
+lands.
+
+**Precision that matters if you are watching the PR:** each push DOES flip the
+three projects to `Building` for a moment, because the ignore script runs as
+part of the build. The status then settles to `Ignored`. An agent that sees
+`Building` and waits for a preview URL is waiting for something that will never
+arrive — check for the `Ignored` settle, don't poll the preview host.
 
 **1b. `pnpm check:doc-claims` is RED in any cloud/container session, and it is
 not your change.** CLAUDE.md links cross-repo docs by absolute path
