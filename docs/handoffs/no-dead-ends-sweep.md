@@ -130,13 +130,13 @@ Ordered by traffic. Each item is independently actionable.
 
 ### Blocked / needs a decision
 
-0. **`scope` still has no registry `hrefFor`.** `/scopes/s/[scopeId]` now
-   resolves a scope from its id alone, so the blocker in item 14 is gone — the
-   registry edit is a one-liner (`hrefFor: (id) => scopeShortHref(id)`) that was
-   deliberately NOT made here to avoid a concurrent-edit conflict in
-   `entityRegistry.ts`. Until it lands, call sites pass `scopeShortHref(id)` as
-   an `href` override to `EntityRef`; registering it changes no call site.
-   `scope_type` has the same gap and no resolver route yet.
+0. ~~**`scope` still has no registry `hrefFor`.**~~ RESOLVED 2026-08-09 —
+   `entityRegistry.ts` now carries `scope: { hrefFor: (id) => scopeShortHref(id) }`
+   (verified live at `entityRegistry.ts:418`), so every surface naming a scope
+   resolves a door with no call-site change. Call sites that still pass
+   `scopeShortHref(id)` as an explicit `href` override are harmless but
+   redundant — drop the override opportunistically.
+   **Still open:** `scope_type` has no `hrefFor`, no resolver route, and no peek.
 0b. **`ContextSummaryChips` cannot carry doors yet.** It is THE context-selection
    display (file rows, note footers, chat header, transcripts sidebar) and every
    chip names a record with an id — org, scope, project, task, all four of which
@@ -183,33 +183,23 @@ Ordered by traffic. Each item is independently actionable.
     fix** — the picker is where "which one is that?" actually bites.
 13. **Scheduling admin consoles show only the viewer's own rows** (D140) — they
     present as fleet-wide and are not.
-14. ~~**`scope` has a real route the registry doesn't know.**~~ RESOLVED — the
-    resolver route was built (`/scopes/s/[scopeId]`, `scopeShortHref`). All that
-    remains is the registry one-liner; see item 0. `scope_type` still has no
+14. ~~**`scope` has a real route the registry doesn't know.**~~ FULLY RESOLVED —
+    the resolver route was built (`/scopes/s/[scopeId]`, `scopeShortHref`) AND
+    the registry now points at it (see item 0). `scope_type` still has no
     resolver and no peek.
 15. ~~**`brand` and marketing `site` are not registered tokens at all.**~~
-    RESOLVED — `web_brand` (`/marketing/brands/<id>`) and `web_site`
+    RESOLVED — `web_brand` (`/marketing/brands/<id>`), `web_site`
     (`/marketing/sites/<id>`, the id-only shim that resolves `brand_id` and
-    redirects) both carry `hrefFor` now. **Still missing: a `web_page` token.**
-    A canonical page is the most-linked record in the whole domain (every GSC
-    breakdown, dig, insight, watch row, crawl ledger and cost rollup resolves a
-    `page_id`), and its route needs a `site_id` an id alone cannot supply. The
-    fix is the same shape as `web_site`: a `/marketing/pages/[pageId]` resolver
-    already exists on disk — point `web_page.hrefFor` at it and every one of
-    those columns can drop its local `marketingRoutes.sitePage(...)` for an
-    `EntityRef`, gaining peek and new-tab for free. Until then those surfaces
-    pass the builder explicitly, which is correct but door-less on peek.
-16. **`context_item` needs a peek**; `user_feedback` now has a real route
-    (`/administration/users/feedback?feedback=<id>`) but sits behind the
-    super-admin gate — same "403 door" question as `skill`.
-17. **`/sandbox/[id]` is owner-only** (`app/api/sandbox/[id]/route.ts` filters
-    `.eq("user_id", user.id)`), so the fleet-wide sandbox console can only open
-    the viewer's own rows. Needs a super-admin read path.
-18. **Industries have no entity token at all** (`public.industries`), so every
-    "Industry — X" grant label is unavoidably plain text.
-14. **Registry entries the admin sweep wanted and could not add** (they need an
-    owner's call, not a call-site patch):
-    - `user_feedback` — now HAS a working route
+    redirects) and `web_page` (`/marketing/pages/[pageId]`, the same resolver
+    shape) all carry `hrefFor` now — verified at `entityRegistry.ts:310/319/396`
+    against the route file `app/(core)/marketing/pages/[pageId]/page.tsx`.
+    **Follow-up, not a blocker:** the GSC breakdown / dig / insight / watch /
+    crawl-ledger / cost-rollup columns still build their own
+    `marketingRoutes.sitePage(...)` href. That is correct and NOT a dead end —
+    but each one could now drop the local builder for an `EntityRef`, gaining
+    peek and new-tab for free. Do NOT re-register `web_page`; it exists.
+16. **Registry entries that need an owner's call, not a call-site patch.**
+    - `user_feedback` — HAS a working route
       (`/administration/users/feedback?feedback=<id>`, see `Done`). Registering
       `hrefFor` would light up every feedback reference at once, but the route
       sits behind the super-admin `(admin)` layout, so it is the same
@@ -218,13 +208,13 @@ Ordered by traffic. Each item is independently actionable.
       peek. The System Context console falls back to an in-surface filter for a
       category and a copy-only uuid for the item. A peek on each is the cheap
       fix (same argument as item 12).
-    - Industries have **no token at all** (`public.industries`), so every
-      "Industry — X" grant label in shared-knowledge is plain text.
-15. **`/sandbox/[id]` is owner-only.** `/api/sandbox/[id]` filters
-    `.eq("user_id", user.id)`, so the FLEET-WIDE admin console at
-    `/administration/compute/sandbox` can only link the viewer's OWN instances —
+17. **`/sandbox/[id]` is owner-only** — `app/api/sandbox/[id]/route.ts` filters
+    `.eq("user_id", user.id)`, so the FLEET-WIDE console at
+    `/administration/compute/sandbox` can only open the viewer's OWN instances;
     the rest would 404. Needs a super-admin read path (or an admin-side sandbox
     detail route) before every row can open. Same family as item 13.
+18. **Industries have no entity token at all** (`public.industries`), so every
+    "Industry — X" grant label in shared-knowledge is unavoidably plain text.
 19. **Agent-set MEMBERS cannot be linked from the set CARD.** `/agents/sets`
     renders each member as an anonymous glyph because `AgentSetSummary` (the
     `agent_set_list()` RPC) carries only `memberCount` — no member ids, no
