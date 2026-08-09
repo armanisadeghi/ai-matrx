@@ -919,8 +919,19 @@ export default function FeedbackTable() {
                       {stage.icon}
                       <span className="hidden sm:inline">{stage.label}</span>
                       <span className="sm:hidden">{stage.shortLabel}</span>
-                      {count > 0 && (
+                      {/* An ABSENT badge means "this stage is empty" — so
+                          hiding it on a failed read makes the same reassuring
+                          claim the number would have. Render an em dash
+                          instead, matching the "All" badge below; a bar that
+                          says "—" everywhere and a number nowhere is honest,
+                          a bar that silently empties itself is not. */}
+                      {(!countsTrustworthy || count > 0) && (
                         <span
+                          aria-label={
+                            countsTrustworthy
+                              ? undefined
+                              : `${stage.label} count unavailable`
+                          }
                           className={cn(
                             "min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold leading-none px-1",
                             isActive
@@ -930,7 +941,7 @@ export default function FeedbackTable() {
                                 : "bg-muted-foreground/10 text-muted-foreground",
                           )}
                         >
-                          {count}
+                          {countsTrustworthy ? count : "—"}
                         </span>
                       )}
                       {/* "Your turn" indicator for admin stages with items */}
@@ -958,6 +969,9 @@ export default function FeedbackTable() {
               >
                 All
                 <span
+                  aria-label={
+                    countsTrustworthy ? undefined : "Total count unavailable"
+                  }
                   className={cn(
                     "min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold leading-none px-1",
                     activeStage === "all"

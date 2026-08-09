@@ -60,8 +60,6 @@ import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import { agentShortcutRecordSummary } from "../format";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import { resolveShortcutDirectUrl } from "../utils/shortcut-directory-rows";
-import type { ShortcutDirectoryMode } from "../utils/shortcut-directory-rows";
 
 type SortField =
   | "label"
@@ -86,21 +84,29 @@ export interface ShortcutListProps extends ScopeProps {
   /** (core) route consumers render title + primary actions in the shell PageHeader instead — set true to suppress this component's own title/action row. */
   hideTitleBar?: boolean;
   /**
-   * Which surface a shortcut's door should open into.
+   * Where this row's doors go — **the same place clicking the row goes.**
    *
-   * 🚨 THE DESTINATION IS MODE-DISCRIMINATED, SO THE ID ALONE CANNOT PICK IT.
-   * The same `agent.shortcut` row resolves to `/agents/shortcuts/<id>` or
-   * `/administration/agents/system-agents/shortcuts/<id>` depending on who is
-   * looking — which is why this cannot come from the entity registry's
-   * `hrefFor`, whose only argument is an id. Registering it there would send
-   * an admin managing system shortcuts into the user surface.
+   * 🚨 THE DESTINATION IS SURFACE-DISCRIMINATED, SO THE ID ALONE CANNOT PICK
+   * IT. One `agent.shortcut` row is edited at `/agents/shortcuts/edit/<id>`,
+   * `/organizations/<orgId>/shortcuts/edit/<id>`, or
+   * `/administration/agents/system-agents/edit/<id>` depending on which
+   * console you are standing in. That is why it cannot come from the entity
+   * registry's `hrefFor`, whose only argument is an id.
    *
-   * Only the CALL SITE knows the answer, so it must say. Omit it and the row
-   * renders no door at all: a missing door is a gap, a wrong one is a bug.
-   * Deliberately not inferred from `scope` — `global` happens to line up with
-   * admin on today's three consumers, and that is a coincidence, not a rule.
+   * **This takes the URL, not a mode.** A two-value `"user" | "admin"` enum was
+   * tried first and shipped a wrong door: the org console had no third value to
+   * pass, so `"user"` sent org shortcuts into the PERSONAL editor — where 2 live
+   * rows (org-scoped, no agent) hard dead-end on "this shortcut doesn't exist in
+   * your personal shortcuts", and the other 28 opened an editor whose back
+   * button leaves the org entirely. An enum that cannot express a caller's
+   * answer makes the wrong answer the only available one.
+   *
+   * Pass the SAME url the row's `onEdit` navigates to, so the door and the click
+   * can never disagree about which surface owns the record. Omit it and the
+   * row's link doors are withheld (a registered peek still renders, minus its
+   * Open) — a missing door is a gap, a wrong one is a bug.
    */
-  doorMode?: ShortcutDirectoryMode;
+  doorHrefFor?: (shortcut: AgentShortcutRecord) => string | null;
 }
 
 export function ShortcutList({
@@ -115,7 +121,7 @@ export function ShortcutList({
   placementFilter: placementFilterProp,
   toolbarSlot,
   hideTitleBar = false,
-  doorMode,
+  doorHrefFor,
 }: ShortcutListProps) {
   const isMobile = useIsMobile();
   const { toast } = useToast();
@@ -475,11 +481,13 @@ export function ShortcutList({
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-1">
-                        {/* THE DOOR LAW: the card's click means EDIT (it opens
-                            ShortcutForm in place), so the name cannot be the
-                            anchor. The doors ride alongside — /agents/shortcuts/<id>
-                            resolves through ShortcutDirectResolver, which reads
-                            the same agent.shortcut row this card was built from.
+                        {/* THE DOOR LAW: the card's click means EDIT — which
+                            NAVIGATES on the user and org consoles and opens a
+                            form in place elsewhere — so the name cannot be the
+                            anchor. The doors ride alongside, pointing at the
+                            same URL the click uses (`doorHrefFor`), so the two
+                            can never disagree about which console owns the
+                            record.
                             Pinned visible: these cards carry no hover group, and
                             a door revealed by a hover that never comes does not
                             exist on touch. The controls stop propagation
@@ -488,11 +496,7 @@ export function ShortcutList({
                           token="agent_shortcut"
                           id={shortcut.id}
                           name={shortcut.label}
-                          href={
-                            doorMode
-                              ? resolveShortcutDirectUrl(shortcut.id, doorMode)
-                              : null
-                          }
+                          href={doorHrefFor?.(shortcut) ?? null}
                           alwaysShowActions
                         />
                         <Switch
@@ -889,7 +893,8 @@ export function ShortcutList({
                           <MousePointerClick className="h-4 w-4 text-primary" />
                           <div className="font-medium">{shortcut.label}</div>
                           {/* The DESKTOP table is the primary view — the card
-                              layout below is the `isMobile` branch. Doors added
+                              layout is the `isMobile` branch ABOVE (the early
+                              return at the top of this component). Doors added
                               only there would have fixed the minority path and
                               left the main one a dead end. Pinned visible: this
                               row's hover group is NAMED (`group/x`), which the
@@ -898,14 +903,7 @@ export function ShortcutList({
                             token="agent_shortcut"
                             id={shortcut.id}
                             name={shortcut.label}
-                            href={
-                              doorMode
-                                ? resolveShortcutDirectUrl(
-                                    shortcut.id,
-                                    doorMode,
-                                  )
-                                : null
-                            }
+                            href={doorHrefFor?.(shortcut) ?? null}
                             alwaysShowActions
                           />
                         </div>

@@ -25,6 +25,13 @@
  * `null` is a meaningful value — "this caller has no destination for this
  * record" — and is honoured exactly, so a peek opened from a doorless surface
  * does not quietly fall back to a route the caller deliberately withheld.
+ *
+ * ⚠️ **A peek that does not render `PeekDialog` cannot see this.** `AgentPeek`
+ * is the notable one — it builds its own chrome, so `token="agent"` ignores the
+ * override entirely. That is worth knowing because agents are the textbook case
+ * for it (a system agent under `/administration/…` vs a personal one under
+ * `/agents/…`), so the motivating example is precisely what this primitive does
+ * NOT yet cover. Route a peek through `PeekDialog` to opt in.
  */
 
 import React from "react";

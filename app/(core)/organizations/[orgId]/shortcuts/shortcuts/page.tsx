@@ -58,7 +58,9 @@ export default function OrgShortcutsListPage() {
   return (
     <div className="h-full flex flex-col overflow-hidden bg-textured">
       <ShortcutList
-        doorMode="user"
+        doorHrefFor={(s) =>
+          `/organizations/${orgId}/shortcuts/edit/${s.id}`
+        }
         scope={SCOPE}
         scopeId={organizationId}
         onCreate={handleCreate}

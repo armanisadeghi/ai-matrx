@@ -96,7 +96,7 @@ export default function UserShortcutsPage() {
 
       <div className="flex-1 min-h-0 pt-[var(--shell-header-h)]">
         <ShortcutList
-          doorMode="user"
+          doorHrefFor={(s) => `/agents/shortcuts/edit/${s.id}`}
           scope={SCOPE}
           onCreate={handleCreate}
           onEdit={handleEdit}

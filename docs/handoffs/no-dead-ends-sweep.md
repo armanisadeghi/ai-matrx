@@ -892,7 +892,13 @@ the user is already viewing, rendered select-all for copying.
 🚨 **THE TRAP THAT INVERTS THIS DETECTOR: a grep for a property name matches the
 comment explaining why the property is ABSENT.** The first version asked
 `\btoken:\s*\{[^}]*hrefFor` against `entityRegistry.ts` and reported 33 routed
-entities. The true number is **27**. The six false ones — `assessment`,
+entities. The true number, **for the population this detector cares about —
+tokens that have BOTH an `hrefFor` and a `titleColumn`** — is **27**. (The
+registry holds **28** `hrefFor:` properties in total; one routed token has no
+title column, so the detector cannot use it. An adversarial pass applied the
+`hrefFor:\s*\(` rule literally, got 28, and flagged the 27 as wrong — fair,
+because the sentence stated a rule and then quoted a number from a different
+population. **Name the population, not just the pattern.**) The six false ones — `assessment`,
 `crm_campaign`, `flashcard_set`, `quiz_session`, `skill`, `workflow` — are
 precisely the entries where THIS CAMPAIGN deliberately wrote *"No hrefFor:
 …because the route is kind-discriminated / 403s for most users"*. The doctrine

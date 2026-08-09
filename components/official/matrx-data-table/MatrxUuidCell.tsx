@@ -280,6 +280,13 @@ export function MatrxUuidCell({
           kind={doors!.peekKind}
           id={value}
           onClose={() => setPeekOpen(false)}
+          // Same contract as `EntityDoorControls`: forward the CALLER's raw
+          // `href` so the peek's "Open" cannot send the user somewhere this
+          // cell's own link does not go. `doors.ts` names EntityRef and this
+          // cell as the two presentations that must not drift — the peek
+          // override shipped on one of them first, which is exactly the drift
+          // that file warns about.
+          href={href}
         />
       ) : null}
     </span>
