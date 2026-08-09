@@ -67,6 +67,15 @@ became visible when the canonical list shell started wrapping every `<tr>`.
    second, ungated copy of the wrapper carrying exactly the right reasoning had
    been sitting at `components/ui/context-menu.tsx` with ZERO consumers; it is
    deleted and the directory copy is now the only one.
+
+   **Guarded, and the guard is proven to fail.**
+   `components/ui/context-menu/context-menu-ssr.test.tsx` asserts the children
+   survive `renderToString` and that no id-bearing attribute appears while the
+   menu is closed — the second one pins the deleted gate's own premise, so if a
+   future Radix version does start emitting an id here, the test fails and tells
+   the next reader that re-gating deserves a real look rather than a reflex.
+   Verified by temporarily reinstating the gate: 2 of 4 tests fail, and pass
+   again once removed.
 2. **Never steal a live text field's native menu.** A read-only menu
    (`isEditable === false`) offers Copy and AI actions and no Paste, Undo,
    spellcheck or autofill — exactly what a user right-clicks a text field FOR,
