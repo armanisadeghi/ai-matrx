@@ -371,10 +371,16 @@ export function AssociationList(props: AssociationListProps) {
                             >
                               {/* THE DOOR LAW via the one primitive: open +
                                   new tab + peek, all resolved from the
-                                  registries. `openEntity` (when the container
-                                  opens records its own way) intercepts only
-                                  the plain click — modified clicks still get a
-                                  native new tab. */}
+                                  registries.
+
+                                  `onOpen` is ALWAYS bound to `openRow` — this
+                                  is a rail that lives inside a workspace (org
+                                  page, project page, war-room thread), so
+                                  following a record must never replace the
+                                  container the user is working in. `openRow`
+                                  keeps the surface's contract: the container's
+                                  `openEntity` when it has one, a new tab
+                                  otherwise. */}
                               <EntityRef
                                 token={row.token}
                                 id={row.resourceId}
@@ -384,15 +390,7 @@ export function AssociationList(props: AssociationListProps) {
                                   label: row.label,
                                 })}
                                 showIcon={Boolean(Icon)}
-                                onOpen={
-                                  props.openEntity
-                                    ? () =>
-                                        props.openEntity?.(
-                                          row.token,
-                                          row.resourceId,
-                                        )
-                                    : undefined
-                                }
+                                onOpen={() => openRow(row)}
                                 className="min-w-0 flex-1 text-foreground"
                               />
                               {row.originNote && (
