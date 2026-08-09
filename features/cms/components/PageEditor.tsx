@@ -13,6 +13,7 @@ import { useCmsPageSurfaceScope } from "@/features/cms/hooks/useCmsPageSurfaceSc
 import { CMS_PAGE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsPageContextMenuProps";
 import { createCmsPageExtraSections } from "@/features/cms/agent-context/cmsPageExtraSections";
 import { clientPageUrl, sitePreviewToken } from "@/features/cms/utils/pageUrls";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
@@ -82,6 +83,35 @@ const VERSION_OPERATION_LABEL: Record<VersionOperation, string> = {
 
 type EditorTab =
   "html" | "css" | "js" | "preview" | "seo" | "settings" | "versions";
+
+// ── Surface write-target input validation ──────────────────────────────
+// The writeback seam (`features/surfaces/runtime/surface-writeback.ts`)
+// converts a throw into a safe error envelope the agent reads, so a bad
+// shape is REPORTED rather than silently coerced.
+
+function asWriteObject(
+  value: unknown,
+  target: string,
+): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${target} expects an object value.`);
+  }
+  return value as Record<string, unknown>;
+}
+
+/** Absent/null = "leave this field alone"; a string (even "") = set it. */
+function optionalWriteString(
+  obj: Record<string, unknown>,
+  key: string,
+  target: string,
+): string | undefined {
+  const raw = obj[key];
+  if (raw === undefined || raw === null) return undefined;
+  if (typeof raw !== "string") {
+    throw new Error(`${target}: ${key} must be a string when provided.`);
+  }
+  return raw;
+}
 
 const TABS: { id: EditorTab; label: string; icon: React.ElementType }[] = [
   { id: "html", label: "HTML", icon: Code2 },
@@ -341,6 +371,82 @@ export default function PageEditor({
     textareaRef,
   });
 
+  // ── Write half of the surface (manifest `writeTargets`) ──────────────
+  // Every target stages into the SAME `useState` setters the user's own
+  // typing drives — never a parallel write path, and never a direct save:
+  // the human still clicks Save Draft / Save & Publish. Handlers validate and
+  // THROW on a bad shape; the seam turns that into a safe error envelope.
+  // Fresh closures per call (the `getWriteHandlers` contract).
+  const getSurfaceWriteHandlers = () => ({
+    page_title: (value: unknown) => {
+      if (typeof value !== "string" || !value.trim())
+        throw new Error("page_title expects a non-empty string.");
+      // Same entry point as the header input, so a new page's slug is
+      // re-derived exactly as it is when a human types the title.
+      handleTitleChange(value.trim());
+    },
+    page_html_content: (value: unknown) => {
+      const obj = asWriteObject(value, "page_html_content");
+      const html = obj.html;
+      if (typeof html !== "string")
+        throw new Error("page_html_content: html must be a string.");
+      const mode = obj.mode ?? "replace";
+      if (mode !== "replace" && mode !== "append")
+        throw new Error(
+          "page_html_content: mode must be 'replace' or 'append'.",
+        );
+      setHtmlContent((prev) => (mode === "append" ? prev + html : html));
+    },
+    page_meta_tags: (value: unknown) => {
+      const obj = asWriteObject(value, "page_meta_tags");
+      const nextTitle = optionalWriteString(
+        obj,
+        "meta_title",
+        "page_meta_tags",
+      );
+      const nextDescription = optionalWriteString(
+        obj,
+        "meta_description",
+        "page_meta_tags",
+      );
+      const nextKeywords = optionalWriteString(
+        obj,
+        "meta_keywords",
+        "page_meta_tags",
+      );
+      if (
+        nextTitle === undefined &&
+        nextDescription === undefined &&
+        nextKeywords === undefined
+      )
+        throw new Error(
+          "page_meta_tags: provide at least one of meta_title, meta_description, meta_keywords.",
+        );
+      if (nextTitle !== undefined) setMetaTitle(nextTitle);
+      if (nextDescription !== undefined) setMetaDescription(nextDescription);
+      if (nextKeywords !== undefined) setMetaKeywords(nextKeywords);
+    },
+    page_excerpt: (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error(
+          "page_excerpt expects a string (empty string clears it).",
+        );
+      setExcerpt(value);
+    },
+    page_tags: (value: unknown) => {
+      if (
+        !Array.isArray(value) ||
+        !value.every((tag) => typeof tag === "string" && tag.trim())
+      )
+        throw new Error(
+          "page_tags expects an array of non-empty strings ([] clears the tags).",
+        );
+      // The Settings tab's field IS a comma-separated string — stage the same
+      // shape a human would have typed.
+      setTags((value as string[]).map((tag) => tag.trim()).join(", "));
+    },
+  });
+
   const getApplicationScope = useCallback(() => {
     const el = textareaRef.current;
     const start = el?.selectionStart ?? 0;
@@ -426,86 +532,71 @@ export default function PageEditor({
 </html>`;
 
   return (
-    <div className="h-full flex flex-col">
-      {/* ── Editor header ────────────────────────────────────────── */}
-      <div className="flex-none border-b border-border/50 bg-muted/20">
-        <div className="flex items-center justify-between px-4 py-2">
-          <div className="flex items-center gap-3 min-w-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 flex-shrink-0"
-              onClick={onClose}
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              placeholder="Page title…"
-              className="text-sm font-semibold bg-transparent border-0 outline-none text-foreground placeholder:text-muted-foreground min-w-0 flex-1"
-            />
-            {page && (
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                {page.is_published && (
-                  <Badge className="text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-0">
-                    <Globe className="h-2.5 w-2.5 mr-1" />
-                    Published
-                  </Badge>
-                )}
-                {page.has_draft && (
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] border-amber-500/50 text-amber-600 dark:text-amber-400"
-                  >
-                    Draft
-                  </Badge>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-            {error && (
-              <span className="text-xs text-destructive flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                Error
-              </span>
-            )}
-
-            {isNew ? (
+    // The page editor is the live `matrx-user/cms-page` runtime: it publishes
+    // this page's own scope to the header Agents chrome (nested inside — and
+    // therefore deeper than — the layout's `matrx-user/cms-site` provider in
+    // `app/(core)/cms/[siteId]/SiteLayoutClient.tsx`) and registers the
+    // handlers for the surface's declared `writeTargets`. ONE scope builder,
+    // shared with the context menus' data path.
+    <SurfaceRuntimeProvider
+      surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+      getScope={buildSurfaceScope}
+      isEditable
+      getWriteHandlers={getSurfaceWriteHandlers}
+    >
+      <div className="h-full flex flex-col">
+        {/* ── Editor header ────────────────────────────────────────── */}
+        <div className="flex-none border-b border-border/50 bg-muted/20">
+          <div className="flex items-center justify-between px-4 py-2">
+            <div className="flex items-center gap-3 min-w-0">
               <Button
-                size="sm"
-                onClick={handleCreate}
-                disabled={isSaving || !title || !slug}
-                className="gap-1.5 text-xs"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 flex-shrink-0"
+                onClick={onClose}
               >
-                {isSaving ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Save className="h-3.5 w-3.5" />
-                )}
-                Create Page
+                <ArrowLeft className="h-4 w-4" />
               </Button>
-            ) : (
-              <>
-                {page?.has_draft && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleDiscard}
-                    className="text-xs gap-1.5 text-muted-foreground"
-                  >
-                    <XCircle className="h-3.5 w-3.5" />
-                    Discard
-                  </Button>
-                )}
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => handleTitleChange(e.target.value)}
+                placeholder="Page title…"
+                className="text-sm font-semibold bg-transparent border-0 outline-none text-foreground placeholder:text-muted-foreground min-w-0 flex-1"
+              />
+              {page && (
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {page.is_published && (
+                    <Badge className="text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-0">
+                      <Globe className="h-2.5 w-2.5 mr-1" />
+                      Published
+                    </Badge>
+                  )}
+                  {page.has_draft && (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] border-amber-500/50 text-amber-600 dark:text-amber-400"
+                    >
+                      Draft
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+              {error && (
+                <span className="text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  Error
+                </span>
+              )}
+
+              {isNew ? (
                 <Button
-                  variant="outline"
                   size="sm"
-                  onClick={handleSaveDraft}
-                  disabled={isSaving}
+                  onClick={handleCreate}
+                  disabled={isSaving || !title || !slug}
                   className="gap-1.5 text-xs"
                 >
                   {isSaving ? (
@@ -513,36 +604,63 @@ export default function PageEditor({
                   ) : (
                     <Save className="h-3.5 w-3.5" />
                   )}
-                  Save Draft
+                  Create Page
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={page?.has_draft ? handlePublish : handleSaveLive}
-                  disabled={isSaving}
-                  className="gap-1.5 text-xs"
-                >
-                  {isSaving ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Upload className="h-3.5 w-3.5" />
+              ) : (
+                <>
+                  {page?.has_draft && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleDiscard}
+                      className="text-xs gap-1.5 text-muted-foreground"
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                      Discard
+                    </Button>
                   )}
-                  {page?.has_draft ? "Publish" : "Save & Publish"}
-                </Button>
-              </>
-            )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSaveDraft}
+                    disabled={isSaving}
+                    className="gap-1.5 text-xs"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )}
+                    Save Draft
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={page?.has_draft ? handlePublish : handleSaveLive}
+                    disabled={isSaving}
+                    className="gap-1.5 text-xs"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="h-3.5 w-3.5" />
+                    )}
+                    {page?.has_draft ? "Publish" : "Save & Publish"}
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* ── Tabs ─────────────────────────────────────────────── */}
-        <div className="flex items-center gap-0.5 px-4 overflow-x-auto scrollbar-none">
-          {TABS.filter((t) => !isNew || !(t.id === "versions")).map((tab) => {
-            const Icon = tab.icon as React.FC<{ className?: string }>;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
+          {/* ── Tabs ─────────────────────────────────────────────── */}
+          <div className="flex items-center gap-0.5 px-4 overflow-x-auto scrollbar-none">
+            {TABS.filter((t) => !isNew || !(t.id === "versions")).map((tab) => {
+              const Icon = tab.icon as React.FC<{ className?: string }>;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`
                                     flex items-center gap-1.5 px-3 py-2 text-xs font-medium
                                     border-b-2 transition-colors whitespace-nowrap
                                     ${
@@ -551,450 +669,456 @@ export default function PageEditor({
                                         : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
                                     }
                                 `}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {tab.label}
-                {tab.id === "versions" && versions.versions.length > 0 && (
-                  <span className="text-[10px] bg-muted px-1 rounded">
-                    {versions.versions.length}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {tab.label}
+                  {tab.id === "versions" && versions.versions.length > 0 && (
+                    <span className="text-[10px] bg-muted px-1 rounded">
+                      {versions.versions.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      {/* ── Tab content ──────────────────────────────────────────── */}
-      {/* The Preview tab is read-only, so it mounts the NonEditable menu (no
+        {/* ── Tab content ──────────────────────────────────────────── */}
+        {/* The Preview tab is read-only, so it mounts the NonEditable menu (no
           text mutation); every other tab is editable. Same surface identity,
           extraSections, and live contextData either way. */}
-      {(() => {
-        const tabPanels = (
-          <div className="flex-1 min-h-0 overflow-hidden">
-            {/* HTML */}
-            {activeTab === "html" && (
-              <div className="relative h-full">
-                <ProTextarea
-                  ref={textareaRef}
-                  value={htmlContent}
-                  onChange={(e) => setHtmlContent(e.target.value)}
-                  placeholder="<div>\n  <h1>Your page content here…</h1>\n</div>"
-                  className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
-                  wrapperClassName="absolute inset-0"
-                  surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
-                  getApplicationScope={getApplicationScope}
-                />
-              </div>
-            )}
+        {(() => {
+          const tabPanels = (
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {/* HTML */}
+              {activeTab === "html" && (
+                <div className="relative h-full">
+                  <ProTextarea
+                    ref={textareaRef}
+                    value={htmlContent}
+                    onChange={(e) => setHtmlContent(e.target.value)}
+                    placeholder="<div>\n  <h1>Your page content here…</h1>\n</div>"
+                    className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
+                    wrapperClassName="absolute inset-0"
+                    surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+                    getApplicationScope={getApplicationScope}
+                  />
+                </div>
+              )}
 
-            {/* CSS */}
-            {activeTab === "css" && (
-              <div className="relative h-full">
-                <ProTextarea
-                  ref={textareaRef}
-                  value={cssContent}
-                  onChange={(e) => setCssContent(e.target.value)}
-                  placeholder="/* Page-specific styles */\n\nh1 {\n  color: #333;\n}"
-                  className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
-                  wrapperClassName="absolute inset-0"
-                  surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
-                  getApplicationScope={getApplicationScope}
-                />
-              </div>
-            )}
+              {/* CSS */}
+              {activeTab === "css" && (
+                <div className="relative h-full">
+                  <ProTextarea
+                    ref={textareaRef}
+                    value={cssContent}
+                    onChange={(e) => setCssContent(e.target.value)}
+                    placeholder="/* Page-specific styles */\n\nh1 {\n  color: #333;\n}"
+                    className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
+                    wrapperClassName="absolute inset-0"
+                    surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+                    getApplicationScope={getApplicationScope}
+                  />
+                </div>
+              )}
 
-            {/* JS */}
-            {activeTab === "js" && (
-              <div className="relative h-full">
-                <ProTextarea
-                  ref={textareaRef}
-                  value={jsContent}
-                  onChange={(e) => setJsContent(e.target.value)}
-                  placeholder="// Page-specific JavaScript\n\nconsole.log('Page loaded');"
-                  className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
-                  wrapperClassName="absolute inset-0"
-                  surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
-                  getApplicationScope={getApplicationScope}
-                />
-              </div>
-            )}
+              {/* JS */}
+              {activeTab === "js" && (
+                <div className="relative h-full">
+                  <ProTextarea
+                    ref={textareaRef}
+                    value={jsContent}
+                    onChange={(e) => setJsContent(e.target.value)}
+                    placeholder="// Page-specific JavaScript\n\nconsole.log('Page loaded');"
+                    className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
+                    wrapperClassName="absolute inset-0"
+                    surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+                    getApplicationScope={getApplicationScope}
+                  />
+                </div>
+              )}
 
-            {/* Preview */}
-            {activeTab === "preview" && (
-              <div className="relative h-full bg-white">
-                <iframe
-                  srcDoc={previewHtml}
-                  title="Page Preview"
-                  className="absolute inset-0 w-full h-full border-0"
-                  sandbox="allow-scripts"
-                />
-              </div>
-            )}
+              {/* Preview */}
+              {activeTab === "preview" && (
+                <div className="relative h-full bg-white">
+                  <iframe
+                    srcDoc={previewHtml}
+                    title="Page Preview"
+                    className="absolute inset-0 w-full h-full border-0"
+                    sandbox="allow-scripts"
+                  />
+                </div>
+              )}
 
-            {/* SEO */}
-            {activeTab === "seo" && (
-              <div className="h-full overflow-auto">
-                <div className="p-6 max-w-2xl mx-auto space-y-5">
-                  <div>
-                    <label className="text-sm font-medium text-foreground block mb-1.5">
-                      Meta Title
-                      <span className="text-muted-foreground font-normal ml-2 text-xs">
-                        ({countSeoCharacters(metaTitle || title)}/
-                        {TITLE_LIMITS.maxChars} chars)
-                      </span>
-                    </label>
-                    <ProInput
-                      value={metaTitle}
-                      onChange={(e) => setMetaTitle(e.target.value)}
-                      placeholder={title || "SEO title…"}
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground block mb-1.5">
-                      Meta Description
-                      <span className="text-muted-foreground font-normal ml-2 text-xs">
-                        ({countSeoCharacters(metaDescription)}/
-                        {DESCRIPTION_LIMITS.maxChars} chars)
-                      </span>
-                    </label>
-                    <ProTextarea
-                      ref={textareaRef}
-                      value={metaDescription}
-                      onChange={(e) => setMetaDescription(e.target.value)}
-                      placeholder="Brief page description for search engines…"
-                      rows={3}
-                      className="text-sm"
-                      surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
-                      getApplicationScope={getApplicationScope}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground block mb-1.5">
-                      Keywords
-                    </label>
-                    <ProInput
-                      value={metaKeywords}
-                      onChange={(e) => setMetaKeywords(e.target.value)}
-                      placeholder="keyword1, keyword2, keyword3"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground block mb-1.5">
-                      OG Image URL
-                    </label>
-                    <Input
-                      value={ogImage}
-                      onChange={(e) => setOgImage(e.target.value)}
-                      placeholder="https://…"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground block mb-1.5">
-                      Canonical URL
-                    </label>
-                    <Input
-                      value={canonicalUrl}
-                      onChange={(e) => setCanonicalUrl(e.target.value)}
-                      placeholder="https://…"
-                      className="text-sm"
-                    />
-                  </div>
+              {/* SEO */}
+              {activeTab === "seo" && (
+                <div className="h-full overflow-auto">
+                  <div className="p-6 max-w-2xl mx-auto space-y-5">
+                    <div>
+                      <label className="text-sm font-medium text-foreground block mb-1.5">
+                        Meta Title
+                        <span className="text-muted-foreground font-normal ml-2 text-xs">
+                          ({countSeoCharacters(metaTitle || title)}/
+                          {TITLE_LIMITS.maxChars} chars)
+                        </span>
+                      </label>
+                      <ProInput
+                        value={metaTitle}
+                        onChange={(e) => setMetaTitle(e.target.value)}
+                        placeholder={title || "SEO title…"}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground block mb-1.5">
+                        Meta Description
+                        <span className="text-muted-foreground font-normal ml-2 text-xs">
+                          ({countSeoCharacters(metaDescription)}/
+                          {DESCRIPTION_LIMITS.maxChars} chars)
+                        </span>
+                      </label>
+                      <ProTextarea
+                        ref={textareaRef}
+                        value={metaDescription}
+                        onChange={(e) => setMetaDescription(e.target.value)}
+                        placeholder="Brief page description for search engines…"
+                        rows={3}
+                        className="text-sm"
+                        surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+                        getApplicationScope={getApplicationScope}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground block mb-1.5">
+                        Keywords
+                      </label>
+                      <ProInput
+                        value={metaKeywords}
+                        onChange={(e) => setMetaKeywords(e.target.value)}
+                        placeholder="keyword1, keyword2, keyword3"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground block mb-1.5">
+                        OG Image URL
+                      </label>
+                      <Input
+                        value={ogImage}
+                        onChange={(e) => setOgImage(e.target.value)}
+                        placeholder="https://…"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground block mb-1.5">
+                        Canonical URL
+                      </label>
+                      <Input
+                        value={canonicalUrl}
+                        onChange={(e) => setCanonicalUrl(e.target.value)}
+                        placeholder="https://…"
+                        className="text-sm"
+                      />
+                    </div>
 
-                  {/* Google preview */}
-                  <div className="rounded-lg border border-border p-4 bg-muted/20 space-y-1">
-                    <p className="text-xs text-muted-foreground font-medium mb-2">
-                      Search Preview
-                    </p>
-                    <p className="text-blue-600 dark:text-blue-400 text-base font-medium leading-tight truncate">
-                      {metaTitle || title || "Page Title"}
-                    </p>
-                    <p className="text-emerald-700 dark:text-emerald-400 text-xs">
-                      example.com/{slug || "page-slug"}
-                    </p>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {metaDescription ||
-                        "No description set. Add a meta description to improve SEO."}
-                    </p>
+                    {/* Google preview */}
+                    <div className="rounded-lg border border-border p-4 bg-muted/20 space-y-1">
+                      <p className="text-xs text-muted-foreground font-medium mb-2">
+                        Search Preview
+                      </p>
+                      <p className="text-blue-600 dark:text-blue-400 text-base font-medium leading-tight truncate">
+                        {metaTitle || title || "Page Title"}
+                      </p>
+                      <p className="text-emerald-700 dark:text-emerald-400 text-xs">
+                        example.com/{slug || "page-slug"}
+                      </p>
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {metaDescription ||
+                          "No description set. Add a meta description to improve SEO."}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Settings */}
-            {activeTab === "settings" && (
-              <div className="h-full overflow-auto">
-                <div className="p-6 max-w-2xl mx-auto space-y-5">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-foreground block mb-1.5">
-                        Slug
-                      </label>
-                      <Input
-                        value={slug}
-                        onChange={(e) => setSlug(e.target.value)}
-                        placeholder="page-slug"
-                        className="text-sm font-mono"
-                      />
+              {/* Settings */}
+              {activeTab === "settings" && (
+                <div className="h-full overflow-auto">
+                  <div className="p-6 max-w-2xl mx-auto space-y-5">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-foreground block mb-1.5">
+                          Slug
+                        </label>
+                        <Input
+                          value={slug}
+                          onChange={(e) => setSlug(e.target.value)}
+                          placeholder="page-slug"
+                          className="text-sm font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-foreground block mb-1.5">
+                          Category
+                        </label>
+                        <Input
+                          value={category}
+                          onChange={(e) => setCategory(e.target.value)}
+                          placeholder="general"
+                          className="text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-foreground block mb-1.5">
+                          Page Type
+                        </label>
+                        <select
+                          value={pageType}
+                          onChange={(e) => setPageType(e.target.value)}
+                          className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                        >
+                          <option value="standard">Standard</option>
+                          <option value="home">Home</option>
+                          <option value="service">Service</option>
+                          <option value="blog">Blog</option>
+                          <option value="listing">Listing</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-foreground block mb-1.5">
+                          Sort Order
+                        </label>
+                        <Input
+                          type="number"
+                          value={sortOrder}
+                          onChange={(e) =>
+                            setSortOrder(parseInt(e.target.value) || 0)
+                          }
+                          className="text-sm"
+                        />
+                      </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-foreground block mb-1.5">
-                        Category
+                        Excerpt
                       </label>
-                      <Input
-                        value={category}
-                        onChange={(e) => setCategory(e.target.value)}
-                        placeholder="general"
+                      <Textarea
+                        value={excerpt}
+                        onChange={(e) => setExcerpt(e.target.value)}
+                        placeholder="Short description for listing pages…"
+                        rows={2}
                         className="text-sm"
                       />
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-foreground block mb-1.5">
-                        Page Type
-                      </label>
-                      <select
-                        value={pageType}
-                        onChange={(e) => setPageType(e.target.value)}
-                        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-                      >
-                        <option value="standard">Standard</option>
-                        <option value="home">Home</option>
-                        <option value="service">Service</option>
-                        <option value="blog">Blog</option>
-                        <option value="listing">Listing</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground block mb-1.5">
-                        Sort Order
+                        Tags
                       </label>
                       <Input
-                        type="number"
-                        value={sortOrder}
-                        onChange={(e) =>
-                          setSortOrder(parseInt(e.target.value) || 0)
-                        }
+                        value={tags}
+                        onChange={(e) => setTags(e.target.value)}
+                        placeholder="tag1, tag2, tag3"
                         className="text-sm"
                       />
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground block mb-1.5">
-                      Excerpt
-                    </label>
-                    <Textarea
-                      value={excerpt}
-                      onChange={(e) => setExcerpt(e.target.value)}
-                      placeholder="Short description for listing pages…"
-                      rows={2}
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground block mb-1.5">
-                      Tags
-                    </label>
-                    <Input
-                      value={tags}
-                      onChange={(e) => setTags(e.target.value)}
-                      placeholder="tag1, tag2, tag3"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox
-                        checked={showInNav}
-                        onCheckedChange={(v) => setShowInNav(v === true)}
-                        className="shrink-0"
-                      />
-                      Show in navigation
-                    </label>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-foreground">
-                      Site shell
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Render the site&apos;s shared header/footer components on
-                      this page. Turn off for landing pages that bring their
-                      own chrome.
-                    </p>
                     <div className="flex items-center gap-6">
                       <label className="flex items-center gap-2 text-sm cursor-pointer">
                         <Checkbox
-                          checked={useClientHeader}
-                          onCheckedChange={(v) => setUseClientHeader(v === true)}
+                          checked={showInNav}
+                          onCheckedChange={(v) => setShowInNav(v === true)}
                           className="shrink-0"
                         />
-                        Use site header
-                      </label>
-                      <label className="flex items-center gap-2 text-sm cursor-pointer">
-                        <Checkbox
-                          checked={useClientFooter}
-                          onCheckedChange={(v) => setUseClientFooter(v === true)}
-                          className="shrink-0"
-                        />
-                        Use site footer
+                        Show in navigation
                       </label>
                     </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Versions */}
-            {activeTab === "versions" && page && (
-              <div className="h-full overflow-auto">
-                <div className="p-6 max-w-2xl mx-auto space-y-4">
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-semibold text-foreground">
-                      Version History
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      Every change is captured — edits, draft saves, publishes,
-                      and rollbacks. Restoring brings back that version&apos;s
-                      content as a new version; nothing is erased.
-                    </p>
-                  </div>
-                  {versions.error && (
-                    <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                      {versions.error}
-                    </div>
-                  )}
-                  {versions.isLoading ? (
-                    <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm">Loading versions…</span>
-                    </div>
-                  ) : versions.versions.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      No history for this page yet.
-                    </p>
-                  ) : (
                     <div className="space-y-2">
-                      {versions.versions.map((v) => (
-                        <div
-                          key={v.id}
-                          className={`rounded-lg border p-3 flex items-center justify-between transition-colors ${
-                            v.is_current
-                              ? "border-primary/40 bg-primary/5"
-                              : "border-border hover:bg-muted/20"
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                              v{v.version_number}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                                {VERSION_OPERATION_LABEL[v.operation]}
-                                {v.is_current && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-[10px]"
-                                  >
-                                    Current
-                                  </Badge>
-                                )}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(v.occurred_at).toLocaleString(
-                                  undefined,
-                                  {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                    hour: "numeric",
-                                    minute: "2-digit",
-                                  },
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="gap-1.5 text-xs"
-                            disabled={!onRollback || v.is_current}
-                            title={
-                              v.is_current
-                                ? "This is the page's current content"
-                                : onRollback
-                                  ? undefined
-                                  : "Save the page before restoring"
+                      <p className="text-sm font-medium text-foreground">
+                        Site shell
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Render the site&apos;s shared header/footer components
+                        on this page. Turn off for landing pages that bring
+                        their own chrome.
+                      </p>
+                      <div className="flex items-center gap-6">
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={useClientHeader}
+                            onCheckedChange={(v) =>
+                              setUseClientHeader(v === true)
                             }
-                            onClick={() => handleRollback(v.version_number)}
-                          >
-                            <RotateCcw className="h-3 w-3" />
-                            Restore
-                          </Button>
-                        </div>
-                      ))}
+                            className="shrink-0"
+                          />
+                          Use site header
+                        </label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={useClientFooter}
+                            onCheckedChange={(v) =>
+                              setUseClientFooter(v === true)
+                            }
+                            className="shrink-0"
+                          />
+                          Use site footer
+                        </label>
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        );
-        return activeTab === "preview" ? (
-          <NonEditableContextMenu
-            {...CMS_PAGE_CONTEXT_MENU_PROPS}
-            extraSections={pageExtraSections}
-            contextData={buildSurfaceScope() as Record<string, unknown>}
-          >
-            {tabPanels}
-          </NonEditableContextMenu>
-        ) : (
-          <EditableContextMenu
-            {...CMS_PAGE_CONTEXT_MENU_PROPS}
-            extraSections={pageExtraSections}
-            getTextarea={() => textareaRef.current}
-            getApplicationScope={getApplicationScope}
-            contextData={buildSurfaceScope() as Record<string, unknown>}
-            onTextReplace={(text) => {
-              if (activeTab === "html") setHtmlContent(text);
-              else if (activeTab === "css") setCssContent(text);
-              else if (activeTab === "js") setJsContent(text);
-              else if (activeTab === "seo") setMetaDescription(text);
-            }}
-            onSave={isNew ? undefined : () => void handleSaveDraft()}
-          >
-            {tabPanels}
-          </EditableContextMenu>
-        );
-      })()}
+              )}
 
-      <ConfirmDialog
-        open={discardConfirmOpen}
-        onOpenChange={setDiscardConfirmOpen}
-        title="Discard draft changes?"
-        description="This cannot be undone. The published version is unaffected."
-        confirmLabel="Discard Draft"
-        variant="destructive"
-        busy={isSaving}
-        onConfirm={confirmDiscard}
-      />
+              {/* Versions */}
+              {activeTab === "versions" && page && (
+                <div className="h-full overflow-auto">
+                  <div className="p-6 max-w-2xl mx-auto space-y-4">
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        Version History
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Every change is captured — edits, draft saves,
+                        publishes, and rollbacks. Restoring brings back that
+                        version&apos;s content as a new version; nothing is
+                        erased.
+                      </p>
+                    </div>
+                    {versions.error && (
+                      <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                        {versions.error}
+                      </div>
+                    )}
+                    {versions.isLoading ? (
+                      <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm">Loading versions…</span>
+                      </div>
+                    ) : versions.versions.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        No history for this page yet.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {versions.versions.map((v) => (
+                          <div
+                            key={v.id}
+                            className={`rounded-lg border p-3 flex items-center justify-between transition-colors ${
+                              v.is_current
+                                ? "border-primary/40 bg-primary/5"
+                                : "border-border hover:bg-muted/20"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                                v{v.version_number}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                                  {VERSION_OPERATION_LABEL[v.operation]}
+                                  {v.is_current && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-[10px]"
+                                    >
+                                      Current
+                                    </Badge>
+                                  )}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(v.occurred_at).toLocaleString(
+                                    undefined,
+                                    {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                      hour: "numeric",
+                                      minute: "2-digit",
+                                    },
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="gap-1.5 text-xs"
+                              disabled={!onRollback || v.is_current}
+                              title={
+                                v.is_current
+                                  ? "This is the page's current content"
+                                  : onRollback
+                                    ? undefined
+                                    : "Save the page before restoring"
+                              }
+                              onClick={() => handleRollback(v.version_number)}
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              Restore
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+          return activeTab === "preview" ? (
+            <NonEditableContextMenu
+              {...CMS_PAGE_CONTEXT_MENU_PROPS}
+              extraSections={pageExtraSections}
+              contextData={buildSurfaceScope() as Record<string, unknown>}
+            >
+              {tabPanels}
+            </NonEditableContextMenu>
+          ) : (
+            <EditableContextMenu
+              {...CMS_PAGE_CONTEXT_MENU_PROPS}
+              extraSections={pageExtraSections}
+              getTextarea={() => textareaRef.current}
+              getApplicationScope={getApplicationScope}
+              contextData={buildSurfaceScope() as Record<string, unknown>}
+              onTextReplace={(text) => {
+                if (activeTab === "html") setHtmlContent(text);
+                else if (activeTab === "css") setCssContent(text);
+                else if (activeTab === "js") setJsContent(text);
+                else if (activeTab === "seo") setMetaDescription(text);
+              }}
+              onSave={isNew ? undefined : () => void handleSaveDraft()}
+            >
+              {tabPanels}
+            </EditableContextMenu>
+          );
+        })()}
 
-      <ConfirmDialog
-        open={rollbackTarget !== null}
-        onOpenChange={(open) =>
-          !isRollingBack && !open && setRollbackTarget(null)
-        }
-        title={`Restore version ${rollbackTarget}?`}
-        description="This version's content replaces the page's current content. The restore is recorded as a new version, so the current content stays in the history."
-        confirmLabel="Restore"
-        variant="destructive"
-        busy={isRollingBack}
-        onConfirm={confirmRollback}
-      />
-    </div>
+        <ConfirmDialog
+          open={discardConfirmOpen}
+          onOpenChange={setDiscardConfirmOpen}
+          title="Discard draft changes?"
+          description="This cannot be undone. The published version is unaffected."
+          confirmLabel="Discard Draft"
+          variant="destructive"
+          busy={isSaving}
+          onConfirm={confirmDiscard}
+        />
+
+        <ConfirmDialog
+          open={rollbackTarget !== null}
+          onOpenChange={(open) =>
+            !isRollingBack && !open && setRollbackTarget(null)
+          }
+          title={`Restore version ${rollbackTarget}?`}
+          description="This version's content replaces the page's current content. The restore is recorded as a new version, so the current content stays in the history."
+          confirmLabel="Restore"
+          variant="destructive"
+          busy={isRollingBack}
+          onConfirm={confirmRollback}
+        />
+      </div>
+    </SurfaceRuntimeProvider>
   );
 }
