@@ -54,6 +54,8 @@ import {
   fetchOrganizationNamesByIds,
   organizationDisplayName,
 } from "../utils/organizationNames";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
 import {
   useOpenCitation,
@@ -224,6 +226,41 @@ interface SelectedEntity {
   id: string;
   name: string;
   kind: string;
+}
+
+/**
+ * An edge endpoint is a REAL kg entity (`kg_edge.src_id` / `dst_id`), and this
+ * console can already show everything it knows about one — its mentions. It was
+ * printed as plain text, so a graph edge named two records the user could not
+ * reach. Clicking either end selects it and jumps to the Mentions tab.
+ *
+ * The endpoint's `kind` ("organization", "code_file", "person") is an NER
+ * CLASS, not a canonical entity token — a kg entity kinded "organization" is an
+ * extracted name, not a row in `iam.organizations` — so it deliberately does
+ * NOT resolve through the entity registry. Doing that would open a completely
+ * different record.
+ */
+function EdgeEndpointButton({
+  id,
+  name,
+  kind,
+  onSelectEntity,
+}: {
+  id: string;
+  name: string;
+  kind: string;
+  onSelectEntity: (e: SelectedEntity) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelectEntity({ id, name, kind })}
+      title={`Show mentions of ${name}`}
+      className="min-w-0 truncate text-left font-medium text-foreground underline-offset-2 hover:text-primary hover:underline"
+    >
+      {name}
+    </button>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -538,7 +575,26 @@ function EntitiesTab({
                       <KindChip kind={row.kind} />
                     </TableCell>
                     <TableCell className="font-medium text-foreground">
-                      {row.canonical_name}
+                      {/* The entity has no route of its own (no `hrefFor` for a
+                          kg entity — see the sweep handoff), but it DOES have a
+                          destination inside this console: its mentions. The row
+                          click already went there for the mouse; this makes the
+                          name itself the door, reachable by keyboard. */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectEntity({
+                            id: row.id,
+                            name: row.canonical_name,
+                            kind: row.kind,
+                          });
+                        }}
+                        title={`Show mentions of ${row.canonical_name}`}
+                        className="max-w-full truncate text-left underline-offset-2 hover:text-primary hover:underline"
+                      >
+                        {row.canonical_name}
+                      </button>
                     </TableCell>
                     <TableCell className="text-sm text-foreground">
                       {!row.organization_id ? (
@@ -547,10 +603,21 @@ function EntitiesTab({
                         !(row.organization_id in orgNames) ? (
                         <Skeleton className="h-4 w-28" />
                       ) : (
-                        <span title={row.organization_id}>
-                          {orgNames[row.organization_id] ??
-                            "Unknown organization"}
-                        </span>
+                        /* THE DOOR LAW: the owning org is a real record with a
+                           route + peek. `name` is deliberately null when the
+                           lookup returned nothing — a failed/forbidden read is
+                           NOT "Unknown organization"; EntityRef then shows the
+                           truncated id, which is the honest answer. */
+                        <EntityRef
+                          token="organization"
+                          id={row.organization_id}
+                          name={
+                            organizationDisplayName(
+                              row.organization_id,
+                              orgNames,
+                            ) ?? null
+                          }
+                        />
                       )}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
@@ -732,8 +799,20 @@ function MentionsTab({ entity }: { entity: SelectedEntity | null }) {
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   ) : (
-                    <span className="ml-auto text-xs text-muted-foreground">
-                      {m.source_kind ?? "unknown"}:{m.source_id ?? "—"}
+                    /* No route for this source kind (citationHrefFor knows the
+                       mapped set and returns null otherwise). The id stays a
+                       dead end by necessity — but not an unselectable one: the
+                       canonical uuid cell gives it a copy control. The kind is
+                       NOT run through the entity registry: a RAG `source_kind`
+                       is not a canonical entity token, and a colliding name
+                       would open the wrong record. */
+                    <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
+                      <span>{m.source_kind ?? "unknown"}</span>
+                      {m.source_id ? (
+                        <MatrxUuidCell value={m.source_id} label="Source" />
+                      ) : (
+                        <span>—</span>
+                      )}
                     </span>
                   )}
                 </div>
@@ -775,7 +854,11 @@ function MentionsTab({ entity }: { entity: SelectedEntity | null }) {
 
 // ---------------------------------------------------------------------------
 
-function EdgesTab() {
+function EdgesTab({
+  onSelectEntity,
+}: {
+  onSelectEntity: (e: SelectedEntity) => void;
+}) {
   const [rawRows, setRawRows] = useState<KgEdgeRow[]>([]);
   const [orgInput, setOrgInput] = useState("");
   const [orgId, setOrgId] = useState("");
@@ -939,9 +1022,12 @@ function EdgesTab() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <KindChip kind={e.src_kind} />
-                        <span className="font-medium text-foreground">
-                          {e.src_name}
-                        </span>
+                        <EdgeEndpointButton
+                          id={e.src_id}
+                          name={e.src_name}
+                          kind={e.src_kind}
+                          onSelectEntity={onSelectEntity}
+                        />
                       </div>
                     </TableCell>
                     <TableCell>
@@ -952,9 +1038,12 @@ function EdgesTab() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <KindChip kind={e.dst_kind} />
-                        <span className="font-medium text-foreground">
-                          {e.dst_name}
-                        </span>
+                        <EdgeEndpointButton
+                          id={e.dst_id}
+                          name={e.dst_name}
+                          kind={e.dst_kind}
+                          onSelectEntity={onSelectEntity}
+                        />
                       </div>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
@@ -1034,7 +1123,7 @@ export function KgInspector() {
             <MentionsTab entity={selected} />
           </TabsContent>
           <TabsContent value="edges" className="mt-0">
-            <EdgesTab />
+            <EdgesTab onSelectEntity={handleSelectEntity} />
           </TabsContent>
         </div>
       </Tabs>
