@@ -184,6 +184,25 @@ function LinkedRelatives({ refs }: { refs: LinkedAgentRef[] }) {
   );
 }
 
+/**
+ * Re-run the comparison. Always available beside a verdict, because a verdict
+ * is a snapshot and this panel can outlive the state it describes.
+ */
+function RecheckButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={onClick}
+      title="Re-check — compare these two agents again"
+      aria-label="Re-check the comparison"
+      className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
+    >
+      <RefreshCw className="w-3 h-3" />
+    </Button>
+  );
+}
+
 /** One changed field, named and quantified. */
 function FieldChangeChip({ change }: { change: AgentSyncFieldChange }) {
   const detail = change.orderOnly
@@ -334,11 +353,37 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
   const canPull = !!userSide && (userSide.isOwnedByMe || isSuperAdmin);
   const canPush = isSuperAdmin;
 
-  /** Re-resolve the pair AND re-run the comparison. Doubles as the retry. */
+  /**
+   * Re-resolve the pair AND re-run the comparison. Doubles as the retry and as
+   * the user-facing "Re-check".
+   */
   const refreshAfterSync = () => {
     setErrorState(null);
     setSyncNonce((n) => n + 1);
   };
+
+  /**
+   * The verdict is a snapshot, and this panel can sit open for a long time
+   * while the very agents it describes are edited in another tab. A stale
+   * "identical" is worse than no verdict, because it DISABLES both buttons —
+   * the user would be unable to sync a difference that already exists. So the
+   * comparison is re-run whenever the user comes back to this tab, and the
+   * verdict carries an explicit Re-check for the cases focus can't catch.
+   */
+  useEffect(() => {
+    const recheck = () => {
+      if (document.visibilityState !== "visible") return;
+      // Never re-key mid-sync; the sync's own refresh covers that.
+      if (busy !== null) return;
+      setSyncNonce((n) => n + 1);
+    };
+    window.addEventListener("focus", recheck);
+    document.addEventListener("visibilitychange", recheck);
+    return () => {
+      window.removeEventListener("focus", recheck);
+      document.removeEventListener("visibilitychange", recheck);
+    };
+  }, [busy]);
 
   const runPull = async () => {
     if (!userSide || !systemSide) return;
@@ -569,18 +614,19 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
       ) : !comparison ? null : comparison.verdict === "identical" ? (
         <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
           <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-          <div className="text-xs leading-relaxed text-muted-foreground">
+          <div className="flex-1 text-xs leading-relaxed text-muted-foreground">
             <span className="font-medium text-foreground">
               These two agents are identical.
             </span>{" "}
             All {comparison.comparedFieldCount} fields that sync would copy
             already match. There is nothing to pull or push.
           </div>
+          <RecheckButton onClick={refreshAfterSync} />
         </div>
       ) : comparison.verdict === "unknown" ? (
         <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
           <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-          <div className="text-xs leading-relaxed text-muted-foreground">
+          <div className="flex-1 text-xs leading-relaxed text-muted-foreground">
             <span className="font-medium text-foreground">
               Could not compare these agents.
             </span>{" "}
@@ -593,12 +639,13 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
             not readable from this account, so syncing would overwrite the
             target with changes you cannot see here.
           </div>
+          <RecheckButton onClick={refreshAfterSync} />
         </div>
       ) : (
         <div className="space-y-2 rounded-md border border-border bg-muted/30 px-3 py-2.5">
           <div className="flex items-start gap-3">
             <GitCompare className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-            <div className="text-xs leading-relaxed text-muted-foreground">
+            <div className="flex-1 text-xs leading-relaxed text-muted-foreground">
               <span className="font-medium text-foreground">
                 These agents are not identical.
               </span>{" "}
@@ -609,6 +656,7 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
                 : ""}
               .
             </div>
+            <RecheckButton onClick={refreshAfterSync} />
           </div>
           <div className="flex flex-wrap gap-1 pl-7">
             {comparison.changed.map((change) => (

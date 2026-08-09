@@ -1220,6 +1220,12 @@ function toLinkedRef(
  * can see — so from a system agent this surfaces the caller's own personal
  * copies (plus the original maintainer agent if visible), never other users'
  * private copies. Returns data only; nothing is written to the slice.
+ *
+ * Soft-deleted rows are excluded here, exactly as `fetchAgentSyncComparison`
+ * excludes them (`deleted_at` is NOT RLS-filtered on this table). The two reads
+ * MUST agree: if the pair card resolved a twin the comparison cannot read, the
+ * panel would show a live-looking agent, report `unknown`, and leave Pull/Push
+ * enabled against a deleted target.
  */
 export const fetchLinkedCounterpart = createAsyncThunk<
   LinkedCounterpartResult | null,
@@ -1244,6 +1250,7 @@ export const fetchLinkedCounterpart = createAsyncThunk<
       .from("definition")
       .select(LINKED_REF_COLS)
       .eq("id", selfRow.source_agent_id)
+      .is("deleted_at", null)
       .maybeSingle<LinkedRefRow>();
     if (srcErr) throw pgErrorToError(srcErr);
     if (srcRow) source = toLinkedRef(srcRow, uid);
@@ -1255,6 +1262,7 @@ export const fetchLinkedCounterpart = createAsyncThunk<
     .select(LINKED_REF_COLS)
     .eq("source_agent_id", agentId)
     .eq("is_archived", false)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .returns<LinkedRefRow[]>();
   if (derErr) throw pgErrorToError(derErr);

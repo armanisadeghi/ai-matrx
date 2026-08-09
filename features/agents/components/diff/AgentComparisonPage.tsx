@@ -42,6 +42,13 @@ interface SideState {
   versionHistory: AgentVersionHistoryItem[];
   snapshotLoading: boolean;
   /**
+   * The agent row itself is in flight. Tracked separately from
+   * `versionsLoading` because the version-history request can settle FIRST —
+   * and if only that cleared, a deep link would render the empty
+   * "select an agent on each side" state while its agent was still loading.
+   */
+  agentLoading: boolean;
+  /**
    * Set when the agent itself could not be loaded (gone, or not visible to
    * this account). Without it a failed deep link silently renders the empty
    * "select an agent on each side" state, which reads as "you didn't pick
@@ -58,6 +65,7 @@ function sideFor(agentId: string | null): SideState {
     versionsLoading: !!agentId,
     versionHistory: [],
     snapshotLoading: false,
+    agentLoading: !!agentId,
     loadError: null,
   };
 }
@@ -95,34 +103,35 @@ export function AgentComparisonPage({
     sideFor(initialRightAgentId),
   );
 
-  /** Fetch one side's agent + version list. Only writes state from callbacks. */
+  /**
+   * Fetch one side's agent + version list. Only writes state from callbacks,
+   * and EVERY write is guarded on the side still pointing at `agentId` — a slow
+   * response must never land on the agent the user picked after it.
+   */
   const loadSideData = (side: "left" | "right", agentId: string) => {
     const setter = side === "left" ? setLeft : setRight;
+    const patchIfCurrent = (patch: Partial<SideState>) =>
+      setter((prev) =>
+        prev.agentId === agentId ? { ...prev, ...patch } : prev,
+      );
+
     dispatch(fetchFullAgent(agentId))
       .unwrap()
-      .catch(() => {
-        setter((prev) =>
-          prev.agentId === agentId
-            ? {
-                ...prev,
-                versionsLoading: false,
-                loadError: `Could not load agent ${agentId.slice(0, 8)}… — it may have been deleted, or it isn't visible to this account.`,
-              }
-            : prev,
-        );
-      });
+      .then(() => patchIfCurrent({ agentLoading: false }))
+      .catch(() =>
+        patchIfCurrent({
+          agentLoading: false,
+          versionsLoading: false,
+          loadError: `Could not load agent ${agentId.slice(0, 8)}… — it may have been deleted, or it isn't visible to this account.`,
+        }),
+      );
+
     dispatch(fetchAgentVersionHistory({ agentId, limit: 100 }))
       .unwrap()
-      .then((data) => {
-        setter((prev) => ({
-          ...prev,
-          versionHistory: data,
-          versionsLoading: false,
-        }));
-      })
-      .catch(() => {
-        setter((prev) => ({ ...prev, versionsLoading: false }));
-      });
+      .then((data) =>
+        patchIfCurrent({ versionHistory: data, versionsLoading: false }),
+      )
+      .catch(() => patchIfCurrent({ versionsLoading: false }));
   };
 
   useEffect(() => {
@@ -149,6 +158,7 @@ export function AgentComparisonPage({
       version: "current",
       versionsLoading: true,
       versionHistory: [],
+      agentLoading: true,
       // Picking a different agent clears the previous one's failure.
       loadError: null,
     }));
@@ -260,7 +270,10 @@ export function AgentComparisonPage({
       </div>
 
       {/* Diff content */}
-      {left.snapshotLoading || right.snapshotLoading ? (
+      {left.snapshotLoading ||
+      right.snapshotLoading ||
+      left.agentLoading ||
+      right.agentLoading ? (
         <div className="flex-1 p-4 space-y-3">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-64 w-full" />
