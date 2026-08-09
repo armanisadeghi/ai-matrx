@@ -390,14 +390,6 @@ File-picker consolidation done; `FolderPicker`/`SaveAsDialog` still use the old 
 
 The D113 fix stops NEW bundles from carrying keys, but past production bundles shipped `NEXT_PUBLIC_CARTESIA_API_KEY` and `NEXT_PUBLIC_OPENAI_API_KEY` — treat both as compromised and **rotate them at the provider**, then set the Cartesia key as server-only `CARTESIA_API_KEY` (already read by `/api/cartesia*`). Also prune the ~20 unreferenced `NEXT_PUBLIC_*` secret env vars in `.env.local`/Vercel (Anthropic, Gemini, Groq, Deepgram, Replicate, Stability, Cerebras, Fireworks, xAI, GetImg, ModelLabs, News, Comfy, Deploy, Picovoice, Stream secret, TensorDock, Unsplash secret) — unreferenced code can't bundle them, but the naming invites the next leak; rename server-side ones without the prefix, delete dead ones.
 
-### D76 — app-wide: "state update on a component that hasn't mounted yet" on `/scraper` and `/` (2026-07-19)
-
-Unattributed; spans routes sharing only providers/shell. Needs a live repro with the component stack. Cross-reference D61 (same warning on `/chat` streams, suspect render-time side-effect in the db-component compile path) — if the root cause is shared, fix once and close both.
-
-### D61 — /chat streams warn "state update on a component that hasn't mounted yet" (2026-07-18)
-
-See D76. Suspect: `getOrCompileDbKindComponent` called during render with a module-store cache. Needs attribution via dev overlay component stack.
-
 ### D82b — CROSS-REPO (aidream): education/flashcard podcast runs publish "Untitled Episode" (2026-07-22)
 
 **Owner: aidream.** (1) Empty title treated as success — derive a title when the agent omits one; never persist `title=''`. (2) `buildDeckOverviewRequest` sends `max_images: 0` yet episodes publish to the public show — **decides: Arman**: give deck overviews a cover or keep them out of the show. Reproduces on the next flashcard→podcast run.
@@ -459,6 +451,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ## RESOLVED
 
 One line per fix — title, date, pointer. History lives in git.
+
+- **D76 / D61** — one root cause, fixed once: `errorCaptureStore.emit()` notified its `useSyncExternalStore` subscribers SYNCHRONOUSLY, so any `captureError` on a render path (content-ir screams, data-shape reads, org-resolution) re-rendered the shell's Error Inspector badge inside another component's render. Notification now defers to a microtask; snapshots stay synchronous. Pinned by `lib/diagnostics/errorCaptureStore.renderSafety.test.tsx`; verified clean in-browser on `/`, `/scraper`, and a live `/chat` stream. 2026-08-09.
 
 - **D129** — Apple OAuth secret rotated and verified; hard-coded expiry replaced by live `app_config` credential metadata plus an audited admin editor and actionable Manage toast. 2026-08-07.
 - **D113** — no Cartesia key in the browser: ONE token primitive (`lib/cartesia/accessToken.ts` — lazy, cached, dedupe, refresh-retry-once) + ONE ws connector (`connection.ts`); all 8 hooks/adapters ported; voices list/clone/create moved to authed server routes (`/api/cartesia/voices*`); raw-key `client.ts`/`tts-service.ts`/`AudioPlayground` deleted; `NEXT_PUBLIC_OPENAI_API_KEY`/`NEXT_PUBLIC_GOOGLE_API_KEY` bundle refs also removed. Rotation = D114. 2026-07-28.

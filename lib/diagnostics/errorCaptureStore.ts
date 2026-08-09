@@ -335,9 +335,27 @@ function refreshStats(): void {
   }
 }
 
+// Listener notification is DEFERRED to a microtask. `captureError` is called
+// from render-path recovery code (content-ir compile/route/envelope screams,
+// data-shape reads, org-resolution) — a synchronous notify there re-renders
+// every `useSyncExternalStore` subscriber (the Error Inspector badge in the
+// shared shell) INSIDE another component's render, which is React's
+// "Cannot update a component while rendering a different component" /
+// "hasn't mounted yet" warning on every route that mounts the shell
+// (FOUND_DEFECTS D61/D76). Snapshots still update synchronously — only the
+// notify waits for the stack to unwind, so capture stays render-safe by
+// construction no matter which of the ~60 capture sites fires. Contract
+// pinned by errorCaptureStore.renderSafety.test.tsx.
+let notifyScheduled = false;
+
 function emit(): void {
   refreshStats();
-  for (const listener of listeners) listener();
+  if (notifyScheduled) return;
+  notifyScheduled = true;
+  queueMicrotask(() => {
+    notifyScheduled = false;
+    for (const listener of listeners) listener();
+  });
 }
 
 function makeId(): string {

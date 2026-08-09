@@ -107,6 +107,19 @@ Capture is in-memory, cheap, try/caught — it can never break a caller — and 
 for **all** users. Only the UI is admin-gated, which is the seam for the future
 "surface certain errors to end users" feature (`user_message` is captured for it).
 
+**`captureError` is RENDER-SAFE — never make notification synchronous again.**
+Loud-recovery sites scream from inside render (content-ir compile/route/envelope
+failures, `data-shape` read guards, `org-resolution`). A synchronous listener
+notify there re-renders every `useSyncExternalStore` subscriber — the shell's
+Inspector badge — inside another component's render pass, which is React's
+"Cannot update a component while rendering a different component" warning on
+every route mounting the shell (FOUND_DEFECTS D61/D76). `emit()` therefore
+**defers notification to a microtask**, coalescing bursts; snapshots still
+update synchronously, so `getSnapshot()` is never stale. This makes capture
+render-safe by construction at every one of the ~60 call sites rather than
+per-site — pinned by
+`lib/diagnostics/errorCaptureStore.renderSafety.test.tsx`.
+
 ## Persistence — client errors join the server error sink
 
 The in-memory store is per-session. `lib/diagnostics/persistCapturedErrors.ts`
@@ -214,6 +227,12 @@ adapter, or tier rule — it holds the full recipe + invariants.
 
 ## Change Log
 
+- 2026-08-09 — **Capture made render-safe (closes D61 + D76).** `emit()` notified
+  subscribers synchronously, so any render-path `captureError` updated the shell's
+  Inspector badge mid-render — the app-wide "Cannot update a component while
+  rendering a different component" warning on `/`, `/scraper`, and `/chat`
+  streams. Notification now defers to a coalescing microtask; regression test at
+  `lib/diagnostics/errorCaptureStore.renderSafety.test.tsx`.
 - 2026-07-26 — **New source `markdown-delimiters`.** A single stray `$$` in a
   model answer made remark-math swallow ~400 chars of prose into a math node;
   KaTeX then rendered it via its built-in `.katex-error` fallback — a huge block
