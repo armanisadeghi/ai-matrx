@@ -1187,7 +1187,7 @@ export const updateAgentFromSource = createAsyncThunk<
 // ---------------------------------------------------------------------------
 
 const LINKED_REF_COLS =
-  "id, agent_type, name, source_agent_id, source_snapshot_at, updated_at, user_id";
+  "id, agent_type, name, source_agent_id, source_snapshot_at, updated_at, user_id, deleted_at";
 
 interface LinkedRefRow {
   id: string;
@@ -1197,6 +1197,7 @@ interface LinkedRefRow {
   source_snapshot_at: string | null;
   updated_at: string;
   user_id: string | null;
+  deleted_at: string | null;
 }
 
 function toLinkedRef(
@@ -1211,6 +1212,7 @@ function toLinkedRef(
     sourceSnapshotAt: row.source_snapshot_at,
     updatedAt: row.updated_at,
     isOwnedByMe: !!currentUserId && row.user_id === currentUserId,
+    deletedAt: row.deleted_at,
   };
 }
 
@@ -1221,11 +1223,16 @@ function toLinkedRef(
  * copies (plus the original maintainer agent if visible), never other users'
  * private copies. Returns data only; nothing is written to the slice.
  *
- * Soft-deleted rows are excluded here, exactly as `fetchAgentSyncComparison`
- * excludes them (`deleted_at` is NOT RLS-filtered on this table). The two reads
- * MUST agree: if the pair card resolved a twin the comparison cannot read, the
- * panel would show a live-looking agent, report `unknown`, and leave Pull/Push
- * enabled against a deleted target.
+ * Soft-deleted `source`/`derived` rows are excluded here, exactly as
+ * `fetchAgentSyncComparison` excludes them (`deleted_at` is NOT RLS-filtered on
+ * this table). The two reads MUST agree: if the pair card resolved a twin the
+ * comparison cannot read, the panel would show a live-looking agent, report
+ * `unknown`, and leave Pull/Push enabled against a deleted target.
+ *
+ * `self` is the one deliberate exception — read UNFILTERED and carrying its
+ * `deletedAt`. Filtering it would collapse "this agent is deleted" into "this
+ * agent isn't linked to a system agent", which is a different and false
+ * statement. The panel reads the stamp and says which one is true.
  */
 export const fetchLinkedCounterpart = createAsyncThunk<
   LinkedCounterpartResult | null,

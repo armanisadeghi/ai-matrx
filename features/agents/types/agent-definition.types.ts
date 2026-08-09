@@ -498,6 +498,13 @@ export interface LinkedAgentRef {
   updatedAt: string;
   /** True when the current user owns this agent (false for builtins / others). */
   isOwnedByMe: boolean;
+  /**
+   * Soft-delete stamp. Always `null` on `source`/`derived` — those reads filter
+   * deleted rows out — so this is only ever set on `self`, which is loaded
+   * unfiltered precisely so a deleted agent can be NAMED as deleted instead of
+   * silently reported as "not linked".
+   */
+  deletedAt: string | null;
 }
 
 /**

@@ -63,6 +63,7 @@ import {
   GitCompare,
   Loader2,
   RefreshCw,
+  Trash2,
   Unlink,
 } from "lucide-react";
 import Link from "next/link";
@@ -284,7 +285,16 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
     };
   }, [agentId, dispatch, syncNonce]);
 
-  const pair = counterpart ? resolvePair(selfType, counterpart) : null;
+  /**
+   * A soft-deleted agent has no honest sync story: the comparison excludes
+   * deleted rows, so every verdict would be `unknown` while the pair card
+   * showed a live-looking twin. Name the real reason instead of falling into
+   * the "isn't linked to a system agent" branch, which would be false.
+   */
+  const selfDeletedAt = counterpart?.self.deletedAt ?? null;
+
+  const pair =
+    counterpart && !selfDeletedAt ? resolvePair(selfType, counterpart) : null;
   const userSide = pair?.userSide ?? null;
   const systemSide = pair?.systemSide ?? null;
   const hasPair = !!userSide && !!systemSide;
@@ -469,6 +479,35 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
           <Button onClick={refreshAfterSync} className="gap-1.5">
             <RefreshCw className="w-3.5 h-3.5" />
             Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── This agent is deleted: no sync story, but its relatives are doors ───
+
+  if (selfDeletedAt && counterpart) {
+    const relatives = [
+      counterpart.source,
+      ...counterpart.derived,
+    ].filter(Boolean) as LinkedAgentRef[];
+    return (
+      <div className="space-y-4">
+        <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
+          <Trash2 className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+          <div className="text-xs leading-relaxed text-muted-foreground">
+            <span className="font-medium text-foreground">
+              {agent?.name ?? "This agent"}
+            </span>{" "}
+            has been deleted, so there is nothing to push or pull. Restore it
+            first if you need to sync it again.
+          </div>
+        </div>
+        <LinkedRelatives refs={relatives} />
+        <div className="flex justify-end">
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            Close
           </Button>
         </div>
       </div>
@@ -735,6 +774,14 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
           ) : null,
         )}
       </div>
+
+      {/*
+        Relatives beyond the synced pair — a third personal copy, a second
+        derived agent. THE DOOR LAW does not switch off once a twin is found:
+        having a pair to sync is no reason to withhold the other links we
+        already resolved.
+      */}
+      <LinkedRelatives refs={otherLinked} />
 
       {/* Provenance footnote — not a verdict */}
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground px-0.5">
