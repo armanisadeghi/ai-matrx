@@ -345,7 +345,7 @@
   grid-auto-rows: minmax(160px, auto);
   gap: 12px;
   padding: 16px;
-  min-height: calc(100dvh - var(--header-height, 2.5rem));
+  min-height: 100%;
 }
 
 .glab-zone {

@@ -25,7 +25,7 @@ export default function ContextMenuLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-textured pt-[var(--header-height)]">
+    <div className="flex h-full flex-col overflow-hidden bg-textured">
       <ContextMenuNav pages={getNavPages()} />
       <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
     </div>

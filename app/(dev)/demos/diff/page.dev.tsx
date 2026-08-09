@@ -106,7 +106,7 @@ export default function DiffDemoPage() {
   };
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden bg-textured">
+    <div className="h-full flex flex-col overflow-hidden bg-textured">
       <div className="shrink-0 border-b border-border px-4 py-2">
         <h1 className="text-sm font-semibold">Diff System — dev playground</h1>
         <p className="text-xs text-muted-foreground">

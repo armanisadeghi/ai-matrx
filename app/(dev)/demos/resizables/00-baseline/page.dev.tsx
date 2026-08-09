@@ -43,7 +43,7 @@ export default function BaselineDemoPage() {
         >
           <Panel id="left" defaultSize="50%" minSize="20%">
             {/* static title at top — clear the header zone with pt */}
-            <div className="h-full overflow-auto bg-muted px-4 pb-4 pt-[var(--shell-header-h)]">
+            <div className="h-full overflow-auto bg-muted px-4 pb-4">
               <h2 className="text-sm font-medium mb-2">Left panel</h2>
               <p className="text-xs text-muted-foreground">
                 <code className="text-foreground">defaultSize=&quot;50%&quot;</code>{" "}
@@ -55,7 +55,7 @@ export default function BaselineDemoPage() {
           <Handle />
 
           <Panel id="right" defaultSize="50%" minSize="20%">
-            <div className="h-full overflow-auto bg-card px-4 pb-4 pt-[var(--shell-header-h)]">
+            <div className="h-full overflow-auto bg-card px-4 pb-4">
               <h2 className="text-sm font-medium mb-2">Right panel</h2>
               <p className="text-xs text-muted-foreground">
                 Drag the separator. Reload returns to default 50/50 (no

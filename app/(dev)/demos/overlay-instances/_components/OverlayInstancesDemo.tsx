@@ -181,7 +181,7 @@ export function OverlayInstancesDemo() {
   );
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {/* Header */}
         <div>

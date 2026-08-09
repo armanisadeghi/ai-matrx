@@ -54,7 +54,7 @@ export default function PerformanceReviewApp() {
 
   if (!store.hydrated || !store.active) {
     return (
-      <div className="grid h-[calc(100dvh-var(--header-height))] place-items-center">
+      <div className="grid h-full place-items-center">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading reviews…
@@ -84,7 +84,7 @@ export default function PerformanceReviewApp() {
   };
 
   return (
-    <div className="flex h-[calc(100dvh-var(--header-height))] overflow-hidden bg-textured">
+    <div className="flex h-full overflow-hidden bg-textured">
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
       <aside className="flex w-72 flex-none flex-col border-r border-border bg-card/60 print:hidden">
         <div className="flex items-center gap-2 border-b border-border p-4">

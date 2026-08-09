@@ -3,9 +3,11 @@ import { scanRoutes } from "@/utils/route-discovery";
 import { DemosRouteHeader } from "./DemosRouteHeader";
 
 /**
- * One header for the complete demo tree. The filesystem scanner is also the
- * landing page's source of truth, keeping every breadcrumb menu current as
- * demos are added or moved.
+ * One fallback header and one header-cleared content box for the complete demo
+ * tree. A leaf route may replace the breadcrumb through PageHeaderPortal; it
+ * must not add another header-height offset or subtract the viewport itself.
+ * The filesystem scanner is also the landing page's source of truth, keeping
+ * every breadcrumb menu current as demos are added or moved.
  */
 export default async function DemosLayout({
   children,
@@ -17,7 +19,12 @@ export default async function DemosLayout({
   return (
     <>
       <DemosRouteHeader routes={routes.sort()} />
-      {children}
+      <div
+        className="h-full min-h-0"
+        data-demo-content=""
+      >
+        {children}
+      </div>
     </>
   );
 }

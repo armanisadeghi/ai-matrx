@@ -29,7 +29,7 @@ export default function WindowDemoPage() {
   const notesOpen = openWindows.has(NOTES_WINDOW_ID);
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height,2.5rem))] flex flex-col bg-textured overflow-hidden">
+    <div className="h-full flex flex-col bg-textured overflow-hidden">
       {/* ── Toolbar ────────────────────────────────────────────────────────── */}
       <div className="shrink-0 flex items-center gap-2 px-4 py-3 border-b border-border bg-card/60 backdrop-blur-sm">
         <span className="text-sm font-semibold text-foreground/80 mr-2">

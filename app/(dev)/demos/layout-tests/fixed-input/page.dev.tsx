@@ -23,7 +23,7 @@ export default function FixedInputPage() {
         </div>
       </PageSpecificHeader>
       
-      <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-zinc-100 dark:bg-zinc-900">
+      <div className="h-full flex flex-col overflow-hidden bg-zinc-100 dark:bg-zinc-900">
 
       {/* Scrollable Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">

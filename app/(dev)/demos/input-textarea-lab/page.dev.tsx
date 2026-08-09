@@ -55,7 +55,7 @@ export default function InputTextareaLabPage() {
   const [proTextarea, setProTextarea] = useState("");
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] w-full overflow-y-auto bg-textured">
+    <div className="h-full w-full overflow-y-auto bg-textured">
       <div className="grid h-full min-h-0 w-full grid-cols-1 gap-3 p-3 lg:grid-cols-2">
         <div className="grid min-h-0 auto-rows-min grid-cols-1 gap-3 content-start">
           <LabCell name="Input" path="@/components/ui/input · Input">

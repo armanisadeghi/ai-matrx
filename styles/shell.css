@@ -1127,6 +1127,14 @@ button.shell-nav-flyout-item {
   min-width: 0;
 }
 
+/* A broad route layout may provide a fallback while a leaf page owns specific
+   workspace controls. Hide the fallback whenever that page header is present;
+   portal effect order is not a reliable proxy for route depth. */
+.shell-header-center:has(> [data-page-header-portal="page"])
+  > [data-page-header-portal="fallback"] {
+  display: none;
+}
+
 /* Injection wrapper — spans the full center zone width so variant roots
    can use flex left/center/right layout inside it. Height matches the
    left/right anchors (2.75rem) for consistent vertical alignment.

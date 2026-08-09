@@ -9,7 +9,7 @@ export const metadata = createRouteMetadata("/demos/textarea-tiers", {
 
 export default function TextareaTiersPage() {
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
+    <div className="h-full overflow-y-auto bg-textured">
       <div className="mx-auto max-w-6xl px-6 py-8 space-y-8">
         <header className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">

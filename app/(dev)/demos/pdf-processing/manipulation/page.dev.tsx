@@ -11,7 +11,7 @@ const PdfManipulationWorkbench = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[calc(100dvh-var(--header-height))] w-full items-center justify-center bg-textured">
+      <div className="flex h-full w-full items-center justify-center bg-textured">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     ),

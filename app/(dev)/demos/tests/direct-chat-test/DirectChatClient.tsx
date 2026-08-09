@@ -178,7 +178,7 @@ export default function DirectChatClient() {
   };
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden bg-background">
+    <div className="h-full flex flex-col overflow-hidden bg-background">
       <div className="flex-1 grid grid-cols-2 gap-3 p-3 pb-safe min-h-0 overflow-hidden">
         {/* Left Column: Controls and JSON */}
         <div className="flex flex-col space-y-3 h-full min-h-0 overflow-hidden">

@@ -294,7 +294,7 @@ export function NewAppConceptClient() {
 
   return (
     <div className="w-full overflow-x-hidden bg-textured text-foreground">
-      <div className="mx-auto flex min-h-[calc(100dvh-var(--header-height,2.5rem))] w-full max-w-7xl flex-col px-4 pb-8 pt-8 sm:px-6 lg:px-10">
+      <div className="mx-auto flex min-h-full w-full max-w-7xl flex-col px-4 pb-8 pt-8 sm:px-6 lg:px-10">
         <section className="flex flex-1 flex-col items-center">
           <h1 className="mt-2 text-center font-serif text-4xl font-semibold tracking-tight text-foreground sm:text-5xl md:text-6xl">
             What are we creating today?
