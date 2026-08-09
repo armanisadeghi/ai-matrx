@@ -386,6 +386,68 @@ describe("compareAgentSyncSnapshots — per-field detection", () => {
   });
 });
 
+describe("compareAgentSyncSnapshots — value-shape sweep", () => {
+  // Every row here was run against the real function before being written
+  // down. The point is symmetric: never "identical" about two different stored
+  // values (which disables both buttons), and never "differs" about two equal
+  // ones (which invites a pointless overwrite).
+  const differs: [string, Record<string, unknown>, Record<string, unknown>][] = [
+    ["null vs empty object", { model_tiers: null }, { model_tiers: {} }],
+    ["empty array vs empty object", { model_tiers: [] }, { model_tiers: {} }],
+    ["number vs numeric string", { default_rag_boost: 0 }, { default_rag_boost: "0" }],
+    ["zero vs false", { default_rag_boost: 0 }, { default_rag_boost: false }],
+    ["false vs null", { settings: { x: false } }, { settings: { x: null } }],
+    [
+      "a leaf deep inside settings",
+      { settings: { a: { b: { c: { d: 1 } } } } },
+      { settings: { a: { b: { c: { d: 2 } } } } },
+    ],
+    ["an added key", { settings: { a: 1 } }, { settings: { a: 1, b: 2 } }],
+    [
+      "an explicit undefined vs an absent key",
+      { settings: { a: 1, b: undefined } },
+      { settings: { a: 1 } },
+    ],
+    [
+      "a reordered array nested inside a message",
+      { messages: [{ c: [1, 2] }] },
+      { messages: [{ c: [2, 1] }] },
+    ],
+  ];
+
+  it.each(differs)("reports differs: %s", (_label, a, b) => {
+    expect(compareAgentSyncSnapshots(snapshot(a), snapshot(b)).verdict).toBe(
+      "differs",
+    );
+  });
+
+  const identical: [string, Record<string, unknown>, Record<string, unknown>][] =
+    [
+      [
+        "the same object with keys in a different order",
+        { settings: { a: 1, b: 2 } },
+        { settings: { b: 2, a: 1 } },
+      ],
+      [
+        "empty arrays on both sides",
+        { tools: [], tags: [] },
+        { tools: [], tags: [] },
+      ],
+      [
+        "the same deeply nested structure",
+        { settings: { a: { b: [1, { c: 2 }] } } },
+        { settings: { a: { b: [1, { c: 2 }] } } },
+      ],
+      ["null on both sides", { model_tiers: null }, { model_tiers: null }],
+    ];
+
+  it.each(identical)("reports identical: %s", (_label, a, b) => {
+    expect(compareAgentSyncSnapshots(snapshot(a), snapshot(b)).verdict).toBe(
+      "identical",
+    );
+  });
+});
+
 describe("agentSyncImpact — what a given sync would actually overwrite", () => {
   const realPair = compareAgentSyncSnapshots(USER_SIDE, SYSTEM_SIDE);
 
