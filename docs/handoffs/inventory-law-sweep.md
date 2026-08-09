@@ -118,7 +118,38 @@ token silently lost the peek door.
   Nineteen private copies of a fact the registry owns; now one call.
   A kind with no route shows NO Open button, which is honest.
 
+- **`OrgResourceDetail`** — both row types → `EntityRef`. Deleted `openItem`,
+  the local `itemHref` share-registry resolver, the `peekId` state, the
+  `ResourcePeekHost` mount, and the hover new-tab buttons. `RowContextMenu`
+  survives as Share/Unshare only — the actions `EntityRef` does NOT cover.
+  Peek moved from buried-in-right-click to inline on every row.
+- **`useOrgSharedItems.href`** deleted — it derived from the stale sharing
+  registry and had no reader left.
+- **`WarRoomResourcesList`** — inert `<p>{title}</p>` → `EntityRef` with
+  `onOpen={() => openRow(row)}`, preserving the existing **new tab** (it is a
+  rail inside the war room). Dropped the now-duplicate `Open` menu item;
+  `ResourceIdCopy` kept (copying a full id is a distinct action).
+- **`OutputRefLink`** — the whole component is now one `EntityRef`. Deleted
+  `hrefForOutputRef` (the FOURTH private route table) and the `#{id.slice(0,8)}`
+  dead-end fallback. Route audit: `conversation` now uses the canonical
+  `/chat/{id}`; **`capture` and `workflow_run` have no route and no entity token
+  — they render as plain text, no fabricated href.** Both named in the file
+  header so they can get a registry route later.
+- **`EntityRef.openInNewTab`** (`3cce4904`) — added after review caught the same
+  regression twice: replacing a hand-rolled `window.open` with `EntityRef`
+  silently turns "open beside my work" into "replace my work". Real
+  `target="_blank"`, not a JS intercept.
+
+**All five hand-rolled route/open/peek resolvers named at the top of this wave
+are now deleted.**
+
 ### Open
+
+- [ ] `features/war-room/components/thread/ThreadResourcesTab.tsx` —
+      `FileResourceRow` renders its own `<p>{name}</p>` via the `renderRow`
+      override (it swaps in a media thumbnail). Same dead-end class, missed by
+      the sweep because it overrides the row.
+- [ ] Nothing here is browser-verified yet.
 
 
 
