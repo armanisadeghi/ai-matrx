@@ -1183,9 +1183,10 @@ interface UnifiedMenuContentBlockItem {
   icon_name: string;
   sort_order: number | null;
   template: string;
-  block_type: RenderDefinitionBlockType;
-  skill_id: string | null;
-  visibility: RenderDefinitionVisibility;
+  // Optional: a stale/cached payload from the pre-2026-08-08 view lacks these.
+  block_type?: RenderDefinitionBlockType | null;
+  skill_id?: string | null;
+  visibility?: RenderDefinitionVisibility | null;
   is_active: boolean | null;
   user_id: string | null;
   organization_id: string | null;
