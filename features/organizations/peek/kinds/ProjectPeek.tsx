@@ -12,6 +12,7 @@ import React from "react";
 import { FolderKanban } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -51,7 +52,7 @@ export default function ProjectPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.name || "Project"}
       icon={<FolderKanban className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
-      href={undefined}
+      href={peekHref("project", id)}
       loading={loading}
     >
       {row ? (

@@ -10,6 +10,7 @@
 import React from "react";
 import { AudioLines } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -50,7 +51,7 @@ export default function TranscriptPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.title || "Transcript"}
       icon={<AudioLines className="h-4 w-4 text-sky-600 dark:text-sky-400" />}
-      href={`/transcripts/${id}`}
+      href={peekHref("transcript", id)}
       loading={loading}
     >
       {row ? (

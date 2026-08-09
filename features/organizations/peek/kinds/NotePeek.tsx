@@ -11,6 +11,7 @@ import React from "react";
 import { NotebookText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/utils/supabase/client";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -56,7 +57,7 @@ export default function NotePeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.label || "Note"}
       icon={<NotebookText className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
-      href={`/notes/${id}`}
+      href={peekHref("note", id)}
       loading={loading}
     >
       {row ? (

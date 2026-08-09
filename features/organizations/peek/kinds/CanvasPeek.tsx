@@ -9,6 +9,7 @@
 import React from "react";
 import { Frame } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -48,7 +49,7 @@ export default function CanvasPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.title || "Canvas"}
       icon={<Frame className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
-      href={`/canvas/${id}`}
+      href={peekHref("canvas_item", id)}
       loading={loading}
     >
       {row ? (

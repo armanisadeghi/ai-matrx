@@ -10,6 +10,7 @@
 import React from "react";
 import { Sparkles } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -50,7 +51,7 @@ export default function SkillPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.label || "Skill"}
       icon={<Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400" />}
-      href={`/skills/${id}`}
+      href={peekHref("skill", id)}
       loading={loading}
     >
       {row ? (

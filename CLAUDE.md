@@ -162,13 +162,13 @@ The `app/` tree splits into purpose-named route groups. **Working on core produc
 
 | Group | Purpose | URL | Build |
 |---|---|---|---|
-| `(core)` | **Production main app.** Slim modern shell, no entity system. New core work goes here. | `/chat`, `/agents`, `/files`, `/notes`… | always |
+| `(core)` | **Production main app.** Slim modern shell, no entity system. New core work goes here. | `/chat`, `/agents`, `/files`, `/notes`… | `full` / `core` / `user` / `slim` |
 | `(admin)` | **Production admin.** Super-admin gated at layout level. Deploys as manage.aimatrx.com. | `/administration/*` | `full` / `core` / `admin` |
-| `(transitional)` | **On the way in/out.** Being (or to be) replaced by `(core)`; not ready to delete. Lower priority. | `/apps`, `/dashboard`, `/settings`, `/scraper`, `/projects`, `/ai`, `/applets`, `/news`… | always |
+| `(transitional)` | **On the way in/out.** Being (or to be) replaced by `(core)`; not ready to delete. Lower priority. | `/apps`, `/dashboard`, `/settings`, `/scraper`, `/projects`, `/ai`, `/applets`, `/news`… | `full` / `core` / `user` / `slim` |
 | `(dev)` | **Internal demos / tests / experiments.** Auth-required. Deploys as demos.aimatrx.com. | `/demos/*` | `full` / `user` / `demos` |
-| `(public)` | Marketing / legal / share / education / canvas. | `/legal`, `/share`, `/p`… | always |
+| `(public)` | Marketing / legal / share / education / canvas. | `/legal`, `/share`, `/p`… | `full` / `core` / `user` / `slim` |
 | `(auth-pages)` | Login / signup / etc. | `/login`, `/sign-up`… | always |
-| `(popup)` | OAuth popup chrome. | `/popup-window/*` | always |
+| `(popup)` | OAuth popup chrome. | `/popup-window/*` | `full` / `core` / `user` / `slim` |
 | `(oauth-review)` | Google OAuth verification review surface — what Google's reviewers open to see each requested scope in use. | `/google-workspace-review` | always |
 
 **`(legacy)` and `(public-demos)` are DELETED** (entity system removed; public demos relocated). Never create files there. `pnpm check:doc-claims` fails if this table and `app/` disagree.

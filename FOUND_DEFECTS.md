@@ -13,6 +13,27 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D138 — the sharing registry is a SECOND route authority, and it disagrees with itself (2026-08-09)
+
+`platform.shareable_resource_registry.url_path_template` (mirrored in
+`utils/permissions/registry.ts`, parity-tested) is a second, DB-owned route table
+independent of `entityRegistry.hrefFor`. It contradicts the canonical registry
+AND itself: `/quizzes/{id}` vs `/education/quizzes/{id}`, `/flashcards/{id}` vs
+`/education/flashcards/{id}`, `/apps/{id}` (real route is `/agent-apps/[id]`),
+`/canvas/{id}` (no route — D137), `/code/files/{id}` vs the registry's
+`/code?tab=code-file:{id}`.
+
+It is load-bearing: `utils/permissions/shareLinks.ts`,
+`features/organizations/hooks/useOrgSharedItems.ts`, `OrgShareReviewCard`, and
+`OrgResourceDetail` all build user-facing links from it — so the stale entries
+are live broken links on the sharing surfaces.
+
+Fix: audit each `url_path_template` against the real `app/` tree, correct the DB
+rows, then make the sharing surfaces resolve routes from `entityRegistry` and
+retire `url_path_template` as a route source (keep the registry row for the
+access-control facts). `ContainerResourceSheet` already prefers the entity
+registry and falls back to the template only where the registry has no route.
+
 ### D137 — `/canvas/{id}` has no route: four callsites link there, including email notifications (2026-08-09)
 
 `app/(public)/canvas/` contains only `discover/` and `shared/[token]/` — there is no

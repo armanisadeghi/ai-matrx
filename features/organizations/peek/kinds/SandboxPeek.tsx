@@ -17,6 +17,7 @@ import React from "react";
 import { Terminal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/utils/supabase/client";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -57,7 +58,7 @@ export default function SandboxPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.sandbox_id ?? "Sandbox"}
       icon={<Terminal className="h-4 w-4 text-violet-600 dark:text-violet-400" />}
-      href={`/sandbox/${id}`}
+      href={peekHref("sandbox_instance", id)}
       loading={loading}
     >
       {row ? (

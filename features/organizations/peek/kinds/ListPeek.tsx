@@ -10,6 +10,7 @@
 import React from "react";
 import { List } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -48,7 +49,7 @@ export default function ListPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.description || "List"}
       icon={<List className="h-4 w-4 text-sky-600 dark:text-sky-400" />}
-      href={`/lists/${id}`}
+      href={peekHref("structured_list", id)}
       loading={loading}
     >
       {row ? (

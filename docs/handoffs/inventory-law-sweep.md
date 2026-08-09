@@ -94,7 +94,33 @@ token silently lost the peek door.
 
 ---
 
-## WAVE 2 — EntityRef adoption (NEXT)
+## WAVE 2 — EntityRef adoption (IN PROGRESS)
+
+### Shipped
+
+- **`AssociationList`** (`77dd9e16`, `c4d0af3c`) — the generic association row.
+  Title `<button>` + duplicate hover `ExternalLink` → `EntityRef`. Every
+  association surface (org, scope, project, war-room) gains peek. `EntityRef`
+  gained `onOpen` (intercepts only the PLAIN click; modified clicks keep the
+  native new tab) so a rail inside a workspace never replaces its container.
+- **`ContainerResourceSheet`** — inert `<span>` + hand-rolled Eye peek +
+  hand-rolled new-tab `<a>` → `EntityRef`. Resolves by TOKEN.
+- **`OrgResourceEntry.token`** — the catalogue now carries the canonical entity
+  token beside its legacy `key`. Six keys differ (`agent_app`→`app`,
+  `sandbox`→`sandbox_instance`, `flashcard`→`flashcard_data`,
+  `quiz`→`quiz_session`, `canvas`→`canvas_item`, `research`→`research_topic`);
+  keying off `key` silently lost the route AND the peek for exactly those six.
+- **`peekHref` — all 19 peeks now resolve their Open door from the registry.**
+  **Six shipped a 404 as the peek's primary action**: `/quizzes/{id}`,
+  `/flashcards/{id}`, `/skills/{id}`, `/transcripts/{id}`, `/workflows/{id}`,
+  `/canvas/{id}` — none of those routes exist. Two more (`project`,
+  `agent_shortcut`) passed no href at all for kinds that DO have a route.
+  Nineteen private copies of a fact the registry owns; now one call.
+  A kind with no route shows NO Open button, which is honest.
+
+### Open
+
+
 
 `EntityRef` is the Door Law made importable and has **one** consumer. Wave 1
 made it much more capable; now spend it. Convert in traffic order, **deleting
@@ -332,6 +358,12 @@ sweep gets a row. Guarded by `pnpm check:reuse-index`.
 
 ## Change log
 
+- **2026-08-09** — Wave 2 in progress: AssociationList + ContainerResourceSheet
+  converted, `peekHref` fixed 6 peeks that shipped a 404 Open door, catalogue
+  gained the canonical token. D138 filed (sharing registry = a 2nd route
+  authority that disagrees with itself). CLAUDE.md route-group build column
+  corrected for 4 groups (`(core)`/`(transitional)`/`(public)`/`(popup)` are
+  parked in the admin+demos profiles, not "always").
 - **2026-08-09** — Campaign opened. Four exhaustive audits. Wave 1 shipped
   (`51a28922`): 8 new `hrefFor` routes + the peek token bridge. D137 filed
   (`/canvas/{id}` 404s, incl. email links).

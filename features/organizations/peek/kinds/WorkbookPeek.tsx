@@ -10,6 +10,7 @@
 import React from "react";
 import { Sheet } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -48,7 +49,7 @@ export default function WorkbookPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.description || "Workbook"}
       icon={<Sheet className="h-4 w-4 text-sky-600 dark:text-sky-400" />}
-      href={`/workbooks/${id}`}
+      href={peekHref("workbook", id)}
       loading={loading}
     >
       {row ? (

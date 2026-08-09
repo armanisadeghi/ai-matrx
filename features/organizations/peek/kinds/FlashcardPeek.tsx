@@ -9,6 +9,7 @@
 import React from "react";
 import { Layers } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -47,7 +48,7 @@ export default function FlashcardPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.topic || "Flashcards"}
       icon={<Layers className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
-      href={`/flashcards/${id}`}
+      href={peekHref("flashcard_data", id)}
       loading={loading}
     >
       {row ? (

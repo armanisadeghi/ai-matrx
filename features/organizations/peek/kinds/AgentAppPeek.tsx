@@ -13,6 +13,7 @@ import React from "react";
 import { AppWindow } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { appDb } from "@/utils/supabase/appDb";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -52,7 +53,7 @@ export default function AgentAppPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.name || "Agent App"}
       icon={<AppWindow className="h-4 w-4 text-violet-600 dark:text-violet-400" />}
-      href={`/agent-apps/${id}`}
+      href={peekHref("app", id)}
       loading={loading}
     >
       {row ? (
