@@ -6,7 +6,12 @@
 import type { SessionContextItem } from "@/features/transcript-studio/types";
 import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/chat-quick-actions.config";
 
-/** Placeholder default for "Help with this…" until a dedicated surface role ships. */
+/**
+ * Placeholder default for "Help with this…" until a dedicated surface role
+ * ships. This reads the `chat.default_new_chat` slot's SEED MIRROR (sync
+ * registry data cannot resolve a slot) — when the dedicated role lands it
+ * becomes its own slot resolved at trigger time, not another constant.
+ */
 export const PRO_TEXTAREA_HELP_DEFAULT_AGENT_ID = DEFAULT_NEW_CHAT_AGENT_ID;
 
 export type ProTextareaAgentActionId = "cleanup" | "help" | "customAgent";
