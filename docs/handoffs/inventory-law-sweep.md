@@ -48,8 +48,8 @@ conversion that is correct on the main deployment and broken on a satellite, and
 one that is correct for the surface's rare case and wrong for its common one. Adopting `EntityRef` is not a drop-in — the hand-rolled code
 it replaces encodes decisions you must carry over deliberately.
 
-Before replacing hand-rolled code with a shared primitive, answer all seven.
-1-3 and 6-7 are door-specific; 4 and 5 apply to ANY primitive adoption:
+Before replacing hand-rolled code with a shared primitive, answer all eight.
+1-3 and 6-7 are door-specific; 4, 5 and 8 apply to ANY primitive adoption:
 
 1. **Where did the old primary click go?** `router.push` (in place) or
    `window.open` (new tab)? Preserve it. A rail, sheet, side panel, or dialog
@@ -114,9 +114,24 @@ Before replacing hand-rolled code with a shared primitive, answer all seven.
    absent. `adminNonGlobalRowToDirectoryRow` hardcodes `agentName: null`, so
    every admin row lost the full id it used to print, while the filter dropdown
    beside it still listed full ids to match against. When the id IS the
-   information, **pass the id as `name`** — it renders whole and becomes a door.
+   information, **pass the id as `name` — plus `wrap`**, or it renders
+   TRUNCATED and you have destroyed the thing you were preserving (see 8).
    *(Caught in `ShortcutDirectory`; the same pattern is deliberate in the
    reachability inspector.)*
+
+8. **Does the primitive's default LAYOUT destroy the content?** Not behaviour —
+   *presentation*. `EntityRef` truncates its label because its home is a table
+   cell; the audit markup it replaced was `break-all`, deliberately wrapping.
+   Converting silently ellipsised the UUID an admin came to copy, and a
+   call-site `className` could NOT fix it (that lands on the outer wrapper,
+   while `truncate` is on the label element) — so the surface's only escape
+   would have been not to use the primitive. **That pressure is the signal to
+   extend it**: `EntityRef.wrap` now exists. Before converting, read what the
+   old markup did about overflow (`truncate` / `break-all` / `whitespace-*` /
+   `line-clamp`) and carry it over deliberately. *(Caught in the events audit
+   detail — and I had written "the id stays whole" in a code comment AND a
+   commit message while it did not, which is the version of this that stops the
+   next reader from checking.)*
 
 Everything the primitive cannot decide for itself is documented on the props;
 read them rather than inferring from a neighbouring call site.
