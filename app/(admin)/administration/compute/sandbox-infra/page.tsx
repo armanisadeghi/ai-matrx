@@ -42,6 +42,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
+import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -357,7 +358,12 @@ export default function SandboxInfraPage() {
     }, [refreshTiers, refreshRuns]);
 
     const triggerDeploy = useCallback(async () => {
-        if (!confirm("Trigger a fresh matrx-sandbox deploy via GitHub Actions?")) return;
+        const ok = await confirmDialog({
+            title: "Trigger a fresh matrx-sandbox deploy?",
+            description: "Dispatches the GitHub Actions deploy workflow.",
+            confirmLabel: "Deploy",
+        });
+        if (!ok) return;
         setDispatching(true);
         try {
             const resp = await fetch("/api/sandbox/deploy", { method: "POST" });

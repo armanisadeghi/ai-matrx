@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "@/lib/toast";
 import { useState, useCallback, useRef } from "react";
 import { extractErrorMessage } from "@/utils/errors";
 import SmallCodeEditor from "./SmallCodeEditor";
@@ -303,7 +304,7 @@ export default function MultiFileCodeEditor({
   // Function to handle HTML document viewing in canvas
   const handleViewHTML = async () => {
     if (!user?.id) {
-      alert("You must be logged in to view HTML pages");
+      toast.error("You must be logged in to view HTML pages");
       return;
     }
 
@@ -325,7 +326,7 @@ export default function MultiFileCodeEditor({
       });
     } catch (error) {
       console.error("Failed to create HTML page:", error);
-      alert(`Failed to create HTML page: ${extractErrorMessage(error)}`);
+      toast.error(`Failed to create HTML page: ${extractErrorMessage(error)}`);
     } finally {
       setIsCreatingPage(false);
     }

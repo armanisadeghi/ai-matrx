@@ -1,4 +1,5 @@
 import { useState, useEffect, type CSSProperties } from "react";
+import { toast } from "@/lib/toast";
 import {
   Plus,
   Minus,
@@ -517,7 +518,7 @@ const KeywordHierarchyDisplay = ({ data }: { data: unknown }) => {
                   <button
                     onClick={() => {
                       // Here you would typically save the feedback
-                      alert("Feedback saved!");
+                      toast.success("Feedback saved!");
                       setFeedbackText("");
                     }}
                     className="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"

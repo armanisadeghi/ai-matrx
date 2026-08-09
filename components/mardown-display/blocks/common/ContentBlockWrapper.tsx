@@ -17,6 +17,7 @@ import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectCanvasIsAvailable, type CanvasContent, type CanvasContentType } from "@/features/canvas/redux/canvasSlice";
 import IconButton from "@/components/official/IconButton";
+import { toast } from "@/lib/toast";
 
 export interface ContentBlockAction {
     icon: LucideIcon;
@@ -135,7 +136,7 @@ const ContentBlockWrapper: React.FC<ContentBlockWrapperProps> = ({
             await onUpload();
         } catch (error) {
             console.error("Upload failed:", error);
-            alert("Failed to upload. Please check the file format.");
+            toast.error("Failed to upload. Please check the file format.");
         }
     };
     

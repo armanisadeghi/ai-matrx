@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { confirm as confirmDialog } from '@/components/dialogs/confirm/ConfirmDialogHost';
 import { X, Search, Tag, Clock, Calendar, Copy, Edit, Trash, ChevronDown, ChevronUp, Download, Filter } from 'lucide-react';
 import { 
   getQueryHistory, 
@@ -296,8 +297,14 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => {
-                if (confirm('Are you sure you want to clear all query history?')) {
+              <DropdownMenuItem onClick={async () => {
+                const ok = await confirmDialog({
+                  title: 'Clear all query history?',
+                  description: 'Every saved query in your history will be removed.',
+                  confirmLabel: 'Clear all',
+                  variant: 'destructive',
+                });
+                if (ok) {
                   clearQueryHistory();
                   loadQueries();
                 }

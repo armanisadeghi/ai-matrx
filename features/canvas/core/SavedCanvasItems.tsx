@@ -1,4 +1,5 @@
 "use client";
+import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 import React, { useEffect, useState } from "react";
 import { useCanvasItems } from "@/features/canvas/hooks/useCanvasItems";
@@ -318,10 +319,15 @@ export function SavedCanvasItems({ showArchived = false }: SavedCanvasItemsProps
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      if (confirm("Are you sure you want to delete this item?")) {
-                        remove(item.id);
-                      }
+                    onClick={async () => {
+                      const ok = await confirmDialog({
+                        title: "Delete this item?",
+                        description:
+                          "This removes the saved canvas item permanently.",
+                        confirmLabel: "Delete",
+                        variant: "destructive",
+                      });
+                      if (ok) remove(item.id);
                     }}
                     className="h-7 w-7 p-0 rounded-full hover:text-red-600 dark:hover:text-red-400"
                   >
