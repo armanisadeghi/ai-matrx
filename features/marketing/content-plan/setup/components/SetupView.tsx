@@ -109,7 +109,7 @@ import {
   parentRouteOf,
   slugOf,
 } from "./PlanReviewSection";
-import { BuildWithAiDialog } from "./BuildWithAiDialog";
+import { BuildWithAiDialog, type BuildLogEntry } from "./BuildWithAiDialog";
 import { SetupAiBar, type SetupAiRunSummary } from "./SetupAiBar";
 import { SetupBridgeSection } from "./SetupBridgeSection";
 import { SetupPreviewColumn } from "./SetupPreviewColumn";
@@ -240,6 +240,20 @@ export function SetupView() {
   const [researchTopicId, setResearchTopicId] = useState<string | null>(null);
   const [draftingWorkOrder, setDraftingWorkOrder] = useState(false);
   const [buildDialogOpen, setBuildDialogOpen] = useState(false);
+  // The Build-with-AI live activity feed — every step (research stream events
+  // + draft milestones) lands here so the user WATCHES it happen. Newest last;
+  // all-but-last render as completed. Capped so a chatty stream can't grow it
+  // unbounded.
+  const [buildLog, setBuildLog] = useState<BuildLogEntry[]>([]);
+  const pushBuildProgress = (text: string) => {
+    setBuildLog((current) => {
+      if (current[current.length - 1]?.text === text) return current;
+      const settled = current.map((entry) =>
+        entry.done ? entry : { ...entry, done: true },
+      );
+      return [...settled.slice(-29), { text, done: false }];
+    });
+  };
   const [aiError, setAiError] = useState<string | null>(null);
   const [lastAiRun, setLastAiRun] = useState<SetupAiRunSummary | null>(null);
   const [review, setReview] = useState<PlanReviewResult | null>(null);
@@ -738,8 +752,13 @@ export function SetupView() {
   const runDraftWorkOrder = async (report: string, hints: SetupGuidance) => {
     if (!site) return;
     const { guidance, targetPageCount } = buildGuidanceInputs(hints);
+    // Every milestone lands in BOTH the bar and the dialog's live feed.
+    const announce = (summary: SetupAiRunSummary) => {
+      setLastAiRun(summary);
+      pushBuildProgress(summary.headline);
+    };
     {
-      setLastAiRun({
+      announce({
         kind: "shape",
         headline: "Drafting the work order — reading the report, picking the shape…",
       });
@@ -788,7 +807,7 @@ export function SetupView() {
         if (family.materialize === "pages") {
           if ((stagedNames[family.key]?.length ?? 0) > 0) continue;
           if ((planDerivedNames[family.key]?.length ?? 0) >= target) continue;
-          setLastAiRun({
+          announce({
             kind: "names",
             headline: `Drafting — naming the ${family.label.toLowerCase()} pages…`,
           });
@@ -814,7 +833,7 @@ export function SetupView() {
           namedFamilies += 1;
         } else {
           if ((stagedTopics[family.key]?.length ?? 0) > 0) continue;
-          setLastAiRun({
+          announce({
             kind: "names",
             headline: `Drafting — planning the ${family.label.toLowerCase()} topics…`,
           });
@@ -837,7 +856,7 @@ export function SetupView() {
           namedFamilies += 1;
         }
       }
-      setLastAiRun({
+      announce({
         kind: "shape",
         headline:
           `Work order drafted: "${plan.archetypeKey}" with ${namedFamilies} ` +
@@ -857,8 +876,10 @@ export function SetupView() {
    */
   const handleBuildWithAi = async (hints: SetupGuidance) => {
     if (!site) return;
-    setBuildDialogOpen(false);
+    // The dialog STAYS OPEN as the live activity feed — the user watches the
+    // whole run happen instead of staring at a spinner while the page shifts.
     setAiError(null);
+    setBuildLog([]);
     setDraftingWorkOrder(true);
     try {
       let report = researchReport;
@@ -867,6 +888,7 @@ export function SetupView() {
       // for a new pipeline. New research runs ONLY when the selected topic
       // truly has no successful report, or no topic is selected at all.
       if (!report && researchTopicId) {
+        pushBuildProgress("Checking the selected research topic for a finished report…");
         const existing = await getLatestSuccessfulDocument(researchTopicId);
         report = existing?.content?.trim() || null;
         // Sync the hook copy so the bar + every aiReady control light up too.
@@ -878,6 +900,7 @@ export function SetupView() {
           companyName: site.name,
           websiteUrl: site.root_url || site.domain,
           onTopicCreated: (created) => selectTopic(created.id),
+          onProgress: pushBuildProgress,
         });
         researchDoc.refresh();
         // The hook state is async — read the fresh report DIRECTLY so the
@@ -891,8 +914,13 @@ export function SetupView() {
         }
       }
       await runDraftWorkOrder(report, hints);
+      setBuildLog((current) =>
+        current.map((entry) => ({ ...entry, done: true })),
+      );
     } catch (error) {
-      setAiError(extractErrorMessage(error));
+      const message = extractErrorMessage(error);
+      setAiError(message);
+      pushBuildProgress(`Failed — ${message}`);
     } finally {
       setDraftingWorkOrder(false);
     }
@@ -1704,7 +1732,12 @@ export function SetupView() {
         documentLoading={Boolean(researchTopicId) && researchDoc.isLoading}
         onRecommendShape={() => void handleRecommendShape()}
         shapeBusy={agents.shapeBusy}
-        onBuildWithAi={() => setBuildDialogOpen(true)}
+        onBuildWithAi={() => {
+          // Re-opening for a NEW run clears the finished feed so the intake
+          // questions come back; an in-flight run keeps its live feed.
+          if (!draftingWorkOrder) setBuildLog([]);
+          setBuildDialogOpen(true);
+        }}
         draftBusy={draftingWorkOrder}
         anyAgentBusy={anyAgentBusy}
         lastRun={lastAiRun}
@@ -1719,6 +1752,9 @@ export function SetupView() {
           siteName={site.name}
           reportReady={Boolean(researchReport)}
           reportPending={Boolean(researchTopicId) && !researchReport}
+          selectedTopicId={researchTopicId}
+          onSelectTopic={selectTopic}
+          log={buildLog}
           busy={draftingWorkOrder}
           onSubmit={(hints) => void handleBuildWithAi(hints)}
         />

@@ -55,6 +55,34 @@ export interface CompanyQuickResearchInput {
   websiteUrl?: string | null;
   /** Fires the moment the topic row exists, before any paid work. */
   onTopicCreated?: (topic: ResearchTopic) => void;
+  /**
+   * Live progress line for host UIs — REAL events parsed off the pipeline's
+   * NDJSON stream (deduped, noise filtered), plus the stage transitions.
+   */
+  onProgress?: (message: string) => void;
+}
+
+/** Stream events too chatty or too raw to show a human. */
+const NOISY_EVENTS = new Set(["chunk", "heartbeat", "ping", "token"]);
+
+/** One NDJSON line → a short human label, or null to skip. */
+function describeStreamEvent(parsed: unknown): string | null {
+  if (!parsed || typeof parsed !== "object") return null;
+  const row = parsed as Record<string, unknown>;
+  const event = typeof row.event === "string" ? row.event : null;
+  if (event && NOISY_EVENTS.has(event)) return null;
+  const data =
+    row.data && typeof row.data === "object" && !Array.isArray(row.data)
+      ? (row.data as Record<string, unknown>)
+      : null;
+  for (const key of ["message", "status", "stage", "type"]) {
+    const value = data?.[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.replaceAll("_", " ").trim();
+    }
+  }
+  if (event && event !== "data") return event.replaceAll("_", " ");
+  return null;
 }
 
 export function useCompanyQuickResearch() {
@@ -64,15 +92,51 @@ export function useCompanyQuickResearch() {
   const [error, setError] = useState<string | null>(null);
   const busyRef = useRef(false);
 
-  /** Reject non-2xx loudly, then read the NDJSON stream to its END. */
-  async function drain(response: Response, what: string): Promise<void> {
+  /**
+   * Reject non-2xx loudly, then read the NDJSON stream to its END — surfacing
+   * each parseable event as a live progress label (consecutive dupes dropped).
+   */
+  async function drain(
+    response: Response,
+    what: string,
+    onProgress?: (message: string) => void,
+  ): Promise<void> {
     if (!response.ok) {
       const body = await response.text().catch(() => "");
       throw new Error(
         `${what} failed (${response.status})${body ? `: ${body.slice(0, 300)}` : ""}`,
       );
     }
-    await response.text();
+    const reader = response.body?.getReader();
+    if (!reader) {
+      await response.text();
+      return;
+    }
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let lastLabel: string | null = null;
+    const emit = (line: string) => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      try {
+        const label = describeStreamEvent(JSON.parse(trimmed));
+        if (label && label !== lastLabel) {
+          lastLabel = label;
+          onProgress?.(label);
+        }
+      } catch {
+        // Partial or non-JSON line — progress display only, never fatal.
+      }
+    };
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) emit(line);
+    }
+    emit(buffer);
   }
 
   /** Resolves when the final Document is assembled. Throws loudly on any step. */
@@ -87,6 +151,7 @@ export function useCompanyQuickResearch() {
     try {
       const name = input.companyName.trim();
       if (!name) throw new Error("Company name is required");
+      input.onProgress?.(`Creating the research topic for ${name}…`);
       const website = input.websiteUrl?.trim() || null;
       const { topic: created } = await createTopic(input.organizationId, {
         name,
@@ -120,14 +185,23 @@ export function useCompanyQuickResearch() {
       await addKeywords(created.id, { keywords });
 
       setStage("running");
+      input.onProgress?.(
+        "Researching — search, scrape, analyze, synthesize…",
+      );
       // Org asserted from the TOPIC row — the backend reloads it as authority.
       await drain(
         await api.runPipeline(created.id, created.organization_id),
         "Research run",
+        input.onProgress,
       );
 
       setStage("assembling");
-      await drain(await api.generateDocument(created.id), "Document assembly");
+      input.onProgress?.("Assembling the final research report…");
+      await drain(
+        await api.generateDocument(created.id),
+        "Document assembly",
+        input.onProgress,
+      );
 
       setStage("done");
       return created;

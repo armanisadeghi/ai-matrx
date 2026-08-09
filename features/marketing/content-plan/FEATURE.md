@@ -340,6 +340,15 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-08-08 — Claude: **Build with AI live progress + in-dialog research
+  picker** (Arman's first-test feedback). The dialog now STAYS OPEN through
+  the run as a live activity feed: REAL events parsed off the research
+  pipeline's NDJSON stream (`useCompanyQuickResearch` `onProgress` — deduped,
+  noise-filtered) plus every draft milestone, each line check/spinner-marked,
+  auto-scrolled; closing mid-run is allowed (run continues, bar shows
+  status). The dialog also embeds `ResearchTopicSelect` so an existing topic
+  is pickable in place — no cancel-out round trip.
+
 - 2026-08-08 — Claude: **Build with AI (guided intake).** The bar's primary
   button is now "Build with AI" (`setup/components/BuildWithAiDialog.tsx`):
   a few optional questions answered as HINTS, never commitments (size feel,

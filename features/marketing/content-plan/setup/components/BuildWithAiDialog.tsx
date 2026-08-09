@@ -1,15 +1,19 @@
 "use client";
 
 /**
- * The Build-with-AI intake — a FEW quick questions answered as HINTS, never
- * commitments. The user does not pick a structure here: the Shape Planner
- * decides from the research evidence, steered (not bound) by these answers.
- * Submitting runs the whole bounded flow — research first when none exists,
- * then shape → counts → names → topics, all STAGED; nothing touches the live
- * plan until the user reviews the routes and hits "Create N pages".
+ * The Build-with-AI intake AND live progress view — a FEW quick questions
+ * answered as HINTS (never commitments), then the dialog STAYS OPEN as a live
+ * activity feed while the run happens: research stream events and draft
+ * milestones append in real time, so the user watches the work instead of
+ * staring at a spinner. Closing mid-run is allowed — the run continues and
+ * the AI bar keeps showing status.
+ *
+ * The user does not pick a structure here: the Shape Planner decides from the
+ * research evidence, steered by these answers. Nothing touches the live plan
+ * until the user reviews the routes and hits "Create N pages".
  */
-import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +28,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
+import { ResearchTopicSelect } from "../../components/ResearchTopicSelect";
 import { DEFAULT_SETUP_GUIDANCE, type SetupGuidance } from "../ai";
+
+export interface BuildLogEntry {
+  text: string;
+  done: boolean;
+}
 
 const SIZE_OPTIONS: Array<{
   value: SetupGuidance["sizeHint"];
@@ -90,12 +100,51 @@ function ChoiceRow<T extends string>({
   );
 }
 
+/** The live feed — every step visible, newest active, auto-scrolled. */
+function ActivityFeed({ log, busy }: { log: BuildLogEntry[]; busy: boolean }) {
+  const endRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: "nearest" });
+  }, [log.length]);
+  return (
+    <div
+      className="max-h-52 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/30 px-2.5 py-2"
+      aria-live="polite"
+      aria-label="Build activity"
+    >
+      {log.map((entry, index) => {
+        const active = busy && index === log.length - 1 && !entry.done;
+        return (
+          <div
+            key={`${index}-${entry.text}`}
+            className={cn(
+              "flex items-start gap-1.5 text-xs leading-relaxed",
+              active ? "font-medium text-foreground" : "text-muted-foreground",
+            )}
+          >
+            {active ? (
+              <Loader2 className="mt-0.5 h-3 w-3 shrink-0 animate-spin text-primary" />
+            ) : (
+              <Check className="mt-0.5 h-3 w-3 shrink-0 text-success" />
+            )}
+            <span className="min-w-0">{entry.text}</span>
+          </div>
+        );
+      })}
+      <div ref={endRef} />
+    </div>
+  );
+}
+
 export function BuildWithAiDialog({
   open,
   onOpenChange,
   siteName,
   reportReady,
   reportPending = false,
+  selectedTopicId,
+  onSelectTopic,
+  log,
   busy,
   onSubmit,
 }: {
@@ -110,10 +159,16 @@ export function BuildWithAiDialog({
    * runs new research if no finished report exists.
    */
   reportPending?: boolean;
+  /** The site's linked research topic — pickable RIGHT HERE, no cancel-out. */
+  selectedTopicId: string | null;
+  onSelectTopic: (topicId: string | null) => void;
+  /** The live activity feed (SetupView owns it — it outlives this dialog). */
+  log: BuildLogEntry[];
   busy: boolean;
   onSubmit: (guidance: SetupGuidance) => void;
 }) {
   const [guidance, setGuidance] = useState<SetupGuidance>(DEFAULT_SETUP_GUIDANCE);
+  const finished = !busy && log.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -121,87 +176,119 @@ export function BuildWithAiDialog({
         <DialogHeader>
           <DialogTitle>Build {siteName} with AI</DialogTitle>
           <DialogDescription>
-            Answer what you know — everything here is a hint, not a commitment.
-            The AI reads the research, picks the shape and counts, names the
-            pages, and stages it all for your review. Nothing is created until
-            you approve the routes.
+            {busy
+              ? "Building — watch every step below. Closing this window does not stop the run."
+              : finished
+                ? "Done — the drafted work order is staged. Review the routes on the right, then Create pages."
+                : "Answer what you know — everything here is a hint, not a commitment. The AI reads the research, picks the shape and counts, names the pages, and stages it all for your review. Nothing is created until you approve the routes."}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <ChoiceRow
-            label="How big should this site feel?"
-            options={SIZE_OPTIONS}
-            value={guidance.sizeHint}
-            onChange={(sizeHint) => setGuidance((g) => ({ ...g, sizeHint }))}
-            disabled={busy}
-          />
-          <ChoiceRow
-            label="Locations"
-            options={LOCATION_OPTIONS}
-            value={guidance.locationsHint}
-            onChange={(locationsHint) =>
-              setGuidance((g) => ({ ...g, locationsHint }))
-            }
-            disabled={busy}
-          />
-          {guidance.locationsHint === "multiple" ? (
-            <div className="flex items-center gap-2">
-              <p className="text-xs text-muted-foreground">Roughly how many?</p>
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={2}
-                value={guidance.locationCount}
-                placeholder="e.g. 4"
+        {log.length > 0 ? <ActivityFeed log={log} busy={busy} /> : null}
+
+        {!busy && !finished ? (
+          <div className="space-y-4">
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-foreground">
+                Ground it in research
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <ResearchTopicSelect
+                  value={selectedTopicId}
+                  onChange={onSelectTopic}
+                  ariaLabel="Research topic grounding this build"
+                />
+                <span className="text-[11px] text-muted-foreground">
+                  {reportReady
+                    ? "Report loaded — the build starts immediately."
+                    : reportPending
+                      ? "Selected — the build uses its report if one is finished."
+                      : "None selected — the AI researches the company first."}
+                </span>
+              </div>
+            </div>
+            <ChoiceRow
+              label="How big should this site feel?"
+              options={SIZE_OPTIONS}
+              value={guidance.sizeHint}
+              onChange={(sizeHint) => setGuidance((g) => ({ ...g, sizeHint }))}
+              disabled={busy}
+            />
+            <ChoiceRow
+              label="Locations"
+              options={LOCATION_OPTIONS}
+              value={guidance.locationsHint}
+              onChange={(locationsHint) =>
+                setGuidance((g) => ({ ...g, locationsHint }))
+              }
+              disabled={busy}
+            />
+            {guidance.locationsHint === "multiple" ? (
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-muted-foreground">Roughly how many?</p>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={2}
+                  value={guidance.locationCount}
+                  placeholder="e.g. 4"
+                  disabled={busy}
+                  className="h-7 w-24 px-2 text-base sm:text-sm"
+                  onChange={(event) =>
+                    setGuidance((g) => ({
+                      ...g,
+                      locationCount: event.target.value,
+                    }))
+                  }
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  (optional — the AI can count them)
+                </p>
+              </div>
+            ) : null}
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-foreground">
+                Anything to emphasize, avoid, or that the AI should know?
+              </p>
+              <Textarea
+                value={guidance.notes}
                 disabled={busy}
-                className="h-7 w-24 px-2 text-base sm:text-sm"
+                rows={3}
+                placeholder="e.g. Lead with commercial services; skip pricing pages; the Phoenix office is closing."
+                className="text-base sm:text-sm"
                 onChange={(event) =>
-                  setGuidance((g) => ({ ...g, locationCount: event.target.value }))
+                  setGuidance((g) => ({ ...g, notes: event.target.value }))
                 }
               />
-              <p className="text-[11px] text-muted-foreground">
-                (optional — the AI can count them)
-              </p>
             </div>
-          ) : null}
-          <div>
-            <p className="mb-1.5 text-xs font-medium text-foreground">
-              Anything to emphasize, avoid, or that the AI should know?
-            </p>
-            <Textarea
-              value={guidance.notes}
-              disabled={busy}
-              rows={3}
-              placeholder="e.g. Lead with commercial services; skip pricing pages; the Phoenix office is closing."
-              className="text-base sm:text-sm"
-              onChange={(event) =>
-                setGuidance((g) => ({ ...g, notes: event.target.value }))
-              }
-            />
+            {!reportReady ? (
+              <p className="rounded-md border border-warning/40 bg-warning/10 px-2.5 py-2 text-xs text-foreground">
+                {reportPending
+                  ? "The build uses the selected topic's finished report if one exists, and only runs NEW research (several minutes, real AI credits) if none does. Keep this tab open."
+                  : "No research is linked, so this will FIRST research the company (full pipeline — several minutes, real AI credits), then build the work order from the report. You can watch every step here."}
+              </p>
+            ) : null}
           </div>
-          {!reportReady ? (
-            <p className="rounded-md border border-warning/40 bg-warning/10 px-2.5 py-2 text-xs text-foreground">
-              {reportPending
-                ? "A research topic is selected — the build uses its finished report if one exists, and only runs NEW research (several minutes, real AI credits) if none does. Keep this tab open."
-                : "No research is linked, so this will FIRST research the company (full pipeline — several minutes, real AI credits), then build the work order from the report. Keep this tab open."}
-            </p>
-          ) : null}
-        </div>
+        ) : null}
 
         <DialogFooter>
           <Button
             variant="ghost"
             size="sm"
-            disabled={busy}
             onClick={() => onOpenChange(false)}
           >
-            Cancel
+            {busy ? "Hide (keeps running)" : finished ? "Close" : "Cancel"}
           </Button>
-          <Button size="sm" disabled={busy} onClick={() => onSubmit(guidance)}>
-            {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-            {reportReady || reportPending ? "Build it" : "Research + build it"}
-          </Button>
+          {!busy && !finished ? (
+            <Button size="sm" onClick={() => onSubmit(guidance)}>
+              {reportReady || reportPending ? "Build it" : "Research + build it"}
+            </Button>
+          ) : null}
+          {finished ? (
+            <Button size="sm" onClick={() => onOpenChange(false)}>
+              Review the routes
+            </Button>
+          ) : null}
         </DialogFooter>
       </DialogContent>
     </Dialog>
