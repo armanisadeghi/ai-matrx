@@ -119,18 +119,20 @@ export function OrgHomeScopeSection({
           >
             <Pencil className="h-3.5 w-3.5" />
           </Button>
+          {/* An Open button beside a record is an ANCHOR. As a push it
+              navigated on click and did nothing else — no cmd-click, no
+              middle-click, no new tab, no destination on hover — while the
+              file already imports Link for exactly this. */}
           <Button
             variant="ghost"
             size="sm"
+            asChild
             aria-label={`Open ${scopeType.label_plural}`}
-            onClick={() =>
-              router.push(
-                `/organizations/${orgSlugOrId}/scopes/${scopeType.id}`,
-              )
-            }
           >
-            Open
-            <ChevronRight className="h-3.5 w-3.5 ml-1" />
+            <Link href={`/organizations/${orgSlugOrId}/scopes/${scopeType.id}`}>
+              Open
+              <ChevronRight className="h-3.5 w-3.5 ml-1" />
+            </Link>
           </Button>
         </div>
       </div>

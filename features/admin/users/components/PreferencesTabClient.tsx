@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -196,15 +197,21 @@ function DriftDashboard() {
                     {r.updated_at ? new Date(r.updated_at).toLocaleString() : "—"}
                   </td>
                   <td className="px-3 py-2 text-right">
+                    {/* The row names a user whose preferences this same page
+                        can focus (`?user=` is read at the `focusUser` line
+                        below — verified, not assumed). An anchor, so the row
+                        can be opened in a new tab beside the current list. */}
                     <Button
                       size="sm"
                       variant="ghost"
+                      asChild
                       className="h-6 text-xs"
-                      onClick={() =>
-                        router.push(`/administration/users/preferences?user=${r.user_id}`)
-                      }
                     >
-                      View
+                      <Link
+                        href={`/administration/users/preferences?user=${r.user_id}`}
+                      >
+                        View
+                      </Link>
                     </Button>
                   </td>
                 </tr>

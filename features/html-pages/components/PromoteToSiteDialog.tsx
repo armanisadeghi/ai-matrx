@@ -14,7 +14,7 @@
  */
 
 import React from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
   Dialog,
@@ -61,7 +61,6 @@ export function PromoteToSiteDialog({
   htmlPage,
   onOpenChange,
 }: PromoteToSiteDialogProps) {
-  const router = useRouter();
   // SUMMARY rows — only id/name/slug/domain are read here.
   const [sites, setSites] = React.useState<ClientSiteSummary[] | null>(null);
   const [sitesError, setSitesError] = React.useState<string | null>(null);
@@ -182,14 +181,18 @@ export function PromoteToSiteDialog({
                   Preview draft
                 </Button>
               )}
-              <Button
-                onClick={() => {
-                  onOpenChange(false);
-                  router.push(`/cms/${result.page.client_id}/pages/${result.page.id}`);
-                }}
-              >
-                <PencilRuler className="h-4 w-4 mr-1.5" />
-                Open in editor
+              {/* Names the page we just created, so it is an anchor —
+                  cmd-click opens the editor in a new tab instead of closing
+                  this dialog out from under the user. The dialog still closes
+                  on a plain click. */}
+              <Button asChild>
+                <Link
+                  href={`/cms/${result.page.client_id}/pages/${result.page.id}`}
+                  onClick={() => onOpenChange(false)}
+                >
+                  <PencilRuler className="h-4 w-4 mr-1.5" />
+                  Open in editor
+                </Link>
               </Button>
             </DialogFooter>
           </div>
