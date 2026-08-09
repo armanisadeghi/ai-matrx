@@ -181,14 +181,21 @@ export function PromoteToSiteDialog({
                   Preview draft
                 </Button>
               )}
-              {/* Names the page we just created, so it is an anchor —
-                  cmd-click opens the editor in a new tab instead of closing
-                  this dialog out from under the user. The dialog still closes
-                  on a plain click. */}
+              {/* Names the page we just created, so it is an anchor. A PLAIN
+                  click navigates and closes the dialog; a MODIFIED click
+                  (cmd/ctrl/shift, or middle-click) opens the editor in a new
+                  tab and deliberately leaves this dialog open, because the
+                  user did not ask to leave it. Closing unconditionally in
+                  onClick would dismiss it on cmd-click too — same guard
+                  `SessionsBrowser` uses. */}
               <Button asChild>
                 <Link
                   href={`/cms/${result.page.client_id}/pages/${result.page.id}`}
-                  onClick={() => onOpenChange(false)}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1)
+                      return;
+                    onOpenChange(false);
+                  }}
                 >
                   <PencilRuler className="h-4 w-4 mr-1.5" />
                   Open in editor

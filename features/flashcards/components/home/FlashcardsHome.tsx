@@ -18,6 +18,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useRouter } from "next/navigation";
 import {
   Layers,
@@ -175,8 +176,21 @@ function SetRow({
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          {/* THE DOOR LAW: the card's onClick is a mouse convenience; the
+              NAME is the real anchor. The card is a `div role="button"` — that
+              gives keyboard Enter/Space but NO anchor at all, so there was no
+              cmd-click, no middle-click, no "open in new tab" and no
+              destination on hover. `flashcard_set` carries an `hrefFor` in the
+              registry, so the route is not hardcoded here. EntityRef already
+              stops propagation on its own anchor, so clicking the name does
+              not also fire the card's onOpen. */}
           <h3 className="min-w-0 truncate text-sm font-semibold text-foreground">
-            {set.name}
+            <EntityRef
+              token="flashcard_set"
+              id={set.id}
+              name={set.name}
+              showIcon={false}
+            />
           </h3>
           <VisibilityChip visibility={set.visibility} />
         </div>
