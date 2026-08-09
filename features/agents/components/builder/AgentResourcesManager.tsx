@@ -12,6 +12,11 @@ import {
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
 import { ResourceAttachmentTile } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
+import {
+  hasPeek,
+  peekKeyForToken,
+} from "@/features/organizations/peek/kinds-list";
+import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import type { ResourcePickerViewId } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
@@ -153,6 +158,8 @@ function AgentResourcePickerAction({
 export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
   const [edges, setEdges] = useState<AssociationTargetEdge[]>([]);
   const [loading, setLoading] = useState(true);
+  /** The attached resource the user is previewing, if any. */
+  const [peekFor, setPeekFor] = useState<AssociationTargetEdge | null>(null);
 
   const reload = async () => {
     const result = await associationsService.listForTargetsVisible("agent", [
@@ -246,6 +253,8 @@ export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
           }
 
           const entity = tryGetEntityInfo(edge.sourceType);
+          const peekKind = peekKeyForToken(edge.sourceType);
+          const canPeek = hasPeek(peekKind);
           return (
             <ResourceAttachmentTile
               key={edge.id}
@@ -253,6 +262,21 @@ export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
               title={edge.label ?? entity?.label ?? "Resource"}
               icon={entity?.Icon ?? FileText}
               themeKey={edge.sourceType}
+              // THE DOOR LAW. Every OTHER `ResourceAttachmentTile` consumer
+              // wires `onClick` (chat messages open the block; the composer
+              // chips open the resource); this strip was the one that resolved
+              // the entity, drew the icon, and then let the tile sit inert —
+              // so an agent's permanently-attached resources were the only
+              // ones you could not look at.
+              //
+              // PEEK, not navigate: the builder holds unsaved agent config, so
+              // following a route here would cost the user their edits. A peek
+              // answers "which note is that?" without leaving, and carries its
+              // own Open door (`peekHref`, registry-resolved) for the user who
+              // does want to go. Gated on a peek actually existing — an
+              // openable-looking tile that no-ops is the dead end this
+              // campaign exists to kill.
+              onClick={canPeek ? () => setPeekFor(edge) : undefined}
               onRemove={() => void detach(edge)}
               variant="compact"
             />
@@ -264,6 +288,14 @@ export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
         <AgentResourcePickerAction batch={false} onSelected={attach} />
         <AgentResourcePickerAction batch onSelected={attach} />
       </div>
+
+      {peekFor && (
+        <ResourcePeekHost
+          kind={peekKeyForToken(peekFor.sourceType)}
+          id={peekFor.sourceId}
+          onClose={() => setPeekFor(null)}
+        />
+      )}
     </div>
   );
 }

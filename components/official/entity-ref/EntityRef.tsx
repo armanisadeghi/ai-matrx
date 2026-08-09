@@ -34,42 +34,13 @@ import {
   resolveEntityToken,
   tryGetEntityInfo,
 } from "@/features/scopes/registry/entityRegistry";
-import { hasPeek } from "@/features/organizations/peek/kinds-list";
+import {
+  hasPeek,
+  peekKeyForToken,
+} from "@/features/organizations/peek/kinds-list";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { allowNativeNewTab } from "@/utils/navigation/should-open-in-new-tab";
 import { cn } from "@/lib/utils";
-
-/**
- * Entity tokens whose peek is registered under a different catalogue key.
- *
- * The peek registry is keyed by the LEGACY resource-catalogue vocabulary
- * (`features/organizations/resource-catalogue.ts`), which predates canonical
- * entity tokens and does not match them. Without this bridge a caller passing
- * the correct token silently loses the peek door — the peek component exists,
- * is registered, and is never reachable. Every entry below was verified against
- * the table the peek actually queries:
- *
- *   agent_app  ← features/organizations/peek/kinds/AgentAppPeek.tsx  (app.definition)
- *   picklist   ← ListPeek
- *   canvas     ← CanvasPeek       (canvas.canvas_items    → canvas_item)
- *   flashcard  ← FlashcardPeek    (education.flashcard_data → flashcard_data)
- *   sandbox    ← SandboxPeek      (public.sandbox_instances → sandbox_instance)
- *   quiz       ← QuizPeek         (education.quiz_sessions  → quiz_session)
- *
- * The real fix is renaming the peek registry keys to the canonical tokens; that
- * also touches `resource-catalogue.ts` and the two organizations surfaces that
- * key off `entry.key`, so it is tracked separately in
- * docs/handoffs/inventory-law-sweep.md. Until then this map must stay complete —
- * an unmapped mismatch is an invisible lost door, not a cosmetic gap.
- */
-const PEEK_KEY_BY_TOKEN: Record<string, string> = {
-  app: "agent_app",
-  structured_list: "picklist",
-  canvas_item: "canvas",
-  flashcard_data: "flashcard",
-  sandbox_instance: "sandbox",
-  quiz_session: "quiz",
-};
 
 export interface EntityRefProps {
   /** Canonical entity token (`agent`, `note`, `task`, …). */
@@ -196,7 +167,7 @@ export function EntityRef({
   const canonicalToken = resolveEntityToken(token);
   const info = tryGetEntityInfo(canonicalToken);
   const resolvedHref = href ?? info?.hrefFor?.(id) ?? null;
-  const peekKind = PEEK_KEY_BY_TOKEN[canonicalToken] ?? canonicalToken;
+  const peekKind = peekKeyForToken(canonicalToken);
   const canPeek = !disablePeek && hasPeek(peekKind);
   const label = name?.trim() || `${id.slice(0, 8)}…`;
   const Icon = info?.Icon ?? null;
