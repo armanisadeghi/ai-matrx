@@ -86,12 +86,14 @@ because it launders the class as "already covered". The rules therefore:
 - **Require the id in scope** before flagging a name. This is the load-bearing
   gate and it is the doctrine's own test.
 
-**Precision was measured, not assumed.** The first cut of these rules was
-audited finding-by-finding against the source and scored **~31%** — `unlinked-count`
-and `no-doors-in-file` scored 0/9 on their samples. That version was not shipped.
-The gates below came out of that audit; on the same hand-checked sample the
-shipped version keeps **8/8** of the confirmed true positives and drops **16/16**
-of the confirmed false positives.
+**Precision was measured, not assumed — twice.** The first cut was audited
+finding-by-finding against the source and scored **~31%** (`unlinked-count` and
+`no-doors-in-file` both 0/9). Retuned, a second independent audit scored **~55%**
+and — more valuably — found four *regressions*: skips so aggressive they silenced
+real violations, including the entire extracted-row-component idiom. Neither
+version shipped. Against the union of both audits' hand-checked samples the
+shipped version keeps **14/14** confirmed true positives and drops **23/23**
+confirmed false positives.
 
 Additional gates, each traceable to a real false positive:
 
@@ -113,26 +115,45 @@ Additional gates, each traceable to a real false positive:
   (`<span className="font-medium">{name}</span> will be copied…`). Prettier's
   `{" "}` counts as text, or nothing matches.
 - **Count gates** — must name an entity, must not be counting a collection the
-  same file renders, must not be pagination phrasing. This rule went 91 → 11.
+  same file renders *or hands to a child component*, must not be pagination or
+  prose phrasing. This rule went 91 → 4.
+- **Rows are never "self-subject"** — a `.map()` callback, a named helper passed
+  to `.map()`, or any function whose JSX carries a `key`. Without all three,
+  `function NoteRow({ note })` read as "the note's own page" and the most common
+  list idiom in this repo went silent.
+- **`onClick` must navigate** to count as a door. An accordion toggle used to
+  silence every finding in the row it wrapped.
+- **`restore` is a door** — a soft-deleted record's row has no "open" by design.
+- **Reference verbs beat prose** — "Saved to {noteTitle}" is doctrine's own
+  class and must survive the prose gate.
+- **`NON_RECORD_ID_RE` is deliberately narrow.** An earlier, longer list
+  suppressed `brokerId`, `call_id`, `nodeId`, `blockId` — every one a real
+  record here. Suppressing a real entity is worse than ranking it low.
 
-Measured on the shipped ruleset: **165 findings (66 high, 99 medium) across 105
+Measured on the shipped ruleset: **170 findings (90 high, 80 medium) across 108
 files out of 6,803 scanned, in ~10s.**
 
 ## Known limits — stated, not hidden
 
 - **A row bound to `r` / `row` / `item` names no entity**, and the name rule
-  requires a resolvable token, so those lists are invisible to
-  `unlinked-entity-name`. This is the biggest recall hole. Closing it needs
-  type information (the row's declared type), which means a full TS program —
-  a different cost class. `bare-id-text` still covers those rows.
+  requires a resolvable token, so `{r.title}` in such a list is invisible to
+  `unlinked-entity-name`. This is the biggest remaining recall hole. Closing it
+  needs the row's declared TYPE, which means a full TS program — a different
+  cost class. `bare-id-text` still covers those rows when the id names its
+  entity.
 - **Names passed as ATTRIBUTES** (`<ListRow title={registry.name} />`) are not
   examined; only text position is. This repo does that often, so real
   violations hide there.
 - **Analysis is per-file and ancestor-based.** A door in a parent component's
   file, or a body extracted into a sibling component, is not seen.
-- **Any `{...spread}` or `onClick` ancestor counts as a door.** Deliberate —
-  precision over recall — but it does mean an accordion toggle can mask a
-  finding.
+- **Any `{...spread}` ancestor counts as a door** (its props may carry `href`).
+  Deliberate — precision over recall — but a spread can mask a finding.
+- **`idIsInScope` matches the whole file**, so `row.id` anywhere in a long file
+  satisfies the gate for an unrelated `row` in another component. A standing
+  precision tax on `unlinked-entity-name`.
+- **Entity inference is name-based.** `broker` and tool-call ids have no token
+  in `entityRegistry.ts`, so they rank as unresolved rather than as the records
+  they are. Registering them there fixes it — not a change here.
 
 ## Truth vs code, not a hardcoded list
 
@@ -193,4 +214,5 @@ new one.
   `/administration/reporting/dead-ends`, `matrx/no-bare-id-text` ESLint rule,
   advisory wiring in `run-release-gates.sh`. Tuned against a finding-by-finding
   precision audit before shipping (~31% → 8/8 TP kept, 16/16 FP dropped on the
-  audited sample). Baseline: 165 findings / 66 high across 105 files.
+  audited samples: ~31% → 14/14 TP kept, 23/23 FP dropped). Baseline: 170
+  findings / 90 high across 108 files.

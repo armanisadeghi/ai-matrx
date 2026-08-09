@@ -37,15 +37,48 @@ const ID_PROPERTY_RE = /^(id|.+_id|.+Id|uuid|.+Uuid|.+UUID)$/;
 const COUNT_PROPERTY_RE = /^(length|count|.+Count|total|.+Total|size)$/;
 
 /**
- * Ids that identify a UI thing rather than a record. Rendering one is not a
- * dead end because there is no record behind it to open — a request, a tab, a
- * DOM node and a broker session have no route by design.
+ * Ids that identify a UI thing rather than a record — there is nothing behind
+ * them to open.
+ *
+ * Deliberately NARROW. An earlier, longer list suppressed `brokerId`,
+ * `call_id`, `nodeId`, `blockId`, `stepId` and `sessionId`, every one of which
+ * IS a real record in this platform (brokers, `cx_tool_call`, workflow/plan
+ * nodes, content-IR blocks). Suppressing a real entity is worse than ranking it
+ * low — the registry decides what has a door, not this list.
  */
 const NON_RECORD_ID_RE =
-  /^(request|instance|client|session|tab|node|element|trace|correlation|block|field|call|container|broker|render|form|input|slot|panel|widget|step|row|cell|group|toast|dialog|menu)(_id|Id|_uuid|Uuid)$/;
+  /^(request|instance|client|tab|element|trace|correlation|render|form|input|row|cell|toast|dialog|menu|container)(_id|Id|_uuid|Uuid)$/;
 
-/** Controls that OPEN something — a row door only counts if it does this. */
-const OPEN_AFFORDANCE_RE = /\b(open|view|details?|preview|manage|inspect|go to|edit)\b/i;
+/**
+ * Object roots that hold a transient runtime thing, not a persisted record.
+ * `promise.id` / `rejection.run_id` / `snap.activeCardId` were the bulk of the
+ * unresolvable-entity noise.
+ */
+const NON_RECORD_ROOT_RE =
+  /^(request|instance|promise|rejection|toast|snap|snapshot|state|draft|event|err|error|ref|timer|subscription|channel)[A-Z0-9_]*$|^(request|instance|promise|rejection|toast|snap|snapshot|state|draft|event|err|error|ref|timer|subscription|channel)$/;
+
+/**
+ * Controls that OPEN something — a row door only counts if it does this.
+ * `restore` counts: a soft-deleted record's row has no "open" by design, and
+ * restoring it is the reachable action.
+ */
+const OPEN_AFFORDANCE_RE =
+  /\b(open|view|details?|preview|manage|inspect|go to|edit|restore|undelete|recover)\b/i;
+
+/**
+ * Verbs that make the following name a REFERENCE, not prose — "Saved to
+ * <note>", "Assigned to <agent>". This is doctrine's own class, so it must
+ * survive the prose gate.
+ */
+const REFERENCE_VERB_RE =
+  /\b(saved (to|as|in)|added to|moved to|assigned to|linked to|attached to|belongs to|created in|now in|sent to)\s*$/i;
+
+/**
+ * `onClick` handlers that actually navigate. Any `onClick` used to count as a
+ * door, so an expand/collapse row silenced every finding inside it.
+ */
+const NAVIGATING_HANDLER_RE =
+  /\b(open|push|replace|router|navigate|href|goTo|view|peek|select|show[A-Za-z]*(Detail|Panel|Modal|Sheet|Drawer)|setSelected|onRowOpen|onOpen)/i;
 
 /** Controls that destroy or dismiss — never a door, even with an onClick. */
 const CLOSING_AFFORDANCE_RE =
@@ -70,7 +103,8 @@ const FORMATTER_CALL_RE =
   /^(slice|substring|substr|toString|trim|toUpperCase|toLowerCase|padStart|padEnd)$/;
 
 /** Result-count phrasing: describes the view, not reachable records. */
-const PAGINATION_PHRASE_RE = /\b(showing|of|out of|total|results?|selected|matching|filtered)\b/i;
+const PAGINATION_PHRASE_RE =
+  /\b(showing|of|out of|total|results?|selected|matching|filtered|loaded|available|remaining|found)\b/i;
 
 /**
  * Tags that ARE doors. An ancestor with one of these means the user can reach
@@ -129,6 +163,9 @@ const SKIP_ANCESTOR_TAGS = new Set([
   "Option",
   "Autocomplete",
   // "You are here" headings — the record's own surface.
+  // h1/h2 only. h3/h4 are card titles inside lists as often as they are
+  // record headings — skipping them lost real findings. The "record's own
+  // heading" case is handled precisely by isSelfSubject instead.
   "h1",
   "h2",
   "DialogTitle",
@@ -351,9 +388,23 @@ function classifyExpression(
     // A naked `{id}` with no object root and no inferable entity is usually a
     // map key, a config slug, or an HTML element id — not a record identifier.
     if (!tokenInfo && !ts.isPropertyAccessExpression(unwrap(expr))) return null;
+    const idRoot = rootIdentifier(expr);
+    if (!tokenInfo && idRoot) {
+      // These only apply when the expression names no entity — `instance` is a
+      // transient runtime object, but `instance.agentId` still names an agent.
+      //
+      // `VAULT_LABELS.internalFieldId` — a SCREAMING_SNAKE constant map is a
+      // caption table, not a record.
+      if (/^[A-Z][A-Z0-9_]*$/.test(idRoot)) return null;
+      // A transient runtime object's `.id` (a promise, a toast, a snapshot).
+      if (NON_RECORD_ROOT_RE.test(idRoot)) return null;
+    }
+    // A bare `.id` on an object we cannot name is not evidence of a record.
+    // `{r.task_id}` and `{lastFileId}` still report — they name their entity.
+    if (!tokenInfo && property === "id") return null;
     // The record's OWN surface printing its own id (a detail page, an editor,
     // a confirm modal) is not a dead end — the user is already there.
-    if (isSelfSubject(node, expr)) return null;
+    if (isSelfSubject(node, expr, sf)) return null;
     return makeFinding({
       relPath,
       line,
@@ -375,7 +426,7 @@ function classifyExpression(
     if (!tokenInfo) return null;
     const root = rootIdentifier(expr);
     if (!idIsInScope(root, rawText, scopeText, tokenInfo.token)) return null;
-    if (isSelfSubject(node, expr)) return null;
+    if (isSelfSubject(node, expr, sf)) return null;
     // A name inside a sentence is copy, not a reference.
     if (isInProse(node, sf)) return null;
     return makeFinding({
@@ -402,8 +453,11 @@ function classifyExpression(
     //    already renders the collection, the user can reach them by looking.
     const collection = rootIdentifier(expr);
     if (collection && rendersCollection(collection, scopeText)) return null;
-    // 3. Result-count / pagination phrasing describes the view, not records.
+    // 3. Result-count / pagination phrasing describes the view, not records,
+    //    and a count inside a sentence ("You have 5 keywords but the limit
+    //    is …") is copy.
     if (isPaginationPhrasing(node)) return null;
+    if (isInProse(node, sf)) return null;
     const noun = siblingNoun(node);
     if (!noun) return null;
     return makeFinding({
@@ -520,10 +574,12 @@ function idIsInScope(
 
 /** Does this file render the collection it is counting? */
 function rendersCollection(collection: string, scopeText: string): boolean {
-  const re = new RegExp(
-    `\\b${escapeRe(collection)}\\??\\.(map|slice|forEach|flatMap)\\(`,
-  );
-  return re.test(scopeText);
+  const name = escapeRe(collection);
+  // Iterated here, OR handed to a child component that renders it
+  // (`<AgentPicker agents={agents} />`) — either way the records are on screen.
+  const iterated = new RegExp(`\\b${name}\\??\\.(map|slice|forEach|flatMap)\\(`);
+  const passedDown = new RegExp(`\\b[A-Za-z0-9_]+=\\{\\s*${name}\\s*\\}`);
+  return iterated.test(scopeText) || passedDown.test(scopeText);
 }
 
 /**
@@ -534,9 +590,13 @@ function rendersCollection(collection: string, scopeText: string): boolean {
  * parameter IS a per-record binding, so `{r.task_id}` inside `.map((r) => …)`
  * still reports.
  */
-function isSelfSubject(node: ts.Node, expr: ts.Expression): boolean {
+function isSelfSubject(node: ts.Node, expr: ts.Expression, sf: ts.SourceFile): boolean {
   const root = rootIdentifier(expr);
   if (!root) return false;
+
+  // `selectedNote` / `activeAgent` / `editingTask` — a detail pane's subject,
+  // bound from state rather than a parameter. The user is already on it.
+  if (/^(selected|active|current|editing|viewing|chosen)[A-Z]/.test(root)) return true;
 
   let cur: ts.Node | undefined = node;
   while (cur) {
@@ -545,12 +605,60 @@ function isSelfSubject(node: ts.Node, expr: ts.Expression): boolean {
       ts.isFunctionExpression(cur) ||
       ts.isFunctionDeclaration(cur)
     ) {
+      // A ROW is not a subject. Three ways a function is a row renderer:
+      // it is a `.map()` callback, it is a named helper handed to `.map()`
+      // (`rows.map(renderRow)`), or its own JSX carries a `key`. Without this
+      // the whole extracted-row-component idiom — `function NoteRow({ note })`
+      // — was classified as "the note's own surface" and silenced.
       if (isIterationCallback(cur)) return false;
+      if (isNamedRowRenderer(cur, sf)) return false;
+      if (rendersKeyedElement(cur)) return false;
       return cur.parameters.some((p) => bindsName(p.name, root));
     }
     cur = cur.parent;
   }
   return false;
+}
+
+/** `const renderRow = (row) => …` used as `rows.map(renderRow)`. */
+function isNamedRowRenderer(fn: ts.Node, sf: ts.SourceFile): boolean {
+  let name: string | null = null;
+  if (ts.isFunctionDeclaration(fn) && fn.name) name = fn.name.text;
+  else if (
+    fn.parent &&
+    ts.isVariableDeclaration(fn.parent) &&
+    ts.isIdentifier(fn.parent.name)
+  ) {
+    name = fn.parent.name.text;
+  }
+  if (!name) return false;
+  const re = new RegExp(
+    `\\.(map|flatMap|forEach)\\(\\s*${escapeRe(name)}\\s*[,)]`,
+  );
+  return re.test(sf.text);
+}
+
+/** Does this function return JSX carrying a `key`? Then it renders a row. */
+function rendersKeyedElement(fn: ts.Node): boolean {
+  let found = false;
+  const visit = (n: ts.Node): void => {
+    if (found) return;
+    // Do not descend into a nested function — that is a different renderer.
+    if (n !== fn && (ts.isArrowFunction(n) || ts.isFunctionExpression(n))) return;
+    const opening = openingElementOf(n);
+    if (
+      opening &&
+      opening.attributes.properties.some(
+        (a) => ts.isJsxAttribute(a) && ts.isIdentifier(a.name) && a.name.text === "key",
+      )
+    ) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(n, visit);
+  };
+  ts.forEachChild(fn, visit);
+  return found;
 }
 
 function isIterationCallback(fn: ts.Node): boolean {
@@ -696,7 +804,11 @@ function humanTextOf(
     }
   }
 
-  const parent = el.parent;
+  // Only a JsxOpeningElement's parent is its OWN element. A self-closing tag's
+  // parent is the element CONTAINING it, so walking it collected the whole
+  // surrounding row — one stray "Open tickets: 3" then made a delete icon read
+  // as a door.
+  const parent = ts.isJsxOpeningElement(el) ? el.parent : null;
   if (parent && ts.isJsxElement(parent)) {
     const collect = (node: ts.Node): void => {
       if (ts.isJsxText(node)) parts.push(node.text);
@@ -781,24 +893,55 @@ function isInProse(node: ts.JsxExpression, sf: ts.SourceFile): boolean {
   const children = parent.children;
   const idx = children.indexOf(subject as ts.JsxChild);
 
-  const wordsAt = (offset: number): number => {
+  const runAt = (offset: number): string => {
     for (let i = idx + offset; i >= 0 && i < children.length; i += offset) {
       const child = children[i];
-      const text = jsxChildText(child);
-      if (text === null) return 0;
-      const count = text.trim().split(/\s+/).filter(Boolean).length;
-      if (count > 0) return count;
+      // Prose is often interrupted by an inline element — "The file <b>is</b>
+      // {scope.name}'s". Read through those instead of giving up.
+      const text = jsxChildText(child) ?? inlineElementText(child);
+      if (text === null) return "";
+      if (text.trim()) return text;
     }
-    return 0;
+    return "";
   };
+  const wordCount = (text: string): number =>
+    text.trim().split(/\s+/).filter(Boolean).length;
 
-  const before = wordsAt(-1);
-  const after = wordsAt(1);
+  const beforeText = runAt(-1);
+  const before = wordCount(beforeText);
+  const after = wordCount(runAt(1));
+
+  // "Saved to {noteTitle}" is a REFERENCE, not prose — doctrine's own class.
+  if (REFERENCE_VERB_RE.test(beforeText)) return false;
+
   // Mid-sentence: words on both sides.
   if (before >= 1 && after >= 1 && before + after >= 3) return true;
+  // A short connective ("Resolved {x} × {y} — agent declares…") still reads as
+  // prose when the whole element is a sentence.
+  if (before >= 1 && after >= 1 && wordCount(elementText(parent)) >= 4) return true;
   // Sentence-initial: "{agentName} will be copied into the system agent
   // library." A table cell never carries five words of trailing copy.
   return before === 0 && after >= 5;
+}
+
+/** Literal text of an inline wrapper element (`<b>is</b>` → "is"). */
+function inlineElementText(child: ts.JsxChild | undefined): string | null {
+  if (!child || !ts.isJsxElement(child)) return null;
+  const tag = tagNameOf(child.openingElement);
+  if (!tag || !INLINE_WRAPPER_TAGS.has(tag)) return null;
+  return elementText(child);
+}
+
+/** All literal text directly under a JSX element or fragment. */
+function elementText(node: ts.Node): string {
+  const parts: string[] = [];
+  const collect = (n: ts.Node): void => {
+    const text = ts.isJsxText(n) || ts.isJsxExpression(n) ? jsxChildText(n as ts.JsxChild) : null;
+    if (text) parts.push(text);
+    ts.forEachChild(n, collect);
+  };
+  ts.forEachChild(node, collect);
+  return parts.join(" ");
 }
 
 /** Literal text of a JSX child, or null when the child is not text. */
@@ -819,13 +962,9 @@ function jsxChildText(child: ts.JsxChild | undefined): string | null {
 function isPaginationPhrasing(node: ts.JsxExpression): boolean {
   const parent = node.parent;
   if (!parent || (!ts.isJsxElement(parent) && !ts.isJsxFragment(parent))) return false;
-  const children = parent.children;
-  const idx = children.indexOf(node as ts.JsxChild);
-  for (const offset of [-2, -1, 1, 2]) {
-    const text = jsxChildText(children[idx + offset]);
-    if (text && PAGINATION_PHRASE_RE.test(text)) return true;
-  }
-  return false;
+  // The whole element's literal text, not a 4-sibling window: "{a} projects ·
+  // {b} tasks loaded" put the giveaway word three runs away.
+  return PAGINATION_PHRASE_RE.test(elementText(parent));
 }
 
 function findDoorAncestor(node: ts.Node): string | null {
@@ -837,7 +976,16 @@ function findDoorAncestor(node: ts.Node): string | null {
       if (tag && DOOR_TAGS.has(tag)) return tag;
       for (const attr of opening.attributes.properties) {
         if (ts.isJsxAttribute(attr) && ts.isIdentifier(attr.name)) {
-          if (DOOR_ATTRS.has(attr.name.text)) return tag ?? attr.name.text;
+          const name = attr.name.text;
+          if (!DOOR_ATTRS.has(name)) continue;
+          // A click handler is a door only if it navigates. An accordion
+          // toggle (`onClick={() => setExpanded(x)}`) is not, and treating it
+          // as one silenced every finding inside the row it wrapped.
+          if (name.startsWith("on")) {
+            const body = attr.initializer?.getText() ?? "";
+            if (!NAVIGATING_HANDLER_RE.test(body)) continue;
+          }
+          return tag ?? name;
         }
         // `{...linkProps}` may carry href/onClick — assume a door rather than
         // report a guess. Precision over recall.
