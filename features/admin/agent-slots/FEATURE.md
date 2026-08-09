@@ -9,6 +9,10 @@ The USER/ORG-facing override surface (browse slots, provenance, write `slot_bind
 ## The two laws (Arman's ruling, 2026-08-08 — violations are defects, fix on sight)
 
 1. **THE SYSTEM-AGENT LAW.** A slot DEFAULT may only reference a **system agent** (`agent_type='builtin'`, system-org owned, no user). A personal/shared/org agent pinned as a slot default breaks every user the slot serves — it fails the moment ownership, visibility, or archival shifts, and it fails on some page far from where it was pinned. The console picker therefore offers ONLY system agents; any row whose default drifts to a non-builtin shows a destructive **"NOT a system agent — fix this pin"** badge; aidream's `sync_declared_slots` screams the same on every boot. Promote an agent to system via `agx_duplicate_agent(p_as_system => true)`, then pin the promoted copy. (User/org OVERRIDE bindings are the opposite case — those are *supposed* to be the principal's own agents.)
+   A super-admin promotion may copy a private source on the platform's behalf;
+   the normal personal-copy path still requires viewer access. This split is
+   enforced by `agx_duplicate_agent` / `agx_duplicate_version` and recorded in
+   `migrations/agx_system_promotion_superadmin.sql`.
 2. **THE CANONICAL-SELECTION LAW.** Anywhere agents are listed for selection, use the canonical agent listing system — the Redux agent-definition slice (`fetchAgentsListFull` + the purpose-fit selector: `selectBuiltinAgents` here, `selectActiveAgents` for user-facing pickers) or the scoped server RPCs (`agx_list_scoped` with true scopes). **A raw `.from("definition")` query dumped alphabetically is the recurring disease this repo keeps re-catching**: it blends mine/shared/org/public/system into one meaningless list, ignores scopes, and treats an administrator like a user. Never write one. The console consumed exactly this bug at birth (fixed 2026-08-08, same day).
 
 ## Test bench (2026-08-08)
