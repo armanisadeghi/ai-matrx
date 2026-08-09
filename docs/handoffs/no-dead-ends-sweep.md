@@ -257,6 +257,28 @@ not assumed.
 | **Content block** (`skill.render_definition`) | Kind assets, content-blocks manager. |
 | **`industries`** | Every "Industry — X" grant label. |
 | **`skill_category`** | Every category header in the skills browser is inert text. |
+| **`recipe`** | Not in the generated registry at all. `RecipesGridUnified` / `RecipesGrid` duplicate a recipe and discard the new id (the POST body is never even read). |
+
+**Slug-keyed routes the id-shaped `hrefFor` cannot express** — `pc_show`'s
+canonical page is `/podcast/[slug]`, so registering an `hrefFor(id)` would mint
+a link to a record that does not exist under that key. Call sites pass an
+explicit `href` instead (`CreateShowDialog`). Either the overlay grows a
+slug-aware form, or these routes gain id resolvers like `/scopes/s/<id>` — an
+owner's call, not a per-surface patch.
+
+**Toast systems that cannot carry a door** — `toastDoor` returns a ReactNode,
+which sonner renders raw. The two legacy wrappers cannot take it:
+`@/lib/toast-service` (`success(message, moduleKey, options)`) and
+`useToastManager` (whose `ToastOptions.action` is `{label, onClick}`). Migrating
+a file to `@/lib/toast` is the fix and is usually trivial — EXCEPT where the
+manager's `moduleKey` supplies default messages, which migrating would silently
+drop (`useQuickSaveCode`, left undone and commented in place).
+
+> ⚠️ **Check tokens against `types/generated/entity-types.generated.ts`, NOT
+> `entityRegistry.ts`.** The generated file IS the token registry; the overlay
+> only adds icons and `hrefFor`. Grepping the overlay alone reports a registered
+> token as "not registered" — I did exactly that on 2026-08-09 and wrote a false
+> claim into a code comment before catching it.
 
 **Registered but no `hrefFor`** (peek may still work; the route does not):
 `pc_show`, `pc_episode`, `content_ir_kind` (routes exist — three surfaces pass
