@@ -45,7 +45,7 @@ export function AddClassContentSheet({
             this class.
           </SheetDescription>
         </SheetHeader>
-        <div className="mt-2 min-h-0 flex-1">
+        <div className="mt-2 flex min-h-0 flex-1 flex-col">
           <UniversalAssociationPicker
             tokens={CLASS_PICKER_TOKENS}
             attachedKeys={content.attachedKeys}

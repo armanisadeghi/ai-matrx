@@ -189,6 +189,7 @@ delete yours and extend ours.
 | Read / write a catalogue preference | `useSetting` | `features/settings/hooks/useSetting.ts` |
 | Show a cost (units for users, USD for admins) | `useCostDisplay` / `<CostValue>` | `components/processing-units/useCostDisplay.ts` |
 | Copy one complete agent request draft to another run | `copyInstanceRequestDraft` | `features/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk.ts` |
+| Prove a scroll area is not clipped (unbounded-height chain) | `useClippedContentGuard` | `lib/layout/useClippedContentGuard.ts` |
 
 ### Systems (extend these — never fork)
 

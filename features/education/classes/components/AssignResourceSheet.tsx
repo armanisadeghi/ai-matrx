@@ -76,7 +76,7 @@ export function AssignResourceSheet({
           </p>
         </div>
 
-        <div className="mt-3 min-h-0 flex-1">
+        <div className="mt-3 flex min-h-0 flex-1 flex-col">
           <UniversalAssociationPicker
             tokens={ASSIGNABLE_TOKENS as EntityTypeToken[]}
             attachedKeys={assignments.assignedKeys}

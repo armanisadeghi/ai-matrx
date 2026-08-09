@@ -102,7 +102,12 @@ export function BacklinkInsightsTab({ siteId }: { siteId: string }) {
       {description ? (
         <p className="text-xs text-muted-foreground">{description}</p>
       ) : null}
-      <div className="min-h-0 flex-1">
+      {/* `flex flex-col` is LOAD-BEARING: the lens views below are bounded
+          scroll chains (`MatrxDataTable` is `h-full`, its child sets
+          `min-h-0 flex-1`). A plain block wrapper here leaves them
+          height:auto, so the table grew past the viewport and the page's
+          `overflow-hidden` clipped it — no scrollbar at all. */}
+      <div className="flex min-h-0 flex-1 flex-col">
         {active === ANCHOR_PROFILE_KEY ? (
           <BacklinkAnchorProfile siteId={siteId} />
         ) : (
