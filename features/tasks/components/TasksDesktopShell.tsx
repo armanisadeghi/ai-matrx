@@ -10,6 +10,7 @@ import { RegisteredPanel } from "@/features/resizable-panels/RegisteredPanel";
 import TasksContextSidebar from "@/features/tasks/components/TasksContextSidebar";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { loadTaskUserStateThunk } from "@/features/tasks/redux/thunks";
+import { useNowMinuteTick } from "@/features/tasks/hooks/useNowMinuteTick";
 import TaskListPane from "@/features/tasks/components/TaskListPane";
 import TaskEditor from "@/features/tasks/components/TaskEditor";
 
@@ -47,6 +48,10 @@ export function TasksDesktopShell({
   const [hasMounted, setHasMounted] = useState(false);
   const isMobile = useIsMobile();
   const dispatch = useAppDispatch();
+
+  // ~60s tick so snooze expiry / overdue windows resurface tasks without an
+  // unrelated store change (D129).
+  useNowMinuteTick();
 
   useEffect(() => {
     setHasMounted(true);

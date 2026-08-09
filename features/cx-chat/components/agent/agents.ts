@@ -6,6 +6,15 @@
 
 import type { WelcomeAgent } from "@/features/cx-chat/components/ChatWelcomeServer";
 
+/**
+ * The default cx-chat agent is a SLOT — resolved at request time via
+ * `resolveAgentSlotServer` (system default → the user's own binding). The
+ * demo root page resolves it; `DEFAULT_AGENT_ID` below is the slot's SEED
+ * MIRROR, kept only as the loud-fallback display seed (`getDefaultAgent`)
+ * when resolution fails on this dev surface.
+ */
+export const CX_DEFAULT_SLOT_KEY = "chat.cx_default";
+
 export const DEFAULT_AGENT_ID = "ce7c5e71-cbdc-4ed1-8dd9-a7eac930b6b8";
 
 export const MATRX_CHAT_AGENT: WelcomeAgent = {

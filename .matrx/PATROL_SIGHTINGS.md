@@ -14,6 +14,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 - [ ] P3 | 6 files via grep `h-screen\|100vh` | banned viewport units still present | 2026-08-08
 - [ ] P3 | 9 files: `fixed bottom-0` without `pb-safe` | fixed bottom bars missing safe-area padding | 2026-08-08
 - [ ] P4 | 44 files: `bg-white`/`text-black` with no `dark:` anywhere in file | strongest light-only candidates (282 total need per-line triage) | 2026-08-08
+- [ ] P1 | /marketing/.../keywords Performance tab | renders 'No search queries stored yet' empty state while v_site_keyword_performance returns HTTP 500 — error laundered into fake empty state (spawn chip filed); found during brand-alias drawer fix | 2026-08-09
 
 ## Cleared
 

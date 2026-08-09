@@ -96,7 +96,7 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
   const [chatSearchOpen, setChatSearchOpen] = useState(false);
 
   const handleNewChat = () => {
-    beginFreshChat({
+    void beginFreshChat({
       dispatch,
       router,
       pathname,

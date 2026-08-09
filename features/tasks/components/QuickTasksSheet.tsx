@@ -40,6 +40,7 @@ import {
   selectScopeSelectionsContext,
 } from "@/lib/redux/slices/appContextSlice";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
+import { useNowMinuteTick } from "@/features/tasks/hooks/useNowMinuteTick";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { Button } from "@/components/ui/button";
 import { ProInput } from "@/components/official/ProInput";
@@ -118,6 +119,10 @@ const Circle = ({ size, className }: { size: number; className?: string }) => (
 );
 
 function QuickTasksSheetContent({ className }: { className?: string }) {
+  // Keep the shared nowMinute clock ticking while this overlay is open — it
+  // feeds selectFilteredTasks (snooze expiry, date windows) and only /tasks
+  // mounts the tick otherwise (D129).
+  useNowMinuteTick();
   const dispatch = useAppDispatch();
   const projects = useAppSelector(selectProjects);
   const activeProject = useAppSelector(selectActiveProject);
