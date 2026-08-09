@@ -825,8 +825,37 @@ these — but **not** `AgentListDropdown` (42 consumers) or `AgentActionModal`.
       Four is correct — fix the FEATURE.md.
 - [ ] Extract the 5 inline `ItemMenuConfig` builders into registries:
       `CrmListPage.tsx:143` · `SitesPortfolio.tsx:206` ·
-      `PlanSitesList.tsx:192` (near-duplicate of the previous) ·
-      `KeywordResearchWorkbench.tsx:608` · `SiteKeywordPerformanceWorkspace.tsx:116`.
+      `PlanSitesList.tsx:192` · `KeywordResearchWorkbench.tsx:608` ·
+      `SiteKeywordPerformanceWorkspace.tsx:116`.
+
+      **SCOPED 2026-08-09, and the note that sent me here was WRONG.** This
+      list described `PlanSitesList` as a "near-duplicate" of
+      `SitesPortfolio`. It is not — I read both. They are DISJOINT action sets
+      for the same entity:
+      - `SitesPortfolio` (`SiteListRow`): Open workspace · Quick view (peek) ·
+        Open live site · Copy summary · Copy for AI · Edit site · Delete site.
+      - `PlanSitesList` (`PlanSiteRow`): Open plan · Table · Pillar map ·
+        Entities · Site Setup · Open in CMS · Site record.
+
+      Merging them blindly, as "near-duplicate" invites, would have produced a
+      worse menu on both surfaces.
+
+      **The REAL finding is the Inventory Law shape, and it is worse than a
+      duplicate:** `site` has a seven-action list in the portfolio, and the
+      OTHER surface listing the same entity offers navigation only — verified
+      by grep, `PlanSitesList` contains no edit, delete, copy, copy-for-AI,
+      peek or live-site action at all. Right-click a site in the content plan
+      and you cannot copy it, edit it, delete it, preview it, or open the live
+      site, all of which the platform already does one folder over. Also
+      private: `siteRowCopy` (`SitesPortfolio.tsx:121`) is a copy-payload
+      builder for `site` living inside one component.
+
+      **Fix shape:** one `buildSiteMenu` + `useSiteRowActions` owning the
+      editor / delete / peek hosts, consumed by both, each surface appending
+      its own section (plan views for `PlanSitesList`). **Do this WITH the
+      `AgentListDropdown` decision above, not before it** — it is the same
+      hook-instancing question (the hook owns dialogs, so who mounts the single
+      instance), and answering it once should settle both.
 - [ ] Entities with **no** registry, by surface count: **file/folder** (4 rival
       vocabularies; `FileContextMenu.tsx` alone has 29 `DropdownMenuItem`s),
       **task** (6 surfaces), agent shortcut (5+), agent app, agent set,
