@@ -149,7 +149,15 @@ internal platform use — never a washed-down user variant beside a private one:
   agent-writable adopters: `matrx-user/marketing-page`,
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
-  `TaskEditorBody.tsx`).
+  `TaskEditorBody.tsx`), and the content-plan family (2026-08-09):
+  `matrx-user/content-plan-node` (9 ask draft fields + `save_node` entity;
+  handlers in `NodePanel.tsx`; `node_primary_keyword_id` stays `manual` —
+  the surface exposes no keyword options, so an agent cannot produce a valid
+  UUID), `matrx-user/content-plan-setup` (`set_family_counts` /
+  `set_family_names` ask, `select_archetype` auto),
+  `matrx-user/content-plan` (`select_node` auto), and
+  `matrx-user/content-plan-list` (`open_site` ask — navigation costs the
+  user their current page).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -307,10 +315,12 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Three modes**, declared per target: `draft` (stages into the page's editor — the USER reviews and saves; the preferred default), `entity` (persists through the page's canonical write path immediately), `ui` (ephemeral state — selection/focus/navigation; no success toast).
 - **`updatesValue`** links a target to its read twin (the evidence loop: read the value, write the target).
 - **Kind components reach it via the action registry:** `apply_surface_write` in `features/content-ir/react/actions/handlers/apply-surface-write.ts` — a rendered agent-result component's button calls `runAction("apply_surface_write", {target, value})`; the component never touches supabase/redux/page internals.
-- **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
+- **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`, agent-writable since 2026-08-09).
+- **`applyPolicy` is not optional in practice.** Omitting it resolves to `manual`, and a `manual` target is never offered to an agent — the surface looks agent-writable in the manifest and is silently inert at runtime. Every new target states its policy explicitly; a deliberate `manual` carries a comment saying why (see `content-plan-node`'s `node_primary_keyword_id`).
 
 ## Change Log
 
+- **2026-08-09 — Content-plan family agent-writable (third adopter).** Every content-plan write target had been declared without `applyPolicy`, so all of them defaulted to `manual` and were never offered to agents (manual-by-omission — declared-but-invisible). `content-plan-node` now carries `ask` on 9 draft fields + `save_node`; `content-plan-setup` `ask` on the two work-order stagers and `auto` on `select_archetype`; `content-plan` `auto` on `select_node`; `content-plan-list` `ask` on `open_site` (navigation costs the user their page). `node_primary_keyword_id` is deliberately left `manual` — the surface exposes no keyword options, so an agent cannot produce a valid `seo.keyword` UUID. Manifest enum prose also corrected against `content-plan/types.ts` (node types are home|pillar|cluster|article|index; technical depth is low|medium|high — the live agent hit the stale foundational/intermediate/advanced wording and had to remap). Live-verified end to end on `/marketing/content-plan/<siteId>`: 4 targets staged in one run with per-target ask dialogs, a decline returned a non-error result, `save_node` persisted, an undeclared target (`route`) drew a loud refusal with the trigger-computed explanation, and the Error Inspector captured zero `surface-writeback` errors.
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 
 - **2026-08-08 — Surface auto-adoption at launch.** `launchAgentExecution` now adopts the mounted `<SurfaceRuntimeProvider>` (deepest wins, via `getSurfaceRuntime()`) when the caller passes NEITHER `runtime.surfaceName` NOR `runtime.applicationScope` — name AND live scope together, so every one of the ~33 surface-blind direct launch call sites picks up binding layers, value mappings, write policies, and document evidence on any page with a provider (127 mounts) with zero per-site wiring. Explicit caller values always win; a scope-only launch is untouched; the route-prefix guess (`detectActiveSurface`) is deliberately NOT used here (a name without a mounted runtime has no scope and would fabricate one — it remains the tool-injection fallback only, `build-tool-injection.ts`). A throwing adopted `getScope()` logs loudly and launches surface-named but scope-less. Verified: type gate + A/B against clean main (identical behavior on the dev session whose chat send was already stalled by HMR churn); live confirmation of an adopted scope on a real launch still owed.

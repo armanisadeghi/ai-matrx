@@ -340,6 +340,22 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-08-09 — Claude: **The node panel is now agent-writable.** Its surface
+  write targets were all declared without `applyPolicy`, which defaults to
+  `manual` — so agents were never offered any of them. `content-plan-node`
+  now sets `applyPolicy: "ask"` on the 9 draft fields (label, slug, type,
+  status, priority, technical depth, needs-reviewer, brief, attributes) and
+  on `save_node`; `node_primary_keyword_id` stays `manual` because the panel
+  exposes no keyword options for an agent to choose a valid UUID from. The
+  sibling surfaces got the same treatment (`content-plan-setup`
+  counts/names `ask` + archetype `auto`, `content-plan` `select_node`
+  `auto`, `content-plan-list` `open_site` `ask`). Manifest enum prose was
+  corrected against `types.ts` (node types home|pillar|cluster|article|index,
+  technical depth low|medium|high). Handlers in `NodePanel.tsx` were already
+  wired and unchanged. Verified with a real Badass Agent run on
+  `/marketing/content-plan/<siteId>`: per-target ask dialogs, staged drafts,
+  a graceful decline, a persisted `save_node`, and a loud refusal for the
+  trigger-computed `route`.
 - 2026-08-08 — Claude: **Build with AI live progress + in-dialog research
   picker** (Arman's first-test feedback). The dialog now STAYS OPEN through
   the run as a live activity feed: REAL events parsed off the research
