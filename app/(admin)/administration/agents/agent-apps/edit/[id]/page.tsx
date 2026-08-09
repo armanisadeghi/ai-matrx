@@ -34,6 +34,11 @@ import {
   getAgentAppById,
   updateAgentAppAdmin,
 } from "@/lib/services/agent-apps-admin-service";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_AGENT_APPS_SURFACE_NAME,
+  createAdminAgentAppsScope,
+} from "@/features/surfaces/manifests/admin-agent-apps.manifest";
 
 // `AgentAppAdminView` is a hand-narrowed subset of the real DB row used by the
 // list/analytics surfaces (no component_code/variable_schema/shell_* fields).
@@ -60,6 +65,7 @@ export default function AdminEditAgentAppPage({
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [metadataOpen, setMetadataOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"admin" | "code">("admin");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -237,6 +243,37 @@ export default function AdminEditAgentAppPage({
   }
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
+      getScope={() =>
+        createAdminAgentAppsScope({
+          admin_section: "edit",
+          selected_app_id: app.id,
+          selected_app_summary: {
+            name: app.name,
+            slug: app.slug,
+            category: app.category ?? null,
+            creator_email: app.creator_email ?? null,
+            tagline: app.tagline ?? null,
+            description: app.description ?? null,
+            status: app.status,
+          },
+          selected_app_analytics: {
+            total_executions: app.total_executions ?? null,
+            unique_users_count: app.unique_users_count ?? null,
+            success_rate: app.success_rate ?? null,
+            total_cost: app.total_cost ?? null,
+          },
+          selected_app_tab: activeTab,
+          selected_app_timestamps: {
+            created_at: app.created_at,
+            updated_at: app.updated_at,
+            published_at: app.published_at ?? null,
+            last_execution_at: app.last_execution_at ?? null,
+          },
+        })
+      }
+    >
     <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       <div className="flex-shrink-0 px-4 h-12 border-b border-border bg-card flex items-center gap-2">
         <Button
@@ -272,7 +309,11 @@ export default function AdminEditAgentAppPage({
       </div>
 
       <div className="flex-1 overflow-hidden">
-        <Tabs defaultValue="admin" className="h-full flex flex-col">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as "admin" | "code")}
+          className="h-full flex flex-col"
+        >
           <div className="border-b border-border px-4 bg-card">
             <TabsList className="bg-transparent h-auto p-0 gap-1">
               <TabsTrigger
@@ -422,6 +463,7 @@ export default function AdminEditAgentAppPage({
         onSubmit={handleSaveMetadata}
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

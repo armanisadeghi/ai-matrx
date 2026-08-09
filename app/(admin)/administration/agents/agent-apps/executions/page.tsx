@@ -60,6 +60,11 @@ import {
   type AgentAppErrorRow,
   type AgentAppExecutionRow,
 } from "@/lib/services/agent-apps-admin-service";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_AGENT_APPS_SURFACE_NAME,
+  createAdminAgentAppsScope,
+} from "@/features/surfaces/manifests/admin-agent-apps.manifest";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
@@ -217,6 +222,31 @@ function ExecutionsTable() {
   }
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
+      getScope={() =>
+        createAdminAgentAppsScope({
+          admin_section: "executions",
+          executions_active_tab: "executions",
+          executions_rows: filtered.map((r) => ({
+            success: r.success,
+            app_name: r.app_name ?? null,
+            app_slug: r.app_slug ?? null,
+            task_id: r.task_id,
+            user_id: r.user_id ?? null,
+            fingerprint: r.fingerprint ?? null,
+            ip_address: r.ip_address ?? null,
+            tokens_used: r.tokens_used ?? null,
+            cost: r.cost ?? null,
+            execution_time_ms: r.execution_time_ms ?? null,
+            created_at: r.created_at,
+          })),
+          executions_stats: stats,
+          executions_app_filter: appFilter,
+          executions_success_filter: successFilter,
+        })
+      }
+    >
     <div className="flex flex-col flex-1 overflow-hidden">
       <div className="flex-shrink-0 p-4 border-b border-border bg-card space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -427,6 +457,7 @@ function ExecutionsTable() {
         )}
       </ScrollArea>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 
@@ -547,6 +578,39 @@ function ErrorsTable() {
   }
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
+      getScope={() =>
+        createAdminAgentAppsScope({
+          admin_section: "executions",
+          executions_active_tab: "errors",
+          errors_rows: filtered.map((r) => ({
+            resolved: r.resolved,
+            error_type: r.error_type,
+            app_name: r.app_name ?? null,
+            app_slug: r.app_slug ?? null,
+            error_message: r.error_message ?? null,
+            created_at: r.created_at,
+          })),
+          errors_stats: stats,
+          errors_resolved_filter: resolvedFilter,
+          selected_error: selected
+            ? {
+                resolved: selected.resolved,
+                error_type: selected.error_type,
+                app_name: selected.app_name ?? null,
+                app_slug: selected.app_slug ?? null,
+                error_message: selected.error_message ?? null,
+                created_at: selected.created_at,
+                error_code: selected.error_code ?? null,
+                variables_sent: selected.variables_sent,
+                expected_variables: selected.expected_variables,
+                error_details: selected.error_details,
+              }
+            : undefined,
+        })
+      }
+    >
     <div className="flex flex-col flex-1 overflow-hidden">
       <div className="flex-shrink-0 p-4 border-b border-border bg-card space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -944,5 +1008,6 @@ function ErrorsTable() {
         </DialogContent>
       </Dialog>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

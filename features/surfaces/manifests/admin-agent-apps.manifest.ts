@@ -24,12 +24,13 @@
  * action has happened; those are the admin's own button clicks and API
  * calls (`updateAgentAppAdmin`, `unblockAgentAppRateLimit`, etc.).
  *
- * Emitters: WIRED on two sections only — dashboard
- * (AgentAppsAdminDashboardPage) and the apps list
- * (AgentAppsAdminListPage) — because both already compute a clean
- * self-contained scope from their own local state at render time. The
- * remaining five sections (edit/[id], categories, executions, analytics,
- * rate-limits) are declared but NOT yet emitting; see readinessNote.
+ * Emitters: WIRED on every section — dashboard (AgentAppsAdminDashboardPage),
+ * apps list (AgentAppsAdminListPage), edit/[id] (AdminEditAgentAppPage,
+ * controlled admin/code tab), categories (AgentAppsCategoriesAdminPage),
+ * executions/errors (ExecutionsTable + ErrorsTable, one provider per mounted
+ * tab), analytics (AgentAppsAnalyticsPage), and rate-limits
+ * (RateLimitsClient). Each section computes its own self-contained scope from
+ * its live local state at Run time.
  */
 
 import type {
@@ -533,9 +534,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminAgentAppsManifest: SurfaceManifest = {
   surfaceName: ADMIN_AGENT_APPS_SURFACE_NAME,
-  readiness: "partial",
-  readinessNote:
-    "Emitters wired for the dashboard (AgentAppsAdminDashboardPage) and apps-list (AgentAppsAdminListPage) sections only. edit/[id], categories, executions, analytics, and rate-limits have no emitter yet — each is its own client component with independent local state and would need its own SurfaceRuntimeProvider mount.",
+  readiness: "verified",
   label: "Agent Apps Admin",
   urlPattern: "/administration/agents/agent-apps",
   intro: `<surface_intro>

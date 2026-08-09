@@ -55,6 +55,11 @@ import {
   type CreateAgentAppCategoryInput,
 } from "@/lib/services/agent-apps-admin-service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_AGENT_APPS_SURFACE_NAME,
+  createAdminAgentAppsScope,
+} from "@/features/surfaces/manifests/admin-agent-apps.manifest";
 
 function humanCategory(c: AgentAppCategoryRow): string {
   return [
@@ -274,6 +279,33 @@ export default function AgentAppsCategoriesAdminPage() {
   }
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
+      getScope={() =>
+        createAdminAgentAppsScope({
+          admin_section: "categories",
+          categories_list: categories.map((c) => ({
+            id: c.id,
+            name: c.name,
+            description: c.description ?? null,
+            icon: c.icon ?? null,
+            sort_order: c.sort_order,
+          })),
+          categories_count: categories.length,
+          categories_search: searchTerm,
+          selected_category: selected
+            ? {
+                id: selected.id,
+                name: selected.name,
+                description: selected.description ?? null,
+                icon: selected.icon ?? null,
+                sort_order: selected.sort_order,
+              }
+            : undefined,
+          category_has_unsaved_changes: selected ? hasUnsaved : undefined,
+        })
+      }
+    >
     <div className="flex h-full w-full bg-textured overflow-hidden">
       <div className="w-80 border-r border-border flex flex-col overflow-hidden">
         <div className="p-4 border-b border-border">
@@ -708,5 +740,6 @@ export default function AgentAppsCategoriesAdminPage() {
         </AlertDialog>
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

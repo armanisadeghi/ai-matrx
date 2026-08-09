@@ -52,6 +52,11 @@ import {
 import { CopyButtons } from '@/components/agent-copy/CopyButtons';
 import { ExportMenu } from '@/components/agent-copy/ExportMenu';
 import { jsonExportItem, csvExportItem } from '@/components/agent-copy/export';
+import { SurfaceRuntimeProvider } from '@/features/surfaces/runtime/SurfaceRuntimeContext';
+import {
+  ADMIN_AGENT_APPS_SURFACE_NAME,
+  createAdminAgentAppsScope,
+} from '@/features/surfaces/manifests/admin-agent-apps.manifest';
 
 function humanRateLimit(limit: AgentAppRateLimitRow): string {
   const identifier = limit.user_id
@@ -341,6 +346,29 @@ export function RateLimitsClient() {
   }
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_AGENT_APPS_SURFACE_NAME}
+      getScope={() =>
+        createAdminAgentAppsScope({
+          admin_section: 'rate_limits',
+          rate_limits_rows: rateLimits.map((r) => ({
+            app_name: r.app_name ?? '',
+            app_slug: r.app_slug ?? '',
+            user_id: r.user_id ?? null,
+            ip_address: r.ip_address ?? null,
+            fingerprint: r.fingerprint ?? null,
+            is_blocked: r.is_blocked,
+            execution_count: r.execution_count,
+            first_execution_at: r.first_execution_at,
+            last_execution_at: r.last_execution_at,
+            blocked_until: r.blocked_until ?? null,
+            blocked_reason: r.blocked_reason ?? null,
+          })),
+          rate_limits_stats: stats,
+          rate_limits_filters: columnFilters,
+        })
+      }
+    >
     <TooltipProvider>
       <div className="flex flex-col h-full">
         {/* Header */}
@@ -723,5 +751,6 @@ export function RateLimitsClient() {
         </ScrollArea>
       </div>
     </TooltipProvider>
+    </SurfaceRuntimeProvider>
   );
 }
