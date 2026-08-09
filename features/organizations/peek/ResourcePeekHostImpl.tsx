@@ -14,29 +14,40 @@ import React, { Suspense } from "react";
 import { PEEK_REGISTRY } from "./registry";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { RegistryPeek } from "./kinds/RegistryPeek";
+import { PeekHrefOverrideProvider } from "./peekHrefOverride";
 
 export function ResourcePeekHostImpl({
   kind,
   id,
   onClose,
+  href,
 }: {
   kind: string;
   id: string | null;
   onClose: () => void;
+  /**
+   * The destination the CALLER resolved for this record, when a token alone
+   * cannot name it (see `peekHrefOverride`). Passed down by context so the
+   * dialog's "Open" cannot disagree with the control that opened it. Omit to
+   * let the peek resolve from its token.
+   */
+  href?: string | null;
 }) {
   if (!id) return null;
 
   const Peek = PEEK_REGISTRY[kind];
-  if (Peek) {
-    return (
-      <Suspense fallback={null}>
-        <Peek id={id} open onClose={onClose} />
-      </Suspense>
-    );
-  }
-
-  // Generic fallback — only for a token the entity registry knows, so an
+  const body = Peek ? (
+    <Suspense fallback={null}>
+      <Peek id={id} open onClose={onClose} />
+    </Suspense>
+  ) : // Generic fallback — only for a token the entity registry knows, so an
   // unregistered string can never open a dialog that queries nothing.
-  if (!tryGetEntityInfo(kind)) return null;
-  return <RegistryPeek token={kind} id={id} open onClose={onClose} />;
+  tryGetEntityInfo(kind) ? (
+    <RegistryPeek token={kind} id={id} open onClose={onClose} />
+  ) : null;
+
+  if (!body) return null;
+  return (
+    <PeekHrefOverrideProvider href={href}>{body}</PeekHrefOverrideProvider>
+  );
 }

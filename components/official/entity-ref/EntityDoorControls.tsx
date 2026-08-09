@@ -182,6 +182,15 @@ export function EntityDoorControls({
           kind={doors.peekKind}
           id={id}
           onClose={() => setPeekOpen(false)}
+          // Forward the CALLER's `href`, not our resolved one. When a caller
+          // overrode it — because the token alone cannot say which surface
+          // this record opens on — the dialog would otherwise send "Open"
+          // somewhere our new-tab link does not go. Passing `resolvedHref`
+          // here instead would set the override on EVERY peek, including the
+          // ones where nobody overrode anything, and would then suppress the
+          // hardcoded href a token-less bespoke peek supplies for itself.
+          // `undefined` (no caller opinion) is the correct default.
+          href={href}
         />
       )}
     </>

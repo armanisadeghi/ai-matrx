@@ -888,6 +888,26 @@ export function ShortcutList({
                         <div className="flex items-center gap-2">
                           <MousePointerClick className="h-4 w-4 text-primary" />
                           <div className="font-medium">{shortcut.label}</div>
+                          {/* The DESKTOP table is the primary view — the card
+                              layout below is the `isMobile` branch. Doors added
+                              only there would have fixed the minority path and
+                              left the main one a dead end. Pinned visible: this
+                              row's hover group is NAMED (`group/x`), which the
+                              controls' plain `group-hover:` cannot see. */}
+                          <EntityDoorControls
+                            token="agent_shortcut"
+                            id={shortcut.id}
+                            name={shortcut.label}
+                            href={
+                              doorMode
+                                ? resolveShortcutDirectUrl(
+                                    shortcut.id,
+                                    doorMode,
+                                  )
+                                : null
+                            }
+                            alwaysShowActions
+                          />
                         </div>
                       </TableCell>
                       <TableCell>

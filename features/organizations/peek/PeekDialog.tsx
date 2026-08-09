@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
+import { usePeekHrefOverride } from "./peekHrefOverride";
 
 export interface PeekDialogProps {
   open: boolean;
@@ -62,8 +63,17 @@ export function PeekDialog({
   children,
 }: PeekDialogProps) {
   const router = useRouter();
+  // The caller that OPENED this peek wins. It knows things a token cannot —
+  // notably which surface the viewer is on when one record has both a user and
+  // an admin route. Without this, a control could hand its new-tab link the
+  // admin URL while this footer sent "Open" to the user one. `undefined` means
+  // no caller expressed a destination; `null` means one deliberately withheld
+  // it, and is honoured rather than falling back to the registry.
+  const override = usePeekHrefOverride();
   const resolvedHref =
-    href ?? (token && id ? resolveEntityDoors(token, id).href : null);
+    override !== undefined
+      ? override
+      : (href ?? (token && id ? resolveEntityDoors(token, id).href : null));
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
