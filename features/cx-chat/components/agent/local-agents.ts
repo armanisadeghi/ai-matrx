@@ -19,6 +19,12 @@ export interface AgentOption {
   variableDefaults?: VariableDefinition[];
 }
 
+/**
+ * SEED MIRROR of the `chat.default_new_chat` slot's system default. Runtime
+ * paths resolve the slot (see `features/agents/slots`); this constant remains
+ * only as the demo conversation page's loud-fallback and for the (currently
+ * unconsumed) `useInstanceBootstrap` URL-parse fallback.
+ */
 export const DEFAULT_AGENT_ID = "6b6b4e45-4699-4860-8dea-d8a60e07d69a";
 
 export const DEFAULT_AGENTS: AgentOption[] = [

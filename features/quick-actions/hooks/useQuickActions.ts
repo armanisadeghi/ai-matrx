@@ -4,7 +4,8 @@
 import { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { DEFAULT_NEW_CHAT_SLOT_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { resolveAgentSlot } from "@/features/agents/slots/service";
 
 export interface OpenChatWindowOptions {
   initialAgentId?: string | null;
@@ -48,21 +49,37 @@ export function useQuickActions() {
 
   /**
    * Opens the floating Chat window panel (`agentRunWindow`) with the same
-   * default agent as `/chat/new`. Callers that need a specific agent should
-   * pass `initialAgentId` explicitly (e.g. agent options menu, item cards).
+   * default agent as `/chat/new` — the `chat.default_new_chat` SLOT, resolved
+   * at open time so the user's own binding wins. Callers that need a specific
+   * agent pass `initialAgentId` explicitly (e.g. agent options menu, item
+   * cards). Slot-resolution failure is loud and degrades to the window's own
+   * "pick an agent" state — never a hardcoded fallback agent.
    */
   const openChatWindow = useCallback(
     (opts: OpenChatWindowOptions = {}) => {
-      dispatch(
-        openOverlay({
-          overlayId: "agentRunWindow",
-          data: {
-            initialAgentId: opts.initialAgentId ?? DEFAULT_NEW_CHAT_AGENT_ID,
-            initialSelectedConversationId:
-              opts.initialSelectedConversationId ?? null,
-          },
-        }),
-      );
+      void (async () => {
+        let agentId = opts.initialAgentId ?? null;
+        if (!agentId) {
+          try {
+            agentId = (await resolveAgentSlot(DEFAULT_NEW_CHAT_SLOT_KEY)).agentId;
+          } catch (error) {
+            console.error(
+              `[useQuickActions] slot "${DEFAULT_NEW_CHAT_SLOT_KEY}" failed to resolve — opening the Chat window with the agent picker:`,
+              error,
+            );
+          }
+        }
+        dispatch(
+          openOverlay({
+            overlayId: "agentRunWindow",
+            data: {
+              initialAgentId: agentId,
+              initialSelectedConversationId:
+                opts.initialSelectedConversationId ?? null,
+            },
+          }),
+        );
+      })();
     },
     [dispatch],
   );

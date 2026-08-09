@@ -11,18 +11,15 @@ export const SHAPES_ROUTE_BASE = "/shapes";
 export const SHAPES_FEATURE_LABEL = "Shapes";
 
 /**
- * The shape-creator agent (built server-side by the aidream lane — its id
- * lands in docs/handoffs/content-ir-integration-map.md when ready). Empty
- * string = not configured; the studio shows a LOUD not-configured state and
- * never silently falls back to another agent.
+ * The shape-creator agent is a SLOT — `content_ir.kind_creator` — resolved at
+ * trigger time via `features/agents/slots` (`resolveAgentSlot` /
+ * `useAgentSlot`; system default → the user's own binding). Consumers stay
+ * LOUD on a resolution failure (toast / not-configured state) and never
+ * silently fall back to another agent. The slot's system default is the
+ * kind_creator builtin (master 4f4ffd49-…, K2 lane 2026-07-18); repin in the
+ * admin slot console, never in code.
  */
-export const SHAPE_CREATOR_AGENT_ID = "4f4ffd49-db15-4a2e-b9fe-341ffafc1323"; // kind_creator (builtin, K2 lane 2026-07-18)
-
-/** Null when the creator agent is not configured yet (loud empty-state). */
-export function shapeCreatorAgentId(): string | null {
-  const id = SHAPE_CREATOR_AGENT_ID.trim();
-  return id.length > 0 ? id : null;
-}
+export const KIND_CREATOR_SLOT_KEY = "content_ir.kind_creator";
 
 /**
  * Slugs shadowed by the STATIC route segments under `app/(core)/shapes/` —
