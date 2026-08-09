@@ -7,6 +7,8 @@
  * any row carrying the eight metric fields qualifies.
  */
 
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import type { GscDimension } from "@/features/marketing/search-console/types";
 import {
@@ -73,23 +75,56 @@ export function GscDeltaSpan({
   );
 }
 
+/**
+ * THE DOOR LAW for every Search Console table at once.
+ *
+ * A page-dimension row names a canonical page that HAS an id (`page_id`, which
+ * every `gsc_perf_*` RPC returns) and a route — so the key must be reachable,
+ * not just printed. `recordHref` returns the record's destination for one row
+ * (`null`/`undefined` = this row names nothing openable, e.g. a query row or a
+ * URL Search Console reported that never matched a canonical page).
+ *
+ * The door is a trailing anchor rather than the whole cell on purpose: in these
+ * tables the row click is the DRILLDOWN (queries for this page, pages for this
+ * query), and swallowing that gesture would trade one destination for another.
+ * The anchor is a real `next/link` — cmd-click, middle-click and keyboard focus
+ * all work — and it stops propagation so the drill still belongs to the row.
+ */
 export function buildGscKeyColumn<T extends { key: string }>(
   dimension: GscDimension,
   header: string,
+  recordHref?: (row: T) => string | null | undefined,
 ): MatrxColumnDef<T> {
   return {
     id: "key",
     accessorKey: "key",
     header,
     filter: false,
-    cell: (row) => (
-      <span
-        className="block max-w-[28rem] truncate text-xs font-medium text-foreground sm:max-w-[36rem]"
-        title={row.key}
-      >
-        {gscKeyCell(dimension, row.key)}
-      </span>
-    ),
+    cell: (row) => {
+      const href = recordHref?.(row) ?? null;
+      const label = gscKeyCell(dimension, row.key);
+      return (
+        <span className="flex min-w-0 items-center gap-1">
+          <span
+            className="block max-w-[28rem] truncate text-xs font-medium text-foreground sm:max-w-[36rem]"
+            title={row.key}
+          >
+            {label}
+          </span>
+          {href ? (
+            <Link
+              href={href}
+              onClick={(event) => event.stopPropagation()}
+              title={`Open ${label} in the page workspace`}
+              aria-label={`Open ${label} in the page workspace`}
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <ArrowUpRight className="h-3 w-3" />
+            </Link>
+          ) : null}
+        </span>
+      );
+    },
   };
 }
 

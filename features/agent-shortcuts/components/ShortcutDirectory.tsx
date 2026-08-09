@@ -57,6 +57,7 @@ import {
   resolveShortcutEditUrl,
   scopeTypeLabel,
 } from "../utils/shortcut-directory-rows";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
@@ -372,7 +373,16 @@ export function ShortcutDirectory({
         <div className="flex items-center gap-2 min-w-0">
           <MousePointerClick className="h-4 w-4 text-primary shrink-0" />
           <div className="min-w-0">
-            <div className="font-medium truncate">{row.label}</div>
+            {/* The row navigates by JS; the shortcut's own name is the anchor,
+                so cmd-click / middle-click / new tab work on it. */}
+            <Link
+              href={resolveShortcutEditUrl(row, mode)}
+              onClick={(e) => e.stopPropagation()}
+              title={`Open ${row.label}`}
+              className="font-medium truncate block underline-offset-2 hover:text-primary hover:underline"
+            >
+              {row.label}
+            </Link>
             {row.description && (
               <div className="text-xs text-muted-foreground truncate">
                 {row.description}
@@ -381,11 +391,25 @@ export function ShortcutDirectory({
           </div>
         </div>
       </TableCell>
-      <TableCell>
-        {row.agentName || row.agentId ? (
-          <span className="text-sm truncate block max-w-[180px]">
-            {row.agentName ?? row.agentId}
-          </span>
+      <TableCell onClick={(e) => e.stopPropagation()}>
+        {/* THE DOOR LAW: this column named the agent (or printed its raw uuid)
+            and reached nothing. In admin mode the agent lives in the system-
+            agents shell, so the door is overridden to stay in that shell. */}
+        {row.agentId ? (
+          <div className="group/entity-ref max-w-[180px]">
+            <EntityRef
+              token="agent"
+              id={row.agentId}
+              name={row.agentName}
+              href={
+                mode === "admin"
+                  ? `/administration/agents/system-agents/agents/${row.agentId}`
+                  : undefined
+              }
+              showIcon={false}
+              className="text-sm"
+            />
+          </div>
         ) : (
           <span className="text-xs text-muted-foreground">—</span>
         )}
