@@ -31,7 +31,11 @@ import type {
   CellEditsMap,
   MatrxColumnDef,
 } from "@/components/official/matrx-data-table/types";
-import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
+import {
+  APPLICATIONS_ADMIN_LOCATION,
+  catalogEntryHref,
+} from "@/features/admin/applications/constants";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken } from "@/lib/redux/slices/userSlice";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
@@ -247,9 +251,15 @@ export function CatalogKindTable({
         width: 260,
       },
       {
+        // THE DOOR LAW: the entry's name is the record — clicking it opens the
+        // editor in place (`onOpenEntry`), and `href` makes it a real anchor so
+        // an operator mid-review can middle-click it into a new tab instead of
+        // losing this table. Both land on the same entry: the route now reads
+        // `?app=&kind=&entry=`.
         id: "name",
         header: "Name",
         accessorFn: (row) => payloadDisplayName(row.payload) ?? "",
+        href: (row) => catalogEntryHref(row.app, row.kind, row.id),
         cell: (row) => {
           const name = payloadDisplayName(row.payload);
           return name ? (
@@ -257,7 +267,7 @@ export function CatalogKindTable({
               {name}
             </span>
           ) : (
-            <span className="text-muted-foreground">—</span>
+            <span className="text-muted-foreground">{row.key}</span>
           );
         },
         width: 220,
@@ -334,14 +344,21 @@ export function CatalogKindTable({
         accessorFn: (row) =>
           row.updated_by ? (adminEmails[row.updated_by] ?? row.updated_by) : "",
         filter: "select",
+        // No `user` entity token and no `/users/<id>` route exists, so an
+        // unresolved admin id is rendered copyable rather than as a truncated
+        // string the operator can do nothing with.
         cell: (row) =>
           row.updated_by ? (
-            <span
-              className="text-xs text-muted-foreground"
-              title={row.updated_by}
-            >
-              {adminEmails[row.updated_by] ?? row.updated_by.slice(0, 8)}
-            </span>
+            adminEmails[row.updated_by] ? (
+              <span
+                className="block truncate text-xs text-muted-foreground"
+                title={row.updated_by}
+              >
+                {adminEmails[row.updated_by]}
+              </span>
+            ) : (
+              <MatrxUuidCell value={row.updated_by} label="Updated by user id" />
+            )
           ) : (
             <span className="text-xs text-muted-foreground">—</span>
           ),

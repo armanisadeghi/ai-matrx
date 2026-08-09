@@ -1,11 +1,18 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Activity,
   AlertCircle,
   CheckCircle,
-  ExternalLink,
   Eye,
   Filter,
   RefreshCw,
@@ -63,6 +70,16 @@ import {
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
+import {
+  AgentAppRef,
+  agentAppExecutionsHref,
+} from "@/features/agent-apps/components/AgentAppRef";
+import {
+  MatrxUuidCell,
+  isUuidValue,
+} from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { supabase } from "@/utils/supabase/client";
+import { appDb } from "@/utils/supabase/appDb";
 
 function humanExecution(r: AgentAppExecutionRow): string {
   return [
@@ -100,7 +117,27 @@ const ERROR_TYPE_LABELS: Record<string, string> = {
   other: "Other",
 };
 
+/**
+ * `?app=<appId>` scopes BOTH tabs to one app. It is the destination of every
+ * "N runs" count elsewhere in the agent-apps admin — THE DOOR LAW's "a count is
+ * a door" corollary. Reading it needs `useSearchParams`, which needs a Suspense
+ * boundary in the App Router (same pattern as the skills admin page).
+ */
 export default function AgentAppsExecutionsAdminPage() {
+  return (
+    <Suspense fallback={null}>
+      <AgentAppsExecutionsAdminPageInner />
+    </Suspense>
+  );
+}
+
+function AgentAppsExecutionsAdminPageInner() {
+  const searchParams = useSearchParams();
+  // A hand-edited/garbage `?app=` must degrade to "all apps", never to a
+  // Postgres uuid-cast error dressed up as a load failure.
+  const rawAppId = searchParams.get("app");
+  const appId = isUuidValue(rawAppId) ? rawAppId : null;
+
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full bg-textured">
@@ -113,6 +150,7 @@ export default function AgentAppsExecutionsAdminPage() {
             Recent runs across every agent app and any errors they surfaced.
           </p>
         </div>
+        {appId && <AppScopeBanner appId={appId} />}
         <Tabs
           defaultValue="executions"
           className="flex-1 flex flex-col overflow-hidden"
@@ -140,13 +178,13 @@ export default function AgentAppsExecutionsAdminPage() {
               value="executions"
               className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col"
             >
-              <ExecutionsTable />
+              <ExecutionsTable appId={appId} />
             </TabsContent>
             <TabsContent
               value="errors"
               className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col"
             >
-              <ErrorsTable />
+              <ErrorsTable appId={appId} />
             </TabsContent>
           </div>
         </Tabs>
@@ -155,7 +193,100 @@ export default function AgentAppsExecutionsAdminPage() {
   );
 }
 
-function ExecutionsTable() {
+/**
+ * States the active scope AND the way out of it — a filter the user can't see
+ * or clear is its own dead end. The app itself is a door (name → admin record,
+ * new tab, peek, public page).
+ */
+function AppScopeBanner({ appId }: { appId: string }) {
+  const [app, setApp] = useState<{ name: string | null; slug: string | null }>({
+    name: null,
+    slug: null,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { data } = await appDb(supabase)
+        .from("definition")
+        .select("name, slug")
+        .eq("id", appId)
+        .maybeSingle();
+      if (!cancelled && data) {
+        setApp({ name: data.name ?? null, slug: data.slug ?? null });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [appId]);
+
+  return (
+    <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border bg-accent/40 text-xs">
+      <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+      <span className="text-muted-foreground">Scoped to app</span>
+      <AgentAppRef
+        appId={appId}
+        name={app.name}
+        slug={app.slug}
+        alwaysShowActions
+      />
+      <Link
+        href="/administration/agents/agent-apps/executions"
+        className="ml-auto inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+      >
+        <X className="h-3.5 w-3.5" />
+        Show all apps
+      </Link>
+    </div>
+  );
+}
+
+/**
+ * Who ran it: a signed-in user, an anonymous fingerprint, or a bare IP.
+ *
+ * The user id gets a copyable `MatrxUuidCell` and NO door: there is no `user`
+ * entity token and no id-addressed user route today (`/administration/users`
+ * is a roster with no `?user=` deep link), and inventing `/users/<id>` would
+ * ship a 404. Registry gap — reported, not faked.
+ */
+function ExecutionIdentity({ row }: { row: AgentAppExecutionRow }) {
+  if (row.user_id) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <MatrxUuidCell value={row.user_id} label="User id" />
+        <Badge variant="outline" className="text-[10px]">
+          User
+        </Badge>
+      </div>
+    );
+  }
+  if (row.fingerprint) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <MatrxUuidCell value={row.fingerprint} label="Fingerprint" />
+        <Badge variant="outline" className="text-[10px]">
+          Anon
+        </Badge>
+      </div>
+    );
+  }
+  if (row.ip_address) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="font-mono text-[11px] text-muted-foreground">
+          {row.ip_address}
+        </span>
+        <Badge variant="outline" className="text-[10px]">
+          IP
+        </Badge>
+      </div>
+    );
+  }
+  return <span className="text-muted-foreground/40">—</span>;
+}
+
+function ExecutionsTable({ appId }: { appId: string | null }) {
   const { toast } = useToast();
   const [rows, setRows] = useState<AgentAppExecutionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -170,6 +301,7 @@ function ExecutionsTable() {
       const successVal =
         successFilter === "all" ? undefined : successFilter === "success";
       const data = await fetchAgentAppExecutions({
+        app_id: appId ?? undefined,
         success: successVal,
         limit: 500,
       });
@@ -184,7 +316,7 @@ function ExecutionsTable() {
     } finally {
       setLoading(false);
     }
-  }, [successFilter, toast]);
+  }, [appId, successFilter, toast]);
 
   useEffect(() => {
     void load();
@@ -356,30 +488,26 @@ function ExecutionsTable() {
                     </Badge>
                   )}
                 </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">{r.app_name ?? "—"}</span>
-                    {r.app_slug && (
-                      <a
-                        href={`/p/${r.app_slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
-                  </div>
+                <TableCell className="text-sm">
+                  <AgentAppRef
+                    appId={r.app_id}
+                    name={r.app_name}
+                    slug={r.app_slug}
+                  />
                 </TableCell>
-                <TableCell className="font-mono text-[11px] text-muted-foreground truncate max-w-[160px]">
-                  {r.task_id}
+                {/*
+                  `app.execution.task_id` is NOT a `tasks` FK — it is a
+                  client-minted run correlation id (useAgentAppTracker
+                  `makeTaskId()`), confirmed against the live schema: the table
+                  has no FK on the column. Linking it to `/tasks/<id>` would
+                  send the operator to another record entirely, so it stays a
+                  copyable id with no door.
+                */}
+                <TableCell className="max-w-[160px]">
+                  <MatrxUuidCell value={r.task_id} label="Run id" />
                 </TableCell>
-                <TableCell className="font-mono text-[11px] text-muted-foreground truncate max-w-[160px]">
-                  {r.user_id ? `user:${r.user_id.slice(0, 8)}` : ""}
-                  {r.fingerprint
-                    ? `fp:${r.fingerprint.slice(0, 8)}`
-                    : ""}
-                  {r.ip_address ?? ""}
+                <TableCell className="max-w-[200px]">
+                  <ExecutionIdentity row={r} />
                 </TableCell>
                 <TableCell className="text-right">
                   {r.tokens_used?.toLocaleString() ?? 0}
@@ -430,7 +558,7 @@ function ExecutionsTable() {
   );
 }
 
-function ErrorsTable() {
+function ErrorsTable({ appId }: { appId: string | null }) {
   const { toast } = useToast();
   const [rows, setRows] = useState<AgentAppErrorRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -449,7 +577,11 @@ function ErrorsTable() {
         resolvedFilter === "all"
           ? undefined
           : resolvedFilter === "resolved";
-      const data = await fetchAgentAppErrors({ resolved: r, limit: 500 });
+      const data = await fetchAgentAppErrors({
+        app_id: appId ?? undefined,
+        resolved: r,
+        limit: 500,
+      });
       setRows(data);
     } catch (err) {
       toast({
@@ -461,7 +593,7 @@ function ErrorsTable() {
     } finally {
       setLoading(false);
     }
-  }, [resolvedFilter, toast]);
+  }, [appId, resolvedFilter, toast]);
 
   useEffect(() => {
     void load();
@@ -734,21 +866,12 @@ function ErrorsTable() {
                     {ERROR_TYPE_LABELS[r.error_type] ?? r.error_type}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">{r.app_name ?? "—"}</span>
-                    {r.app_slug && (
-                      <a
-                        href={`/p/${r.app_slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
-                  </div>
+                <TableCell className="text-sm">
+                  <AgentAppRef
+                    appId={r.app_id}
+                    name={r.app_name}
+                    slug={r.app_slug}
+                  />
                 </TableCell>
                 <TableCell className="max-w-md">
                   <Tooltip>
@@ -870,18 +993,19 @@ function ErrorsTable() {
               )}
               <div>
                 <Label>App</Label>
-                <div className="mt-1 flex items-center gap-2">
-                  <span className="text-sm">{selected.app_name}</span>
-                  {selected.app_slug && (
-                    <a
-                      href={`/p/${selected.app_slug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  )}
+                <div className="mt-1 flex items-center gap-2 text-sm">
+                  <AgentAppRef
+                    appId={selected.app_id}
+                    name={selected.app_name}
+                    slug={selected.app_slug}
+                    alwaysShowActions
+                  />
+                  <Link
+                    href={agentAppExecutionsHref(selected.app_id)}
+                    className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  >
+                    All runs & errors for this app
+                  </Link>
                 </div>
               </div>
               <div>

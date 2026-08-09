@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +34,6 @@ import {
   Search,
   Shield,
   ShieldOff,
-  ExternalLink,
   User,
   Globe,
   RefreshCw,
@@ -52,6 +52,11 @@ import {
 import { CopyButtons } from '@/components/agent-copy/CopyButtons';
 import { ExportMenu } from '@/components/agent-copy/ExportMenu';
 import { jsonExportItem, csvExportItem } from '@/components/agent-copy/export';
+import {
+  AgentAppRef,
+  agentAppExecutionsHref,
+} from '@/features/agent-apps/components/AgentAppRef';
+import { MatrxUuidCell } from '@/components/official/matrx-data-table/MatrxUuidCell';
 
 function humanRateLimit(limit: AgentAppRateLimitRow): string {
   const identifier = limit.user_id
@@ -281,12 +286,16 @@ export function RateLimitsClient() {
     }
   };
 
+  // Ids the operator may need to act on elsewhere are copyable, never bare
+  // text. There is no `user` entity token and no id-addressed user route, so
+  // the user id gets copy + hover-full and no door — a link to `/users/<id>`
+  // would be a 404, which is worse than no link. Registry gap, reported.
   const getIdentifierDisplay = (limit: AgentAppRateLimitRow) => {
     if (limit.user_id) {
       return (
         <div className="flex items-center gap-2">
-          <User className="w-4 h-4 text-purple-600" />
-          <span className="text-sm">{limit.user_id}</span>
+          <User className="w-4 h-4 text-muted-foreground" />
+          <MatrxUuidCell value={limit.user_id} label="User id" />
           <Badge variant="outline" className="text-xs">
             User
           </Badge>
@@ -295,8 +304,8 @@ export function RateLimitsClient() {
     } else if (limit.ip_address) {
       return (
         <div className="flex items-center gap-2">
-          <Globe className="w-4 h-4 text-blue-600" />
-          <span className="text-sm">{limit.ip_address}</span>
+          <Globe className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-mono">{limit.ip_address}</span>
           <Badge variant="outline" className="text-xs">
             IP
           </Badge>
@@ -305,15 +314,8 @@ export function RateLimitsClient() {
     } else if (limit.fingerprint) {
       return (
         <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4 text-orange-600" />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="text-sm font-mono">{limit.fingerprint.substring(0, 12)}...</span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <code className="text-xs">{limit.fingerprint}</code>
-            </TooltipContent>
-          </Tooltip>
+          <Shield className="w-4 h-4 text-muted-foreground" />
+          <MatrxUuidCell value={limit.fingerprint} label="Fingerprint" />
           <Badge variant="outline" className="text-xs">
             Fingerprint
           </Badge>
@@ -643,26 +645,27 @@ export function RateLimitsClient() {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{limit.app_name}</span>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <a
-                            href={`/p/${limit.app_slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </TooltipTrigger>
-                        <TooltipContent>View app</TooltipContent>
-                      </Tooltip>
-                    </div>
+                  <TableCell className="text-sm font-medium">
+                    <AgentAppRef
+                      appId={limit.app_id}
+                      name={limit.app_name}
+                      slug={limit.app_slug}
+                    />
                   </TableCell>
                   <TableCell>{getIdentifierDisplay(limit)}</TableCell>
-                  <TableCell className="text-right">{limit.execution_count}</TableCell>
+                  {/*
+                    A count is a door: the executions console accepts `?app=`,
+                    so this number reaches the runs it counts.
+                  */}
+                  <TableCell className="text-right">
+                    <Link
+                      href={agentAppExecutionsHref(limit.app_id)}
+                      title={`Open the runs and errors for ${limit.app_name ?? "this app"}`}
+                      className="underline-offset-2 hover:text-primary hover:underline"
+                    >
+                      {limit.execution_count}
+                    </Link>
+                  </TableCell>
                   <TableCell>
                     <span className="text-xs text-muted-foreground">
                       {new Date(limit.first_execution_at).toLocaleString()}

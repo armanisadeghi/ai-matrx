@@ -113,6 +113,37 @@ async function emailsForUserIds(
 
 // ── Admin runs ─────────────────────────────────────────────────────────────
 
+/**
+ * A run plus the TITLE of the scheduled task it belongs to.
+ *
+ * THE DOOR LAW: an admin table that prints `task_id` and nothing else makes the
+ * operator copy a uuid and go hunting. The parent title comes free off the
+ * existing `sch_run_task_id_fkey` embed, so every run names its schedule and
+ * links to `/schedules/<task_id>`.
+ */
+export interface AdminRunRow extends SchRunRow {
+  task_title: string | null;
+}
+
+/** Shared PostgREST projection: the run row + its parent task's title. */
+const RUN_WITH_TASK_SELECT = "*, task:sch_task(title)";
+
+// MATRX-EXCEPTION: PostgREST aliased-embed select (task:sch_task(title)) —
+// supabase-js cannot infer the joined shape from the select() string literal,
+// and SchRunRow is the feature's FE-facing projection type
+// (features/scheduling/types.ts), not a generated row. The alias name and
+// selected column are verified against RUN_WITH_TASK_SELECT above, and the
+// embed is backed by the live `sch_run_task_id_fkey` constraint.
+function toAdminRunRows(data: unknown): AdminRunRow[] {
+  const rows = (data ?? []) as unknown as Array<
+    SchRunRow & { task: { title: string }[] | { title: string } | null }
+  >;
+  return rows.map(({ task, ...run }) => ({
+    ...run,
+    task_title: (Array.isArray(task) ? task[0]?.title : task?.title) ?? null,
+  }));
+}
+
 export async function fetchAllRunsAdmin(
   options: {
     status?: RunStatus | null;
@@ -120,10 +151,10 @@ export async function fetchAllRunsAdmin(
     limit?: number;
     since?: string | null;
   } = {},
-): Promise<SchRunRow[]> {
+): Promise<AdminRunRow[]> {
   let q = schedulerDb(supabase)
     .schema("scheduler").from("sch_run")
-    .select("*")
+    .select(RUN_WITH_TASK_SELECT)
     .order("created_at", { ascending: false })
     .limit(options.limit ?? 100);
 
@@ -133,22 +164,22 @@ export async function fetchAllRunsAdmin(
 
   const { data, error } = await q;
   if (error) throw pgErrorToError(error);
-  return (data ?? []) as SchRunRow[];
+  return toAdminRunRows(data);
 }
 
 // ── Orphan leases ──────────────────────────────────────────────────────────
 
-export async function fetchOrphanLeases(): Promise<SchRunRow[]> {
+export async function fetchOrphanLeases(): Promise<AdminRunRow[]> {
   const nowIso = new Date().toISOString();
   const { data, error } = await schedulerDb(supabase)
     .schema("scheduler").from("sch_run")
-    .select("*")
+    .select(RUN_WITH_TASK_SELECT)
     .in("status", ["claimed", "running"])
     .lt("claim_expires_at", nowIso)
     .order("claim_expires_at", { ascending: true })
     .limit(200);
   if (error) throw pgErrorToError(error);
-  return (data ?? []) as SchRunRow[];
+  return toAdminRunRows(data);
 }
 
 // ── System health ──────────────────────────────────────────────────────────

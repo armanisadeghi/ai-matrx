@@ -14,8 +14,9 @@
 // MatrxDataTable owns all filtering.
 
 import { useCallback, useMemo, useState } from "react";
+import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
-import { History, LibraryBig, MonitorCog } from "lucide-react";
+import { ExternalLink, History, LibraryBig, MonitorCog } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,13 @@ import { useToast } from "@/components/ui/use-toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { createClient } from "@/utils/supabase/client";
-import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
+import {
+  APPLICATIONS_ADMIN_LOCATION,
+  applicationConfigHref,
+  catalogEntryHref,
+  catalogKindHref,
+} from "@/features/admin/applications/constants";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
 import { buildApplicationsTimeline } from "@/features/admin/applications/history/buildTimeline";
 import type { ApplicationsHistoryEntry } from "@/features/admin/applications/history/types";
@@ -33,6 +40,17 @@ interface ApplicationsHistoryClientProps {
   initialEntries: ApplicationsHistoryEntry[];
   /** Rows fetched per source — surfaced so the cap is never silently hidden. */
   limit: number;
+}
+
+/**
+ * The record route for one timeline entry. Configuration snapshots are keyed by
+ * application; catalog snapshots carry their own entry id + kind.
+ */
+function recordHref(row: ApplicationsHistoryEntry): string {
+  if (row.source === "configuration") return applicationConfigHref(row.app);
+  return row.entryId && row.kind
+    ? catalogEntryHref(row.app, row.kind, row.entryId)
+    : catalogKindHref(row.app, row.kind ?? "");
 }
 
 function sourceBadge(source: ApplicationsHistoryEntry["source"]) {
@@ -122,9 +140,16 @@ export function ApplicationsHistoryClient({
         width: 130,
       },
       {
+        // THE DOOR LAW: this column names the exact record that changed, so it
+        // opens it. Configuration → that application's editor; catalog → that
+        // entry's editor. Both routes read the params server-side, so the link
+        // lands ON the record, not merely on the tab. A catalog snapshot whose
+        // entry was since deleted still links: the Catalogs tab says so loudly
+        // rather than pretending to have opened it.
         id: "target",
         accessorKey: "target",
         header: "Record",
+        href: (row) => recordHref(row),
         cell: (row) => (
           <span className="block max-w-80 truncate text-sm" title={row.target}>
             {row.target}
@@ -156,14 +181,25 @@ export function ApplicationsHistoryClient({
         header: "Changed by",
         accessorFn: (row) => whoLabel(row.changedBy),
         filter: "select",
-        cell: (row) => (
-          <span
-            className="text-xs text-muted-foreground"
-            title={row.changedBy ?? undefined}
-          >
-            {whoLabel(row.changedBy)}
-          </span>
-        ),
+        // No `user` entity token and no `/users/<id>` route exists — an admin
+        // id we cannot resolve to an email is rendered copyable instead of
+        // truncated into something the operator can do nothing with.
+        cell: (row) => {
+          if (!row.changedBy) {
+            return <span className="text-xs text-muted-foreground">—</span>;
+          }
+          const email = adminEmails[row.changedBy];
+          return email ? (
+            <span
+              className="block truncate text-xs text-muted-foreground"
+              title={row.changedBy}
+            >
+              {email}
+            </span>
+          ) : (
+            <MatrxUuidCell value={row.changedBy} label="Changed by user id" />
+          );
+        },
         width: 200,
       },
       {
@@ -181,7 +217,7 @@ export function ApplicationsHistoryClient({
         width: 150,
       },
     ];
-  }, [whoLabel]);
+  }, [whoLabel, adminEmails]);
 
   return (
     <div className="flex h-full flex-col gap-3 p-4">
@@ -221,6 +257,20 @@ export function ApplicationsHistoryClient({
             ),
           }}
           detail={{
+            // Reading a diff and then having to go hunt for the record is the
+            // dead end; the panel carries the door, into a new tab so the
+            // timeline stays put.
+            headerActions: (row) => (
+              <Button size="sm" variant="outline" asChild>
+                <Link
+                  href={recordHref(row)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Open record
+                </Link>
+              </Button>
+            ),
             title: (row) => row.target,
             description: (row) =>
               `${row.source === "configuration" ? "Configuration" : "Catalog"} · ${row.op} · ${format(

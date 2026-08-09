@@ -12,6 +12,7 @@
 import { useMemo, useState } from "react";
 import { LibraryBig, Link2, Plus } from "lucide-react";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +42,24 @@ import type {
 
 interface CatalogsClientProps {
   initialRows: CatalogEntryRow[];
+  /** Deep-link: application to select. Defaults to DEFAULT_CATALOG_APP. */
+  initialApp?: string;
+  /** Deep-link: open this kind's entry table instead of the kind dashboard. */
+  initialKind?: string;
+  /** Deep-link: open this entry's editor (needs `initialKind`). */
+  initialEntryId?: string;
+}
+
+/**
+ * Landing view for a deep link. `?kind=` opens that kind's table, `?entry=`
+ * opens one entry's editor — THE DOOR LAW: a surface that names a catalog entry
+ * (the applications history timeline) must be able to open exactly that entry,
+ * not just drop the operator on the tab.
+ */
+function initialView(kind?: string, entryId?: string): View {
+  if (kind && entryId) return { mode: "edit", kind, entryId };
+  if (kind) return { mode: "kind", kind };
+  return { mode: "kinds" };
 }
 
 type View =
@@ -58,13 +77,20 @@ function sortRows(rows: CatalogEntryRow[]): CatalogEntryRow[] {
   );
 }
 
-export function CatalogsClient({ initialRows }: CatalogsClientProps) {
+export function CatalogsClient({
+  initialRows,
+  initialApp,
+  initialKind,
+  initialEntryId,
+}: CatalogsClientProps) {
   const { toast } = useToast();
   const [rows, setRows] = useState<CatalogEntryRow[]>(() =>
     sortRows(initialRows),
   );
-  const [app, setApp] = useState<string>(DEFAULT_CATALOG_APP);
-  const [view, setView] = useState<View>({ mode: "kinds" });
+  const [app, setApp] = useState<string>(initialApp ?? DEFAULT_CATALOG_APP);
+  const [view, setView] = useState<View>(() =>
+    initialView(initialKind, initialEntryId),
+  );
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkDialogKind, setLinkDialogKind] = useState<string | null>(null);
 
@@ -227,6 +253,33 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
       view.mode === "edit"
         ? (rows.find((r) => r.id === view.entryId) ?? null)
         : null;
+    // A deep link can name an entry that was deleted, or that belongs to
+    // another application. Say so — silently rendering the blank "new entry"
+    // editor would claim we opened a record we never found.
+    if (view.mode === "edit" && !row) {
+      return (
+        <div className="flex h-full flex-col gap-3 p-4">
+          <Alert variant="destructive">
+            <AlertDescription className="flex flex-wrap items-center gap-2 text-sm">
+              <span>
+                No <code className="font-mono">{kindLabel(view.kind)}</code>{" "}
+                entry <code className="font-mono">{view.entryId}</code> under{" "}
+                <code className="font-mono">{app}</code> — it may have been
+                deleted, or it belongs to another application.
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setView({ mode: "kind", kind: view.kind })}
+              >
+                Show all {kindLabel(view.kind)} entries
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
+      );
+    }
     return (
       <div className="h-full overflow-y-auto p-4">
         <CatalogEntryEditor

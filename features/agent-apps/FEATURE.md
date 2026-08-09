@@ -23,6 +23,11 @@ Successor to the legacy `features/prompt-apps/` (still live, deprecated) and `fe
 
 **Feature code** (`features/agent-apps/`)
 - `components/`, `sample-code/`, `services/`, `utils/`, `types.ts`, `index.ts`
+- `components/AgentAppRef.tsx` — **the ONE way an app is named in the admin shell.**
+  Composes `EntityRef` with the admin editor as the record route and `/p/<slug>`
+  as an extra door; also exports `agentAppAdminEditHref` /
+  `agentAppExecutionsHref` / `agentAppPublicHref`. Never print an app's name as
+  a `<span>` and never hand-roll the link (THE DOOR LAW).
 
 **Redux** (canonical slice lives with agents)
 - `features/agents/redux/agent-apps/` — slice, selectors, types, thunks (currently stubbed)
@@ -135,6 +140,10 @@ Lifecycle:
 
 Aborts (`AbortError`) intentionally leave the row at `success=NULL` — analytics treats long-pending rows as abandoned, distinct from outright errors.
 
+**`app.execution.task_id` is NOT a `tasks` FK.** It is a client-minted run correlation id (`useAgentAppTracker` → `makeTaskId()` → `crypto.randomUUID()`), and the table carries no foreign key on the column — verified against the live schema. Admin surfaces render it as a copyable id with **no door**: a `/tasks/<id>` link would send the operator to an unrelated record. The column name is the trap; do not "fix" it with a link.
+
+**The runs console is scoped by `?app=<appId>`** — `/administration/agents/agent-apps/executions?app=…` filters both the Executions and Errors tabs (`agentAppExecutionsHref` in `components/AgentAppRef.tsx`). Every "N runs" count in the agent-apps admin points there, so a count always reaches the rows it counts.
+
 The `kind` column was added in [`migrations/aga_executions_visit_run_tracking.sql`](../../migrations/aga_executions_visit_run_tracking.sql). The success-rate trigger now counts only `kind='run' AND success IS NOT NULL` rows so visits and in-flight runs don't pollute `aga_apps.success_rate` / `total_executions`. The rate-limit BEFORE-INSERT trigger has a `WHEN (NEW.kind = 'run')` clause so visits never count against quota.
 
 Why the renderer doesn't write directly via the Supabase JS client: the in-shell `/run` route is for owners testing draft apps, where the public RLS INSERT policies (`status='published'`, `is_public=true`) would block. Routing through a Next.js endpoint that uses the admin client gives one path that works for both surfaces and keeps the secret key off the client.
@@ -174,6 +183,7 @@ Thunks stub and throw. Backing DB table not yet created. UI rendering path in bu
 
 ## Change log
 
+- `2026-08-09` — claude: **no-dead-ends sweep for the agent-apps admin.** New `components/AgentAppRef.tsx` (EntityRef → admin editor + new tab + peek + `/p/<slug>`), consumed by the apps list, system-agents apps, executions, errors (table + dialog), and rate limits — the app name is a real anchor everywhere instead of a `<span>` / onClick-only `<button>`. Executions console gained `?app=<appId>` (both tabs, with a scope banner and a "show all apps" exit), so every "N runs" count is now a door. `task_id`, `user_id`, `fingerprint`, and the category uuid render through `MatrxUuidCell` (copy + hover-full) instead of raw text; `task_id` deliberately gets **no** link (not a `tasks` FK). Categories are addressable via `?category=<id>`, with the URL as the single source of truth for the selection.
 - 2026-07-28 — `shells/catalog.ts`: SHELL_CATALOG metadata (kind/label/description) split out of `shells/index.ts` so ShellPicker/settings surfaces stop compiling the shell components (FormToResultShell drags SmartAgentInput ~1,500 modules). Import the catalog for picker UI, the index for rendering.
 - `2026-07-22` — claude: **killed the "Identifier 'X' has already been declared" sandbox crash class.** An agent-authored kind whose helper was declared `const IconBase = …` and used as `<IconBase/>` failed to render: the missing-identifier patcher injected a fallback `IconBase` into scope, which became a `new Function` *parameter*, colliding with the author's own top-level `const IconBase`. Root cause is structural — `new Function(...scopeKeys, body)` makes every injected scope name a parameter, so ANY author top-level `const`/`let`/`class` matching a scope key (injected fallback OR allowlisted export like `Button`) is an illegal redeclaration. Fix centralized in the shared compiler and applied to BOTH sandbox stacks (agent-apps/content-ir/tool-renderers via `compile-slot.ts`; inline React blocks via `dynamic-react/compileReactComponent.ts`): a new Babel plugin `collectTopLevelBindingsPlugin` records the author's top-level bindings during the transform, then `getScopeFunctionParameters` excludes them from params and `patchScopeForMissingIdentifiers` skips fallback injection for them — so an author declaration cleanly shadows the injected scope. Regression tests added to `utils/compile-slot.test.ts` (const-arrow, class, allowlist-shadow); full `pnpm type-check` clean.
 - `2026-07-18` — codex: hardened the shared Babel sandbox compiler used by Agent Apps, tool renderers, and DB kind components. Import removal now happens through a Babel AST plugin, covering multiline, type-only, and side-effect declarations without rewriting import-like text inside strings; regression tests pin the boundary. This fixed the live `employee_card` / `employee_roster` Shape components that previously reached `new Function` with an import declaration intact.

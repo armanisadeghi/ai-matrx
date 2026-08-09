@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowDown,
   ArrowUp,
@@ -55,6 +56,8 @@ import {
   type CreateAgentAppCategoryInput,
 } from "@/lib/services/agent-apps-admin-service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 
 function humanCategory(c: AgentAppCategoryRow): string {
   return [
@@ -67,11 +70,44 @@ function humanCategory(c: AgentAppCategoryRow): string {
     .join("\n");
 }
 
+/**
+ * `?category=<id>` makes one category addressable, so its name in the list can
+ * be a real anchor (open, cmd-click, new tab) instead of an onClick-only div —
+ * THE DOOR LAW. `useSearchParams` needs a Suspense boundary in the App Router
+ * (same pattern as the skills admin page).
+ */
 export default function AgentAppsCategoriesAdminPage() {
+  return (
+    <Suspense fallback={null}>
+      <AgentAppsCategoriesAdminPageInner />
+    </Suspense>
+  );
+}
+
+/** Deep link to one category on this page — the category's canonical door. */
+function categoryHref(id: string): string {
+  return `/administration/agents/agent-apps/categories?category=${id}`;
+}
+
+function AgentAppsCategoriesAdminPageInner() {
   const { toast } = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const linkedCategoryId = searchParams.get("category");
   const [categories, setCategories] = useState<AgentAppCategoryRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // The URL is the single source of truth for the selection — no mirrored
+  // state to drift, and every selection is therefore a shareable door.
+  const selectedId = linkedCategoryId;
+  const selectCategory = useCallback(
+    (id: string | null) => {
+      router.replace(
+        id ? categoryHref(id) : "/administration/agents/agent-apps/categories",
+        { scroll: false },
+      );
+    },
+    [router],
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editData, setEditData] = useState<Partial<AgentAppCategoryRow>>({});
@@ -207,7 +243,7 @@ export default function AgentAppsCategoriesAdminPage() {
     setDeleting(true);
     try {
       await deleteAgentAppCategory(deleteTarget.id);
-      if (selectedId === deleteTarget.id) setSelectedId(null);
+      if (selectedId === deleteTarget.id) selectCategory(null);
       setDeleteTarget(null);
       await load();
       toast({
@@ -343,7 +379,7 @@ export default function AgentAppsCategoriesAdminPage() {
             {filtered.map((c) => (
               <div
                 key={c.id}
-                onClick={() => setSelectedId(c.id)}
+                onClick={() => selectCategory(c.id)}
                 className={`group/x flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer transition-colors mb-1 ${
                   selectedId === c.id
                     ? "bg-accent text-accent-foreground"
@@ -353,10 +389,24 @@ export default function AgentAppsCategoriesAdminPage() {
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   {renderIcon(c.icon, { className: "w-4 h-4" }, "Tag")}
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{c.name}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {c.id}
-                    </div>
+                    {/*
+                      `category` IS a registered token — but it points at
+                      `platform.categories`, and these are `app.category` rows.
+                      The explicit href is therefore load-bearing, and the peek
+                      is disabled: the day `category` gets one it would preview
+                      a DIFFERENT record. A wrong door is worse than no door.
+                    */}
+                    <EntityRef
+                      token="category"
+                      id={c.id}
+                      name={c.name}
+                      href={categoryHref(c.id)}
+                      disablePeek
+                      showIcon={false}
+                      className="text-sm font-medium"
+                    />
+                    {/* Was the full raw uuid as a subtitle: unopenable, uncopyable. */}
+                    <MatrxUuidCell value={c.id} label="Category id" />
                   </div>
                 </div>
                 <CopyButtons

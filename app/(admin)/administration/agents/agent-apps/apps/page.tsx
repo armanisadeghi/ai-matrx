@@ -7,6 +7,7 @@ import React, {
   useState,
   useTransition,
 } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Archive,
@@ -14,7 +15,6 @@ import {
   Ban,
   CheckCircle,
   Clock,
-  ExternalLink,
   Filter,
   Loader2,
   RefreshCw,
@@ -44,12 +44,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/use-toast";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import {
@@ -67,6 +62,10 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import { appBrief, humanAgentApp } from "@/features/agent-apps/format";
+import {
+  AgentAppRef,
+  agentAppExecutionsHref,
+} from "@/features/agent-apps/components/AgentAppRef";
 
 type SortField =
   | "name"
@@ -837,23 +836,16 @@ export default function AgentAppsAdminListPage() {
                   onClick={() => handleOpenEdit(app.id)}
                 >
                   <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      <span>{app.name}</span>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <a
-                            href={`/p/${app.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:text-primary/80"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </TooltipTrigger>
-                        <TooltipContent>View public app</TooltipContent>
-                      </Tooltip>
-                    </div>
+                    {/*
+                      A real anchor, not just the row's onClick: cmd-click, a
+                      new tab, and a peek all have to work from the name — THE
+                      DOOR LAW. The row click still opens the editor in place.
+                    */}
+                    <AgentAppRef
+                      appId={app.id}
+                      name={app.name}
+                      slug={app.slug}
+                    />
                   </TableCell>
                   <TableCell>
                     <code className="text-xs bg-muted px-2 py-1 rounded">
@@ -919,8 +911,18 @@ export default function AgentAppsAdminListPage() {
                       {app.is_verified ? "Yes" : "No"}
                     </Button>
                   </TableCell>
-                  <TableCell className="text-right">
-                    {app.total_executions?.toLocaleString() || 0}
+                  {/* A count is a door: the runs total reaches those runs. */}
+                  <TableCell
+                    className="text-right"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Link
+                      href={agentAppExecutionsHref(app.id)}
+                      title={`Open the runs and errors for ${app.name}`}
+                      className="underline-offset-2 hover:text-primary hover:underline"
+                    >
+                      {app.total_executions?.toLocaleString() || 0}
+                    </Link>
                   </TableCell>
                   <TableCell className="text-right">
                     {app.unique_users_count?.toLocaleString() || 0}

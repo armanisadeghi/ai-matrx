@@ -155,6 +155,15 @@ injection of triggers/runs).
 7. **matrx-frontend doesn't execute** — `'web'` is observe-only.
 8. **All status-writing updates inside the runner are gated by
    `claim_token`** so a lapsed-and-re-claimed run can't be stomped on.
+9. **A scheduled task is NOT a workspace `task`.** Its record route is
+   `/schedules/<id>` — build it from
+   `features/scheduling/constants/routes.ts#scheduleHref`, never from the
+   entity registry, whose `task` token resolves to `/tasks/<id>` (a
+   different record). Any surface rendering `sch_run.task_id` must
+   therefore opt OUT of `MatrxDataTable`'s `fk.token: "auto"` /
+   `tokenFromColumnName` column-name guess. A door onto the wrong record
+   is worse than no door (THE DOOR LAW,
+   `common-docs/policies/no-dead-ends.md`).
 
 ## Related features
 
@@ -186,6 +195,7 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-08-09** — THE DOOR LAW on the three scheduling admin tables. `constants/routes.ts#scheduleHref` is now the one definition of `/schedules/<id>`; `/tasks` links every title (+ new tab) and surfaces the agent each schedule runs as an `agent`-token door; `/runs` and `/orphan-leases` name their parent schedule instead of printing a raw uuid (title embedded off `sch_run_task_id_fkey` → new `AdminRunRow.task_title`), and the force-fail confirm carries that door so an admin never loses the dialog to answer "which one?". Owner/user ids stay copy-only — there is no `/users/<id>` route to open. The `task_id` columns deliberately do NOT take the column-name token guess (invariant 9).
 - **2026-07-22** — Added a `// VIEW LAW:` comment to `service/queries.ts` `listAgentTasks` noting the existing RLS container-scope (sch_task rows are user-scoped by policy), clearing THE VIEW LAW's bare-RLS guard finding (no behavior change).
 - **2026-07-13** (later) — `EntityModeHeader` v2 on `/schedules/[id]`: actions are declarative — Run now (solid primary), Pause/Enable (glass, replaces the Switch — one canonical control), Delete (solid destructive); on mobile the header is back + title + one `…` opening a bottom drawer with View/Edit/New + all actions.
 - **2026-07-13** — `/schedules/[id]` view + edit now consume the new `EntityModeHeader` shell template (back + title sibling-dropdown + View|Edit|New center nav + enabled-switch/run/delete as glass tap targets); `ScheduleDetail`'s in-body back row, h1 title block, and button row are deleted; body widened to `max-w-5xl`.

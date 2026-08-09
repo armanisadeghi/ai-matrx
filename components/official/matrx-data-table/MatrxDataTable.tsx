@@ -859,13 +859,17 @@ export function MatrxDataTable<T>({
 
       {detailEnabled && selectedRow ? (
         <SidePanelSurface
+          // `title` stays a plain string (it is the accessible name), while
+          // `titleNode` / `description` carry whatever the caller actually
+          // rendered — an `EntityRef` door included. These used to be coerced
+          // through string-only resolvers, so a detail config returning JSX had
+          // its door silently dropped.
           title={resolveStringTitle(
             detail?.title?.(selectedRow),
             defaultRowTitle(selectedRow, visibleColumns),
           )}
-          description={resolveOptionalString(
-            detail?.description?.(selectedRow),
-          )}
+          titleNode={detail?.title?.(selectedRow)}
+          description={detail?.description?.(selectedRow)}
           onClose={() => setSelectedId(null)}
           defaultWidth={detail?.defaultWidth ?? 480}
           headerActions={
@@ -1061,12 +1065,5 @@ function resolveStringTitle(
   return fallback;
 }
 
-function resolveOptionalString(
-  value: ReactNode | undefined,
-): string | undefined {
-  if (typeof value === "string") return value;
-  if (typeof value === "number") return String(value);
-  return undefined;
-}
 
 export default MatrxDataTable;

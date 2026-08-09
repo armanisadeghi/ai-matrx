@@ -1,4 +1,16 @@
-// Scheduling admin › All tasks — canonical MatrxDataTable over sch.task rows.
+// Scheduling admin › All tasks — canonical MatrxDataTable over scheduler.sch_task
+// rows.
+//
+// THE DOOR LAW: these are SCHEDULED tasks, and their record route is
+// `/schedules/<id>` (features/scheduling). They are NOT workspace `task` rows —
+// the `task` entity token's `/tasks/<id>` would open a different record
+// entirely, so every door here is wired explicitly.
+//
+// SCOPE CAVEAT: `scheduler.sch_task` / `sch_run` carry only the canonical
+// std_select/std_update/std_delete policies — there is NO admin clause live
+// (the old `migrations/sch_admin_rls.sql` targeted pre-reorg `public.sch_task`
+// and was superseded by the RLS canonicalization). So this console shows the
+// VIEWER'S OWN schedules, not the fleet. See FOUND_DEFECTS D140.
 
 "use client";
 
@@ -7,13 +19,16 @@ import { Loader2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import {
   fetchAllTasksAdmin,
   type AdminTaskRow,
 } from "@/lib/services/scheduling-admin-service";
 import { humanizeRelative, humanizeTrigger } from "@/features/scheduling/utils/triggerHumanize";
+import { scheduleHref } from "@/features/scheduling/constants/routes";
 
 function triggerText(r: AdminTaskRow): string {
   return r.trigger
@@ -50,8 +65,14 @@ export default function AdminTasksPage() {
         header: "Title",
         width: 260,
         cell: (r) => (
-          <div>
-            <div className="font-medium">{r.title}</div>
+          <div className="min-w-0">
+            <EntityRef
+              token="scheduled_task"
+              id={r.id}
+              name={r.title}
+              href={scheduleHref(r.id)}
+              className="font-medium"
+            />
             {r.description && (
               <div className="text-xs text-muted-foreground line-clamp-1">
                 {r.description}
@@ -61,13 +82,32 @@ export default function AdminTasksPage() {
         ),
       },
       {
+        id: "agent",
+        header: "Agent",
+        // The row already carries the agent it runs — rendering it without a
+        // door would be knowing the answer and withholding it.
+        accessorFn: (r) => r.agent?.agent_id ?? "",
+        cellKind: "uuid",
+        fk: { token: "agent", label: "Agent" },
+        width: 130,
+      },
+      {
         id: "owner",
         header: "Owner",
         accessorFn: (r) => r.user_email ?? r.user_id,
+        // No `user` entity token and no `/users/<id>` route exist — the id
+        // stays copyable rather than pointing at a route that isn't there.
         cell: (r) => (
-          <span className="font-mono text-xs">{r.user_email ?? r.user_id.slice(0, 8)}</span>
+          <span className="flex min-w-0 items-center gap-1.5">
+            {r.user_email ? (
+              <span className="min-w-0 truncate text-xs" title={r.user_email}>
+                {r.user_email}
+              </span>
+            ) : null}
+            <MatrxUuidCell value={r.user_id} label="Owner user id" />
+          </span>
         ),
-        width: 200,
+        width: 240,
       },
       {
         id: "trigger",
@@ -102,7 +142,14 @@ export default function AdminTasksPage() {
           </Badge>
         ),
       },
-      { id: "id", accessorKey: "id", header: "ID", cellKind: "uuid", width: 110 },
+      {
+        id: "id",
+        accessorKey: "id",
+        header: "ID",
+        cellKind: "uuid",
+        fk: { label: "Scheduled task", href: (id) => scheduleHref(id) },
+        width: 110,
+      },
     ];
   }, []);
 
@@ -146,7 +193,19 @@ export default function AdminTasksPage() {
               ].join("\n"),
             rowAttributes: (r) => ({ id: r.id, enabled: r.enabled }),
           }}
-          detail={{ title: (r) => r.title, description: (r) => r.description ?? undefined }}
+          detail={{
+            // The panel names the record, so the panel opens it too.
+            title: (r) => (
+              <EntityRef
+                token="scheduled_task"
+                id={r.id}
+                name={r.title}
+                href={scheduleHref(r.id)}
+                alwaysShowActions
+              />
+            ),
+            description: (r) => r.description ?? undefined,
+          }}
         />
       </div>
     </div>

@@ -36,8 +36,20 @@ export function useSidePanelSurface(): SidePanelSurfaceContextValue | null {
 }
 
 export interface SidePanelSurfaceProps {
+  /**
+   * Plain-text title. Kept a string because it is also the accessible name
+   * (`DrawerTitle`, `expandButtonLabel`) — a ReactNode there reads as noise.
+   */
   title: string;
-  description?: string;
+  /**
+   * Rich title, rendered INSTEAD of `title` in the visible header. This is how
+   * a panel puts a door on the record it names (`EntityRef`) without losing the
+   * accessible name. Panels used to type `title` as `string` while the host
+   * accepted a ReactNode, so a caller passing JSX had it silently coerced away
+   * and the door simply never rendered.
+   */
+  titleNode?: React.ReactNode;
+  description?: React.ReactNode;
   onClose: () => void;
   defaultWidth?: number;
   minWidth?: number;
@@ -78,6 +90,7 @@ function PanelHeader({
 
 export function SidePanelSurface({
   title,
+  titleNode,
   description,
   onClose,
   defaultWidth = 460,
@@ -143,7 +156,7 @@ export function SidePanelSurface({
               </DrawerDescription>
             ) : null}
             <PanelHeader
-              title={title}
+              title={titleNode ?? title}
               headerActions={headerActions}
               onRequestClose={requestClose}
             />
@@ -161,7 +174,7 @@ export function SidePanelSurface({
         onOpenChange={(next) => {
           if (!next) requestClose();
         }}
-        title={title}
+        title={titleNode ?? title}
         description={description}
         headerActions={headerActions}
         expandButtonLabel={title}

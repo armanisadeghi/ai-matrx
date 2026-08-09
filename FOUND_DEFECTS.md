@@ -13,6 +13,22 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D140 — the scheduling admin consoles show only the viewer's own schedules (2026-08-09)
+
+`/administration/automation/scheduling/{tasks,runs,orphan-leases}` present as fleet-wide admin
+views, but `scheduler.sch_task` / `scheduler.sch_run` carry only the canonical
+`std_select` / `std_update` / `std_delete` policies — there is **no admin clause live**.
+(`migrations/sch_admin_rls.sql` added `OR public.is_platform_admin()` to the *pre-reorg*
+`public.sch_task` and was superseded by the RLS canonicalization; a source comment still
+claimed it applied, corrected 2026-08-09.) So an admin opening these consoles sees their own
+schedules and silently concludes the fleet is idle — reporting green for data you could not
+read, which is the exact failure the no-dead-ends work exists to stop.
+
+Fix: decide whether these consoles are fleet-wide. If yes, add an `is_super_admin()` clause to
+the `sch_*` select policies (or serve them from a `SECURITY DEFINER` RPC like the other admin
+consoles) and say so in the page header. If no, rename them so they don't claim to be admin
+fleet views.
+
 ### D137 — `platform.shareable_resource_registry.url_path_template` is a stale second route authority (2026-08-09)
 
 The DB registry carries a per-resource `url_path_template` that competes with the entity

@@ -15,6 +15,14 @@ export interface ApplicationsHistoryEntry {
   app: string;
   /** Human target: the app slug for configuration, `kind · key` for catalogs. */
   target: string;
+  /**
+   * THE DOOR LAW: the timeline NAMES the record that changed, so it must be
+   * able to open it. Catalog snapshots carry the entry's own id + kind, which
+   * (with `app`) is exactly what `catalogEntryHref` needs; configuration
+   * snapshots need only `app`. Null for configuration rows.
+   */
+  entryId: string | null;
+  kind: string | null;
   /** Catalog rows carry update|delete; configuration rows are always update. */
   op: string;
   changedAt: string;
