@@ -97,9 +97,26 @@ export function loadToolRenderer(
   const existing = inflight.get(toolName);
   if (existing) return existing;
 
+  // Snapshot the tool's invalidation version at load start. If the row is
+  // edited (invalidated) while this fetch is in flight, the fetched data may
+  // be PRE-edit — writing it to the caches would resurrect the stale renderer
+  // with nothing left to heal it (tool_ui compiles are not updated_at-keyed).
+  // On a mid-flight version bump: discard this result and load fresh.
+  const startVersion = getToolRendererVersion(toolName);
+  const invalidatedMidFlight = () =>
+    getToolRendererVersion(toolName) !== startVersion;
+
+  // Assigned right after the async body is created; the finally below reads it
+  // to release only OUR in-flight slot (invalidation may have already cleared
+  // it and a newer load may own it by the time this settles).
+  let self: Promise<ToolComponent | null> | null = null;
+
   const promise = (async (): Promise<ToolComponent | null> => {
     try {
       const row = await fetchToolRendererRow(toolName);
+      // Everything below this await is synchronous, so one check covers all
+      // cache writes on this path.
+      if (invalidatedMidFlight()) return loadToolRenderer(toolName);
       if (!row) {
         markNoToolRenderer(toolName);
         return null;
@@ -157,13 +174,19 @@ export function loadToolRenderer(
         `[toolRendererCache] load failed for "${toolName}":`,
         err,
       );
+      // Same mid-flight guard: don't negative-cache a tool off a fetch that
+      // raced an invalidation — retry against the fresh row instead.
+      if (invalidatedMidFlight()) return loadToolRenderer(toolName);
       markNoToolRenderer(toolName);
       return null;
     } finally {
-      inflight.delete(toolName);
+      if (self !== null && inflight.get(toolName) === self) {
+        inflight.delete(toolName);
+      }
     }
   })();
 
+  self = promise;
   inflight.set(toolName, promise);
   return promise;
 }

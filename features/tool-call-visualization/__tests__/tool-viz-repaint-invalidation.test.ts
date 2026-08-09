@@ -96,6 +96,54 @@ describe("toolRendererCache registers the db-renderer invalidation at module ini
     expect(cache.getToolRendererVersion("some_other_tool")).toBe(otherV0 + 1);
   });
 
+  it("a fetch in flight when invalidation fires cannot repopulate the cache with pre-edit data", async () => {
+    const cache = await import("../db-renderer/toolRendererCache");
+    const { fetchToolRendererRow } = await import(
+      "../db-renderer/fetchToolRendererRow"
+    );
+    const { compileToolRenderer } = await import(
+      "../db-renderer/compileToolRenderer"
+    );
+    const fetchMock = fetchToolRendererRow as jest.Mock;
+    const compileMock = compileToolRenderer as jest.Mock;
+
+    const StaleComponent = () => null;
+    const FreshComponent = () => null;
+    const row = (code: string) => ({
+      inline_code: code,
+      allowed_imports: [],
+      display_name: null,
+      results_label: null,
+      header_subtitle_code: null,
+      keep_expanded_on_stream: false,
+    });
+
+    // Compile mirrors whichever row's code it is given, so the assertion
+    // proves WHICH row's data survived the race.
+    compileMock.mockImplementation((code: string) => ({
+      Component: code === "fresh" ? FreshComponent : StaleComponent,
+    }));
+
+    // First (stale) fetch: resolves ONLY after we invalidate mid-flight.
+    let resolveStale!: (value: unknown) => void;
+    fetchMock.mockImplementationOnce(
+      () => new Promise((resolve) => (resolveStale = resolve)),
+    );
+    const staleLoad = cache.loadToolRenderer("race_tool");
+
+    // The agent's edit lands while the fetch is in flight.
+    cache.invalidateToolRenderer("race_tool");
+
+    // The retry (and any post-invalidation load) sees the fresh row.
+    fetchMock.mockResolvedValue(row("fresh"));
+
+    resolveStale(row("stale"));
+    const resolved = await staleLoad;
+
+    expect(resolved).toBe(FreshComponent);
+    expect(cache.getCachedToolRenderer("race_tool")).toBe(FreshComponent);
+  });
+
   it("version subscribers are notified on invalidation", async () => {
     const cache = await import("../db-renderer/toolRendererCache");
     const listener = jest.fn();
