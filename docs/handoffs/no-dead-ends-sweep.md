@@ -48,84 +48,90 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
 Ordered by traffic. Each item is independently actionable.
 
 1. **`(core)` feature list/detail surfaces** — `/agents`, `/notes`, `/files`,
-   `/tasks`, `/transcripts`, `/marketing/*`. Highest user traffic; not yet audited.
-2. **Association surfaces** — `features/scopes/components/associations/`
-   (`AssociationCard`, `AssociationList`, `AttachedItemsSheet`,
-   `AssociationCardGrid`). These render entity names BY TOKEN, so one fix covers
-   every container that shows attached items. Highest leverage left.
-3. **Remaining admin consoles** not yet swept: `/administration/shared-knowledge`
+   `/tasks`, `/transcripts`, `/marketing/*`, `/crm`, `/research`. Highest user
+   traffic and NOT yet audited. Start with a census like the admin one: find
+   names rendered as `<span>`, bare uuids, and counts.
+2. **Remaining admin consoles.** Not yet swept: `/administration/shared-knowledge`
    (Access Explorer, Stores & Grants, Industries — names live only as
    `<SelectItem>`), `/administration/scopes-context/system-context`,
    `/administration/users/feedback` (feedback id, parent_id, assignee),
-   `/administration/database/sql-functions` (`{usage_count} tables` counts),
+   `/administration/database/sql-functions` (`{usage_count} tables`),
    `/administration/compute/sandbox`, `/administration/users/email`,
-   `/administration/users/announcements`, `/administration/users/invitations`.
-   Plus routes that render from `features/agents` / `features/skills` /
-   `features/podcasts` / `features/content-ir` rather than `features/admin`:
+   `/administration/users/{announcements,invitations}`. Plus routes rendering
+   from `features/agents` / `features/skills` / `features/podcasts` /
+   `features/content-ir` rather than `features/admin`:
    `/administration/agents/system-agents/agents`, `…/shortcuts/all`,
-   `…/mcp-tools`, `…/skills`, `…/bundles`, `/administration/knowledge/podcasts/shows`,
-   `/administration/knowledge/kg-inspector`, `/administration/utilities/kind-registry`,
-   `/administration/utilities/content-blocks`.
-4. **Dialogs / drawers / warnings** that name an entity.
-5. **Toasts and badges.**
-6. **`(dev)` demos** — last.
-7. **aidream admin surfaces** — after matrx-frontend.
+   `…/mcp-tools`, `…/skills`, `…/bundles`,
+   `/administration/knowledge/{podcasts/shows,kg-inspector}`,
+   `/administration/utilities/{kind-registry,content-blocks}`.
+3. **Dialogs / drawers / warnings** that name an entity.
+4. **Toasts and badges.**
+5. **`(dev)` demos** — last.
+6. **aidream admin surfaces** — after matrx-frontend.
+7. **Collapse the `AssociationList` fork.** It has ZERO live JSX consumers;
+   war-room renders `WarRoomResourcesList`, a second implementation of the same
+   grouped row list, while three war-room docblocks still call `AssociationList`
+   "canonical". Both carry doors now, so this is cleanup, not a dead end.
+   Logged in `.matrx/PATROL_SIGHTINGS.md` (P2).
 
 ### Blocked / needs a decision
 
-8. **No canonical user-account route** (FOUND_DEFECTS D138). The single most
-   common remaining dead end in `(admin)` — every actor column. The console's
-   stand-in is `features/admin/users/components/AdminUserRef.tsx` (a menu of
-   param-consuming per-user admin pages); **consume it, don't hand-roll**. Give
+8. **No canonical user-account route** (FOUND_DEFECTS D138) — the most common
+   remaining dead end in `(admin)`; every actor column. The stand-in is
+   `features/admin/users/components/AdminUserRef.tsx` (a menu of param-consuming
+   per-user admin pages); **consume it, don't hand-roll**. Give
    `/administration/users` a deep-link param + register a token with `hrefFor`
-   and every `user_id` column lights up at once.
-   Note `/administration/users/admins` accepts NO param, so an existing Accounts
+   and every `user_id` column lights up at once. Note
+   `/administration/users/admins` accepts NO param, so an existing Accounts
    row-menu item promises a filter it cannot deliver.
 9. **Association edges have no listable destination.** `edge_count` /
    `closure_rows` / `reverse_edge_count` (`RelationshipRulesClient`,
-   `ProblemsPanel`) count real `platform.associations` rows nothing in the app
-   can list, so they stay inert on purpose. A client read would LIE:
-   `platform.associations` SELECT is `iam.has_org_access(organization_id)` while
-   the counts come from `is_super_admin()` RPCs, so the panel would silently
-   under-report. **Needs** an `admin_association_edges(p_source_type,
-   p_target_type, p_label, p_direction)` SECURITY DEFINER RPC + an Edges
-   destination on the Relationships hub. Then both become links in one edit.
-   Same shape blocks the Exposure Audit's "N link" / "N grant" signals and the
-   Entitlements "Events" / "Users" counts (no billing-event list route exists).
-10. **The share registry's `url_path_template` is a stale second route
-    authority** (FOUND_DEFECTS D137). Mitigated — `getResourceSharePath` asks the
-    entity registry first and no longer guesses — but the stale rows remain.
-    Decide: correct each row (then regenerate the TS mirror with
+   `ProblemsPanel`) count real `platform.associations` rows nothing can list, so
+   they stay inert on purpose. A client read would LIE: SELECT is
+   `iam.has_org_access(organization_id)` while the counts come from
+   `is_super_admin()` RPCs. **Needs** `admin_association_edges(p_source_type,
+   p_target_type, p_label, p_direction)` + an Edges destination on the hub.
+   Same shape blocks Exposure Audit's "N link" / "N grant" and the Entitlements
+   "Events" / "Users" counts.
+10. **Stale `url_path_template` rows** (FOUND_DEFECTS D137). Mitigated — a
+    registered token with no `hrefFor` now returns null instead of the template
+    — but the rows are still wrong. Decide: correct each (then
     `pnpm tsx scripts/regen-shareable-registry-snapshot.ts`), or drop the column
-    and let the entity registry be the only route authority. Shared with aidream.
-11. **`workflow` has no detail route in this repo** (FOUND_DEFECTS D139) — it
-    lives in aidream's `apps/workflow-studio`. Several surfaces were shipping
-    `/workflows/<id>` 404s; they now offer the peek instead. Decide: link out to
-    workflow-studio, or build a detail route here.
-12. **`skill` has no user-facing route** — only
-    `/administration/agents/skills?open=<id>`, behind the super-admin gate. Left
-    door-less rather than 403-ing non-admins. Same for `quiz_session`,
-    `flashcard_data`, `canvas_items`: peeks render, no route exists.
+    so the entity registry is the only route authority. Shared with aidream.
+11. **Routes that do not exist for real entities.** `workflow` (D139 — lives in
+    aidream's workflow-studio), `skill` (admin-only route; a 403 door is still a
+    dead end), `quiz_session`, `flashcard_data`, `canvas_items`. Peeks render;
+    no route does. Decide per entity: build the route, or link out.
+12. **Association-edge endpoints with NO door at all** — `crm_campaign`,
+    `seo_keyword`, `folder`, `working_document`, `flashcard_set`, `quiz_session`,
+    `code_folder`, `code_repository`. These are valid edge endpoints, so an
+    attached item of these types is plain text. **A peek each is the cheapest
+    fix** — the picker is where "which one is that?" actually bites.
+13. **Scheduling admin consoles show only the viewer's own rows** (D140) — they
+    present as fleet-wide and are not.
 
 ## Done
 
-- **`components/official/entity-ref/doors.ts`** — the ONE resolver. `EntityRef`
-  (name + doors), `MatrxUuidCell` (id + doors), `PeekDialog`, `OrgResourceList`
-  and `getResourceSharePath` all consume it, so a registry edit can never light
-  one surface and miss another.
-- **Registry routes added** (each verified against the route AND the table it
-  reads): `agent_shortcut`, `app`, `project`, `organization`, `message_template`,
-  `transcript`, `studio_session`, `data_store`; `code_file` corrected. Plus an
-  `organization` peek.
-- **Six peeks were shipping "Open" buttons that 404'd** — `PeekDialog` now takes
-  `token` + `id` and asks the registry. `WorkflowPeek` also read a deprecated
-  table that always errors; repointed at `workflow.definition`.
-- **Share links no longer guess.** `getResourceSharePath` = entity registry →
-  share-registry template → null (never a fabricated path); both share UIs and
-  the five direct `urlPathTemplate` readers go through it.
-- **Column-name token inference is opt-in** (`fk.token: "auto"`). It was
-  default-on and would have mislinked `scheduler.sch_run.task_id` to a workspace
-  task.
-- Consoles done: Agent Slots (`features/admin/agent-slots/FEATURE.md`, the
+- **`components/official/entity-ref/`** is the campaign's spine:
+  `doors.ts` (the ONE resolver), `EntityRef` (name + doors),
+  `EntityDoorControls` (doors WITHOUT the name, for a name that can't be an
+  anchor — an inline editor, a picker toggle). `MatrxUuidCell`, `PeekDialog`,
+  `OrgResourceList` and `getResourceSharePath` all consume the same resolver, so
+  a registry edit can never light one surface and miss another.
+- **Registry routes added**, each verified against the route AND the table it
+  reads: `agent_shortcut`, `app`, `project`, `organization`, `message_template`,
+  `transcript`, `studio_session`, `data_store`; `code_file` corrected; an
+  `organization` peek added.
+- **Live 404s removed**: six peeks with "Open" buttons to nonexistent routes;
+  share links built from a stale DB template (incl. the public share page);
+  the fork-a-shared-quiz redirect; agent-usage workflow links; the org workflows
+  tile; `sourceLinkFor`'s hand-written transcript/code routes.
+- **Wrong doors prevented**: column-name token inference is opt-in
+  (`fk.token: "auto"`), because `scheduler.sch_run.task_id` is NOT a workspace
+  task; a dangling-reference integrity check no longer links the record it just
+  proved missing; a catalog deep link can no longer save under another
+  application.
+- **Consoles done**: Agent Slots (`features/admin/agent-slots/FEATURE.md`, the
   worked reference) · Users & Access · Relationships hub · reporting/events
-  audit log · agent-apps · scheduling + applications.
+  audit log · agent-apps · scheduling · applications · every association surface
+  (`features/scopes/components/associations/`) + war-room resource lists.
