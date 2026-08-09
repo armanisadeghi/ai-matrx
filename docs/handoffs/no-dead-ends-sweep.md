@@ -179,8 +179,22 @@ Ordered by traffic. Each item is independently actionable.
    name three things that were already done (see item 6), so this one gets the
    same warning. Spot-checked 2026-08-09: `/tasks`, `/projects` and
    `/war-room` DO carry `EntityRef`; `LibraryDocDetailSheet` carries 8 door
-   references; `/lists` did NOT and is now fixed (see the route-literal section
-   — its name was a `<span>` and its only door 404'd). `features/rag/components/
+   references.
+
+   🚨 **`/lists` IS STILL A DEAD END — an earlier version of this line claimed
+   it "is now fixed" and that was FALSE.** What got fixed is
+   `features/user-lists/components/ListsTableView.tsx`, which the very commit
+   that fixed it states has **zero consumers**. The live route
+   `app/(core)/lists/page.tsx` renders `StructuredListLanding` → the
+   `features/structured-lists/*` V1/V2/V3 managers, and
+   `structured-list-manager-v3.tsx` + `StructuredListManagerV3Client.tsx`
+   contain **zero `EntityRef` and zero `<Link>`** — the list name sits inside
+   an `onClick={() => setActiveId(l.id)}` with no anchor, while `/lists/[id]`
+   exists and resolves. **A doc that marks a defective surface done is worse
+   than no doc: it makes the defect invisible to the next pass.** Verified
+   2026-08-09 by grepping the components the ROUTE actually renders.
+
+   `features/rag/components/
    library/*` and `features/files/components/*` show no `EntityRef` import at
    all, but that is not proof of a defect — `ChunkList` renders chunk text, not
    record names. **Confirm the surface actually names a record before treating
@@ -753,8 +767,15 @@ same "fixing from the description" the review-triage section warns about.
 
 **Also check the component's prop surface before passing a handler.**
 `EntityRef` has no `onClick` prop; it stops propagation on its own anchor
-(`EntityRef.tsx:91,107`). Passing one is silently ignored, not a compile error
-in every shape.
+(`EntityRef.tsx:91,107`), so a handler passed in does nothing.
+
+⚠️ **An earlier version of this line claimed that is "silently ignored, not a
+compile error" — that is FALSE and it is the more dangerous direction to be
+wrong in.** `EntityRefProps` has no index signature, so
+`<EntityRef token=… id=… onClick={…} />` is `error TS2322: … not assignable to
+type 'IntrinsicAttributes & EntityRefProps'`. `pnpm type-check` catches it.
+Telling the next agent the gate is silent invites them to stop trusting a gate
+that works.
 
 ### A FOURTH failure mode: the route literal that has no page
 

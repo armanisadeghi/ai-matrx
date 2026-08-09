@@ -22,9 +22,22 @@ Router — it does not route.** So `/apps`, `/applets`, `/applet`, `/ai` are
 
 Measured: **135** link/push references from *inside* those parked trees
 (self-referential), plus **20 files outside** them — every one under
-`components/applet/**` or `features/applet/**`, i.e. still the same feature.
-No unrelated surface links in, so this is one coherent parked feature, not
-scattered rot.
+`components/applet/**` or `features/applet/**`.
+
+🚨 **That measurement was INCOMPLETE, and the gap is the only part with a
+public blast radius.** An earlier version of this entry concluded "no
+unrelated surface links in, so this is one coherent parked feature." It missed
+`next.config.js` (~line 493), which rewrites **`source: '/u/:slug*'` →
+`/apps/custom/:slug*`**. The only implementation of that destination is
+`app/(transitional)/_apps/custom/[slug]/page.tsx` — parked — and there is no
+non-parked `/u` route. **So the public vanity URL `/u/<slug>` 404s today.**
+That reference lives in routing CONFIG, not in the applet trees, so a
+grep over `.tsx` link/push call sites could never see it.
+
+**The lesson, and it generalises past this entry: when auditing whether a route
+is reachable, grep `next.config.js` rewrites/redirects and `proxy.ts` as well
+as call sites.** A rewrite can make an unrelated public URL depend on a route
+you are about to park, with nothing in the feature's own tree to show for it.
 
 **Not fixing on my own authority** — un-parking a route tree is a product
 decision (it looks deliberate, likely the build-profile split). What is needed

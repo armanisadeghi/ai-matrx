@@ -155,7 +155,7 @@ export function ImportDeckPanel() {
           <div className="flex min-w-0 items-center gap-2 text-sm text-foreground">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600 dark:text-green-500" />
             <EntityRef
-              token="flashcard_set"
+              token="fc_set"
               id={result.setId}
               name={result.name}
               showIcon={false}

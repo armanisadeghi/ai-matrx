@@ -368,18 +368,38 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Conversations",
     hrefFor: (id) => `/chat/${id}`,
   },
-  flashcard_set: {
+  // 🚨 THE LIVE TOKEN FOR FLASHCARDS. `education.fc_set` — verified against
+  // the code path that actually runs: /education/flashcards/[setId] renders
+  // SetDetailView, which calls fcService.getSetWithCards → getSet →
+  // EDU().from("fc_set"). 770 platform.associations edges use this token.
+  fc_set: {
     Icon: Layers,
     labelPlural: "Flashcard Sets",
-    // users.user_flashcard_sets — verified: /education/flashcards/[setId]
-    // renders SetDetailView, which loads that exact table by id.
     hrefFor: (id) => `/education/flashcards/${id}`,
+  },
+  flashcard_set: {
+    Icon: Layers,
+    labelPlural: "Flashcard Sets (legacy)",
+    // 🚨 NO hrefFor. This token is `users.user_flashcard_sets`, a DIFFERENT
+    // table from the one the flashcards route loads. I gave it
+    // /education/flashcards/[setId] and that was a BROKEN door: live DB says
+    // users.user_flashcard_sets = 24 rows, education.fc_set = 61 rows,
+    // **id overlap = 0**, so every such link landed on "Set not found or you
+    // don't have access to it". It also carries 0 association edges while
+    // `fc_set` carries 770 — the route went on the token with no traffic.
+    //
+    // HOW THE MISTAKE HAPPENED, because the shape repeats: I grepped for a
+    // service touching `user_flashcard_sets`, found
+    // features/flashcards/services/flashcardPersistenceService.ts, and treated
+    // that as proof. The route does not use that service. **Verify the path
+    // the ROUTE takes — follow page → component → the service it imports —
+    // never a plausible neighbour that mentions the same table.**
   },
   assessment: {
     Icon: ListChecks,
     labelPlural: "Assessments",
     // 🚨 NO hrefFor — this token's route is KIND-DISCRIMINATED and `hrefFor`
-    // structurally cannot express that. `education.assessment.kind` is
+    // structurally cannot express that. `education.assessment.assessment_kind` is
     // "quiz" | "practice_test", and each has its own canonical route
     // (/education/quizzes/[id], /education/practice-tests/[id]). Both render
     // the SAME AssessmentDetail, which derives its base path from the loaded

@@ -42,7 +42,6 @@ interface DriftReport {
 }
 
 function DriftDashboard() {
-  const router = useRouter();
   const [report, setReport] = useState<DriftReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [healing, setHealing] = useState(false);
