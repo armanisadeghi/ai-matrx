@@ -21,6 +21,7 @@ import {
   humanLines,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   GscDeltaSpan,
   buildGscKeyColumn,
@@ -143,7 +144,13 @@ export function DigResultsTable({
         />
       ),
     },
-    buildGscKeyColumn<GscDigResultRow>(dimension, columnLabel),
+    // THE DOOR LAW: a page-dimension dig row names a canonical page the RPC
+    // already resolved (`page_id`) — that page has a route, so it gets a door.
+    buildGscKeyColumn<GscDigResultRow>(dimension, columnLabel, (row) =>
+      dimension === "page" && row.page_id
+        ? marketingRoutes.sitePage(null, siteId, row.page_id)
+        : null,
+    ),
     // Class column only when the server attributed classes (query digs and
     // class-pinned page digs) — an all-null column is noise.
     ...(rows.some((r) => r.traffic_class !== null)

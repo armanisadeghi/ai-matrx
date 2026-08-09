@@ -16,6 +16,7 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { cn } from "@/styles/themes/utils";
 import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   GscDeltaSpan,
   buildGscKeyColumn,
@@ -124,9 +125,15 @@ export function QualityView({
   );
 
   const moverColumns: MatrxColumnDef<GscClassMoverRow>[] = [
+    // THE DOOR LAW: a page-dimension mover names a canonical page the RPC
+    // already resolved (`page_id`) — that page has a route, so it gets a door.
     buildGscKeyColumn<GscClassMoverRow>(
       dimension,
       dimension === "query" ? "Query" : "Page",
+      (row) =>
+        dimension === "page" && row.page_id
+          ? marketingRoutes.sitePage(null, siteId, row.page_id)
+          : null,
     ),
     {
       id: "class",
@@ -654,7 +661,10 @@ export function JuiceView({
   const total = query.data?.total ?? rows.length;
 
   const columns: MatrxColumnDef<GscJuiceRow>[] = [
-    buildGscKeyColumn<GscJuiceRow>("page", "Page"),
+    // Every juice row IS a page — `gsc_perf_juice` returns its `page_id`.
+    buildGscKeyColumn<GscJuiceRow>("page", "Page", (row) =>
+      row.page_id ? marketingRoutes.sitePage(null, siteId, row.page_id) : null,
+    ),
     {
       id: "edu_months_active",
       accessorKey: "edu_months_active",
