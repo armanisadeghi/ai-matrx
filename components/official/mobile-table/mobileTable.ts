@@ -58,6 +58,25 @@ export const MOBILE_TABLE_FROZEN = [
 ].join(" ");
 
 /**
+ * Same treatment, but freezing the SECOND column — for the very common shape
+ * where a narrow control column (expand chevron, row index, icon) sits in front
+ * of the identity column. The narrow first column simply scrolls under the
+ * frozen one, which is what you want: freezing a 24px chevron is a useless
+ * anchor.
+ *
+ * Use this whenever column 1 is not the thing that identifies the row. If the
+ * identity column is third or later, or the table is checkbox-led and needs
+ * BOTH the checkbox and the name pinned, that is the multi-cell freeze variant
+ * — not built yet; those tables currently get horizontal scroll with no anchor.
+ */
+export const MOBILE_TABLE_FROZEN_SECOND = [
+  "w-max min-w-full max-w-none sm:w-full sm:min-w-0 sm:max-w-full",
+  "max-sm:[&_th]:whitespace-nowrap max-sm:[&_td]:whitespace-nowrap",
+  "max-sm:[&_thead_tr>*:nth-child(2)]:sticky max-sm:[&_thead_tr>*:nth-child(2)]:left-0 max-sm:[&_thead_tr>*:nth-child(2)]:z-20 max-sm:[&_thead_tr>*:nth-child(2)]:bg-muted",
+  "max-sm:[&_tbody_tr>*:nth-child(2)]:sticky max-sm:[&_tbody_tr>*:nth-child(2)]:left-0 max-sm:[&_tbody_tr>*:nth-child(2)]:z-10 max-sm:[&_tbody_tr>*:nth-child(2)]:bg-card",
+].join(" ");
+
+/**
  * On the `<table>` element. Below `sm` the table sizes to its CONTENT so it can
  * scroll horizontally; from `sm` up the desktop rendering is byte-identical to
  * a plain `w-full` table.
