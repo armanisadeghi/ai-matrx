@@ -1,29 +1,14 @@
 // features/education/convert/runAgentExtraction.ts
 //
-// The shared "run a JSON-extraction agent → get the structured object back"
-// primitive, extracted so the converter generators (deck / summary / mind_map /
-// …) don't each re-implement the launch + poll dance that flashcards'
-// `useGenerateCards` and mindmap's `useGenerateMindMap` hand-rolled. Unlike
-// those hooks this is a PLAIN async function driven by an explicit
-// dispatch+store, so it works inside a generator called from `runConvert(ctx)`
-// (no React context available).
-//
-// Timing invariant (same as useGenerateCards): with displayMode:"direct" +
-// autoRun, `launchAgentExecution` awaits the ENTIRE stream before resolving, so
-// the requestId from `.unwrap()` only exists AFTER generation completes. The
-// pre-stream `onConversationCreated` hook is what lets a live UI subscribe to
-// the requestId mid-stream — we surface it via `onRequestId`.
+// Thin throw-on-failure adapter over the canonical headless primitive
+// (`runHeadlessAgentJson`, D126) for the converter generators (deck / summary /
+// mind_map / …), which run inside `runConvert(ctx)` with no React context.
+// Kept as a named seam because the converter contract wants a THROWING
+// `{ value, requestId, conversationId }` result with a live-UI handle.
 
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import {
-  selectConversationRequestIds,
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestError,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
-import type { AppDispatch, AppStore, RootState } from "@/lib/redux/store";
+import type { AppDispatch, AppStore } from "@/lib/redux/store";
 
 export interface RunAgentExtractionOpts {
   agentId: string;
@@ -36,7 +21,7 @@ export interface RunAgentExtractionOpts {
   /** Extraction ceiling. Defaults to 180s — generous for a full artifact. */
   timeoutMs?: number;
   pollIntervalMs?: number;
-  /** Fires with the live requestId the moment the stream connects (for live UI). */
+  /** Fires with the live requestId the moment it is known (for live UI). */
   onRequestId?: (requestId: string) => void;
 }
 
@@ -49,8 +34,6 @@ export interface RunAgentExtractionResult {
 
 const DEFAULT_TIMEOUT_MS = 180_000;
 const DEFAULT_POLL_MS = 250;
-/** After the stream ends, how long to let Redux settle before declaring "no JSON". */
-const GRACE_MS = 6_000;
 
 /**
  * Launch a direct/autoRun agent with JSON extraction on, wait for the extracted
@@ -62,89 +45,38 @@ export async function runAgentExtraction(
   store: AppStore,
   opts: RunAgentExtractionOpts,
 ): Promise<RunAgentExtractionResult> {
-  const timeout = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-  const poll = opts.pollIntervalMs ?? DEFAULT_POLL_MS;
+  const result = await runHeadlessAgentJson(dispatch, store.getState, {
+    agentId: opts.agentId,
+    surfaceKey: opts.surfaceKey,
+    sourceFeature: opts.sourceFeature,
+    variables: opts.variables,
+    displayMode: "direct",
+    // Live converter UI renders the stream via onRequestId — keep the
+    // instance so those selectors stay populated (pre-D126 behavior).
+    keepInstance: true,
+    timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    pollIntervalMs: opts.pollIntervalMs ?? DEFAULT_POLL_MS,
+    onRequestId: opts.onRequestId,
+    failureMessages: {
+      streamError: "The generation agent failed before returning a result",
+      noJson:
+        "The agent finished but returned no structured result — try again or simplify the source.",
+      timeout: "Timed out waiting for the generation agent to respond",
+    },
+  });
 
-  let conversationId = "";
-  let liveRequestId: string | null = null;
-
-  const { requestId } = await dispatch(
-    launchAgentExecution({
-      surfaceKey: opts.surfaceKey,
-      agentId: opts.agentId,
-      sourceFeature: opts.sourceFeature,
-      jsonExtraction: { enabled: true },
-      onConversationCreated: (cid) => {
-        conversationId = cid;
-        // Surface the live requestId as soon as createRequest lands it (the
-        // launch thunk's own resolution comes only after the stream ends).
-        if (opts.onRequestId) {
-          const ids = selectConversationRequestIds(cid)(
-            store.getState() as RootState,
-          );
-          if (ids.length > 0) {
-            liveRequestId = ids[ids.length - 1];
-            opts.onRequestId(liveRequestId);
-          }
-        }
-      },
-      runtime: { variables: opts.variables },
-      config: { autoRun: true, displayMode: "direct" },
-    }),
-  ).unwrap();
-
-  const finalRequestId = requestId ?? liveRequestId;
-  if (!finalRequestId) {
+  if (!result.success || result.data == null) {
+    throw new Error(
+      result.error ??
+        "The agent finished but returned no structured result — try again or simplify the source.",
+    );
+  }
+  if (!result.requestId || !result.conversationId) {
     throw new Error("Agent launch did not return a request id");
   }
-  if (opts.onRequestId && finalRequestId !== liveRequestId) {
-    opts.onRequestId(finalRequestId);
-  }
-
-  // For displayMode:"direct" + autoRun, `.unwrap()` resolves only AFTER the
-  // whole stream completes — so extraction is either already in state or never
-  // coming. We poll a short GRACE window for Redux to settle, NOT the full
-  // timeout, and distinguish "no JSON" from "timed out" so the error is honest.
-  const start = Date.now();
-  while (Date.now() - start < timeout) {
-    const state = store.getState() as RootState;
-
-    if (selectJsonExtractionComplete(finalRequestId)(state)) {
-      const snapshot = selectFirstExtractedObject(finalRequestId)(state);
-      if (!snapshot) {
-        throw new Error("The agent finished but returned no structured result");
-      }
-      return {
-        value: snapshot.value,
-        requestId: finalRequestId,
-        conversationId,
-      };
-    }
-
-    if (selectRequestStatus(finalRequestId)(state) === "error") {
-      const reqError = selectRequestError(finalRequestId)(state);
-      throw new Error(
-        reqError?.user_message ??
-          reqError?.message ??
-          "The generation agent failed before returning a result",
-      );
-    }
-
-    // Stream already ended (status settled to a terminal, non-error state) but
-    // no extraction landed — fail fast rather than burn the whole timeout.
-    const status = selectRequestStatus(finalRequestId)(state);
-    const inFlight =
-      status === "pending" ||
-      status === "connecting" ||
-      status === "streaming" ||
-      status === "awaiting-tools";
-    if (Date.now() - start > GRACE_MS && !inFlight) {
-      throw new Error(
-        "The agent finished but returned no structured result — try again or simplify the source.",
-      );
-    }
-
-    await new Promise((r) => setTimeout(r, poll));
-  }
-  throw new Error("Timed out waiting for the generation agent to respond");
+  return {
+    value: result.data,
+    requestId: result.requestId,
+    conversationId: result.conversationId,
+  };
 }

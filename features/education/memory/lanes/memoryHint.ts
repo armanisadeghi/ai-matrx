@@ -2,20 +2,15 @@
 //
 // VISION §11 "Proactive suggestions" — a cheap/fast per-card memory aid, surfaced
 // on demand next to the flashcard the learner is studying. Mirrors the tutor's
-// microCoach lane exactly (fire-and-forget thunk, ephemeral cleanup, best-effort
-// null on any failure) so it never blocks the study flow.
+// microCoach lane exactly (fire-and-forget thunk, best-effort null on any
+// failure) so it never blocks the study flow. The round-trip runs through the
+// canonical headless primitive (`runHeadlessAgentJson`, D126).
 //
 // Deliberately opt-in: nothing fires unless the learner taps "Memory aid" on the
 // card — this thunk is only dispatched from that tap, never automatically.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { EDU_MEMORY_AGENTS } from "../agents";
 import { coerceMemoryHint, type MemoryHintPayload } from "../types";
 
@@ -25,63 +20,31 @@ export interface MemoryHintContext {
   topic?: string | null;
 }
 
-async function waitForObject(
-  getState: () => RootState,
-  requestId: string,
-  timeoutMs = 25_000,
-): Promise<unknown | null> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const state = getState();
-    if (selectJsonExtractionComplete(requestId)(state)) {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    if (selectRequestStatus(requestId)(state) === "error") {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    await new Promise((r) => setTimeout(r, 100));
-  }
-  return null;
-}
-
 /** One memory aid for the current card, or null on failure / no signal. */
 export function memoryHint(ctx: MemoryHintContext) {
   return async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<MemoryHintPayload | null> => {
-    let conversationId: string | null = null;
     try {
-      const launch = await dispatch(
-        launchAgentExecution({
-          agentId: EDU_MEMORY_AGENTS.memoryHint,
-          surfaceKey: "flashcards-memory-hint",
-          // A background per-card study aid on a study surface — the exact
-          // meaning of the existing "coach" lane tag.
-          sourceFeature: "education-flashcards",
-          isEphemeral: false,
-          runtime: {
-            variables: {
-              front: ctx.front,
-              back: ctx.back,
-              topic: ctx.topic ?? "",
-            },
-          },
-          config: { autoRun: true, displayMode: "direct" },
-          jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
-        }),
-      ).unwrap();
-      conversationId = launch.conversationId;
-      const requestId = launch.requestId;
-      if (!requestId) return null;
-
-      const raw = await waitForObject(getState, requestId);
-      return coerceMemoryHint(raw);
+      const result = await runHeadlessAgentJson(dispatch, getState, {
+        agentId: EDU_MEMORY_AGENTS.memoryHint,
+        surfaceKey: "flashcards-memory-hint",
+        // A background per-card study aid on a study surface — the exact
+        // meaning of the existing "coach" lane tag.
+        sourceFeature: "education-flashcards",
+        variables: {
+          front: ctx.front,
+          back: ctx.back,
+          topic: ctx.topic ?? "",
+        },
+        timeoutMs: 25_000,
+        pollIntervalMs: 100,
+      });
+      return coerceMemoryHint(result.data);
     } catch (err) {
       console.error("[memory.memoryHint] failed:", err);
       return null;
-    } finally {
-      if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     }
   };
 }

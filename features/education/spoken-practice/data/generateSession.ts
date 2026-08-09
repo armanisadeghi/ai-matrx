@@ -1,19 +1,11 @@
 // features/education/spoken-practice/data/generateSession.ts
 //
 // The ONE new agent call in Spoken Practice: run the "Session Designer" agent to
-// produce a grounded set of spoken prompts. Same execution discipline as the
-// FastFire grader + tutor review lanes — launch (autoRun:false / background),
-// executeInstance, poll the JSON extractor, coerce, clean up. Never throws.
+// produce a grounded set of spoken prompts. Runs through the canonical
+// headless primitive (`runHeadlessAgentJson`, D126). Never throws.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { TrustConfidence } from "@/features/education/trust/types";
 import { SPOKEN_PRACTICE_AGENTS } from "../agents";
 import type {
@@ -32,25 +24,6 @@ export interface GenerateSessionArgs {
   studyMaterial: string;
   /** The source, for attaching trust citations to each prompt. */
   source: PracticeSource | null;
-}
-
-async function waitForObject(
-  getState: () => RootState,
-  requestId: string,
-  timeoutMs = 120_000,
-): Promise<unknown | null> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const state = getState();
-    if (selectJsonExtractionComplete(requestId)(state)) {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    if (selectRequestStatus(requestId)(state) === "error") {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    await new Promise((r) => setTimeout(r, 200));
-  }
-  return null;
 }
 
 function asString(v: unknown): string {
@@ -108,7 +81,6 @@ export function generateSession(args: GenerateSessionArgs) {
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<PracticePlan | null> => {
-    let conversationId: string | null = null;
     try {
       // The `pronunciation` mode has a DEDICATED designer that emits
       // target-language utterances (same plan shape); the three shipped modes
@@ -118,41 +90,27 @@ export function generateSession(args: GenerateSessionArgs) {
           ? SPOKEN_PRACTICE_AGENTS.designLanguageSession
           : SPOKEN_PRACTICE_AGENTS.designSession;
 
-      const launch = await dispatch(
-        launchAgentExecution({
-          agentId: designerAgentId,
-          surfaceKey: "education-spoken-practice-generate",
-          // No dedicated SourceFeature exists (adding one lives in the frozen
-          // agents module); reuse the closest sibling — generating graded
-          // questions — which is exactly what this does.
-          sourceFeature: "education-assessment",
-          isEphemeral: false,
-          runtime: {
-            variables: {
-              mode: args.mode,
-              focus: args.focus,
-              study_material: args.studyMaterial,
-              difficulty: args.difficulty,
-              count: String(args.count),
-            },
-          },
-          config: { autoRun: false, displayMode: "background" },
-          jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
-        }),
-      ).unwrap();
-      conversationId = launch.conversationId;
-
-      const exec = await dispatch(executeInstance({ conversationId })).unwrap();
-      const requestId = exec.requestId;
-      if (!requestId) return null;
-
-      const raw = await waitForObject(getState, requestId);
-      return coercePracticePlan(raw, args.source);
+      const result = await runHeadlessAgentJson(dispatch, getState, {
+        agentId: designerAgentId,
+        surfaceKey: "education-spoken-practice-generate",
+        // No dedicated SourceFeature exists (adding one lives in the frozen
+        // agents module); reuse the closest sibling — generating graded
+        // questions — which is exactly what this does.
+        sourceFeature: "education-assessment",
+        variables: {
+          mode: args.mode,
+          focus: args.focus,
+          study_material: args.studyMaterial,
+          difficulty: args.difficulty,
+          count: String(args.count),
+        },
+        timeoutMs: 120_000,
+        pollIntervalMs: 200,
+      });
+      return coercePracticePlan(result.data, args.source);
     } catch (err) {
       console.error("[spoken-practice.generateSession] failed:", err);
       return null;
-    } finally {
-      if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     }
   };
 }

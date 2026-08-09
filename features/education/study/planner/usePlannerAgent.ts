@@ -2,11 +2,9 @@
 
 // features/education/study/planner/usePlannerAgent.ts
 //
-// The "run the Study Planner agent → get a PlanDraft back" hook. Mirrors the
-// production pattern in features/flashcards/data/useGenerateCards.ts
-// (launchAgentExecution + waitForExtraction): dispatch a direct auto-running
-// agent launch with JSON extraction on, poll the active-requests slice until
-// extraction finalizes, then coerce the object into a `PlanDraft`.
+// The "run the Study Planner agent → get a PlanDraft back" hook, built on the
+// canonical `useHeadlessAgentJson` primitive (D126) — this hook only owns the
+// planner variables and the `PlanDraft` coercion.
 //
 // Persisting the draft (planService.savePlan / regeneratePlan) is the caller's
 // job — this hook only owns the agent round-trip, so the same primitive serves
@@ -14,16 +12,7 @@
 //
 // React Compiler is on: no manual memo.
 
-import { useState } from "react";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestError,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import type { RootState } from "@/lib/redux/store";
+import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
 import { STUDY_AGENTS, restDaysToNames } from "./agents";
 import { buildStudySnapshot, coercePlanDraft } from "./coercePlan";
 import type { PlanDraft, PlanInput } from "./types";
@@ -39,81 +28,36 @@ export interface PlannerAgentResult {
 }
 
 export function usePlannerAgent(): PlannerAgentResult {
-  const dispatch = useAppDispatch();
-  const store = useAppStore();
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function waitForExtraction(
-    requestId: string,
-    input: PlanInput,
-    summary: PlanSummary,
-  ): Promise<PlanDraft> {
-    const start = Date.now();
-    while (Date.now() - start < EXTRACTION_TIMEOUT_MS) {
-      const state = store.getState() as RootState;
-      if (selectJsonExtractionComplete(requestId)(state)) {
-        const snapshot = selectFirstExtractedObject(requestId)(state);
-        if (!snapshot) {
-          throw new Error("Planner finished but produced no structured JSON");
-        }
-        return coercePlanDraft(snapshot.value, input, summary);
-      }
-      const status = selectRequestStatus(requestId)(state);
-      if (status === "error") {
-        const reqError = selectRequestError(requestId)(state);
-        throw new Error(
-          reqError?.user_message ??
-            reqError?.message ??
-            "The planner agent failed before returning a plan",
-        );
-      }
-      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-    }
-    throw new Error("Timed out waiting for the planner agent to respond");
-  }
+  const { run, isRunning, error } = useHeadlessAgentJson();
 
   async function generate(
     input: PlanInput,
     summary: PlanSummary,
   ): Promise<PlanDraft> {
-    setIsGenerating(true);
-    setError(null);
-    try {
-      const itemType = input.itemType ?? "fc_card";
-      const { requestId } = await dispatch(
-        launchAgentExecution({
-          surfaceKey: "education-planner-generate",
-          agentId: STUDY_AGENTS.planner,
-          sourceFeature: "education-planner",
-          jsonExtraction: { enabled: true },
-          runtime: {
-            variables: {
-              goal_title: input.title,
-              start_date: input.startDate,
-              exam_date: input.examDate,
-              daily_minutes: String(input.dailyMinutes),
-              rest_days: restDaysToNames(input.restDays),
-              study_snapshot: buildStudySnapshot(summary, itemType),
-            },
-          },
-          config: { autoRun: true, displayMode: "direct" },
-        }),
-      ).unwrap();
-
-      if (!requestId) {
-        throw new Error("Planner launch did not return a request id");
-      }
-      return await waitForExtraction(requestId, input, summary);
-    } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "Failed to generate a plan";
-      setError(message);
-      throw e instanceof Error ? e : new Error(message);
-    } finally {
-      setIsGenerating(false);
-    }
+    const itemType = input.itemType ?? "fc_card";
+    return run<PlanDraft>({
+      agentId: STUDY_AGENTS.planner,
+      surfaceKey: "education-planner-generate",
+      sourceFeature: "education-planner",
+      displayMode: "direct",
+      variables: {
+        goal_title: input.title,
+        start_date: input.startDate,
+        exam_date: input.examDate,
+        daily_minutes: String(input.dailyMinutes),
+        rest_days: restDaysToNames(input.restDays),
+        study_snapshot: buildStudySnapshot(summary, itemType),
+      },
+      timeoutMs: EXTRACTION_TIMEOUT_MS,
+      pollIntervalMs: POLL_INTERVAL_MS,
+      failureMessages: {
+        streamError: "The planner agent failed before returning a plan",
+        noJson: "Planner finished but produced no structured JSON",
+        timeout: "Timed out waiting for the planner agent to respond",
+      },
+      coerce: (value) => coercePlanDraft(value, input, summary),
+    });
   }
 
-  return { generate, isGenerating, error };
+  return { generate, isGenerating: isRunning, error };
 }

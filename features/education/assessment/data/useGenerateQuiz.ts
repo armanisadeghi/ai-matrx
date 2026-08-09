@@ -3,10 +3,10 @@
 // features/education/assessment/data/useGenerateQuiz.ts
 //
 // The reusable "run the assessment generator agent → structured questions" hook.
-// Mirrors features/flashcards/data/useGenerateCards.ts exactly: dispatch a
-// direct, auto-running agent launch with JSON extraction on, expose the live
-// requestId (for streaming preview), poll the active-requests slice until
-// extraction finalizes, then coerce the extracted object into questions.
+// Built on the canonical `useHeadlessAgentJson` primitive (D126): launch a
+// direct, auto-running agent with JSON extraction on, expose the live
+// requestId (for streaming preview), and coerce the extracted object into
+// questions.
 //
 // Persisting the result (assessment + assessment_item rows) is the CALLER's job
 // (assessmentService.createWithItems) — this hook owns only the agent round-trip,
@@ -14,17 +14,7 @@
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
-import { useState } from "react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import {
-  selectConversationRequestIds,
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestError,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import type { RootState } from "@/lib/redux/store";
+import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import type { NewAssessmentItemInput, QuestionType, Depth } from "./types";
 
@@ -196,104 +186,55 @@ export function coerceGeneratedQuiz(value: unknown): GeneratedQuiz {
 }
 
 export function useGenerateQuiz(): UseGenerateQuizResult {
-  const dispatch = useAppDispatch();
-  const store = useAppStore();
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [activeConversationId, setActiveConversationId] = useState<
-    string | null
-  >(null);
-
-  const activeRequestId = useAppSelector((state) => {
-    if (!activeConversationId) return null;
-    const ids = selectConversationRequestIds(activeConversationId)(state);
-    return ids.length > 0 ? ids[ids.length - 1] : null;
-  });
-
-  async function waitForExtraction(requestId: string): Promise<GeneratedQuiz> {
-    const start = Date.now();
-    while (Date.now() - start < EXTRACTION_TIMEOUT_MS) {
-      const state = store.getState() as RootState;
-      if (selectJsonExtractionComplete(requestId)(state)) {
-        const snapshot = selectFirstExtractedObject(requestId)(state);
-        if (!snapshot) {
-          throw new Error("The generator finished but produced no structured JSON");
-        }
-        return coerceGeneratedQuiz(snapshot.value);
-      }
-      const status = selectRequestStatus(requestId)(state);
-      if (status === "error") {
-        const reqError = selectRequestError(requestId)(state);
-        throw new Error(
-          reqError?.user_message ??
-            reqError?.message ??
-            "The assessment generator failed before returning any questions",
-        );
-      }
-      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-    }
-    throw new Error("Timed out waiting for the assessment generator to respond");
-  }
+  const { run, isRunning, error, activeRequestId } = useHeadlessAgentJson();
 
   async function generate(
     agentId: string,
     vars: GenerateQuizVariables | GenerateFromSourceVariables,
   ): Promise<GeneratedQuiz> {
-    setIsGenerating(true);
-    setError(null);
-    setActiveConversationId(null);
-    try {
-      const fromSource = isFromSourceVars(vars);
-      const { requestId } = await dispatch(
-        launchAgentExecution({
-          surfaceKey: fromSource
-            ? "assessment-generate-from-source"
-            : "assessment-generate-from-topic",
-          agentId,
-          sourceFeature: "education-assessment",
-          jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
-          onConversationCreated: (conversationId) =>
-            setActiveConversationId(conversationId),
-          runtime: {
-            variables: fromSource
-              ? {
-                  source_content: vars.source_content,
-                  source_label: vars.source_label,
-                  count: String(vars.count),
-                  difficulty: vars.difficulty,
-                  depth: vars.depth,
-                  question_types: vars.question_types ?? "",
-                  exam_type: vars.exam_type ?? "",
-                  user_request: vars.user_request ?? "",
-                }
-              : {
-                  topic: vars.topic,
-                  count: String(vars.count),
-                  difficulty: vars.difficulty,
-                  depth: vars.depth,
-                  question_types: vars.question_types ?? "",
-                  exam_type: vars.exam_type ?? "",
-                  grade_level: vars.grade_level ?? "",
-                  user_request: vars.user_request ?? "",
-                },
+    const fromSource = isFromSourceVars(vars);
+    return run<GeneratedQuiz>({
+      agentId,
+      surfaceKey: fromSource
+        ? "assessment-generate-from-source"
+        : "assessment-generate-from-topic",
+      sourceFeature: "education-assessment",
+      // Live streaming preview owns the conversation — keep the instance so
+      // consumers of activeRequestId can render the stream + final envelope.
+      displayMode: "direct",
+      keepInstance: true,
+      variables: fromSource
+        ? {
+            source_content: vars.source_content,
+            source_label: vars.source_label,
+            count: String(vars.count),
+            difficulty: vars.difficulty,
+            depth: vars.depth,
+            question_types: vars.question_types ?? "",
+            exam_type: vars.exam_type ?? "",
+            user_request: vars.user_request ?? "",
+          }
+        : {
+            topic: vars.topic,
+            count: String(vars.count),
+            difficulty: vars.difficulty,
+            depth: vars.depth,
+            question_types: vars.question_types ?? "",
+            exam_type: vars.exam_type ?? "",
+            grade_level: vars.grade_level ?? "",
+            user_request: vars.user_request ?? "",
           },
-          config: { autoRun: true, displayMode: "direct" },
-        }),
-      ).unwrap();
-
-      if (!requestId) {
-        throw new Error("Agent launch did not return a request id");
-      }
-      return await waitForExtraction(requestId);
-    } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "Failed to generate the assessment";
-      setError(message);
-      throw e instanceof Error ? e : new Error(message);
-    } finally {
-      setIsGenerating(false);
-    }
+      timeoutMs: EXTRACTION_TIMEOUT_MS,
+      pollIntervalMs: POLL_INTERVAL_MS,
+      failureMessages: {
+        streamError:
+          "The assessment generator failed before returning any questions",
+        noJson: "The generator finished but produced no structured JSON",
+        timeout: "Timed out waiting for the assessment generator to respond",
+      },
+      coerce: coerceGeneratedQuiz,
+    });
   }
 
-  return { generate, isGenerating, error, activeRequestId };
+  return { generate, isGenerating: isRunning, error, activeRequestId };
 }

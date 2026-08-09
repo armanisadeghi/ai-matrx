@@ -9,18 +9,12 @@
 // display it for free everywhere, with zero per-surface UI work.
 //
 // OPTIONAL: with no review agent configured this is a clean no-op.
-// Read-from-Redux-after-resolve, never a same-tick re-read — same discipline
-// as the grading lane.
+// The agent round-trip runs through the canonical headless primitive
+// (`runHeadlessAgentJson`, D126) — this lane only owns variables, coercion,
+// and the session_review persist.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { studyService } from "@/features/education/study/service/studyService";
 import { getFcTutorAgentConfig } from "./config";
 import type { ReviewAggregate, ReviewAttempt } from "./learnerContext";
@@ -39,25 +33,6 @@ export interface ReviewSessionResult {
   weaknesses: string[];
 }
 
-async function waitForObject(
-  getState: () => RootState,
-  requestId: string,
-  timeoutMs = 120_000,
-): Promise<unknown | null> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const state = getState();
-    if (selectJsonExtractionComplete(requestId)(state)) {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    if (selectRequestStatus(requestId)(state) === "error") {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    await new Promise((r) => setTimeout(r, 200));
-  }
-  return null;
-}
-
 /**
  * Run the holistic review AND persist it to `study_session.session_review`.
  * Returns the parsed result for surfaces that want to show it inline (the
@@ -73,43 +48,26 @@ export function reviewSession(args: ReviewSessionArgs) {
     if (!agentId) return null; // optional lane — clean skip
     if (args.attempts.length === 0) return null; // nothing to review
 
-    let conversationId: string | null = null;
     try {
-      // Launch WITHOUT auto-running (autoRun:false + background), then run it
-      // ourselves so `waitForObject` polling owns the wait — mirrors the
-      // grading lane's pattern (see fast-fire/agents/gradeCard.thunk.ts).
-      const launch = await dispatch(
-        launchAgentExecution({
-          agentId,
-          surfaceKey: "flashcards-review-session",
-          sourceFeature: "education-flashcards",
-          isEphemeral: false,
-          runtime: {
-            variables: {
-              transcript: args.attempts
-                .map((a) => a.transcript)
-                .filter(Boolean)
-                .join("\n"),
-              attempts: args.attempts,
-              aggregate: args.aggregate,
-              remaining_cards: [],
-            },
-          },
-          config: {
-            autoRun: false,
-            displayMode: "background",
-            // No response_format / llmOverrides: fc_review_batch is OUR agent.
-          },
-          jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
-        }),
-      ).unwrap();
-      conversationId = launch.conversationId;
+      const result = await runHeadlessAgentJson(dispatch, getState, {
+        agentId,
+        surfaceKey: "flashcards-review-session",
+        sourceFeature: "education-flashcards",
+        variables: {
+          transcript: args.attempts
+            .map((a) => a.transcript)
+            .filter(Boolean)
+            .join("\n"),
+          attempts: args.attempts,
+          aggregate: args.aggregate,
+          remaining_cards: [],
+        },
+        timeoutMs: 120_000,
+        pollIntervalMs: 200,
+      });
 
-      const exec = await dispatch(executeInstance({ conversationId })).unwrap();
-      const requestId = exec.requestId;
-      if (!requestId) return null;
-
-      const raw = await waitForObject(getState, requestId);
+      // Partial-tolerant: an errored stream may still carry a usable object.
+      const raw = result.data;
       if (!raw || typeof raw !== "object") return null;
       const r = raw as Record<string, unknown>;
       const summary = typeof r.summary === "string" ? r.summary : "";
@@ -133,8 +91,6 @@ export function reviewSession(args: ReviewSessionArgs) {
     } catch (err) {
       console.error("[flashcards.reviewSession] failed:", err);
       return null;
-    } finally {
-      if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     }
   };
 }

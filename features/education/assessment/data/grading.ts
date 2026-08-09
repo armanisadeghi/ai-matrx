@@ -12,13 +12,7 @@
 // `gradeAnswer` (in the taking hook) picks the path per question type.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import {
   coerceGradeVerdict,
   gradeResultScore,
@@ -135,25 +129,6 @@ function verdictToGraded(v: GradeVerdict, agentId: string): GradedAnswer {
   };
 }
 
-async function waitForObject(
-  getState: () => RootState,
-  requestId: string,
-  timeoutMs = 60_000,
-): Promise<unknown | null> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const state = getState();
-    if (selectJsonExtractionComplete(requestId)(state)) {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    if (selectRequestStatus(requestId)(state) === "error") {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    await new Promise((r) => setTimeout(r, 150));
-  }
-  return null;
-}
-
 /**
  * Grade a free-response (short_answer / written_response) answer on MEANING via
  * the `gradeTypedAnswer` agent. `expected` is the model answer (short_answer's
@@ -188,37 +163,25 @@ export function gradeAnswerAI(args: {
         gradedBy: "local",
       };
     }
-    let conversationId: string | null = null;
     try {
-      const launch = await dispatch(
-        launchAgentExecution({
-          agentId,
-          surfaceKey: "assessment-grade-typed",
-          sourceFeature: "education-assessment",
-          isEphemeral: false,
-          runtime: {
-            variables: {
-              question: args.question,
-              expected_answer: args.expected,
-              learner_answer: args.learnerAnswer,
-            },
-          },
-          config: { autoRun: true, displayMode: "background" },
-          jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
-        }),
-      ).unwrap();
-      conversationId = launch.conversationId;
-      const requestId = launch.requestId;
-      if (!requestId) return fallback;
-      const raw = await waitForObject(getState, requestId);
-      const verdict = coerceGradeVerdict(raw);
+      const result = await runHeadlessAgentJson(dispatch, getState, {
+        agentId,
+        surfaceKey: "assessment-grade-typed",
+        sourceFeature: "education-assessment",
+        variables: {
+          question: args.question,
+          expected_answer: args.expected,
+          learner_answer: args.learnerAnswer,
+        },
+        timeoutMs: 60_000,
+        pollIntervalMs: 150,
+      });
+      const verdict = coerceGradeVerdict(result.data);
       if (!verdict) return fallback;
       return verdictToGraded(verdict, agentId);
     } catch (err) {
       console.error("[assessment.gradeAnswerAI] failed:", err);
       return fallback;
-    } finally {
-      if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     }
   };
 }
