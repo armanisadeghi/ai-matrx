@@ -14,10 +14,17 @@
  * Variants:
  *   - "block"  → labelled rows (Organization / <Type>: <scopes>) for detail pages
  *   - "inline" → compact chips (`<Type>: <Scope>`) for dense headers
+ *
+ * THE DOOR LAW: every scope and the organization named here is a real record we
+ * hold the id of, so each renders through `EntityRef` — open, new tab, peek.
+ * `scope` has no registry `hrefFor` yet, so its route comes from the shared
+ * `scopeShortHref` resolver (see docs/handoffs/no-dead-ends-sweep.md).
  */
 
 import React from "react";
 import { Building2, Loader2, Tag } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { scopeShortHref } from "@/features/scope-system/utils/scopeRoutes";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { EntityType } from "@/features/scopes/types";
@@ -121,7 +128,18 @@ export function AssignedScopesDisplay({
           <Chip
             icon={<Building2 className="h-3 w-3" />}
             label="Organization"
-            value={orgName ?? "None"}
+            value={
+              organizationId && orgName ? (
+                <EntityRef
+                  token="organization"
+                  id={organizationId}
+                  name={orgName}
+                  showIcon={false}
+                />
+              ) : (
+                (orgName ?? "None")
+              )
+            }
           />
         )}
         {groups.map((g) =>
@@ -131,7 +149,15 @@ export function AssignedScopesDisplay({
               colorKey={g.type.color}
               typeId={g.type.id}
               label={g.type.label_singular}
-              value={s.name}
+              value={
+                <EntityRef
+                  token="scope"
+                  id={s.id}
+                  name={s.name}
+                  href={scopeShortHref(s.id)}
+                  showIcon={false}
+                />
+              }
             />
           )),
         )}
@@ -146,7 +172,18 @@ export function AssignedScopesDisplay({
         <Row
           icon={<Building2 className="h-4 w-4 text-muted-foreground" />}
           label="Organization"
-          values={[orgName ?? "None"]}
+          values={[
+            organizationId && orgName ? (
+              <EntityRef
+                token="organization"
+                id={organizationId}
+                name={orgName}
+                showIcon={false}
+              />
+            ) : (
+              (orgName ?? "None")
+            ),
+          ]}
           muted={!orgName}
         />
       )}
@@ -169,7 +206,16 @@ export function AssignedScopesDisplay({
                 </span>
               }
               label={g.type.label_singular}
-              values={g.scopes.map((s) => s.name)}
+              values={g.scopes.map((s) => (
+                <EntityRef
+                  key={s.id}
+                  token="scope"
+                  id={s.id}
+                  name={s.name}
+                  href={scopeShortHref(s.id)}
+                  showIcon={false}
+                />
+              ))}
             />
           );
         })
@@ -186,7 +232,8 @@ function Row({
 }: {
   icon: React.ReactNode;
   label: string;
-  values: string[];
+  /** Nodes, not strings — each value is an `EntityRef` (name + its doors). */
+  values: React.ReactNode[];
   muted?: boolean;
 }) {
   return (
@@ -201,7 +248,7 @@ function Row({
         {values.map((v, i) => (
           <span
             key={i}
-            className={`text-sm ${muted ? "text-muted-foreground italic" : "text-foreground font-medium"}`}
+            className={`inline-flex items-center text-sm ${muted ? "text-muted-foreground italic" : "text-foreground font-medium"}`}
           >
             {v}
             {i < values.length - 1 ? "," : ""}
@@ -223,7 +270,8 @@ function Chip({
   colorKey?: string | null;
   typeId?: string;
   label: string;
-  value: string;
+  /** A node, not a string — the value is an `EntityRef` (name + its doors). */
+  value: React.ReactNode;
 }) {
   const color = typeId
     ? resolveColor({ id: typeId, color: colorKey ?? null })

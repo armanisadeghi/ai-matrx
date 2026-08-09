@@ -24,6 +24,7 @@ import {
   Search,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import { useScopeTypeTables } from "@/features/scopes/hooks/useScopeTypeTables";
@@ -312,8 +313,16 @@ function ScopeTypeTable({
           {type.scopes.length}
         </span>
         {showOrg && (
-          <span className="text-[11px] text-muted-foreground/70 truncate">
-            · {org.name}
+          /* The org OWNS these scopes — it has a route and a peek, so it is a
+             door, not a caption (THE DOOR LAW). */
+          <span className="flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground/70">
+            ·
+            <EntityRef
+              token="organization"
+              id={org.id}
+              name={org.name}
+              showIcon={false}
+            />
           </span>
         )}
         <span className="ml-auto flex items-center gap-1 shrink-0">
@@ -391,14 +400,21 @@ function ScopeTypeTable({
                     }
                   >
                     <td className="px-3 sm:px-4 py-2 whitespace-nowrap">
-                      <span
+                      {/* The name is the door: a real anchor (cmd/middle-click
+                          opens a new tab, keyboard reaches it, screen readers
+                          announce a link) plus peek + new-tab controls. The
+                          whole-row click stays as a mouse convenience. */}
+                      <EntityRef
+                        token="scope"
+                        id={scope.id}
+                        name={scope.name}
+                        href={`${typeHref}/${scope.id}`}
+                        showIcon={false}
                         className={cn(
                           "font-medium",
                           isActive && "font-semibold",
                         )}
-                      >
-                        {scope.name}
-                      </span>
+                      />
                     </td>
                     {columns.map((item) => {
                       const cell = cells?.[item.id];

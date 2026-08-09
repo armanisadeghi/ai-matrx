@@ -35,6 +35,23 @@ export function scopeHref(
   return `/organizations/${orgSlugOrId}/scopes/${scopeSeg(type)}/${scopeSeg(scope)}`;
 }
 
+/**
+ * THE DOOR LAW door for a scope you only know the ID of.
+ *
+ * The canonical scope page needs org + type in the path, but almost every
+ * surface that NAMES a scope (assigned-scope chips, association cards, the
+ * scopes hub, agent context) holds only its id — which is why those names were
+ * plain text. `/scopes/s/[scopeId]` is a server resolver that looks up the
+ * scope's org + type and redirects to `scopeHref`, so an id is enough.
+ *
+ * Prefer `scopeHref` when the surface already knows org + type (one less hop).
+ * Pass this to `<EntityRef token="scope" href={scopeShortHref(id)} …/>` —
+ * `scope` has no registry `hrefFor` yet (see docs/handoffs/no-dead-ends-sweep.md).
+ */
+export function scopeShortHref(scopeId: string): string {
+  return `/scopes/s/${scopeId}`;
+}
+
 /** The VALUE page: a context item's value for one scope (item × scope cell). */
 export function scopeItemHref(
   orgSlugOrId: string,
