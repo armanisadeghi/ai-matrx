@@ -77,6 +77,10 @@ export function TranscriptsLayout({ className }: TranscriptsLayoutProps) {
         }
       } catch (err) {
         if (!cancelled) {
+          // A THROWN error is transient (network, aborted request) — release
+          // the guard so a later render can try again. A clean `null` is a real
+          // answer ("not yours / deleted") and must NOT retry.
+          attemptedFocusRef.current = null;
           console.error("Failed to open the linked transcript", err);
           toast.error("Couldn't open that transcript.");
         }
