@@ -70,6 +70,11 @@ import { isScopesRpcErr } from "@/features/scopes/types";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { useOpenCreateProjectWindow } from "@/features/window-panels/windows/projects/useOpenCreateProjectWindow";
+import {
+  useListViewPrefs,
+  type LegacyListViewImport,
+} from "@/lib/list-views/useListViewPrefs";
+import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import type {
   ProjectWithRole,
   ProjectStatus,
@@ -85,12 +90,28 @@ import {
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/**
+ * Style prefs for this surface (synced across devices via `userPreferences`).
+ * Cards-first is this hub's own default — the platform default is table.
+ */
+const PROJECTS_HUB_VIEW_DEFAULTS: Partial<ListViewPrefs> = { view: "cards" };
+
+/**
+ * One-time adoption of the device-local key this hub used before it moved onto
+ * the synced hook. Without it, a user whose only record of "I like the table
+ * here" was `localStorage` silently reverts to cards on the deploy that was
+ * supposed to make the choice FOLLOW them to another device.
+ */
+const PROJECTS_HUB_LEGACY_VIEW: LegacyListViewImport = {
+  key: "projects-view",
+  map: (raw) => (raw === "table" || raw === "cards" ? { view: raw } : null),
+};
+
 type Stat = {
   open: number;
   done: number;
   preview: { id: string; title: string }[];
 };
-type ViewMode = "cards" | "table";
 type SortKey = "name" | "org" | "open" | "done" | "updated";
 type OrgMap = Map<string, { name: string; slug: string; isPersonal: boolean }>;
 
@@ -104,17 +125,20 @@ export function ProjectsHub({
   const { organizations } = useUserOrganizations();
   const router = useRouter();
   const openCreateProject = useOpenCreateProjectWindow();
-  const [view, setView] = React.useState<ViewMode>("cards");
+  const { prefs, setView } = useListViewPrefs(
+    "projects-hub",
+    PROJECTS_HUB_VIEW_DEFAULTS,
+    PROJECTS_HUB_LEGACY_VIEW,
+  );
+  /**
+   * Narrow on read — this hub offers only Cards and Table, while
+   * `ListViewPrefs["view"]` also allows `rows`. Reading `prefs.view` raw makes
+   * the layout and the toggle disagree for any other value: the layout falls
+   * through to cards while NEITHER button renders as selected. Same rule as
+   * `/documents`; see lib/list-views/FEATURE.md.
+   */
+  const view: "cards" | "table" = prefs.view === "table" ? "table" : "cards";
   const [query, setQuery] = React.useState("");
-
-  React.useEffect(() => {
-    const saved = window.localStorage.getItem("projects-view");
-    if (saved === "table" || saved === "cards") setView(saved);
-  }, []);
-  const setViewPersist = (v: ViewMode) => {
-    setView(v);
-    window.localStorage.setItem("projects-view", v);
-  };
 
   const orgMap = React.useMemo<OrgMap>(() => {
     const m: OrgMap = new Map();
@@ -373,14 +397,14 @@ export function ProjectsHub({
             </div>
             <div className="flex items-center rounded-lg border border-border p-0.5">
               <button
-                onClick={() => setViewPersist("cards")}
+                onClick={() => setView("cards")}
                 className={`h-7 w-7 rounded-md flex items-center justify-center transition-colors ${view === "cards" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                 title="Card view"
               >
                 <LayoutGrid className="h-4 w-4" />
               </button>
               <button
-                onClick={() => setViewPersist("table")}
+                onClick={() => setView("table")}
                 className={`h-7 w-7 rounded-md flex items-center justify-center transition-colors ${view === "table" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                 title="Table view"
               >

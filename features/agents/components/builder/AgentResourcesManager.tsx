@@ -12,9 +12,14 @@ import {
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
 import { ResourceAttachmentTile } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
+import { hasPeek } from "@/features/organizations/peek/kinds-list";
+import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import type { ResourcePickerViewId } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
-import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import {
+  resolveEntityToken,
+  tryGetEntityInfo,
+} from "@/features/scopes/registry/entityRegistry";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { AssociationTargetEdge } from "@/features/scopes/types";
@@ -153,6 +158,15 @@ function AgentResourcePickerAction({
 export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
   const [edges, setEdges] = useState<AssociationTargetEdge[]>([]);
   const [loading, setLoading] = useState(true);
+  /**
+   * The attached resource being previewed, held as an ID and DERIVED from
+   * `edges` below. Storing the edge object instead means every path that drops
+   * an edge — `reload`, `detach`, a future one — has to remember to clear the
+   * peek, and the first review caught exactly that: `detach` filters `edges`
+   * directly and left a preview open on a resource the agent no longer had.
+   * Deriving makes that unrepresentable rather than remembered.
+   */
+  const [peekEdgeId, setPeekEdgeId] = useState<string | null>(null);
 
   const reload = async () => {
     const result = await associationsService.listForTargetsVisible("agent", [
@@ -218,6 +232,10 @@ export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
     setEdges((current) => current.filter((item) => item.id !== edge.id));
   };
 
+  const peekEdge = peekEdgeId
+    ? (edges.find((edge) => edge.id === peekEdgeId) ?? null)
+    : null;
+
   return (
     <div className="flex min-w-0 items-center gap-2">
       <Label className="shrink-0 text-xs text-muted-foreground">
@@ -245,7 +263,14 @@ export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
             );
           }
 
-          const entity = tryGetEntityInfo(edge.sourceType);
+          // ONE canonicalisation feeds both doors. Resolving the entity
+          // through `tryGetEntityInfo` (which canonicalises) while looking the
+          // peek up by the RAW string is the "one door and not the other"
+          // split this helper was extracted to prevent — reintroduced in the
+          // commit that extracted it, and caught in review.
+          const canonicalToken = resolveEntityToken(edge.sourceType);
+          const entity = tryGetEntityInfo(canonicalToken);
+          const canPeek = hasPeek(canonicalToken);
           return (
             <ResourceAttachmentTile
               key={edge.id}
@@ -253,6 +278,21 @@ export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
               title={edge.label ?? entity?.label ?? "Resource"}
               icon={entity?.Icon ?? FileText}
               themeKey={edge.sourceType}
+              // THE DOOR LAW. Every OTHER `ResourceAttachmentTile` consumer
+              // wires `onClick` (chat messages open the block; the composer
+              // chips open the resource); this strip was the one that resolved
+              // the entity, drew the icon, and then let the tile sit inert —
+              // so an agent's permanently-attached resources were the only
+              // ones you could not look at.
+              //
+              // PEEK, not navigate: the builder holds unsaved agent config, so
+              // following a route here would cost the user their edits. A peek
+              // answers "which note is that?" without leaving, and carries its
+              // own Open door (`peekHref`, registry-resolved) for the user who
+              // does want to go. Gated on a peek actually existing — an
+              // openable-looking tile that no-ops is the dead end this
+              // campaign exists to kill.
+              onClick={canPeek ? () => setPeekEdgeId(edge.id) : undefined}
               onRemove={() => void detach(edge)}
               variant="compact"
             />
@@ -264,6 +304,14 @@ export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
         <AgentResourcePickerAction batch={false} onSelected={attach} />
         <AgentResourcePickerAction batch onSelected={attach} />
       </div>
+
+      {peekEdge && (
+        <ResourcePeekHost
+          kind={resolveEntityToken(peekEdge.sourceType)}
+          id={peekEdge.sourceId}
+          onClose={() => setPeekEdgeId(null)}
+        />
+      )}
     </div>
   );
 }

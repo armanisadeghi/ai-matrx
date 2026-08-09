@@ -17,6 +17,8 @@
 import React, { useCallback, useState, useMemo } from "react";
 import { ChevronDown, ChevronRight, FileText, Folder } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { shouldOpenInNewTab } from "@/utils/navigation/should-open-in-new-tab";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   addInstanceTab,
@@ -49,6 +51,34 @@ export function GlobalSearchResults({
     setCollapsed((c) => ({ ...c, [noteId]: !c[noteId] }));
   }, []);
 
+  /**
+   * A COUNT IS A DOOR (no-dead-ends.md): "3" must REACH those three matches.
+   * Expand-only, never toggle — a count that hides the very thing it counts is
+   * the door closing in the user's face. Idempotent when already open, which is
+   * the correct no-op: the destination is the list immediately below it.
+   */
+  const expandNote = useCallback((noteId: string) => {
+    setCollapsed((c) => (c[noteId] ? { ...c, [noteId]: false } : c));
+  }, []);
+
+  /**
+   * Same intent as `handleMouseDown`, for the note ROW — which now contains a
+   * real `<a>` (the `EntityRef`).
+   *
+   * `preventDefault()` on mousedown is a blunt instrument: it fires for EVERY
+   * button, so on the row it also lands on the middle-click and cmd-click the
+   * anchor exists to serve. Suppressing focus-theft is only wanted for the
+   * PLAIN click; a modified click is the user deliberately opening a new tab,
+   * where the current tab's focus is not the thing to protect. Reuses the
+   * global `shouldOpenInNewTab` predicate rather than re-deriving the modifier
+   * set — the same one `EntityRef` uses on the click side, so the two halves
+   * cannot drift.
+   */
+  const handleRowMouseDown = useCallback((e: React.MouseEvent) => {
+    if (shouldOpenInNewTab(e)) return;
+    e.preventDefault();
+  }, []);
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     // Keep focus in the find input — clicking a result must not steal
     // focus, otherwise typing afterwards goes nowhere and the previously
@@ -57,6 +87,28 @@ export function GlobalSearchResults({
     // the focus shift before the click handler runs.
     e.preventDefault();
   }, []);
+
+  const openNote = useCallback(
+    (noteId: string) => {
+      // "Open" on this surface is an in-app TAB SWITCH, not a route change.
+      // `/notes?active={id}` (the registry route) would reload the notes app
+      // and throw away the find state the user is standing in — so it is the
+      // cmd-click destination only, never the plain click.
+      //
+      // The pending match MUST be queued even though the user picked no
+      // specific hit: `requestActiveMatch` is the only thing that resets the
+      // index, so without it the newly-opened note inherits whatever ordinal
+      // was active in the note before it — click hit #7 in note B, then click
+      // note C's name, and C opens scrolled to its 8th match for no reason the
+      // user can see. Opening a note with no hit chosen means "start at the
+      // first one", and that has to be said explicitly.
+      dispatch(requestActiveMatch({ instanceId, noteId, matchIndex: 0 }));
+      dispatch(addInstanceTab({ instanceId, noteId }));
+      dispatch(markTabInteraction({ instanceId }));
+      dispatch(setInstanceActiveTab({ instanceId, noteId }));
+    },
+    [dispatch, instanceId],
+  );
 
   const handleHitClick = useCallback(
     (noteId: string, hit: GlobalMatchHit) => {
@@ -130,27 +182,78 @@ export function GlobalSearchResults({
             </div>
             {group.notes.map((note) => {
               const isCollapsed = collapsed[note.noteId];
+              const hitsId = `global-find-hits-${instanceId}-${note.noteId}`;
               return (
                 <div key={note.noteId} className="mb-0.5">
-                  <button
-                    type="button"
-                    onMouseDown={handleMouseDown}
+                  {/* This row was ONE <button> wrapping the note's name, which
+                      is why the name could not become an `EntityRef`: that
+                      renders an <a> (plus control <button>s), and nesting
+                      either inside a <button> is invalid HTML that React warns
+                      about. Splitting the row is the whole fix — the container
+                      is a <div> that still toggles on click anywhere, and the
+                      chevron stays a real <button> so the toggle keeps its
+                      keyboard affordance.
+
+                      `onMouseDown` MUST stay on the container: it
+                      preventDefaults to keep focus in the find input (see
+                      `handleMouseDown`), and mousedown bubbles, so it covers
+                      the name and the chevron without either repeating it. */}
+                  <div
+                    onMouseDown={handleRowMouseDown}
                     onClick={() => toggleCollapsed(note.noteId)}
-                    className="w-full flex items-center gap-1 px-2 py-0.5 text-xs text-foreground hover:bg-muted/60 transition-colors"
+                    className="w-full flex cursor-pointer items-center gap-1 px-2 py-0.5 text-xs text-foreground hover:bg-muted/60 transition-colors"
                   >
-                    {isCollapsed ? (
-                      <ChevronRight className="w-3 h-3 shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-3 h-3 shrink-0" />
-                    )}
-                    <FileText className="w-3 h-3 shrink-0 text-muted-foreground" />
-                    <span className="truncate">{note.label}</span>
-                    <span className="ml-auto text-[10px] text-muted-foreground tabular-nums shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        // The container already toggles; without this the click
+                        // would toggle twice and land back where it started.
+                        e.stopPropagation();
+                        toggleCollapsed(note.noteId);
+                      }}
+                      aria-expanded={!isCollapsed}
+                      aria-controls={isCollapsed ? undefined : hitsId}
+                      aria-label={`${isCollapsed ? "Expand" : "Collapse"} matches in ${note.label}`}
+                      className="flex shrink-0 items-center gap-1"
+                    >
+                      {isCollapsed ? (
+                        <ChevronRight className="w-3 h-3 shrink-0" />
+                      ) : (
+                        <ChevronDown className="w-3 h-3 shrink-0" />
+                      )}
+                      <FileText className="w-3 h-3 shrink-0 text-muted-foreground" />
+                    </button>
+                    {/* THE DOOR LAW: this panel named a note and gave you no way
+                        to reach it — the only click available collapsed a list.
+                        Plain click switches to the note's tab (what "open"
+                        means here); cmd/middle-click goes natively to
+                        `/notes?active={id}`; hover gives the note peek. */}
+                    <EntityRef
+                      token="note"
+                      id={note.noteId}
+                      name={note.label}
+                      showIcon={false}
+                      onOpen={() => openNote(note.noteId)}
+                      className="min-w-0 flex-1"
+                    />
+                    {/* No `ml-auto`: the EntityRef beside it is `flex-1` and
+                        already eats the free space, so the count is pinned
+                        right by the layout, not by a margin. */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        expandNote(note.noteId);
+                      }}
+                      title={`Show the ${note.hits.length} ${note.hits.length === 1 ? "match" : "matches"} in ${note.label}`}
+                      aria-label={`Show the ${note.hits.length} ${note.hits.length === 1 ? "match" : "matches"} in ${note.label}`}
+                      className="shrink-0 rounded-sm px-1 text-[10px] text-muted-foreground tabular-nums transition-colors hover:bg-accent hover:text-foreground"
+                    >
                       {note.hits.length}
-                    </span>
-                  </button>
+                    </button>
+                  </div>
                   {!isCollapsed && (
-                    <ul className="pl-7">
+                    <ul id={hitsId} className="pl-7">
                       {note.hits.map((hit) => (
                         <li key={hit.start}>
                           <button

@@ -9,6 +9,7 @@
 import React from "react";
 import { Workflow } from "lucide-react";
 import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -53,7 +54,7 @@ export default function WorkflowPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.name || "Workflow"}
       icon={workflowIcon}
-      href={`/workflows/${id}`}
+      href={peekHref("workflow", id)}
       loading={loading}
     >
       {row ? (

@@ -39,9 +39,23 @@ import {
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { captureDomSelection } from "@/features/context-menu-v3/utils/selection-tracking";
+import {
+  useListViewPrefs,
+  type LegacyListViewImport,
+} from "@/lib/list-views/useListViewPrefs";
+import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 
-type HubViewMode = "cards" | "table";
-const HUB_VIEW_STORAGE_KEY = "documents-hub-view";
+/**
+ * Style prefs for this hub (synced across devices via `userPreferences`).
+ * Cards-first is this hub's own default — the platform default is table.
+ */
+const DOCUMENTS_HUB_VIEW_DEFAULTS: Partial<ListViewPrefs> = { view: "cards" };
+
+/** One-time adoption of the device-local key this hub used before the hook. */
+const DOCUMENTS_HUB_LEGACY_VIEW: LegacyListViewImport = {
+  key: "documents-hub-view",
+  map: (raw) => (raw === "table" || raw === "cards" ? { view: raw } : null),
+};
 
 export default function DocumentsLandingPage() {
   const router = useRouter();
@@ -51,19 +65,15 @@ export default function DocumentsLandingPage() {
   const [creating, setCreating] = useState(false);
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<DocumentSortKey>("updated");
-  const [view, setView] = useState<HubViewMode>("cards");
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem(HUB_VIEW_STORAGE_KEY);
-    if (saved === "cards" || saved === "table") setView(saved);
-  }, []);
-
-  const setViewPersist = (mode: HubViewMode) => {
-    setView(mode);
-    window.localStorage.setItem(HUB_VIEW_STORAGE_KEY, mode);
-  };
+  const { prefs, setView } = useListViewPrefs(
+    "documents-hub",
+    DOCUMENTS_HUB_VIEW_DEFAULTS,
+    DOCUMENTS_HUB_LEGACY_VIEW,
+  );
+  // This hub renders two of the three canonical views; anything else is cards.
+  const view = prefs.view === "table" ? "table" : "cards";
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -197,7 +207,7 @@ export default function DocumentsLandingPage() {
                 query={query}
                 onQueryChange={setQuery}
                 view={view}
-                onViewChange={setViewPersist}
+                onViewChange={setView}
                 sortKey={sortKey}
                 onSortChange={setSortKey}
               />

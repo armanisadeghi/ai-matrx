@@ -17,10 +17,36 @@ No barrel — import from the concrete file.
 
 ---
 
+## `sourceFeature` and `entity` — the slot that was dark
+
+Every row forwards a **surface** to the v3 right-click menu (`ItemMenuSurface`
+in `types.ts`), and both fields earn their keep:
+
+- **`sourceFeature` (required).** v3 attributes every shortcut and agent
+  launched from the menu to it, and `SourceFeature` is a closed registry with no
+  generic member — deliberately, so nothing can hide behind one. It used to be
+  hardcoded `"files"` *inside* `ItemContextMenu`, meaning a note row's launches
+  were filed under the files feature. A confident wrong answer is worse than
+  being made to give the right one, which is why this is required rather than
+  defaulted.
+- **`entity` (pass it).** It gates **Attach To** in `MenuContent`, and with a
+  `resourceType`, **Share** as well. `ItemContextMenu` never forwarded one, so
+  both doors were dark on every row in the app — not because the capability was
+  missing, but because the wrapper dropped the value on the floor. A row that
+  omits `entity` ships a menu missing two doors the platform already owns.
+
+Return/pass `undefined` for a row that is not a registered entity (a
+heterogeneous hub's non-entity kinds). **Never fabricate a token** — that offers
+to attach a record which does not exist under that name.
+
+---
+
 ## ItemRow
 
 ```tsx
 <ItemRow
+  sourceFeature="conversation"                    // REQUIRED — see below
+  entity={{ type: "conversation", id: conv.id, title: conv.title }}
   label={conv.title}
   active={conv.id === activeId}
   onOpen={() => open(conv)}                       // or href="/chat/123" for <Link>

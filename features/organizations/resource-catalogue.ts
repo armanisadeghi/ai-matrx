@@ -59,6 +59,7 @@ import {
   ListTodo,
 } from "lucide-react";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
 const STRUCTURED_LIST_INFO = getEntityInfo("structured_list");
 
@@ -138,6 +139,21 @@ export function getContentRole(role: ContentRole): ContentRoleMeta {
 export interface OrgResourceEntry {
   /** Stable key, used for React keys and lookups. */
   key: string;
+  /**
+   * The CANONICAL entity token for this kind (`platform.entity_types.token`).
+   *
+   * `key` above is this catalogue's own legacy vocabulary and does NOT match
+   * the token for six kinds (`agent_app`→`app`, `sandbox`→`sandbox_instance`,
+   * `flashcard`→`flashcard_data`, `quiz`→`quiz_session`, `canvas`→`canvas_item`,
+   * `research`→`research_topic`). Surfaces that render these rows must resolve
+   * routes, icons and peeks from the registry by TOKEN — keying off `key`
+   * silently loses the door for exactly those six.
+   *
+   * `null` = no registered token maps cleanly (`website`: the entry is the
+   * scraper's `scraper.sites` share key, not `web.site`), so registry lookups
+   * must be skipped rather than guessed.
+   */
+  token: EntityTypeToken | null;
   label: string;
   labelPlural: string;
   role: ContentRole;
@@ -200,6 +216,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   // ─── Utilities ──────────────────────────────────────────────────────────
   {
     key: "agent",
+    token: "agent",
     label: "Agent",
     labelPlural: "Agents",
     role: "utility",
@@ -218,6 +235,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "agent_app",
+    token: "app",
     label: "Agent App",
     labelPlural: "Agent Apps",
     role: "utility",
@@ -236,6 +254,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "agent_shortcut",
+    token: "agent_shortcut",
     label: "Shortcut",
     labelPlural: "Agent Shortcuts",
     role: "utility",
@@ -252,6 +271,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "skill",
+    token: "skill",
     label: "Skill",
     labelPlural: "Skills",
     role: "utility",
@@ -270,6 +290,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "workflow",
+    token: "workflow",
     label: "Workflow",
     labelPlural: "Workflows",
     role: "utility",
@@ -284,6 +305,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "message_template",
+    token: "message_template",
     label: "Message Template",
     labelPlural: "Message Templates",
     role: "utility",
@@ -298,6 +320,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "sandbox",
+    token: "sandbox_instance",
     label: "Sandbox",
     labelPlural: "Sandboxes",
     role: "utility",
@@ -314,6 +337,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   // ─── Sources ────────────────────────────────────────────────────────────
   {
     key: "file",
+    token: "file",
     label: "File",
     labelPlural: "Files",
     role: "source",
@@ -333,6 +357,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "dataset",
+    token: "dataset",
     label: "Dataset",
     labelPlural: "Datasets",
     role: "hybrid",
@@ -347,6 +372,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "structured_list",
+    token: "structured_list",
     label: STRUCTURED_LIST_INFO.label,
     labelPlural: STRUCTURED_LIST_INFO.labelPlural,
     role: STRUCTURED_LIST_INFO.contentRole,
@@ -365,6 +391,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "workbook",
+    token: "workbook",
     label: "Workbook",
     labelPlural: "Workbooks",
     role: "hybrid",
@@ -379,6 +406,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "transcript",
+    token: "transcript",
     label: "Transcript",
     labelPlural: "Transcripts",
     role: "source",
@@ -393,6 +421,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "website",
+    token: null,
     label: "Website",
     labelPlural: "Websites",
     role: "source",
@@ -409,6 +438,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   // ─── Outputs (Destinations) ─────────────────────────────────────────────
   {
     key: "note",
+    token: "note",
     label: "Note",
     labelPlural: "Notes",
     role: "hybrid",
@@ -423,6 +453,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "conversation",
+    token: "conversation",
     label: "Conversation",
     labelPlural: "Conversations",
     role: "destination",
@@ -438,6 +469,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "flashcard",
+    token: "flashcard_data",
     label: "Flashcard Set",
     labelPlural: "Flashcards",
     role: "destination",
@@ -452,6 +484,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "quiz",
+    token: "quiz_session",
     label: "Quiz",
     labelPlural: "Quizzes",
     role: "destination",
@@ -466,6 +499,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "canvas",
+    token: "canvas_item",
     label: "Canvas",
     labelPlural: "Canvases",
     role: "destination",
@@ -481,6 +515,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "research",
+    token: "research_topic",
     label: "Research Topic",
     labelPlural: "Research",
     role: "destination",
@@ -499,6 +534,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   // ─── Workspaces (Containers) ────────────────────────────────────────────
   {
     key: "project",
+    token: "project",
     label: "Project",
     labelPlural: "Projects",
     role: "container",
@@ -516,6 +552,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   },
   {
     key: "task",
+    token: "task",
     label: "Task",
     labelPlural: "Tasks",
     role: "container",

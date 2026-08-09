@@ -199,6 +199,7 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 
 ## Change log
 
+- `2026-08-09` — claude: **Your Cloud's Cozy/Compact/List toggle moved onto `useListViewPrefs`** (`surfaceKey` `image-manager-cloud`). The local `ViewMode` union, the `image-manager:cloud-images-view` localStorage key, `loadInitialView()`, and the persist `useEffect` are deleted. The three buttons are now a render-time projection of the two canonical style axes — Cozy = `cards`/`comfortable`, Compact = `cards`/`compact`, List = `rows` — so the choice syncs across devices via `userPreferences`. Default is unchanged (Cozy); switching to List no longer forgets the last grid density.
 - `2026-08-08` — `hooks/images/unsplashClient.ts` gained `photos.trackDownload` (shim + server route now cover the same method set). First consumer outside presentations: the marketing Media workspace Sources view (`features/marketing/components/media/StockSourcesView.tsx`) — Unsplash search + durable save-to-brand-library.
 - `2026-05-09` — Moved the mobile Images section context into the shared top header (`Images / Section`) and retuned the bottom command pill so it acts like navigation/actions instead of repeating the page title.
 - `2026-05-09` — Reworked the Images mobile bottom command bar toward the Files dock pattern: ellipsis section opener, icon-only app quick links, active Images affordance, and a separate floating primary action.

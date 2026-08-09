@@ -109,14 +109,43 @@ delete yours and extend ours.
 | Compact active-context picker (popover/menu) | `ActiveContextTree` (+ `ContextTree`) | `features/scopes/components/active-context/ActiveContextTree.tsx` |
 | Pick or create a project (complete searchable list) | `ProjectPicker` | `features/projects/components/ProjectPicker.tsx` |
 | Overflow / hierarchical action menu | `AdvancedMenu` | `components/official/AdvancedMenu.tsx` |
-| **Name another record anywhere** (cell, row, dialog, badge) — open / new tab / peek. THE DOOR LAW: never a bare `<span>` or UUID | `EntityRef` | `components/official/entity-ref/EntityRef.tsx` |
-| Ask whether a kind has a registered peek (without pulling all 19 peeks into your chunk) | `hasPeek` + `ResourcePeekHost` | `features/organizations/peek/kinds-list.ts`, `features/organizations/peek/ResourcePeekHost.tsx` |
+| **Name another record anywhere** (cell, row, dialog, badge) — open / new tab / peek. THE DOOR LAW: never a bare `<span>` or UUID. Two props carry the decisions it can't make for you: `openInNewTab` on anything embedded (rail, sheet, panel, audit) so following a record can't cost the user what they're in, and `href` to override the registry on an `(admin)`/`(dev)` surface, where a `(core)` route is a **different origin** and bounces off the console. Where the id itself is the information, pass it as `name` **plus `wrap`** — it truncates by default (its home is a table cell), which silently eats the thing an admin came to copy. Safe to drop inside a clickable row: the controls AND the portaled peek both stop propagation (React events travel the React tree, so a portal alone does not isolate them). Replacing a FULL-WIDTH control? Add `fill` — `className="flex-1"` stretches only the wrapper, so the label stops opening the record everywhere the old button's padding used to. Styling that must land on the TEXT (`line-through`, weight) goes in `labelClassName`, not `className`. Name is JSX, not a string (title + badge, title over subtitle)? Pass it as CHILDREN — a surface that can't be flattened is how a shell ends up building its own poorer door | `EntityRef` | `components/official/entity-ref/EntityRef.tsx` |
+| Ask whether a kind has a registered peek (without pulling all 19 peeks into your chunk), and translate a canonical token to its peek key — **six differ**, and keying off the token loses the peek for exactly those six | `hasPeek` + `peekKeyForToken` + `ResourcePeekHost` | `features/organizations/peek/kinds-list.ts`, `features/organizations/peek/ResourcePeekHost.tsx` |
+| Turn a `kind` / `type` string written by ANOTHER system (an ingest pipeline, a stream envelope, a legacy catalogue) into a canonical entity token before you resolve a route or a peek. **A column named `kind` is not a token**: `source_kind='cld_file'` is the registry's `file` — same row, same id, same route — but handed over raw it renders doorless while `note`/`task` on the same screen work, which is the most deceptive possible failure. Canonicalise ONCE and carry that token to both doors; resolving the entity from the canonical string and the peek from the raw one is the exact split this exists to stop. Add a new alias here and nowhere else, and only after verifying it points at the same physical row | `resolveEntityToken` (+ `tryGetEntityInfo`, which canonicalises for you) | `features/scopes/registry/entityRegistry.ts` |
 | An agent's parent / children / system twin (derived, no query) | `selectAgentLineageIndex` / `selectAgentLineage` | `features/agents/redux/agent-definition/selectors.ts` |
 | Run an agent headlessly and get its extracted JSON (one-shot, optional file/audio message parts) — NEVER hand-roll launch+poll (D126) | `useHeadlessAgentJson` (React) / `runHeadlessAgentJson` (thunk-style) | `features/agents/hooks/useHeadlessAgentJson.ts`, `features/agents/redux/execution-system/thunks/run-headless-agent-json.ts` |
 | Resolve Lucide / custom icon by name | `IconResolver` | `components/official/icons/IconResolver.tsx` |
 | 44×44 icon tap targets | `TapTargetButton` + `tap-buttons` | `components/icons/TapTargetButton.tsx`, `components/icons/tap-buttons.tsx` |
 | Single-value picker over a `platform.categories` dimension (FK columns) | `CategorySelect` | `features/scopes/components/CategorySelect.tsx` |
 | Tag an entity with categories via association edges (multi-select + inline create) | `CategoryTagPicker` | `features/scopes/components/CategoryTagPicker.tsx` |
+
+### Components — lists, rows & record actions
+
+Building a feature's list page, a row menu, or "what can I do to this record?"
+Start here — there are ~26 bespoke list pages in the repo and that is the defect
+this section exists to stop. Campaign: `docs/handoffs/inventory-law-sweep.md`.
+
+| If you need to… | Use | Located at |
+| --- | --- | --- |
+| **A feature's list page** — table/cards/dense, Mine/My Orgs/Shared/Public scopes with true server counts, facets, column picker, inline edit. Write a config, never a bespoke table | `EntityListPage` + `EntityListConfig` | `lib/entity-list/components/EntityListPage.tsx`, `lib/entity-list/config.tsx` — see `lib/entity-list/FEATURE.md`; best consumer `features/agents/browse/` |
+| Declare a list column (sorts AND filters server-side — no exceptions) | `EntityColumnSpec` (+ `relativeTime` / `timeCell`) | `lib/entity-list/columns.tsx` |
+| A list column that NAMES a record — give it `entityToken` and the shell renders the cell through `EntityRef` (Open + new tab + peek), keeping the pencil-forcing that lets a linked body coexist with inline edit. `href` still overrides the route for an admin-side/satellite one. **Do not hand-roll a `<Link>` in a `cell`** — that is the Open-only door this replaced | `entityToken` on the column | `components/official/matrx-data-table/types.ts` |
+| The scoped list RPC behind a config's `service` | the `*_list_scoped` template | `lib/list-scope/FEATURE.md` |
+| **One action list per entity**, consumed identically by table, cards, rows, and right-click | `ItemMenuConfig` + `ItemMenu` / `ItemContextMenu` | `components/official/item/types.ts`, `components/official/item/ItemMenu.tsx` |
+| A list / sidebar / tree row with kebab + right-click + inline rename | `ItemRow` | `components/official/item/ItemRow.tsx` |
+| Rename in place (optimistic or awaited) | `EditableLabel` | `components/official/item/EditableLabel.tsx` |
+| Persist a list's VIEW STYLE (view, density, sort, page size, hidden columns — never search/filters/page) | `useListViewPrefs` | `lib/list-views/useListViewPrefs.ts` — see `lib/list-views/FEATURE.md` |
+| Every action an **agent** record supports (23 entries) | `buildAgentMenu` + `useAgentRowActions` | `features/agents/browse/agentActionRegistry.tsx`, `features/agents/browse/useAgentRowActions.tsx` |
+| The same for a **note** / **conversation** / **pdf doc** | `buildNoteMenu` · `conversationActionRegistry` · `buildPdfDocMenu` | `features/notes/components/note-actions/noteMenuRegistry.tsx` · `features/agents/components/conversation-actions/conversationActionRegistry.tsx` · `features/pdf-extractor/studio/pdfDocMenu.tsx` |
+| **Universal right-click menu** (copy-as, export, download as markdown, convert, attach, share, AI actions) | `NonEditableContextMenu` / `EditableContextMenu` — pass `contentSource` **and** `entity` or half the menu stays dark | `features/context-menu-v3/NonEditableContextMenu.tsx`, `features/context-menu-v3/EditableContextMenu.tsx` — see the `context-menu-v3` skill |
+
+### Components — AI assists & promises
+
+| If you need to… | Use | Located at |
+| --- | --- | --- |
+| Offer a one-click AI action at a friction point (error, empty state, gap) — ask this BEFORE designing a manual affordance | `makeEphemeralAssist` + `AssistChip` (inline) · `emitAssistTracked` (durable, needs `dedupeKey` + `filterUndecidedKeys` first) | `features/assists/types.ts`, `features/assists/components/AssistChip.tsx`, `features/assists/redux/emitTracked.ts` — see `features/assists/FEATURE.md` |
+| Run / dismiss an assist (never hand-roll an accept handler) | `useAssistRunner` | `features/assists/runtime/useAssistRunner.ts` |
+| Advertise a not-yet-built action (never a bare "coming soon" string) | `announceComingSoon(id)` + register the id | `lib/coming-soon/announce.ts`, `lib/coming-soon/registry.ts` |
 
 ### Components — markdown & content
 
@@ -146,6 +175,7 @@ delete yours and extend ours.
 | --- | --- | --- |
 | Draggable / resizable window frame | `WindowPanel` | `features/window-panels/WindowPanel.tsx` — see `features/window-panels/FEATURE.md` |
 | Open any overlay / window / modal | typed opener, else `openOverlay` | `features/overlays/openers/*`, `lib/redux/thunks/overlayThunks.ts` — see `features/overlays/FEATURE.md` |
+| **Register a NEW window panel** (~10 registration sites; a half-registered panel is invisible to the tray, minimize-all and persistence). **Check first whether a twin already exists** — seven windows currently have a canonical opener with ZERO call sites while a colocated copy does the work, and several blocking modals already have a `WindowPanel` twin one file over | the `window-panel-authoring` skill (reverse: `remove-window-panel`) | `.claude/skills/window-panel-authoring/SKILL.md` — see `features/window-panels/FEATURE.md` |
 | Full-viewport overlay shell | `FullScreenOverlay` | `components/official/FullScreenOverlay.tsx` |
 | Imperative confirm (replaces `window.confirm`) | `confirm({…})` | `components/dialogs/confirm/ConfirmDialogHost.tsx` |
 | Inline destructive confirm | `ConfirmDialog` | `components/ui/confirm-dialog.tsx` |
@@ -201,5 +231,10 @@ delete yours and extend ours.
 | Window panels + tray | `features/window-panels/` | `features/window-panels/FEATURE.md` + `window-panels` skill |
 | Universal files | `features/files/handler/` | `features/files/handler/FEATURE.md` |
 | Message / content action registries | `messageActionRegistry`, `contentActionRegistry` | extend the registry; don't build a parallel menu |
+| Canonical entity list shell | `lib/entity-list/` | `lib/entity-list/FEATURE.md` — write a config, never a bespoke table |
+| Per-entity record actions | `components/official/item/` | one `ItemMenuConfig` builder per entity; three rival lists for one entity is the defect this kills |
+| Universal right-click | `features/context-menu-v3/` | `features/context-menu-v3/FEATURE.md` + `context-menu-v3` skill |
+| AI assists everywhere | `features/assists/` | `features/assists/FEATURE.md` — never fork a second chip, table, or accept handler |
+| Entity token → route / icon / peek (THE DOOR LAW) | `features/scopes/registry/entityRegistry.ts` + `features/organizations/peek/` | add `hrefFor` / a peek to the REGISTRY, never to the call site |
 | Scopes / context assignment | `features/scopes/` | `features/scopes/FEATURE.md` — Surface A vs B invariant |
 | Settings catalogue | `features/settings/` | `features/settings/FEATURE.md` + `settings-system` skill |

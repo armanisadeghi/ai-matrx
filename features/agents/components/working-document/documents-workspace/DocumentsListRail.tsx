@@ -189,6 +189,13 @@ export function DocumentsListRail({
             });
           return (
             <ItemRow
+              sourceFeature="working-document"
+              entity={{
+                type: "working_document",
+                id: d.id,
+                title: label,
+                resourceType: "working_document",
+              }}
               key={d.id}
               size="sm"
               active={isActive}

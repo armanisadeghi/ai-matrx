@@ -1,12 +1,16 @@
 // features/scheduling/components/shared/OutputRefLink.tsx
 //
-// Polymorphic deep-link to whatever the run produced. Switches on
-// `output_ref.kind` per docs/SCHEDULING.md §6.
+// Deep-link to whatever the run produced. `output_ref.kind` IS a canonical
+// entity token, so the route comes from the entity registry via `EntityRef` —
+// there is no private route table here. Kinds with no registered route
+// (`capture`, `workflow_run`: no entity token, and `/scraper/captures/{id}` /
+// `/workflows/runs/{id}` are not real routes) render as plain text until the
+// registry gains an `hrefFor` for them. A fabricated link that 404s is worse
+// than no link.
 
 "use client";
 
-import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { OutputRef } from "../../types";
 
 interface Props {
@@ -16,39 +20,21 @@ interface Props {
 export function OutputRefLink({ outputRef }: Props) {
   if (!outputRef) return null;
 
-  const href = hrefForOutputRef(outputRef);
-  if (!href) {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-        {labelFor(outputRef)} #{outputRef.id.slice(0, 8)}
-      </span>
-    );
-  }
-
+  // This sits inside an expandable run row on the schedule detail page, so
+  // opening the output must not cost the user the run history they are reading:
+  // `openInNewTab` is a real `target="_blank"` anchor, which also keeps
+  // middle-click and cmd-click working — the hand-rolled `window.open` this
+  // replaces had neither, and popup blockers can eat it.
   return (
-    <Link
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-    >
-      Open {labelFor(outputRef)}
-      <ExternalLink className="h-3 w-3" />
-    </Link>
+    <EntityRef
+      token={outputRef.kind}
+      id={outputRef.id}
+      name={labelFor(outputRef)}
+      alwaysShowActions
+      openInNewTab
+      className="text-xs text-muted-foreground"
+    />
   );
-}
-
-function hrefForOutputRef(ref: OutputRef): string | null {
-  switch (ref.kind) {
-    case "conversation":
-      return `/agents?conversation=${ref.id}`;
-    case "capture":
-      return `/scraper/captures/${ref.id}`;
-    case "workflow_run":
-      return `/workflows/runs/${ref.id}`;
-    default:
-      return null;
-  }
 }
 
 function labelFor(ref: OutputRef): string {

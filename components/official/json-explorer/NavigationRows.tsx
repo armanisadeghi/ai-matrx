@@ -8,7 +8,6 @@ const NavigationRows: React.FC<NavigationRowsProps> = ({
   originalData, 
   currentPath, 
   onKeySelect, 
-  onContextMenu, 
   isPathHidden 
 }) => {
   if (!originalData) return null;
@@ -37,7 +36,6 @@ const NavigationRows: React.FC<NavigationRowsProps> = ({
               variant={isSelected ? "default" : "outline"}
               data-json-key={key}
               onClick={() => onKeySelect(rowIndex, key)}
-              onContextMenu={(e) => onContextMenu && onContextMenu(e, buttonPath)}
               className={`text-xs ${isHidden ? 'bg-yellow-200 dark:bg-yellow-800 hover:bg-yellow-300 dark:hover:bg-yellow-900 text-gray-800 dark:text-gray-300' : ''}`}
             >
               {key}

@@ -107,8 +107,15 @@ selection resets). Without it, every user with ANY stored blob keeps
 ### 3. One menu, every action — and it reads like Chrome's
 
 `agentActionRegistry.tsx` builds ONE `ItemMenuConfig` consumed identically by
-the table row menu, card kebab, compact-row kebab, and right-click.
-`/agents/all` had **three** divergent hard-coded lists.
+the table row menu, card kebab, and compact-row kebab. `/agents/all` had
+**three** divergent hard-coded lists.
+
+**Right-click is NOT wired** — not here and not on `/transcripts`. This doc and
+`agentActionRegistry.tsx` both used to assert right-click parity that never
+shipped. `ItemContextMenu` takes this same config, but `MatrxDataTable` exposes
+no row-wrapper seam; the extension and its one real hazard (a row-level menu
+would swallow the native right-click inside inline-editable cells, killing
+copy/paste there) are tracked in `docs/handoffs/inventory-law-sweep.md`.
 
 Menu style rules, set against Chrome's app menu as the benchmark:
 

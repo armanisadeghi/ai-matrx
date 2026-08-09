@@ -270,6 +270,7 @@ function ConversationRow({
 
   return (
     <ItemRow
+      sourceFeature="agent-runner"
       className="mx-1"
       size="sm"
       label={title}

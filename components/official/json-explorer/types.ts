@@ -41,7 +41,6 @@ export interface NavigationRowsProps {
   originalData: JsonValue | null | undefined;
   currentPath: PathArray;
   onKeySelect: (rowIndex: number, key: string) => void;
-  onContextMenu?: (e: React.MouseEvent, path: PathArray) => void;
   hiddenPaths?: string[];
   isPathHidden?: (path: PathArray) => boolean;
 }

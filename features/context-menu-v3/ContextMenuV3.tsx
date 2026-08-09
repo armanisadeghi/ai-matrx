@@ -60,6 +60,40 @@ import { buildEditableWidgetHandle } from "./utils/widget-handle";
  */
 export const CANONICAL_MENU_VERSION_V3 = 1;
 
+/**
+ * Text-entry targets whose NATIVE menu we must never steal.
+ *
+ * A read-only menu (`isEditable === false`) offers Copy and AI actions; it
+ * offers no Paste, no Undo, no spellcheck, no autofill — everything a user
+ * right-clicks a live text field FOR. Swallowing that gesture makes the field
+ * strictly less capable than an unwrapped one. Editable surfaces are the
+ * opposite case: they wire text mutation into the menu deliberately, so they
+ * keep it.
+ *
+ * Non-text `<input>` types (checkbox, button, range…) have no native text menu
+ * to protect, so the record menu still wins there.
+ */
+const NON_TEXT_INPUT_TYPES = new Set([
+  "button",
+  "checkbox",
+  "color",
+  "file",
+  "image",
+  "radio",
+  "range",
+  "reset",
+  "submit",
+]);
+
+function yieldsToNativeTextMenu(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  if (target instanceof HTMLTextAreaElement) return true;
+  if (target instanceof HTMLInputElement)
+    return !NON_TEXT_INPUT_TYPES.has(target.type);
+  return false;
+}
+
 // Tiny placeholder for the (~0.5s) MenuContent chunk load on first open only.
 function MenuContentSkeleton() {
   return (
@@ -286,6 +320,11 @@ export function ContextMenuV3({
   const handleMouseDown = (e: React.MouseEvent) => {
     if (suppressed) return; // yield to the native menu (e.g. streaming)
     if (e.button !== 2) return; // right-click only
+    // Must mirror the capture guard exactly. Capturing here would set
+    // `selectionLocked` for a menu that is never going to open, and only
+    // `handleMenuClose` clears it — so selection tracking would stay frozen
+    // for the rest of this instance's life.
+    if (!isEditable && yieldsToNativeTextMenu(e.target)) return;
     const target = e.target as HTMLElement;
     resolvePerTargetContext(target);
     selectionLocked.current = true;
@@ -454,6 +493,13 @@ export function ContextMenuV3({
   };
   const handleTouchStart = (e: React.TouchEvent) => {
     if (suppressed) return;
+    // The touch half of the native-menu rule. Long-press inside a text field IS
+    // the OS text callout (Select / Paste / Look Up) — pre-empting it at 480ms
+    // leaves a mobile user with no way to paste at all, which is worse than the
+    // desktop case because there is no right-click to fall back to. The guard
+    // shipped on the three pointer paths and missed this one, so the stated
+    // invariant held on desktop only.
+    if (!isEditable && yieldsToNativeTextMenu(e.target)) return;
     const t = e.touches[0];
     if (!t) return;
     touchStart.current = {
@@ -579,6 +625,9 @@ export function ContextMenuV3({
           style={{ display: "contents" }}
           onContextMenu={(e) => {
             if (suppressed) return; // native menu shows
+            // Same rule as the desktop capture guard below: a read-only menu
+            // never steals a live text field's native menu.
+            if (!isEditable && yieldsToNativeTextMenu(e.target)) return;
             e.preventDefault();
             captureContext(
               e.target as HTMLElement,
@@ -639,6 +688,17 @@ export function ContextMenuV3({
           asChild
           disabled={suppressed}
           ref={setSelectionOwner}
+          // CAPTURE, and it has to be. Radix's own open handler is composed
+          // into the trigger's bubble-phase `onContextMenu`, so returning early
+          // from ours does not stop it, and `preventDefault()` would kill the
+          // native menu too — the exact thing we are trying to preserve.
+          // Stopping propagation during capture skips every remaining listener
+          // on this element, ours and Radix's, and leaves the event otherwise
+          // untouched, so the browser shows its own menu.
+          onContextMenuCapture={(e) => {
+            if (!isEditable && yieldsToNativeTextMenu(e.target))
+              e.stopPropagation();
+          }}
           onMouseDown={handleMouseDown}
           onContextMenu={handleContextMenu}
         >

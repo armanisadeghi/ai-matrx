@@ -51,8 +51,25 @@ with a `kind` column). CRM consumes `EntityScopeTabs` directly.
 6. Surfaces without an axis switch it off (`supportsArchived: false`, omit
    `favorite`/`deepSearch`/`views`) — the shell hides the affordance rather
    than rendering a lie.
+7. **`sourceFeature` is required and `getRowEntity` should be supplied.** They
+   feed the row's right-click menu: `sourceFeature` attributes every shortcut
+   and agent launched from it (a closed registry — no generic member to hide
+   behind), and the entity is what turns **Attach To** (and, with a
+   `resourceType`, **Share**) on. Both were dark on every list row until the
+   config carried them. A heterogeneous hub returns `undefined` for rows that
+   are not registered entities — never a fabricated token, which would offer to
+   attach a record that does not exist. Keep the entity identical to what the
+   name column's `entityToken` resolves and what the kebab's share action uses:
+   one record, one identity, three entry points.
 
 ## Change log
 
+- 2026-08-09 — Rows carry a SURFACE to the right-click menu: `sourceFeature`
+  (required) + optional `getRowEntity`. `ItemContextMenu` had hardcoded
+  `sourceFeature="files"` for every consumer and never forwarded an `entity` at
+  all, so Attach To and Share were unreachable from any list row while the slot
+  sat unused in `MenuContent`. `/agents/all` passes the same `resourceType:
+  "agent"` its ShareModal uses; `/transcripts` returns an entity only for the
+  `transcript` kind.
 - 2026-08-08 — Extracted from features/agents/browse (steps 2–5 of the
   handoff); /transcripts migrated as the second consumer (step 6).

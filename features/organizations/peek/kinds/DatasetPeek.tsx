@@ -10,6 +10,7 @@
 import React from "react";
 import { Table } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -51,7 +52,7 @@ export default function DatasetPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={title}
       icon={<Table className="h-4 w-4 text-teal-600 dark:text-teal-400" />}
-      href={`/data/${id}`}
+      href={peekHref("dataset", id)}
       loading={loading}
     >
       {row ? (

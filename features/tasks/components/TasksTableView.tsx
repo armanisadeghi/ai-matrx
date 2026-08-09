@@ -45,6 +45,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/utils/cn";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   compareTimestamps,
   formatAbsoluteDate,
@@ -685,16 +686,35 @@ export default function TasksTableView() {
                     </TableCell>
                     <TableCell className="py-1.5 max-w-[200px]">
                       <div className="min-w-0">
-                        <span
-                          className={cn(
-                            "block text-[13px] truncate",
+                        {/* THE DOOR LAW. The row already selects the task into
+                            the detail pane, and that is the RIGHT plain click
+                            — so it is preserved verbatim through `onOpen`
+                            rather than replaced by navigation. What the name
+                            gains is everything the row could never offer:
+                            cmd/middle-click opens `/tasks/{id}` natively in a
+                            new tab, and the hover controls carry the task peek.
+                            No `fill`: the old span had no click of its own (the
+                            ROW did), so there is no hit target to preserve, and
+                            in a 200px cell the controls read better beside the
+                            name than pinned to the far edge. */}
+                        <EntityRef
+                          token="task"
+                          id={task.id}
+                          name={task.title}
+                          showIcon={false}
+                          onOpen={() => dispatch(setSelectedTaskId(task.id))}
+                          className="text-[13px]"
+                          // On the LABEL, not the wrapper: `line-through` is
+                          // the completed-state signal, and whether a wrapper
+                          // decoration reaches an inline-flex child's link is
+                          // not something to leave to inheritance — especially
+                          // when that link carries its own `hover:underline`.
+                          labelClassName={
                             task.completed
                               ? "line-through text-muted-foreground"
-                              : "font-medium text-foreground",
-                          )}
-                        >
-                          {task.title}
-                        </span>
+                              : "font-medium text-foreground"
+                          }
+                        />
                         {labels.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-0.5">
                             {labels.slice(0, 2).map((label) => (
@@ -716,14 +736,30 @@ export default function TasksTableView() {
                       </div>
                     </TableCell>
                     <TableCell className="py-1.5 text-sm text-muted-foreground">
-                      <span className="inline-flex items-center gap-1 min-w-0 max-w-[160px]">
-                        <Folder className="h-3 w-3 shrink-0" />
-                        <span className="truncate">
-                          {task.projectId === UNASSIGNED_PROJECT_ID
-                            ? "Unassigned"
-                            : (task.projectName ?? "—")}
+                      {/* The project a task belongs to was named on every row
+                          and reachable from none of them — a relationship we
+                          can resolve must be rendered AND linked. The sentinel
+                          "Unassigned" bucket is not a record, so it stays inert
+                          text; passing it to `EntityRef` would hand a route a
+                          non-id and 404. */}
+                      {task.projectId === UNASSIGNED_PROJECT_ID ||
+                      !task.projectId ? (
+                        <span className="inline-flex items-center gap-1 min-w-0 max-w-[160px]">
+                          <Folder className="h-3 w-3 shrink-0" />
+                          <span className="truncate">
+                            {task.projectId === UNASSIGNED_PROJECT_ID
+                              ? "Unassigned"
+                              : "—"}
+                          </span>
                         </span>
-                      </span>
+                      ) : (
+                        <EntityRef
+                          token="project"
+                          id={task.projectId}
+                          name={task.projectName}
+                          className="max-w-[160px]"
+                        />
+                      )}
                     </TableCell>
                     <TableCell className="py-1.5 text-xs text-muted-foreground whitespace-nowrap">
                       <span className="inline-flex items-center gap-1.5">

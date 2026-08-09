@@ -9,6 +9,7 @@
 import React from "react";
 import { ListChecks } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -48,7 +49,7 @@ export default function QuizPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.title || "Quiz"}
       icon={<ListChecks className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
-      href={`/quizzes/${id}`}
+      href={peekHref("quiz_session", id)}
       loading={loading}
     >
       {row ? (

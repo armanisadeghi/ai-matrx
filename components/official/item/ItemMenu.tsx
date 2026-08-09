@@ -419,6 +419,9 @@ export function ItemMenu({
 export function ItemContextMenu({
   config,
   children,
+  sourceFeature,
+  surfaceName,
+  entity,
   onOpenChange,
   onCloseAutoFocus,
   enabled = true,
@@ -429,7 +432,14 @@ export function ItemContextMenu({
 
   return (
     <NonEditableContextMenu
-      sourceFeature="files"
+      // Was hardcoded `"files"` for every consumer, so a note row's agent
+      // launches were attributed to the files feature. `entity` was worse than
+      // wrong — it was never passed at all, and it is what gates Attach To and
+      // Share in `MenuContent`, so both doors were dark on every ItemRow and
+      // every canonical-list row while the slot sat there unused.
+      sourceFeature={sourceFeature}
+      surfaceName={surfaceName}
+      entity={entity}
       resolveContextOnOpen={() => {
         // Re-resolve on every open so lazy configs stay live (parity with the
         // old handleOpenChange). The resolved config feeds extraSections on

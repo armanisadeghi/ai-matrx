@@ -8,15 +8,15 @@
  */
 
 import React from "react";
-import { Loader2, Search, ExternalLink, Eye } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Input } from "@/components/ui/input";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { supabase } from "@/utils/supabase/client";
 import { getShareableResource } from "@/utils/permissions/registry";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { OrgResourceEntry } from "../resource-catalogue";
-import { ResourcePeekHost } from "../peek/ResourcePeekHost";
-import { hasPeek } from "../peek/kinds-list";
 import type { ContainerColumn } from "../hooks/useContainerInventory";
 
 interface Item {
@@ -40,7 +40,6 @@ export function ContainerResourceSheet({
   const [items, setItems] = React.useState<Item[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [query, setQuery] = React.useState("");
-  const [peekId, setPeekId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!open || !entry || !entry.table) {
@@ -94,12 +93,23 @@ export function ContainerResourceSheet({
 
   if (!entry) return null;
   const Icon = entry.icon;
-  const peekable = hasPeek(entry.key);
+  const token = entry.token;
   const shareable = entry.shareKey
     ? getShareableResource(entry.shareKey)
     : undefined;
-  const hrefFor = (id: string): string | null =>
-    shareable ? shareable.urlPathTemplate.replace("{id}", id) : null;
+  /**
+   * The entity registry is the canonical route source; the sharing registry's
+   * `urlPathTemplate` is a SECOND, DB-backed one that disagrees with it in
+   * places (`/quizzes/{id}` vs `/education/quizzes/{id}`, and the 404 route
+   * `/canvas/{id}` — FOUND_DEFECTS D137/D138). Prefer the registry, and fall
+   * back to the share template only where the registry has no route yet, so
+   * this surface's set of working doors is a strict superset of what it had.
+   */
+  const shareHrefFor = (id: string): string | undefined =>
+    shareable ? shareable.urlPathTemplate.replace("{id}", id) : undefined;
+  const registryHasRoute = Boolean(
+    token && tryGetEntityInfo(token)?.hrefFor,
+  );
   const filtered = items.filter(
     (it) =>
       it.title.toLowerCase().includes(query.toLowerCase()) ||
@@ -153,57 +163,37 @@ export function ContainerResourceSheet({
             </div>
           ) : (
             <ul className="space-y-1.5">
-              {filtered.map((item) => {
-                const href = hrefFor(item.id);
-                return (
+              {filtered.map((item) => (
                   <li
                     key={item.id}
                     className="group flex items-center gap-3 p-2.5 rounded-lg border border-border bg-card hover:bg-accent/40"
                   >
-                    {!entry.hideRowIcon && (
-                      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    )}
-                    <span
-                      className="flex-1 min-w-0 text-sm truncate"
-                      title={item.title}
-                    >
-                      {item.title}
-                    </span>
-                    {peekable && (
-                      <button
-                        type="button"
-                        onClick={() => setPeekId(item.id)}
-                        className="text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
-                        title="Peek"
-                        aria-label={`Peek at ${item.title}`}
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                    {href && (
-                      <a
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
-                        title="Open in new tab"
-                        aria-label={`Open ${item.title} in a new tab`}
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    )}
+                    {/* Was: an inert <span> title, a hand-rolled Eye peek
+                        button, and a hand-rolled new-tab <a> — i.e. a local
+                        copy of EntityRef missing the Open door entirely.
+                        Resolved by TOKEN, not by `entry.key`: six catalogue
+                        keys differ from their canonical token and would
+                        silently lose both the route and the peek. */}
+                    <EntityRef
+                      token={token ?? entry.key}
+                      id={item.id}
+                      name={item.title}
+                      href={
+                        registryHasRoute ? undefined : shareHrefFor(item.id)
+                      }
+                      // This sheet sits over the project workspace / task
+                      // editor. Following a row must never replace what the
+                      // user has open — same rule as the association rail.
+                      openInNewTab
+                      showIcon={!entry.hideRowIcon}
+                      fill
+                      className="flex-1 min-w-0 text-sm"
+                    />
                   </li>
-                );
-              })}
+              ))}
             </ul>
           )}
         </div>
-
-        <ResourcePeekHost
-          kind={entry.key}
-          id={peekId}
-          onClose={() => setPeekId(null)}
-        />
       </MatrxDynamicPanelHost>
     </>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -43,9 +43,31 @@ import { cn } from "@/utils/cn";
 import type { TaskWithProject } from "@/features/tasks/types";
 import TasksTableView from "@/features/tasks/components/TasksTableView";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
+import {
+  useListViewPrefs,
+  type LegacyListViewImport,
+} from "@/lib/list-views/useListViewPrefs";
+import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 
-type ListViewMode = "list" | "table";
-const LIST_VIEW_STORAGE_KEY = "tasks-list-view";
+/**
+ * Style prefs for this pane (synced across devices via `userPreferences`).
+ * The grouped task list is the canonical `rows` view; table is the alternate.
+ */
+const TASK_LIST_VIEW_DEFAULTS: Partial<ListViewPrefs> = { view: "rows" };
+
+/**
+ * One-time adoption of the device-local key. Note the vocabulary change: this
+ * pane called its non-table mode "list", which is `rows` on the shared axes —
+ * a raw pass-through would have written a value no toggle here matches.
+ */
+const TASK_LIST_LEGACY_VIEW: LegacyListViewImport = {
+  key: "tasks-list-view",
+  map: (raw) => {
+    if (raw === "table") return { view: "table" };
+    if (raw === "list") return { view: "rows" };
+    return null;
+  },
+};
 
 export default function TaskListPane() {
   const dispatch = useAppDispatch();
@@ -73,15 +95,12 @@ export default function TaskListPane() {
     selectScopeNameMapForOrg(state, orgId),
   );
 
-  const [listView, setListView] = React.useState<ListViewMode>("list");
-  React.useEffect(() => {
-    const saved = window.localStorage.getItem(LIST_VIEW_STORAGE_KEY);
-    if (saved === "list" || saved === "table") setListView(saved);
-  }, []);
-  const setListViewPersist = (mode: ListViewMode) => {
-    setListView(mode);
-    window.localStorage.setItem(LIST_VIEW_STORAGE_KEY, mode);
-  };
+  const { prefs, setView } = useListViewPrefs(
+    "tasks-list-pane",
+    TASK_LIST_VIEW_DEFAULTS,
+    TASK_LIST_LEGACY_VIEW,
+  );
+  const isTableView = prefs.view === "table";
 
   const activeGroupKey = useMemo(() => {
     if (!selectedTaskId) return null;
@@ -156,10 +175,10 @@ export default function TaskListPane() {
         <div className="flex items-center rounded-md border border-border p-0.5 shrink-0">
           <button
             type="button"
-            onClick={() => setListViewPersist("list")}
+            onClick={() => setView("rows")}
             className={cn(
               "h-6 w-6 rounded flex items-center justify-center transition-colors",
-              listView === "list"
+              !isTableView
                 ? "bg-accent text-foreground"
                 : "text-muted-foreground hover:text-foreground",
             )}
@@ -169,10 +188,10 @@ export default function TaskListPane() {
           </button>
           <button
             type="button"
-            onClick={() => setListViewPersist("table")}
+            onClick={() => setView("table")}
             className={cn(
               "h-6 w-6 rounded flex items-center justify-center transition-colors",
-              listView === "table"
+              isTableView
                 ? "bg-accent text-foreground"
                 : "text-muted-foreground hover:text-foreground",
             )}
@@ -204,7 +223,7 @@ export default function TaskListPane() {
         </div>
       </div>
 
-      {groupByBanner && listView === "list" && (
+      {groupByBanner && !isTableView && (
         <div className="shrink-0 px-3 py-1.5 border-b border-border/50 bg-muted/40">
           <span className="text-xs font-semibold uppercase tracking-wider text-foreground/90">
             {groupByBanner}
@@ -214,7 +233,7 @@ export default function TaskListPane() {
 
       {/* List */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        {listView === "table" ? (
+        {isTableView ? (
           <TasksTableView />
         ) : loading && totalCount === 0 ? (
           <div className="space-y-1 p-2 animate-pulse">

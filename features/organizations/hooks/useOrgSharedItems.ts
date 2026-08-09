@@ -11,15 +11,19 @@
 
 import React from "react";
 import { supabase } from "@/utils/supabase/client";
-import { getShareableResource } from "@/utils/permissions/registry";
 import { listOrgShareGrants } from "@/utils/permissions/orgModeration";
 import type { OrgResourceEntry } from "../resource-catalogue";
 
+/**
+ * No `href` here on purpose: the route for a record comes from the entity
+ * registry (`getEntityInfo(token).hrefFor`) at render time, via `EntityRef`.
+ * This hook used to derive one from the sharing registry's `urlPathTemplate` —
+ * a second route authority with stale entries (FOUND_DEFECTS D138).
+ */
 export interface OrgSharedItem {
   id: string;
   title: string;
   source: "owned" | "shared";
-  href: string | null;
   /** auth.users id of the member who contributed it (shared items only). */
   sharedBy?: string | null;
   /** permissions row id (shared items only) — for unshare/moderation. */
@@ -51,9 +55,6 @@ export function useOrgSharedItems(
     (async () => {
       setLoading(true);
       const titleCol = entry.titleColumn ?? "id";
-      const sharePath = entry.shareKey ? getShareableResource(entry.shareKey) : undefined;
-      const hrefFor = (id: string): string | null =>
-        sharePath ? sharePath.urlPathTemplate.replace("{id}", id) : null;
 
       try {
         const db = (
@@ -79,7 +80,6 @@ export function useOrgSharedItems(
               id,
               title: String(row[titleCol] ?? "").trim() || "Untitled",
               source: "owned",
-              href: hrefFor(id),
             });
           }
         }
@@ -111,7 +111,6 @@ export function useOrgSharedItems(
                 id,
                 title: titleById.get(id) || entry.label,
                 source: "shared",
-                href: hrefFor(id),
                 sharedBy: grant?.sharedBy ?? null,
                 permissionId: grant?.permissionId ?? null,
               });

@@ -50,6 +50,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   getKgCostSummary,
   listOrgCosts,
@@ -274,11 +275,25 @@ function OrgLeaderboard({
             onClick={() => onPick(row.organization_id)}
           >
             <TableCell className="font-medium">
-              {row.organization_name ?? (
-                <span className="text-muted-foreground">
-                  {row.organization_id.slice(0, 8)}…
-                </span>
-              )}
+              {/* The org was named and unreachable, and where the name hadn't
+                  resolved it printed a truncated id — unopenable AND unusable
+                  for copying.
+
+                  `onOpen` is the load-bearing part: this row's click is an
+                  in-page DRILL-DOWN (`onPick`), not navigation, so handing the
+                  name a plain link would have quietly replaced this dashboard's
+                  primary interaction. Plain click still drills down; the doors
+                  arrive as additions — cmd/middle-click goes natively to the
+                  org, and the hover controls carry new tab and peek. */}
+              <EntityRef
+                token="organization"
+                id={row.organization_id}
+                name={row.organization_name ?? row.organization_id}
+                showIcon={false}
+                wrap
+                onOpen={() => onPick(row.organization_id)}
+                className="font-medium"
+              />
             </TableCell>
             <TableCell className="text-right tabular-nums">
               {fmtUsdShort(row.daily_auto_rag_cost_used_usd)}
@@ -367,7 +382,20 @@ function PendingBatchesTable({
               </Badge>
             </TableCell>
             <TableCell>
-              {row.organization_name ?? (
+              {/* The org that owns the batch was named and unreachable. Unlike
+                  the org table above — whose row click is an in-page
+                  drill-down — this table's row has no org action at all, so
+                  the name is the only handle. `openInNewTab`: admin surface,
+                  `/organizations/{id}` is on the main host. */}
+              {row.organization_id ? (
+                <EntityRef
+                  token="organization"
+                  id={row.organization_id}
+                  name={row.organization_name ?? row.organization_id}
+                  showIcon={false}
+                  openInNewTab
+                />
+              ) : (
                 <span className="text-muted-foreground italic">personal</span>
               )}
             </TableCell>
@@ -820,18 +848,59 @@ function BatchDetailDialog({
                 </dd>
 
                 <dt className="text-muted-foreground">Organization</dt>
-                <dd>{detail.organization_name ?? "personal"}</dd>
-
-                <dt className="text-muted-foreground">User</dt>
-                <dd className="font-mono text-xs">
-                  {(detail.user_id ?? "").slice(0, 8)}…
+                <dd>
+                  {detail.organization_id ? (
+                    <EntityRef
+                      token="organization"
+                      id={detail.organization_id}
+                      name={detail.organization_name ?? detail.organization_id}
+                      showIcon={false}
+                      openInNewTab
+                      wrap
+                    />
+                  ) : (
+                    "personal"
+                  )}
                 </dd>
 
+                {/* No `user` token exists in the entity registry, so there is
+                    no door to offer and none is fabricated. What the old markup
+                    DID do is destroy the id: `.slice(0, 8)…` is neither
+                    openable nor copyable, which is the worst of both. The full
+                    id at least answers "who ran this?" when pasted into the
+                    users console. */}
+                <dt className="text-muted-foreground">User</dt>
+                <dd className="break-all font-mono text-xs">
+                  {detail.user_id ?? "—"}
+                </dd>
+
+                {/* THE most valuable door on a cost dashboard: `source_kind` IS
+                    a canonical entity token and `source_id` its id, so
+                    "which document cost me this?" was always answerable and was
+                    being rendered as the string "document:8f3a…". Same shape as
+                    the events audit. A `source_kind` outside the token set
+                    degrades to plain text inside the primitive, so every value
+                    is safe. `openInNewTab` because this is an admin surface —
+                    `/documents/{id}` and friends live on the main host, so a
+                    same-tab click would be a cross-origin load that discards
+                    the dashboard (see proxy.ts's satellite gate). */}
                 <dt className="text-muted-foreground">Source</dt>
                 <dd className="font-mono text-xs">
-                  {detail.source_kind && detail.source_id
-                    ? `${detail.source_kind}:${detail.source_id}`
-                    : "—"}
+                  {detail.source_kind && detail.source_id ? (
+                    <>
+                      {detail.source_kind}:{" "}
+                      <EntityRef
+                        token={detail.source_kind}
+                        id={detail.source_id}
+                        name={detail.source_id}
+                        showIcon={false}
+                        openInNewTab
+                        wrap
+                      />
+                    </>
+                  ) : (
+                    "—"
+                  )}
                 </dd>
 
                 <dt className="text-muted-foreground">Submitted</dt>

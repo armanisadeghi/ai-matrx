@@ -17,6 +17,7 @@ import { FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/utils/supabase/client";
 import { filesDb } from "@/features/files/filesDb";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -69,7 +70,7 @@ export default function FilePeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.file_name ?? "File"}
       icon={<FileText className="h-4 w-4 text-sky-600 dark:text-sky-400" />}
-      href={`/files/f/${id}`}
+      href={peekHref("file", id)}
       loading={loading}
     >
       {row ? (

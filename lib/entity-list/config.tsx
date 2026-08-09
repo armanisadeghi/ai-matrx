@@ -17,6 +17,8 @@ import type { ReactNode } from "react";
 import type { ListScopeKind } from "@/lib/list-scope/types";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ContextMenuEntityRef } from "@/features/context-menu-v3/types";
+import type { SourceFeature } from "@/features/agents/types/instance.types";
 import type { MatrxDataTableCopyConfig } from "@/components/official/matrx-data-table/types";
 import type { EntityColumnSpec } from "./columns";
 import type {
@@ -130,6 +132,25 @@ export interface EntityListConfig<TRow> {
   getRowId: (row: TRow) => string;
   /** Human name for a row — aria labels ("Actions for X"). */
   getRowName: (row: TRow) => string;
+  /**
+   * Which feature mounted this list. Forwarded to the row's right-click menu,
+   * which attributes every shortcut and agent launched from it. Required
+   * because `SourceFeature` is a closed registry with no generic member —
+   * `ItemContextMenu` used to hardcode `"files"` for every caller, and a
+   * confident wrong answer is worse than being made to give the right one.
+   */
+  sourceFeature: SourceFeature;
+  /**
+   * What a row IS, for the right-click menu. Present → **Attach To**; with a
+   * `resourceType` → **Share** as well. Both were dark on every list row until
+   * this slot existed, not because the capability was missing but because
+   * nothing forwarded an entity into it.
+   *
+   * Return `undefined` for a row that has no registered entity (a
+   * heterogeneous hub's non-entity kinds) — never fabricate a token, which
+   * would offer to attach a record that does not exist under that name.
+   */
+  getRowEntity?: (row: TRow) => ContextMenuEntityRef | undefined;
   /** Surface-specific style defaults beyond version/hiddenColumns. */
   prefsDefaults?: Partial<ListViewPrefs>;
 

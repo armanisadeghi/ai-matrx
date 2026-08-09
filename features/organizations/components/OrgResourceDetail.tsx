@@ -9,9 +9,9 @@
  *     showing who shared each item)
  *   - "Yours to share"     — your own items, each one click from sharing
  *
- * Every row has a right-click context menu (Open / Open in new tab / Peek /
- * Share | Unshare). Agents get a live Peek (AgentSneakPeekModal); other kinds
- * show "Peek — coming soon" until their own peek component is built.
+ * Every row names its record through `EntityRef`, which carries the Open /
+ * new-tab / Peek doors (registry-driven). The right-click menu is what EntityRef
+ * does NOT cover: sharing the item with the team, or taking it back.
  *
  * No per-type code: everything reads from the org resource catalogue.
  */
@@ -27,7 +27,6 @@ import {
   ExternalLink,
   Share2,
   Users,
-  Eye,
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -37,13 +36,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
+import { ItemContextMenu } from "@/components/official/item/ItemMenu";
+import type { ItemMenuConfig } from "@/components/official/item/types";
 import {
   UserAvatarDisplay,
   type UserLike,
@@ -54,6 +48,12 @@ import {
 } from "@/features/organizations/service";
 import { revokeOrgShare } from "@/utils/permissions/orgModeration";
 import { getShareableResource } from "@/utils/permissions/registry";
+import {
+  resolveEntityToken,
+  tryGetEntityInfo,
+} from "@/features/scopes/registry/entityRegistry";
+import { isEntityTypeToken } from "@/types/generated/entity-types.generated";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   getEntry,
   getContentRole,
@@ -67,8 +67,6 @@ import {
   useOrgSharedItems,
   type OrgSharedItem,
 } from "../hooks/useOrgSharedItems";
-import { ResourcePeekHost } from "../peek/ResourcePeekHost";
-import { hasPeek } from "../peek/kinds-list";
 
 export function OrgResourceDetail() {
   const params = useParams();
@@ -87,7 +85,6 @@ export function OrgResourceDetail() {
   const [userMap, setUserMap] = React.useState<Map<string, UserLike>>(
     new Map(),
   );
-  const [peekId, setPeekId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -132,17 +129,6 @@ export function OrgResourceDetail() {
       shared.reload();
     },
   );
-
-  const canPeek = entry ? hasPeek(entry.key) : false;
-
-  function openItem(href: string | null, newTab: boolean) {
-    if (!href) {
-      toast.info("This item doesn't have an open destination yet.");
-      return;
-    }
-    if (newTab) window.open(href, "_blank", "noopener,noreferrer");
-    else router.push(href);
-  }
 
   async function unshare(item: { id: string }) {
     if (!entry?.shareKey || !org) return;
@@ -191,6 +177,27 @@ export function OrgResourceDetail() {
 
   const role = getContentRole(entry.role);
   const Icon = entry.icon;
+  /**
+   * Resolved by TOKEN, never by `entry.key`: six catalogue keys differ from
+   * their canonical token, and keying off the key silently loses both the
+   * route and the peek.
+   */
+  const token = entry.token ?? entry.key;
+  /**
+   * The entity registry is the canonical route source; the sharing registry's
+   * `urlPathTemplate` is a SECOND, DB-backed one that disagrees with it in
+   * places (FOUND_DEFECTS D137/D138). Prefer the registry, and fall back to the
+   * share template only where the registry has no route yet, so this surface's
+   * set of working doors is a strict superset of what it had.
+   */
+  const registryHasRoute = Boolean(tryGetEntityInfo(token)?.hrefFor);
+  const shareable = entry.shareKey
+    ? getShareableResource(entry.shareKey)
+    : undefined;
+  const fallbackHref = (id: string): string | undefined =>
+    registryHasRoute || !shareable
+      ? undefined
+      : shareable.urlPathTemplate.replace("{id}", id);
   const filteredMine = mine.items.filter(
     (it) =>
       it.title.toLowerCase().includes(query.toLowerCase()) ||
@@ -290,13 +297,11 @@ export function OrgResourceDetail() {
                       key={`${item.source}-${item.id}`}
                       item={item}
                       entry={entry}
+                      token={token}
+                      href={fallbackHref(item.id)}
                       sharer={
                         item.sharedBy ? userMap.get(item.sharedBy) : undefined
                       }
-                      canPeek={canPeek}
-                      onOpen={() => openItem(item.href, false)}
-                      onOpenNewTab={() => openItem(item.href, true)}
-                      onPeek={() => setPeekId(item.id)}
                       onUnshare={() => unshare(item)}
                     />
                   ))}
@@ -354,18 +359,12 @@ export function OrgResourceDetail() {
                             key={item.id}
                             item={item}
                             entry={entry}
+                            token={token}
+                            href={fallbackHref(item.id)}
                             isShared={isShared}
                             sharing={mine.sharingId === item.id}
-                            canPeek={canPeek}
                             onShare={() => mine.share(item)}
                             onUnshare={() => unshare(item)}
-                            onOpen={() =>
-                              openItem(itemHref(entry, item.id), false)
-                            }
-                            onOpenNewTab={() =>
-                              openItem(itemHref(entry, item.id), true)
-                            }
-                            onPeek={() => setPeekId(item.id)}
                           />
                         );
                       })}
@@ -376,12 +375,6 @@ export function OrgResourceDetail() {
             </Card>
           </div>
         </div>
-
-        <ResourcePeekHost
-          kind={entry.key}
-          id={peekId}
-          onClose={() => setPeekId(null)}
-        />
       </div>
     </>
   );
@@ -389,110 +382,121 @@ export function OrgResourceDetail() {
 
 // ─── Rows ───────────────────────────────────────────────────────────────────
 
+/**
+ * The row's right-click menu, on the ONE canonical menu (v3) via
+ * `ItemContextMenu` — this was the last ad-hoc `@/components/ui/context-menu`
+ * consumer in the repo, and being ad-hoc cost it every v3 capability: Copy,
+ * Copy-as, Export, Convert, AI actions, bound agents, Attach To.
+ *
+ * Open / Open-in-new-tab / Peek are still NOT here: `EntityRef` renders all
+ * three inline on the row's name, from the same registries. Adding them back
+ * would be a second, drifting copy of doors we already own.
+ *
+ * NO `resourceType` on the entity, deliberately. It would light up v3's
+ * generic Share (the permission ShareModal) beside this row's own "Share with
+ * team" (the org association) — two share buttons, different meanings, on one
+ * row. That is the two-authorities defect this sweep exists to kill, so org
+ * sharing stays the single sharing path here and `entity` contributes Attach
+ * To only.
+ */
 function RowContextMenu({
-  canPeek,
+  token,
+  id,
+  title,
   isShared,
-  onOpen,
-  onOpenNewTab,
-  onPeek,
   onShare,
   onUnshare,
   children,
 }: {
-  canPeek: boolean;
+  token: string;
+  id: string;
+  title: string;
   isShared: boolean;
-  onOpen: () => void;
-  onOpenNewTab: () => void;
-  onPeek: () => void;
   onShare?: () => void;
   onUnshare?: () => void;
   children: React.ReactNode;
 }) {
+  const config = (): ItemMenuConfig => ({
+    sections: [
+      {
+        id: "org-sharing",
+        items: isShared
+          ? [
+              {
+                id: "unshare",
+                label: "Unshare",
+                icon: X,
+                tone: "destructive",
+                onSelect: () => onUnshare?.(),
+              },
+            ]
+          : [
+              {
+                id: "share",
+                label: "Share with team",
+                icon: Plus,
+                disabled: !onShare,
+                onSelect: () => onShare?.(),
+              },
+            ],
+      },
+    ],
+  });
+
+  // Canonicalise once (checklist 3): the catalogue's token is meant to be
+  // canonical, but resolving here means an alias can never silently cost this
+  // row its Attach To while the name beside it opens fine.
+  const canonicalToken = resolveEntityToken(token);
+
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent className="w-48">
-        <ContextMenuItem onSelect={onOpen}>
-          <ExternalLink className="h-4 w-4" />
-          Open
-        </ContextMenuItem>
-        <ContextMenuItem onSelect={onOpenNewTab}>
-          <ExternalLink className="h-4 w-4" />
-          Open in new tab
-        </ContextMenuItem>
-        {canPeek ? (
-          <ContextMenuItem onSelect={onPeek}>
-            <Eye className="h-4 w-4" />
-            Peek
-          </ContextMenuItem>
-        ) : (
-          <ContextMenuItem disabled>
-            <Eye className="h-4 w-4" />
-            Peek — coming soon
-          </ContextMenuItem>
-        )}
-        <ContextMenuSeparator />
-        {isShared ? (
-          <ContextMenuItem
-            onSelect={() => onUnshare?.()}
-            className="text-red-600 dark:text-red-400 focus:text-red-600"
-          >
-            <X className="h-4 w-4" />
-            Unshare
-          </ContextMenuItem>
-        ) : (
-          <ContextMenuItem onSelect={() => onShare?.()} disabled={!onShare}>
-            <Plus className="h-4 w-4" />
-            Share with team
-          </ContextMenuItem>
-        )}
-      </ContextMenuContent>
-    </ContextMenu>
+    <ItemContextMenu
+      config={config}
+      sourceFeature="system"
+      entity={
+        isEntityTypeToken(canonicalToken)
+          ? { type: canonicalToken, id, title }
+          : undefined
+      }
+    >
+      {children}
+    </ItemContextMenu>
   );
 }
 
 function SharedRow({
   item,
   entry,
+  token,
+  href,
   sharer,
-  canPeek,
-  onOpen,
-  onOpenNewTab,
-  onPeek,
   onUnshare,
 }: {
   item: OrgSharedItem;
   entry: OrgResourceEntry;
+  token: string;
+  href: string | undefined;
   sharer: UserLike | undefined;
-  canPeek: boolean;
-  onOpen: () => void;
-  onOpenNewTab: () => void;
-  onPeek: () => void;
   onUnshare: () => void;
 }) {
-  const Icon = entry.icon;
   return (
     <li>
       <RowContextMenu
-        canPeek={canPeek}
+        token={token}
+        id={item.id}
+        title={item.title}
         isShared
-        onOpen={onOpen}
-        onOpenNewTab={onOpenNewTab}
-        onPeek={onPeek}
         onUnshare={onUnshare}
       >
-        <div className="group flex items-center gap-3 p-2.5 rounded-lg border border-border bg-card hover:bg-accent/40 transition-colors">
-          {!entry.hideRowIcon && (
-            <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-          )}
-          <button
-            type="button"
-            onClick={onOpen}
-            className="flex-1 min-w-0 text-left text-sm truncate hover:text-primary"
-            title={`Open ${item.title}`}
-          >
-            {item.title}
-          </button>
+        <div className="flex items-center gap-3 p-2.5 rounded-lg border border-border bg-card hover:bg-accent/40 transition-colors">
+          <EntityRef
+            token={token}
+            id={item.id}
+            name={item.title}
+            href={href}
+            showIcon={!entry.hideRowIcon}
+            fill
+            className="flex-1 min-w-0 text-sm"
+          />
           {item.source === "shared" && sharer && (
             <span
               className="flex items-center gap-1.5 shrink-0"
@@ -511,17 +515,6 @@ function SharedRow({
           >
             {item.source === "owned" ? "Org" : "Shared"}
           </Badge>
-          {item.href && (
-            <button
-              type="button"
-              onClick={onOpenNewTab}
-              className="text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
-              title="Open in new tab"
-              aria-label={`Open ${item.title} in a new tab`}
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-            </button>
-          )}
         </div>
       </RowContextMenu>
     </li>
@@ -531,59 +524,42 @@ function SharedRow({
 function MineRow({
   item,
   entry,
+  token,
+  href,
   isShared,
   sharing,
-  canPeek,
   onShare,
   onUnshare,
-  onOpen,
-  onOpenNewTab,
-  onPeek,
 }: {
   item: MyItem;
   entry: OrgResourceEntry;
+  token: string;
+  href: string | undefined;
   isShared: boolean;
   sharing: boolean;
-  canPeek: boolean;
   onShare: () => void;
   onUnshare: () => void;
-  onOpen: () => void;
-  onOpenNewTab: () => void;
-  onPeek: () => void;
 }) {
-  const Icon = entry.icon;
   return (
     <li>
       <RowContextMenu
-        canPeek={canPeek}
+        token={token}
+        id={item.id}
+        title={item.title}
         isShared={isShared}
-        onOpen={onOpen}
-        onOpenNewTab={onOpenNewTab}
-        onPeek={onPeek}
         onShare={onShare}
         onUnshare={onUnshare}
       >
-        <div className="group flex items-center gap-3 p-2.5 rounded-lg border border-border bg-card hover:bg-accent/40 transition-colors">
-          {!entry.hideRowIcon && (
-            <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-          )}
-          <button
-            type="button"
-            onClick={onOpen}
-            className="flex-1 min-w-0 text-left text-sm truncate hover:text-primary"
-            title={`Open ${item.title}`}
-          >
-            {item.title}
-          </button>
-          <button
-            type="button"
-            onClick={onOpenNewTab}
-            className="text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
-            title="Open in new tab"
-            aria-label={`Open ${item.title} in a new tab`}
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </button>
+        <div className="flex items-center gap-3 p-2.5 rounded-lg border border-border bg-card hover:bg-accent/40 transition-colors">
+          <EntityRef
+            token={token}
+            id={item.id}
+            name={item.title}
+            href={href}
+            showIcon={!entry.hideRowIcon}
+            fill
+            className="flex-1 min-w-0 text-sm"
+          />
           {isShared ? (
             <Badge variant="secondary" className="text-[10px] gap-1 shrink-0">
               <Check className="h-3 w-3" />
@@ -614,14 +590,6 @@ function MineRow({
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────
-
-function itemHref(entry: OrgResourceEntry, id: string): string | null {
-  // Mirror useOrgSharedItems' href derivation for the "yours" side.
-  const shareable = entry.shareKey
-    ? getShareableResource(entry.shareKey)
-    : undefined;
-  return shareable ? shareable.urlPathTemplate.replace("{id}", id) : null;
-}
 
 function CenterState({ children }: { children: React.ReactNode }) {
   return (

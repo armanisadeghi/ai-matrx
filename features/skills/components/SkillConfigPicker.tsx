@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -589,14 +590,31 @@ function SelectedTier({
                 className="group flex items-center gap-2 rounded-md border border-border/70 bg-background px-2.5 py-1.5"
                 title={skill?.description ?? id}
               >
-                <button
-                  type="button"
-                  onClick={() => onSelect(id)}
-                  disabled={!skill}
-                  className="min-w-0 flex-1 truncate rounded-sm text-left text-xs hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:no-underline"
-                >
-                  {skill?.label ?? `Unknown skill ${id.slice(0, 8)}`}
-                </button>
+                {/* THE DOOR LAW. When the catalogue has no row for this id the
+                    old control printed "Unknown skill 1a2b3c4d" and DISABLED
+                    itself — an id the user is assigned to, can see, and cannot
+                    reach. `SkillPeek` queries `skill.definition` by id on its
+                    own, so the record was reachable the whole time; only this
+                    surface's gate hid it. `EntityRef` gives it the peek door
+                    unconditionally, and keeps the in-place detail pane as the
+                    primary click for the normal case.
+
+                    `onOpen` is gated on `skill` deliberately (the pane is
+                    driven off the catalogue map and would open empty), so an
+                    unknown skill gets the peek and no link-styled no-op. The
+                    label text is preserved verbatim — "unknown" is a true
+                    statement about the catalogue you are browsing, and the peek
+                    is what resolves the real name. `skill` has no `hrefFor`, so
+                    there is no route to lose here. */}
+                <EntityRef
+                  token="skill"
+                  id={id}
+                  name={skill?.label ?? `Unknown skill ${id.slice(0, 8)}`}
+                  showIcon={false}
+                  onOpen={skill ? () => onSelect(id) : undefined}
+                  fill
+                  className="min-w-0 flex-1 text-xs"
+                />
                 <button
                   type="button"
                   onClick={() => onRemove(id)}

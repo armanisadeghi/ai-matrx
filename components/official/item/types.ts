@@ -11,6 +11,8 @@
 
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import type { ContextMenuEntityRef } from "@/features/context-menu-v3/types";
+import type { SourceFeature } from "@/features/agents/types/instance.types";
 
 // ── Menu entries ────────────────────────────────────────────────────────────
 
@@ -179,7 +181,33 @@ export interface ItemMenuProps {
   presentation?: "auto" | "dropdown" | "drawer";
 }
 
-export interface ItemContextMenuProps {
+/**
+ * What the row IS, forwarded to the v3 context menu.
+ *
+ * This is the slot that was dark. `entity` gates **Attach To** and **Share**
+ * inside `MenuContent`; `ItemContextMenu` never passed one, so every consumer
+ * of the item system was denied both — not because the capability was missing,
+ * but because the wrapper dropped it on the floor. `sourceFeature` was worse
+ * than absent: it was hardcoded `"files"` for every caller, so a note row's
+ * agent launches were attributed to the files feature.
+ */
+export interface ItemMenuSurface {
+  /**
+   * REQUIRED. v3 attributes every shortcut and agent launched from this menu
+   * to it, and the type is a closed registry — there is deliberately no
+   * generic member to hide behind.
+   */
+  sourceFeature: SourceFeature;
+  /** Registry surface name, when the row's surface has one (AI actions, bound agents). */
+  surfaceName?: string;
+  /**
+   * The record itself. Present → Attach To. With `resourceType` → Share too.
+   * Omit only when the row does not correspond to a registered entity.
+   */
+  entity?: ContextMenuEntityRef;
+}
+
+export interface ItemContextMenuProps extends ItemMenuSurface {
   config: ItemMenuConfigInput;
   /** The right-clickable surface (usually the whole row). */
   children: ReactNode;
@@ -246,7 +274,7 @@ export interface ItemRowRename {
 
 export type ItemRowSize = "sm" | "md" | "lg"; // h-7 / h-8 (default) / h-10
 
-export interface ItemRowProps {
+export interface ItemRowProps extends ItemMenuSurface {
   label: string;
   /** Muted, never masked; sits between label and trailing indicators. */
   secondaryLabel?: string;
@@ -275,6 +303,12 @@ export interface ItemRowProps {
   openInPlace?: boolean;
   /** Kebab + right-click menu. Omit for menu-less rows. */
   menu?: ItemMenuConfigInput;
+  /**
+   * `sourceFeature` / `surfaceName` / `entity` (inherited from
+   * `ItemMenuSurface`) are forwarded to the right-click menu. **Pass `entity`**
+   * — it is what turns Attach To and Share on, and every row that omits it
+   * ships a menu missing two doors the platform already has.
+   */
   /** Inline rename. Enables double-click + the `intent: "rename"` contract. */
   rename?: ItemRowRename;
   size?: ItemRowSize; // default "md"

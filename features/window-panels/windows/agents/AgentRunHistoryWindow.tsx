@@ -1,11 +1,6 @@
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -156,6 +151,7 @@ function VersionConversationRow({
 
   return (
     <ItemRow
+      sourceFeature="agent-runner"
       label={conv.title?.trim() || "Untitled"}
       active={isActive}
       size="sm"

@@ -11,6 +11,7 @@ import React from "react";
 import { ListTodo } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -52,7 +53,7 @@ export default function TaskPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.title || "Task"}
       icon={<ListTodo className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
-      href={`/tasks/${id}`}
+      href={peekHref("task", id)}
       loading={loading}
     >
       {row ? (

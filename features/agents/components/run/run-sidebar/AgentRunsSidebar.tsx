@@ -187,6 +187,7 @@ function ConversationListRow({
       onOpen={onSelect}
     >
       <ItemRow
+        sourceFeature="agent-runner"
         className="mx-1"
         size="md"
         label={title}

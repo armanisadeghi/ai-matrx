@@ -52,11 +52,13 @@ import type {
 } from "../utils/shortcut-directory-rows";
 import {
   getGroupKey,
+  resolveAgentUrl,
   isShortcutUuid,
   resolveShortcutDirectUrl,
   resolveShortcutEditUrl,
   scopeTypeLabel,
 } from "../utils/shortcut-directory-rows";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
@@ -385,10 +387,24 @@ export function ShortcutDirectory({
           </div>
         </div>
       </TableCell>
-      <TableCell>
-        {row.agentName || row.agentId ? (
+      <TableCell onClick={(e) => e.stopPropagation()}>
+        {/* This column printed `agentName ?? agentId` — so a shortcut whose
+            agent name had not resolved rendered a bare UUID you could not
+            click, the Door Law's named worst case. `EntityRef` opens the
+            agent, offers the new tab and the peek, and falls back to a
+            truncated id rather than a full one when the name is missing. */}
+        {row.agentId ? (
+          <EntityRef
+            token="agent"
+            id={row.agentId}
+            name={row.agentName ?? row.agentId}
+            href={resolveAgentUrl(row.agentId, mode)}
+            showIcon={false}
+            className="max-w-[180px] text-sm"
+          />
+        ) : row.agentName ? (
           <span className="text-sm truncate block max-w-[180px]">
-            {row.agentName ?? row.agentId}
+            {row.agentName}
           </span>
         ) : (
           <span className="text-xs text-muted-foreground">—</span>
@@ -792,8 +808,26 @@ export function ShortcutDirectory({
                     {groupBy !== "none" && (
                       <TableRow className="bg-muted/40 hover:bg-muted/40">
                         <TableCell colSpan={9}>
-                          <div className="font-semibold text-sm">
-                            {group.key}
+                          <div className="flex items-center font-semibold text-sm">
+                            {/* Grouping by agent made every header a raw
+                                unclickable UUID in admin mode (admin rows all
+                                carry `agentName: null`) — the very defect the
+                                cell below was just fixed for. */}
+                            {groupBy === "agent" && group.rows[0]?.agentId ? (
+                              <EntityRef
+                                token="agent"
+                                id={group.rows[0].agentId}
+                                name={group.key}
+                                href={resolveAgentUrl(
+                                  group.rows[0].agentId,
+                                  mode,
+                                )}
+                                showIcon={false}
+                                className="font-semibold"
+                              />
+                            ) : (
+                              group.key
+                            )}
                             <Badge variant="secondary" className="ml-2">
                               {group.rows.length}
                             </Badge>

@@ -11,6 +11,7 @@
 import React from "react";
 import { Zap } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -51,7 +52,7 @@ export default function ShortcutPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.label || "Shortcut"}
       icon={<Zap className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
-      href={undefined}
+      href={peekHref("agent_shortcut", id)}
       loading={loading}
     >
       {row ? (

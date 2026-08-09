@@ -172,13 +172,13 @@ The `app/` tree splits into purpose-named route groups. **Working on core produc
 
 | Group | Purpose | URL | Build |
 |---|---|---|---|
-| `(core)` | **Production main app.** Slim modern shell, no entity system. New core work goes here. | `/chat`, `/agents`, `/files`, `/notes`… | always |
+| `(core)` | **Production main app.** Slim modern shell, no entity system. New core work goes here. | `/chat`, `/agents`, `/files`, `/notes`… | `full` / `core` / `user` / `slim` |
 | `(admin)` | **Production admin.** Super-admin gated at layout level. Deploys as manage.aimatrx.com. | `/administration/*` | `full` / `core` / `admin` |
-| `(transitional)` | **On the way in/out.** Being (or to be) replaced by `(core)`; not ready to delete. Lower priority. | `/apps`, `/dashboard`, `/settings`, `/scraper`, `/projects`, `/ai`, `/applets`, `/news`… | always |
+| `(transitional)` | **On the way in/out.** Being (or to be) replaced by `(core)`; not ready to delete. Lower priority. | `/apps`, `/dashboard`, `/settings`, `/scraper`, `/projects`, `/ai`, `/applets`, `/news`… | `full` / `core` / `user` / `slim` |
 | `(dev)` | **Internal demos / tests / experiments.** Auth-required. Deploys as demos.aimatrx.com. | `/demos/*` | `full` / `user` / `demos` |
-| `(public)` | Marketing / legal / share / education / canvas. | `/legal`, `/share`, `/p`… | always |
+| `(public)` | Marketing / legal / share / education / canvas. | `/legal`, `/share`, `/p`… | `full` / `core` / `user` / `slim` |
 | `(auth-pages)` | Login / signup / etc. | `/login`, `/sign-up`… | always |
-| `(popup)` | OAuth popup chrome. | `/popup-window/*` | always |
+| `(popup)` | OAuth popup chrome. | `/popup-window/*` | `full` / `core` / `user` / `slim` |
 | `(oauth-review)` | Google OAuth verification review surface — what Google's reviewers open to see each requested scope in use. | `/google-workspace-review` | always |
 
 **`(legacy)` and `(public-demos)` are DELETED** (entity system removed; public demos relocated). Never create files there. `pnpm check:doc-claims` fails if this table and `app/` disagree.
@@ -326,7 +326,7 @@ Rules + stages: [`lib/coming-soon/FEATURE.md`](./lib/coming-soon/FEATURE.md).
 
 **The list page every feature should have is a config on the ONE shell: `lib/entity-list/` ([`FEATURE.md`](./lib/entity-list/FEATURE.md))** — `<EntityListPage config={...} />` with table-first + ONE `…` menu carrying every record action, card/dense views, and **Mine / My Orgs / Shared / Public** scopes with true server counts. Live consumers: `/agents/all` ([`features/agents/browse/FEATURE.md`](./features/agents/browse/FEATURE.md), the proving ground) and `/transcripts`. Building or fixing a feature's list page? Write a config (service RPCs per `lib/list-scope/FEATURE.md` + column registry + row-actions hook), never a fifth bespoke variant:
 
-- **View style persistence** → `useListViewPrefs` ([`lib/list-views/FEATURE.md`](./lib/list-views/FEATURE.md)). Style persists (view, density, sort, page size, columns); query never does (search, filters, page, scope). Four hand-rolled `localStorage` copies are pending migration onto it.
+- **View style persistence** → `useListViewPrefs` ([`lib/list-views/FEATURE.md`](./lib/list-views/FEATURE.md)). Style persists (view, density, sort, page size, columns); query never does (search, filters, page, scope). Every hand-rolled list-style `localStorage` copy is migrated (last four, 2026-08-09) — **a new one is a defect**; a surface whose toggle isn't `table`/`cards`/`rows` maps onto `view` + `density`, never a cast. (Page-*layout* toggles — which panes are on screen — are a different axis and stay off it.)
 - **Row actions** → one `ItemMenuConfig` builder per entity (`components/official/item/`), consumed identically by table, cards, rows, and right-click. Three divergent hard-coded action lists for one entity is the defect this kills.
 - **Table** → `MatrxDataTable` in **controlled** mode when paging server-side. **Every column sorts AND filters — no exceptions**, and finite value sets get real options with counts. A filter the server can't serve must not render at all; a control that silently filters one page is worse than none.
 - **Full-row click** opens the record (pointer cursor); interactive cells stop propagation. Fields the user can see and easily change (name, description, category, tags) edit **inline**.

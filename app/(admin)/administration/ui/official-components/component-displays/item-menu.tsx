@@ -36,7 +36,8 @@ const demoConfig: ItemMenuConfig = {
           label: "Rename",
           icon: Pencil,
           shortcutKey: "r",
-          onSelect: () => void toast.info("Rename (standalone: opens a dialog)"),
+          onSelect: () =>
+            void toast.info("Rename (standalone: opens a dialog)"),
         },
         {
           id: "pin",
@@ -73,7 +74,12 @@ const demoConfig: ItemMenuConfig = {
             error: "Duplicate failed",
           },
         },
-        { id: "share", label: "Share…", icon: Share2, onSelect: () => void toast.info("Share") },
+        {
+          id: "share",
+          label: "Share…",
+          icon: Share2,
+          onSelect: () => void toast.info("Share"),
+        },
         {
           id: "export",
           kind: "submenu",
@@ -104,7 +110,8 @@ const demoConfig: ItemMenuConfig = {
           label: "Show metadata",
           icon: Eye,
           checked: true,
-          onCheckedChange: (next) => void toast.message(`Metadata ${next ? "on" : "off"}`),
+          onCheckedChange: (next) =>
+            void toast.message(`Metadata ${next ? "on" : "off"}`),
         },
         {
           id: "archive",
@@ -185,7 +192,7 @@ export default function ItemMenuDisplay({ component }: ComponentDisplayProps) {
         </div>
 
         <div className="flex flex-col items-center gap-2">
-          <ItemContextMenu config={demoConfig}>
+          <ItemContextMenu config={demoConfig} sourceFeature="system">
             <div className="flex h-24 w-48 items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 text-sm text-muted-foreground">
               Right-click me
             </div>

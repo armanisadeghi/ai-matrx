@@ -28,6 +28,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   useDocumentLineage,
   type ProcessingNode,
@@ -92,6 +93,16 @@ export function LineageTreeView({ doc }: LineageTreeViewProps) {
                 <FileText className="w-3.5 h-3.5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
+                {/* Deliberately NOT an `EntityRef`: this row is the document
+                    the studio already has open, so every door leads back to
+                    where you are. With `processed_document` now carrying an
+                    `hrefFor`, an `EntityRef` here would render a live link
+                    that reloads the studio on a plain click (discarding the
+                    extraction in progress) and opens a duplicate tab on a
+                    modified one. `disableNewTab` does NOT prevent that — it
+                    only hides the extra control; the label itself stays a
+                    `Link`. A door to the room you are standing in is not a
+                    door. */}
                 <p className="text-xs font-medium truncate">{doc.name}</p>
                 <p className="text-[10px] text-muted-foreground truncate">
                   <code className="font-mono">{doc.id.slice(0, 8)}…</code> ·{" "}
@@ -219,7 +230,20 @@ function ProcessingRow({
       />
       <FileText className="w-3 h-3 shrink-0 text-muted-foreground" />
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-medium truncate">{node.name}</p>
+        {/* A lineage tree exists to answer "what did this come from?" and then
+            gave you no way to GO there — the whole point of the panel stopped
+            one click short. `openInNewTab` because the studio has an extraction
+            session open behind this panel; navigating the current tab to a
+            different document is precisely the state loss the new-tab door
+            exists to prevent. */}
+        <EntityRef
+          token="processed_document"
+          id={node.id}
+          name={node.name}
+          showIcon={false}
+          openInNewTab
+          className="text-[11px] font-medium"
+        />
         <p className="text-[9px] text-muted-foreground truncate">
           <code className="font-mono">{node.id.slice(0, 8)}…</code> ·{" "}
           {node.derivationKind}
@@ -261,7 +285,18 @@ function BinaryRow({
         )}
       />
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-medium truncate">{node.fileName}</p>
+        {/* The binary axis walks `files.files`, which is the registry's `file`:
+            a real route AND a peek. The peek is the one that earns its keep on
+            this panel — "is that the cropped one?" is answerable without
+            leaving the extraction you are in the middle of. */}
+        <EntityRef
+          token="file"
+          id={node.id}
+          name={node.fileName}
+          showIcon={false}
+          openInNewTab
+          className="text-[11px] font-medium"
+        />
         <p className="text-[9px] text-muted-foreground truncate">
           <code className="font-mono">{node.id.slice(0, 8)}…</code>
           {node.derivationKind && <> · {node.derivationKind}</>}

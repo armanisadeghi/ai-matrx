@@ -76,6 +76,40 @@ export interface MatrxColumnDef<T> {
    */
   href?: (row: T) => string | undefined;
   /**
+   * Canonical entity token for the record this column NAMES. When set, the cell
+   * renders through `EntityRef`, so the name carries the full door set — Open,
+   * new tab, and Peek — instead of the Open-only `<Link>` that `href` alone
+   * produces.
+   *
+   * THE INVENTORY LAW, applied to this component: the table grew its own door
+   * (`href`) beside the platform's (`EntityRef`), and every column that named a
+   * record picked one and silently lost the other half. This field collapses
+   * them — `href` still works and still forces the pencil trigger, and it
+   * OVERRIDES the registry route when both are set (for an admin-side route on
+   * a satellite deployment).
+   *
+   * Needs the record's id: `entityToken` is paired with `entityId`, defaulting
+   * to the table's own `getRowId`.
+   *
+   * **PER ROW, not per column** — a hub can be heterogeneous. `/transcripts`
+   * lists transcripts, studio sessions, cleanup runs and an "unsorted" bucket
+   * in one table, each with its own destination; a constant token would have
+   * sent a session id to the transcript processor route and opened the
+   * transcript peek on a record that is not one. Return `undefined` for a row
+   * that names no entity — it falls back to the plain `href` link, or to inert
+   * text. Pair with a per-row `href` when the kinds diverge.
+   */
+  entityToken?: string | ((row: T) => string | undefined);
+  /**
+   * NOTE: give the column a `cell` when you set this. Without one, a
+   * UUID-shaped value renders the default `MatrxUuidCell`, which has its own
+   * controls — wrapping those in the door's anchor would nest interactive
+   * elements inside a link, and is redundant besides. The shell detects that
+   * combination, skips the door, and screams once per column.
+   */
+  /** The id `entityToken` refers to. Defaults to the table's `getRowId(row)`. */
+  entityId?: (row: T) => string | undefined;
+  /**
    * Built-in cell kinds. `"uuid"` / `"fk"` use MatrxUuidCell (short + copy +
    * optional open). `"auto"` (default) detects UUID-shaped strings.
    */
@@ -341,6 +375,19 @@ export interface MatrxDataTableProps<T> {
 
   /** Extra row actions rendered in a trailing Actions column. */
   rowActions?: (row: T) => ReactNode;
+  /**
+   * Wrap the whole `<tr>`. Return `children` unchanged for no-op.
+   *
+   * `rowActions` only reaches the actions CELL, so anything that must own the
+   * entire row — a right-click menu, a drag handle, a drop target — had no
+   * seam and would have forced a surface to fork the table. THE INVENTORY LAW:
+   * the fork is the defect, so the seam exists instead.
+   *
+   * Whatever you return must render `children` as a direct `<tbody>` child, so
+   * the wrapper has to be a component that emits the `<tr>` unchanged
+   * (`ItemContextMenu` does — it renders a Radix trigger with `asChild`).
+   */
+  rowWrapper?: (row: T, children: ReactNode) => ReactNode;
 
   emptyState?: MatrxDataTableEmptyState;
   /** Default 25. Pass 0 to show all. */

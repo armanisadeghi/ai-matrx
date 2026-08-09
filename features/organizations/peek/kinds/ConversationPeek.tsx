@@ -9,6 +9,7 @@
 import React from "react";
 import { MessagesSquare } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -48,7 +49,7 @@ export default function ConversationPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.title || "Conversation"}
       icon={<MessagesSquare className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
-      href={`/chat/${id}`}
+      href={peekHref("conversation", id)}
       loading={loading}
     >
       {row ? (

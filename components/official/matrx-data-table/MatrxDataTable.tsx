@@ -22,6 +22,7 @@ import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem } from "@/components/agent-copy/export";
 import { cn } from "@/lib/utils";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ColumnHeaderCell } from "./ColumnHeaderCell";
 import { DataRowInspector } from "./DataRowInspector";
 import DataRowWindow from "./DataRowWindow.dynamic";

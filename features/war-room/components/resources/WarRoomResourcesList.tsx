@@ -4,16 +4,15 @@
 //
 // War-room resources list — org-style role colors, flat token headers (icon +
 // type + count in one row), individual resource rows underneath (title, id
-// prefix + copy, ⋯ menu). Association actions (detach / pin) are separated
-// from entity actions (open / delete) in the menu.
+// prefix + copy, ⋯ menu). The title is an `EntityRef`, so open / new-tab / peek
+// come from the registries; the ⋯ menu carries only what EntityRef does not:
+// association actions (detach / pin) and the destructive entity delete.
 
 import { useState, type ReactNode } from "react";
 import {
   Check,
   Copy,
-  ExternalLink,
   Link2,
-  Loader2,
   MoreHorizontal,
   Pin,
   PinOff,
@@ -23,6 +22,7 @@ import {
   Unlink,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -400,14 +400,12 @@ export function WarRoomResourcesList({
                               row={row}
                               info={info}
                               detachLabel={detachLabel}
-                              canOpen={!!info?.hrefFor}
                               canDelete={DELETABLE_TOKENS.has(row.token)}
                               canPin={!!adapter.setPinned && row.removable}
                               pinned={row.pinned ?? false}
                               onDetach={() =>
                                 setConfirm({ kind: "detach", row })
                               }
-                              onOpen={() => openRow(row)}
                               onDelete={() =>
                                 setConfirm({
                                   kind: "delete",
@@ -449,6 +447,8 @@ export function WarRoomResourcesList({
                             <li key={row.key}>
                               {card(
                                 <DefaultResourceRow
+                                  token={row.token}
+                                  id={row.resourceId}
                                   title={title}
                                   originNote={row.originNote}
                                   idPrefix={idPrefix}
@@ -581,12 +581,16 @@ export function ResourceItemCard({
 }
 
 function DefaultResourceRow({
+  token,
+  id,
   title,
   originNote,
   idPrefix,
   menu,
   busy,
 }: {
+  token: string;
+  id: string;
   title: string;
   originNote?: string | null;
   idPrefix: ReactNode;
@@ -596,7 +600,21 @@ function DefaultResourceRow({
   return (
     <div className={cn("flex items-start gap-2", busy && "opacity-50")}>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm text-foreground">{title}</p>
+        {/* The token group header already carries the entity icon, so the row
+            shows the name only. `openInNewTab` keeps this rail's behaviour —
+            never replacing the war room the user is working in — as a real
+            `target="_blank"` anchor rather than the `window.open` this
+            replaced, so middle-click and cmd-click work and no popup blocker
+            can eat it. A token with no registry route renders as plain text,
+            so the title can never look openable and no-op. */}
+        <EntityRef
+          token={token}
+          id={id}
+          name={title}
+          showIcon={false}
+          openInNewTab
+          className="text-sm text-foreground"
+        />
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
           {idPrefix}
           {originNote ? (
@@ -645,28 +663,29 @@ function ResourceIdCopy({ id }: { id: string }) {
   );
 }
 
+/**
+ * Association + destructive actions only. "Open" is NOT here: the row's
+ * `EntityRef` already opens the record (same registry route, same new tab), and
+ * a second copy in this menu is exactly the drift this campaign removes.
+ */
 function ResourceRowMenu({
   row,
   info,
   detachLabel,
-  canOpen,
   canDelete,
   canPin,
   pinned,
   onDetach,
-  onOpen,
   onDelete,
   onTogglePin,
 }: {
   row: ContainerResourceRow;
   info: EntityInfo | null;
   detachLabel: string;
-  canOpen: boolean;
   canDelete: boolean;
   canPin: boolean;
   pinned: boolean;
   onDetach: () => void;
-  onOpen: () => void;
   onDelete: () => void;
   onTogglePin: () => void;
 }) {
@@ -714,27 +733,19 @@ function ResourceRowMenu({
           </DropdownMenuItem>
         ) : null}
 
-        {(canOpen || canDelete) && (
+        {canDelete && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[10px] font-normal uppercase tracking-wide text-muted-foreground">
               {entityLabel}
             </DropdownMenuLabel>
-            {canOpen ? (
-              <DropdownMenuItem onSelect={onOpen} className="gap-2">
-                <ExternalLink className="h-4 w-4" />
-                Open {entityLabel.toLowerCase()}
-              </DropdownMenuItem>
-            ) : null}
-            {canDelete ? (
-              <DropdownMenuItem
-                onSelect={onDelete}
-                className="gap-2 text-destructive focus:text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete {entityLabel.toLowerCase()}
-              </DropdownMenuItem>
-            ) : null}
+            <DropdownMenuItem
+              onSelect={onDelete}
+              className="gap-2 text-destructive focus:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete {entityLabel.toLowerCase()}
+            </DropdownMenuItem>
           </>
         )}
       </DropdownMenuContent>

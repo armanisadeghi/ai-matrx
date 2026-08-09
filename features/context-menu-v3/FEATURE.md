@@ -43,6 +43,56 @@ A menu that opens but Copy does nothing and the selection bar is empty is a **bu
 
 ---
 
+## Two things the shell may never do to the surface it wraps
+
+The menu is a passenger. Both of these were latent in all 45 consumers and only
+became visible when the canonical list shell started wrapping every `<tr>`.
+
+1. **Never delete the children — and the fix belongs in the wrapper, not here.**
+   `components/ui/context-menu/context-menu.tsx` used to gate its Root on
+   `useIsMounted` and return `null`, so a wrapped list row **painted empty** and
+   filled in after hydration. Its justification ("Radix generates dynamic
+   aria-controls ids that differ between SSR and client") was false: the closed
+   `ContextMenuTrigger` renders only `data-state` / `data-disabled` (verified
+   against @radix-ui/react-context-menu 2.3.1). **The gate is gone; the Root
+   renders unconditionally.**
+
+   The first attempt fixed the symptom HERE instead —
+   `if (!isMounted) return <>{children}</>` in the shell — and that was worse
+   than it looked. It changes the element TYPE at that position, so React
+   destroys and recreates the whole wrapped subtree on the commit after first
+   paint: every Monaco editor re-instantiated, and a 50-row table ran 50
+   unmount/remount cycles with every row effect firing twice. **A mount gate
+   that swaps element types is not free — it is a remount.** Meanwhile a
+   second, ungated copy of the wrapper carrying exactly the right reasoning had
+   been sitting at `components/ui/context-menu.tsx` with ZERO consumers; it is
+   deleted and the directory copy is now the only one.
+
+   **Guarded, and the guard is proven to fail.**
+   `components/ui/context-menu/context-menu-ssr.test.tsx` asserts the children
+   survive `renderToString` and that no id-bearing attribute appears while the
+   menu is closed — the second one pins the deleted gate's own premise, so if a
+   future Radix version does start emitting an id here, the test fails and tells
+   the next reader that re-gating deserves a real look rather than a reflex.
+   Verified by temporarily reinstating the gate: 2 of 4 tests fail, and pass
+   again once removed.
+2. **Never steal a live text field's native menu.** A read-only menu
+   (`isEditable === false`) offers Copy and AI actions and no Paste, Undo,
+   spellcheck or autofill — exactly what a user right-clicks a text field FOR,
+   so swallowing that gesture makes the field strictly worse than an unwrapped
+   one. `yieldsToNativeTextMenu` (textarea / text-ish input / contenteditable)
+   yields on every open path — the three pointer paths AND the mobile
+   long-press, which was missed first time round and matters more than the
+   others: on touch there is no right-click to fall back to, so pre-empting the
+   OS callout leaves the user unable to paste at all. **It has to run in the CAPTURE phase:**
+   Radix's open handler is composed into the trigger's bubble-phase
+   `onContextMenu`, so returning early from ours does not stop it, and
+   `preventDefault()` would kill the native menu too. Editable surfaces are the
+   opposite case — they wire text mutation into the menu deliberately and keep
+   it.
+
+---
+
 ## Content-aware sections — the menu reads the selection
 
 Some verbs only make sense for a _kind_ of content, so the menu inspects what it
@@ -214,6 +264,8 @@ v3 is the only UNIVERSAL menu, but these independent right-click implementations
 
 ## Change Log
 
+- `2026-08-09` — **Adversarial-review corrections to the same-day fix below.** (1) The mount gate is deleted from `components/ui/context-menu/context-menu.tsx` — its "Radix generates dynamic aria ids" justification was false (the closed Trigger renders only `data-state`/`data-disabled`, verified against 2.3.1), and the shell's `if (!isMounted) return <>{children}</>` workaround was itself a defect: swapping the element type at that position makes React destroy and recreate every wrapped subtree after first paint (Monaco re-instantiated; 50 rows = 50 remounts, every row effect twice). The zero-consumer duplicate `components/ui/context-menu.tsx`, which carried the CORRECT reasoning all along, is deleted; one copy remains. (2) The native-menu guard now covers the mobile long-press too.
+- `2026-08-09` — **The shell no longer harms the surface it wraps** (see the section above). (1) `ContextMenuV3` renders its children bare until mounted instead of inheriting the ui wrapper's `null` — a wrapped list row used to vanish from the server render and the first client render. (2) A read-only menu yields to the browser's own menu inside a live text field (`yieldsToNativeTextMenu`, capture phase on the desktop trigger + the mobile `onContextMenu` + the mousedown capture path, which would otherwise leave `selectionLocked` stuck on for a menu that never opens). Both surfaced by the canonical list shell's new row-level right-click.
 - `2026-07-27` — **Registered entities are attachable without curated-union casts.** `ContextMenuEntityRef` and the context-assignment write path now consume the generated `EntityTypeToken` contract instead of the older hand-curated `EntityType` subset. Scopeable registered entities such as `web_site` can therefore light up Attach To alongside Share through the standard `entity` prop; association reads/writes still flow through the existing scopes/associations chokepoints.
 - `2026-07-22` — **extraSections gained `checkbox` + `link` item kinds** (desktop: Radix CheckboxItem stays open on toggle / real `<a>` anchors; mobile: toggle-and-close with On/Off sublabel / navigate). Prerequisite for folding `ItemContextMenu` into v3.
 - `2026-07-21` — **Files menus consolidated + PDF region menu born on v3.** (1) `FileRowContextMenu` / `FolderRowContextMenu` / `FileRightClickMenu` rebuilt as v3 wrappers (extraSections; ConfirmDialog deletes; file rows gain agents/Attach/Share via `matrx-user/files` + `entity`). (2) `PdfRegionContextMenu` (features/file-analysis) finished the abandoned 2026-05-11 annotation right-click: v3 `resolveContextOnOpen` on `data-region-id` + extract/promote/redact/delete against the live endpoints. (3) Adversarial review fixes: destroyInstance no longer unregisters registrant-owned widget handles; widget-handle field fallback writes via native setter + input event (controlled-safe); `buildEditableWidgetHandle` is render-pure (capability presence only).

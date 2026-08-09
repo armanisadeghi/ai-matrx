@@ -112,6 +112,17 @@ function ConversationRow({
 
   return (
     <ItemRow
+      sourceFeature="conversation"
+      // NO `resourceType`, and this is a RULE not a preference: this row's own
+      // menu already carries Share (opening the canonical `shareModal`), so
+      // declaring a resourceType would add v3's generic Share BESIDE it —
+      // two Share entries, two implementations, one menu. `entity` without
+      // `resourceType` contributes Attach To only, which nothing else offers.
+      entity={{
+        type: "conversation",
+        id: conv.conversationId,
+        title: conv.title || "Untitled",
+      }}
       className="mx-1"
       size="sm"
       label={conv.title || "Untitled"}

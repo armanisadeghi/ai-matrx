@@ -29,10 +29,21 @@ interface DemoItem {
 }
 
 const INITIAL: DemoItem[] = [
-  { id: "a", title: "Q3 go-to-market strategy and competitive positioning deep-dive", favorite: true },
-  { id: "b", title: "Pipeline refactor — extract the shared NER routing layer", streaming: true },
+  {
+    id: "a",
+    title: "Q3 go-to-market strategy and competitive positioning deep-dive",
+    favorite: true,
+  },
+  {
+    id: "b",
+    title: "Pipeline refactor — extract the shared NER routing layer",
+    streaming: true,
+  },
   { id: "c", title: "Notes" },
-  { id: "d", title: "Untitled draft from the weekly sync that nobody has renamed yet" },
+  {
+    id: "d",
+    title: "Untitled draft from the weekly sync that nobody has renamed yet",
+  },
 ];
 
 const rowMenu = (item: DemoItem, fav: boolean): ItemMenuConfig => ({
@@ -41,7 +52,14 @@ const rowMenu = (item: DemoItem, fav: boolean): ItemMenuConfig => ({
     {
       id: "actions",
       items: [
-        { id: "rename", label: "Rename", icon: Pencil, intent: "rename", shortcutKey: "r", onSelect: () => {} },
+        {
+          id: "rename",
+          label: "Rename",
+          icon: Pencil,
+          intent: "rename",
+          shortcutKey: "r",
+          onSelect: () => {},
+        },
         {
           id: "pin",
           label: fav ? "Unpin" : "Pin",
@@ -50,13 +68,25 @@ const rowMenu = (item: DemoItem, fav: boolean): ItemMenuConfig => ({
           shortcutKey: "p",
           onSelect: () => void toast.success(fav ? "Unpinned" : "Pinned"),
         },
-        { id: "duplicate", label: "Duplicate", icon: Copy, shortcutKey: "d", onSelect: () => void toast.success("Duplicated") },
+        {
+          id: "duplicate",
+          label: "Duplicate",
+          icon: Copy,
+          shortcutKey: "d",
+          onSelect: () => void toast.success("Duplicated"),
+        },
       ],
     },
     {
       id: "danger",
       items: [
-        { id: "delete", label: "Delete", icon: Trash2, tone: "destructive", onSelect: () => void toast.error("Deleted (demo)") },
+        {
+          id: "delete",
+          label: "Delete",
+          icon: Trash2,
+          tone: "destructive",
+          onSelect: () => void toast.error("Deleted (demo)"),
+        },
       ],
     },
   ],
@@ -65,6 +95,7 @@ const rowMenu = (item: DemoItem, fav: boolean): ItemMenuConfig => ({
 const code = `import { ItemRow } from "@/components/official/item/ItemRow";
 
 <ItemRow
+      sourceFeature="system"
   label={conv.title}
   active={conv.id === activeId}
   onOpen={() => setActiveId(conv.id)}
@@ -83,9 +114,13 @@ export default function ItemRowDisplay({ component }: ComponentDisplayProps) {
   if (!component) return null;
 
   const rename = (id: string, next: string) =>
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, title: next } : it)));
+    setItems((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, title: next } : it)),
+    );
   const toggleFav = (id: string) =>
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, favorite: !it.favorite } : it)));
+    setItems((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, favorite: !it.favorite } : it)),
+    );
 
   return (
     <ComponentDisplayWrapper
@@ -101,12 +136,16 @@ export default function ItemRowDisplay({ component }: ComponentDisplayProps) {
           </div>
           {items.map((it) => (
             <ItemRow
+              sourceFeature="system"
               key={it.id}
               label={it.title}
               active={it.id === activeId}
               onOpen={() => setActiveId(it.id)}
               menu={() => rowMenu(it, !!it.favorite)}
-              rename={{ value: it.title, onCommit: (next) => rename(it.id, next) }}
+              rename={{
+                value: it.title,
+                onCommit: (next) => rename(it.id, next),
+              }}
               trailing={
                 it.streaming ? (
                   <span className="relative flex h-1.5 w-1.5" aria-hidden>
@@ -114,8 +153,15 @@ export default function ItemRowDisplay({ component }: ComponentDisplayProps) {
                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
                   </span>
                 ) : it.favorite ? (
-                  <button type="button" onClick={() => toggleFav(it.id)} aria-label="Toggle pin">
-                    <Star className="h-3 w-3 text-amber-500" fill="currentColor" />
+                  <button
+                    type="button"
+                    onClick={() => toggleFav(it.id)}
+                    aria-label="Toggle pin"
+                  >
+                    <Star
+                      className="h-3 w-3 text-amber-500"
+                      fill="currentColor"
+                    />
                   </button>
                 ) : null
               }
@@ -128,9 +174,23 @@ export default function ItemRowDisplay({ component }: ComponentDisplayProps) {
           <div className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
             Files — sizes & indent
           </div>
-          <ItemRow size="sm" label="src" leading={<Folder className="h-3.5 w-3.5 text-muted-foreground" />} onOpen={() => {}} />
-          <ItemRow size="sm" indent={1} label="components" leading={<Folder className="h-3.5 w-3.5 text-muted-foreground" />} onOpen={() => {}} />
           <ItemRow
+            sourceFeature="system"
+            size="sm"
+            label="src"
+            leading={<Folder className="h-3.5 w-3.5 text-muted-foreground" />}
+            onOpen={() => {}}
+          />
+          <ItemRow
+            sourceFeature="system"
+            size="sm"
+            indent={1}
+            label="components"
+            leading={<Folder className="h-3.5 w-3.5 text-muted-foreground" />}
+            onOpen={() => {}}
+          />
+          <ItemRow
+            sourceFeature="system"
             size="sm"
             indent={2}
             label="ItemRow.tsx is a fairly long filename that demonstrates the fade"
@@ -138,7 +198,14 @@ export default function ItemRowDisplay({ component }: ComponentDisplayProps) {
             onOpen={() => {}}
             menu={() => rowMenu({ id: "f", title: "ItemRow.tsx" }, false)}
           />
-          <ItemRow size="lg" label="Large row variant" leading={<Hash className="h-4 w-4 text-muted-foreground" />} onOpen={() => {}} menu={() => rowMenu({ id: "g", title: "Large row" }, false)} />
+          <ItemRow
+            sourceFeature="system"
+            size="lg"
+            label="Large row variant"
+            leading={<Hash className="h-4 w-4 text-muted-foreground" />}
+            onOpen={() => {}}
+            menu={() => rowMenu({ id: "g", title: "Large row" }, false)}
+          />
         </div>
       </div>
     </ComponentDisplayWrapper>

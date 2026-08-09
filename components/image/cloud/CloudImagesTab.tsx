@@ -3,9 +3,10 @@
  *
  * Live image gallery sourced from the user's cloud-files Redux slice.
  * Filters to image-MIME records, supports search, a Recents (last 30d)
- * filter, and a view-mode toggle (Cozy / Compact / List). All view-mode
- * state is persisted to `localStorage` under
- * `image-manager:cloud-images-view`.
+ * filter, and a view-mode toggle (Cozy / Compact / List). The toggle is a
+ * projection of the two canonical style axes — Cozy/Compact are the `cards`
+ * view at comfortable/compact `density`, List is the `rows` view — persisted
+ * and synced across devices through `useListViewPrefs("image-manager-cloud")`.
  *
  * Selection writes `ImageSource` with `type: "cloud-file"` and stashes
  * `metadata.fileId` so downstream features can deep-link back into the
@@ -95,7 +96,10 @@ import {
   resolveCloudFileUrl,
 } from "@/components/image/cloud/resolveCloudFileUrl";
 import { ImageGrid } from "@/components/image/shared/ImageGrid";
-import { CloudImageGrid } from "@/components/image/cloud/CloudImageGrid";
+import {
+  CloudImageGrid,
+  type CloudImageViewMode,
+} from "@/components/image/cloud/CloudImageGrid";
 import { CloudImageList } from "@/components/image/cloud/CloudImageList";
 import { useBrowseAction } from "@/features/image-manager/browse/BrowseImageProvider";
 import { CloudFileMetadataSheet } from "@/features/image-manager/components/CloudFileMetadataSheet";
@@ -103,29 +107,78 @@ import { openFolderPicker } from "@/features/files/components/pickers/cloudFiles
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildImagesScope } from "@/features/image-manager/lib/images-surface-scope";
 import { IMAGES_SURFACE_NAME } from "@/features/surfaces/manifests/images.manifest";
+import {
+  useListViewPrefs,
+  type LegacyListViewImport,
+} from "@/lib/list-views/useListViewPrefs";
+import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { toast } from "@/lib/toast";
 
 const RECENTS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-type ViewMode = "cozy" | "compact" | "list";
-const VIEW_STORAGE_KEY = "image-manager:cloud-images-view";
+/**
+ * Style prefs for this gallery (synced across devices via `userPreferences`).
+ * The cozy grid is this surface's own default — the platform default is table,
+ * which this surface does not offer.
+ */
+const CLOUD_IMAGES_VIEW_DEFAULTS: Partial<ListViewPrefs> = {
+  view: "cards",
+  density: "comfortable",
+};
 
-const VIEW_OPTIONS: { id: ViewMode; label: string; icon: LucideIcon }[] = [
-  { id: "cozy", label: "Cozy grid", icon: LayoutGrid },
-  { id: "compact", label: "Compact grid", icon: Grid3x3 },
-  { id: "list", label: "List", icon: ListIcon },
+/**
+ * One-time adoption of the device-local key. This surface's old vocabulary was
+ * a single three-value string, so the mapping is a genuine PROJECTION onto the
+ * two persisted axes — not a pass-through. Getting it wrong would have written
+ * `view: "cozy"`, which no toggle here matches.
+ */
+const CLOUD_IMAGES_LEGACY_VIEW: LegacyListViewImport = {
+  key: "image-manager:cloud-images-view",
+  map: (raw) => {
+    if (raw === "list") return { view: "rows" };
+    if (raw === "cozy") return { view: "cards", density: "comfortable" };
+    if (raw === "compact") return { view: "cards", density: "compact" };
+    return null;
+  },
+};
+
+/**
+ * The three toggle buttons are a projection of the two persisted axes, not a
+ * third persisted vocabulary: Cozy/Compact are `cards` at comfortable/compact
+ * density, List is `rows`. The List option deliberately carries no density so
+ * switching to it preserves whichever grid density the user last chose.
+ */
+const VIEW_OPTIONS: {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  view: ListViewPrefs["view"];
+  density?: ListViewPrefs["density"];
+}[] = [
+  {
+    id: "cozy",
+    label: "Cozy grid",
+    icon: LayoutGrid,
+    view: "cards",
+    density: "comfortable",
+  },
+  {
+    id: "compact",
+    label: "Compact grid",
+    icon: Grid3x3,
+    view: "cards",
+    density: "compact",
+  },
+  { id: "list", label: "List", icon: ListIcon, view: "rows" },
 ];
 
-function loadInitialView(): ViewMode {
-  if (typeof window === "undefined") return "cozy";
-  try {
-    const v = window.localStorage.getItem(VIEW_STORAGE_KEY);
-    if (v === "cozy" || v === "compact" || v === "list") return v;
-  } catch {
-    /* ignore */
-  }
-  return "cozy";
-}
+const isActiveViewOption = (
+  prefs: ListViewPrefs,
+  option: (typeof VIEW_OPTIONS)[number],
+) =>
+  option.view === "rows"
+    ? prefs.view === "rows"
+    : prefs.view !== "rows" && prefs.density === option.density;
 
 export interface CloudImagesTabProps {
   /**
@@ -152,23 +205,22 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
   const [metadataFile, setMetadataFile] = useState<CloudFileRecord | null>(
     null,
   );
-  const [viewMode, setViewMode] = useState<ViewMode>(loadInitialView);
+  const { prefs, setPrefs } = useListViewPrefs(
+    "image-manager-cloud",
+    CLOUD_IMAGES_VIEW_DEFAULTS,
+    CLOUD_IMAGES_LEGACY_VIEW,
+  );
+  const isListView = prefs.view === "rows";
+  const gridDensity: CloudImageViewMode =
+    prefs.density === "compact" ? "compact" : "cozy";
+  /** The toggle id the two axes currently project to — reported to agents. */
+  const viewMode = isListView ? "list" : gridDensity;
   const [bulkSelectedIds, setBulkSelectedIds] = useState<string[]>([]);
   const [bulkBusy, setBulkBusy] = useState<
     "download" | "move" | "visibility" | "delete" | null
   >(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [mobileOptionsOpen, setMobileOptionsOpen] = useState(false);
-
-  // Persist the view mode whenever it changes.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(VIEW_STORAGE_KEY, viewMode);
-    } catch {
-      /* ignore */
-    }
-  }, [viewMode]);
 
   // Hydrate the tree the first time the tab opens. The realtime provider
   // also fires this when mounted at the layout level, but inside a modal
@@ -439,7 +491,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
               <Clock className="h-3.5 w-3.5 mr-1.5" />
               Recents
             </Button>
-            <ViewModeToggle value={viewMode} onChange={setViewMode} />
+            <ViewModeToggle prefs={prefs} onChange={setPrefs} />
             <div
               className="flex h-9 items-center rounded-md border border-border/80 bg-card/70 px-2.5 text-xs font-medium text-muted-foreground shadow-sm"
               aria-label={`${imageCountLabel} loaded`}
@@ -501,7 +553,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
                   icon={query.length > 0 ? ImageOff : Cloud}
                 />
               </div>
-            ) : viewMode === "list" ? (
+            ) : isListView ? (
               <CloudImageList
                 files={imageFiles}
                 resolvingId={resolvingId}
@@ -515,7 +567,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
             ) : (
               <CloudImageGrid
                 files={imageFiles}
-                density={viewMode}
+                density={gridDensity}
                 resolvingId={resolvingId}
                 selectionMode={selectionMode}
                 isSelected={(id) => isSelected(`cloud:${id}`)}
@@ -660,12 +712,18 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
                 <div className="overflow-hidden rounded-xl border border-border bg-card/60">
                   {VIEW_OPTIONS.map((opt, index) => {
                     const Icon = opt.icon;
-                    const active = viewMode === opt.id;
+                    const active = isActiveViewOption(prefs, opt);
                     return (
                       <button
                         key={opt.id}
                         type="button"
-                        onClick={() => setViewMode(opt.id)}
+                        onClick={() =>
+                          setPrefs(
+                            opt.density
+                              ? { view: opt.view, density: opt.density }
+                              : { view: opt.view },
+                          )
+                        }
                         className={cn(
                           "flex min-h-[48px] w-full items-center gap-3 px-3 text-left",
                           index > 0 && "border-t border-border",
@@ -719,11 +777,11 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
 // ---------------------------------------------------------------------------
 
 function ViewModeToggle({
-  value,
+  prefs,
   onChange,
 }: {
-  value: ViewMode;
-  onChange: (mode: ViewMode) => void;
+  prefs: ListViewPrefs;
+  onChange: (patch: Partial<ListViewPrefs>) => void;
 }) {
   return (
     <div
@@ -732,14 +790,20 @@ function ViewModeToggle({
       aria-label="View mode"
     >
       {VIEW_OPTIONS.map((opt) => {
-        const active = value === opt.id;
+        const active = isActiveViewOption(prefs, opt);
         const Icon = opt.icon;
         return (
           <Tooltip key={opt.id}>
             <TooltipTrigger asChild>
               <button
                 type="button"
-                onClick={() => onChange(opt.id)}
+                onClick={() =>
+                  onChange(
+                    opt.density
+                      ? { view: opt.view, density: opt.density }
+                      : { view: opt.view },
+                  )
+                }
                 aria-pressed={active}
                 aria-label={opt.label}
                 className={cn(

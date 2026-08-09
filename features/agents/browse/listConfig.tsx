@@ -145,6 +145,26 @@ function useAgentListRowActions(
 export const agentListConfig: EntityListConfig<AgentBrowseRow> = {
   surfaceKey: "agents-browse",
   entityLabel: { singular: "agent", plural: "agents" },
+  // "agents-other", NOT "agent". Both type-check — `SourceFeature` is generated
+  // from the backend's union — but only registered keys exist in `FEATURE_META`
+  // (`conversation-history/source-registry.ts`), and `"agent"` is not one. A
+  // conversation stamped with an unregistered feature renders ungrouped with
+  // the generic fallback icon in the history filter tree AND cannot be selected
+  // at all in Settings -> Conversation Filters, whose options are derived from
+  // `Object.entries(FEATURE_META)`. Those conversations become unfilterable.
+  // **Type-checking is not the gate here; registration is.**
+  sourceFeature: "agents-other",
+  // Lights up Attach To. **NO `resourceType`**, deliberately: the agent action
+  // registry already carries Share (`agentActionRegistry.tsx`), and the shell
+  // feeds that same config to the right-click menu — so declaring a
+  // resourceType would put v3's generic Share beside the registry's, two
+  // implementations of one verb in one menu. The registry's Share wins because
+  // it is the one every other agent surface uses.
+  getRowEntity: (row) => ({
+    type: "agent",
+    id: row.id,
+    title: row.name,
+  }),
   scopes: AGENT_LIST_SCOPES,
   service: {
     fetchPage: fetchAgentBrowsePage,

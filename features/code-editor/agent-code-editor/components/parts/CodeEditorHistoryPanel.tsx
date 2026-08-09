@@ -167,6 +167,7 @@ function ConversationItemRow({
 
   return (
     <ItemRow
+      sourceFeature="code-editor"
       className="mx-1"
       size="sm"
       label={row.title}

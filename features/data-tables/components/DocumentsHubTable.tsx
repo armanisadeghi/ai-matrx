@@ -1,13 +1,11 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   ChevronUp,
   ChevronsUpDown,
-  Eye,
   ListFilter,
   Trash,
 } from "lucide-react";
@@ -27,6 +25,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { cn } from "@/lib/utils";
 import {
   compareTimestamps,
@@ -238,6 +238,28 @@ function OptionColumnFilter<T extends string>({
       </div>
     </div>
   );
+}
+
+/**
+ * `/documents/{id}` from the ONE registry entry, with an alarm.
+ *
+ * The registry is the route authority (never a second inline template), but a
+ * missing `hrefFor` here is not a cosmetic gap: it removes the table's only
+ * remaining door. Screaming once per session makes that impossible to ship
+ * unnoticed, which a bare `?.` could not.
+ */
+let warnedNoDocumentRoute = false;
+function documentHref(id: string): string | undefined {
+  const href = tryGetEntityInfo("udt_document")?.hrefFor?.(id);
+  if (!href && !warnedNoDocumentRoute) {
+    warnedNoDocumentRoute = true;
+    console.error(
+      "[DocumentsHubTable] entity registry has no `hrefFor` for `udt_document` — " +
+        "every door on this table is now dead (row click, name, new tab). " +
+        "Fix features/scopes/registry/entityRegistry.ts.",
+    );
+  }
+  return href;
 }
 
 export function DocumentsHubTable({
@@ -510,19 +532,36 @@ export function DocumentsHubTable({
             </TableRow>
           ) : (
             sorted.map((doc) => {
-              const href = `/documents/${doc.id}`;
+              // ONE route authority: the same registry entry the name's
+              // `EntityRef` resolves, not a second copy of the path.
+              //
+              // If that entry ever loses its `hrefFor`, this table has NO way
+              // left to open a document — the row click, the name, and (since
+              // the duplicate button went) every other path all hang off it.
+              // A silent version of that is the opposite of CLAUDE.md's loud
+              // recovery rule, so it screams instead of degrading quietly.
+              const href = documentHref(doc.id);
               return (
                 <TableRow
                   key={doc.id}
-                  className="cursor-pointer hover:bg-muted/30"
-                  onClick={() => router.push(href)}
+                  className={cn(href && "cursor-pointer", "hover:bg-muted/30")}
+                  onClick={href ? () => router.push(href) : undefined}
                 >
                   <TableCell className="py-2 max-w-[280px]">
-                    <div className="min-w-0">
-                      <span className="block text-sm font-medium truncate">
-                        {doc.document_name}
-                      </span>
-                    </div>
+                    {/* THE DOOR LAW: the row already navigated here on click,
+                        but the name was a plain <span> — so cmd-click and
+                        middle-click, the two ways a user opens a document
+                        without losing this list, did nothing. `EntityRef`
+                        resolves `/documents/{id}` from the entity registry
+                        (the same route this row pushes) and adds the explicit
+                        new-tab door. */}
+                    <EntityRef
+                      token="udt_document"
+                      id={doc.id}
+                      name={doc.document_name}
+                      showIcon={false}
+                      className="text-sm font-medium"
+                    />
                   </TableCell>
                   <TableCell className="py-2 text-xs text-muted-foreground max-w-[240px]">
                     <span className="line-clamp-2 break-words">
@@ -552,12 +591,6 @@ export function DocumentsHubTable({
                       className="flex justify-end gap-0.5"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <Button asChild size="sm" variant="ghost">
-                        <Link href={href}>
-                          <Eye className="h-3.5 w-3.5 mr-1" />
-                          Open
-                        </Link>
-                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"

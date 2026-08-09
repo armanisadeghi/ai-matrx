@@ -13,24 +13,204 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D137 — DB kind components documented as a bare function do NOT compile on the web platform (2026-08-09)
+### D145 — DB kind components documented as a bare function do not compile on the web platform (2026-08-09)
 
-The kindcomp_* contract (aidream `kind_shared.py::PROPS_CONTRACT`, mirrored in the tool
-descriptions agents read) documents the component shape as a bare top-level
-`function Card({ data }) { … }` — no `export default`. But the ONE shared compiler
-(`features/agent-apps/utils/compile-slot.ts::compileSlotComponent`, consumed by
-`features/content-ir/react/db-component/dbKindComponentCache.ts`) only rewrites
-`export default` → `return`; a bare-function source makes the `new Function` factory
-return `undefined` → "compile produced no component" → generic viewer. So an agent
-following the documented example authors a row the WEB platform silently can't mount.
-Found 2026-08-09 when the new `workflow_shape_component_builder` agent emitted exactly
-that shape (kind `cooking_recipe`, platform `vite`). The workflow-studio twin compiler
-(aidream `apps/workflow-studio/src/lib/content-ir/db-component/compile-kind-component.ts`)
-now falls back to returning the last PascalCase top-level binding — port that fallback
-into `compileSlotComponent` (it already collects top-level bindings via
-`collectTopLevelBindingsPlugin`), or tighten the contract text to require
-`export default` everywhere. Decide + fix in one place; the studio fallback is the
-reference implementation.
+The kind-component contract documents a bare top-level `function Card({ data }) { … }`,
+but `features/agent-apps/utils/compile-slot.ts::compileSlotComponent` only rewrites
+`export default` into a return. A contract-following bare function therefore produces no
+component and falls back to the generic viewer. Workflow Studio already recovers the last
+PascalCase top-level binding; port that behavior into the shared web compiler or tighten the
+contract everywhere in the same change.
+
+### D144 — 14 shadcn wrappers blank their own visible content until hydration (2026-08-09)
+
+**Found while fixing one instance of it** (the context-menu wrapper, PR #72).
+Fourteen `components/ui/*` wrappers gate their Radix **Root** on `useIsMounted`
+and `return null`, all carrying the same copy-pasted justification: *"Radix UI
+generates dynamic IDs for aria-controls that can differ between SSR and client."*
+
+```
+tooltip · dropdown-menu · tabs · accordion · collapsible · matrx/dialog
+dialog · alert-dialog · sheet · popover · menubar · hover-card
+navigation-menu · select
+```
+
+**Why this is a defect, not a precaution:** a Radix Root's children include its
+**Trigger**, and a trigger is always-visible page content. Returning `null`
+deletes it from the server render AND the first client render, so the surface
+paints without its tabs / accordion headers / nav bar / menubar / trigger
+buttons and fills them in after hydration — flash of missing content, layout
+shift, and nothing rendered for a crawler. The worst are the five whose whole
+purpose is always-visible chrome: **`tabs`, `accordion`, `collapsible`,
+`navigation-menu`, `menubar`**.
+
+**The justification is at least partly false.** Verified for the context-menu
+case against `@radix-ui/react-context-menu` 2.3.1: the closed trigger renders
+only `data-state` / `data-disabled` — no id, nothing to mismatch. Radix uses
+React's `useId`, which is SSR-stable by design. Each wrapper needs the same
+ten-minute check against its own primitive before its gate is removed; I have
+only done the one.
+
+**Precedent + the fix shape:** `components/ui/context-menu/context-menu.tsx` is
+now ungated and documents the reasoning. A zero-consumer duplicate that had the
+correct implementation all along (`components/ui/context-menu.tsx`) was deleted
+in the same change.
+
+**NOT fixed here, deliberately.** It is 14 shared primitives with app-wide blast
+radius, in a session with no CI and no browser verification, and it is off the
+mission of the sweep that found it. **Patrol candidate** — this is one grep
+(`useIsMounted` + `return null` under `components/ui/`) with a mechanical fix and
+a clear per-file verification step, which is exactly the shape the pattern-patrol
+registry wants.
+
+### D143 — the files-upload eslint ban points every caller at a file that does not exist (2026-08-09)
+
+`eslint.config.mjs:46-53` bans `@/features/files/upload` + `@/features/files/upload/*`
+and tells the caller to use *"requestUpload from
+`@/features/files/upload/requestUpload`"*. **That module does not exist** —
+`requestUpload` is exported from `features/files/upload/uploadGuardOpeners.ts:81`,
+and the ban's own `upload/*` glob would reject the suggested path even if it did.
+So the rule's remediation is impossible to follow, and the only two imperative
+callers (`features/war-room/components/thread/ThreadNewFileDialog.tsx:34`,
+`ThreadResourcesTab.tsx:43`) are permanently red with no compliant path.
+
+**Why it matters beyond two files:** a guard whose escape hatch is a dead path
+trains agents to disable the rule or add a suppression — the exact
+type-suppression-debt pattern that is a registered patrol. Fix is one of: create
+the re-export the message promises (and exempt it from the glob), or point the
+message at `uploadGuardOpeners` and narrow the ban to the genuinely internal
+modules (`cloudUpload`, `tusUpload`, which are already named separately at
+`:124`). **Not fixed here** — it is a lint-policy call on a feature this sweep
+does not own; found while converting the war-room file row.
+
+### D142 — on TOUCH, EntityRef offers only one of its four doors (2026-08-09)
+
+`EntityRef`'s control cluster (peek + new tab) is revealed by `group-hover` /
+`focus-within` and is `pointer-events-none opacity-0` otherwise
+(`components/official/entity-ref/EntityRef.tsx`). A touch device has no hover,
+so on phones and tablets **the peek and the explicit new-tab door do not exist**
+— every `EntityRef` degrades to Open-only. That is THE DOOR LAW failing inside
+the component built to enforce it, on the platform where losing your place by
+navigating hurts most.
+
+The `pointer-events-none` is itself correct and deliberate — without it, an
+invisible new-tab link sits beside every name and a stray tap opens a blank tab.
+The gap is that nothing replaces it for touch.
+
+Secondary, same cause: the cluster stays IN FLOW, so it permanently reserves
+~44px (two 20px controls + gaps) in every cell it lands in, including the
+`/transcripts` title column which declares no width. Found while giving
+`MatrxDataTable` columns the door set (that adoption made the cost visible; it
+predates it).
+
+**Needs a product call, which is why this is filed rather than fixed:** either
+(a) `alwaysShowActions` whenever `useIsMobile()`, which changes the resting
+appearance of every list on mobile; (b) a long-press / tap-and-hold affordance;
+or (c) the row's `…` menu carries peek on touch and `EntityRef` stays
+hover-only. (c) is probably right for tables and wrong for prose references.
+Whatever is chosen, `opacity-0` should stop reserving layout.
+
+### D141 — the entity registry's content_role alarm screams for 289 of 322 tokens (2026-08-09)
+
+`getEntityInfo` (`features/scopes/registry/entityRegistry.ts:461-470`) `console.error`s a
+"loud recovery" banner whenever `platform.entity_types.content_role` is not one of the five
+valid values, and falls back to `destination`. **`content_role` is NULL for 289 of the 322
+rows** — only 33 carry a value — so the banner is not reporting an exception, it is reporting
+the norm. In production `console.error` is captured into the Error Inspector
+(`lib/diagnostics/globalErrorCapture.ts`), so any surface that renders a list of
+lesser-used tokens floods it.
+
+Found while giving `processed_document` its `hrefFor`: the PDF lineage tree calls
+`tryGetEntityInfo` once per node per render, and every call fired the banner. I set that one
+row to `source` live (it is a source like `file`/`transcript`/`web_page`) — but the other 288
+are untouched and this is a data problem, not a code one.
+
+**Decide which it is** and act once: either `content_role` is genuinely required (backfill all
+322 and make the column NOT NULL, so the alarm means something) or it is optional for
+non-content tokens (then the fallback is correct behaviour, not a recovery, and the
+`console.error` should be a one-time dev-only warning keyed by token). A guard that fires on
+the majority case trains everyone to ignore it, which is the opposite of a loud recovery.
+
+### D139 — CRM scope counts fire `3 + N_orgs` round trips per keystroke (2026-08-09)
+
+`fetchPartyScopeCounts` (`features/crm/service.ts:224-267`) issues one
+`head:true` count query per scope PLUS one per organization, and
+`usePartyList.ts:94` re-runs it on a 200ms search debounce. A user in 8 orgs
+types one character and fires 11 requests. The exemplars do this in ONE call —
+`agx_list_scope_counts` / `trx_list_scope_counts` return `{byKind, narrow}` from
+a single RPC.
+
+**Fix:** it disappears as a side effect of the `crm_list_scope_counts` RPC that
+the `lib/entity-list` conversion needs anyway (see
+`docs/handoffs/inventory-law-sweep.md` § Wave 4). Filed separately because the
+fan-out is a live cost today and should not wait on that conversion's scheduling.
+
+### D140 — `lib/entity-list` cannot be used in a window panel or by the surfaces runtime (2026-08-09)
+
+Three gaps in the canonical list shell, found while scoping the CRM conversion.
+Each one BLOCKS adoption by a surface that otherwise wants the shell, which
+reframes "26 bespoke list pages" from purely an adoption failure into partly a
+capability gap:
+
+1. **No `presentation` prop.** `EntityListPage.tsx:120` hardcodes
+   `pt-[calc(var(--shell-header-h)+0.5rem)]`. A list rendered inside a
+   `WindowPanel` gets route-header padding. `CrmListPage` already solves this
+   with `presentation: "route" | "window"` (`CrmListPage.tsx:118-121`) because
+   `CrmManagerWindow` embeds it — so the bespoke page is strictly MORE capable
+   than the shell here.
+2. **No surfaces-runtime slot.** `CrmListPage.tsx:311-339` wraps its list in
+   `SurfaceRuntimeProvider` with a 16-field live snapshot for the agent/surfaces
+   system. `lib/entity-list/**` has zero references to `surfaces/runtime` —
+   converting would silently DROP the manifest integration.
+3. **No segmented-control axis.** `EntityListQuery` (`lib/entity-list/types.ts:44-60`)
+   models `scope/search/deep/archived/filters/page` only. A top-level
+   either/or that is not a scope (CRM's People/Companies) can only degrade into
+   a filter chip inside the Filters popover.
+
+Also unmodelled: the shell's `archived: active|archived|all` is not CRM's
+`active|trash` — `crm.party` has `deleted_at` and no archive flag, so soft-delete
+and archive are different axes wearing one name.
+
+**Who decides:** 1 is a clear small fix once a second consumer needs it (do NOT
+add it speculatively). 2 and 3 are Arman's call on whether the shell grows them
+or those surfaces stay bespoke.
+
+### D138 — the sharing registry is a SECOND route authority, and it disagrees with itself (2026-08-09)
+
+`platform.shareable_resource_registry.url_path_template` (mirrored in
+`utils/permissions/registry.ts`, parity-tested) is a second, DB-owned route table
+independent of `entityRegistry.hrefFor`. It contradicts the canonical registry
+AND itself: `/quizzes/{id}` vs `/education/quizzes/{id}`, `/flashcards/{id}` vs
+`/education/flashcards/{id}`, `/apps/{id}` (real route is `/agent-apps/[id]`),
+`/canvas/{id}` (no route — D137), `/code/files/{id}` vs the registry's
+`/code?tab=code-file:{id}`.
+
+It is load-bearing: `utils/permissions/shareLinks.ts`,
+`features/organizations/hooks/useOrgSharedItems.ts`, `OrgShareReviewCard`, and
+`OrgResourceDetail` all build user-facing links from it — so the stale entries
+are live broken links on the sharing surfaces.
+
+Fix: audit each `url_path_template` against the real `app/` tree, correct the DB
+rows, then make the sharing surfaces resolve routes from `entityRegistry` and
+retire `url_path_template` as a route source (keep the registry row for the
+access-control facts). `ContainerResourceSheet` already prefers the entity
+registry and falls back to the template only where the registry has no route.
+
+### D137 — `/canvas/{id}` has no route: four callsites link there, including email notifications (2026-08-09)
+
+`app/(public)/canvas/` contains only `discover/` and `shared/[token]/` — there is no
+`[id]/page.tsx` and no `page.tsx`, so **both `/canvas` and `/canvas/{id}` 404**. Four
+places build that URL and hand it to a user:
+
+- `features/window-panels/windows/ShareModalWindow.tsx:57` (`canvas`) and `:65` (`canvas_items`)
+- `features/organizations/peek/kinds/CanvasPeek.tsx:51` — the peek's "Open" door
+- `lib/email/notificationService.ts:229` — **a link mailed to users**, the worst of the four
+
+Fix: decide the canonical canvas record route, then either build
+`app/(public)/canvas/[id]/page.tsx` or repoint all four callsites at the real destination
+(the only working canvas detail URL today is `/canvas/shared/[token]`, which needs a share
+token, not an id). Until then `canvas_item` deliberately carries no `hrefFor` in
+`features/scopes/registry/entityRegistry.ts` — do not add one without the route.
 
 ### D136 — `pnpm check:hatches` is red on main: baseline drifted, ratchet no longer ratchets (2026-08-08)
 
@@ -111,18 +291,12 @@ unrecoverable. Verified via `history.row_versions` (single INSERT, zero UPDATEs)
 `auth.users.last_sign_in_at`. **Fixed 2026-08-08:** `AuthSessionWatcher` now detects identity
 drift (auth events + focus/visibility/60s cookie re-reads vs the booted user id) and hard-stops
 the tab with a blocking "Account Changed" overlay; the orphaned note was re-owned to the main
-account by SQL.
-**Remainders (a) and (b) FIXED 2026-08-09** — see [`features/notes/FEATURE.md`](features/notes/FEATURE.md)
-and the new [`lib/local-drafts/FEATURE.md`](lib/local-drafts/FEATURE.md):
-(a) unsaved in-memory edits are snapshotted to a local draft **before** the blocking overlay
-renders (also on sign-out and unload), stamped with the account that wrote them, and offered
-back on reopen — per-note (`NoteDraftRecoveryBanner`) and, for a note that never reached the DB
-at all, from a surface-level list (`NotesDraftRecoveryList`), which is the exact case that was
-unrecoverable above; (b) three consecutive save failures escalate from a deduped toast to a
-**non-dismissible blocking banner on the editor** (`NoteSaveFailureBanner`: retry / copy /
-download / reload) plus a `captureError` scream on the new `unsaved-work` source.
-**Still open:** (c) test-account logins (oauth-review, admin@admin.com walkthroughs) should use
-isolated browser profiles/incognito by convention — document in the OAuth-verification plan.
+account by SQL. **Open remainder:** (a) decide whether unsaved in-memory edits can be preserved
+across the forced reload (e.g. local draft snapshot before blocking); (b) the notes autosave
+error surfacing existed but 14h of failing saves were ignorable — consider escalating a
+persistent save-failure (N consecutive failures) to a blocking banner on the editor itself;
+(c) test-account logins (oauth-review, admin@admin.com walkthroughs) should use isolated
+ browser profiles/incognito by convention — document in the OAuth-verification plan.
 
 ### D130 — RESOLVED (client) 2026-08-08: headless image-gen promise now ALWAYS settles on a terminal run; server socket-hold still open
 
@@ -154,34 +328,32 @@ then fix what breaks. Companion aidream-side entry exists in aidream/FOUND_DEFEC
 `(popup)` becomes the branded OAuth-return page (see docs/handoffs/google-oauth-product-build.md)
 or gets deleted.
 
-### D126 — RESOLVED 2026-08-09 (one small remainder): hand-rolled "launch agent → poll → extract JSON" loops consolidated
+### D126 — 22 hand-rolled copies of the headless "launch agent → poll → extract JSON" loop (2026-08-04)
 
-**Fixed 2026-08-09:** built the ONE primitive — `runHeadlessAgentJson`
-([features/agents/redux/execution-system/thunks/run-headless-agent-json.ts](features/agents/redux/execution-system/thunks/run-headless-agent-json.ts),
-plain `(dispatch, getState)` for thunk-style code) + `useHeadlessAgentJson`
-([features/agents/hooks/useHeadlessAgentJson.ts](features/agents/hooks/useHeadlessAgentJson.ts),
-React) — and converted every listed call site: education (15 files: tutor ×3, memory,
-assessment ×4, convert, trust, study ×2, mindmap, spoken-practice ×2), flashcards (5:
-useGenerateCards, enhanceCard, makeQuizItems, grading-core, gradeCard.thunk),
-content-ir `useKindRequest`, marketing content-plan `setup/ai.ts`.
-`executeBuiltinWithJsonExtraction` now delegates to the core. The primitive also fixes the
-shared latent bugs: bounded settle window + fuzzy fallback after a dead stream (instead of
-burning the full timeout), consistent partial-object tolerance on stream error, and instance
-cleanup by default (`keepInstance: true` only where live streaming UI owns the conversation).
-Registered in the reuse-first Primitives Index.
+The canonical primitive EXISTS and is almost unused: `executeBuiltinWithJsonExtraction` /
+`executeBuiltinWithCodeExtraction`
+([features/agents/redux/execution-system/thunks/execute-builtin-with-extraction.thunks.ts](features/agents/redux/execution-system/thunks/execute-builtin-with-extraction.thunks.ts))
+has exactly ONE consumer (`features/agent-apps/hooks/useAutoCreateApp.ts`). Meanwhile **22
+files** re-implement its body inline — `launchAgentExecution` + a `useAppStore()` + a
+`while (Date.now() - start < TIMEOUT)` poll on `selectJsonExtractionComplete` +
+`setTimeout(POLL_INTERVAL_MS)` — each with its own timeout, poll interval, error mapping, and
+instance cleanup (or lack of it):
 
-**Verified live (dev server + real agent runs):** flashcards create-from-topic (set persisted
-to `education.fc_set` with cards) and assessment create-from-topic (navigated to the created
-quiz). The other converted lanes (tutor/memory/spoken-practice/trust/planner/analytics/
-mindmap/convert, content-ir kind requests, content-plan setup) are behavior-preserving
-conversions verified by type-check + code review, not exercised end-to-end — exercise each on
-first touch.
+`features/education/**` (13: assessment ×4, convert, media/mindmap, spoken-practice ×2,
+tutor ×3, trust, study ×2, memory) · `features/flashcards/**` (5) · `features/content-ir/react/actions/useKindRequest.ts` ·
+`features/marketing/content-plan/setup/ai.ts`.
 
-**Open remainder:** `features/image-studio/hooks/useImageStudio.ts` `describeFile` — a partial
-copy launched via a SHORTCUT (`useShortcutTrigger` + resource attach + `executeInstance`), not
-`launchAgentExecution`, so the primitive doesn't cover it yet; it also polls only
-`selectJsonExtractionComplete` (an errored stream burns its full 120s). Either extend the
-primitive with a shortcut-launch variant or fix its poll loop when next in that file.
+This is the "duplicated hook logic" anti-pattern from [docs/reuse-first.md](docs/reuse-first.md) at
+scale. Every copy is a place a timeout tweak, an abort-on-unmount fix, or an instance leak has to
+be made 22 times — and each new feature copies the nearest neighbour, so it grows on its own.
+
+**Fix:** one hook (`useHeadlessAgentJson(agentId, variables)`) over the existing thunk, then
+convert the 22 call sites in batches per feature area. Not a rewrite of behaviour — the loops are
+already near-identical; the differences are the accidental ones. **Nobody should convert these
+blind:** each area needs its feature's tests/manual path exercised, so batch it per owner.
+
+Filed while merging the content-plan branch (which is copy #22 and correctly followed the local
+exemplar `useGenerateQuiz.ts` — the pattern, not that change, is the defect).
 
 ### D125 — stale `platform.entity_types` rows → SILENT access denial (2026-08-04; 13 of 18 FIXED, 5 open)
 

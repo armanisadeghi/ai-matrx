@@ -246,7 +246,22 @@ export function AnnotatablePdfCanvas({
         mode={mode}
         onDrawComplete={handleDrawComplete}
         onRegionClick={(id) => onRegionClick?.(id)}
-        onRegionContextMenu={(id, x, y) => onRegionContextMenu?.(id, x, y)}
+        // CONDITIONAL, and the arrow is the whole bug. The layer's contract is
+        // "no handler => early-return, let the event bubble so a v3 menu can
+        // catch it" (see `RegionContextMenu.tsx`'s header, which tells callers
+        // NOT to pass this prop when using the wrapper). Both callers obey it —
+        // but this arrow was always defined, so the layer always saw a handler,
+        // always ran preventDefault + stopPropagation, and then called into
+        // `undefined`. Right-clicking a region did NOTHING: native menu
+        // suppressed, v3 menu never reached, and the region actions built for
+        // it (extract-at-bbox, promote-to-entity, redact, delete) unreachable.
+        // Wrapping an optional callback in an unconditional arrow silently
+        // converts "absent" into "present and inert".
+        onRegionContextMenu={
+          onRegionContextMenu
+            ? (id, x, y) => onRegionContextMenu(id, x, y)
+            : undefined
+        }
         onBackgroundClick={onBackgroundClick}
       />
     ),

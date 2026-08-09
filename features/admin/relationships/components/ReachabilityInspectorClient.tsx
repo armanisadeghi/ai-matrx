@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { ConveyPill } from "./shared";
 import type { ReachabilityContainer, ReachabilityContent } from "../types";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 
 export function ReachabilityInspectorClient() {
   const supabase = useMemo(() => createClient(), []);
@@ -159,7 +160,23 @@ export function ReachabilityInspectorClient() {
                       <TableCell>
                         <EntityTypeChip token={type} showToken />
                       </TableCell>
-                      <TableCell className="font-mono text-xs">{id}</TableCell>
+                      {/* A reachability inspector that prints ids you cannot
+                          open is the Door Law's worst case on the surface that
+                          most needs the doors: the whole question here is
+                          "what IS that thing?". The full id stays visible (an
+                          admin copies it) by passing it as the label, and the
+                          row now opens, peeks, and offers a new tab — the
+                          audit stays on screen while you look. */}
+                      <TableCell className="font-mono text-xs">
+                        <EntityRef
+                          token={type}
+                          id={id}
+                          name={id}
+                          showIcon={false}
+                          openInNewTab
+                          wrap
+                        />
+                      </TableCell>
                       <TableCell className="text-xs tabular-nums">
                         {row.depth}
                       </TableCell>
