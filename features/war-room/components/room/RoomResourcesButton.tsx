@@ -2,16 +2,18 @@
 
 // features/war-room/components/room/RoomResourcesButton.tsx
 //
-// Room-level resources: the header control that opens EVERYTHING attached to
-// the war room itself (room-wide references — a data store every thread
-// should see, the room's project docs…) as the canonical <AssociationList>
-// over the room adapter. Threads have their own paperclip; this is the
-// room-scope sibling.
+// Room-level resources: EVERYTHING attached to the war room itself (room-wide
+// references — a data store every thread should see, the room's project
+// docs…) as the canonical <AssociationList> over the room adapter. Threads
+// have their own paperclip; this is the room-scope sibling.
+//
+// Re-housed 2026-08-09 (core-route-headers conformance): the header paperclip
+// trigger died with the in-body header — the sheet (desktop) / drawer (mobile)
+// is now launched CONTROLLED from RoomHeader's "⋯" overflow menu (which shows
+// the attachment count), so only the surface is exported.
 
-import { useState } from "react";
 import { Paperclip } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAppSelector } from "@/lib/redux/hooks";
 import {
   Sheet,
   SheetContent,
@@ -28,50 +30,8 @@ import {
 } from "@/components/ui/drawer";
 import { WarRoomResourcesList } from "@/features/war-room/components/resources/WarRoomResourcesList";
 import { useRoomResourcesAdapter } from "@/features/war-room/hooks/useThreadResourcesAdapter";
-import { selectContentAssignmentsForRoom } from "@/features/war-room/redux/selectors";
-import { cn } from "@/lib/utils";
 
-export function RoomResourcesButton({
-  sessionId,
-  className,
-}: {
-  sessionId: string;
-  className?: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const count = useAppSelector(
-    selectContentAssignmentsForRoom(sessionId),
-  ).length;
-
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        title="Room resources — attached to the whole room"
-        aria-label="Room resources"
-        className={cn(
-          "grid h-7 grid-flow-col place-items-center gap-1 rounded-md px-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-          className,
-        )}
-      >
-        <Paperclip className="size-3.5" />
-        {count > 0 && (
-          <span className="text-[10px] font-medium tabular-nums">{count}</span>
-        )}
-      </button>
-      {open && (
-        <RoomResourcesSheet
-          sessionId={sessionId}
-          open={open}
-          onOpenChange={setOpen}
-        />
-      )}
-    </>
-  );
-}
-
-function RoomResourcesSheet({
+export function RoomResourcesSheet({
   sessionId,
   open,
   onOpenChange,

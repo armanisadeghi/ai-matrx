@@ -41,7 +41,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       url: "/war-room/[id]",
       label: "The room (cockpit)",
       description:
-        "Mission-control header (title + live meter + Stage⇄Grid + instrument projector + density dial + ActiveContextLensChip + Room Agent button) over Stage view (rail + driven thread) or Grid view (bento gallery). Hydrates the session, tiles, audio links, and linked tasks. The 'Room Agent' button opens the TIER-2 per-room agent (RoomAgentPanel) in an inline non-modal WindowPanel; the shared MasterWatchLayer is mounted here too so messaging a thread pops a live-watch window in the room.",
+        "Mission-control chrome injected into the SHELL glass via RoomHeader (<PageHeader>): title + live meter + Stage⇄Grid + thread search + ActiveContextLensChip + Room Agent inline; projector, density, room details, resources, project, and delete live in the ONE '…' menu (mobile: back + title + one '…' bottom sheet). Over Stage view (rail + driven thread) or Grid view (bento gallery). Hydrates the session, tiles, audio links, and linked tasks. The 'Room Agent' button opens the TIER-2 per-room agent (RoomAgentPanel) in an inline non-modal WindowPanel; the shared MasterWatchLayer is mounted here too so messaging a thread pops a live-watch window in the room.",
       filePath: "features/war-room/components/room/WarRoomShell.tsx",
       status: "Live",
     },
@@ -74,7 +74,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "WarRoomShell + roomViewContext",
       filePath: "features/war-room/components/room/WarRoomShell.tsx",
       description:
-        "The cockpit frame + header (Stage⇄Grid, projector, density dial, live meter). roomViewContext.tsx holds the ephemeral view state (mode / projectedTab / density / staged thread) — never Redux, never persisted.",
+        "The cockpit frame; RoomHeader.tsx injects mission control into the shell glass row (Stage⇄Grid, search, live meter, the '…' overflow with projector/density/details/resources/project/delete). roomViewContext.tsx holds the ephemeral view state (mode / projectedTab / density / staged thread) — never Redux, never persisted.",
       tier: "candidate",
     },
     {
@@ -120,10 +120,10 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       tier: "internal",
     },
     {
-      name: "ThreadResourcesButton / ThreadResourcesSheet + RoomResourcesButton",
+      name: "ThreadResourcesButton / ThreadResourcesSheet + RoomResourcesSheet",
       filePath: "features/war-room/components/thread/ThreadResourcesSheet.tsx",
       description:
-        "The 1-click resources surfaces: a paperclip+count button on EVERY thread header (grid tile + stage) opening the full resources view in a Sheet/Drawer, and the room-scope sibling in the WarRoomShell header (room-wide attachments every thread's agent sees). Both render the canonical AssociationList (features/scopes/components/associations/).",
+        "The 1-click resources surfaces: a paperclip+count button on EVERY thread header (grid tile + stage) opening the full resources view in a Sheet/Drawer, and the room-scope sibling RoomResourcesSheet launched from RoomHeader's '…' menu (room-wide attachments every thread's agent sees). Both render the canonical AssociationList (features/scopes/components/associations/).",
       tier: "internal",
     },
     {
@@ -193,7 +193,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "Tile flavors + project association",
       filePath: "features/projects/components/ProjectPicker.tsx",
       description:
-        "A tile's flavor (thread | task | project) + project_id FK. PROJECT flavor binds a tile to a ctx_projects row; its Task tab is the project's task list (ThreadProjectTaskList). Surfaces: QuickAddThread (flavor segmented picker + shared ProjectPicker), ThreadAnchorBadge (header marker for task/project tiles), RoomProjectButton (header: tie the WHOLE room to a project / clear), NewRoomFromProjectDialog (/all: header 'From project' action → createRoomFromProject seeds a project room + tile), ProjectConflictDialog (the per-thread vs keep-room prompt). ProjectPicker is the projects feature's flat searchable picker over useUserProjects; War Room uses its cross-org mode. INVARIANT (see invariant 9): a room and its threads never hold conflicting projects; tasks auto-associate via the app-wide ctx_tasks.project_id (createTileTask stamps selectEffectiveThreadProjectId). Foundation: redux/thunks (checkThreadProjectConflict, convertRoomToPerThreadThunk, setTileProjectThunk, absorbRoomIntoProjectThunk, createRoomFromProject) + selectors (selectThreadPickerOption / selectEffectiveThreadProjectId / selectSessionProjectMode). DB: migrations/ctx_war_room_tiles_flavor_project.sql.",
+        "A tile's flavor (thread | task | project) + project_id FK. PROJECT flavor binds a tile to a ctx_projects row; its Task tab is the project's task list (ThreadProjectTaskList). Surfaces: QuickAddThread (flavor segmented picker + shared ProjectPicker), ThreadAnchorBadge (header marker for task/project tiles), RoomProjectPickerBody (RoomHeader '…' menu → controlled popover: tie the WHOLE room to a project / clear), NewRoomFromProjectDialog (/all: header 'From project' action → createRoomFromProject seeds a project room + tile), ProjectConflictDialog (the per-thread vs keep-room prompt). ProjectPicker is the projects feature's flat searchable picker over useUserProjects; War Room uses its cross-org mode. INVARIANT (see invariant 9): a room and its threads never hold conflicting projects; tasks auto-associate via the app-wide ctx_tasks.project_id (createTileTask stamps selectEffectiveThreadProjectId). Foundation: redux/thunks (checkThreadProjectConflict, convertRoomToPerThreadThunk, setTileProjectThunk, absorbRoomIntoProjectThunk, createRoomFromProject) + selectors (selectThreadPickerOption / selectEffectiveThreadProjectId / selectSessionProjectMode). DB: migrations/ctx_war_room_tiles_flavor_project.sql.",
       tier: "candidate",
     },
     {
