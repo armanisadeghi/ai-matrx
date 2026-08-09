@@ -27,6 +27,7 @@ import {
 import type { ResourceType } from "@/utils/permissions/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, Lock } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { PermissionsList } from "./PermissionsList";
 import { ShareWithUserTab } from "./tabs/ShareWithUserTab";
 import { ShareWithOrgTab } from "./tabs/ShareWithOrgTab";
@@ -226,8 +227,27 @@ export function ShareModal({
           <div className="flex items-start justify-between gap-2 pr-10">
             <div className="flex-1 min-w-0">
               <DialogTitle>Share {resourceLabel}</DialogTitle>
-              <DialogDescription className="truncate">
-                {resourceName}
+              {/* THE DOOR LAW: the most-reused share surface in the app named
+                  the record and gave no way to reach it — while already
+                  computing its canonical path for the share URL. `ResourceType`
+                  IS the entity-token vocabulary (getResourceSharePath resolves
+                  through resolveEntityDoors), so EntityRef also gets the peek
+                  and the new tab. A null path falls through to `undefined`,
+                  which defers to the registry and correctly ends in no door for
+                  a type that genuinely has no route. */}
+              <DialogDescription asChild>
+                <div className="text-sm text-muted-foreground">
+                  <EntityRef
+                    token={resourceType}
+                    id={resourceId}
+                    name={resourceName}
+                    href={
+                      getResourceSharePath(resourceType, resourceId) ??
+                      undefined
+                    }
+                    showIcon={false}
+                  />
+                </div>
               </DialogDescription>
             </div>
             <Button
