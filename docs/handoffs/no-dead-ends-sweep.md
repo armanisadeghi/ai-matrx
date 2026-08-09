@@ -59,6 +59,23 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
 6. **Toasts and badges.**
 7. **`(dev)` demos** — last.
 8. **aidream admin surfaces** — after matrx-frontend.
+9. **BLOCKED — association edges have no listable destination.** Every
+   `edge_count` / `closure_rows` / `reverse_edge_count` in the Relationship
+   Manager (`RelationshipRulesClient`, `ProblemsPanel`) counts real
+   `platform.associations` rows that NOTHING in the app can list, so those
+   counts stay inert on purpose (a count is a door only when a destination
+   lists the records). A client-side read is not the fix: `platform.associations`
+   RLS is `iam.has_org_access(organization_id)` on SELECT, while the counts come
+   from `is_super_admin()` RPCs — the panel would silently under-report.
+   **Needs:** an `admin_association_edges(p_source_type, p_target_type, p_label,
+   p_direction)` SECURITY DEFINER RPC + an Edges destination on the
+   Relationships hub (each endpoint rendered with `EntityRef`). Then the counts
+   become links in one edit.
+10. **Registry route gaps found in the Relationships hub audit (2026-08-09):**
+    no `user`/`user_profile` `hrefFor` and no `/administration/users/[id]`
+    route — the console's user door is `features/admin/users/components/AdminUserRef.tsx`
+    (a menu of param-consuming per-user admin pages). Consume it; don't
+    hand-roll. `organization` has a route but no peek.
 
 ## Done
 

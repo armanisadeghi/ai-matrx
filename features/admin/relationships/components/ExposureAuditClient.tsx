@@ -1,6 +1,17 @@
 "use client";
 
+// features/admin/relationships/components/ExposureAuditClient.tsx
+//
+// THE DOOR LAW: every row here is a REAL file or note owned by a REAL user in a
+// REAL organization, and the row carries every id needed to open all three.
+// Names go through `EntityRef` (route + new tab + peek, resolved from the
+// registries), the owner through `AdminUserRef` (the console's one user door),
+// the id column through `MatrxUuidCell` with the row's own resource_type, and
+// the "N context" signal links to the Reachability Inspector prefilled with
+// this record — a count that reaches the containers it counts.
+
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   File,
   FileImage,
@@ -12,6 +23,8 @@ import {
   StickyNote,
   Users,
 } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { AdminUserRef } from "@/features/admin/users/components/AdminUserRef";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type {
   MatrxColumnDef,
@@ -31,10 +44,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
-import type {
-  ExposureAuditRow,
-  ExposureAuditSummary,
-} from "../types";
+import type { ExposureAuditRow, ExposureAuditSummary } from "../types";
 
 type ResourceFilter = "all" | "file" | "note";
 type ExposureFilter =
@@ -56,8 +66,7 @@ const INITIAL_QUERY: MatrxDataTableQueryState = {
 };
 
 const VISIBILITY_STYLES: Record<string, string> = {
-  public:
-    "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+  public: "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300",
   internal:
     "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
   link: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
@@ -86,10 +95,7 @@ function countSummary(
 
 function sumSummary(
   summaries: ExposureAuditSummary[],
-  key:
-    | "active_share_link_count"
-    | "active_grant_count"
-    | "contextual_count",
+  key: "active_share_link_count" | "active_grant_count" | "contextual_count",
 ): number {
   return summaries.reduce((total, row) => total + row[key], 0);
 }
@@ -104,6 +110,20 @@ function relativeTime(value: string): string {
   const days = Math.floor(hours / 24);
   if (days < 30) return `${days}d`;
   return new Date(value).toLocaleDateString();
+}
+
+/**
+ * The Reachability Inspector, prefilled with this record in "which containers
+ * convey access to this item?" mode — the destination that lists the exact rows
+ * `conveying_container_count` counts (admin_reachability_containers).
+ */
+function conveyingContainersHref(row: ExposureAuditRow): string {
+  const params = new URLSearchParams({
+    mode: "containers",
+    type: row.resource_type,
+    id: row.resource_id,
+  });
+  return `/administration/database/relationships/reachability?${params.toString()}`;
 }
 
 function ResourceIcon({ row }: { row: ExposureAuditRow }) {
@@ -170,7 +190,13 @@ const COLUMNS: MatrxColumnDef<ExposureAuditRow>[] = [
       <div className="flex min-w-0 items-start gap-2">
         <ResourceIcon row={row} />
         <div className="min-w-0">
-          <div className="truncate text-xs font-medium">{row.display_name}</div>
+          <EntityRef
+            token={row.resource_type}
+            id={row.resource_id}
+            name={row.display_name}
+            showIcon={false}
+            className="text-xs font-medium"
+          />
           <div className="truncate text-[10px] text-muted-foreground">
             {row.location || row.mime_type || row.resource_type}
           </div>
@@ -218,11 +244,16 @@ const COLUMNS: MatrxColumnDef<ExposureAuditRow>[] = [
     filter: false,
     sortable: false,
     width: 190,
-    cell: (row) => (
-      <span className="block max-w-[12rem] truncate text-xs">
-        {row.owner_email || row.owner_id}
-      </span>
-    ),
+    cell: (row) =>
+      row.owner_id ? (
+        <AdminUserRef
+          userId={row.owner_id}
+          email={row.owner_email}
+          className="max-w-[12rem]"
+        />
+      ) : (
+        <span className="text-xs text-muted-foreground">—</span>
+      ),
   },
   {
     accessorKey: "organization_name",
@@ -230,11 +261,18 @@ const COLUMNS: MatrxColumnDef<ExposureAuditRow>[] = [
     filter: false,
     sortable: false,
     width: 170,
-    cell: (row) => (
-      <span className="block max-w-[11rem] truncate text-xs text-muted-foreground">
-        {row.organization_name || row.organization_id}
-      </span>
-    ),
+    cell: (row) =>
+      row.organization_id ? (
+        <EntityRef
+          token="organization"
+          id={row.organization_id}
+          name={row.organization_name}
+          showIcon={false}
+          className="max-w-[11rem] text-xs text-muted-foreground"
+        />
+      ) : (
+        <span className="text-xs text-muted-foreground">—</span>
+      ),
   },
   {
     id: "signals",
@@ -262,9 +300,22 @@ const COLUMNS: MatrxColumnDef<ExposureAuditRow>[] = [
           </Badge>
         ) : null}
         {row.conveying_container_count > 0 ? (
-          <Badge variant="outline" className="py-0 text-[9px]">
-            {row.conveying_container_count} context
-          </Badge>
+          <Link
+            href={conveyingContainersHref(row)}
+            onClick={(event) => event.stopPropagation()}
+            title={`Open the ${row.conveying_container_count} container(s) conveying access to ${row.display_name}${
+              row.conveying_container_types?.length
+                ? ` — ${row.conveying_container_types.join(", ")}`
+                : ""
+            }`}
+          >
+            <Badge
+              variant="outline"
+              className="py-0 text-[9px] transition-colors hover:border-primary/50 hover:bg-accent"
+            >
+              {row.conveying_container_count} context
+            </Badge>
+          </Link>
         ) : null}
         {row.is_system_artifact ? (
           <Badge variant="secondary" className="py-0 text-[9px]">
@@ -301,6 +352,9 @@ const COLUMNS: MatrxColumnDef<ExposureAuditRow>[] = [
     filter: false,
     sortable: false,
     cellKind: "uuid",
+    // Per-row token — this table mixes files and notes, and both are registered
+    // with a route AND a peek, so the raw FK column opens its own record.
+    fk: { label: "Resource", token: (row) => row.resource_type },
     width: 120,
   },
 ];
@@ -308,8 +362,7 @@ const COLUMNS: MatrxColumnDef<ExposureAuditRow>[] = [
 export function ExposureAuditClient() {
   const [summaries, setSummaries] = useState<ExposureAuditSummary[]>([]);
   const [rows, setRows] = useState<ExposureAuditRow[]>([]);
-  const [resourceFilter, setResourceFilter] =
-    useState<ResourceFilter>("all");
+  const [resourceFilter, setResourceFilter] = useState<ResourceFilter>("all");
   const [exposureFilter, setExposureFilter] =
     useState<ExposureFilter>("public");
   const [includeDeleted, setIncludeDeleted] = useState(false);

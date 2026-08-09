@@ -5,14 +5,25 @@
 // The "why can they see this?" debugger — its own tab on the Relationships
 // hub. Self-fetching via the admin_reachability_* SECURITY DEFINER RPCs
 // (super-admin re-checked in the DB); no server props needed.
+//
+// THE DOOR LAW: every row here is a REAL record (a note, a file, a project…),
+// and the row already knows its own entity token — so the id column is a
+// `MatrxUuidCell` with a per-row token, which resolves route + new tab + peek
+// from the registries. A bare uuid in this table was a dead end with extra
+// steps.
+//
+// It is also a DESTINATION: `?mode=&type=&id=` prefills the form and runs the
+// lookup on mount, so a "N conveying containers" count elsewhere (the Exposure
+// Audit) can reach the actual containers instead of just naming them.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Layers, RefreshCw, Search } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { createClient } from "@/utils/supabase/client";
 import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";
 import { EntityTypeCombobox } from "@/components/entity-types/EntityTypeCombobox";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,11 +44,26 @@ import {
 import { ConveyPill } from "./shared";
 import type { ReachabilityContainer, ReachabilityContent } from "../types";
 
-export function ReachabilityInspectorClient() {
+export type ReachabilityMode = "contents" | "containers";
+
+export interface ReachabilityInspectorClientProps {
+  /** Deep link: which direction to inspect. */
+  initialMode?: ReachabilityMode;
+  /** Deep link: entity token of the record to inspect. */
+  initialType?: string;
+  /** Deep link: record id. With `initialType`, the lookup runs on mount. */
+  initialId?: string;
+}
+
+export function ReachabilityInspectorClient({
+  initialMode,
+  initialType,
+  initialId,
+}: ReachabilityInspectorClientProps = {}) {
   const supabase = useMemo(() => createClient(), []);
-  const [mode, setMode] = useState<"contents" | "containers">("contents");
-  const [entityType, setEntityType] = useState<string>("thread");
-  const [entityId, setEntityId] = useState("");
+  const [mode, setMode] = useState<ReachabilityMode>(initialMode ?? "contents");
+  const [entityType, setEntityType] = useState<string>(initialType || "thread");
+  const [entityId, setEntityId] = useState(initialId ?? "");
   const [loading, setLoading] = useState(false);
   const [contents, setContents] = useState<ReachabilityContent[] | null>(null);
   const [containers, setContainers] = useState<ReachabilityContainer[] | null>(
@@ -81,6 +107,17 @@ export function ReachabilityInspectorClient() {
       setLoading(false);
     }
   }
+
+  // Deep link (?type=&id=): run the lookup once on mount so the caller that
+  // linked here lands on the answer, not on a form it has to re-fill. Kicked
+  // off from a microtask so no setState runs synchronously in the effect body.
+  const ranDeepLink = useRef(false);
+  useEffect(() => {
+    if (ranDeepLink.current) return;
+    if (!initialType || !initialId) return;
+    ranDeepLink.current = true;
+    queueMicrotask(() => void lookup());
+  }, [initialType, initialId]);
 
   const rows = mode === "contents" ? contents : containers;
 
@@ -159,7 +196,13 @@ export function ReachabilityInspectorClient() {
                       <TableCell>
                         <EntityTypeChip token={type} showToken />
                       </TableCell>
-                      <TableCell className="font-mono text-xs">{id}</TableCell>
+                      <TableCell>
+                        <MatrxUuidCell
+                          value={id}
+                          token={type}
+                          label={mode === "contents" ? "Item" : "Container"}
+                        />
+                      </TableCell>
                       <TableCell className="text-xs tabular-nums">
                         {row.depth}
                       </TableCell>

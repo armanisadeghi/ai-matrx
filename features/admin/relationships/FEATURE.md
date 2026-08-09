@@ -180,6 +180,21 @@ used by the per-row **Link policy** side panel).
   (`features/scopes/registry/entityRegistry`) → `components/entity-types/*`.
 - Drift panel + each problem row use `<CopyButtons>` (same Copy / Copy-for-AI
   primitive as the registry tables).
+- **THE DOOR LAW** (`common-docs/policies/no-dead-ends.md`) — this hub names
+  real records constantly, so it never prints a bare id or an unlinked name:
+  a record name → `EntityRef`, a raw FK column → `MatrxUuidCell` with the
+  row's own `token` (per-row via `fk.token`), a user → `AdminUserRef`, an
+  entity TYPE → `EntityTypeChip` / `entityTypeHref` (both already link to the
+  explorer). The Reachability Inspector is also a **destination**:
+  `?mode=contents|containers&type=<token>&id=<uuid>` prefills and auto-runs.
+- **Association-edge counts are deliberately inert.** `edge_count`,
+  `closure_rows`, `reverse_edge_count` (Rules table, drift panel) count
+  `platform.associations` rows that NO surface can list. Do **not** link them to
+  a client-side read: SELECT RLS on that table is
+  `iam.has_org_access(organization_id)` while the counts come from
+  `is_super_admin()` RPCs, so the destination would silently under-report. The
+  unblock is an `admin_association_edges(...)` SECURITY DEFINER RPC + an Edges
+  destination — tracked in `docs/handoffs/no-dead-ends-sweep.md`.
 
 ## Related features
 
@@ -210,6 +225,13 @@ used by the per-row **Link policy** side panel).
 
 ## Change log
 
+- **2026-08-09** — No-dead-ends sweep. Exposure Audit: resource name →
+  `EntityRef`, owner → `AdminUserRef`, organization → `EntityRef`, `resource_id`
+  → per-row `fk.token`, and the "N context" signal now links to the Reachability
+  Inspector prefilled with that record. Reachability Inspector: id column →
+  `MatrxUuidCell` with the row's token, plus `?mode=&type=&id=` deep-link entry.
+  Shareable registry: the Label column links to the entity explorer. Edge counts
+  left inert on purpose — see Invariants.
 - **2026-07-27** — Added the live `agent_writable` column and one-click toggle to the
   Entity Types registry; extracted the shared mutation consumed by the Actions matrix.
 
