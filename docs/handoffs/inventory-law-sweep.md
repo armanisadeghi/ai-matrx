@@ -612,7 +612,26 @@ lineage tree all ship. Two of those were worth more than the row they fixed:
 `/agents/classic` is slated for deletion ~mid-Aug 2026, which retires two of
 these — but **not** `AgentListDropdown` (42 consumers) or `AgentActionModal`.
 
-- [ ] Point `AgentListDropdown` + `AgentActionModal` at `useAgentRowActions`.
+- [ ] **Point `AgentListDropdown` + `AgentActionModal` at `useAgentRowActions`.**
+      **Scoped 2026-08-09, and the "42 consumers" figure is misleading in a
+      helpful direction:** `AgentListDropdownProps` takes NO action props at all
+      (only trigger/scoping: `onSelect`, `navigateTo`, `triggerSlot`,
+      `activeAgentId`, `consumerId`, `initialTab`, `includeSystemInAll`). So the
+      42 sites pass nothing that would need updating — this is a ONE-FILE change
+      that 42 surfaces inherit. Re-measured: `AgentListDropdown` 42,
+      `AgentCard` 10, `AgentListItem` 3, `AgentActionModal` 8. The registry
+      carries 20 distinct action ids.
+
+      **The real constraint is hook INSTANCING, not consumers.**
+      `useAgentRowActions` owns the modals the actions open and is documented
+      "one instance per page — the modals are singletons keyed by the agent
+      currently acted on, never one modal per row (that was 372 mounted
+      ShareModals on /agents/all)". Calling it inside the dropdown puts one host
+      per dropdown, which is fine at one dropdown per page and wrong the moment
+      two are mounted. Decide that first: either the dropdown takes the host as
+      a prop (page owns the single instance) or the modal host moves to a
+      provider. Also check the row shape — the hook takes `AgentBrowseRow`, and
+      the dropdown's rows may not be that.
 - [x] **Doc lie corrected (2026-08-09).** `agentActionRegistry.tsx` and
       `features/agents/browse/FEATURE.md` both asserted the config drives
       "table row menu, card kebab, **and right-click**". Right-click was never
