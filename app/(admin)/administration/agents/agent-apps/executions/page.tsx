@@ -80,6 +80,7 @@ import { supabase } from "@/utils/supabase/client";
 import { appDb } from "@/utils/supabase/appDb";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { useLatestRequest } from "@/hooks/useLatestRequest";
 
 function humanExecution(r: AgentAppExecutionRow): string {
   return [
@@ -288,6 +289,7 @@ function ExecutionIdentity({ row }: { row: AgentAppExecutionRow }) {
 
 function ExecutionsTable({ appId }: { appId: string | null }) {
   const { toast } = useToast();
+  const latest = useLatestRequest();
   const [rows, setRows] = useState<AgentAppExecutionRow[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -297,6 +299,13 @@ function ExecutionsTable({ appId }: { appId: string | null }) {
   >("all");
 
   const load = useCallback(async () => {
+    // Claim this attempt. Switching `?app=` puts two fetches in flight, and
+    // responses do not come back in order — an older one landing last would
+    // repaint the table with the PREVIOUS app's runs under the new app's
+    // banner. Clearing rows on failure (below) closes only the error half of
+    // that hole; a late SUCCESS mislabels the screen just as badly and looks
+    // completely normal while doing it.
+    const isCurrent = latest.begin();
     setLoading(true);
     try {
       const successVal =
@@ -306,6 +315,7 @@ function ExecutionsTable({ appId }: { appId: string | null }) {
         success: successVal,
         limit: 500,
       });
+      if (!isCurrent()) return;
       setRows(data);
       setLoadFailed(false);
     } catch (err) {
@@ -315,6 +325,9 @@ function ExecutionsTable({ appId }: { appId: string | null }) {
       // banner above names the new one. That is not stale data, it is the
       // wrong record under a confident label. A toast that fades cannot
       // correct it.
+      // Guarded too: a SUPERSEDED failure must not blank the rows the current
+      // request just loaded, nor raise a notice about a request nobody awaits.
+      if (!isCurrent()) return;
       setRows([]);
       setLoadFailed(true);
       toast({
@@ -324,9 +337,10 @@ function ExecutionsTable({ appId }: { appId: string | null }) {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      // Only the live attempt may declare the surface settled.
+      if (isCurrent()) setLoading(false);
     }
-  }, [appId, successFilter, toast]);
+  }, [appId, successFilter, toast, latest]);
 
   useEffect(() => {
     void load();
@@ -596,6 +610,7 @@ function ExecutionsTable({ appId }: { appId: string | null }) {
 
 function ErrorsTable({ appId }: { appId: string | null }) {
   const { toast } = useToast();
+  const latest = useLatestRequest();
   const [rows, setRows] = useState<AgentAppErrorRow[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -608,6 +623,9 @@ function ErrorsTable({ appId }: { appId: string | null }) {
   const [resolutionNotes, setResolutionNotes] = useState("");
 
   const load = useCallback(async () => {
+    // Same ordering hazard as the executions tab: `?app=` changes put two
+    // fetches in flight and the older response can land last.
+    const isCurrent = latest.begin();
     setLoading(true);
     try {
       const r =
@@ -619,12 +637,14 @@ function ErrorsTable({ appId }: { appId: string | null }) {
         resolved: r,
         limit: 500,
       });
+      if (!isCurrent()) return;
       setRows(data);
       setLoadFailed(false);
     } catch (err) {
       // Same as the executions tab above: rows are scoped to `appId`, so
       // keeping them across a failed refetch shows one app's errors under
       // another app's banner.
+      if (!isCurrent()) return;
       setRows([]);
       setLoadFailed(true);
       toast({
@@ -634,9 +654,9 @@ function ErrorsTable({ appId }: { appId: string | null }) {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [appId, resolvedFilter, toast]);
+  }, [appId, resolvedFilter, toast, latest]);
 
   useEffect(() => {
     void load();

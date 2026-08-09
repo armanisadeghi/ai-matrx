@@ -186,6 +186,31 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
     cannot disagree. Live on the executions/errors tabs and the feedback stage
     bar — the second hand-rolled copy of that ternary is what made it a
     primitive.
+  - 🚨 **Clearing rows on FAILURE closes only half the hole — a late SUCCESS
+    mislabels the screen too.** A surface that refetches when a scope changes
+    (`?app=`, a selected id, a search box) has two requests in flight, and
+    **responses do not arrive in send order**. The older one lands last, calls
+    `setRows`, and wins — so the table shows app A's runs under app B's banner,
+    which is the exact wrong-record-under-a-confident-label failure the
+    row-clearing was added to prevent, arriving through the path that looks
+    completely normal. Guard it with **`hooks/useLatestRequest.ts`**
+    (`const isCurrent = latest.begin()` at the top, then check before EVERY
+    post-`await` state write) — and guard the `catch` and `finally` too: a stale
+    REJECTION blanks rows the live request just loaded, and a stale
+    `setLoading(false)` reports the surface settled while the real fetch is
+    still running. `AbortController` is a good addition, never a substitute — it
+    races the response and many data sources have no signal to give; this
+    decides at APPLY time, which is the only moment that matters. Three
+    hand-rolled `requestSeq`/`reqIdRef` copies predate the hook
+    (`useServerAgentSearch`, `useRagSearch`, `useContextPreview`) — correct, but
+    the evidence that this is a class; they collapse onto it when next touched.
+  - **An unregistered token silently strips a notice of its doors.**
+    `DeepLinkMissNotice`/`EntityDoorControls` resolve route + peek from the
+    entity registry, so a token that is not registered (`app_category`) yields
+    copy and nothing else — on the one screen whose whole job is "you asked for
+    a record we can't show you". When the page IS the record's canonical door,
+    pass `href` explicitly (the prop exists for exactly this); the real fix is
+    registering the token, which is owner-scoped.
 - Test login: `/login` → `admin@admin.com` / `Password1234#`
 
 ## 🚨 NOTHING IN THIS CAMPAIGN HAS BEEN SEEN IN A BROWSER

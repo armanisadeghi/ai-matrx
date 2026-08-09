@@ -650,6 +650,14 @@ function AgentAppsCategoriesAdminPageInner() {
                 entityLabel="category"
                 id={selectedId ?? ""}
                 containerLabel="list"
+                // `app_category` is NOT in the entity registry, so the token
+                // alone resolves no route — the notice would offer copy and
+                // nothing else, on the one screen whose entire job is "you
+                // asked for a record we can't show you". This page IS the
+                // category's canonical door, so hand the notice the same URL
+                // its own list rows link to; that restores new-tab and lets a
+                // reload retry the link rather than dead-ending on it.
+                href={selectedId ? categoryHref(selectedId) : null}
                 onClear={() => selectCategory(null)}
                 className="w-full max-w-xl"
               />
