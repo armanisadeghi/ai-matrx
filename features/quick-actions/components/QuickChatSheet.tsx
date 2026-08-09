@@ -18,7 +18,8 @@ import { AgentConversationColumn } from "@/features/agents/components/shared/Age
 import { ChatHistorySidebar } from "@/features/agents/components/chat/ChatHistorySidebar";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { DEFAULT_NEW_CHAT_SLOT_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
@@ -63,11 +64,50 @@ function loadedSurfaceKey(conversationId: string): string {
  *
  * Rendered as bare content — surrounding chrome (the side panel header / the
  * Utilities Hub tab) is supplied by the consumer.
+ *
+ * The starting agent is the `chat.default_new_chat` SLOT (same as `/chat/new`):
+ * the wrapper resolves it (system default → the user's own binding) before the
+ * body mounts. Loud on failure — a skeleton while resolving, an error panel if
+ * the slot can't resolve; never a hardcoded fallback agent.
  */
 export function QuickChatSheet({ className }: QuickChatSheetProps) {
+  const { slot, loading, error } = useAgentSlot(DEFAULT_NEW_CHAT_SLOT_KEY);
+  if (loading) {
+    return (
+      <div className={cn("flex h-full flex-col overflow-hidden", className)}>
+        <ChatRoomSkeleton />
+      </div>
+    );
+  }
+  if (error || !slot) {
+    return (
+      <div
+        className={cn(
+          "flex h-full flex-col items-center justify-center gap-2 px-6 text-center",
+          className,
+        )}
+      >
+        <p className="text-sm font-medium text-foreground">
+          Chat is unavailable right now.
+        </p>
+        <p className="max-w-sm text-xs text-muted-foreground">
+          The default chat agent could not be resolved
+          {error ? ` — ${error}` : ""}. Check your override on the Agent Slots
+          page, or try again shortly.
+        </p>
+      </div>
+    );
+  }
+  return <QuickChatSheetBody className={className} initialAgentId={slot.agentId} />;
+}
+
+function QuickChatSheetBody({
+  className,
+  initialAgentId,
+}: QuickChatSheetProps & { initialAgentId: string }) {
   const dispatch = useAppDispatch();
 
-  const [agentId, setAgentId] = useState<string>(DEFAULT_NEW_CHAT_AGENT_ID);
+  const [agentId, setAgentId] = useState<string>(initialAgentId);
   const [session, setSession] = useState(0);
   const [loadedConversationId, setLoadedConversationId] = useState<
     string | null
@@ -122,7 +162,11 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
     ? loadedSurfaceKey(loadedConversationId)
     : currentLiveSurfaceKey;
 
-  activeSurfaceKeyRef.current = surfaceKey;
+  // Track the active surface key for the unmount clearFocus — written in an
+  // effect (never during render) so the ref always holds the last committed key.
+  useEffect(() => {
+    activeSurfaceKeyRef.current = surfaceKey;
+  }, [surfaceKey]);
 
   // Drop the cursor straight into the message box once the conversation is
   // ready — the user came here to type, not to click. The input renders a beat

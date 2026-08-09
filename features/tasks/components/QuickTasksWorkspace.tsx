@@ -42,6 +42,7 @@ import {
   setQuickTasksSearchQuery,
 } from "@/features/tasks/redux/quickTasksWindowSlice";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
+import { useNowMinuteTick } from "@/features/tasks/hooks/useNowMinuteTick";
 import {
   selectOrganizationId,
   selectScopeSelectionsContext,
@@ -87,6 +88,10 @@ export function filterQuickTasksBySearch<T extends { id: string; title: string }
 
 /** Tasks visible in the Quick Tasks window — org-scoped, hierarchy-hydrated. */
 function useQuickTasksList() {
+  // Keep the shared nowMinute clock ticking while the Quick Tasks window is
+  // open — selectFilteredTasks derives snooze expiry / date windows from it,
+  // and only /tasks mounts the tick otherwise (D129).
+  useNowMinuteTick();
   const { isLoading, isSuccess, isError } = useEnsureHierarchyLoaded();
   const selectedOrgId = useAppSelector(selectQuickTasksSelectedOrgId);
   const showAllProjects = useAppSelector(selectShowAllProjects);
