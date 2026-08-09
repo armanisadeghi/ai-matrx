@@ -69,7 +69,8 @@ CREATE TABLE IF NOT EXISTS platform.assists (
   created_at      timestamptz NOT NULL DEFAULT now(),
   updated_at      timestamptz NOT NULL DEFAULT now(),
   version         integer NOT NULL DEFAULT 1,
-  -- An assist is a personal nudge to one person.
+  -- personal-justified: an assist is addressed to exactly one person (a nudge
+  -- about THEIR shapes/runs/pages) — the canonical 'personal' case.
   visibility      platform.visibility NOT NULL DEFAULT 'personal',
   deleted_at      timestamptz
 );
