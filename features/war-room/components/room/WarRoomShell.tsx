@@ -231,7 +231,7 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
       surfaceName="matrx-user/war-room"
       getScope={getRoomScope}
     >
-    <div className="@container h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">
+    <div className="@container h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       {/* ── Header — pr-14 clears the shell's fixed top-right avatar ── */}
       <header
         className={cn(

@@ -139,7 +139,7 @@ export function YouTubeSearchHistory({
 
   return (
     <>
-      <aside className="sticky top-5 hidden h-[calc(100vh-2.5rem)] w-72 shrink-0 overflow-hidden rounded-3xl border border-border bg-card/80 p-4 shadow-xl shadow-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/70 dark:shadow-black/20 lg:flex lg:flex-col">
+      <aside className="sticky top-5 hidden h-[calc(100dvh-2.5rem)] w-72 shrink-0 overflow-hidden rounded-3xl border border-border bg-card/80 p-4 shadow-xl shadow-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/70 dark:shadow-black/20 lg:flex lg:flex-col">
         <div className="mb-4">
           <div className="flex items-center gap-2 font-semibold">
             <History className="h-4 w-4 text-red-500" />

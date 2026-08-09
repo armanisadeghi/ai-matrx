@@ -197,7 +197,7 @@ export function RunControlsMenu({
         className={cn(
           "p-0 border-border",
           fullscreen
-            ? "flex h-[calc(100vh-2rem)] w-[calc(100vw-1rem)] flex-col"
+            ? "flex h-[calc(100dvh-2rem)] w-[calc(100vw-1rem)] flex-col"
             : "w-[min(680px,calc(100vw-1rem))]",
         )}
         container={dialogContainer ?? undefined}

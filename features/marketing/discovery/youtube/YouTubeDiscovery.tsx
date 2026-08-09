@@ -328,7 +328,7 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
   };
 
   return (
-    <main className="min-h-screen bg-background text-foreground dark:bg-[#07090d] dark:text-zinc-100">
+    <main className="min-h-dvh bg-background text-foreground dark:bg-[#07090d] dark:text-zinc-100">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(239,68,68,0.08),transparent_32%),radial-gradient(circle_at_90%_20%,rgba(8,145,178,0.07),transparent_34%)] dark:bg-[radial-gradient(circle_at_10%_0%,rgba(239,68,68,0.13),transparent_32%),radial-gradient(circle_at_90%_20%,rgba(34,211,238,0.1),transparent_34%)]" />
       <div className="relative mx-auto flex max-w-[1830px] items-start gap-6 px-4 py-8 sm:px-6 lg:px-8">
         <YouTubeSearchHistory

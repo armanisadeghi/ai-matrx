@@ -304,7 +304,7 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
               isMobile &&
                 // Opaque: the rail's own bg-card/40 is a tint, not a surface —
                 // as a slide-over it would show the canvas straight through.
-                "fixed bottom-0 left-0 top-[var(--shell-header-h)] z-40 bg-background shadow-2xl",
+                "fixed bottom-0 left-0 top-[var(--shell-header-h)] z-40 bg-background shadow-2xl pb-[env(safe-area-inset-bottom)]",
             )}
           >
             <AgentLibraryRail

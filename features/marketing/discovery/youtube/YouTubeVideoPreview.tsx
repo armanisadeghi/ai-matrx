@@ -170,7 +170,7 @@ export function YouTubeVideoPreviewSurface({
   video: YouTubeVideoCandidate;
 }) {
   return (
-    <main className="min-h-screen bg-background px-4 py-8 text-foreground dark:bg-[#07090d] dark:text-zinc-100 sm:px-6">
+    <main className="min-h-dvh bg-background px-4 py-8 text-foreground dark:bg-[#07090d] dark:text-zinc-100 sm:px-6">
       <div className="mx-auto max-w-5xl">
         <Button
           asChild
