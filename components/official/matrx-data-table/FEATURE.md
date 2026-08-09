@@ -143,6 +143,13 @@ Do not drop these when replacing `AiModelTable`:
 
 ## Change Log
 
+- `2026-08-09` — **Clipped-content guard.** The table root is `h-full`, which is
+  inert unless every ancestor is a flex column; one plain block wrapper left
+  it unbounded, growing past the page until an `overflow-hidden` ancestor
+  clipped it — no scrollbar, unreachable rows, nothing thrown. The root now
+  runs `useClippedContentGuard` (`lib/layout/`), which screams into the Error
+  Inspector (`layout-scroll-chain`) when that happens. Static twin:
+  `pnpm check:scroll-chain`.
 - `2026-08-08` — `MatrxColumnDef.editableIf?: (row) => boolean` — per-row edit
   gate for editable columns, for heterogeneous lists where some row kinds can't
   take the write (first consumer: /transcripts title column, kind "unsorted").

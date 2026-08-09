@@ -55,6 +55,8 @@
     "check:reuse-index": "tsx scripts/check-reuse-index.ts",
     "check:reuse-index:strict": "tsx scripts/check-reuse-index.ts --strict",
     "check:turbopack-fs": "tsx scripts/check-turbopack-fs-tracing.ts",
+    "check:scroll-chain": "tsx scripts/check-scroll-chain.ts",
+    "check:scroll-chain:strict": "tsx scripts/check-scroll-chain.ts --strict",
     "check:page-headers": "tsx scripts/check-page-headers.ts",
     "check:page-headers:strict": "tsx scripts/check-page-headers.ts --strict",
     "check:registry-deps": "tsx scripts/check-registry-deps.ts",
