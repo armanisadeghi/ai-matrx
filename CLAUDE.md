@@ -260,9 +260,16 @@ A signed S3 URL (`?X-Amz-Signature=…&Expires=…`) expires and breaks days lat
 - **A column the public web reads MUST hold a public URL.** Register it with the DB-edge guard (`migrations/mtx_public_media_url_guard.sql`): `insert into mtx_public_url_guard(table_name,column_name)…` + `mtx_public_url_guard_trigger`. Non-durable writes get logged + queued to `mtx_media_heal_queue`.
 - **Surface violations loudly** — `reportMediaDurabilityViolation()` (same file) screams when an expiring URL hits a render/store path. That's a defect, not something to silently fix.
 
+## Pattern Patrols — recurring mistakes become scheduled, certified sweeps
+
+System (canonical, cross-repo): `/Users/armanisadeghi/code/common-docs/systems/pattern-patrols/FEATURE.md` + its `PATROL_REGISTRY.md` (10 live patrols: dead ends, unused primitives, mobile breakage, light/dark, copy-everywhere, emojis, browser dialogs, bare Loading, coming-soon compliance, type-suppression debt). Recurring runs execute in Codex; certification by a second adversarial agent is mandatory for every fix batch. **Two standing duties for EVERY agent in this repo — invoke the `pattern-patrol` skill for the mechanics:**
+
+1. **Log sightings, don't fix off-mission.** Spot a violation of a registered patrol while doing something else → one line in [`.matrx/PATROL_SIGHTINGS.md`](./.matrx/PATROL_SIGHTINGS.md), keep moving.
+2. **Nominate patterns.** When a mistake you're fixing is a recurring CLASS (third occurrence, past Arman rant, a check you wish existed) — stop and tell Arman it's a patrol candidate, with real grep counts as evidence. The registry is meant to grow from 10 toward 50+.
+
 ## Found defects & task tracking
 
-Track bugs/gaps you can't fully fix in [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (the frontend twin of aidream's). If a fix is partial, record what's open there — a defect that lives only in a chat log will recur. Four-file task system: `FOUND_DEFECTS.md` (unapproved discoveries), `CURRENT_ERRORS.md` (error-dump inbox), `.matrx/AGENT_TASKS.md` (the only approved worklist), `.matrx/ARMAN_TASKS.md` (Arman-only asks).
+Track bugs/gaps you can't fully fix in [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (the frontend twin of aidream's). If a fix is partial, record what's open there — a defect that lives only in a chat log will recur. Task system files: `FOUND_DEFECTS.md` (unapproved discoveries), `CURRENT_ERRORS.md` (error-dump inbox), `.matrx/AGENT_TASKS.md` (the only approved worklist), `.matrx/ARMAN_TASKS.md` (Arman-only asks), `.matrx/PATROL_SIGHTINGS.md` (registered-pattern sightings — see Pattern Patrols above).
 
 ## 🚨 An env var is a VALUE, never a TOGGLE — a flag in env fails silently and invisibly
 
