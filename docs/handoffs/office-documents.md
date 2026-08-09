@@ -49,8 +49,11 @@ first real user surfaces shipped: **Word/PowerPoint preview in Files, Convert-to
 1. **Office thumbnails backfill** (aidream — chip spawned 2026-08-08). New-upload page-1 thumbs
    need verification; pre-existing files need a re-render backfill (mirror
    `aidream/cli/scan_thumbnail_backfill.py`; note the variant-key dedup trap in FOUND_DEFECTS.md).
-2. **Desktop bundle verification** (matrx-local — chip spawned). PyInstaller sidecar never
-   exercised for docx/pptx/openpyxl + templates.
+2. **Desktop bundle verification on macOS/Windows** (matrx-local). Done and fixed on Linux
+   (see Done, 2026-08-09) — the bug and the fix are platform-independent (all four specs are
+   one-file), and the new gate runs on every target inside `build-sidecar.sh` + the release
+   workflow. It just has not executed on a mac/Windows runner yet: **the next release build is
+   the verification**. If it goes red there, read `matrx-local/specs/_office_bundle.py` first.
 3. **Files-service catch-up** (ops). `packages/matrx-files/Dockerfile` carries LibreOffice but
    that image deploys manually and is not the traffic path yet. Nothing breaks meanwhile.
 4. **Visual-fidelity preview (optional next rung).** Today's preview is extracted text. A
@@ -72,7 +75,22 @@ first real user surfaces shipped: **Word/PowerPoint preview in Files, Convert-to
   LibreOffice bridge), and the FE surfaces: `OfficePreview` (Files side panel + `/files/f/{id}` +
   chat inline via `UniversalInlineFile`), Convert-to-PDF action, "New → AI document" prompt
   prefill into `/chat/new`.
-- Local desktop read + generate — matrx-local, catalog synced (bundle verification pending).
+- Local desktop read + generate — matrx-local, catalog synced.
+- **2026-08-09 (matrx-local bundle — the sidecar was BROKEN and is now fixed + gated):** built the
+  PyInstaller sidecar for the first time and ran the codec inside it. Reading .docx/.pptx/.xlsx
+  worked; **generating a .pptx with speaker notes did not** — `FileNotFoundError:
+  /tmp/_MEIxxxx/pptx/oxml/../templates/notesMaster.xml`. The template was in the archive:
+  `pptx/oxml/__init__.py` opens it via `<its own dir>/../templates/…`, and frozen modules live in
+  the PYZ, so `_MEIPASS/pptx/oxml/` is not a real directory and the OS cannot resolve the `..`.
+  Same shape in `docx/parts/*` (default header/footer/styles/settings/comments) and `pptx/shapes`.
+  All four specs are one-file, so every shipped platform carried it. Also found: the Office
+  collection in all four specs sat inside a bare `except Exception: pass` — the silent skip behind
+  four earlier frozen-only outages. Fixed via `matrx-local/specs/_office_bundle.py` (one source of
+  truth; fatal on a missing package/template; derives the `../`-referencing dirs from the installed
+  sources and materializes them), plus artifact-level gates in `verify-frozen-runtime.py` (archive
+  module + data TOC checks, and an in-process `MATRX_FROZEN_OFFICE_VERIFY=1` probe that generates
+  all three formats, round-trips them, reads raw-renderer-authored documents, and checks
+  `classify_office` routing) and `tests/unit/test_office_bundle.py`.
 - **2026-08-08 (workflow nodes):** four graph nodes live — `office.generate_document` /
   `office.generate_presentation` / `office.generate_spreadsheet` (inputs ARE the `office_*`
   kinds via new `@action(input_kind=/output_kind=)` support) + `office.extract`
