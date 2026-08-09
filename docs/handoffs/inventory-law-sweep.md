@@ -35,7 +35,8 @@ were the same mistake in different clothes:** a conversion changed what the
 original door DID. Adopting `EntityRef` is not a drop-in — the hand-rolled code
 it replaces encodes decisions you must carry over deliberately.
 
-Before deleting a hand-rolled name/open/new-tab/peek, answer all four:
+Before replacing hand-rolled code with a shared primitive, answer all five.
+The first three are door-specific; 4 and 5 apply to ANY primitive adoption:
 
 1. **Where did the old primary click go?** `router.push` (in place) or
    `window.open` (new tab)? Preserve it. A rail, sheet, side panel, or dialog
@@ -54,7 +55,15 @@ Before deleting a hand-rolled name/open/new-tab/peek, answer all four:
    catalogue keys differ from their token; keying off the key silently loses
    both the route and the peek for exactly those six.
 
-4. **Does the route you're now pointing at exist?** Verify the page file AND
+4. **Does the primitive's value range exceed the surface's?** A shared type is
+   usually WIDER than any one consumer. `ListViewPrefs["view"]` allows
+   `table | cards | rows`, but a Cards/Table hub only renders two of those —
+   read `prefs.view === "table" ? "table" : "cards"`, never raw. Reading raw
+   let the layout fall through to cards while NEITHER toggle rendered as
+   selected. Narrow on read; never cast, and never widen the shared type to
+   fit one caller. *(Caught in `ProjectsHub`.)*
+
+5. **Does the route you're now pointing at exist?** Verify the page file AND
    that the id TYPE matches (a session id is not an assessment id; a card id is
    not a set id). Where no route exists, render plain text — never fabricate.
 
