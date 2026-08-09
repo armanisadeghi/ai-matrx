@@ -123,7 +123,16 @@ export function EntityRef({
         token={token}
         id={id}
         name={label}
-        href={resolvedHref}
+        // 🚨 THE CALLER'S RAW `href`, NOT `resolvedHref`. The two are identical
+        // for the links (EntityDoorControls re-resolves through the same
+        // `resolveEntityDoors(token, id, href)`), but they are NOT identical in
+        // meaning: `href` is undefined when nobody expressed a destination,
+        // whereas `resolvedHref` is `null` whenever the registry has no route.
+        // That distinction is load-bearing downstream — `null` reaches the peek
+        // as "this caller deliberately has no destination", which suppresses a
+        // token-less peek's own hardcoded href (SandboxPeek). Passing the
+        // resolved value here silently converted "no opinion" into "no door".
+        href={href}
         disablePeek={disablePeek}
         disableNewTab={disableNewTab}
         alwaysShowActions={alwaysShowActions}
