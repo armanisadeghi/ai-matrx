@@ -154,8 +154,20 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
   because the read failed, not because there is nothing here") and carries a
   required `onRetry`, because a problem you can detect ships with its one-click
   fix. **Withhold derived claims too** — a count computed from stale rows is a
-  statement about the database, so the admins heading now omits it rather than
-  restating it.
+  statement about the database, so the admins heading omits it rather than
+  restating it, and the feedback stage bar drops its badges, its total, and
+  (most importantly) its "your turn" pulse, which otherwise tells an admin work
+  is waiting based on rows nobody read. **Apply this to EVERY derived number on
+  the surface, not just the obvious heading** — Bugbot caught this doc stating
+  the rule while the stage bar still broke it.
+  - 🚨 **The worst form is a SWALLOWED read on an evidence surface.**
+    `fetchAudit` was `if (!res.ok) return;` — no toast, no flag — so the admin
+    audit log rendered as a successfully-loaded, empty table titled "Audit log
+    (0)" saying "No audit entries yet", on the one page whose purpose is
+    proving every admin change was recorded. **"Nothing happened" and "we could
+    not check" are opposite claims, and a swallow always publishes the
+    reassuring one.** Audit logs, security views, compliance counts: an unread
+    log must never render as a clean one.
 - Test login: `/login` → `admin@admin.com` / `Password1234#`
 
 ## 🚨 NOTHING IN THIS CAMPAIGN HAS BEEN SEEN IN A BROWSER
