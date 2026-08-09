@@ -5560,28 +5560,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/scraper/admin/sites/{site_id}/schedules": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create Schedule For Site
-         * @description Create a recurring schedule pinned to this site. Captures the site's
-         *     current default-or-last config as inline_config so the schedule survives
-         *     even if the site's config changes later.
-         */
-        post: operations["create_schedule_for_site_scraper_admin_sites__site_id__schedules_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/scraper/admin/runs/{run_id}/timeseries": {
         parameters: {
             query?: never;
@@ -5692,41 +5670,6 @@ export interface paths {
          *     scope='system' rows.
          */
         delete: operations["delete_extractor_scraper_admin_extractors__extractor_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/schedules": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Schedules */
-        get: operations["list_schedules_scraper_admin_schedules_get"];
-        put?: never;
-        /** Save Schedule */
-        post: operations["save_schedule_scraper_admin_schedules_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/schedules/{schedule_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete Schedule */
-        delete: operations["delete_schedule_scraper_admin_schedules__schedule_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6087,7 +6030,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/scraper/admin/credentials": {
+    "/web-credentials/oauth-defaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Credentials Oauth Defaults
+         * @description Whether the server has an OAuth client configured, so the UI can hide
+         *     the client_id/secret paste fields from end users.
+         */
+        get: operations["credentials_oauth_defaults_web_credentials_oauth_defaults_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/web-credentials": {
         parameters: {
             query?: never;
             header?: never;
@@ -6098,79 +6062,20 @@ export interface paths {
          * List Credentials Endpoint
          * @description List the requesting user's Google credentials (PSI + GSC).
          */
-        get: operations["list_credentials_endpoint_scraper_admin_credentials_get"];
+        get: operations["list_credentials_endpoint_web_credentials_get"];
         put?: never;
         /**
          * Create Credential Endpoint
-         * @description Create a new credential. Payload is Fernet-encrypted at rest.
+         * @description Create a credential. The secret is sealed into a vault credential item.
          */
-        post: operations["create_credential_endpoint_scraper_admin_credentials_post"];
+        post: operations["create_credential_endpoint_web_credentials_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/scraper/admin/credentials/oauth-defaults": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Credentials Oauth Defaults
-         * @description Returns whether the server has GOOGLE_CLIENT_ID/SECRET set so the UI
-         *     can hide the OAuth-client paste fields from end users.
-         */
-        get: operations["credentials_oauth_defaults_scraper_admin_credentials_oauth_defaults_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/credentials/{credential_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete Credential Endpoint */
-        delete: operations["delete_credential_endpoint_scraper_admin_credentials__credential_id__delete"];
-        options?: never;
-        head?: never;
-        /** Update Credential Endpoint */
-        patch: operations["update_credential_endpoint_scraper_admin_credentials__credential_id__patch"];
-        trace?: never;
-    };
-    "/scraper/admin/credentials/{credential_id}/test": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Test Credential Endpoint
-         * @description Verify the credential by issuing one live API call. Updates last_verified_*.
-         */
-        post: operations["test_credential_endpoint_scraper_admin_credentials__credential_id__test_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/credentials/gsc/oauth/start": {
+    "/web-credentials/gsc/oauth/start": {
         parameters: {
             query?: never;
             header?: never;
@@ -6181,16 +6086,16 @@ export interface paths {
         put?: never;
         /**
          * Gsc Oauth Start
-         * @description Step 1 - return Google's consent URL for the popup to open.
+         * @description Step 1 — return Google's consent URL for the popup to open.
          */
-        post: operations["gsc_oauth_start_scraper_admin_credentials_gsc_oauth_start_post"];
+        post: operations["gsc_oauth_start_web_credentials_gsc_oauth_start_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/scraper/admin/credentials/gsc/oauth/complete": {
+    "/web-credentials/gsc/oauth/complete": {
         parameters: {
             query?: never;
             header?: never;
@@ -6201,16 +6106,54 @@ export interface paths {
         put?: never;
         /**
          * Gsc Oauth Complete
-         * @description Step 2 - exchange the auth code for a refresh token and persist.
+         * @description Step 2 — exchange the auth code for a refresh token and persist it.
          */
-        post: operations["gsc_oauth_complete_scraper_admin_credentials_gsc_oauth_complete_post"];
+        post: operations["gsc_oauth_complete_web_credentials_gsc_oauth_complete_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/scraper/admin/sites/{site_id}/credential": {
+    "/web-credentials/{credential_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Credential Endpoint */
+        delete: operations["delete_credential_endpoint_web_credentials__credential_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Credential Endpoint */
+        patch: operations["update_credential_endpoint_web_credentials__credential_id__patch"];
+        trace?: never;
+    };
+    "/web-credentials/{credential_id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test Credential Endpoint
+         * @description Verify the credential with one live API call. Updates last_verified_*.
+         */
+        post: operations["test_credential_endpoint_web_credentials__credential_id__test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/web-credentials/sites/{site_id}/credential": {
         parameters: {
             query?: never;
             header?: never;
@@ -6223,7 +6166,7 @@ export interface paths {
          * Set Site Credential Endpoint
          * @description Pin a site to a specific credential. Pass credential_id=null to clear.
          */
-        post: operations["set_site_credential_endpoint_scraper_admin_sites__site_id__credential_post"];
+        post: operations["set_site_credential_endpoint_web_credentials_sites__site_id__credential_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -12185,6 +12128,34 @@ export interface paths {
          *     before the save; a concurrent studio edit is a 409.
          */
         post: operations["apply_workflow_patch_endpoint_recovery_workflows__definition_id__apply_patch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Suggestions
+         * @description Workflow Copilot v1 (OPERATING_PRIORITIES #18): analyze the run's
+         *     failed node server-side, run the ``workflow_copilot_fix_suggester`` DB
+         *     agent, and STREAM back 1-3 one-click fix suggestions (the studio renders
+         *     them as chips and applies them through the existing recovery funnel).
+         *
+         *     Streams (the agent call takes seconds): a ``workflow_copilot_status``
+         *     heartbeat, then ONE terminal ``workflow_copilot_suggestions`` data event.
+         *     Agent-side failures never error the stream — the terminal event carries
+         *     ``fallback=true`` so the user is never left powerless (priority #4).
+         */
+        post: operations["run_suggestions_runs__run_id__suggestions_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -23947,6 +23918,21 @@ export interface components {
         };
         /** CredentialCreateRequest */
         CredentialCreateRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
             /** Provider */
             provider: string;
             /** Display Name */
@@ -23967,6 +23953,65 @@ export interface components {
             /** Service Account Json */
             service_account_json?: string | null;
         };
+        /** CredentialDeletedResponse */
+        CredentialDeletedResponse: {
+            /** Deleted */
+            deleted: string;
+        };
+        /** CredentialListResponse */
+        CredentialListResponse: {
+            /** Items */
+            items: components["schemas"]["CredentialOut"][];
+        };
+        /**
+         * CredentialMetadata
+         * @description Non-secret display material derived at write time — never a value.
+         *
+         *     ``extra="allow"``: rows written before a provider gained a field keep
+         *     whatever they carry; dropping it on read would be silent data loss.
+         */
+        CredentialMetadata: {
+            /** Key Prefix */
+            key_prefix?: string | null;
+            /** Refresh Token Prefix */
+            refresh_token_prefix?: string | null;
+            /** Client Id Prefix */
+            client_id_prefix?: string | null;
+            /** Service Account Email */
+            service_account_email?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** CredentialOut */
+        CredentialOut: {
+            /** Id */
+            id: string;
+            /** User Id */
+            user_id: string;
+            /** Provider */
+            provider: string;
+            /** Display Name */
+            display_name?: string | null;
+            /** @default {} */
+            metadata?: components["schemas"]["CredentialMetadata"];
+            /**
+             * Is Default
+             * @default false
+             */
+            is_default?: boolean;
+            /** Last Verified At */
+            last_verified_at?: string | null;
+            /** Last Verified Status */
+            last_verified_status?: string | null;
+            /** Last Verified Error */
+            last_verified_error?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
         /**
          * CredentialReferenceKind
          * @enum {string}
@@ -23974,6 +24019,21 @@ export interface components {
         CredentialReferenceKind: "platform_secret" | "integration_connection";
         /** CredentialUpdateRequest */
         CredentialUpdateRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
             /** Display Name */
             display_name?: string | null;
             /** Is Default */
@@ -23988,6 +24048,34 @@ export interface components {
             client_secret?: string | null;
             /** Service Account Json */
             service_account_json?: string | null;
+        };
+        /**
+         * CredentialVerifyDetails
+         * @description Provider-specific proof of the one live verification call.
+         */
+        CredentialVerifyDetails: {
+            /** Performance */
+            performance?: number | null;
+            /**
+             * Sites
+             * @default []
+             */
+            sites?: (string | null)[];
+        };
+        /** CredentialVerifyResponse */
+        CredentialVerifyResponse: {
+            /** Ok */
+            ok: boolean;
+            /** Provider */
+            provider: string;
+            /** Error */
+            error?: string | null;
+            /**
+             * @default {
+             *       "sites": []
+             *     }
+             */
+            details?: components["schemas"]["CredentialVerifyDetails"];
         };
         /** CropPagesRequest */
         CropPagesRequest: {
@@ -28085,6 +28173,21 @@ export interface components {
         };
         /** GscOauthStartRequest */
         GscOauthStartRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
             /** Display Name */
             display_name: string;
             /** Redirect Uri */
@@ -29666,6 +29769,14 @@ export interface components {
             sort_order: number;
             /** Version */
             version: number;
+            /** Component Source */
+            component_source?: string | null;
+            /** Props Transform */
+            props_transform?: string | null;
+            /** Config */
+            config?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         /**
          * KindDescriptor
@@ -29678,6 +29789,11 @@ export interface components {
             label: string;
             /** Version */
             version: number;
+            /**
+             * Is Contract Artifact
+             * @default false
+             */
+            is_contract_artifact?: boolean;
             /** Emitted Json Schema */
             emitted_json_schema?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -31899,6 +32015,24 @@ export interface components {
             config_id?: string | null;
             /** Endpoint Override */
             endpoint_override?: string | null;
+        };
+        /**
+         * OauthDefaultsResponse
+         * @description Whether the server holds an OAuth client, so the UI can hide the
+         *     client_id/secret paste fields from end users.
+         */
+        OauthDefaultsResponse: {
+            /** Has Oauth Client */
+            has_oauth_client: boolean;
+            /** Client Id */
+            client_id?: string | null;
+        };
+        /** OauthStartResponse */
+        OauthStartResponse: {
+            /** Auth Url */
+            auth_url: string;
+            /** State */
+            state: string;
         };
         /**
          * OccupationalCodesResponse
@@ -36530,6 +36664,32 @@ export interface components {
             /** Created At */
             created_at?: string | null;
         };
+        /**
+         * RunSuggestionsRequest
+         * @description Body for POST /runs/{run_id}/suggestions (all fields optional).
+         */
+        RunSuggestionsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Node Id
+             * @description Optional hint: which failed node to analyze. Defaults to the run's most recent node_failed event.
+             */
+            node_id?: string | null;
+        };
         /** RunWorkflowRequest */
         RunWorkflowRequest: {
             /** Inputs */
@@ -36889,24 +37049,6 @@ export interface components {
             metadata: {
                 [key: string]: unknown;
             };
-        };
-        /** ScheduleSaveRequest */
-        ScheduleSaveRequest: {
-            /** Name */
-            name: string;
-            /** Preset Id */
-            preset_id?: string | null;
-            /** Inline Config */
-            inline_config?: {
-                [key: string]: unknown;
-            } | null;
-            /** Cron Expr */
-            cron_expr: string;
-            /**
-             * Enabled
-             * @default true
-             */
-            enabled?: boolean;
         };
         /** SchemaFinding */
         SchemaFinding: {
@@ -37687,10 +37829,38 @@ export interface components {
         };
         /** SiteCredentialRequest */
         SiteCredentialRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
             /** Provider */
             provider: string;
             /** Credential Id */
             credential_id?: string | null;
+            /** Gsc Site Url */
+            gsc_site_url?: string | null;
+        };
+        /** SiteCredentialResponse */
+        SiteCredentialResponse: {
+            /** Id */
+            id: string;
+            /** Base Url */
+            base_url?: string | null;
+            /** Gsc Credential Id */
+            gsc_credential_id?: string | null;
+            /** Psi Credential Id */
+            psi_credential_id?: string | null;
             /** Gsc Site Url */
             gsc_site_url?: string | null;
         };
@@ -37771,18 +37941,6 @@ export interface components {
             favicon_url?: string | null;
             /** Archived */
             archived?: boolean | null;
-        };
-        /** SiteScheduleCreateRequest */
-        SiteScheduleCreateRequest: {
-            /** Name */
-            name: string;
-            /** Cron Expr */
-            cron_expr: string;
-            /**
-             * Enabled
-             * @default true
-             */
-            enabled?: boolean;
         };
         /** SiteScheduleStatusResponse */
         SiteScheduleStatusResponse: {
@@ -39602,6 +39760,11 @@ export interface components {
              * @default 0
              */
             popularity?: number;
+            /**
+             * Step Count
+             * @default 0
+             */
+            step_count?: number;
             /** Definition */
             definition?: {
                 [key: string]: unknown;
@@ -53462,43 +53625,6 @@ export interface operations {
             };
         };
     };
-    create_schedule_for_site_scraper_admin_sites__site_id__schedules_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                site_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SiteScheduleCreateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     run_timeseries_scraper_admin_runs__run_id__timeseries_get: {
         parameters: {
             query?: never;
@@ -53697,96 +53823,6 @@ export interface operations {
             header?: never;
             path: {
                 extractor_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_schedules_scraper_admin_schedules_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    save_schedule_scraper_admin_schedules_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScheduleSaveRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_schedule_scraper_admin_schedules__schedule_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                schedule_id: string;
             };
             cookie?: never;
         };
@@ -54448,7 +54484,7 @@ export interface operations {
             };
         };
     };
-    list_credentials_endpoint_scraper_admin_credentials_get: {
+    credentials_oauth_defaults_web_credentials_oauth_defaults_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -54463,14 +54499,32 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["OauthDefaultsResponse"];
                 };
             };
         };
     };
-    create_credential_endpoint_scraper_admin_credentials_post: {
+    list_credentials_endpoint_web_credentials_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CredentialListResponse"];
+                };
+            };
+        };
+    };
+    create_credential_endpoint_web_credentials_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -54489,9 +54543,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["CredentialOut"];
                 };
             };
             /** @description Validation Error */
@@ -54505,9 +54557,45 @@ export interface operations {
             };
         };
     };
-    credentials_oauth_defaults_scraper_admin_credentials_oauth_defaults_get: {
+    gsc_oauth_start_web_credentials_gsc_oauth_start_post: {
         parameters: {
             query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GscOauthStartRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OauthStartResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    gsc_oauth_complete_web_credentials_gsc_oauth_complete_post: {
+        parameters: {
+            query: {
+                code: string;
+                state: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -54520,14 +54608,21 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["CredentialOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
     };
-    delete_credential_endpoint_scraper_admin_credentials__credential_id__delete: {
+    delete_credential_endpoint_web_credentials__credential_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -54544,9 +54639,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["CredentialDeletedResponse"];
                 };
             };
             /** @description Validation Error */
@@ -54560,7 +54653,7 @@ export interface operations {
             };
         };
     };
-    update_credential_endpoint_scraper_admin_credentials__credential_id__patch: {
+    update_credential_endpoint_web_credentials__credential_id__patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -54581,9 +54674,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["CredentialOut"];
                 };
             };
             /** @description Validation Error */
@@ -54597,7 +54688,7 @@ export interface operations {
             };
         };
     };
-    test_credential_endpoint_scraper_admin_credentials__credential_id__test_post: {
+    test_credential_endpoint_web_credentials__credential_id__test_post: {
         parameters: {
             query?: {
                 sample_url?: string | null;
@@ -54616,9 +54707,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["CredentialVerifyResponse"];
                 };
             };
             /** @description Validation Error */
@@ -54632,76 +54721,7 @@ export interface operations {
             };
         };
     };
-    gsc_oauth_start_scraper_admin_credentials_gsc_oauth_start_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GscOauthStartRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    gsc_oauth_complete_scraper_admin_credentials_gsc_oauth_complete_post: {
-        parameters: {
-            query: {
-                code: string;
-                state: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    set_site_credential_endpoint_scraper_admin_sites__site_id__credential_post: {
+    set_site_credential_endpoint_web_credentials_sites__site_id__credential_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -54722,9 +54742,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["SiteCredentialResponse"];
                 };
             };
             /** @description Validation Error */
@@ -65408,6 +65426,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApplyWorkflowPatchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_suggestions_runs__run_id__suggestions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RunSuggestionsRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

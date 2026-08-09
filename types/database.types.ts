@@ -49180,21 +49180,23 @@ export type Database = {
       crawl_schedule: {
         Row: {
           cadence: Json
+          claim_expires_at: string | null
+          claim_token: string | null
+          consecutive_failures: number
           created_at: string
           created_by: string | null
           deleted_at: string | null
           enabled: boolean
           id: string
+          last_error: string | null
+          last_outcome: string | null
           last_run_at: string | null
           last_session_id: string | null
           metadata: Json
           name: string
           next_run_at: string | null
           organization_id: string
-          respect_robots: boolean
-          scheduler_task_id: string | null
-          scope: Json
-          screenshot_policy: Json
+          preset_id: string | null
           site_id: string
           timezone: string
           updated_at: string
@@ -49202,22 +49204,24 @@ export type Database = {
           version: number
         }
         Insert: {
-          cadence?: Json
+          cadence: Json
+          claim_expires_at?: string | null
+          claim_token?: string | null
+          consecutive_failures?: number
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           enabled?: boolean
           id?: string
+          last_error?: string | null
+          last_outcome?: string | null
           last_run_at?: string | null
           last_session_id?: string | null
           metadata?: Json
           name: string
           next_run_at?: string | null
           organization_id: string
-          respect_robots?: boolean
-          scheduler_task_id?: string | null
-          scope?: Json
-          screenshot_policy?: Json
+          preset_id?: string | null
           site_id: string
           timezone?: string
           updated_at?: string
@@ -49226,21 +49230,23 @@ export type Database = {
         }
         Update: {
           cadence?: Json
+          claim_expires_at?: string | null
+          claim_token?: string | null
+          consecutive_failures?: number
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           enabled?: boolean
           id?: string
+          last_error?: string | null
+          last_outcome?: string | null
           last_run_at?: string | null
           last_session_id?: string | null
           metadata?: Json
           name?: string
           next_run_at?: string | null
           organization_id?: string
-          respect_robots?: boolean
-          scheduler_task_id?: string | null
-          scope?: Json
-          screenshot_policy?: Json
+          preset_id?: string | null
           site_id?: string
           timezone?: string
           updated_at?: string
@@ -49253,6 +49259,13 @@ export type Database = {
             columns: ["last_session_id"]
             isOneToOne: false
             referencedRelation: "crawl_session"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crawl_schedule_preset_id_fkey"
+            columns: ["preset_id"]
+            isOneToOne: false
+            referencedRelation: "crawl_preset"
             referencedColumns: ["id"]
           },
           {

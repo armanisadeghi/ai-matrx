@@ -113,6 +113,7 @@ export const SOURCE_FEATURES = [
   "server-run",
   "socket_compat",
   "summarize_content",
+  "workflow_copilot",
   "workflow_node_test",
   "workflow_recovery_advisor",
   "workflow_run",
