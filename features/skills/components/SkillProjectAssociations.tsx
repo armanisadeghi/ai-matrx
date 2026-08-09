@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAllProjects } from "@/features/agent-context/redux/projectsSlice";
 
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+
 import { useSkillProjects } from "../hooks/useSkillProjects";
 
 interface SkillProjectAssociationsProps {
@@ -79,9 +81,19 @@ export function SkillProjectAssociations({
             <Badge
               key={p.id}
               variant="secondary"
-              className="gap-1 pr-1 font-normal"
+              className="group/entity-ref gap-1 pr-1 font-normal"
             >
-              <span className="truncate max-w-[180px]">{p.name}</span>
+              {/* THE DOOR LAW: `project` has a route AND a peek in the
+                  registries. This chip named a real project and offered only
+                  "remove" — the one thing you can do to it that isn't opening
+                  it. The badge is not a button, so the name can be the anchor. */}
+              <EntityRef
+                token="project"
+                id={p.id}
+                name={p.name}
+                showIcon={false}
+                nameClassName="max-w-[180px]"
+              />
               {editable && (
                 <button
                   type="button"

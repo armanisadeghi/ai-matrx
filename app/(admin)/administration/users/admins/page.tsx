@@ -10,7 +10,8 @@
 // mutations still go through the SECURITY DEFINER admin RPCs via
 // /api/admin/admins/* (protected-resources single path of resistance).
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Loader2, Search, ShieldAlert, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { toast } from "@/lib/toast";
 
@@ -112,7 +113,24 @@ function auditChange(entry: AuditEntry): string {
   return `was ${before?.level ? LEVEL_LABEL[before.level] : "admin"}`;
 }
 
-export default function AdminsManagementPage() {
+function AdminsManagementPageContent() {
+  // `?user=<id>` — the door every surface that names a user now offers
+  // ("Admin level"). Accounts linked here for months while this page read no
+  // param at all, landing the user on an unfiltered roster while promising a
+  // filtered one. The admins search matches user id, so seeding it honours the
+  // link with the table's own primitive rather than a second filter.
+  const searchParams = useSearchParams();
+  const focusedUserId = searchParams.get("user") ?? "";
+  const [adminSearch, setAdminSearch] = useState(focusedUserId);
+  // Re-seed only when the PARAM changes — never on every render, so typing in
+  // the box (or clearing it) is not fought by the deep link that opened it.
+  const lastSeededUserId = useRef(focusedUserId);
+  useEffect(() => {
+    if (lastSeededUserId.current === focusedUserId) return;
+    lastSeededUserId.current = focusedUserId;
+    setAdminSearch(focusedUserId);
+  }, [focusedUserId]);
+
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -480,6 +498,8 @@ export default function AdminsManagementPage() {
               toolbar={{
                 search: true,
                 searchPlaceholder: "Search email, level, user id…",
+                searchValue: adminSearch,
+                onSearchChange: setAdminSearch,
               }}
               copy={{
                 label: "Admin",
@@ -584,5 +604,14 @@ export default function AdminsManagementPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+export default function AdminsManagementPage() {
+  // useSearchParams needs a Suspense boundary under the App Router.
+  return (
+    <Suspense fallback={null}>
+      <AdminsManagementPageContent />
+    </Suspense>
   );
 }

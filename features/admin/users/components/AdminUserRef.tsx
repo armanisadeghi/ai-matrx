@@ -19,15 +19,21 @@
  * up all of them.
  *
  * Every destination below was verified to actually READ its param:
+ *   accounts      ?user=   → AccountsTableClient       (searchParams.get("user"))
  *   organizations ?user=   → OrganizationsAdminClient  (searchParams.get("user"))
  *   preferences   ?user=   → PreferencesTabClient      (useSearchParams().get("user"))
  *   usage         ?user=   → UsageTableClient          (searchParams.get("user"))
+ *   admins        ?user=   → users/admins/page.tsx     (seeds the table search)
  *   email         ?userId= → users/email/page.tsx      (URLSearchParams .get("userId"))
  *
- * DELIBERATELY ABSENT: `/administration/users/admins?user=<id>`. That page reads
- * no search param at all, so the link would land on an unfiltered list while
- * promising a filtered one — a link to a route that does not honour it is worse
- * than no link.
+ * ACCOUNTS IS THE PRIMARY DOOR, and it is what the NAME itself links to — Door
+ * #1 of the four is "click the name", and a name whose only doors hide behind a
+ * chevron is still a dead end to anyone who does not think to open the menu.
+ * Accounts + admins both used to be broken promises (Accounts read no param at
+ * all; admins still landed on an unfiltered roster while the Accounts row menu
+ * advertised a filter). Both now honour `?user=`, which is why they appear here
+ * — a link to a route that ignores it is worse than no link, so verify the
+ * target reads the param before adding a row.
  *
  * Composes, never duplicates: when no name/email is loaded it falls back to
  * `MatrxUuidCell`, which already owns short-id display + copy + tooltip.
@@ -50,7 +56,9 @@ import {
   ChevronDown,
   Gauge,
   Mail,
+  ShieldCheck,
   SlidersHorizontal,
+  UserRound,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -81,6 +89,15 @@ interface UserDoor {
 }
 
 /**
+ * The user's primary destination — the Accounts roster focused on this one
+ * account. Exported because the NAME links here directly; the menu repeats it
+ * so the door is reachable both ways.
+ */
+export function accountHrefFor(userId: string): string {
+  return `/administration/users?user=${encodeURIComponent(userId)}`;
+}
+
+/**
  * The verified per-user admin destinations. Add a row here ONLY after reading
  * the target route and confirming it consumes the param.
  */
@@ -88,9 +105,19 @@ function doorsFor(userId: string): UserDoor[] {
   const id = encodeURIComponent(userId);
   return [
     {
+      href: accountHrefFor(userId),
+      label: "Account",
+      Icon: UserRound,
+    },
+    {
       href: `/administration/users/organizations?user=${id}`,
       label: "Organizations",
       Icon: Building2,
+    },
+    {
+      href: `/administration/users/admins?user=${id}`,
+      label: "Admin level",
+      Icon: ShieldCheck,
     },
     {
       href: `/administration/users/preferences?user=${id}`,
@@ -182,7 +209,18 @@ export function AdminUserRef({
     <div className={cn("flex min-w-0 items-center gap-1", className)}>
       <div className="min-w-0">
         {primary ? (
-          <div className="truncate text-sm font-medium">{primary}</div>
+          // A real anchor, not a click handler: middle-click and cmd-click open
+          // the account in a new tab without costing the admin the table they
+          // are standing in. stopPropagation so a row-detail click handler on
+          // the enclosing table does not also fire.
+          <Link
+            href={accountHrefFor(userId)}
+            onClick={(event) => event.stopPropagation()}
+            title={`Open account ${primary}`}
+            className="block truncate text-sm font-medium hover:text-primary hover:underline"
+          >
+            {primary}
+          </Link>
         ) : (
           <MatrxUuidCell value={userId} label="User ID" />
         )}

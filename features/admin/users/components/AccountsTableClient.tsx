@@ -9,7 +9,7 @@
 // ?user=<id>. An admin surface hides nothing.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   BadgeCheck,
   Building2,
@@ -23,6 +23,8 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   UserCog,
+  UserRound,
+  X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -79,6 +81,11 @@ function levelBadge(level: string | null) {
 
 export function AccountsTableClient() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // `?user=<id>` is THE canonical destination for a named user (AdminUserRef's
+  // first door). Same focus-banner shape the sibling consoles already use.
+  const focusedUserId = searchParams.get("user");
   const [rows, setRows] = useState<AdminUserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -376,6 +383,29 @@ export function AccountsTableClient() {
     ];
   }, [router]);
 
+  // Derived, never stored: a deep link that arrives after load and one that
+  // arrives before it resolve identically, and closing the focus cannot fight a
+  // seeding effect.
+  const focusedUser = focusedUserId
+    ? (rows.find((row) => row.id === focusedUserId) ?? null)
+    : null;
+  const visibleRows = focusedUserId
+    ? rows.filter((row) => row.id === focusedUserId)
+    : rows;
+  // The roster loaded and the requested account is not in it. Saying "no
+  // accounts match your filters" here would blame a filter for a record that
+  // simply is not in this list.
+  const focusMissed = Boolean(
+    focusedUserId && !loading && !error && focusedUser === null,
+  );
+
+  function clearUserFocus() {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("user");
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname);
+  }
+
   return (
     <div className="flex h-full flex-col gap-3 p-4">
       {error ? (
@@ -383,9 +413,41 @@ export function AccountsTableClient() {
           {error}
         </div>
       ) : null}
+
+      {focusedUserId ? (
+        <div className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2">
+          <div className="flex min-w-0 items-center gap-2 text-sm">
+            <UserRound className="h-4 w-4 shrink-0 text-primary" />
+            {focusMissed ? (
+              <span className="min-w-0">
+                No account with id{" "}
+                <code className="rounded bg-muted px-1 text-xs">
+                  {focusedUserId}
+                </code>{" "}
+                is in this roster — it may have been deleted, or it may sit
+                outside what this view loads.
+              </span>
+            ) : (
+              <>
+                <span className="shrink-0">Showing</span>
+                <AdminUserRef
+                  userId={focusedUserId}
+                  name={focusedUser?.display_name}
+                  email={focusedUser?.email}
+                  hideEmail
+                />
+              </>
+            )}
+          </div>
+          <Button size="sm" variant="ghost" onClick={clearUserFocus}>
+            <X className="mr-1 h-4 w-4" /> Show all accounts
+          </Button>
+        </div>
+      ) : null}
+
       <div className="min-h-0 flex-1">
         <MatrxDataTable
-          data={rows}
+          data={visibleRows}
           columns={columns}
           getRowId={(r) => r.id}
           isLoading={loading}

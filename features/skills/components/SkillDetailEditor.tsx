@@ -22,7 +22,10 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+
 import { useSkill } from "../hooks/useSkill";
+import { selectAllSkills } from "../redux/skillsSelectors";
 import {
   draftToPatchBody,
   emptySkillDraft,
@@ -41,6 +44,13 @@ interface SkillDetailEditorProps {
   onBack: () => void;
   /** Optional override — when present, the form is the create flow. */
   isNew?: boolean;
+  /**
+   * Route that opens ONE skill, for the parent-skill door. Supplied only by
+   * surfaces that HAVE such a route (the super-admin console's `?open=`); the
+   * entity registry gives `skill` no `hrefFor` on purpose, so everywhere else
+   * the parent is previewable but not navigable. See `SkillsBrowser`.
+   */
+  skillHref?: (skillId: string) => string;
 }
 
 const KNOWN_SKILL_TYPES: SkillType[] = [
@@ -57,12 +67,16 @@ export function SkillDetailEditor({
   skillId,
   onBack,
   isNew = false,
+  skillHref,
 }: SkillDetailEditorProps) {
   const dispatch = useAppDispatch();
   const isAdmin = useAppSelector(selectIsSuperAdmin);
   const { skill, loading: skillLoading } = useSkill({
     skillRef: isNew ? null : skillId,
   });
+  // Resolve the parent skill's NAME from the slice the browser already loaded —
+  // no second fetch. Absent → the door still renders, on the id.
+  const allSkills = useAppSelector(selectAllSkills);
 
   const [draft, setDraft] = useState<SkillDraft>(emptySkillDraft);
   const [changed, setChanged] = useState<Set<keyof SkillDraft>>(new Set());
@@ -83,6 +97,10 @@ export function SkillDetailEditor({
   }, [isNew, skill]);
 
   const readOnly = !isNew && (skill?.isSystem ? !isAdmin : false);
+
+  const parentSkill = draft.parentSkillId
+    ? (allSkills.find((s) => s.id === draft.parentSkillId) ?? null)
+    : null;
 
   // The metadata fields around Body (skill_id, label, description, type,
   // triggers) so agent actions run on the body text (Clean up, bound agents,
@@ -318,6 +336,28 @@ export function SkillDetailEditor({
               disabled={readOnly}
             />
           </Field>
+
+          {/* THE DOOR LAW, corollary 1: a relationship the code can resolve
+              must be RENDERED and LINKED. `parent_skill_id` was loaded on
+              every skill, carried through the draft, and shown nowhere — the
+              editor knew the lineage and said nothing. `parentSkill` is null
+              when the slice has not loaded it; EntityRef then shows the
+              truncated id rather than an invented name. */}
+          {!isNew && draft.parentSkillId && (
+            <Field label="Parent skill">
+              <div className="flex h-9 items-center">
+                <EntityRef
+                  token="skill"
+                  id={draft.parentSkillId}
+                  name={parentSkill?.label ?? null}
+                  href={
+                    skillHref ? skillHref(draft.parentSkillId) : undefined
+                  }
+                  alwaysShowActions
+                />
+              </div>
+            </Field>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <Field label="Type">

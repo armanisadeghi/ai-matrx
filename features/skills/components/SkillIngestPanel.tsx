@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -35,13 +36,24 @@ interface SkillIngestPanelProps {
    * or a UUID. Omit to hide the "View" action (e.g. no host surface to
    * navigate within). */
   onViewSkill?: (skillId: string) => void;
+  /**
+   * Route for one skill, keyed by the same business key. When supplied the
+   * "View" action becomes a real anchor, so a middle-click / cmd-click keeps
+   * the ingest report on screen instead of trading it for the editor — the
+   * report is the only place these results exist.
+   */
+  skillHref?: (skillId: string) => string;
 }
 
 /** Admin-only filesystem ingest. Takes one or more absolute paths (each
  * can be a leaf skills directory OR a repo root — the server auto-walks
  * the six conventional `<repo>/.X/skills` locations), shows a dry-run
  * preview, and applies on confirm. */
-export function SkillIngestPanel({ onBack, onViewSkill }: SkillIngestPanelProps) {
+export function SkillIngestPanel({
+  onBack,
+  onViewSkill,
+  skillHref,
+}: SkillIngestPanelProps) {
   const isAdmin = useAppSelector(selectIsSuperAdmin);
   const { report, status, error, preview, apply, reset, appliedAt } =
     useSkillsIngest();
@@ -299,10 +311,26 @@ export function SkillIngestPanel({ onBack, onViewSkill }: SkillIngestPanelProps)
                         <span className="text-muted-foreground/70 truncate flex-1">
                           {s.sourcePath}
                         </span>
-                        {onViewSkill &&
-                          (s.status === "created" ||
-                            s.status === "updated" ||
-                            s.status === "unchanged") && (
+                        {(s.status === "created" ||
+                          s.status === "updated" ||
+                          s.status === "unchanged") &&
+                          (skillHref ? (
+                            <Link
+                              href={skillHref(s.skillId)}
+                              onClick={(e) => {
+                                // Same-tab click stays in-panel when the host
+                                // can show it; every other gesture (middle
+                                // click, cmd-click) gets the real route.
+                                if (!onViewSkill) return;
+                                e.preventDefault();
+                                onViewSkill(s.skillId);
+                              }}
+                              className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline shrink-0"
+                            >
+                              View
+                              <ExternalLink className="h-3 w-3" />
+                            </Link>
+                          ) : onViewSkill ? (
                             <button
                               type="button"
                               onClick={() => onViewSkill(s.skillId)}
@@ -311,7 +339,7 @@ export function SkillIngestPanel({ onBack, onViewSkill }: SkillIngestPanelProps)
                               View
                               <ExternalLink className="h-3 w-3" />
                             </button>
-                          )}
+                          ) : null)}
                       </li>
                     ))}
                   </ul>
