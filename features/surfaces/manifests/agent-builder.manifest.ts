@@ -23,6 +23,11 @@
  * Honest availability: nothing is `alwaysAvailable`. The emitter returns an
  * empty scope when no agent id is present, and the builder can be reached
  * before the agent record has hydrated.
+ *
+ * Write half: `writeTargets` below (see the block comment there for what is
+ * deliberately excluded). Handlers are registered on the same provider by
+ * `useAgentBuilderWriteHandlers`
+ * (`features/agents/hooks/useAgentBuilderWriteHandlers.ts`).
  */
 
 import type {
@@ -30,6 +35,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -588,6 +594,100 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may WRITE into the open agent
+ * definition. This is the surface where an agent authors ANOTHER agent, so the
+ * bar is deliberately narrow: authored prose the user asked for help with
+ * (system instruction, description, name, category, tags) and nothing else.
+ *
+ * What is deliberately NOT here, and must stay that way: model / model tiers,
+ * tools, custom tools, MCP servers, skill config, Matrx-action policy, context
+ * slots, variable definitions, output schema — an agent editing what another
+ * agent may REACH is a capability change, not a copy edit. Governance
+ * (`is_public`, `is_active`, `is_archived`, access) and every id/lineage field
+ * are human-only for the same reason. Publishing a version is human-only too.
+ *
+ * Every target is `mode: "draft"` + `applyPolicy: "ask"`: the value is staged
+ * into the same Redux record the user's own typing edits (marking the builder
+ * dirty), the confirm dialog names the field before anything moves, and
+ * NOTHING reaches the database until the user presses Save. Handlers are
+ * registered by `AgentBuilderClient` via `useAgentBuilderWriteHandlers`.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "system_instruction",
+    label: "System instruction",
+    description:
+      "REPLACES the agent's entire system prompt with the string you pass — the text lands in the System Prompt editor exactly as typed. This is a full replacement, not a merge: read `system_instruction` first and include everything you want kept, or use `append_system_instruction` instead when you only mean to add. Non-text blocks attached to the system message (files, images) are preserved. Staged into the editor as unsaved changes; the user reviews and saves.",
+    valueType: "string",
+    updatesValue: "system_instruction",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "agent_definition",
+    sortOrder: 100,
+  },
+  {
+    name: "append_system_instruction",
+    label: "Added system instruction",
+    description:
+      "APPENDS the string you pass to the end of the agent's existing system prompt, separated by a blank line. Nothing already in the prompt is touched or re-sent — pass only the new text. Use this for adding a rule, a constraint, or a section; use `system_instruction` when the whole prompt is being rewritten. Staged into the editor as unsaved changes; the user reviews and saves.",
+    valueType: "string",
+    updatesValue: "system_instruction",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "agent_definition",
+    sortOrder: 110,
+  },
+  {
+    name: "agent_description",
+    label: "Agent description",
+    description:
+      "Replaces the agent's description — the prose shown in agent lists and the catalog explaining what this agent is for. Plain text, no markdown headings; a few sentences. Staged into the editor as unsaved changes; the user reviews and saves.",
+    valueType: "string",
+    updatesValue: "agent_description",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "agent_identity",
+    sortOrder: 200,
+  },
+  {
+    name: "agent_name",
+    label: "Agent name",
+    description:
+      "Replaces the agent's display name. A short human-readable label (a few words, no quotes or trailing punctuation) — this is what the user sees everywhere the agent is listed, so only propose it when renaming was asked for. Staged into the editor as unsaved changes; the user reviews and saves.",
+    valueType: "string",
+    updatesValue: "agent_name",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "agent_identity",
+    sortOrder: 210,
+  },
+  {
+    name: "agent_category",
+    label: "Agent category",
+    description:
+      "Replaces the catalog category the agent is filed under. A single short free-text label (there is no fixed vocabulary — reuse an existing category name where one fits rather than inventing a near-duplicate). Staged into the editor as unsaved changes; the user reviews and saves.",
+    valueType: "string",
+    updatesValue: "agent_category",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "agent_identity",
+    sortOrder: 220,
+  },
+  {
+    name: "agent_tags",
+    label: "Agent tags",
+    description:
+      "Replaces the FULL tag set — this does not append. Read `agent_tags` first and include every existing tag you want kept. Value: an array of short free-text tag strings (no fixed vocabulary, no leading '#'); pass an empty array to clear all tags. Staged into the editor as unsaved changes; the user reviews and saves.",
+    valueType: "array",
+    updatesValue: "agent_tags",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "agent_identity",
+    sortOrder: 230,
+  },
+];
+
 export const agentBuilderManifest: SurfaceManifest = {
   surfaceName: "matrx-user/agent-builder",
   readiness: "verified",
@@ -613,12 +713,22 @@ Read the values this way:
 
 You are helping AUTHOR an agent. Nothing here has run yet; the run transcript
 lives on the separate Agent Run surface.
+
+You can also WRITE here, but only to the authored prose: the system
+instruction, description, name, category, and tags. Everything that decides
+what the agent can REACH or who can see it — model, tools, MCP servers,
+skills, variables, output schema, visibility, access — is human-only, so
+propose those in your answer instead of trying to apply them. Every write you
+apply is STAGED in the editor and saved only when the user saves, so a
+rewrite is always reviewable and always reversible. Read the value before you
+replace it: \`system_instruction\` and \`agent_tags\` are full replacements.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "text_before", "text_after", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 export function createAgentBuilderScope(values: {
