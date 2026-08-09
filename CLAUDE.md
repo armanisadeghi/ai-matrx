@@ -14,6 +14,17 @@ Every task is a probe exposing what the platform is missing. Build (or extend) t
 
 **Before writing ANY new function, component, hook, slice, service, or table, read [docs/reuse-first.md](./docs/reuse-first.md)** — the ladder (**Reuse → Extend → Compose → Create**, exhaust each rung), the mandatory search gate (concept + synonyms + the Primitives Index; "found nothing" names the queries you ran), the importable-code rules (pure core, thin shell, no speculative abstraction), and the new-table bar (exceptional — same entity, new variant → column/flag/JSONB on the existing table). Its Primitives Index is guarded by `pnpm check:reuse-index` — fix or delete a row when a file moves. Your summary states what you searched, what you found, and what you reused or extended.
 
+## 🚨 NO DEAD ENDS — every identity is a door, every capability is on the table
+
+> **THE DOOR LAW.** If the UI names a thing that has an identity in our system, the UI must let the user reach it.
+> **THE INVENTORY LAW.** You may not build a surface before you know what the platform already gives it.
+
+Doctrine (cross-repo, canonical): **`/Users/armanisadeghi/code/common-docs/policies/no-dead-ends.md`**. Concrete FE recipe + the primitives to reach for: **invoke the `no-dead-ends` skill** before building or fixing any surface that displays a record. There is **no size threshold** — admin consoles, demos, dialogs, and toasts are all in scope.
+
+Four doors, offered in this order: **Open** (click the name — always), **New tab** (always, when navigating would cost the user their current state), **Peek** (non-blocking preview — whenever the next question is "which one is that?"), **Window** (a `WindowPanel` beside the work, not instead of it). Plus the corollaries that cause the real damage: **a relationship you can resolve must be rendered AND linked** (knowing an agent's system twin exists and only saying "this isn't a system agent" is worse than saying nothing); **a problem you can detect ships with its one-click fix**; **a comparison states the verdict, not a timestamp** (identical / what differs / link to the diff); **never render an id you can't open**; **a count is a door** (`3 overrides` reaches those overrides).
+
+The Inventory Law is reuse-first's other half: don't build a *poorer* one. Before the first line, inventory what exists for every entity the surface names — registry route (`getEntityInfo(token).hrefFor`), peek (`features/organizations/peek/registry.ts`), overlay opener, window panel, action registry (e.g. `features/agents/browse/agentActionRegistry.tsx`), canonical list shell. Missing a primitive? Build the generic one where every surface can reach it, then consume it — the task is the probe, the primitive is the deliverable.
+
 **This file must never lie.** Every factual claim here — a flag's value, a path, a route group, a version, an enforcement — is one an agent acts on without opening the config. When you change a config setting that this file describes, **change both in the same commit.** `pnpm check:doc-claims` ([script](./scripts/check-doc-claims.ts)) machine-verifies the checkable ones and prints the exact contradiction; add a claim there when you add a load-bearing rule here. A `TEMP:` flip with a promise to revisit is how the React Compiler sat off for three months while this file swore it was on (D62).
 
 ---
@@ -158,6 +169,7 @@ The `app/` tree splits into purpose-named route groups. **Working on core produc
 | `(public)` | Marketing / legal / share / education / canvas. | `/legal`, `/share`, `/p`… | always |
 | `(auth-pages)` | Login / signup / etc. | `/login`, `/sign-up`… | always |
 | `(popup)` | OAuth popup chrome. | `/popup-window/*` | always |
+| `(oauth-review)` | Google OAuth verification review surface — what Google's reviewers open to see each requested scope in use. | `/google-workspace-review` | always |
 
 **`(legacy)` and `(public-demos)` are DELETED** (entity system removed; public demos relocated). Never create files there. `pnpm check:doc-claims` fails if this table and `app/` disagree.
 

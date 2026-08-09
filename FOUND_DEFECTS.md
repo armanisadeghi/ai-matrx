@@ -422,6 +422,10 @@ Context (`organization_id`, `project_id`, `task_id`, `scope_ids`, agent identity
 
 The stub is DELETED live (verified 2026-07-28); real path shipped `584eb5941`: Checkout destination-charge (80/20 split) → signature-verified webhook → service-role `edu_class_confer_purchase` (+ refund/dispute revoke). **Blocked on Arman:** (1) enable Stripe Connect on the platform account; (2) set `STRIPE_WEBHOOK_SECRET` + register `/api/stripe/webhook` in the dashboard; then one test-mode purchase E2E.
 
+### D64 — `ContainerResourceSheet` has a live ESLint error on main (2026-08-08)
+
+`features/organizations/components/ContainerResourceSheet.tsx:47` — `setItems([])` called synchronously in an effect body (`react-hooks/set-state-in-effect`, **error**, 2 occurrences). Pre-existing on `main` (predates c18fa27a4); found while repointing that file's `hasPeek` import during the No Dead Ends pass. Unrelated to that change, so not fixed there — the fix is the derived-state pattern already used in `AgentSlotsConsole`'s `SlotEditor` (compute "loading"/"empty" from a keyed state object instead of resetting in the effect). Nothing runs ESLint at commit time here, which is why it has survived.
+
 ### D57 — COPPA gate: only the LEGAL policy calls remain (2026-07-15)
 
 All code layers done (client fail-closed, server-side enforcement in aidream, `age_band` write-tamper trigger + audit). **Open (Arman/legal):** (1) self-declared age — hard-block the `under_13→adult` transition vs allow-audited (currently audited + `review_signal`); (2) verifiable-consent method per COPPA §312.5. See `COPPA_VERIFIABLE_CONSENT_RUNBOOK.md` §1.

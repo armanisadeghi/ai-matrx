@@ -109,6 +109,9 @@ delete yours and extend ours.
 | Compact active-context picker (popover/menu) | `ActiveContextTree` (+ `ContextTree`) | `features/scopes/components/active-context/ActiveContextTree.tsx` |
 | Pick or create a project (complete searchable list) | `ProjectPicker` | `features/projects/components/ProjectPicker.tsx` |
 | Overflow / hierarchical action menu | `AdvancedMenu` | `components/official/AdvancedMenu.tsx` |
+| **Name another record anywhere** (cell, row, dialog, badge) — open / new tab / peek. THE DOOR LAW: never a bare `<span>` or UUID | `EntityRef` | `components/official/entity-ref/EntityRef.tsx` |
+| Ask whether a kind has a registered peek (without pulling all 19 peeks into your chunk) | `hasPeek` + `ResourcePeekHost` | `features/organizations/peek/kinds-list.ts`, `features/organizations/peek/ResourcePeekHost.tsx` |
+| An agent's parent / children / system twin (derived, no query) | `selectAgentLineageIndex` / `selectAgentLineage` | `features/agents/redux/agent-definition/selectors.ts` |
 | Resolve Lucide / custom icon by name | `IconResolver` | `components/official/icons/IconResolver.tsx` |
 | 44×44 icon tap targets | `TapTargetButton` + `tap-buttons` | `components/icons/TapTargetButton.tsx`, `components/icons/tap-buttons.tsx` |
 | Single-value picker over a `platform.categories` dimension (FK columns) | `CategorySelect` | `features/scopes/components/CategorySelect.tsx` |

@@ -23,11 +23,23 @@ The USER/ORG-facing override surface (browse slots, provenance, write `slot_bind
 
 The list is the canonical `MatrxDataTable` (`components/official/matrx-data-table`) — every column sorts + filters, global search, Copy/Copy-for-AI (row + this view), pagination, UUID cell on `id`. Derived `SlotRow` adds a filterable **Health** column (`ok` / `version drift` / `agent archived` / `not a system agent` — worst-first). Row click → side-panel workbench (`SlotDetail`): pin editor + test bench + overrides; the WindowPanel Edit tab reuses the same body. `SlotEditor`/`SlotTestBench` seed local state from props, so `SlotDetail` keys them by slot id — dropping the key regresses to stale cross-slot state (bug found 2026-08-08).
 
+## THE DOOR LAW on this console (2026-08-08)
+
+Doctrine: `/Users/armanisadeghi/code/common-docs/policies/no-dead-ends.md`; recipe: the `no-dead-ends` skill. This console is the worked reference, because it was the surface that provoked the ruling — it named agents it would not open, and complained about a pin it would not fix.
+
+- **Every agent is reachable.** The Agent column renders `EntityRef` (`components/official/entity-ref/EntityRef.tsx`) — open / new tab / peek — with an `href` override, because system agents live under `/administration/agents/system-agents/agents/<id>` and personal agents under `/agents/<id>`. Pin cells carry a version-history door (`…/v`).
+- **Lineage is shown, not withheld.** `selectAgentLineageIndex` derives parent / children / **systemTwin** from the agent slice (zero extra queries). The twin may be a PARENT (personal copy of a system agent) or a CHILD (system agent promoted from a personal one) — both directions are load-bearing and covered by `features/agents/redux/agent-definition/__tests__/lineage-selectors.test.ts`.
+- **The complaint ships with the fix.** A `not a system agent` row renders the twin (linked) plus **Repin to system twin** (repins to the twin tracking latest — a pin to a personal agent's version has no meaningful version to carry over). No twin → **Create system twin…**, which opens the existing Linked Agent Sync window rather than a second bespoke flow.
+- **The drawer leads with what you HAVE.** `SlotAgentIdentityCard` (currently-running agent, type badge, pin vs latest, drift, lineage chips, Versions / Linked Agent Sync / Repin) sits above the picker. It used to open straight into a repin picker, so an admin could not see the agent they were about to replace.
+- **`unresolved pin` is its own health state.** A pin whose agent row the caller cannot read (another user's personal agent under RLS, or a deleted record) is NEVER `ok`. Reporting green for data you could not read is the exact dead end this console exists to prevent — it hid two live personal-agent pins (`podcast.deep_research`, `podcast.image_v2`) behind a green badge for any admin who wasn't their owner.
+
 ## Surface declaration
 
 The page is the `matrx-admin/agent-slots` surface (`features/surfaces/manifests/agent-slots.manifest.ts`, readiness `partial`; route mapped in `features/surfaces/utils/route-to-surface.ts`; `ui.ui_surface` + values synced live 2026-08-08). `AgentSlotsConsole` mounts `<SurfaceRuntimeProvider>` and builds the Run-time scope via `createAgentSlotsScope` — slot list summary, health roll-up, system-agent picker count, and the selected slot's id/detail/health/overrides. Test-bench state (exemplars, candidate runs) stays in `SlotTestBench` local state and is NOT in the scope yet — lifting it promotes readiness.
 
 ## Change Log
+
+- 2026-08-08 — THE DOOR LAW pass (Arman's ruling): `EntityRef` on every agent reference, version-history door on pins, lineage/system-twin resolution + one-click **Repin to system twin**, identity card above the drawer's picker, and the new `unresolved pin` health state (`AgentSlotsHealthSummary.unresolved_pin` added to the surface scope). Health column widened; `ok` no longer masks unreadable pins.
 
 - 2026-08-08 — Bindings are now EDITABLE in the console: `SlotDetail` embeds the shared `SlotOverridePanel` (`features/agents/slots/components/`) — user + admin-org bindings incl. settings-only `config_overrides`, written via the aidream bind endpoint (`PUT/DELETE /agent-slots/{slot_key}/binding`, 422 contract verdicts shown verbatim); the read-only "All overrides" roll-up stays below it.
 - 2026-08-08 — One-value-per-column pass (Arman): Label its own column; IO kinds split into separate Input / Output columns. Never re-merge values into a compound column.

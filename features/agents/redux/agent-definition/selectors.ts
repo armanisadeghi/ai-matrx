@@ -659,6 +659,100 @@ export const selectBuiltinAgents = createSelector(
 /** Alias for selectBuiltinAgents — matches the access_level = 'system' label. */
 export const selectSystemAgents = selectBuiltinAgents;
 
+// ---------------------------------------------------------------------------
+// Lineage (parent / children / system twin) — derived, zero extra queries
+// ---------------------------------------------------------------------------
+
+/**
+ * One agent's place in the copy lineage (`agent.definition.source_agent_id`).
+ *
+ * THE DOOR LAW (common-docs/policies/no-dead-ends.md): a surface that can tell
+ * the user "this is a personal agent, not a system agent" already has the data
+ * to tell them WHICH system agent it came from — withholding that is the defect
+ * this selector exists to make impossible. Any surface holding the agent slice
+ * gets lineage for free; none of them should re-query for it.
+ *
+ * `fetchLinkedCounterpart` (thunks.ts) stays the authority when the slice is
+ * NOT loaded (single-agent dialogs, cold surfaces) — it round-trips the DB and
+ * sees rows RLS grants that a partially-hydrated slice may not hold.
+ */
+export interface AgentLineageRef {
+  id: string;
+  name: string;
+  agentType: string | null;
+  isSystem: boolean;
+}
+
+export interface AgentLineage {
+  /** The agent this one was copied FROM, when visible. */
+  parent: AgentLineageRef | null;
+  /** Agents copied FROM this one, newest-name-agnostic order (slice order). */
+  children: AgentLineageRef[];
+  /**
+   * The system (builtin) agent in this agent's immediate lineage — its parent
+   * or one of its children. This is the answer to "does a system copy of this
+   * already exist?" and it must always be rendered WITH a door.
+   */
+  systemTwin: AgentLineageRef | null;
+}
+
+const EMPTY_LINEAGE: AgentLineage = {
+  parent: null,
+  children: [],
+  systemTwin: null,
+};
+
+function toLineageRef(a: AgentDefinitionRecord): AgentLineageRef {
+  return {
+    id: a.id,
+    name: a.name ?? a.id,
+    agentType: a.agentType ?? null,
+    isSystem: a.agentType === "builtin",
+  };
+}
+
+/**
+ * agentId → lineage, for every live agent in the slice. Built once per slice
+ * change so a table of N rows costs one pass, not N lookups.
+ */
+export const selectAgentLineageIndex = createSelector(
+  [selectLiveAgents],
+  (agents): Record<string, AgentLineage> => {
+    const byId = new Map(agents.map((a) => [a.id, a]));
+    const childrenByParent = new Map<string, AgentDefinitionRecord[]>();
+    for (const a of agents) {
+      if (!a.sourceAgentId) continue;
+      const bucket = childrenByParent.get(a.sourceAgentId);
+      if (bucket) bucket.push(a);
+      else childrenByParent.set(a.sourceAgentId, [a]);
+    }
+
+    const index: Record<string, AgentLineage> = {};
+    for (const a of agents) {
+      const parentRecord = a.sourceAgentId
+        ? (byId.get(a.sourceAgentId) ?? null)
+        : null;
+      const parent = parentRecord ? toLineageRef(parentRecord) : null;
+      const children = (childrenByParent.get(a.id) ?? []).map(toLineageRef);
+      index[a.id] = {
+        parent,
+        children,
+        systemTwin:
+          parent?.isSystem === true
+            ? parent
+            : (children.find((c) => c.isSystem) ?? null),
+      };
+    }
+    return index;
+  },
+);
+
+/** Lineage for one agent. Empty (not undefined) when unknown. */
+export const selectAgentLineage = createSelector(
+  [selectAgentLineageIndex, (_state: RootState, id: string) => id],
+  (index, id): AgentLineage => index[id] ?? EMPTY_LINEAGE,
+);
+
 export const selectActiveAgents = createSelector([selectLiveAgents], (agents) =>
   agents.filter((a) => a.isActive && !a.isArchived),
 );
