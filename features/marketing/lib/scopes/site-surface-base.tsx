@@ -56,6 +56,7 @@ export interface MarketingSiteBaseValues {
   brand_profile?: Record<string, unknown>;
   site_name?: string;
   site_root_url?: string;
+  site_description?: string;
   site_context?: string;
   gsc_synced_at?: string;
 }
@@ -119,6 +120,7 @@ export function useMarketingSiteSurfaceBase(): {
         : undefined,
       site_name: site.name ?? undefined,
       site_root_url: site.root_url ?? undefined,
+      site_description: site.description ?? undefined,
       site_context: buildSiteContextXml({
         site,
         statuses: siteConnectionStatuses(site),

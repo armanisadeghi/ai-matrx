@@ -24,6 +24,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -96,6 +97,17 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 60,
     sortOrder: 314,
+    group: "site_identity",
+  },
+  {
+    name: "site_description",
+    label: "Site description",
+    description:
+      "User-authored description of the managed website (`web.site.description`) — what this business/site is, in a sentence or two, shown on the overview hero. Empty when nobody (human or initialization) has written one yet.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 200,
+    sortOrder: 316,
     group: "site_identity",
   },
 
@@ -171,6 +183,43 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * The WRITE half — the two site-identity fields an agent plausibly authors.
+ * Deliberately narrow: logo/favicon/social-image URLs, lifecycle status,
+ * visibility, and the brand move are human-mechanical decisions and stay
+ * out (the SiteEditorDialog owns them). Both targets persist immediately
+ * through the canonical `updateSiteIdentity` service with its version
+ * guard, so both default to `ask` — an agent proposing identity copy is
+ * welcome, an agent silently rewriting it is not. Handlers:
+ * `features/marketing/components/site/MarketingSiteWriteTargets.tsx`.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "site_name",
+    label: "Site name",
+    description:
+      "Rename the managed website's human label (`web.site.name`) — the display name only, never the root URL or domain. Value: { name: string } (non-empty plain text; replaces the current name in full — the current one is in site_name). Persists immediately through updateSiteIdentity with the version guard; every other identity field is preserved.",
+    valueType: "object",
+    updatesValue: "site_name",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "site_identity",
+    sortOrder: 100,
+  },
+  {
+    name: "site_description",
+    label: "Site description",
+    description:
+      "Set the site's description — what this business/website is, in one or two plain-text sentences (no markdown). Value: { description: string } (non-empty; REPLACES the current description in full — the current one is in site_description). Persists immediately through updateSiteIdentity with the version guard; every other identity field is preserved.",
+    valueType: "object",
+    updatesValue: "site_description",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "site_identity",
+    sortOrder: 110,
+  },
+];
+
 export const marketingSiteManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-site",
   readiness: "verified",
@@ -188,6 +237,7 @@ Empty values mean the workspace has not finished loading or the data genuinely d
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
   agentRoles: [
     {
       name: "site_strategist",
@@ -235,6 +285,7 @@ export function createMarketingSiteScope(values: {
   // alwaysAvailable: false → optional
   site_name?: string;
   site_root_url?: string;
+  site_description?: string;
   site_context?: string;
   connection_statuses?: Record<string, unknown>;
   initialization_state?: Record<string, unknown>;
