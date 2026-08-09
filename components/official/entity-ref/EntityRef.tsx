@@ -87,7 +87,16 @@ export interface EntityRefProps {
   showIcon?: boolean;
   /** Hide the peek control even when one is registered. */
   disablePeek?: boolean;
-  /** Hide the new-tab control (rare — only when the row is already a link). */
+  /**
+   * Hide the new-tab CONTROL (rare — only when the row is already a link).
+   *
+   * It does NOT make the name inert: the label stays a real `Link` whenever a
+   * route resolves, so a plain click still navigates and a modified click
+   * still opens a tab. If what you actually want is "name this record but do
+   * not offer a door" — the record is already open, so every door leads back
+   * to where the user is standing — then don't use `EntityRef` for that row at
+   * all. Render the text, and say in a comment why the door is absent.
+   */
   disableNewTab?: boolean;
   /**
    * The name itself opens in a NEW TAB.

@@ -93,19 +93,17 @@ export function LineageTreeView({ doc }: LineageTreeViewProps) {
                 <FileText className="w-3.5 h-3.5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                {/* This IS the document the studio has open, so its name is
-                    not a door to anywhere new — but it stays an `EntityRef`
-                    so the row reads identically to its ancestors and
-                    descendants, and so the peek arrives here too if
-                    `processed_document` ever gets one. */}
-                <EntityRef
-                  token="processed_document"
-                  id={doc.id}
-                  name={doc.name}
-                  showIcon={false}
-                  disableNewTab
-                  className="text-xs font-medium"
-                />
+                {/* Deliberately NOT an `EntityRef`: this row is the document
+                    the studio already has open, so every door leads back to
+                    where you are. With `processed_document` now carrying an
+                    `hrefFor`, an `EntityRef` here would render a live link
+                    that reloads the studio on a plain click (discarding the
+                    extraction in progress) and opens a duplicate tab on a
+                    modified one. `disableNewTab` does NOT prevent that — it
+                    only hides the extra control; the label itself stays a
+                    `Link`. A door to the room you are standing in is not a
+                    door. */}
+                <p className="text-xs font-medium truncate">{doc.name}</p>
                 <p className="text-[10px] text-muted-foreground truncate">
                   <code className="font-mono">{doc.id.slice(0, 8)}…</code> ·{" "}
                   current · {doc.derivationKind}
