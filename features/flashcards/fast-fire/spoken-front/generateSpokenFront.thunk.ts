@@ -20,7 +20,6 @@ import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-syst
 import { selectRenderBlocksByType } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { selectLatestRequestId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { fcService } from "@/features/flashcards/data/fcService";
-import { resolveAgentSlot } from "@/features/agents/slots/service";
 import { pickSpokenFrontVariables } from "./variations";
 
 /** Permanent id of the "Generate custom speech" agent (Google Gemini TTS). */
@@ -114,13 +113,14 @@ export function generateSpokenFront(
     getState: () => RootState,
   ): Promise<string | null> => {
     const vars = pickSpokenFrontVariables(card.id, card.front, index, total);
-    // The TTS agent is a slot — resolution is loud, never a hardcoded id.
-    const { agentId } = await resolveAgentSlot(SPOKEN_FRONT_TTS_SLOT);
+    // The TTS agent is a slot — resolution is loud, never a hardcoded id. The
+    // launch thunk resolves it and applies the binding's config_overrides too
+    // (a settings-only binding swaps the model without swapping the agent).
     let conversationId: string | null = null;
     try {
       const launch = await dispatch(
         launchAgentExecution({
-          agentId,
+          slotKey: SPOKEN_FRONT_TTS_SLOT,
           surfaceKey: `fastfire-tts-${card.id}`,
           // Persisted like the other Fast Fire runs; a distinct system
           // source_feature keeps it out of the user's normal chats.

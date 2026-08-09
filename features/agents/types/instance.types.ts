@@ -967,6 +967,18 @@ export interface ManagedAgentOptions {
   /** Stable surface key for the focus registry (e.g. "agent-builder", "agent-runner:<id>") */
   surfaceKey: string;
   agentId?: string;
+  /**
+   * Agent-slot key (`<domain>.<step>`, e.g. `plan_client.shape_planner`) —
+   * the slot-first alternative to `agentId`. The launch thunk resolves it via
+   * `resolveAgentSlot` (system default → the caller's own user binding) and
+   * applies BOTH halves of the binding: the resolved agent id AND the
+   * binding's `config_overrides`, which are merged over `config.llmOverrides`
+   * (the binding wins per key — a user who set "run this step on a cheaper
+   * model" means it) and seeded into the instance-model-overrides slice so
+   * every turn's request carries them as `config_overrides`.
+   * Mutually exclusive with `agentId` and `shortcutId`.
+   */
+  slotKey?: string;
   shortcutId?: string;
   manual?: { label?: string; baseSettings?: Partial<LLMParams> };
 
