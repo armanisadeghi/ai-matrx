@@ -4,7 +4,10 @@
  * Word / PowerPoint previewer — server-side extraction. Calls aidream
  * `GET /office/{file_id}/markdown` (the matrx-files Office codec, with the
  * LibreOffice bridge for legacy .doc/.ppt) and renders the result as
- * formatted markdown. Decks render slide-by-slide with titled dividers.
+ * formatted markdown. Decks render slide-by-slide with titled dividers — the
+ * divider owns the slide's number/title, so each portion's own duplicate
+ * heading is stripped for display (`stripDuplicatePortionHeading`); the codec
+ * keeps emitting it, because the whole-document markdown needs it.
  *
  * The bytes never reach the browser — the server parses; we render text.
  * Extractions are cached at module level (keyed by fileId) so closing and
@@ -32,7 +35,11 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 import { guardMarkdownDelimiters } from "@/lib/markdown/delimiter-guard";
-import type { OfficeExtraction } from "@/features/files/api/office";
+import { stripDuplicatePortionHeading } from "@/lib/markdown/portion-heading";
+import type {
+  OfficeExtraction,
+  OfficePortion,
+} from "@/features/files/api/office";
 // Cache lives OUTSIDE this lazy chunk so upload/restore/delete thunks and the
 // realtime middleware can invalidate it without importing this graph.
 import {
@@ -49,6 +56,47 @@ const KIND_LABEL: Record<string, string> = {
   xlsx: "Excel workbook",
   xls: "Excel workbook (legacy)",
 };
+
+/**
+ * One slide card: the divider IS the slide's title row, so the portion's own
+ * leading "Slide N: <title>" heading is dropped when it would repeat it —
+ * defensively, leaving any heading that carries real content in place.
+ */
+function SlideCard({ slide }: { slide: OfficePortion }) {
+  const body = stripDuplicatePortionHeading(slide.markdown, {
+    label: "Slide",
+    number: slide.number,
+    title: slide.title,
+  }).trim();
+
+  return (
+    <section className="rounded-lg border border-border bg-background/40 px-5 py-4">
+      <div className="mb-2 flex items-baseline gap-2 border-b border-border/60 pb-1.5">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Slide {slide.number}
+        </span>
+        {slide.title && (
+          <span className="truncate text-xs font-medium text-foreground">
+            {slide.title}
+          </span>
+        )}
+      </div>
+      {body ? (
+        <article className="prose prose-sm dark:prose-invert max-w-none">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {guardMarkdownDelimiters(body).text}
+          </ReactMarkdown>
+        </article>
+      ) : (
+        // A title-only slide: stripping its heading leaves nothing, and an
+        // empty card body reads as a rendering failure.
+        <p className="text-xs italic text-muted-foreground">
+          No additional text on this slide.
+        </p>
+      )}
+    </section>
+  );
+}
 
 export interface OfficePreviewProps {
   fileId: string;
@@ -226,26 +274,7 @@ export function OfficePreview({
         {isDeck && slides.length > 0 ? (
           <div className="space-y-6">
             {slides.map((slide) => (
-              <section
-                key={slide.index}
-                className="rounded-lg border border-border bg-background/40 px-5 py-4"
-              >
-                <div className="mb-2 flex items-baseline gap-2 border-b border-border/60 pb-1.5">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Slide {slide.number}
-                  </span>
-                  {slide.title && (
-                    <span className="truncate text-xs font-medium text-foreground">
-                      {slide.title}
-                    </span>
-                  )}
-                </div>
-                <article className="prose prose-sm dark:prose-invert max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {guardMarkdownDelimiters(slide.markdown ?? "").text}
-                  </ReactMarkdown>
-                </article>
-              </section>
+              <SlideCard key={slide.index} slide={slide} />
             ))}
           </div>
         ) : (

@@ -143,7 +143,13 @@ internal platform use — never a washed-down user variant beside a private one:
   (`{ok:false, declined:true}`) — an error would invite the model to retry
   the write the user just refused. `manual`-only surfaces offer no tool
   (mirrors aidream's `_write_targets_block`: never advertise a write the
-  platform refuses).
+  platform refuses). **Making a surface agent-writable? Invoke the
+  `surface-write-targets` skill** — judgment bar, declaration + handler
+  recipe, mandatory live-agent verification, avalanche contract. Live
+  agent-writable adopters: `matrx-user/marketing-page`,
+  `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
+  `add_subtasks`/`save_task` entity actions, handlers in
+  `TaskEditorBody.tsx`).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -304,6 +310,10 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
 
 ## Change Log
+
+- **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
+
+- **2026-08-08 — Surface auto-adoption at launch.** `launchAgentExecution` now adopts the mounted `<SurfaceRuntimeProvider>` (deepest wins, via `getSurfaceRuntime()`) when the caller passes NEITHER `runtime.surfaceName` NOR `runtime.applicationScope` — name AND live scope together, so every one of the ~33 surface-blind direct launch call sites picks up binding layers, value mappings, write policies, and document evidence on any page with a provider (127 mounts) with zero per-site wiring. Explicit caller values always win; a scope-only launch is untouched; the route-prefix guess (`detectActiveSurface`) is deliberately NOT used here (a name without a mounted runtime has no scope and would fabricate one — it remains the tool-injection fallback only, `build-tool-injection.ts`). A throwing adopted `getScope()` logs loudly and launches surface-named but scope-less. Verified: type gate + A/B against clean main (identical behavior on the dev session whose chat send was already stalled by HMR churn); live confirmation of an adopted scope on a real launch still owed.
 
 - **2026-08-08 — Agent-origin surface writes live (first real caller of `origin:"agent"`).** `apply_surface_write` inline delegated tool injected per turn when `listAgentWritableTargets()` is non-empty (new export beside `listLiveWriteTargets`; policy-resolved, manual never offered); routed in `surface-delegated-tool-call.thunk.ts` → new `dispatch-surface-write.thunk.ts` → `applySurfaceWrite(origin:"agent")`. Decline = non-error tool result; instance `paused` while an ask-confirm awaits the user.
 
