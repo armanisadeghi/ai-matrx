@@ -70,13 +70,18 @@ export function ReachabilityInspectorClient({
     null,
   );
 
-  async function lookup() {
-    const id = entityId.trim();
+  /** Run the lookup for EXPLICIT arguments — a deep link can't wait for state. */
+  async function lookupFor(
+    lookupMode: ReachabilityMode,
+    lookupType: string,
+    rawId: string,
+  ) {
+    const id = rawId.trim();
     if (!id) {
       toast.error("Enter an entity UUID");
       return;
     }
-    if (!entityType) {
+    if (!lookupType) {
       toast.error("Pick an entity type");
       return;
     }
@@ -84,17 +89,17 @@ export function ReachabilityInspectorClient({
     setContents(null);
     setContainers(null);
     try {
-      if (mode === "contents") {
+      if (lookupMode === "contents") {
         const { data, error } = await supabase.rpc(
           "admin_reachability_contents",
-          { p_type: entityType, p_id: id },
+          { p_type: lookupType, p_id: id },
         );
         if (error) throw error;
         setContents(data ?? []);
       } else {
         const { data, error } = await supabase.rpc(
           "admin_reachability_containers",
-          { p_type: entityType, p_id: id },
+          { p_type: lookupType, p_id: id },
         );
         if (error) throw error;
         setContainers(data ?? []);
@@ -108,16 +113,27 @@ export function ReachabilityInspectorClient({
     }
   }
 
-  // Deep link (?type=&id=): run the lookup once on mount so the caller that
-  // linked here lands on the answer, not on a form it has to re-fill. Kicked
-  // off from a microtask so no setState runs synchronously in the effect body.
-  const ranDeepLink = useRef(false);
+  // Deep link (?mode=&type=&id=): run the lookup so the caller that linked here
+  // lands on the answer, not on a form it has to re-fill. Keyed by the link
+  // itself, not by "have we run once" — a client-side navigation to a DIFFERENT
+  // record re-renders this same component instance, so a one-shot ref would
+  // leave the old answer on screen under the new URL (or run the wrong RPC,
+  // since `mode` also comes from the link). Kicked off from a microtask so no
+  // setState runs synchronously in the effect body.
+  const lastDeepLink = useRef<string | null>(null);
   useEffect(() => {
-    if (ranDeepLink.current) return;
     if (!initialType || !initialId) return;
-    ranDeepLink.current = true;
-    queueMicrotask(() => void lookup());
-  }, [initialType, initialId]);
+    const key = `${initialMode ?? "contents"}|${initialType}|${initialId}`;
+    if (lastDeepLink.current === key) return;
+    lastDeepLink.current = key;
+    // Re-seed the form so the controls match the link that was followed.
+    setMode(initialMode ?? "contents");
+    setEntityType(initialType);
+    setEntityId(initialId);
+    queueMicrotask(() =>
+      void lookupFor(initialMode ?? "contents", initialType, initialId),
+    );
+  }, [initialMode, initialType, initialId]);
 
   const rows = mode === "contents" ? contents : containers;
 
@@ -156,7 +172,7 @@ export function ReachabilityInspectorClient({
           placeholder="entity UUID"
           className="h-8 w-80 font-mono text-xs"
         />
-        <Button size="sm" disabled={loading} onClick={() => void lookup()}>
+        <Button size="sm" disabled={loading} onClick={() => void lookupFor(mode, entityType, entityId)}>
           {loading ? (
             <RefreshCw className="mr-1.5 h-3.5 w-3.5 animate-spin" />
           ) : (

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { TranscriptsSidebar } from "./TranscriptsSidebar";
 import { TranscriptViewer } from "./TranscriptViewer";
@@ -33,6 +33,8 @@ export function TranscriptsLayout({ className }: TranscriptsLayoutProps) {
     refreshTranscripts,
   } = useTranscripts();
   const toast = useToastManager("transcripts");
+  /** The last `?focus=` id we tried to resolve by id — one attempt each. */
+  const attemptedFocusRef = useRef<string | null>(null);
 
   useEffect(() => {
     initialize();
@@ -55,6 +57,11 @@ export function TranscriptsLayout({ className }: TranscriptsLayoutProps) {
       return;
     }
     if (isLoading) return;
+    // One attempt per id. Without this the effect re-runs on every
+    // `transcripts` / `isLoading` change — `activeTranscript` never becomes the
+    // unreachable id, so the failure toast would repeat forever.
+    if (attemptedFocusRef.current === focusId) return;
+    attemptedFocusRef.current = focusId;
 
     let cancelled = false;
     (async () => {

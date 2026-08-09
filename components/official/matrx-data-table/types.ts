@@ -273,11 +273,15 @@ export interface MatrxDataTableDetailConfig<T> {
   defaultWidth?: number;
   enabled?: boolean;
   /**
-   * Override the column-name → entity-token guess used by the default
-   * inspector (side panel AND row window). Required for a table whose column
-   * name collides with a token it does not point at — `sch_run.task_id` is a
-   * SCHEDULED task, not a workspace `task`. Return `null` to keep an id
-   * copy-only; a wrong door is worse than no door.
+   * Maps a field name to the entity token its id points at, turning that field
+   * into a door (route + peek) in the default inspector — side panel AND row
+   * window.
+   *
+   * There is no default guess: this inspector renders whatever columns the row
+   * has, and a wrong door opens a DIFFERENT record (`sch_run.task_id` is a
+   * SCHEDULED task, not a workspace `task`). A table whose FKs you HAVE checked
+   * can pass `tokenFromColumnName` (`components/official/entity-ref/doors`) to
+   * open every `<token>_id` field at once.
    */
   tokenForField?: (key: string) => string | null;
 }

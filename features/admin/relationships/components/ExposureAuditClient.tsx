@@ -24,6 +24,7 @@ import {
   Users,
 } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { tokenFromColumnName } from "@/components/official/entity-ref/doors";
 import { AdminUserRef } from "@/features/admin/users/components/AdminUserRef";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type {
@@ -636,6 +637,10 @@ export function ExposureAuditClient() {
             title: (row) => row.display_name,
             description: (row) =>
               `${row.resource_type}:${row.resource_id} · ${row.discovery_status}`,
+            // These rows come from one audit RPC whose FK columns are checked:
+            // `organization_id` is a real org, `owner_id`/`resource_id` resolve
+            // to no token and stay copy-only. Safe to open every `<token>_id`.
+            tokenForField: tokenFromColumnName,
           }}
           window={{ enabled: true, title: (row) => row.display_name }}
           emptyState={{
