@@ -60,6 +60,7 @@ export const SOURCE_FEATURES = [
   "education-tutor",
   "files",
   "image-studio",
+  "incident-assurance",
   "marketing",
   "mermaid-workbench",
   "messages",
