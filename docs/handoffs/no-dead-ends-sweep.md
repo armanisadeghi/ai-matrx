@@ -713,6 +713,22 @@ for anchors that also mutate the current surface. And note the general shape of
 the miss: the comment described an *intention* the code did not implement —
 which is the same failure as a stale doc, just at three-line scale.
 
+**SWEPT 2026-08-09, and deliberately NOT mass-fixed.** Eight unguarded
+side-effecting anchors exist repo-wide (`tabs-navigation`, `MobileDock`,
+`FloatingDock`, `BalancedFloatingDock`, `AgentOptionsMenu`, `MobileNavGroup`,
+`CaPdCalculatorClient`, `ConversationalLayout`). **Every one closes transient
+chrome** — a dropdown, a dock, a mobile sheet, an options menu — or selects a
+section. Losing that on cmd-click is mildly annoying and arguably intended;
+the user's page is unchanged and no information is destroyed.
+
+**What made `PromoteToSiteDialog` different is the thing to key on: the dialog
+held RESULT STATE the user might still need** — the preview URL, the
+conversion warnings. Closing it on cmd-click destroyed information that has no
+other home. **Guard when the surface holds something the user cannot get back;
+leave it when the surface is just chrome.** Applying the rule to all eight
+would be churning seven files on a rule written five minutes earlier — the
+same "fixing from the description" the review-triage section warns about.
+
 **Also check the component's prop surface before passing a handler.**
 `EntityRef` has no `onClick` prop; it stops propagation on its own anchor
 (`EntityRef.tsx:91,107`). Passing one is silently ignored, not a compile error
