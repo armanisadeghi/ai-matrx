@@ -649,53 +649,6 @@ export function NoteContentEditor({
       readOnly: access.loading || readOnly,
     });
 
-  // ── Surface write targets (manifest `writeTargets`) ──────────────────
-  // Write half of the notes surface. Every handler validates its input and
-  // THROWS on a bad shape — the writeback seam converts throws to safe error
-  // envelopes the agent reads. All three stage through the EXACT paths the
-  // user's own editing uses (handleChangeFlush / updateNoteLabel /
-  // updateNoteTags), so the canonical autosave + echo-suppression pipeline
-  // persists them like keystrokes (freeze-loop doctrine — never a parallel
-  // write, never raw supabase). Fresh closures per call.
-  const getSurfaceWriteHandlers = () => {
-    const assertWritable = () => {
-      if (access.loading || readOnly)
-        throw new Error(
-          "This note is read-only (shared with view access) — it cannot be edited.",
-        );
-    };
-    return {
-      note_title: (value: unknown) => {
-        assertWritable();
-        if (typeof value !== "string" || !value.trim())
-          throw new Error("note_title expects a non-empty string.");
-        dispatch(updateNoteLabel({ id: noteId, label: value.trim() }));
-      },
-      note_content: (value: unknown) => {
-        assertWritable();
-        if (typeof value !== "string")
-          throw new Error(
-            "note_content expects the full replacement markdown body as a string.",
-          );
-        // Same flush path as cleanup / materialization / menu text-replace:
-        // local state + Redux in one step, autosave picks it up.
-        handleChangeFlush(value);
-      },
-      note_tags: (value: unknown) => {
-        assertWritable();
-        if (
-          !Array.isArray(value) ||
-          !value.every((v) => typeof v === "string" && v.trim())
-        )
-          throw new Error(
-            "note_tags expects an array of non-empty tag strings (the FULL replacement set).",
-          );
-        const tags = Array.from(new Set(value.map((v: string) => v.trim())));
-        dispatch(updateNoteTags({ id: noteId, tags }));
-      },
-    };
-  };
-
   // Notes-specific menu items wired to the REAL handlers above (no stubs).
   const notesExtras = createNotesEditorExtraSections({
     isDirty,
