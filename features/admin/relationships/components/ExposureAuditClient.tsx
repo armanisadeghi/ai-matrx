@@ -31,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type {
   ExposureAuditRow,
   ExposureAuditSummary,
@@ -170,7 +171,20 @@ const COLUMNS: MatrxColumnDef<ExposureAuditRow>[] = [
       <div className="flex min-w-0 items-start gap-2">
         <ResourceIcon row={row} />
         <div className="min-w-0">
-          <div className="truncate text-xs font-medium">{row.display_name}</div>
+          {/* An exposure audit whose rows you cannot click through forces the
+              admin to go hunt each resource by hand — on the surface where the
+              question is literally "should this be visible?". `openInNewTab`
+              because the audit must survive the click. A `resource_type` that
+              is not a canonical token degrades to plain text on its own, so
+              this is safe for every value the RPC can return. */}
+          <EntityRef
+            token={row.resource_type}
+            id={row.resource_id}
+            name={row.display_name}
+            showIcon={false}
+            openInNewTab
+            className="text-xs font-medium"
+          />
           <div className="truncate text-[10px] text-muted-foreground">
             {row.location || row.mime_type || row.resource_type}
           </div>
