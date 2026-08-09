@@ -124,8 +124,10 @@ internal platform use — never a washed-down user variant beside a private one:
   surface-bound agents as a `<surface_write_targets>` block. Live adopters:
   `matrx-user/marketing-page` (`page_meta_tags`, `page_target_keyword`,
   `page_supporting_keywords` — handlers in
-  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`) and
-  `matrx-user/keyword-intelligence` (`keyword_selection`). The LSI kind
+  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`),
+  `matrx-user/marketing-brand` (`brand_profile`, `brand_identity` — handlers
+  in `features/marketing/components/brands/MarketingBrandWriteTargets.tsx`)
+  and `matrx-user/keyword-intelligence` (`keyword_selection`). The LSI kind
   components (`meta_tag_options` / `keyword_relationship_research` /
   `keyword_search_metrics`, DB components) call
   `runAction("apply_surface_write", …)` — same seam users' agent-authored
@@ -149,11 +151,9 @@ internal platform use — never a washed-down user variant beside a private one:
   agent-writable adopters: `matrx-user/marketing-page`,
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
-  `TaskEditorBody.tsx`), `matrx-user/notes` (5 targets — `note_content` /
-  `append_to_note` / `note_title` / `note_tags` drafts through the same
-  slice actions the user's typing dispatches, + `note_folder` entity via
-  `moveNoteToFolder`; handlers in `NoteContentEditor.tsx`, withheld on
-  view-only shared notes).
+  `TaskEditorBody.tsx`), `matrx-user/marketing-brand` (2 ask-policy entity
+  targets through `updateBrand`; confirmed facts/assets/properties have no
+  write path by doctrine — human-owned, promoted via discovery review).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -315,7 +315,7 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 
 ## Change Log
 
-- **2026-08-09 — Notes editor agent-writable (third adopter).** `matrx-user/notes` declares 5 `ask`-policy targets: `note_content` (full body replace) and `append_to_note` (add to the end, existing body untouched) — deliberately two targets rather than one mode-flagged target, so the confirm dialog names which one is about to happen; `note_title` and `note_tags` (full set, replaces); and `note_folder`, the one `entity` target, because a move is only correct when `folder_name` and `folder_id` change together (`moveNoteToFolder`) and there is no draft form of it. Handlers live on the `SurfaceRuntimeProvider` already mounted in `NoteContentEditor.tsx`; the draft ones dispatch the SAME slice actions the user's own typing does (`updateNoteContent` via `handleChangeFlush`, `updateNoteLabel`, `updateNoteTags` → `applyFieldEdit`), so an agent edit gets an undo entry, marks the field dirty, and rides the ordinary autosave — no parallel write path, nothing new in the realtime/freeze-loop hot path. `note_folder` refuses a name not already in `all_folder_names` instead of creating a folder as a side effect (`moveNoteToFolder` → `createFolder` is create-or-get). On a view-only shared note the handler factory returns `{}`, so the seam never advertises a write RLS would reject. Live-verified end to end with Badass Agent (all 5 targets: rewrite + append + retitle + retag + refile; decline on tags; forced bad-folder value returned the handler's own error to the agent verbatim; an undeclared target — visibility — was refused with the declared list).
+- **2026-08-09 — Marketing brand cockpit agent-writable (live-verified).** `matrx-user/marketing-brand` declares 2 ask-policy entity targets (`brand_profile` — merge-patch of the full editorial profile, `brand_identity` — industry/description copy), both through `updateBrand` with the version guard; handlers in `features/marketing/components/brands/MarketingBrandWriteTargets.tsx`, pure validation/merge core in `features/marketing/lib/brand-write-targets.ts` (unit-tested). Verified with a real agent run: per-target ask dialogs, applies persisted (v12→v16 on the test brand), decline path clean, undeclared brand-name write refused, zero writeback captures. Mirrored to `ui.ui_surface_write_target`. Confirmed business facts/assets/properties deliberately have NO write path — the surface doctrine keeps confirmed truth human-owned (candidates flow through the discovery review inbox).
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 
 - **2026-08-08 — Surface auto-adoption at launch.** `launchAgentExecution` now adopts the mounted `<SurfaceRuntimeProvider>` (deepest wins, via `getSurfaceRuntime()`) when the caller passes NEITHER `runtime.surfaceName` NOR `runtime.applicationScope` — name AND live scope together, so every one of the ~33 surface-blind direct launch call sites picks up binding layers, value mappings, write policies, and document evidence on any page with a provider (127 mounts) with zero per-site wiring. Explicit caller values always win; a scope-only launch is untouched; the route-prefix guess (`detectActiveSurface`) is deliberately NOT used here (a name without a mounted runtime has no scope and would fabricate one — it remains the tool-injection fallback only, `build-tool-injection.ts`). A throwing adopted `getScope()` logs loudly and launches surface-named but scope-less. Verified: type gate + A/B against clean main (identical behavior on the dev session whose chat send was already stalled by HMR churn); live confirmation of an adopted scope on a real launch still owed.
