@@ -256,11 +256,29 @@ export function KeywordIntelPanel({
     }
   };
 
+  // Write half (`open_keyword`): the panel owns the navigation callbacks, so
+  // it services the target on its own provider. Lands through the SAME
+  // related-keyword path the Relationships tab uses (records window history,
+  // opens Overview) — never a parallel navigation.
+  const getWriteHandlers = () => ({
+    open_keyword: (value: unknown) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error("open_keyword expects { phrase: string }.");
+      }
+      const next = (value as { phrase?: unknown }).phrase;
+      if (typeof next !== "string" || !next.trim()) {
+        throw new Error("open_keyword: phrase must be a non-empty string.");
+      }
+      onRelatedKeywordNavigate(next.trim());
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={KEYWORD_INTELLIGENCE_SURFACE_NAME}
       isEditable={false}
       getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
     >
     <div className="flex h-full min-h-0 flex-col">
       {/* ── Header: phrase + condensed data + actions ─────────────────────── */}

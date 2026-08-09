@@ -82,12 +82,79 @@ import {
 } from "./useRanks";
 import { TRACKING_MODES } from "./types";
 import type {
+  AddRankTargetInput,
   AiAnswerEngine,
   RankPortfolioItem,
   RankProvider,
   RankTargetHistoryPoint,
   SerpLandscape,
 } from "./types";
+
+/** Wire value for one `track_keywords` entry (see the manifest's contract). */
+interface TrackKeywordsEntry {
+  keyword: string;
+  mode: string;
+  location_name?: string;
+  cadence_days?: number;
+}
+
+/**
+ * Validate one agent-supplied `track_keywords` entry against the REAL
+ * tracking-mode catalog and return the canonical add-target input — the same
+ * shape `AddTargetForm.submit` builds. Throws on any contract break; the
+ * writeback seam turns throws into the loud error envelope the agent reads.
+ */
+function toAddTargetInput(raw: unknown, index: number): AddRankTargetInput {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error(
+      `track_keywords: entry ${index + 1} must be an object { keyword, mode, location_name?, cadence_days? }.`,
+    );
+  }
+  const entry = raw as Partial<TrackKeywordsEntry>;
+  const keyword =
+    typeof entry.keyword === "string" ? entry.keyword.trim() : "";
+  if (!keyword) {
+    throw new Error(
+      `track_keywords: entry ${index + 1} needs a non-empty keyword.`,
+    );
+  }
+  const mode = TRACKING_MODES.find((m) => m.id === entry.mode);
+  if (!mode) {
+    throw new Error(
+      `track_keywords: entry ${index + 1} ("${keyword}") has unknown mode "${String(entry.mode)}". Valid modes: ${TRACKING_MODES.map((m) => m.id).join(", ")}.`,
+    );
+  }
+  const locationName =
+    typeof entry.location_name === "string" ? entry.location_name.trim() : "";
+  if (mode.location === "required" && !locationName) {
+    throw new Error(
+      `track_keywords: entry ${index + 1} ("${keyword}") — ${mode.label} requires location_name (e.g. "Los Angeles, California, United States").`,
+    );
+  }
+  let cadenceDays = 7;
+  if (entry.cadence_days !== undefined) {
+    if (
+      typeof entry.cadence_days !== "number" ||
+      !Number.isInteger(entry.cadence_days) ||
+      entry.cadence_days < 1 ||
+      entry.cadence_days > 90
+    ) {
+      throw new Error(
+        `track_keywords: entry ${index + 1} ("${keyword}") — cadence_days must be an integer between 1 and 90.`,
+      );
+    }
+    cadenceDays = entry.cadence_days;
+  }
+  return {
+    keyword,
+    provider: mode.provider,
+    engine: mode.engine ?? undefined,
+    search_type: mode.search_type,
+    location_name:
+      mode.location === "none" ? undefined : locationName || undefined,
+    cadence_days: cadenceDays,
+  };
+}
 
 /**
  * What the open history dialog currently holds. The dialog owns the fetch (and
@@ -576,10 +643,70 @@ export function RanksWorkspace() {
     });
   };
 
+  // Write half of the surface (manifest `writeTargets`). Both handlers land
+  // through the SAME `usePortfolio` paths as the Track form and the Active
+  // switch — never a parallel write. Throws surface through the writeback
+  // envelope; partial success on a multi-entry add is reported loudly too.
+  const getWriteHandlers = () => ({
+    track_keywords: async (value: unknown) => {
+      if (!Array.isArray(value) || value.length === 0) {
+        throw new Error(
+          "track_keywords expects a non-empty array of { keyword, mode, location_name?, cadence_days? }.",
+        );
+      }
+      const inputs = value.map(toAddTargetInput);
+      const added: string[] = [];
+      for (const input of inputs) {
+        try {
+          await addTarget(input);
+          added.push(input.keyword);
+        } catch (err) {
+          throw new Error(
+            `track_keywords: "${input.keyword}" failed (${extractErrorMessage(err)})${added.length > 0 ? ` — already tracking: ${added.join(", ")}` : ""}.`,
+          );
+        }
+      }
+    },
+    set_tracking_active: async (value: unknown) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error(
+          "set_tracking_active expects { target_ids: string[], is_active: boolean }.",
+        );
+      }
+      const { target_ids: targetIds, is_active: isActive } = value as {
+        target_ids?: unknown;
+        is_active?: unknown;
+      };
+      if (
+        !Array.isArray(targetIds) ||
+        targetIds.length === 0 ||
+        !targetIds.every((id): id is string => typeof id === "string")
+      ) {
+        throw new Error(
+          "set_tracking_active: target_ids must be a non-empty array of target_id strings from rank_portfolio.",
+        );
+      }
+      if (typeof isActive !== "boolean") {
+        throw new Error("set_tracking_active: is_active must be a boolean.");
+      }
+      const known = new Set(items.map((item) => item.target_id));
+      const unknown = targetIds.filter((id) => !known.has(id));
+      if (unknown.length > 0) {
+        throw new Error(
+          `set_tracking_active: not in this portfolio: ${unknown.join(", ")}.`,
+        );
+      }
+      for (const targetId of targetIds) {
+        await updateTarget(targetId, { is_active: isActive });
+      }
+    },
+  });
+
   const withSurface = (children: ReactNode) => (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-ranks"
       getScope={getSurfaceScope}
+      getWriteHandlers={getWriteHandlers}
     >
       {children}
     </SurfaceRuntimeProvider>

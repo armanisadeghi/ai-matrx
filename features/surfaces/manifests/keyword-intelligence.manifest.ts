@@ -170,12 +170,28 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 /**
- * What may be written INTO this window. Declared here, serviced by the tab
- * that owns the state (`KeywordResearchTab` via `useSurfaceWriteHandlers`),
- * reached by any rendered block or agent result through
- * `applySurfaceWrite("keyword_selection", …)`.
+ * What may be written INTO this window. Declared here, serviced by the
+ * component that owns each target's state — `open_keyword` by the panel
+ * itself (`KeywordIntelPanel`'s provider, which holds the navigation
+ * callbacks), `keyword_selection` by the tab that owns the selection
+ * (`KeywordResearchTab` via `useSurfaceWriteHandlers`) — reached by any
+ * rendered block or agent result through `applySurfaceWrite(target, …)`.
  */
 const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "open_keyword",
+    label: "Open keyword",
+    description:
+      "Navigates this window's dossier to a different keyword phrase — the same path as clicking a related keyword: the phrase is recorded in the window's research history and the Overview tab opens. Value is { phrase: string }. Ephemeral navigation only; nothing is persisted. Useful for pivoting the user to a phrase you found in keyword_relationships or the SERP evidence.",
+    valueType: "object",
+    updatesValue: "phrase",
+    mode: "ui",
+    // Navigation replaces what the user is looking at mid-thought, so it asks —
+    // same posture as keyword_selection. Decline is a normal outcome.
+    applyPolicy: "ask",
+    group: "keyword_identity",
+    sortOrder: 340,
+  },
   {
     name: "keyword_selection",
     label: "Keyword selection",
