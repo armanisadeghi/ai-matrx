@@ -65,6 +65,13 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
     void load();
   }, []);
 
+  // EVERY category the report computes must be counted here. `surfaceLabelDrifts`
+  // and `valueGroupsDrifts` (THE NAMING LAW's DB check, service step 10) were
+  // computed, returned, and counted by nothing — so a workspace whose ONLY drift
+  // was a renamed label or a reordered value group got the green
+  // "Everything is in sync" check while the drift sat in the report object.
+  // Reporting a healthy state for a problem you already detected is worse than
+  // not checking at all: it actively tells the operator to stop looking.
   const totalIssues = report
     ? report.manifestsMissingInDb.length +
       report.dbValuesNotInManifest.length +
@@ -74,7 +81,9 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
       report.roleDiffs.length +
       report.unknownNamespaces.length +
       report.brokenAgentMappings.length +
-      report.urlPatternDrifts.length
+      report.urlPatternDrifts.length +
+      report.surfaceLabelDrifts.length +
+      report.valueGroupsDrifts.length
     : 0;
 
   return (
@@ -252,6 +261,73 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
               </Section>
 
               <Section
+                title="Surface label drift"
+                count={report.surfaceLabelDrifts.length}
+                tone="amber"
+                description="ui_surface.label missing or differs from the code manifest (THE NAMING LAW). Sync to apply."
+              >
+                {report.surfaceLabelDrifts.map((d) => (
+                  <div
+                    key={`label-${d.surfaceName}`}
+                    className="px-2 py-1.5 text-[11px] space-y-0.5"
+                  >
+                    <div className="font-mono text-foreground">
+                      {d.surfaceName}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      code=<code className="font-mono">{d.manifest}</code>
+                      {d.db ? (
+                        <>
+                          {" "}
+                          db=<code className="font-mono">{d.db}</code>
+                        </>
+                      ) : (
+                        " (empty in DB)"
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </Section>
+
+              <Section
+                title="Value group drift"
+                count={report.valueGroupsDrifts.length}
+                tone="amber"
+                description="ui_surface.value_groups missing or differs from the code manifest. Compared on a normalized projection, so jsonb key order is never the cause. Sync to apply."
+              >
+                {report.valueGroupsDrifts.map((d) => (
+                  <div
+                    key={`groups-${d.surfaceName}`}
+                    className="px-2 py-1.5 text-[11px] space-y-0.5"
+                  >
+                    <div className="font-mono text-foreground">
+                      {d.surfaceName}
+                    </div>
+                    {/* State the verdict, not just "they differ": name the group
+                        keys on each side so the operator knows what changed
+                        without diffing two blobs by eye. */}
+                    <div className="text-[10px] text-muted-foreground">
+                      code=
+                      <code className="font-mono">
+                        {groupKeyList(d.manifest)}
+                      </code>
+                      {d.kind === "diff" ? (
+                        <>
+                          {" "}
+                          db=
+                          <code className="font-mono">
+                            {groupKeyList(d.db)}
+                          </code>
+                        </>
+                      ) : (
+                        " (empty in DB)"
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </Section>
+
+              <Section
                 title="Broken agent mappings"
                 count={report.brokenAgentMappings.length}
                 tone="rose"
@@ -302,6 +378,22 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
       </DialogContent>
     </Dialog>
   );
+}
+
+/**
+ * Name the group KEYS rather than dumping the raw jsonb — a comparison states
+ * what differs, not just that something does. Falls back to a count when a
+ * group has no readable key so the row can never render an empty verdict.
+ */
+function groupKeyList(input: unknown): string {
+  const groups = Array.isArray(input) ? input : [];
+  if (groups.length === 0) return "(none)";
+  const keys = groups.map((g, i) => {
+    const rec = (g ?? {}) as Record<string, unknown>;
+    const key = rec.key ?? rec.label;
+    return typeof key === "string" && key.trim() ? key.trim() : `#${i + 1}`;
+  });
+  return keys.join(", ");
 }
 
 function Section({
