@@ -43,45 +43,47 @@ interface SideState {
   snapshotLoading: boolean;
 }
 
-const initialSide: SideState = {
-  agentId: null,
-  version: null,
-  versionsLoading: false,
-  versionHistory: [],
-  snapshotLoading: false,
-};
+/** A side, optionally already pointed at an agent (URL preselection). */
+function sideFor(agentId: string | null): SideState {
+  return {
+    agentId,
+    version: agentId ? "current" : null,
+    versionsLoading: !!agentId,
+    versionHistory: [],
+    snapshotLoading: false,
+  };
+}
 
-export function AgentComparisonPage() {
+export interface AgentComparisonPageProps {
+  /**
+   * Preselect a side (from `?left=` / `?right=`). Lets a surface that already
+   * knows which two agents are in question — the Linked Agent Sync panel, a
+   * lineage view — open the full diff already pointed at them.
+   */
+  initialLeftAgentId?: string | null;
+  initialRightAgentId?: string | null;
+}
+
+export function AgentComparisonPage({
+  initialLeftAgentId = null,
+  initialRightAgentId = null,
+}: AgentComparisonPageProps = {}) {
   const dispatch = useAppDispatch();
   const [, startTransition] = useTransition();
 
   const allAgents = useAppSelector(selectAllAgentsArray);
   const [agentsLoading, setAgentsLoading] = useState(allAgents.length === 0);
 
-  const [left, setLeft] = useState<SideState>(initialSide);
-  const [right, setRight] = useState<SideState>(initialSide);
+  // Preselected sides start already pointed at their agent, so a deep link
+  // renders the diff instead of an empty picker on the first paint.
+  const [left, setLeft] = useState<SideState>(() => sideFor(initialLeftAgentId));
+  const [right, setRight] = useState<SideState>(() =>
+    sideFor(initialRightAgentId),
+  );
 
-  useEffect(() => {
-    if (allAgents.length === 0) {
-      dispatch(fetchAgentsListFull())
-        .unwrap()
-        .finally(() => setAgentsLoading(false));
-    } else {
-      setAgentsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleAgentChange = (side: "left" | "right", agentId: string) => {
+  /** Fetch one side's agent + version list. Only writes state from callbacks. */
+  const loadSideData = (side: "left" | "right", agentId: string) => {
     const setter = side === "left" ? setLeft : setRight;
-    setter((prev) => ({
-      ...prev,
-      agentId,
-      version: "current",
-      versionsLoading: true,
-      versionHistory: [],
-    }));
-
     dispatch(fetchFullAgent(agentId));
     dispatch(fetchAgentVersionHistory({ agentId, limit: 100 }))
       .unwrap()
@@ -95,6 +97,34 @@ export function AgentComparisonPage() {
       .catch(() => {
         setter((prev) => ({ ...prev, versionsLoading: false }));
       });
+  };
+
+  useEffect(() => {
+    if (allAgents.length > 0) return;
+    dispatch(fetchAgentsListFull())
+      .unwrap()
+      .finally(() => setAgentsLoading(false));
+     
+  }, []);
+
+  // Load whatever the URL preselected. State for those sides is already set
+  // above; this only fires the fetches.
+  useEffect(() => {
+    if (initialLeftAgentId) loadSideData("left", initialLeftAgentId);
+    if (initialRightAgentId) loadSideData("right", initialRightAgentId);
+     
+  }, [initialLeftAgentId, initialRightAgentId]);
+
+  const handleAgentChange = (side: "left" | "right", agentId: string) => {
+    const setter = side === "left" ? setLeft : setRight;
+    setter((prev) => ({
+      ...prev,
+      agentId,
+      version: "current",
+      versionsLoading: true,
+      versionHistory: [],
+    }));
+    loadSideData(side, agentId);
   };
 
   const handleVersionChange = (side: "left" | "right", option: Option) => {

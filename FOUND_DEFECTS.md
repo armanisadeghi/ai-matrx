@@ -13,6 +13,30 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D137 — linked-agent sync silently leaves `ui_gates` and `matrx_actions` divergent forever (2026-08-09)
+
+`public.agx_sync_linked_agents` copies 18 `agent.definition` columns between a user agent and
+its system twin. Two real config columns are **not** in its `UPDATE ... SET`:
+
+- `ui_gates` — model-gated UI flags (file/image/youtube attachment inputs)
+- `matrx_actions` — whether model-emitted output directives auto-apply / ask / are off
+
+Both are on `AgentDefinition` (`uiGates`, `matrxActions`) and both are editable in the Builder,
+so a Push that "publishes my copy to the shared catalogue" publishes everything except these —
+and no surface says so. The same omission exists in `agx_duplicate_agent`'s sibling history
+(migration `agx_agent_bidirectional_sync.sql` fixed three other silently-dropped columns:
+`skill_config`, `default_rag_boost`, `rag_awareness_mode`; these two were missed).
+
+Found while building the sync comparison. `features/agents/sync/sync-fields.ts` deliberately
+omits them — the comparison must describe the sync as it *is*, or the verdict would claim a
+difference Pull/Push cannot resolve, leaving the user stuck on a permanently "differs" pair.
+
+Fix (one change, needs a decision on `ui_gates` first): add both columns to the RPC's SET clause
+in the behavior group, add the two rows to `AGENT_SYNC_FIELDS`, run `pnpm check:sync-fields`.
+**Decision needed:** `uiGates` is documented as "FE-only, NEVER sent to the server" — confirm
+whether it should travel with a published system agent at all. If the answer is no, it needs an
+explicit "not synced" note in the panel rather than silence.
+
 ### D136 — `pnpm check:hatches` is red on main: baseline drifted, ratchet no longer ratchets (2026-08-08)
 
 `scripts/type-escape-baseline.json` is far behind the tree — five categories are ABOVE baseline

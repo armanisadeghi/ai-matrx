@@ -11,10 +11,18 @@
  *   - Create my personal copy           — idempotent (opens an existing copy)
  *   - Convert to a new system agent      — when a user agent has no twin yet
  *
- * The DB (`agx_sync_linked_agents`) is the real authority on linkage + write
- * gating; this component only enables/labels the actions. Direction-agnostic by
- * design: the link lives on whichever side was derived, and we resolve the twin
- * from either end via `fetchLinkedCounterpart`.
+ * THE PANEL ANSWERS BEFORE IT ASKS. It opens by actually comparing the two
+ * agents — identical / differs / unknown — over exactly the fields
+ * `agx_sync_linked_agents` copies (`features/agents/sync/sync-fields.ts`), so
+ * the verdict can never disagree with what Pull/Push would write. A "last
+ * synced" timestamp is not a verdict; it is demoted to a footnote. When the
+ * pair matches for a given direction, that direction's button says so instead
+ * of inviting a pointless overwrite.
+ *
+ * The DB (`agx_sync_linked_agents`) remains the real authority on linkage +
+ * write gating; this component only enables/labels the actions.
+ * Direction-agnostic by design: the link lives on whichever side was derived,
+ * and we resolve the twin from either end via `fetchLinkedCounterpart`.
  */
 
 import { useEffect, useState } from "react";
@@ -22,6 +30,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import {
+  fetchAgentSyncComparison,
   fetchLinkedCounterpart,
   syncLinkedAgents,
   createPersonalCopy,
@@ -30,7 +39,14 @@ import type {
   LinkedAgentRef,
   LinkedCounterpartResult,
 } from "@/features/agents/types/agent-definition.types";
+import {
+  agentSyncImpact,
+  describeAgentSyncImpact,
+  type AgentSyncComparison,
+  type AgentSyncFieldChange,
+} from "@/features/agents/sync/compare";
 import { ConvertAgentToSystemBody } from "@/features/agents/components/admin/ConvertAgentToSystemBody";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -38,14 +54,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowDownToLine,
   ArrowUpFromLine,
+  CheckCircle2,
   Clock,
   Copy,
-  ExternalLink,
+  GitCompare,
   Loader2,
   RefreshCw,
-  ShieldCheck,
   Unlink,
 } from "lucide-react";
 import Link from "next/link";
@@ -106,56 +123,155 @@ function resolvePair(
   return { userSide: self, systemSide };
 }
 
+/** One changed field, named and quantified. */
+function FieldChangeChip({ change }: { change: AgentSyncFieldChange }) {
+  const detail = change.orderOnly
+    ? "order only"
+    : change.changedCount > 1
+      ? `${change.changedCount} changes`
+      : null;
+
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[11px]"
+      title={`${change.label} — differs (agent.definition.${change.column})`}
+    >
+      <span className="font-medium text-foreground">{change.label}</span>
+      {detail && <span className="text-muted-foreground">{detail}</span>}
+      {change.group === "identity" && (
+        <Badge
+          variant="outline"
+          className="h-3.5 px-1 text-[9px] leading-none text-muted-foreground"
+        >
+          identity
+        </Badge>
+      )}
+    </span>
+  );
+}
+
 export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const dispatch = useAppDispatch();
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [counterpart, setCounterpart] =
-    useState<LinkedCounterpartResult | null>(null);
+  /**
+   * Both async reads are stored KEYED by what they describe, and their
+   * loading/error states are derived from that key rather than set from inside
+   * an effect. That keeps a stale result (or a stale error) from a previously
+   * viewed agent from ever being rendered as if it belonged to this one.
+   */
+  const [counterpartState, setCounterpartState] = useState<{
+    agentId: string;
+    result: LinkedCounterpartResult | null;
+  } | null>(null);
+  const [errorState, setErrorState] = useState<{
+    agentId: string;
+    message: string;
+  } | null>(null);
   const [busy, setBusy] = useState<null | "pull" | "push" | "copy">(null);
   const [pullIdentity, setPullIdentity] = useState(false);
+  /** Bumped after a sync so the comparison is recomputed against fresh rows. */
+  const [syncNonce, setSyncNonce] = useState(0);
+
+  const error = errorState?.agentId === agentId ? errorState.message : null;
+  const counterpart =
+    counterpartState?.agentId === agentId ? counterpartState.result : null;
+  const loading = counterpartState?.agentId !== agentId && !error;
 
   const selfType: "user" | "builtin" =
     agent?.agentType === "builtin" ? "builtin" : "user";
 
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await dispatch(fetchLinkedCounterpart(agentId)).unwrap();
-      setCounterpart(result);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to resolve linked agent.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    load();
-  }, [agentId]);
+    let cancelled = false;
+    dispatch(fetchLinkedCounterpart(agentId))
+      .unwrap()
+      .then((result) => {
+        if (!cancelled) setCounterpartState({ agentId, result });
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setErrorState({
+          agentId,
+          message:
+            err instanceof Error
+              ? err.message
+              : "Failed to resolve linked agent.",
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [agentId, dispatch, syncNonce]);
 
   const pair = counterpart ? resolvePair(selfType, counterpart) : null;
   const userSide = pair?.userSide ?? null;
   const systemSide = pair?.systemSide ?? null;
   const hasPair = !!userSide && !!systemSide;
 
-  // The reconciliation stamp lives on whichever side was derived.
-  const derivedRef =
-    userSide && userSide.sourceAgentId === systemSide?.id
-      ? userSide
-      : systemSide && systemSide.sourceAgentId === userSide?.id
-        ? systemSide
-        : null;
-  const lastSyncedAt = derivedRef?.sourceSnapshotAt ?? null;
+  const userSideId = userSide?.id ?? null;
+  const systemSideId = systemSide?.id ?? null;
+
+  /**
+   * Compare on open, and again after every sync. The nonce is part of the key,
+   * so a sync invalidates the old verdict instead of leaving it on screen. A
+   * failed comparison becomes `unknown` — "I couldn't look" must never read as
+   * "they match".
+   */
+  const [comparisonState, setComparisonState] = useState<{
+    key: string;
+    value: AgentSyncComparison;
+  } | null>(null);
+
+  const pairKey =
+    userSideId && systemSideId
+      ? `${userSideId}|${systemSideId}|${syncNonce}`
+      : null;
+  const comparison =
+    pairKey && comparisonState?.key === pairKey ? comparisonState.value : null;
+  const comparing = !!pairKey && comparison === null;
+
+  useEffect(() => {
+    if (!userSideId || !systemSideId || !pairKey) return;
+    let cancelled = false;
+    dispatch(
+      fetchAgentSyncComparison({
+        userAgentId: userSideId,
+        systemAgentId: systemSideId,
+      }),
+    )
+      .unwrap()
+      .then((value) => {
+        if (!cancelled) setComparisonState({ key: pairKey, value });
+      })
+      .catch((err: unknown) => {
+        console.error("[AgentSyncBody] agent comparison failed", err);
+        if (cancelled) return;
+        setComparisonState({
+          key: pairKey,
+          value: {
+            verdict: "unknown",
+            unreadable: ["user", "system"],
+            changed: [],
+            identityChanged: [],
+            behaviorChanged: [],
+            comparedFieldCount: 0,
+          },
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userSideId, systemSideId, pairKey, dispatch]);
 
   const canPull = !!userSide && (userSide.isOwnedByMe || isSuperAdmin);
   const canPush = isSuperAdmin;
+
+  /** Re-resolve the pair AND re-run the comparison. Doubles as the retry. */
+  const refreshAfterSync = () => {
+    setErrorState(null);
+    setSyncNonce((n) => n + 1);
+  };
 
   const runPull = async () => {
     if (!userSide || !systemSide) return;
@@ -169,7 +285,7 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
         }),
       ).unwrap();
       toast.success(`Pulled latest into "${userSide.name}".`);
-      await load();
+      refreshAfterSync();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Pull failed.");
     } finally {
@@ -189,7 +305,7 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
         }),
       ).unwrap();
       toast.success(`Pushed "${userSide.name}" to the system agent.`);
-      await load();
+      refreshAfterSync();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Push failed.");
     } finally {
@@ -206,7 +322,7 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
           ? "Opened your existing personal copy."
           : "Created your personal copy.",
       );
-      await load();
+      refreshAfterSync();
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Could not create personal copy.",
@@ -238,7 +354,7 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
-          <Button onClick={load} className="gap-1.5">
+          <Button onClick={refreshAfterSync} className="gap-1.5">
             <RefreshCw className="w-3.5 h-3.5" />
             Retry
           </Button>
@@ -306,20 +422,107 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
     );
   }
 
-  // ─── Linked pair: push / pull ────────────────────────────────────────────
+  // ─── Linked pair: verdict, then push / pull ──────────────────────────────
+
+  // Unreachable — `hasPair` above already guarantees both sides. Present so the
+  // rest of this branch is narrowed without non-null assertions.
+  if (!userSide || !systemSide) return null;
+
+  // The reconciliation stamp lives on whichever side was derived. It is
+  // provenance, not a verdict — the comparison above is the verdict.
+  const derivedRef =
+    userSide && userSide.sourceAgentId === systemSide?.id
+      ? userSide
+      : systemSide && systemSide.sourceAgentId === userSide?.id
+        ? systemSide
+        : null;
+  const lastSyncedAt = derivedRef?.sourceSnapshotAt ?? null;
+
+  const pullImpact = comparison
+    ? agentSyncImpact(comparison, pullIdentity)
+    : null;
+  const pushImpact = comparison ? agentSyncImpact(comparison, true) : null;
+
+  const pullBlocked = !!pullImpact?.nothingToSync;
+  const pushBlocked = !!pushImpact?.nothingToSync;
+
+  const diffHref = `/agents/compare?left=${encodeURIComponent(
+    userSide.id,
+  )}&right=${encodeURIComponent(systemSide.id)}`;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
-        <ShieldCheck className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-        <div className="text-xs leading-relaxed text-muted-foreground">
-          These two agents are linked. Push your personal copy up to the shared
-          system agent, or pull the system agent&apos;s latest down into your
-          copy.
+      {/* Verdict — the answer, before any action is offered */}
+      {comparing || !comparison ? (
+        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
+          Comparing the two agents…
         </div>
-      </div>
+      ) : comparison.verdict === "identical" ? (
+        <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
+          <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+          <div className="text-xs leading-relaxed text-muted-foreground">
+            <span className="font-medium text-foreground">
+              These two agents are identical.
+            </span>{" "}
+            All {comparison.comparedFieldCount} fields that sync would copy
+            already match. There is nothing to pull or push.
+          </div>
+        </div>
+      ) : comparison.verdict === "unknown" ? (
+        <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
+          <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+          <div className="text-xs leading-relaxed text-muted-foreground">
+            <span className="font-medium text-foreground">
+              Could not compare these agents.
+            </span>{" "}
+            The{" "}
+            {comparison.unreadable.length === 2
+              ? "agent records are"
+              : comparison.unreadable[0] === "system"
+                ? "system agent is"
+                : "user copy is"}{" "}
+            not readable from this account, so syncing would overwrite the
+            target with changes you cannot see here.
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2 rounded-md border border-border bg-muted/30 px-3 py-2.5">
+          <div className="flex items-start gap-3">
+            <GitCompare className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+            <div className="text-xs leading-relaxed text-muted-foreground">
+              <span className="font-medium text-foreground">
+                These agents are not identical.
+              </span>{" "}
+              {comparison.changed.length} of {comparison.comparedFieldCount}{" "}
+              synced fields differ
+              {comparison.behaviorChanged.length === 0
+                ? " — all of them identity fields, so behavior is in sync"
+                : ""}
+              .
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1 pl-7">
+            {comparison.changed.map((change) => (
+              <FieldChangeChip key={change.field} change={change} />
+            ))}
+          </div>
+          <div className="pl-7">
+            <Button
+              asChild
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-[11px]"
+            >
+              <Link href={diffHref} target="_blank" rel="noopener noreferrer">
+                See exactly what changed, field by field
+              </Link>
+            </Button>
+          </div>
+        </div>
+      )}
 
-      {/* Pair card */}
+      {/* Pair card — every identity is a door */}
       <div className="rounded-md border border-border bg-card divide-y divide-border">
         {[userSide, systemSide].map((ref) =>
           ref ? (
@@ -335,38 +538,29 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
               >
                 {ref.agentType === "builtin" ? "System" : "User copy"}
               </Badge>
-              <span className="text-sm font-medium truncate flex-1">
-                {ref.name}
-              </span>
+              <EntityRef
+                token="agent"
+                id={ref.id}
+                name={ref.name}
+                href={`${basePathFor(ref)}/${ref.id}/build`}
+                showIcon={false}
+                alwaysShowActions
+                className="flex-1 text-sm font-medium"
+              />
               {ref.isOwnedByMe && (
                 <Badge variant="outline" className="text-[10px] shrink-0">
                   mine
                 </Badge>
               )}
-              <Button
-                asChild
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
-                title="Open in new tab"
-              >
-                <Link
-                  href={`${basePathFor(ref)}/${ref.id}/build`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span className="sr-only">Open {ref.name}</span>
-                </Link>
-              </Button>
             </div>
           ) : null,
         )}
       </div>
 
+      {/* Provenance footnote — not a verdict */}
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground px-0.5">
         <Clock className="w-3 h-3 shrink-0" />
-        Last synced {formatTimestamp(lastSyncedAt)}
+        Last reconciled {formatTimestamp(lastSyncedAt)}
       </div>
 
       {/* Pull options */}
@@ -382,11 +576,18 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
             className="text-xs font-normal text-muted-foreground cursor-pointer"
           >
             On pull, also overwrite my copy&apos;s name, description &amp; tags
+            {comparison?.verdict === "differs" &&
+              comparison.identityChanged.length > 0 && (
+                <span className="text-foreground">
+                  {" "}
+                  ({comparison.identityChanged.length} would change)
+                </span>
+              )}
           </Label>
         </div>
       )}
 
-      {/* Actions */}
+      {/* Actions — labelled with what they would actually overwrite */}
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
         <Button variant="ghost" size="sm" onClick={onClose}>
           Close
@@ -396,12 +597,14 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
             variant="outline"
             size="sm"
             onClick={runPull}
-            disabled={!canPull || busy !== null}
+            disabled={!canPull || busy !== null || pullBlocked}
             className="gap-1.5"
             title={
-              canPull
-                ? "Overwrite the user copy with the system agent's config"
-                : "You can only pull into a copy you own"
+              !canPull
+                ? "You can only pull into a copy you own"
+                : pullImpact
+                  ? describeAgentSyncImpact(pullImpact, userSide.name)
+                  : "Comparing…"
             }
           >
             {busy === "pull" ? (
@@ -409,17 +612,23 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
             ) : (
               <ArrowDownToLine className="w-3.5 h-3.5" />
             )}
-            Pull from system
+            {pullBlocked
+              ? "Nothing to pull"
+              : pullImpact && pullImpact.count > 0
+                ? `Pull ${pullImpact.count} field${pullImpact.count === 1 ? "" : "s"}`
+                : "Pull from system"}
           </Button>
           <Button
             size="sm"
             onClick={runPush}
-            disabled={!canPush || busy !== null}
+            disabled={!canPush || busy !== null || pushBlocked}
             className="gap-1.5"
             title={
-              canPush
-                ? "Overwrite the system agent with the user copy's config"
-                : "Only super admins can push to a system agent"
+              !canPush
+                ? "Only super admins can push to a system agent"
+                : pushImpact
+                  ? describeAgentSyncImpact(pushImpact, systemSide.name)
+                  : "Comparing…"
             }
           >
             {busy === "push" ? (
@@ -427,7 +636,11 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
             ) : (
               <ArrowUpFromLine className="w-3.5 h-3.5" />
             )}
-            Push to system
+            {pushBlocked
+              ? "Nothing to push"
+              : pushImpact && pushImpact.count > 0
+                ? `Push ${pushImpact.count} field${pushImpact.count === 1 ? "" : "s"}`
+                : "Push to system"}
           </Button>
         </div>
       </div>
