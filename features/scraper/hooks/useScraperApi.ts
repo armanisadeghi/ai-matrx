@@ -708,8 +708,7 @@ export function useScraperApi(): UseScraperApiReturn {
       const ctx = createStreamCtx();
       let stage: ScraperApiErrorDiagnostics["stage"] = "api.post";
       let httpSnapshot:
-        | ScraperApiErrorDiagnostics["received"]["http"]
-        | undefined;
+        ScraperApiErrorDiagnostics["received"]["http"] | undefined;
       try {
         const signal = newSignal();
         const body: QuickScrapeRequest = {
@@ -732,6 +731,11 @@ export function useScraperApi(): UseScraperApiReturn {
         };
 
         stage = "api.post";
+        // Guests authenticate with a fingerprint that GlobalAuthSync resolves
+        // ~100ms after mount. Anonymous surfaces (the public /seo tools) can
+        // fire before that lands, so wait for an identity or the backend
+        // rejects the call with auth_required.
+        await api.waitForAuth();
         const response = await api.post(
           ENDPOINTS.scraper.quickScrape,
           body,
@@ -818,6 +822,7 @@ export function useScraperApi(): UseScraperApiReturn {
           ...options,
         };
 
+        await api.waitForAuth();
         const response = await api.post(ENDPOINTS.scraper.quickScrape, body);
         const { results, metadata } = await consumeScrapeStream(
           response,
@@ -860,8 +865,7 @@ export function useScraperApi(): UseScraperApiReturn {
 
       let stage: ScraperApiErrorDiagnostics["stage"] = "api.post";
       let httpSnapshot:
-        | ScraperApiErrorDiagnostics["received"]["http"]
-        | undefined;
+        ScraperApiErrorDiagnostics["received"]["http"] | undefined;
 
       try {
         const signal = newSignal();
@@ -885,6 +889,11 @@ export function useScraperApi(): UseScraperApiReturn {
         };
 
         stage = "api.post";
+        // Guests authenticate with a fingerprint that GlobalAuthSync resolves
+        // ~100ms after mount. Anonymous surfaces (the public /seo tools) can
+        // fire before that lands, so wait for an identity or the backend
+        // rejects the call with auth_required.
+        await api.waitForAuth();
         const response = await api.post(
           ENDPOINTS.scraper.quickScrape,
           body,
@@ -964,8 +973,7 @@ export function useScraperApi(): UseScraperApiReturn {
       const ctx = createStreamCtx();
       let stage: ScraperApiErrorDiagnostics["stage"] = "api.post";
       let httpSnapshot:
-        | ScraperApiErrorDiagnostics["received"]["http"]
-        | undefined;
+        ScraperApiErrorDiagnostics["received"]["http"] | undefined;
 
       try {
         const signal = newSignal();
@@ -989,6 +997,11 @@ export function useScraperApi(): UseScraperApiReturn {
         };
 
         stage = "api.post";
+        // Guests authenticate with a fingerprint that GlobalAuthSync resolves
+        // ~100ms after mount. Anonymous surfaces (the public /seo tools) can
+        // fire before that lands, so wait for an identity or the backend
+        // rejects the call with auth_required.
+        await api.waitForAuth();
         const response = await api.post(
           ENDPOINTS.scraper.quickScrape,
           body,
@@ -1023,9 +1036,9 @@ export function useScraperApi(): UseScraperApiReturn {
             );
           } catch (mapErr) {
             throw new Error(
-              `mapToScraperResult failed at index ${i} (${urls[i] ?? "?"}): ${
-                extractErrorMessage(mapErr)
-              }`,
+              `mapToScraperResult failed at index ${i} (${urls[i] ?? "?"}): ${extractErrorMessage(
+                mapErr,
+              )}`,
               { cause: { failedResultIndex: i } },
             );
           }
@@ -1092,12 +1105,16 @@ export function useScraperApi(): UseScraperApiReturn {
       const ctx = createStreamCtx();
       let stage: ScraperApiErrorDiagnostics["stage"] = "api.post";
       let httpSnapshot:
-        | ScraperApiErrorDiagnostics["received"]["http"]
-        | undefined;
+        ScraperApiErrorDiagnostics["received"]["http"] | undefined;
 
       try {
         const signal = newSignal();
         stage = "api.post";
+        // Guests authenticate with a fingerprint that GlobalAuthSync resolves
+        // ~100ms after mount. Anonymous surfaces (the public /seo tools) can
+        // fire before that lands, so wait for an identity or the backend
+        // rejects the call with auth_required.
+        await api.waitForAuth();
         const response = await api.post(
           ENDPOINTS.scraper.search,
           request,
@@ -1189,12 +1206,16 @@ export function useScraperApi(): UseScraperApiReturn {
       const ctx = createStreamCtx();
       let stage: ScraperApiErrorDiagnostics["stage"] = "api.post";
       let httpSnapshot:
-        | ScraperApiErrorDiagnostics["received"]["http"]
-        | undefined;
+        ScraperApiErrorDiagnostics["received"]["http"] | undefined;
 
       try {
         const signal = newSignal();
         stage = "api.post";
+        // Guests authenticate with a fingerprint that GlobalAuthSync resolves
+        // ~100ms after mount. Anonymous surfaces (the public /seo tools) can
+        // fire before that lands, so wait for an identity or the backend
+        // rejects the call with auth_required.
+        await api.waitForAuth();
         const response = await api.post(
           ENDPOINTS.scraper.searchAndScrape,
           request,
@@ -1230,9 +1251,9 @@ export function useScraperApi(): UseScraperApiReturn {
             );
           } catch (mapErr) {
             throw new Error(
-              `mapToScraperResult failed at index ${i} (${(r.url as string) ?? "?"}): ${
-                extractErrorMessage(mapErr)
-              }`,
+              `mapToScraperResult failed at index ${i} (${(r.url as string) ?? "?"}): ${extractErrorMessage(
+                mapErr,
+              )}`,
               { cause: { failedResultIndex: i } },
             );
           }
@@ -1298,12 +1319,16 @@ export function useScraperApi(): UseScraperApiReturn {
       const ctx = createStreamCtx();
       let stage: ScraperApiErrorDiagnostics["stage"] = "api.post";
       let httpSnapshot:
-        | ScraperApiErrorDiagnostics["received"]["http"]
-        | undefined;
+        ScraperApiErrorDiagnostics["received"]["http"] | undefined;
 
       try {
         const signal = newSignal();
         stage = "api.post";
+        // Guests authenticate with a fingerprint that GlobalAuthSync resolves
+        // ~100ms after mount. Anonymous surfaces (the public /seo tools) can
+        // fire before that lands, so wait for an identity or the backend
+        // rejects the call with auth_required.
+        await api.waitForAuth();
         const response = await api.post(
           ENDPOINTS.scraper.searchAndScrapeLimited,
           request,
@@ -1338,9 +1363,9 @@ export function useScraperApi(): UseScraperApiReturn {
             );
           } catch (mapErr) {
             throw new Error(
-              `mapToScraperResult failed at index ${i} (${(r.url as string) ?? "?"}): ${
-                extractErrorMessage(mapErr)
-              }`,
+              `mapToScraperResult failed at index ${i} (${(r.url as string) ?? "?"}): ${extractErrorMessage(
+                mapErr,
+              )}`,
               { cause: { failedResultIndex: i } },
             );
           }
