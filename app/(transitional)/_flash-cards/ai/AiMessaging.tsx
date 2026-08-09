@@ -66,7 +66,7 @@ export default function FlashcardChat() {
                         <div
                             key={index}
                             className={`p-2 my-2 rounded-lg ${
-                                msg.role === 'user' ? 'bg-primary/10 text-right' : 'bg-accent'
+                                msg.role === 'user' ? 'bg-primary/10 border border-primary/20 text-right' : 'bg-muted border border-border'
                             }`}
                         >
                             <p>{msg.content}</p>

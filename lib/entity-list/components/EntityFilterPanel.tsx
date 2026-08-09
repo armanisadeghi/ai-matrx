@@ -240,7 +240,7 @@ export function EntityFilterPanel<TRow>({
                 >
                   <span
                     className={cn(
-                      "absolute top-px h-4 w-4 rounded-full bg-background shadow-sm transition-all",
+                      "absolute top-px h-4 w-4 rounded-full bg-background border border-primary shadow-sm transition-all",
                       favoritesFirst ? "left-[14px]" : "left-px",
                     )}
                   />

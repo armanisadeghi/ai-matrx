@@ -24,7 +24,7 @@ export default function OAuthProvider({
           <div className={`text-${config.color}`}>
             {config.iconSvg}
           </div>
-          <h2 className="text-xl font-semibold ml-2 text-gray-800">{config.name}</h2>
+          <h2 className="text-xl font-semibold ml-2 text-foreground">{config.name}</h2>
         </div>
 
         {state.error && (
@@ -35,12 +35,12 @@ export default function OAuthProvider({
 
         {state.isLoading ? (
             <div className="flex items-center justify-center p-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-foreground"></div>
               <span className="ml-2">Connecting to {config.name}...</span>
             </div>
         ) : !state.isConnected ? (
             <div>
-              <p className="mb-4 text-gray-600">
+              <p className="mb-4 text-muted-foreground">
                 Connect to your {config.name} account to access data and services.
               </p>
               <div className="flex flex-col space-y-3">
@@ -61,19 +61,19 @@ export default function OAuthProvider({
                       <h3 className="text-lg font-semibold">Access Token</h3>
                       <button
                           onClick={() => setShowToken(!showToken)}
-                          className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded"
+                          className="text-xs px-2 py-1 bg-muted hover:bg-accent rounded"
                       >
                         {showToken ? 'Hide' : 'Show'} Token
                       </button>
                     </div>
 
                     {showToken ? (
-                        <div className="bg-gray-100 p-4 rounded-md overflow-x-auto">
+                        <div className="bg-muted p-4 rounded-md overflow-x-auto">
                           <code className="text-sm break-all">{state.token}</code>
                         </div>
                     ) : (
-                        <div className="bg-gray-100 p-4 rounded-md">
-                          <p className="text-sm text-gray-500">Token is hidden. Click "Show Token" to reveal.</p>
+                        <div className="bg-muted p-4 rounded-md">
+                          <p className="text-sm text-muted-foreground">Token is hidden. Click "Show Token" to reveal.</p>
                         </div>
                     )}
                   </div>

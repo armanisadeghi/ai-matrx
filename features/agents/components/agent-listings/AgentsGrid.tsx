@@ -1357,7 +1357,7 @@ export function AgentsGrid() {
                 >
                   <span
                     className={cn(
-                      "absolute top-0.5 w-4 h-4 rounded-full bg-background shadow-sm transition-all",
+                      "absolute top-0.5 w-4 h-4 rounded-full bg-background border border-primary shadow-sm transition-all",
                       favoritesFirst ? "left-4" : "left-0.5",
                     )}
                   />

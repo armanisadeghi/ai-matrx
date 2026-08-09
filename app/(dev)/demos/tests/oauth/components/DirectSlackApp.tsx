@@ -61,18 +61,18 @@ export default function DirectSlackApp() {
   };
 
   return (
-      <div className="min-h-dvh bg-gray-50 py-8">
+      <div className="min-h-dvh bg-muted/50 py-8">
         <div className="max-w-5xl mx-auto px-4">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Slack Direct Integration</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-3xl font-bold text-foreground">Slack Direct Integration</h1>
+            <p className="text-muted-foreground mt-2">
               Access and manage your Slack workspace directly with a token.
             </p>
           </div>
 
           {!isConnected ? (
               <div className="bg-card shadow rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Enter Your Slack Token</h2>
+                <h2 className="text-xl font-semibold text-foreground mb-4">Enter Your Slack Token</h2>
 
                 {error && (
                     <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -82,19 +82,19 @@ export default function DirectSlackApp() {
 
                 <form onSubmit={handleTokenSubmit} className="space-y-4">
                   <div>
-                    <label htmlFor="token" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="token" className="block text-sm font-medium text-foreground mb-1">
                       Slack Bot User OAuth Token
                     </label>
                     <input
                         type="text"
                         id="token"
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full border border-border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                         placeholder="xoxb-your-token"
                         value={token}
                         onChange={(e) => setToken(e.target.value)}
                         disabled={isTokenSubmitted}
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       This should be a Bot User OAuth Token beginning with "xoxb-"
                     </p>
                   </div>
@@ -110,7 +110,7 @@ export default function DirectSlackApp() {
 
                     <button
                         type="button"
-                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded"
+                        className="bg-muted hover:bg-accent text-foreground font-medium py-2 px-4 rounded"
                         onClick={prefillToken}
                         disabled={isTokenSubmitted}
                     >

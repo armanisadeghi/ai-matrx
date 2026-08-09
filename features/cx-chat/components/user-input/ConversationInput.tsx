@@ -596,7 +596,7 @@ export function ConversationInput({
                 className={`w-6 h-3.5 rounded-full transition-colors ${submitOnEnter ? "bg-primary" : "bg-muted"} relative`}
               >
                 <div
-                  className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-background transition-transform ${submitOnEnter ? "translate-x-[13px]" : "translate-x-0.5"}`}
+                  className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-background border border-primary transition-transform ${submitOnEnter ? "translate-x-[13px]" : "translate-x-0.5"}`}
                 />
               </div>
               <CornerDownLeft className="w-3 h-3" />

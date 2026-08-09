@@ -42,7 +42,7 @@ const TokenDisplay: React.FC<TokenDisplayProps> = ({ providerStates }) => {
   return (
       <div className="mt-8 bg-card shadow rounded-lg p-6">
         <h2 className="text-xl font-bold mb-4">Access Tokens</h2>
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="text-sm text-muted-foreground mb-4">
           These tokens can be used to access the respective APIs. Click to expand and view the full token.
         </p>
 
@@ -61,7 +61,7 @@ const TokenDisplay: React.FC<TokenDisplayProps> = ({ providerStates }) => {
                   </div>
                   <div>
                     <button
-                        className="text-gray-500 hover:text-gray-700 px-2 py-1 text-sm"
+                        className="text-muted-foreground hover:text-foreground px-2 py-1 text-sm"
                     >
                       {expandedProvider === provider.providerId ? 'Hide' : 'Show'} Token
                     </button>
@@ -69,9 +69,9 @@ const TokenDisplay: React.FC<TokenDisplayProps> = ({ providerStates }) => {
                 </div>
 
                 {expandedProvider === provider.providerId && (
-                    <div className="p-4 bg-gray-50 border-t">
+                    <div className="p-4 bg-muted/50 border-t">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-gray-500">Token Value</span>
+                        <span className="text-sm text-muted-foreground">Token Value</span>
                         <button
                             className="text-blue-600 hover:text-blue-800 text-sm"
                             onClick={() => copyToClipboard(provider.token!, provider.providerId)}
@@ -79,7 +79,7 @@ const TokenDisplay: React.FC<TokenDisplayProps> = ({ providerStates }) => {
                           {copiedToken === provider.providerId ? 'Copied!' : 'Copy to Clipboard'}
                         </button>
                       </div>
-                      <div className="bg-gray-100 p-3 rounded overflow-x-auto">
+                      <div className="bg-muted p-3 rounded overflow-x-auto">
                         <code className="text-sm break-all font-mono">{provider.token}</code>
                       </div>
                     </div>
