@@ -173,6 +173,7 @@ export function enrichCard(args: { card: CardWithDetails; depth: Depth }) {
           sourceFeature: "education-flashcards",
           isEphemeral: false,
           runtime: {
+            surfaceName: "matrx-user/education-flashcards",
             variables: {
               front: card.front,
               back: card.back,
@@ -220,6 +221,7 @@ export function expandCard(args: { card: CardWithDetails; depth: Depth }) {
           sourceFeature: "education-flashcards",
           isEphemeral: false,
           runtime: {
+            surfaceName: "matrx-user/education-flashcards",
             variables: {
               front: card.front,
               back: card.back,

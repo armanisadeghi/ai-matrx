@@ -13,10 +13,12 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { buildFastFireSurfaceScope } from "../fastfire-surface-scope";
 import { openSetup, resetFastFire } from "../redux/fastFireSlice";
 import { selectFastFirePhase, selectFastFireConfig } from "../redux/fastFire.selectors";
 import { useFastFireDrill } from "../hooks/useFastFireDrill";
@@ -30,6 +32,7 @@ const FLASHCARDS_HOME = "/education/flashcards";
 
 export function FastFireSurface({ setId }: { setId?: string | null }) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const router = useRouter();
   const phase = useAppSelector(selectFastFirePhase);
   const config = useAppSelector(selectFastFireConfig);
@@ -60,20 +63,27 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
     router.push(FLASHCARDS_HOME);
   };
 
+  // Live scope for the surface system — read from the store at Run time only.
+  const getScope = () => buildFastFireSurfaceScope(store.getState());
+
+  let body: ReactNode;
   switch (phase) {
     case "idle":
-      return (
+      body = (
         <div className="flex min-h-[60dvh] items-center justify-center bg-textured">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       );
+      break;
     case "setup":
-      return <FastFireSetup />;
+      body = <FastFireSetup />;
+      break;
     case "countdown":
-      return <FastFireCountdown count={countdown} />;
+      body = <FastFireCountdown count={countdown} />;
+      break;
     case "card_recording":
     case "advancing":
-      return (
+      body = (
         <>
           <FastFireLiveCard
             subscribeProgress={subscribeProgress}
@@ -85,11 +95,13 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
           <FastFireTimesUp />
         </>
       );
+      break;
     case "finalizing":
     case "complete":
-      return <FastFireScoreboard onRestart={restart} onExit={exit} />;
+      body = <FastFireScoreboard onRestart={restart} onExit={exit} />;
+      break;
     case "abandoned":
-      return (
+      body = (
         <div className="flex min-h-[60dvh] flex-col items-center justify-center gap-3 bg-textured text-center">
           <p className="text-sm text-muted-foreground">Session ended.</p>
           <button
@@ -101,7 +113,17 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
           </button>
         </div>
       );
+      break;
     default:
-      return null;
+      body = null;
   }
+
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/education-fastfire"
+      getScope={getScope}
+    >
+      {body}
+    </SurfaceRuntimeProvider>
+  );
 }

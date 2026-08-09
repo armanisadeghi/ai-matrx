@@ -131,6 +131,7 @@ export function deepenItem(args: {
           sourceFeature: "education-assessment",
           isEphemeral: false,
           runtime: {
+            surfaceName: "matrx-user/education-assessment",
             variables: {
               prompt: args.item.prompt,
               correct_answer: args.item.correct_answer ?? "",

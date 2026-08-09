@@ -72,6 +72,7 @@ export function makeQuizItems(args: MakeQuizItemsArgs) {
           sourceFeature: "education-flashcards",
           isEphemeral: false,
           runtime: {
+            surfaceName: "matrx-user/education-flashcards",
             variables: {
               front: args.front,
               back: args.back,

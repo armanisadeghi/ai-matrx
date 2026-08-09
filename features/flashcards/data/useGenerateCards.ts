@@ -296,6 +296,7 @@ export function useGenerateCards(): GenerateCardsResult {
           onConversationCreated: (conversationId) =>
             setActiveConversationId(conversationId),
           runtime: {
+            surfaceName: "matrx-user/education-flashcards",
             variables: fromSource
               ? {
                   source_content: vars.source_content,

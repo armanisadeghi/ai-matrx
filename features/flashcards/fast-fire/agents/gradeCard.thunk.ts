@@ -172,6 +172,7 @@ export function gradeCard(args: GradeCardArgs) {
           sourceFeature: "education-fastfire",
           isEphemeral: false,
           runtime: {
+            surfaceName: "matrx-user/education-fastfire",
             variables: {
               front,
               back,
