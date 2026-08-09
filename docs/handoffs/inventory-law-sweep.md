@@ -365,7 +365,7 @@ these — but **not** `AgentListDropdown` (42 consumers) or `AgentActionModal`.
 
 | Route | File | Effort | Note |
 |---|---|---|---|
-| `/crm` | `features/crm/components/CrmListPage.tsx` (493) | **S** | Closest in the repo — already uses `EntityScopeTabs`, `useListViewPrefs`, `ItemMenu`, controlled `MatrxDataTable`. Missing facets, column picker, card/dense; hand-writes a filter bridge the shell owns. |
+| `/crm` | `features/crm/components/CrmListPage.tsx` (493) | **M** (audit said S — wrong, see below) | Closest in UI terms: already uses `EntityScopeTabs`, `useListViewPrefs`, `ItemMenu`, controlled `MatrxDataTable`, and hand-writes a filter bridge the shell owns. |
 | `/marketing/sites` | `SitesPortfolio.tsx` (647) | **S** | Best non-adopter: has `MatrxDataTable` + `ItemMenu` already |
 | `/schedules` | `ScheduleList.tsx` (98) | **S** | Small, zero primitives, cheap win |
 | `/agents/sets` | `AgentSetsBrowser.tsx` (150) | **S** | Sits inside the feature that owns the gold standard |
@@ -374,6 +374,24 @@ these — but **not** `AgentListDropdown` (42 consumers) or `AgentActionModal`.
 | `/notes` | — | **M** | **No list page exists** — `page.tsx` returns `null`. Violates the "feature entry pages are LIST views" doctrine head-on. `noteMenuRegistry` + `ItemRow` are already done; only the route + scoped RPC are missing. |
 | `/projects` | `ProjectsHub.tsx` (**1335**) | **L** | largest offender |
 | `/files/all` | `FileTable`/`FileGrid`/`FileList` | **L** | highest traffic; genuinely hierarchical — needs a decision on the shell's flat scoped-list model first |
+
+**Scouted 2026-08-09 — the audit's "S" rating for `/crm` is wrong; do not plan
+against it.** `EntityListService` requires all THREE methods, none optional
+(`lib/entity-list/config.tsx:37-43`): `fetchPage`, `fetchCounts`, `fetchFacets`.
+CRM has the first two in shape already (`fetchPartyPage`,
+`fetchPartyScopeCounts` in `features/crm/service.ts:136,224`) — but as direct
+`supabase.schema("crm").from("party")` reads, not the `*_list_scoped` RPC set,
+and **`fetchFacets` does not exist at all**.
+
+Facets are the real work, and doctrine forbids the cheap version: they must be
+server-computed WITH counts (deriving them from the loaded page is the exact
+anti-pattern `features/agents/browse/` was built to kill — one account has 34
+categories and 773 tags). So this conversion needs either a new
+`crm_list_facets` RPC — which per CLAUDE.md means a live migration applied via
+the Supabase MCP plus `pnpm db-types` — or a set of PostgREST count queries.
+That is a DB-touching change, not config assembly. Budget accordingly, and pick
+the RPC-vs-count-queries approach deliberately (`lib/list-scope/FEATURE.md` has
+the template).
 
 Also: `features/user-lists/` declares `ActionConfig<T>[]` and
 `features/tool-call-visualization/renderers/**` declares `EntityAction[]` —
