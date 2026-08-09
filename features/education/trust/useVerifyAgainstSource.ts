@@ -50,6 +50,9 @@ export function useVerifyAgainstSource(): UseVerifyAgainstSource {
     args: VerifyAgainstSourceArgs,
   ): Promise<VerifyResult | null> {
     setResult(null);
+    // Clear any prior run's error too — the early "unverifiable" return below
+    // never enters run(), which is where the hook clears its own error state.
+    resetRun();
     if (!args.sourceExcerpt.trim()) {
       // No cited passage to check against — an honest "can't verify", not an error.
       const unverifiable: VerifyResult = {
