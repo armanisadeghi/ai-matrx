@@ -846,6 +846,102 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "analysis",
     sortOrder: 120,
   },
+  {
+    name: "page_remove_keywords",
+    label: "Remove supporting keywords",
+    description:
+      "Detach supporting keywords from this page. Value: { keywords: string[] } — phrases matched case-insensitively against the attached keyword_batch (supporting role only; the primary target keyword is changed via page_target_keyword, never removed here). Removes the association edges through the canonical chokepoint (removePageKeyword); the library rows themselves are untouched. A phrase that is not attached as supporting is an error.",
+    valueType: "object",
+    updatesValue: "keyword_batch",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "analysis",
+    sortOrder: 125,
+  },
+  {
+    name: "page_social_card",
+    label: "Desired social card",
+    description:
+      "Set the page's DESIRED Open Graph share-card copy (`desired_values.social_card`). Value: { og_title?: string, og_description?: string } — at least one; omitted fields keep their current desired value. Persists immediately through updatePageDesiredValues (clobber-safe merge — sibling plan areas are never touched). Read the observed social_card value for what the live site currently serves.",
+    valueType: "object",
+    updatesValue: "desired_values",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "authoring",
+    sortOrder: 130,
+  },
+  {
+    name: "page_indexability_plan",
+    label: "Desired indexability",
+    description:
+      "Set the page's DESIRED canonical URL and/or meta robots directive (`desired_values.indexability`). Value: { canonical_url?: string, meta_robots?: string } (e.g. meta_robots 'index, follow' or 'noindex') — at least one; omitted fields keep their current desired value. Persists immediately through updatePageDesiredValues. Read the observed indexability value for what the live site currently serves.",
+    valueType: "object",
+    updatesValue: "desired_values",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "authoring",
+    sortOrder: 135,
+  },
+  {
+    name: "page_headings_plan",
+    label: "Desired heading outline",
+    description:
+      "Set the page's DESIRED heading structure (`desired_values.headings`). Value: { outline: [{ level: 1-6, text: string }, …], notes?: string } — outline REPLACES the full planned outline (include every heading you want kept; read desired_values.headings for the current plan and headings_outline for the observed structure); notes replaces the plan notes when provided, otherwise keeps them. Persists immediately through updatePageDesiredValues.",
+    valueType: "object",
+    updatesValue: "desired_values",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "authoring",
+    sortOrder: 140,
+  },
+  {
+    name: "page_link_plan",
+    label: "Link plan",
+    description:
+      "Set the page's authored internal-link plan (`desired_values` link keys). Value: { accepted_anchor_texts?: string[], inbound_links?: [{ url: string, anchor_text?: string }], outbound_links?: [{ url: string, anchor_text?: string }] } — at least one key; each PROVIDED key REPLACES that whole list (read the link_plan value first and include entries to keep), omitted keys keep their current value. inbound_links are pages that SHOULD link here; outbound_links are pages this page SHOULD link to. Persists immediately through updatePageDesiredValues; compliance is re-scored against the observed crawl edges.",
+    valueType: "object",
+    updatesValue: "link_plan",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "authoring",
+    sortOrder: 145,
+  },
+  {
+    name: "page_plan_notes",
+    label: "Plan notes",
+    description:
+      "Set the page's freeform per-area plan notes (`desired_values` note keys). Value: an object with at least one of { identity_notes?, structured_data_notes?, strategy_notes?, performance_goals?, backlink_plan?, additional_content_notes? } — each a non-empty string that REPLACES that note; omitted keys keep their current value. Persists immediately through updatePageDesiredValues (clobber-safe merge).",
+    valueType: "object",
+    updatesValue: "desired_values",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "authoring",
+    sortOrder: 150,
+  },
+  {
+    name: "page_image_plan",
+    label: "Image plan",
+    description:
+      "Propose planned images for this page (`desired_values.image_plan`). Value: { images: [{ description: string, alt?: string, placement?: string, style?: string }], mode?: 'replace' | 'append' } — 'append' (default) adds after the current plan entries, 'replace' swaps the whole plan. Each entry is created with status 'planned' and no file yet; the user generates the actual image from the plan card. Persists immediately through updatePageDesiredValues. Read the image_plan value for the current entries.",
+    valueType: "object",
+    updatesValue: "image_plan",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "authoring",
+    sortOrder: 155,
+  },
+  {
+    name: "page_image_alts",
+    label: "Desired image alt text",
+    description:
+      "Set DESIRED alt text for EXISTING crawled images (`desired_values.image_alts`). Value: { alts: { [src: string]: string } } — keys are exact image src values from the observed images inventory (images.items[].src), values are the proposed alt text. Provided entries are merged over the current desired alts; other srcs keep their value. Persists immediately through updatePageDesiredValues. Never invents images — only plans alt text for what the crawl observed.",
+    valueType: "object",
+    updatesValue: "desired_values",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "authoring",
+    sortOrder: 160,
+  },
 ];
 
 /**

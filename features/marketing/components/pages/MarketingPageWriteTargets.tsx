@@ -30,14 +30,26 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { publishSurfaceUiState } from "@/features/surfaces/runtime/surface-ui-state";
 import { MARKETING_PAGE_SURFACE_NAME } from "@/features/marketing/lib/marketing-page-scope";
-import { updatePageIntent } from "@/features/marketing/data/service";
+import {
+  updatePageDesiredValues,
+  updatePageIntent,
+} from "@/features/marketing/data/service";
 import {
   addPageSupportingKeywords,
   fetchPageKeywordBoard,
   pageKeywordsQueryKey,
+  removePageKeyword,
+  PAGE_KEYWORD_SUPPORTING_ROLE,
 } from "@/features/marketing/data/page-keywords";
 import { marketingKeys } from "@/features/marketing/data/hooks";
-import type { MarketingPage } from "@/features/marketing/types";
+import {
+  readPageDesiredValues,
+  type DesiredHeadingEntry,
+  type DesiredImagePlanEntry,
+  type MarketingPage,
+  type PageDesiredValues,
+  type PlannedLinkEntry,
+} from "@/features/marketing/types";
 
 /** Wire value for the `page_meta_tags` target. Omitted fields keep current. */
 export interface PageMetaTagsWrite {
@@ -53,6 +65,65 @@ export interface PageTargetKeywordWrite {
 /** Wire value for the `page_supporting_keywords` target. */
 export interface PageSupportingKeywordsWrite {
   keywords: string[];
+}
+
+/** Wire value for the `page_remove_keywords` target. */
+export interface PageRemoveKeywordsWrite {
+  keywords: string[];
+}
+
+/** Wire value for the `page_social_card` target. Omitted fields keep current. */
+export interface PageSocialCardWrite {
+  og_title?: string;
+  og_description?: string;
+}
+
+/** Wire value for the `page_indexability_plan` target. */
+export interface PageIndexabilityPlanWrite {
+  canonical_url?: string;
+  meta_robots?: string;
+}
+
+/** Wire value for the `page_headings_plan` target. Outline replaces the plan. */
+export interface PageHeadingsPlanWrite {
+  outline: DesiredHeadingEntry[];
+  notes?: string;
+}
+
+/** Wire value for the `page_link_plan` target. Provided keys replace lists. */
+export interface PageLinkPlanWrite {
+  accepted_anchor_texts?: string[];
+  inbound_links?: { url: string; anchor_text?: string }[];
+  outbound_links?: { url: string; anchor_text?: string }[];
+}
+
+/** The plan-note desired_values keys `page_plan_notes` may set. */
+export const PAGE_PLAN_NOTE_KEYS = [
+  "identity_notes",
+  "structured_data_notes",
+  "strategy_notes",
+  "performance_goals",
+  "backlink_plan",
+  "additional_content_notes",
+] as const;
+export type PagePlanNotesWrite = Partial<
+  Record<(typeof PAGE_PLAN_NOTE_KEYS)[number], string>
+>;
+
+/** Wire value for the `page_image_plan` target. */
+export interface PageImagePlanWrite {
+  images: {
+    description: string;
+    alt?: string;
+    placement?: string;
+    style?: string;
+  }[];
+  mode?: "replace" | "append";
+}
+
+/** Wire value for the `page_image_alts` target. Entries merge over current. */
+export interface PageImageAltsWrite {
+  alts: Record<string, string>;
 }
 
 function asRecord(value: unknown, target: string): Record<string, unknown> {
@@ -89,16 +160,22 @@ export interface PageKeywordsUiState {
 export function MarketingPageWriteTargets({ page }: { page: MarketingPage }) {
   const queryClient = useQueryClient();
 
-  // The freshest version we KNOW. `platform._touch_row` bumps `version` on
+  // The freshest ROW we KNOW. `platform._touch_row` bumps `version` on
   // every UPDATE and the workspace refetch is a heavy aggregate, so between a
-  // successful write and the refetch landing, `page.version` is stale by one —
+  // successful write and the refetch landing, `page` is stale by one save —
   // a second consecutive apply would spuriously trip the optimistic lock with
-  // "changed in another session" (adversarial find D5). `updatePageIntent`
-  // RETURNS the fresh row; we keep its version here and use max(prop, ref).
-  const versionRef = useRef(page.version);
+  // "changed in another session" (adversarial find D5), and — with several
+  // targets applied in ONE agent message — would read reverted intent fields
+  // or desired_values and silently undo the first apply. Every canonical
+  // write RETURNS the fresh row; keep whichever row carries the highest
+  // version and read intent/desired state from it, never from the prop.
+  const rowRef = useRef(page);
   useEffect(() => {
-    versionRef.current = Math.max(versionRef.current, page.version);
-  }, [page.version]);
+    if (page.version >= rowRef.current.version) rowRef.current = page;
+  }, [page]);
+  const noteFreshRow = (updated: MarketingPage) => {
+    if (updated.version >= rowRef.current.version) rowRef.current = updated;
+  };
 
   // Same key + the ONE shared queryFn as PageKeywordsCard — this subscribes
   // to the existing cache entry rather than defining a second fetch.
@@ -145,6 +222,18 @@ export function MarketingPageWriteTargets({ page }: { page: MarketingPage }) {
     });
   };
 
+  // Persist ONLY the caller's desired_values keys through the ONE clobber-safe
+  // read-merge-write path, then remember the returned fresh row.
+  const saveDesired = async (patch: Partial<PageDesiredValues>) => {
+    const updated = await updatePageDesiredValues({
+      siteId: page.site_id,
+      pageId: page.id,
+      patch,
+    });
+    noteFreshRow(updated);
+    invalidatePage();
+  };
+
   useSurfaceWriteHandlers(MARKETING_PAGE_SURFACE_NAME, {
     page_meta_tags: async (value: unknown) => {
       const obj = asRecord(value, "page_meta_tags");
@@ -161,15 +250,16 @@ export function MarketingPageWriteTargets({ page }: { page: MarketingPage }) {
       }
       // Omitted fields keep the page's CURRENT intent — a metadata proposal
       // for the title alone must never erase the desired description.
+      const current = rowRef.current;
       const updated = await updatePageIntent({
         siteId: page.site_id,
         pageId: page.id,
-        expectedVersion: versionRef.current,
-        targetKeyword: page.target_keyword,
-        desiredMetaTitle: title ?? page.meta_title_desired,
-        desiredMetaDescription: description ?? page.meta_description_desired,
+        expectedVersion: current.version,
+        targetKeyword: current.target_keyword,
+        desiredMetaTitle: title ?? current.meta_title_desired,
+        desiredMetaDescription: description ?? current.meta_description_desired,
       });
-      versionRef.current = Math.max(versionRef.current, updated.version);
+      noteFreshRow(updated);
       invalidatePage();
     },
 
@@ -179,15 +269,16 @@ export function MarketingPageWriteTargets({ page }: { page: MarketingPage }) {
       if (!keyword) {
         throw new Error("page_target_keyword: keyword is required.");
       }
+      const current = rowRef.current;
       const updated = await updatePageIntent({
         siteId: page.site_id,
         pageId: page.id,
-        expectedVersion: versionRef.current,
+        expectedVersion: current.version,
         targetKeyword: keyword,
-        desiredMetaTitle: page.meta_title_desired,
-        desiredMetaDescription: page.meta_description_desired,
+        desiredMetaTitle: current.meta_title_desired,
+        desiredMetaDescription: current.meta_description_desired,
       });
-      versionRef.current = Math.max(versionRef.current, updated.version);
+      noteFreshRow(updated);
       invalidatePage();
     },
 
@@ -218,6 +309,291 @@ export function MarketingPageWriteTargets({ page }: { page: MarketingPage }) {
         queryKey: pageKeywordsQueryKey(page.id),
       });
       invalidatePage();
+    },
+
+    page_remove_keywords: async (value: unknown) => {
+      const obj = asRecord(value, "page_remove_keywords");
+      const raw = obj.keywords;
+      const phrases = Array.isArray(raw)
+        ? raw.filter((k): k is string => typeof k === "string" && !!k.trim())
+        : [];
+      if (phrases.length === 0) {
+        throw new Error(
+          "page_remove_keywords: keywords must be a non-empty string array.",
+        );
+      }
+      // Match against the FRESH board (the same one queryFn every subscriber
+      // uses), supporting role only — the primary target keyword is intent
+      // (page_target_keyword), never an edge removal.
+      const board = await queryClient.fetchQuery({
+        queryKey: pageKeywordsQueryKey(page.id),
+        queryFn: () => fetchPageKeywordBoard(page.id),
+        staleTime: 0,
+      });
+      const supporting = new Map(
+        board
+          .filter((entry) => entry.role === PAGE_KEYWORD_SUPPORTING_ROLE)
+          .map((entry) => [entry.phrase.trim().toLowerCase(), entry]),
+      );
+      const missing: string[] = [];
+      const toRemove = phrases.flatMap((phrase) => {
+        const entry = supporting.get(phrase.trim().toLowerCase());
+        if (!entry) {
+          missing.push(phrase);
+          return [];
+        }
+        return [entry];
+      });
+      if (missing.length > 0) {
+        throw new Error(
+          `page_remove_keywords: not attached as supporting keywords: ${missing.join(
+            ", ",
+          )}. Use page_target_keyword to change the primary keyword.`,
+        );
+      }
+      for (const entry of toRemove) {
+        await removePageKeyword(page.id, entry.keywordId, entry.role);
+      }
+      void queryClient.invalidateQueries({
+        queryKey: pageKeywordsQueryKey(page.id),
+      });
+      invalidatePage();
+    },
+
+    page_social_card: async (value: unknown) => {
+      const obj = asRecord(value, "page_social_card");
+      const title = optionalString(obj, "og_title", "page_social_card");
+      const description = optionalString(
+        obj,
+        "og_description",
+        "page_social_card",
+      );
+      if (title === undefined && description === undefined) {
+        throw new Error(
+          "page_social_card: provide og_title and/or og_description.",
+        );
+      }
+      const current = readPageDesiredValues(rowRef.current).social_card ?? {};
+      await saveDesired({
+        social_card: {
+          ...current,
+          ...(title !== undefined ? { og_title: title } : {}),
+          ...(description !== undefined ? { og_description: description } : {}),
+        },
+      });
+    },
+
+    page_indexability_plan: async (value: unknown) => {
+      const obj = asRecord(value, "page_indexability_plan");
+      const canonical = optionalString(
+        obj,
+        "canonical_url",
+        "page_indexability_plan",
+      );
+      const robots = optionalString(
+        obj,
+        "meta_robots",
+        "page_indexability_plan",
+      );
+      if (canonical === undefined && robots === undefined) {
+        throw new Error(
+          "page_indexability_plan: provide canonical_url and/or meta_robots.",
+        );
+      }
+      const current = readPageDesiredValues(rowRef.current).indexability ?? {};
+      await saveDesired({
+        indexability: {
+          ...current,
+          ...(canonical !== undefined ? { canonical_url: canonical } : {}),
+          ...(robots !== undefined ? { meta_robots: robots } : {}),
+        },
+      });
+    },
+
+    page_headings_plan: async (value: unknown) => {
+      const obj = asRecord(value, "page_headings_plan");
+      const rawOutline = obj.outline;
+      if (!Array.isArray(rawOutline) || rawOutline.length === 0) {
+        throw new Error(
+          "page_headings_plan: outline must be a non-empty array of { level, text }.",
+        );
+      }
+      const outline = rawOutline.map((entry, index): DesiredHeadingEntry => {
+        const record = asRecord(entry, `page_headings_plan: outline[${index}]`);
+        const level = record.level;
+        const text = record.text;
+        if (
+          typeof level !== "number" ||
+          !Number.isInteger(level) ||
+          level < 1 ||
+          level > 6
+        ) {
+          throw new Error(
+            `page_headings_plan: outline[${index}].level must be an integer 1-6.`,
+          );
+        }
+        if (typeof text !== "string" || !text.trim()) {
+          throw new Error(
+            `page_headings_plan: outline[${index}].text must be a non-empty string.`,
+          );
+        }
+        return { level, text: text.trim() };
+      });
+      const notes = optionalString(obj, "notes", "page_headings_plan");
+      const current = readPageDesiredValues(rowRef.current).headings ?? {};
+      await saveDesired({
+        headings: { outline, notes: notes ?? current.notes },
+      });
+    },
+
+    page_link_plan: async (value: unknown) => {
+      const obj = asRecord(value, "page_link_plan");
+      const patch: Partial<PageDesiredValues> = {};
+      const rawAnchors = obj.accepted_anchor_texts;
+      if (rawAnchors !== undefined) {
+        if (
+          !Array.isArray(rawAnchors) ||
+          rawAnchors.some((a) => typeof a !== "string" || !a.trim())
+        ) {
+          throw new Error(
+            "page_link_plan: accepted_anchor_texts must be an array of non-empty strings.",
+          );
+        }
+        patch.accepted_anchor_texts = rawAnchors.map((a) => a.trim());
+      }
+      const parseLinks = (key: "inbound_links" | "outbound_links") => {
+        const rawLinks = obj[key];
+        if (rawLinks === undefined) return;
+        if (!Array.isArray(rawLinks)) {
+          throw new Error(
+            `page_link_plan: ${key} must be an array of { url, anchor_text? }.`,
+          );
+        }
+        patch[key] = rawLinks.map((entry, index): PlannedLinkEntry => {
+          const record = asRecord(entry, `page_link_plan: ${key}[${index}]`);
+          const url = record.url;
+          if (typeof url !== "string" || !url.trim()) {
+            throw new Error(
+              `page_link_plan: ${key}[${index}].url must be a non-empty string.`,
+            );
+          }
+          const anchor = optionalString(
+            record,
+            "anchor_text",
+            `page_link_plan: ${key}[${index}]`,
+          );
+          return {
+            id: crypto.randomUUID(),
+            url: url.trim(),
+            ...(anchor ? { anchor_text: anchor } : {}),
+          };
+        });
+      };
+      parseLinks("inbound_links");
+      parseLinks("outbound_links");
+      if (Object.keys(patch).length === 0) {
+        throw new Error(
+          "page_link_plan: provide accepted_anchor_texts, inbound_links, and/or outbound_links.",
+        );
+      }
+      await saveDesired(patch);
+    },
+
+    page_plan_notes: async (value: unknown) => {
+      const obj = asRecord(value, "page_plan_notes");
+      const patch: Partial<PageDesiredValues> = {};
+      for (const key of PAGE_PLAN_NOTE_KEYS) {
+        const note = optionalString(obj, key, "page_plan_notes");
+        if (note !== undefined) patch[key] = note;
+      }
+      if (Object.keys(patch).length === 0) {
+        throw new Error(
+          `page_plan_notes: provide at least one of ${PAGE_PLAN_NOTE_KEYS.join(
+            ", ",
+          )} as a non-empty string.`,
+        );
+      }
+      await saveDesired(patch);
+    },
+
+    page_image_plan: async (value: unknown) => {
+      const obj = asRecord(value, "page_image_plan");
+      const rawImages = obj.images;
+      if (!Array.isArray(rawImages) || rawImages.length === 0) {
+        throw new Error(
+          "page_image_plan: images must be a non-empty array of { description, alt?, placement?, style? }.",
+        );
+      }
+      const mode = obj.mode ?? "append";
+      if (mode !== "append" && mode !== "replace") {
+        throw new Error(
+          "page_image_plan: mode must be 'replace' or 'append' when provided.",
+        );
+      }
+      const minted = rawImages.map((entry, index): DesiredImagePlanEntry => {
+        const record = asRecord(entry, `page_image_plan: images[${index}]`);
+        const description = record.description;
+        if (typeof description !== "string" || !description.trim()) {
+          throw new Error(
+            `page_image_plan: images[${index}].description must be a non-empty string.`,
+          );
+        }
+        const alt = optionalString(
+          record,
+          "alt",
+          `page_image_plan: images[${index}]`,
+        );
+        const placement = optionalString(
+          record,
+          "placement",
+          `page_image_plan: images[${index}]`,
+        );
+        const style = optionalString(
+          record,
+          "style",
+          `page_image_plan: images[${index}]`,
+        );
+        return {
+          id: crypto.randomUUID(),
+          description: description.trim(),
+          alt: alt ?? "",
+          placement: placement ?? "",
+          status: "planned",
+          file_id: null,
+          ...(style ? { style } : {}),
+        };
+      });
+      const current = readPageDesiredValues(rowRef.current).image_plan ?? [];
+      await saveDesired({
+        image_plan: mode === "replace" ? minted : [...current, ...minted],
+      });
+    },
+
+    page_image_alts: async (value: unknown) => {
+      const obj = asRecord(value, "page_image_alts");
+      const rawAlts = obj.alts;
+      if (
+        !rawAlts ||
+        typeof rawAlts !== "object" ||
+        Array.isArray(rawAlts) ||
+        Object.keys(rawAlts).length === 0
+      ) {
+        throw new Error(
+          "page_image_alts: alts must be a non-empty { src: alt } object.",
+        );
+      }
+      const entries = Object.entries(rawAlts as Record<string, unknown>);
+      const alts: Record<string, string> = {};
+      for (const [src, alt] of entries) {
+        if (typeof alt !== "string" || !alt.trim()) {
+          throw new Error(
+            `page_image_alts: alt for "${src}" must be a non-empty string.`,
+          );
+        }
+        alts[src] = alt.trim();
+      }
+      const current = readPageDesiredValues(rowRef.current).image_alts ?? {};
+      await saveDesired({ image_alts: { ...current, ...alts } });
     },
   });
 
