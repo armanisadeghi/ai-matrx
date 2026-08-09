@@ -95,7 +95,7 @@ the shape doctor uses (`features/content-ir/admin/shape-doctor-server.ts`).
 | `bare-id-text` | high when the token has a route | An id-shaped expression (`x.id`, `r.agent_id`, `fileId`) is rendered as JSX text with no door ancestor. |
 | `unlinked-entity-name` | high when the token has a route | A name-shaped expression (`x.name`, `agentName`, `noteTitle`) is rendered as text **and the same object's id is in scope in that file** — the surface provably knows the identity and withheld the door. |
 | `unlinked-count` | medium | `{n} agents` / `{x.length} members` with no navigation — a count is a door. |
-| `no-doors-in-file` | high | A file reads records (imports a service/slice/selector), **presents** them — by name, or by an id whose entity resolves — and imports **no** door mechanism at all. Debug panels, diagnostics and test clients are excluded: they print raw ids by design, and their individual `bare-id-text` findings still report. |
+| `no-doors-in-file` | high | A file reads records (imports a service/slice/selector), **presents** them — by name, or by an id whose entity resolves — and imports **no** door mechanism at all. Debug panels, diagnostics and test clients are excluded from **both** triggers: they display raw records by design, and their individual `bare-id-text` / `unlinked-entity-name` findings still report. |
 
 `high` means "the entity already has an `hrefFor`, so the fix is one
 `<EntityRef>`". `medium` means "real, but needs a judgment call" — usually the

@@ -316,11 +316,16 @@ export function scanFile(
   let importsEntitySource = false;
 
   /**
-   * A debug panel, diagnostic or test client prints raw ids BY DESIGN — that
-   * is the whole surface. The individual `bare-id-text` findings still report
-   * there; adding a file-level "you skipped the inventory pass" on top is a
-   * false accusation. Measured: without this, widening added 14 files of which
-   * 8 were diagnostics.
+   * A debug panel, diagnostic or test client displays raw records BY DESIGN —
+   * that is the whole surface. Its individual `bare-id-text` /
+   * `unlinked-entity-name` findings still report; adding a file-level "you
+   * skipped the inventory pass" on top is a false accusation. Measured: without
+   * this, widening added 14 files of which 8 were diagnostics.
+   *
+   * Applies to BOTH triggers. A first cut gated only the id path, so a
+   * diagnostic that happened to render a record's NAME still got the
+   * file-level finding — code contradicting the rule text one file over. (No
+   * finding changes today: zero of the 16 are diagnostics either way.)
    */
   const isDiagnosticSurface =
     /(^|\/)(debug|diagnostic|devtools)|Debug|Diagnostic|DevTools|TestClient/.test(relPath);
@@ -351,7 +356,7 @@ export function scanFile(
   // Inventory Law: a surface that reads real records, PRESENTS them — by name
   // or by an id whose entity resolves — and imports no door mechanism at all
   // has skipped the inventory pass wholesale.
-  const presentsRecords = sawEntityName || (sawNamedId && !isDiagnosticSurface);
+  const presentsRecords = (sawEntityName || sawNamedId) && !isDiagnosticSurface;
   if (!importsDoor && importsEntitySource && presentsRecords) {
     findings.push(
       makeFinding({
