@@ -47,7 +47,10 @@ import {
   MatrxUuidCell,
   isUuidValue,
 } from "@/components/official/matrx-data-table/MatrxUuidCell";
-import { getItemConfig } from "@/features/item-presentation/registry";
+import {
+  entityTokenForItemType,
+  getItemConfig,
+} from "@/features/item-presentation/registry";
 import type { ItemType } from "@/features/item-presentation/types";
 
 export interface ItemDetailWindowProps {
@@ -154,6 +157,11 @@ function ItemDetailWindowInner({
   initialAbout: string | null;
 }) {
   const { config, recognized } = getItemConfig(itemType);
+  // NOT `itemType` verbatim — a few item types are spelled differently in the
+  // entity registry (`table` → `dataset`, `document` → `udt_document`,
+  // `picklist` → `structured_list`), and passing the raw type silently costs
+  // those records their route and peek.
+  const doorToken = entityTokenForItemType(itemType);
   const Icon = config.icon;
   const detailSource = recognized ? config.detailSource : undefined;
 
@@ -291,9 +299,9 @@ function ItemDetailWindowInner({
                 button, never inside it — and `EntityDoorControls` renders no
                 chrome at all when the token has neither route nor peek, so an
                 unrecognised item type simply keeps the copy chip it had. */}
-            {itemType ? (
+            {doorToken ? (
               <EntityDoorControls
-                token={itemType}
+                token={doorToken}
                 id={itemId}
                 name={displayTitle}
                 alwaysShowActions
