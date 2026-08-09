@@ -97,6 +97,7 @@ import {
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { NotesInstanceProvider } from "../context/NotesInstanceContext";
 import { NotePresenceBanner } from "./NotePresenceBanner";
+import { NotesAssistStrip } from "./NotesAssistStrip";
 import { NoteContentEditor } from "./NoteContentEditor";
 import { NoteCleanupButton } from "./cleanup/NoteCleanupButton";
 import { NoteMetadataBar } from "./NoteMetadataBar";
@@ -548,6 +549,10 @@ export function NotesView({
 
         {/* Presence indicator (shared with the window view) */}
         <NotePresenceBanner instanceId={instanceId} />
+
+        {/* Page-layer assist chips (unorganized-notes pileup) — the strip
+            renders nothing when there are none, so this row costs no space. */}
+        <NotesAssistStrip className="shrink-0 border-b border-border/40 px-2 py-1" />
 
         {/* Layer 1: Content editor (fills available space) */}
         {activeTabId ? (
