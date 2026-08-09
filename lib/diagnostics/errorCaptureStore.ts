@@ -153,7 +153,16 @@ export type CapturedErrorSource =
    * failing after the action ran. Every firing is a real defect in the
    * producer's action binding or the registry wiring.
    */
-  | "assists";
+  | "assists"
+  /**
+   * A bounded-height chain broke: a scrollable surface overflowed a clipping
+   * (`overflow: hidden`) ancestor, so rows past the fold are unreachable and
+   * no scrollbar exists. One non-flex wrapper anywhere in the ancestor chain
+   * causes it, and nothing else in the app notices. See
+   * `lib/layout/useClippedContentGuard.ts`; the static half is
+   * `pnpm check:scroll-chain`.
+   */
+  | "layout-scroll-chain";
 
 /** A Supabase DML verb, or "rpc" for a function call. */
 export type CapturedOperation =

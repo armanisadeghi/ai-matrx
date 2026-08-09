@@ -4066,12 +4066,7 @@ export interface paths {
         put?: never;
         /**
          * Sync Gsc Search Performance
-         * @description On-demand streamed Google Search Console SEARCH_PERFORMANCE collection
-         *     for one bound site — the canonical (all-dimension) twin of the Bing route
-         *     below: builds the ``CollectionRequest`` from the site's live binding (the
-         *     SSOT — never a caller-supplied property/credential) and runs it through
-         *     the ONE ``run_collection`` funnel. Persists every dimension profile to
-         *     ``seo.search_performance_daily``.
+         * @description Run the canonical service-layer GSC catch-up/history operation.
          */
         post: operations["sync_gsc_search_performance_seo_sites__site_id__gsc_search_performance_sync_post"];
         delete?: never;
@@ -12081,7 +12076,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/recovery/handle": {
+    "/recovery/handle": {
         parameters: {
             query?: never;
             header?: never;
@@ -12098,14 +12093,14 @@ export interface paths {
          *     is best-effort — on failure the response carries `fallback=true` with
          *     a deterministic ForceFailProposal so the FE always renders something.
          */
-        post: operations["handle_recovery_api_recovery_handle_post"];
+        post: operations["handle_recovery_recovery_handle_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/recovery/audit/{audit_id}/applied": {
+    "/recovery/audit/{audit_id}/applied": {
         parameters: {
             query?: never;
             header?: never;
@@ -12119,7 +12114,29 @@ export interface paths {
          * @description Flag the audit row as applied / overridden so analytics on agent
          *     acceptance can run later. Caller-owned via auth.uid() RLS.
          */
-        post: operations["mark_recovery_applied_endpoint_api_recovery_audit__audit_id__applied_post"];
+        post: operations["mark_recovery_applied_endpoint_recovery_audit__audit_id__applied_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/recovery/workflows/{definition_id}/apply-patch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Workflow Patch Endpoint
+         * @description Apply a typed edit_workflow proposal (DefinitionPatch) to the
+         *     workflow's draft. Owner-gated; full validate/compile gate stack runs
+         *     before the save; a concurrent studio edit is a 409.
+         */
+        post: operations["apply_workflow_patch_endpoint_recovery_workflows__definition_id__apply_patch_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -16833,6 +16850,15 @@ export interface components {
             /** Model Alias */
             model_alias?: string | null;
         };
+        /** AddEdgeOp */
+        AddEdgeOp: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "add_edge";
+            edge: components["schemas"]["EdgeDef"];
+        };
         /** AddFieldResponse */
         AddFieldResponse: {
             /** Id */
@@ -16872,6 +16898,24 @@ export interface components {
         AddLinksToScope: {
             /** Urls */
             urls: string[];
+        };
+        /** AddNodeOp */
+        "AddNodeOp-Input": {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "add_node";
+            node: components["schemas"]["NodeDef"];
+        };
+        /** AddNodeOp */
+        "AddNodeOp-Output": {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "add_node";
+            node: components["schemas"]["NodeDef"];
         };
         /** AddRowsResponse */
         AddRowsResponse: {
@@ -18805,6 +18849,50 @@ export interface components {
              */
             assignments?: number;
         };
+        /**
+         * ApplyWorkflowPatchRequest
+         * @description Body for POST /recovery/workflows/{definition_id}/apply-patch.
+         */
+        ApplyWorkflowPatchRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            patch: components["schemas"]["DefinitionPatch-Input"];
+            /**
+             * Expected Updated At
+             * @description Optimistic-concurrency guard: the definition's updated_at the client last saw (ISO 8601). A concurrent studio edit turns the apply into a 409 instead of a silent clobber.
+             */
+            expected_updated_at?: string | null;
+            /**
+             * Audit Id
+             * @description Recovery audit row to mark applied on success.
+             */
+            audit_id?: string | null;
+        };
+        /** ApplyWorkflowPatchResult */
+        ApplyWorkflowPatchResult: {
+            /** Definition Id */
+            definition_id: string;
+            /** Applied */
+            applied: boolean;
+            /** Summary */
+            summary: string;
+            validation: components["schemas"]["ValidationResult"];
+            /** Updated At */
+            updated_at?: string | null;
+        };
         /** ArchiveRequest */
         ArchiveRequest: {
             /**
@@ -19777,7 +19865,7 @@ export interface components {
             use_latest: boolean;
             /** Config Overrides */
             config_overrides?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /** Is Enabled */
             is_enabled: boolean;
@@ -24307,6 +24395,46 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * DefinitionPatch
+         * @description A flat, ordered list of typed edits to one Definition.
+         */
+        "DefinitionPatch-Input": {
+            /**
+             * Version
+             * @default 1
+             * @constant
+             */
+            version?: "1";
+            /**
+             * Summary
+             * @description One-line human-readable description of what the patch does.
+             * @default
+             */
+            summary?: string;
+            /** Ops */
+            ops: (components["schemas"]["UpdateNodeDataOp"] | components["schemas"]["AddNodeOp-Input"] | components["schemas"]["RemoveNodeOp"] | components["schemas"]["AddEdgeOp"] | components["schemas"]["RemoveEdgeOp"] | components["schemas"]["SetVariableOp"] | components["schemas"]["RemoveVariableOp"])[];
+        };
+        /**
+         * DefinitionPatch
+         * @description A flat, ordered list of typed edits to one Definition.
+         */
+        "DefinitionPatch-Output": {
+            /**
+             * Version
+             * @default 1
+             * @constant
+             */
+            version?: "1";
+            /**
+             * Summary
+             * @description One-line human-readable description of what the patch does.
+             * @default
+             */
+            summary?: string;
+            /** Ops */
+            ops: (components["schemas"]["UpdateNodeDataOp"] | components["schemas"]["AddNodeOp-Output"] | components["schemas"]["RemoveNodeOp"] | components["schemas"]["AddEdgeOp"] | components["schemas"]["RemoveEdgeOp"] | components["schemas"]["SetVariableOp"] | components["schemas"]["RemoveVariableOp"])[];
+        };
+        /**
          * DefinitionRecord
          * @description ``wf_definition`` (or ``wf_definition_version``) row as returned by
          *     the matrx-graph DefinitionStore. Open shape — Pydantic models in
@@ -25415,8 +25543,9 @@ export interface components {
         };
         /**
          * EditWorkflowProposal
-         * @description Suggest a graph edit (config / schema / structure). Cannot be applied
-         *     automatically — surfaced to the user as a recommendation.
+         * @description A typed graph edit (config / structure / variables). Applied with one
+         *     click via ``apply_workflow_patch`` (POST /recovery/workflows/{id}/apply-patch)
+         *     — validated through the full gate stack before any row is written.
          */
         EditWorkflowProposal: {
             /**
@@ -25426,10 +25555,7 @@ export interface components {
             action: "edit_workflow";
             /** Node Id */
             node_id?: string | null;
-            /** Suggested Diff */
-            suggested_diff: {
-                [key: string]: unknown;
-            };
+            patch: components["schemas"]["DefinitionPatch-Output"];
             /** Rationale */
             rationale: string;
         };
@@ -34741,6 +34867,41 @@ export interface components {
             /** Skipped Reason */
             skipped_reason?: string | null;
         };
+        /** RemoveEdgeOp */
+        RemoveEdgeOp: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "remove_edge";
+            /** Edge Id */
+            edge_id: string;
+        };
+        /**
+         * RemoveNodeOp
+         * @description Remove a node. Edges touching it are removed too (a dangling edge
+         *     would fail definition validation anyway — removing them is the only
+         *     coherent outcome).
+         */
+        RemoveNodeOp: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "remove_node";
+            /** Node Id */
+            node_id: string;
+        };
+        /** RemoveVariableOp */
+        RemoveVariableOp: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "remove_variable";
+            /** Name */
+            name: string;
+        };
         /** RenameArgs */
         RenameArgs: {
             /** New Name */
@@ -37021,6 +37182,18 @@ export interface components {
             reason: string;
         };
         /**
+         * SetVariableOp
+         * @description Upsert a declared run variable by name.
+         */
+        SetVariableOp: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "set_variable";
+            variable: components["schemas"]["VariableSpec"];
+        };
+        /**
          * ShareLinkInfo
          * @description Share-link info returned in combined-op envelopes.
          */
@@ -37671,7 +37844,7 @@ export interface components {
             use_latest?: boolean | null;
             /** Config Overrides */
             config_overrides?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /**
              * Is Enabled
@@ -37693,7 +37866,7 @@ export interface components {
             agent_version_id?: string | null;
             /** Config Overrides */
             config_overrides?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
         /** SlotTestRequest */
@@ -37702,7 +37875,7 @@ export interface components {
             exemplar_id?: string | null;
             /** Variables */
             variables?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /** User Input */
             user_input?: string | null;
@@ -37726,12 +37899,12 @@ export interface components {
             output?: string;
             /** Artifact */
             artifact?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
             structural: components["schemas"]["StructuralVerdict"];
             /** Usage */
             usage?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Model Id */
             model_id?: string | null;
@@ -40446,6 +40619,27 @@ export interface components {
             message_id: string;
             /** Fields */
             fields: string[];
+        };
+        /**
+         * UpdateNodeDataOp
+         * @description Deep-merge ``data`` into an existing node's ``data`` payload.
+         *
+         *     Nested dicts merge recursively; an explicit ``None`` deletes the key;
+         *     scalars/lists replace. ``data.config`` is where node config lives, so
+         *     ``{"config": {"timeout_s": 60}}`` tweaks one config key in place.
+         */
+        UpdateNodeDataOp: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "update_node_data";
+            /** Node Id */
+            node_id: string;
+            /** Data */
+            data: {
+                [key: string]: unknown;
+            };
         };
         /** UpdateRowResponse */
         UpdateRowResponse: {
@@ -64754,7 +64948,7 @@ export interface operations {
             };
         };
     };
-    handle_recovery_api_recovery_handle_post: {
+    handle_recovery_recovery_handle_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -64787,7 +64981,7 @@ export interface operations {
             };
         };
     };
-    mark_recovery_applied_endpoint_api_recovery_audit__audit_id__applied_post: {
+    mark_recovery_applied_endpoint_recovery_audit__audit_id__applied_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -64809,6 +65003,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecoveryApplyAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_workflow_patch_endpoint_recovery_workflows__definition_id__apply_patch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyWorkflowPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplyWorkflowPatchResult"];
                 };
             };
             /** @description Validation Error */

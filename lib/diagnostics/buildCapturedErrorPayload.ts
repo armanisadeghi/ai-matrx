@@ -60,6 +60,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "surface-writeback": "Surface writeback contract break",
   "markdown-delimiters": "Runaway delimiter in rendered markdown",
   assists: "Assist chip action failure",
+  "layout-scroll-chain": "Content clipped — scroll chain broken",
 };
 
 export function sourceLabel(source: CapturedErrorSource): string {

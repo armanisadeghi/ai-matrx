@@ -102,6 +102,11 @@ the safety net, not the main event.
 - **Domain** — `lib/media/durability.ts` (`reportMediaDurabilityViolation` →
   `media-durability`) and `lib/toast-service.ts` (`toast.error` → `user-toast`,
   tiered orange: already handled + shown to the user).
+- **Layout** — `lib/layout/useClippedContentGuard.ts` (`layout-scroll-chain`).
+  Measures a bounded scroll surface against the nearest ancestor that
+  constrains overflow: content hanging past a CLIPPING ancestor is
+  unreachable with no scrollbar and no exception. First consumer:
+  `MatrxDataTable`. `relation` = the table's list label.
 
 Capture is in-memory, cheap, try/caught — it can never break a caller — and runs
 for **all** users. Only the UI is admin-gated, which is the seam for the future
@@ -227,6 +232,12 @@ adapter, or tier rule — it holds the full recipe + invariants.
 
 ## Change Log
 
+- 2026-08-09 — **New source `layout-scroll-chain`.** A broken bounded-height chain
+  (one non-flex wrapper between a table and the page) left the backlinks
+  Insights table at height:auto: it grew past the viewport, an
+  `overflow-hidden` ancestor clipped it, and the user got no scrollbar and no
+  error. `useClippedContentGuard` now measures the rendered surface and
+  screams here; the static twin is `pnpm check:scroll-chain`.
 - 2026-08-09 — **Capture made render-safe (closes D61 + D76).** `emit()` notified
   subscribers synchronously, so any render-path `captureError` updated the shell's
   Inspector badge mid-render — the app-wide "Cannot update a component while
