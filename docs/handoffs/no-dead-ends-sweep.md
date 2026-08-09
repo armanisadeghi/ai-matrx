@@ -119,39 +119,35 @@ Ordered by traffic. Each item is independently actionable.
    `features/content-ir` four (`/administration/knowledge/{podcasts/shows,
    kg-inspector}`, `/administration/utilities/{kind-registry,content-blocks}`)
    — see the podcasts / KG / kind-registry entry under **Done**.
-3. **Dialogs / drawers / warnings — audited 2026-08-09, in progress.** 13 HIGH
-   and 16 MED across `components/dialogs/**`, `features/overlays/**`,
+3. **Dialogs / drawers / warnings — audited 2026-08-09. Every HIGH is closed.**
+   13 HIGH + 16 MED found across `components/dialogs/**`, `features/overlays/**`,
    `features/window-panels/windows/**` and every `*Dialog`/`*Drawer`/`*Sheet`.
-   **Landed:** `ItemDetailWindow` (the generic fallback window — the record's
-   own doors in the title bar, and every `<token>_id` column now openable via
-   `tokenFromColumnName` → `MatrxUuidCell`; item types whose token diverges now
-   declare `entityToken` in `features/item-presentation/registry.tsx`) ·
-   `ManifestDriftDialog` (it claimed "Everything is in sync" while holding
-   uncounted `surfaceLabelDrifts` / `valueGroupsDrifts` — a **false green**).
-   **Next, highest value first:**
-   - `features/sharing/components/ShareModal.tsx:230` — names the record and
-     never opens it, though `getResourceSharePath(resourceType, resourceId)` is
-     already computed at `:88`. The most-reused share surface in the app.
-   - `features/admin/error-inspector/ErrorInspectorWindow.tsx:378` +
-     `features/window-panels/windows/agents/AgentDebugWindow.tsx` (5 bare ids)
-     + `StreamDebugHistoryWindow.tsx:85` — `conversation` and `agent` both have
-     `hrefFor`; these print truncated uuids as the only identity.
-   - `features/organizations/admin/components/ReassignResourcesDialog.tsx:173`
-     — a destructive bulk reassign showing counts with no way to see WHICH
-     records change owner.
-   - `features/files/components/core/DuplicateUploadDialog/` — the dialog whose
-     whole question is "is this the same file?" offers no peek, though
-     `existing.id` is already passed to `InlineMediaRef` two lines above.
-   - `features/agents/components/usages/NotifyOwnerDialog.tsx` — names the agent
-     unlinked with `drift.agentId` in the same object; "Failed for N recipients"
-     names nobody.
-   - The `agent-shortcuts` modal family (`LinkAgentToShortcutModal`,
-     `DuplicateShortcutModal`, `PromoteToGlobalModal`) — labels plain, ids in
-     scope; `LinkAgentToShortcutModal:398` resolves "already linked to an agent"
-     and refuses to say which.
-   - `components/dialogs/scope-mismatch/ScopeMismatchDialogHostImpl.tsx:60` —
-     asks the user to choose between two scope sets with no way to look at
-     either; `ScopeMismatchDisplayItem.id` IS the scope id.
+
+   **Landed (all HIGH):** `ItemDetailWindow` (generic fallback window — record
+   doors in the title bar + every `<token>_id` column openable; divergent item
+   types now declare `entityToken` in `features/item-presentation/registry.tsx`)
+   · `ManifestDriftDialog` (**false green** — it said "Everything is in sync"
+   while holding uncounted `surfaceLabelDrifts`/`valueGroupsDrifts`) ·
+   `ShareModal` · `ErrorInspectorWindow` (its `Field` now takes a `token`) ·
+   `AgentDebugWindow` + `StreamDebugHistoryWindow` · `ReassignResourcesDialog`
+   (+ new `features/organizations/admin/routes.ts`) · `DuplicateUploadDialog` ·
+   `ScopeMismatchDialogHostImpl` · `NotifyOwnerDialog`.
+
+   **Remaining, all MED — the `agent-shortcuts` modal family:**
+   `LinkAgentToShortcutModal` (`:233/:388/:480/:498`, and `:398` resolves
+   "already linked to an agent" then refuses to say WHICH) ·
+   `DuplicateShortcutModal` (`:138/:217/:271/:292` — `:217` is a truncated bare
+   scope id, and `scope` has an `hrefFor` now) · `PromoteToGlobalModal`
+   (`:172/:319/:341`). All three name a shortcut/agent/scope with the id in
+   scope. Note `:388` is a picker `<button>` — that one needs
+   `EntityDoorControls` as a SIBLING, not an anchor.
+
+   Plus the scattered MED set: `ObservationalMemoryWindow`, `AgentContentWindow`,
+   `CreatorHubWindow`, `AgentExecutionTestModal`, `CleanupReviewDialog`,
+   `MoveNoteDialog` (no id in props — it is one prop away; `NotesSidebar` already
+   has `moveNoteData.id`), `PermissionsList`, `LibraryDocDetailSheet` (the delete
+   confirm only), `ApplySchemaDialog`, `AddToSetDialog`.
+
 4. **Toasts and badges.**
 5. **`(dev)` demos** — last.
 6. **aidream admin surfaces** — after matrx-frontend.
