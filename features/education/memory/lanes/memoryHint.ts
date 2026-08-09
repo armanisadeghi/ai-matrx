@@ -61,6 +61,7 @@ export function memoryHint(ctx: MemoryHintContext) {
           sourceFeature: "education-flashcards",
           isEphemeral: false,
           runtime: {
+            surfaceName: "matrx-user/education-flashcards",
             variables: {
               front: ctx.front,
               back: ctx.back,

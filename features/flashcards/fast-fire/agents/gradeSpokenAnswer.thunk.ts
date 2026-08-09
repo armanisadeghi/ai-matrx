@@ -34,6 +34,9 @@ export interface GradeSpokenAnswerArgs {
   sessionId?: string | null;
   /** For telemetry / folder labelling. */
   surface?: string;
+  /** Canonical `ui_surface.name` of the lane driving this grade (threads into
+   *  the shared grader launch so surface bindings resolve). */
+  surfaceName?: string;
 }
 
 export interface GradeSpokenAnswerResult {
@@ -89,6 +92,7 @@ export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
           ...(args.rubric ? { rubric: args.rubric } : {}),
           surfaceKey: `${surface}-grade`,
           sourceFeature: "education-fastfire",
+          ...(args.surfaceName ? { surfaceName: args.surfaceName } : {}),
         }),
       );
 

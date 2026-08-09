@@ -101,6 +101,30 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     prefix: "/education/flashcards",
     surface: "matrx-user/education-flashcards",
   },
+  { prefix: "/education/fastfire", surface: "matrx-user/education-fastfire" },
+  { prefix: "/education/quizzes", surface: "matrx-user/education-assessment" },
+  {
+    prefix: "/education/practice-tests",
+    surface: "matrx-user/education-assessment",
+  },
+  {
+    prefix: "/education/grade-work",
+    surface: "matrx-user/education-grade-work",
+  },
+  { prefix: "/education/mind-maps", surface: "matrx-user/education-mind-maps" },
+  { prefix: "/education/memory", surface: "matrx-user/education-memory" },
+  { prefix: "/education/planner", surface: "matrx-user/education-planner" },
+  {
+    prefix: "/education/practice-oral",
+    surface: "matrx-user/education-practice-oral",
+  },
+  { prefix: "/education/progress", surface: "matrx-user/education-progress" },
+  { prefix: "/education/learn", surface: "matrx-user/education-learn" },
+  {
+    prefix: "/education/audio-study",
+    surface: "matrx-user/education-audio-study",
+  },
+  { prefix: "/education/game", surface: "matrx-user/education-game" },
   { prefix: "/education", surface: "matrx-user/education" },
   { prefix: "/dashboard", surface: "matrx-user/dashboard" },
   // Podcast: run + create studios BEFORE the hub prefix.

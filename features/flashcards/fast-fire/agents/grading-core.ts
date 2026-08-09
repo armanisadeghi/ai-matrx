@@ -200,6 +200,13 @@ export interface RunSpokenGraderArgs {
   rubric?: string;
   surfaceKey: string;
   sourceFeature: SourceFeature;
+  /**
+   * Canonical `ui_surface.name` of the surface driving this grade (e.g.
+   * `matrx-user/education-fastfire`). Caller-supplied because this core is
+   * shared across lanes (FastFire, voice test, spoken practice) — each lane
+   * names its own surface so bindings resolve against the right one.
+   */
+  surfaceName?: string;
 }
 
 /**
@@ -224,6 +231,7 @@ export function runSpokenGrader(args: RunSpokenGraderArgs) {
           sourceFeature: args.sourceFeature,
           isEphemeral: false,
           runtime: {
+            ...(args.surfaceName ? { surfaceName: args.surfaceName } : {}),
             variables: {
               front: args.front,
               back: args.back,

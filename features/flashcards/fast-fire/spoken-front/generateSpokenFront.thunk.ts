@@ -127,6 +127,7 @@ export function generateSpokenFront(
           sourceFeature: "education-fastfire",
           isEphemeral: false,
           runtime: {
+            surfaceName: "matrx-user/education-fastfire",
             variables: {
               content: vars.content,
               sample_context: vars.sample_context,
