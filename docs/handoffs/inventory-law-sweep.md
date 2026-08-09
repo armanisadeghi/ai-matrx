@@ -28,6 +28,41 @@ build time as you go.
 
 ---
 
+## THE CONVERSION CHECKLIST — read before replacing any hand-rolled door
+
+Four review findings landed on the Wave 2 PR. **Three were real, and all three
+were the same mistake in different clothes:** a conversion changed what the
+original door DID. Adopting `EntityRef` is not a drop-in — the hand-rolled code
+it replaces encodes decisions you must carry over deliberately.
+
+Before deleting a hand-rolled name/open/new-tab/peek, answer all four:
+
+1. **Where did the old primary click go?** `router.push` (in place) or
+   `window.open` (new tab)? Preserve it. A rail, sheet, side panel, or dialog
+   must NEVER navigate the current tab — that costs the user the thing the
+   surface is embedded in. Use `openInNewTab` for a target swap, `onOpen` for a
+   behaviour swap. *(Caught twice: `AssociationList`, `ContainerResourceSheet`.)*
+
+2. **Could the old control actually open anything?** If the old handler was
+   gated on a route existing, `onOpen` must be gated the same way —
+   `onOpen={canOpen ? handler : undefined}`. Handing `EntityRef` a no-op
+   handler renders a link-styled title that does nothing, which is a dead end
+   with extra steps and strictly worse than the inert text you replaced.
+   *(Caught in `WarRoomResourcesList`; `AssociationList` had it too.)*
+
+3. **Are you resolving by canonical TOKEN, not by a local key?** Six org
+   catalogue keys differ from their token; keying off the key silently loses
+   both the route and the peek for exactly those six.
+
+4. **Does the route you're now pointing at exist?** Verify the page file AND
+   that the id TYPE matches (a session id is not an assessment id; a card id is
+   not a set id). Where no route exists, render plain text — never fabricate.
+
+Everything the primitive cannot decide for itself is documented on the props;
+read them rather than inferring from a neighbouring call site.
+
+---
+
 ## Two constraints the next agent must know
 
 **1. You cannot browser-verify this branch from a Vercel preview.** Every
