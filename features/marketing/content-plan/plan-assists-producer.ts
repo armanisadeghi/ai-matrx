@@ -46,8 +46,10 @@ export function isPlanAssist(assist: Assist, siteId: string): boolean {
 }
 
 /**
- * One sweep per site per session (the strip gates it). Emits at most one
- * assist per site.
+ * One sweep per site per session once a gap exists (the strip gates it).
+ * Emits at most one assist per site. Returns true when a gap was found (the
+ * caller may stop re-checking this site this session) — false means "no gap
+ * yet, keep watching"; no network is touched without a gap.
  */
 export async function producePlanAssists(args: {
   siteId: string;
@@ -60,17 +62,17 @@ export async function producePlanAssists(args: {
   pagesByNodeId: ReadonlyMap<string, CmsPageMapEntry>;
   userId: string;
   dispatch: AppDispatch;
-}): Promise<void> {
+}): Promise<boolean> {
   const { siteId, siteLabel, nodeRows, pagesByNodeId, userId, dispatch } = args;
 
   const missing = nodeRows.filter(
     (node) => !node.deleted_at && !pagesByNodeId.has(node.id),
   );
-  if (missing.length === 0) return;
+  if (missing.length === 0) return false;
 
   const dedupeKey = `${SOURCE_KEY}:${siteId}`;
   const undecided = await filterUndecidedKeys([dedupeKey]);
-  if (undecided.length === 0) return;
+  if (undecided.length === 0) return true;
 
   const count = missing.length;
   await emitAssistTracked(
@@ -90,4 +92,5 @@ export async function producePlanAssists(args: {
     },
     dispatch,
   );
+  return true;
 }

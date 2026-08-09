@@ -43,7 +43,10 @@ export interface UnorganizedNote {
 }
 
 /**
- * One sweep per session (the strip gates it). Emits at most one assist.
+ * One sweep per session once the threshold is met (the strip gates it).
+ * Emits at most one assist. Returns true when the threshold was met (the
+ * caller may stop re-checking this session) — false means "not enough yet,
+ * keep watching"; no network is touched below the threshold.
  */
 export async function produceNotesAssists(args: {
   userId: string;
@@ -51,13 +54,13 @@ export async function produceNotesAssists(args: {
    * already-loaded Redux state (list + scope assignments). */
   unorganized: UnorganizedNote[];
   dispatch: AppDispatch;
-}): Promise<void> {
+}): Promise<boolean> {
   const { userId, unorganized, dispatch } = args;
-  if (unorganized.length < MIN_UNORGANIZED) return;
+  if (unorganized.length < MIN_UNORGANIZED) return false;
 
   const dedupeKey = `${SOURCE_KEY}:${userId}`;
   const undecided = await filterUndecidedKeys([dedupeKey]);
-  if (undecided.length === 0) return;
+  if (undecided.length === 0) return true;
 
   const count = unorganized.length;
   const listed = unorganized.slice(0, MAX_LISTED);
@@ -91,4 +94,5 @@ export async function produceNotesAssists(args: {
     },
     dispatch,
   );
+  return true;
 }

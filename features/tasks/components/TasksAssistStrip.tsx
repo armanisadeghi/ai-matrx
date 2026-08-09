@@ -28,8 +28,12 @@ import {
   produceTaskAssists,
 } from "@/features/tasks/tasks-assists-producer";
 
-/** One sweep per user per browser session — revisiting /tasks must not
- * re-run the scan (or re-emit) on every mount. Module-scoped on purpose. */
+/** Users whose pileup crossed the threshold this browser session — once the
+ * producer has actually run its ledger round-trip there is nothing more to
+ * notice until the next session. Below the threshold we deliberately do NOT
+ * latch, so tasks that go overdue later in the session are still noticed
+ * (the re-checks are pure in-memory — the producer touches no network under
+ * the threshold). Module-scoped on purpose. */
 const sweptUsers = new Set<string>();
 
 export function TasksAssistStrip({ className }: { className?: string }) {
@@ -44,7 +48,6 @@ export function TasksAssistStrip({ className }: { className?: string }) {
     // count tasks the user has explicitly parked (a false-positive factory).
     if (!userId || !userStateLoaded || tasks.length === 0) return;
     if (sweptUsers.has(userId)) return;
-    sweptUsers.add(userId);
 
     const { todayStr } = buildSmartViewContext(userId);
     const nowIso = new Date().toISOString();
@@ -54,7 +57,14 @@ export function TasksAssistStrip({ className }: { className?: string }) {
       const snoozedUntil = userStateMap[t.id]?.snoozedUntil;
       return !snoozedUntil || snoozedUntil <= nowIso;
     });
-    void produceTaskAssists({ userId, overdue, dispatch });
+    // Latch synchronously (no concurrent double-run), un-latch when under
+    // threshold so later pileups this session are still noticed.
+    sweptUsers.add(userId);
+    void produceTaskAssists({ userId, overdue, dispatch }).then(
+      (thresholdMet) => {
+        if (!thresholdMet) sweptUsers.delete(userId);
+      },
+    );
   }, [userId, userStateLoaded, tasks, userStateMap, dispatch]);
 
   return <AssistStrip surfaceName={TASKS_ASSIST_SURFACE} className={className} />;

@@ -25,8 +25,11 @@ import {
   producePlanAssists,
 } from "../plan-assists-producer";
 
-/** One sweep per site per browser session — switching views (tree/table/map)
- * must not re-run the scan on every mount. Module-scoped on purpose. */
+/** Sites whose page gap was found this browser session — once the producer
+ * has run its ledger round-trip there is nothing more to notice until the
+ * next session. With no gap we deliberately do NOT latch, so nodes planned
+ * later in the session are still noticed (the re-checks are pure in-memory —
+ * the producer touches no network without a gap). Module-scoped on purpose. */
 const sweptSites = new Set<string>();
 
 export function PlanAssistStrip({
@@ -53,6 +56,8 @@ export function PlanAssistStrip({
   useEffect(() => {
     if (!enabled || !siteId || !userId) return;
     if (sweptSites.has(siteId)) return;
+    // Latch synchronously (no concurrent double-run), un-latch when no gap
+    // exists so nodes planned later in the session are still noticed.
     sweptSites.add(siteId);
     void producePlanAssists({
       siteId,
@@ -61,6 +66,8 @@ export function PlanAssistStrip({
       pagesByNodeId,
       userId,
       dispatch,
+    }).then((gapFound) => {
+      if (!gapFound) sweptSites.delete(siteId);
     });
   }, [enabled, siteId, siteLabel, nodeRows, pagesByNodeId, userId, dispatch]);
 

@@ -51,7 +51,10 @@ function taskLine(t: TaskWithProject): string {
 }
 
 /**
- * One sweep per session (the strip gates it). Emits at most one assist.
+ * One sweep per session once the threshold is met (the strip gates it).
+ * Emits at most one assist. Returns true when the threshold was met (the
+ * caller may stop re-checking this session) — false means "not enough yet,
+ * keep watching"; no network is touched below the threshold.
  */
 export async function produceTaskAssists(args: {
   userId: string;
@@ -59,13 +62,13 @@ export async function produceTaskAssists(args: {
    * due date — computed by the caller from already-loaded Redux state. */
   overdue: TaskWithProject[];
   dispatch: AppDispatch;
-}): Promise<void> {
+}): Promise<boolean> {
   const { userId, overdue, dispatch } = args;
-  if (overdue.length < MIN_OVERDUE) return;
+  if (overdue.length < MIN_OVERDUE) return false;
 
   const dedupeKey = `${SOURCE_KEY}:${userId}`;
   const undecided = await filterUndecidedKeys([dedupeKey]);
-  if (undecided.length === 0) return;
+  if (undecided.length === 0) return true;
 
   const count = overdue.length;
   const listed = overdue.slice(0, MAX_LISTED);
@@ -99,4 +102,5 @@ export async function produceTaskAssists(args: {
     },
     dispatch,
   );
+  return true;
 }

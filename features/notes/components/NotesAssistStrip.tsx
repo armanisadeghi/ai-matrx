@@ -4,11 +4,12 @@
  * NotesAssistStrip — the /notes page's inline assist chips.
  *
  * Runs the deterministic unorganized-notes sweep (notes-assists-producer.ts)
- * once per user per browser session over ALREADY-LOADED Redux state (list +
- * scope assignments — zero extra reads), then renders this surface's pending
- * assists through the canonical per-page AssistStrip (never a forked chip
- * component). The same rows also appear in the global AssistsDock; deciding
- * a chip in either place clears both — one ledger, one slice.
+ * over the Redux notes list plus the note scope assignments (self-hydrated
+ * below — the sidebar only loads them in scope-grouping mode), then renders
+ * this surface's pending assists through the canonical per-page AssistStrip
+ * (never a forked chip component). The same rows also appear in the global
+ * AssistsDock; deciding a chip in either place clears both — one ledger,
+ * one slice.
  */
 
 import { useEffect } from "react";
@@ -21,13 +22,18 @@ import {
   selectNoteScopesLoaded,
   selectNotesListStatus,
 } from "@/features/notes/redux/selectors";
+import { fetchAllNoteScopes } from "@/features/notes/redux/thunks";
 import {
   NOTES_ASSIST_SURFACE,
   produceNotesAssists,
 } from "@/features/notes/notes-assists-producer";
 
-/** One sweep per user per browser session — revisiting /notes must not
- * re-run the scan (or re-emit) on every mount. Module-scoped on purpose. */
+/** Users whose pileup crossed the threshold this browser session — once the
+ * producer has actually run its ledger round-trip there is nothing more to
+ * notice until the next session. Below the threshold we deliberately do NOT
+ * latch, so notes created later in the session are still noticed (the
+ * re-checks are pure in-memory — the producer touches no network under the
+ * threshold). Module-scoped on purpose. */
 const sweptUsers = new Set<string>();
 
 export function NotesAssistStrip({ className }: { className?: string }) {
@@ -38,12 +44,18 @@ export function NotesAssistStrip({ className }: { className?: string }) {
   const scopesLoaded = useAppSelector(selectNoteScopesLoaded);
   const listStatus = useAppSelector(selectNotesListStatus);
 
+  // Self-hydrate scope assignments — the sidebar only fetches them in its
+  // scope-grouping mode, and the sweep is gated on them (sweeping without
+  // them would call every note unorganized). Idempotent: skipped once loaded.
+  useEffect(() => {
+    if (userId && !scopesLoaded) void dispatch(fetchAllNoteScopes());
+  }, [userId, scopesLoaded, dispatch]);
+
   useEffect(() => {
     // Both halves must be loaded — sweeping before scope assignments arrive
     // would call every note unorganized (a false-positive factory).
     if (!userId || listStatus !== "loaded" || !scopesLoaded) return;
     if (sweptUsers.has(userId)) return;
-    sweptUsers.add(userId);
 
     const assigned = new Set(assignments.map((a) => a.entity_id));
     const unorganized = notes
@@ -61,7 +73,14 @@ export function NotesAssistStrip({ className }: { className?: string }) {
         id: n.id,
         label: (n.label ?? "").trim() || "Untitled note",
       }));
-    void produceNotesAssists({ userId, unorganized, dispatch });
+    // Latch synchronously (no concurrent double-run), un-latch when under
+    // threshold so later pileups this session are still noticed.
+    sweptUsers.add(userId);
+    void produceNotesAssists({ userId, unorganized, dispatch }).then(
+      (thresholdMet) => {
+        if (!thresholdMet) sweptUsers.delete(userId);
+      },
+    );
   }, [userId, listStatus, scopesLoaded, notes, assignments, dispatch]);
 
   return <AssistStrip surfaceName={NOTES_ASSIST_SURFACE} className={className} />;
