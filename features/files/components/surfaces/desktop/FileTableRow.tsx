@@ -54,6 +54,7 @@ import { FileTypeBadge } from "./FileTypeBadge";
 import { OwnerCell } from "./OwnerCell";
 import { RagStatusCell } from "./RagStatusCell";
 import { FileContextCell } from "./FileContextCell";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 
 export interface FileTableRowProps {
   kind: "file" | "folder";
@@ -248,16 +249,21 @@ function FileCell({
             />
             <div className="flex min-w-0 flex-col">
               <span className="flex min-w-0 items-center gap-1">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onActivate();
-                  }}
-                  className="truncate text-left font-medium text-foreground hover:underline"
-                >
-                  {file.fileName}
-                </button>
+                {/* The name was a bare <button>, so opening a file into a new
+                    tab — cmd-click, middle-click — was impossible; the ONLY
+                    gesture was a plain click. `EntityRef` keeps that click
+                    doing exactly what it did (`onActivate` opens the file
+                    in-app) while making the name a real anchor to
+                    `/files/f/{id}`, so modified clicks work natively, and it
+                    adds the file peek. */}
+                <EntityRef
+                  token="file"
+                  id={file.id}
+                  name={file.fileName}
+                  showIcon={false}
+                  onOpen={onActivate}
+                  className="min-w-0 font-medium text-foreground"
+                />
                 <FileRagBadge fileId={file.id} className="shrink-0" />
               </span>
               {parentPath ? (
