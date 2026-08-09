@@ -656,6 +656,34 @@ org-settings-scopes — none names an existing record.
 **The remaining backlog is the handler-body form**, still ~140 files. Nobody has
 walked it end to end.
 
+### A FOURTH failure mode: the route literal that has no page
+
+Alongside "no door", "wrong record" and "param the destination never reads":
+**a hardcoded route that simply does not exist.** It never 404s in review
+because nothing type-checks a string against the route tree.
+
+Found 2026-08-09 by checking route literals against `app/`:
+- **`/lists-v2`** — three call sites in `features/user-lists/**` built URLs
+  under it; the real routes are `/lists`, `/lists/[id]`, `/lists/v1..v3`. Fixed
+  (and the row route now resolves through the registry, not a literal). No user
+  was affected because both components have zero consumers — **which is exactly
+  why it stayed broken: nothing rendered them, so nothing proved them wrong.**
+- **`/apps`, `/applets`, `/applet`, `/ai`** — parked behind `_`-prefixed
+  private folders, ~155 links. Filed as **FOUND_DEFECTS D145**; un-parking is a
+  product decision, not a sweep fix. CLAUDE.md's route table was advertising
+  them and has been corrected.
+
+**The check, mechanically:** build the set of real routes by walking `app/` for
+`page.tsx`, skipping `(group)` and `@parallel` segments and treating a
+leading-`_` segment as NOT a route; then grep `router.push(\`/x` / `href="/x`
+and test each first segment against that set. Same truth-vs-code guard shape
+aidream uses for schema drift.
+
+⚠️ **A literal is the smell.** Both findings would have been impossible if the
+route came from `getEntityInfo(token).hrefFor`. Prefer the registry over a
+string every time — that is the same reason this campaign fixes registries
+rather than call sites.
+
 ### A door can point at a real page and STILL be wrong — check the param
 
 A third failure mode, alongside "no door" and "wrong record": **a link whose

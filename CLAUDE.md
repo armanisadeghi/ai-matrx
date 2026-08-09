@@ -169,7 +169,7 @@ The `app/` tree splits into purpose-named route groups. **Working on core produc
 |---|---|---|---|
 | `(core)` | **Production main app.** Slim modern shell, no entity system. New core work goes here. | `/chat`, `/agents`, `/files`, `/notes`… | always |
 | `(admin)` | **Production admin.** Super-admin gated at layout level. Deploys as manage.aimatrx.com. | `/administration/*` | `full` / `core` / `admin` |
-| `(transitional)` | **On the way in/out.** Being (or to be) replaced by `(core)`; not ready to delete. Lower priority. | `/apps`, `/dashboard`, `/settings`, `/scraper`, `/projects`, `/ai`, `/applets`, `/news`… | always |
+| `(transitional)` | **On the way in/out.** Being (or to be) replaced by `(core)`; not ready to delete. Lower priority. **A leading `_` folder here (`_apps`, `_applets`, `_flash-cards`, `_flashcard`) is PARKED — Next.js does not route a private folder, so those URLs 404. See FOUND_DEFECTS D145.** | `/settings`, `/news`, `/local`, `/agent-lists`, `/registered-results` | always |
 | `(dev)` | **Internal demos / tests / experiments.** Auth-required. Deploys as demos.aimatrx.com. | `/demos/*` | `full` / `user` / `demos` |
 | `(public)` | Marketing / legal / share / education / canvas. | `/legal`, `/share`, `/p`… | always |
 | `(auth-pages)` | Login / signup / etc. | `/login`, `/sign-up`… | always |

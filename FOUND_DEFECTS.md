@@ -13,6 +13,36 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D145 — The applet/apps feature is PARKED and ~155 of its links 404 (2026-08-09)
+
+`app/(transitional)/_apps`, `_applets`, `_flash-cards`, `_flashcard` are
+underscore-prefixed. **A leading `_` makes a folder PRIVATE in the Next.js App
+Router — it does not route.** So `/apps`, `/applets`, `/applet`, `/ai` are
+404s today.
+
+Measured: **135** link/push references from *inside* those parked trees
+(self-referential), plus **20 files outside** them — every one under
+`components/applet/**` or `features/applet/**`, i.e. still the same feature.
+No unrelated surface links in, so this is one coherent parked feature, not
+scattered rot.
+
+**Not fixing on my own authority** — un-parking a route tree is a product
+decision (it looks deliberate, likely the build-profile split). What is needed
+is a decision: **finish the retirement** (delete the tree and its links) or
+**un-park** (drop the `_`) and re-verify the links.
+
+**CLAUDE.md was lying about this** and is now corrected: its `(transitional)`
+row advertised `/apps`, `/dashboard`, `/settings`, `/scraper`, `/projects`,
+`/ai`, `/applets`, `/news` — only `/settings` and `/news` were right.
+`/dashboard`, `/scraper` and `/projects` had moved to `(core)`; `/apps`,
+`/applets` and `/ai` were parked.
+
+**Reproduce (no new tooling):** walk `app/` for `page.tsx`, skip `(group)` and
+`@parallel` segments, and treat a leading-`_` segment as NOT a route; then grep
+`router.push('/x` and `href="/x` and check each first segment against that set.
+This "route literal vs the real route tree" check is the same truth-vs-code
+guard shape aidream uses for schema drift, and it is what found this.
+
 ### D144 — Org admins reassign a member's records without being able to see them (2026-08-09)
 
 `/organizations/[orgId]/admin/users/[userId]/resources`
