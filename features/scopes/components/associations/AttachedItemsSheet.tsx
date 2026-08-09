@@ -12,18 +12,25 @@
 //
 // Adaptive per project rule: a NON-BLOCKING draggable `WindowPanel` on
 // desktop (the page behind stays interactive), bottom Drawer on mobile.
+//
+// THE DOOR LAW: every attached item's name is an `EntityRef` — open, new tab,
+// and (where a peek is registered) a quick look without leaving this window.
+// Tokens with no route still get their peek, and tokens with neither render as
+// plain text rather than a control that goes nowhere. Never hand-roll the link:
+// `hrefFor` alone loses the peek, and this window was doing exactly that.
 
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import dynamic from "next/dynamic";
-import { ExternalLink, Loader2, Plus, X } from "lucide-react";
+import { AlertTriangle, Loader2, Plus, X } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { fetchEntityTitles } from "@/features/sharing/service/accessSummary";
 import type { ContainerLink } from "@/features/scopes/hooks/useContainerLinks";
+import type { PrimaryEntity } from "@/features/scopes/components/associations/PrimaryEntityContext";
 import {
   Drawer,
   DrawerContent,
@@ -49,6 +56,12 @@ export interface AttachedItemsSheetProps {
   onOpenChange: (open: boolean) => void;
   token: EntityTypeToken;
   containerLabel?: string;
+  /**
+   * The container these items are attached to. When given, the "Attached to X"
+   * line puts a door on X — this window is draggable and outlives the page it
+   * was opened from, so its container reference must be reachable.
+   */
+  container?: PrimaryEntity;
   links: ContainerLink[];
   /** Opens the attach picker. Omitted when the token cannot list candidates. */
   onAdd?: () => void;
@@ -60,9 +73,22 @@ export function AttachedItemsSheet(props: AttachedItemsSheetProps) {
   const info = getEntityInfo(props.token);
 
   const title = info.labelPlural;
-  const subtitle = props.containerLabel
-    ? `Attached to ${props.containerLabel}`
-    : "Attached items";
+  const containerName = props.container?.label ?? props.containerLabel;
+  const subtitle = props.container ? (
+    <span className="inline-flex min-w-0 max-w-full items-center gap-1">
+      Attached to
+      <EntityRef
+        token={props.container.type}
+        id={props.container.id}
+        name={containerName}
+        alwaysShowActions
+      />
+    </span>
+  ) : props.containerLabel ? (
+    `Attached to ${props.containerLabel}`
+  ) : (
+    "Attached items"
+  );
 
   const body = (
     <AttachedItemsBody
@@ -83,7 +109,11 @@ export function AttachedItemsSheet(props: AttachedItemsSheetProps) {
               <info.Icon className="h-4 w-4 text-muted-foreground" />
               {title}
             </DrawerTitle>
-            <DrawerDescription>{subtitle}</DrawerDescription>
+            {/* asChild → a <div>, not a <p>: the subtitle now carries an
+                EntityRef whose peek may render block content. */}
+            <DrawerDescription asChild>
+              <div className="text-sm text-muted-foreground">{subtitle}</div>
+            </DrawerDescription>
           </DrawerHeader>
           <div className="flex-1 min-h-0 px-4 pb-4 flex flex-col overflow-y-auto">
             {body}
@@ -204,40 +234,36 @@ function AttachedItemsBody({
               const missing = !titles.has(link.resourceId);
               const name =
                 resolved ?? link.label ?? (missing ? null : "Untitled");
-              const href = info.hrefFor?.(link.resourceId) ?? null;
               const busy = busyId === link.resourceId;
 
               return (
                 <li
                   key={link.edgeId}
-                  className="group flex items-center gap-2 rounded-md px-2.5 py-2 text-sm transition-colors hover:bg-accent"
+                  className="group/entity-ref flex items-center gap-2 rounded-md px-2.5 py-2 text-sm transition-colors hover:bg-accent"
                 >
                   <info.Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <span className="flex-1 min-w-0 truncate">
                     {name === null ? (
-                      <span className="text-muted-foreground italic">
-                        No longer available
-                      </span>
-                    ) : href ? (
-                      <Link
-                        href={href}
-                        className="text-foreground hover:underline"
+                      // The edge points at something this viewer cannot read
+                      // (deleted, or access revoked). Say so loudly — the X
+                      // beside it is the one-click fix.
+                      <span
+                        className="inline-flex items-center gap-1 text-destructive"
+                        title="This item was deleted or is no longer shared with you. Detach it with the X."
                       >
-                        {name}
-                      </Link>
+                        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                        Unresolved — deleted or no longer shared
+                      </span>
                     ) : (
-                      <span className="text-foreground">{name}</span>
+                      <EntityRef
+                        token={token}
+                        id={link.resourceId}
+                        name={name}
+                        showIcon={false}
+                        className="text-foreground"
+                      />
                     )}
                   </span>
-                  {href ? (
-                    <Link
-                      href={href}
-                      title="Open"
-                      className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </Link>
-                  ) : null}
                   <button
                     type="button"
                     disabled={busy}

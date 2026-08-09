@@ -9,12 +9,21 @@
 // Fully registry-driven: register a token + one overlay line and it appears
 // here with zero changes. Empty query shows the caller's recently-touched
 // entities (`platform.user_entity_state`).
+//
+// THE DOOR LAW, picker flavour: "which one is that?" is THE question a picker
+// provokes, so every candidate carries its doors. The row itself stays the
+// attach/detach toggle (that is what the user came for, and an <a> inside a
+// <button> is invalid DOM anyway), so the doors ride alongside it as SIBLINGS
+// via `EntityDoorControls` — peek and new tab only. Same-tab open is
+// deliberately withheld here: navigating away would cost the user the picking
+// session they are in the middle of.
 
 "use client";
 
 import { useState } from "react";
 import { Check, Loader2, Plus, Search } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/utils/cn";
 import { useUniversalEntitySearch } from "@/features/scopes/hooks/useUniversalEntitySearch";
@@ -190,15 +199,26 @@ export function UniversalAssociationPicker(
                         const attached = attachedKeys.has(key);
                         const busy = busyKey === key;
                         return (
-                          <li key={key}>
+                          <li
+                            key={key}
+                            className={cn(
+                              "group/entity-ref group flex items-center gap-1 rounded-md pr-1.5 transition-colors",
+                              "hover:bg-accent",
+                              attached && "bg-accent/40",
+                            )}
+                          >
                             <button
                               type="button"
                               disabled={busy}
                               onClick={() => toggle(c)}
+                              title={
+                                attached
+                                  ? `Detach "${c.title}"`
+                                  : `Attach "${c.title}"`
+                              }
                               className={cn(
-                                "group flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm transition-colors",
-                                "hover:bg-accent disabled:opacity-50",
-                                attached && "bg-accent/40",
+                                "flex min-w-0 flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm",
+                                "disabled:opacity-50",
                               )}
                             >
                               <span className="min-w-0 flex-1 truncate text-foreground">
@@ -221,6 +241,13 @@ export function UniversalAssociationPicker(
                                 )}
                               </span>
                             </button>
+                            {/* Sibling of the toggle, never a child — an
+                                anchor inside a button is invalid DOM. */}
+                            <EntityDoorControls
+                              token={c.token}
+                              id={c.id}
+                              name={c.title}
+                            />
                           </li>
                         );
                       })}

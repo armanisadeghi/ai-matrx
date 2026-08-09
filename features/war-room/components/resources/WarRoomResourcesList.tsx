@@ -23,6 +23,7 @@ import {
   Unlink,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -449,6 +450,8 @@ export function WarRoomResourcesList({
                             <li key={row.key}>
                               {card(
                                 <DefaultResourceRow
+                                  token={row.token}
+                                  resourceId={row.resourceId}
                                   title={title}
                                   originNote={row.originNote}
                                   idPrefix={idPrefix}
@@ -580,13 +583,24 @@ export function ResourceItemCard({
   );
 }
 
+/**
+ * THE DOOR LAW: the row's name is an `EntityRef`, not a `<p>`. The ⋯ menu's
+ * "Open" is a door only the user who thinks to look for it ever finds — and it
+ * exists only for tokens with a route, so a `workflow` or `skill` row was a
+ * plain word with nothing behind it. `EntityRef` gives the name itself the
+ * click, a new tab, and a peek when one is registered.
+ */
 function DefaultResourceRow({
+  token,
+  resourceId,
   title,
   originNote,
   idPrefix,
   menu,
   busy,
 }: {
+  token: string;
+  resourceId: string;
   title: string;
   originNote?: string | null;
   idPrefix: ReactNode;
@@ -594,9 +608,20 @@ function DefaultResourceRow({
   busy?: boolean;
 }) {
   return (
-    <div className={cn("flex items-start gap-2", busy && "opacity-50")}>
+    <div
+      className={cn(
+        "group/entity-ref flex items-start gap-2",
+        busy && "opacity-50",
+      )}
+    >
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm text-foreground">{title}</p>
+        <EntityRef
+          token={token}
+          id={resourceId}
+          name={title}
+          showIcon={false}
+          className="text-sm text-foreground"
+        />
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
           {idPrefix}
           {originNote ? (

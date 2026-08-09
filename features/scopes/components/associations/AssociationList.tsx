@@ -14,11 +14,20 @@
 // `ContainerResourcesAdapter` and the UI stays identical.
 //
 // Titles are never UUIDs: edge label → batched title fetch → "Untitled <type>".
+//
+// THE DOOR LAW: a row's title is an `EntityRef` — open, new tab, and a peek
+// where one is registered — so a token with no route (`workflow`, `skill`,
+// `crm_campaign`, …) still gives the user a way to see what it is instead of an
+// inert word. Rows only fall back to a plain button when the caller supplies
+// `openEntity` (a surface that opens the record its own way, e.g. in a panel).
+// An edge whose target cannot be resolved is called out loudly beside its
+// one-click fix (detach) — never rendered as a healthy "Untitled" row.
 
 "use client";
 
 import { useState, type ReactNode } from "react";
 import {
+  AlertTriangle,
   ExternalLink,
   Link2,
   Loader2,
@@ -27,6 +36,7 @@ import {
   RefreshCw,
   X,
 } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/utils/cn";
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
@@ -173,7 +183,7 @@ export function AssociationList(props: AssociationListProps) {
     : adapter.rows;
   const visibleRows = rows.filter((r) => !removingKeys.has(r.key));
 
-  const { titleFor } = useEntityTitles(
+  const { titleFor, isUnresolved } = useEntityTitles(
     visibleRows.map((r) => ({ token: r.token, id: r.resourceId, label: r.label })),
   );
 
@@ -348,12 +358,15 @@ export function AssociationList(props: AssociationListProps) {
                       {tokenRows.map((row) => {
                         const busy = removingKeys.has(row.key);
                         const Icon = info?.Icon;
+                        const titleRef = {
+                          token: row.token,
+                          id: row.resourceId,
+                          label: row.label,
+                        };
+                        const rowTitle = titleFor(titleRef);
+                        const unresolved = isUnresolved(titleRef);
                         const custom = props.renderRow?.(row, {
-                          title: titleFor({
-                            token: row.token,
-                            id: row.resourceId,
-                            label: row.label,
-                          }),
+                          title: rowTitle,
                           busy,
                           onDetach: () => void handleDetach(row),
                           onOpen: () => openRow(row),
@@ -365,29 +378,42 @@ export function AssociationList(props: AssociationListProps) {
                           <li key={row.key}>
                             <div
                               className={cn(
-                                "group flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent",
+                                "group/entity-ref group flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent",
                                 busy && "opacity-50",
                               )}
                             >
                               {Icon && (
                                 <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                               )}
-                              <button
-                                type="button"
-                                onClick={() => openRow(row)}
-                                className="min-w-0 flex-1 truncate text-left text-foreground hover:underline"
-                                title={titleFor({
-                                  token: row.token,
-                                  id: row.resourceId,
-                                  label: row.label,
-                                })}
-                              >
-                                {titleFor({
-                                  token: row.token,
-                                  id: row.resourceId,
-                                  label: row.label,
-                                })}
-                              </button>
+                              {unresolved ? (
+                                // The edge survives but its target does not
+                                // resolve for this viewer (deleted, or no
+                                // longer shared). Say it — the X is the fix.
+                                <span
+                                  className="inline-flex min-w-0 flex-1 items-center gap-1 truncate text-destructive"
+                                  title="This item was deleted or is no longer shared with you. Detach it with the X."
+                                >
+                                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                                  Unresolved — deleted or no longer shared
+                                </span>
+                              ) : props.openEntity ? (
+                                <button
+                                  type="button"
+                                  onClick={() => openRow(row)}
+                                  className="min-w-0 flex-1 truncate text-left text-foreground hover:underline"
+                                  title={rowTitle}
+                                >
+                                  {rowTitle}
+                                </button>
+                              ) : (
+                                <EntityRef
+                                  token={row.token}
+                                  id={row.resourceId}
+                                  name={rowTitle}
+                                  showIcon={false}
+                                  className="min-w-0 flex-1 text-foreground"
+                                />
+                              )}
                               {row.originNote && (
                                 <span className="shrink-0 text-[10px] text-muted-foreground/60">
                                   {row.originNote}
@@ -424,7 +450,10 @@ export function AssociationList(props: AssociationListProps) {
                                   />
                                 </button>
                               )}
-                              {(props.openEntity || info?.hrefFor) && (
+                              {/* EntityRef carries its own open / new-tab /
+                                  peek controls; this button only exists for the
+                                  `openEntity` override path. */}
+                              {props.openEntity && !unresolved && (
                                 <button
                                   type="button"
                                   onClick={() => openRow(row)}

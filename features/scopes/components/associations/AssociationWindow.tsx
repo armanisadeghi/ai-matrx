@@ -23,8 +23,12 @@ export interface AssociationWindowProps {
   title: string;
   /** Small leading icon rendered beside the title. */
   icon?: ReactNode;
-  /** One-line context under the header ("Attach to Titanium Marketing"). */
-  subtitle?: string;
+  /**
+   * One-line context under the header ("Attached to Titanium Marketing").
+   * A node, not a string, so the container it names can carry its own door
+   * (THE DOOR LAW) instead of being an unreachable label.
+   */
+  subtitle?: ReactNode;
   children: ReactNode;
 }
 
@@ -68,8 +72,12 @@ export function AssociationWindow({
       bodyClassName="p-0 overflow-hidden"
     >
       <div className="flex h-full min-h-0 flex-col gap-2 p-3">
+        {/* A <div>, not a <p>: `subtitle` is a node and may carry an EntityRef
+            whose peek renders block content. */}
         {subtitle ? (
-          <p className="shrink-0 text-xs text-muted-foreground">{subtitle}</p>
+          <div className="shrink-0 text-xs text-muted-foreground">
+            {subtitle}
+          </div>
         ) : null}
         {children}
       </div>

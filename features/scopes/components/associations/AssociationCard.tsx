@@ -156,6 +156,7 @@ export function AssociationCard({
           onOpenChange={setListOpen}
           token={token}
           containerLabel={container.label}
+          container={container}
           links={linksFor(token)}
           onAdd={
             canAttach

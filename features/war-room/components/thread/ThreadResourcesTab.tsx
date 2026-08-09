@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   CommandDialog,
   CommandEmpty,
@@ -432,7 +433,12 @@ function FileResourceRow({
         : FileIcon;
 
   return ctx.card(
-    <div className={cn("flex items-start gap-2", ctx.busy && "opacity-50")}>
+    <div
+      className={cn(
+        "group/entity-ref flex items-start gap-2",
+        ctx.busy && "opacity-50",
+      )}
+    >
       {isMedia ? (
         <InlineMediaRef
           ref={fileIdToMediaRef(fileId)}
@@ -450,7 +456,15 @@ function FileResourceRow({
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm text-foreground">{name}</p>
+        {/* THE DOOR LAW: the file's name opens the file (and offers a new tab
+            and a peek) — it was a plain <p> with the only door buried in ⋯. */}
+        <EntityRef
+          token="file"
+          id={fileId}
+          name={name}
+          showIcon={false}
+          className="text-sm text-foreground"
+        />
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
           {ctx.idPrefix}
           {!compact && file?.meta.mime ? (

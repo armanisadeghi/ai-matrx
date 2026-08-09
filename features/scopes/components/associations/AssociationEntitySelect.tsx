@@ -21,10 +21,19 @@
 // `useAssociationEntitySelectAdapter` for plain platform.associations
 // containers, or a bespoke adapter when the surface has its own lifecycle
 // (e.g. war-room threads with is_active edge metadata).
+//
+// THE DOOR LAW: the name this control shows is a real record, so it carries its
+// doors — but the name itself CANNOT be a link (clicking it starts an inline
+// rename), so `EntityDoorControls` rides beside it as a sibling: peek, plus a
+// new tab. Same-tab open is withheld on purpose — this control lives in a
+// toolbar above live work (a war-room tile, a notes pane), and navigating away
+// would throw that work away to answer "what is this thing?". Every row in the
+// switcher gets the same doors.
 
 import { useState } from "react";
 import { Check, ChevronDown, Loader2, Plus, X } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import {
   Popover,
   PopoverContent,
@@ -139,7 +148,12 @@ export function AssociationEntitySelect({
   };
 
   return (
-    <div className={cn("flex min-w-0 items-center gap-0.5", className)}>
+    <div
+      className={cn(
+        "group/entity-ref flex min-w-0 items-center gap-0.5",
+        className,
+      )}
+    >
       {showIcon ? (
         <info.Icon
           className={cn(
@@ -167,7 +181,13 @@ export function AssociationEntitySelect({
           displayClassName="text-xs font-medium text-foreground"
           inputClassName="text-xs font-medium"
         />
-      ) : (
+      ) : null}
+
+      {active ? (
+        <EntityDoorControls token={token} id={active.id} name={active.title} />
+      ) : null}
+
+      {!active ? (
         <span
           className={cn(
             "truncate px-1 text-xs font-medium text-muted-foreground",
@@ -176,7 +196,7 @@ export function AssociationEntitySelect({
         >
           {adapter.loading ? "…" : (emptyLabel ?? info.labelPlural)}
         </span>
-      )}
+      ) : null}
 
       <Popover
         open={open}
@@ -219,7 +239,7 @@ export function AssociationEntitySelect({
                           void adapter.setActive(item.id);
                         close();
                       }}
-                      className="group gap-2"
+                      className="group/entity-ref group gap-2"
                     >
                       <Check
                         className={cn(
@@ -229,6 +249,24 @@ export function AssociationEntitySelect({
                       />
                       <span className="min-w-0 flex-1 truncate">
                         {item.title}
+                      </span>
+                      {/* Doors, as siblings of the row's select handler.
+                          `onPointerDown` is swallowed for the same reason the
+                          unlink button below swallows it: cmdk would otherwise
+                          take focus and select the row out from under the
+                          control. */}
+                      <span
+                        className="inline-flex shrink-0 items-center"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                      >
+                        <EntityDoorControls
+                          token={token}
+                          id={item.id}
+                          name={item.title}
+                        />
                       </span>
                       {adapter.detach && item.id !== activeId ? (
                         <button

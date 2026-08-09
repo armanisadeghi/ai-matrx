@@ -16,21 +16,25 @@
  *
  * It composes primitives, it does not duplicate them:
  *   - route + icon + peek availability → `resolveEntityDoors` (./doors)
- *   - preview                          → `ResourcePeekHost`
+ *   - the control cluster + preview    → `EntityDoorControls`
  *
  * Safe inside clickable table rows: every control stops propagation.
+ *
+ * When the name genuinely CANNOT be an anchor — it is an inline editor, or it
+ * lives inside a `<button>` that means something else — render
+ * `<EntityDoorControls>` as a SIBLING of the name instead. Same doors, no
+ * invalid nesting.
  *
  * Adding a door for a new entity type is a registry edit, never a change here:
  * give the token an `hrefFor` in `entityRegistry.ts`, and/or a peek in
  * `features/organizations/peek/registry.ts` + `kinds-list.ts`.
  */
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { ExternalLink, Lightbulb } from "lucide-react";
-import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { cn } from "@/lib/utils";
 import { resolveEntityDoors } from "./doors";
+import { EntityDoorControls } from "./EntityDoorControls";
 
 export interface EntityRefProps {
   /** Canonical entity token (`agent`, `note`, `task`, …). */
@@ -57,10 +61,6 @@ export interface EntityRefProps {
   className?: string;
 }
 
-const CONTROL_CLASS =
-  "flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground " +
-  "transition-colors hover:bg-accent hover:text-foreground";
-
 export function EntityRef({
   token,
   id,
@@ -73,12 +73,8 @@ export function EntityRef({
   extraActions,
   className,
 }: EntityRefProps) {
-  const [peekOpen, setPeekOpen] = useState(false);
-
   const doors = resolveEntityDoors(token, id, href);
   const resolvedHref = doors.href;
-  const peekKind = doors.peekKind;
-  const canPeek = !disablePeek && doors.canPeek;
   const label = name?.trim() || `${id.slice(0, 8)}…`;
   const Icon = doors.Icon;
 
@@ -110,50 +106,16 @@ export function EntityRef({
         </span>
       )}
 
-      <span
-        className={cn(
-          "inline-flex shrink-0 items-center gap-0.5",
-          !alwaysShowActions &&
-            "opacity-0 transition-opacity group-hover/entity-ref:opacity-100 focus-within:opacity-100",
-        )}
-      >
-        {canPeek && (
-          <button
-            type="button"
-            title={`Quick look at ${label}`}
-            aria-label={`Quick look at ${label}`}
-            onClick={(e) => {
-              stop(e);
-              setPeekOpen(true);
-            }}
-            className={CONTROL_CLASS}
-          >
-            <Lightbulb className="h-3 w-3" />
-          </button>
-        )}
-        {resolvedHref && !disableNewTab && (
-          <Link
-            href={resolvedHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={stop}
-            title={`Open ${label} in a new tab`}
-            aria-label={`Open ${label} in a new tab`}
-            className={CONTROL_CLASS}
-          >
-            <ExternalLink className="h-3 w-3" />
-          </Link>
-        )}
-        {extraActions}
-      </span>
-
-      {canPeek && peekOpen && (
-        <ResourcePeekHost
-          kind={peekKind}
-          id={id}
-          onClose={() => setPeekOpen(false)}
-        />
-      )}
+      <EntityDoorControls
+        token={token}
+        id={id}
+        name={label}
+        href={resolvedHref}
+        disablePeek={disablePeek}
+        disableNewTab={disableNewTab}
+        alwaysShowActions={alwaysShowActions}
+        extraActions={extraActions}
+      />
     </span>
   );
 }
