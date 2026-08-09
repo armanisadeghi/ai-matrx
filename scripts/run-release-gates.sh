@@ -53,7 +53,10 @@ if $STRICT; then
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts --strict"
         "Entity registry generation drift|pnpm check:entity-types"
-        "Agent sync fields vs live RPC|pnpm exec tsx scripts/check-agent-sync-fields.ts --strict"
+        # --live pulls the deployed agx_sync_linked_agents() and diffs the TS
+        # list against it. If the DB is unreachable it screams and falls back to
+        # the committed snapshot rather than failing the release.
+        "Agent sync fields vs live RPC (snapshot fallback)|pnpm exec tsx scripts/check-agent-sync-fields.ts --live --strict"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts --strict"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts --strict"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts --strict"
@@ -79,7 +82,7 @@ else
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
         "Entity registry generation drift|pnpm check:entity-types"
-        "Agent sync fields vs live RPC|pnpm exec tsx scripts/check-agent-sync-fields.ts"
+        "Agent sync fields vs live RPC (snapshot fallback)|pnpm exec tsx scripts/check-agent-sync-fields.ts --live"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts"

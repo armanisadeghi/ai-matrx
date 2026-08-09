@@ -85,6 +85,7 @@
         "gen:action-nouns": "node scripts/gen-action-nouns.mjs",
         "check:entity-types": "tsx scripts/generate-entity-types.ts --check",
         "check:sync-fields": "tsx scripts/check-agent-sync-fields.ts",
+        "check:sync-fields:live": "tsx scripts/check-agent-sync-fields.ts --live",
         "check:sync-fields:strict": "tsx scripts/check-agent-sync-fields.ts --strict",
         "check:sync-fields:refresh": "tsx scripts/check-agent-sync-fields.ts --refresh",
         "check:release-gates": "bash scripts/run-release-gates.sh",

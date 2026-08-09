@@ -131,6 +131,47 @@ describe("diffSyncFields — mutated function definitions", () => {
     expect(parsed.problems.join(" ")).toContain("no \"UPDATE agent.definition SET");
   });
 
+  it("screams at a constant assigned to a column that is not known bookkeeping", () => {
+    // The exact hole: someone adds `messages = '[]'::jsonb` to the SET clause.
+    // It reads neither v_from nor v_identity, so an "any constant is fine"
+    // bucket would swallow it and the gate would stay green while sync started
+    // wiping the target agent's messages.
+    const mutated = REAL_DEFINITION.replace(
+      "    updated_at           = now()\n",
+      "    messages_backup      = '[]'::jsonb,\n    updated_at           = now()\n",
+    );
+    const parsed = parseSyncSetClause(mutated);
+    expect(parsed.ignored).toEqual(["updated_at = now()"]);
+    expect(parsed.columns.map((c) => c.column)).not.toContain("messages_backup");
+    expect(parsed.problems).toHaveLength(1);
+    expect(parsed.problems[0]).toContain("messages_backup");
+    expect(parsed.problems[0]).toContain("not a known bookkeeping column");
+  });
+
+  it("screams at a constant assigned to a real synced column", () => {
+    const mutated = REAL_DEFINITION.replace(
+      "    messages             = v_from.messages,",
+      "    messages             = '[]'::jsonb,",
+    );
+    const parsed = parseSyncSetClause(mutated);
+    expect(parsed.columns.map((c) => c.column)).not.toContain("messages");
+    expect(parsed.problems).toHaveLength(1);
+    expect(parsed.problems[0]).toContain("not a known bookkeeping column");
+    // ...and the missing column is still reported as drift on top of it.
+    const issues = diffSyncFields(parsed.columns, AGENT_SYNC_FIELDS);
+    expect(issues.map((i) => i.column)).toEqual(["messages"]);
+  });
+
+  it("still ignores the whitelisted bookkeeping columns", () => {
+    const mutated = REAL_DEFINITION.replace(
+      "    updated_at           = now()\n",
+      "    updated_at           = now(),\n    source_snapshot_at   = now()\n",
+    );
+    const parsed = parseSyncSetClause(mutated);
+    expect(parsed.problems).toEqual([]);
+    expect(parsed.ignored).toEqual(["updated_at = now()", "source_snapshot_at = now()"]);
+  });
+
   it("catches a cross-column copy (col = v_from.other_col)", () => {
     const mutated = REAL_DEFINITION.replace(
       "    model_id             = v_from.model_id,",
@@ -139,6 +180,35 @@ describe("diffSyncFields — mutated function definitions", () => {
     const parsed = parseSyncSetClause(mutated);
     expect(parsed.problems).toHaveLength(1);
     expect(parsed.problems[0]).toContain("v_from.model_tiers");
+  });
+});
+
+describe("diffSyncFields — a malformed AGENT_SYNC_FIELDS list", () => {
+  const REAL_COLUMNS = parseSyncSetClause(REAL_DEFINITION).columns;
+
+  it("reports a duplicate column", () => {
+    // Same column, DIFFERENT field key — isolates the duplicate-column check.
+    const fields = [...AGENT_SYNC_FIELDS, { ...AGENT_SYNC_FIELDS[0], field: "nameAgain" }];
+    const issues = diffSyncFields(REAL_COLUMNS, fields);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].column).toBe(AGENT_SYNC_FIELDS[0].column);
+    expect(issues[0].detail).toContain("listed TWICE");
+  });
+
+  it("reports a duplicate field key — it silently drops a column from every snapshot", () => {
+    // Two DIFFERENT columns sharing one `field` key. Every column is still
+    // present so the DB-vs-TS diff is clean; the damage is entirely inside
+    // AGENT_SYNC_FIELD_BY_KEY / toAgentSyncSnapshot, which are keyed by field.
+    const fields = AGENT_SYNC_FIELDS.map((f) =>
+      f.column === "tool_config" ? { ...f, field: "tools" } : f,
+    );
+    expect(new Set(fields.map((f) => f.column)).size).toBe(fields.length);
+
+    const issues = diffSyncFields(REAL_COLUMNS, fields);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].column).toBe("tool_config");
+    expect(issues[0].detail).toContain('share the field key "tools"');
+    expect(issues[0].detail).toContain("dropped from every");
   });
 });
 

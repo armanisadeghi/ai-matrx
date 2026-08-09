@@ -723,7 +723,9 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
                 ? "You can only pull into a copy you own"
                 : pullImpact
                   ? describeAgentSyncImpact(pullImpact, userSide.name)
-                  : "Comparing…"
+                  : comparisonError
+                    ? "The comparison failed — syncing would overwrite the target with changes you cannot see here."
+                    : "Comparing…"
             }
           >
             {busy === "pull" ? (
@@ -747,7 +749,9 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
                 ? "Only super admins can push to a system agent"
                 : pushImpact
                   ? describeAgentSyncImpact(pushImpact, systemSide.name)
-                  : "Comparing…"
+                  : comparisonError
+                    ? "The comparison failed — syncing would overwrite the target with changes you cannot see here."
+                    : "Comparing…"
             }
           >
             {busy === "push" ? (

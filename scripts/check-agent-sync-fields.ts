@@ -1,6 +1,6 @@
 #!/usr/bin/env npx tsx
 /**
- * Agent-sync field drift gate — TRUTH (the live Postgres function) vs CODE
+ * Agent-sync field drift gate — the sync RPC's `UPDATE ... SET` vs CODE
  * (`AGENT_SYNC_FIELDS` in features/agents/sync/sync-fields.ts).
  *
  * `public.agx_sync_linked_agents(p_from_id, p_to_id, p_include_identity)` owns
@@ -12,20 +12,37 @@
  *
  * If the two disagree there is NO compile error and NO runtime error — the UI
  * simply lies: a column the RPC writes but TS omits makes the comparison swear
- * two agents are identical while the sync silently overwrites that column. This
- * guard fetches the real state and diffs it against the code's assumption.
+ * two agents are identical while the sync silently overwrites that column.
  *
- *   pnpm check:sync-fields            # offline, advisory — parses the snapshot
- *   pnpm check:sync-fields:strict     # exits non-zero on drift (CI / release)
- *   pnpm check:sync-fields:refresh    # re-pull the live function definition
+ * 🚨 WHAT IS ACTUALLY COMPARED DEPENDS ON THE MODE. Read this before trusting a
+ * green run:
  *
- * The committed snapshot (scripts/agent-sync-fields-snapshot.json) holds the
- * full `pg_get_functiondef()` text, so the default run needs no DB reach.
+ *   (no flag)   Parses ONLY the committed snapshot
+ *               (scripts/agent-sync-fields-snapshot.json). Catches someone
+ *               editing sync-fields.ts. It CANNOT catch someone changing the
+ *               function in Supabase — the snapshot is a photograph, and a
+ *               photograph never goes stale on its own.
+ *   --live      Pulls the deployed function definition and diffs TS against
+ *               THAT, and additionally screams when the committed snapshot has
+ *               drifted from live. If the pull fails (no network, no creds, no
+ *               permission) it prints an unmissable banner saying DB-side drift
+ *               was NOT checked this run, then falls back to the snapshot. A
+ *               blocked network never fails the gate on its own.
+ *   --refresh   Re-pull and rewrite the committed snapshot. A failed pull here
+ *               IS a failure (exit 2) — pulling is the entire job.
+ *   --strict    Exit 1 on actual drift (or a parse problem). Never on a failed
+ *               live pull.
+ *
+ *   pnpm check:sync-fields            # offline, advisory — snapshot only
+ *   pnpm check:sync-fields:live       # attempts live, falls back loudly
+ *   pnpm check:sync-fields:strict     # offline, exits non-zero on drift
+ *   pnpm check:sync-fields:refresh    # re-pull + rewrite the snapshot
  *
  * Exit codes:
- *   0  no drift (or drift found in advisory mode — still printed loudly).
- *   1  drift found, --strict only.
- *   2  unexpected error / snapshot unusable.
+ *   0  no drift (or drift in advisory mode — still printed loudly). Also the
+ *      code for a --live run whose pull failed and fell back to the snapshot.
+ *   1  drift or parse problem, --strict only.
+ *   2  unexpected error / snapshot unusable / --refresh could not reach the DB.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -52,6 +69,15 @@ const IDENTITY_FLAG = "v_identity";
 const TARGET_TABLE = "agent.definition";
 /** The RPC that dumps every routine in a schema (anon-executable via PostgREST). */
 const ROUTINE_DUMP_RPC = "__dump_schema_routines";
+/**
+ * The ONLY columns the sync UPDATE may write without copying from the source
+ * row. Anything else assigned a constant is drift the guard must scream about —
+ * `messages = '[]'::jsonb` or `is_public = true` in that SET clause changes what
+ * sync does to the target agent, and no comparison surface would know.
+ */
+const BOOKKEEPING_COLUMNS: readonly string[] = ["updated_at", "source_snapshot_at"];
+/** A live pull must never hang a release gate. */
+const LIVE_FETCH_TIMEOUT_MS = 15_000;
 
 // ── Snapshot shape ───────────────────────────────────────────────────────────
 export interface SyncFunctionSnapshot {
@@ -183,8 +209,11 @@ function extractSyncSetBody(sql: string): { body: string | null; problems: strin
  * Classification, per assignment:
  *   `col = CASE WHEN v_identity THEN v_from.col ELSE col END` → identity
  *   `col = v_from.col`                                        → behavior
- *   anything that reads neither v_from nor v_identity         → bookkeeping (ignored)
+ *   a constant assigned to a BOOKKEEPING_COLUMNS column       → ignored
  *   anything else                                             → problem (loud)
+ *
+ * There is deliberately NO "any constant is fine" bucket: that is how
+ * `messages = '[]'::jsonb` would slip into the SET clause with the gate green.
  */
 export function parseSyncSetClause(functionDefinition: string): ParsedSetClause {
   const sql = stripSqlComments(functionDefinition);
@@ -241,8 +270,18 @@ export function parseSyncSetClause(functionDefinition: string): ParsedSetClause 
     }
 
     if (!readsSource.test(expression) && !readsFlag.test(expression)) {
-      // Bookkeeping — `updated_at = now()` and friends. Not a synced field.
-      ignored.push(`${column} = ${expression}`);
+      if (BOOKKEEPING_COLUMNS.includes(column)) {
+        // Bookkeeping — `updated_at = now()`. Not a synced field.
+        ignored.push(`${column} = ${expression}`);
+        continue;
+      }
+      problems.push(
+        `"${column} = ${expression}" writes a value taken from neither ${SOURCE_RECORD} nor ${IDENTITY_FLAG}, ` +
+          `and "${column}" is not a known bookkeeping column (${BOOKKEEPING_COLUMNS.join(", ")}). ` +
+          `The sync changes this column on the target agent and no comparison surface knows it. ` +
+          `Either the RPC should copy it from ${SOURCE_RECORD}, or — if it is genuinely bookkeeping — ` +
+          `add it to BOOKKEEPING_COLUMNS in ${"scripts/check-agent-sync-fields.ts"} deliberately.`,
+      );
       continue;
     }
 
@@ -268,15 +307,31 @@ export function diffSyncFields(
 ): DriftIssue[] {
   const issues: DriftIssue[] = [];
 
-  const seen = new Set<string>();
+  // Both keys must be unique. `column` keys the DB comparison; `field` keys
+  // AGENT_SYNC_FIELD_BY_KEY and toAgentSyncSnapshot — a duplicate there
+  // silently collapses two columns into one snapshot entry, so one of them
+  // disappears from every diff with nothing to see in the UI.
+  const seenColumns = new Set<string>();
+  const seenFields = new Set<string>();
   for (const f of fields) {
-    if (seen.has(f.column)) {
+    if (seenColumns.has(f.column)) {
       issues.push({
         column: f.column,
         detail: `listed TWICE in AGENT_SYNC_FIELDS — one column, one row`,
       });
     }
-    seen.add(f.column);
+    seenColumns.add(f.column);
+
+    if (seenFields.has(f.field)) {
+      issues.push({
+        column: f.column,
+        detail:
+          `two rows in AGENT_SYNC_FIELDS share the field key "${f.field}" — AGENT_SYNC_FIELD_BY_KEY and ` +
+          `toAgentSyncSnapshot are both keyed by "field", so one of the two columns is dropped from every ` +
+          `snapshot and every comparison. One column, one field key.`,
+      });
+    }
+    seenFields.add(f.field);
   }
 
   const byColumnDb = new Map(parsed.map((p) => [p.column, p]));
@@ -399,14 +454,21 @@ const MCP_INSTRUCTIONS =
   `  where n.nspname = '${FUNCTION_SCHEMA}' and p.proname = '${FUNCTION_NAME}';\n` +
   `then write the result into ${SNAPSHOT_REL} as the "definition" string (and bump "generated_at").`;
 
-async function refreshSnapshot(): Promise<number> {
+/**
+ * The ONE live pull. `--refresh` (which rewrites the snapshot) and `--live`
+ * (which compares against it) share this path exactly, so a `--live` run either
+ * sees the same bytes `--refresh` would write, or reports precisely why it
+ * could not. Never throws — the caller decides whether a failure is fatal.
+ */
+async function fetchLiveDefinition(): Promise<
+  { readonly definition: string; readonly failure: null } | { readonly definition: null; readonly failure: string }
+> {
   const env = loadSupabaseEnv();
   if (!env) {
-    console.error(
-      `[FAIL] --refresh: no Supabase URL/key in env or .env* files, so the live definition cannot be pulled.\n` +
-        MCP_INSTRUCTIONS,
-    );
-    return 2;
+    return {
+      definition: null,
+      failure: `no Supabase URL/key found in env or .env* files, so the live definition cannot be pulled`,
+    };
   }
   const endpoint = `${env.url.replace(/\/$/, "")}/rest/v1/rpc/${ROUTINE_DUMP_RPC}`;
   let raw: string;
@@ -422,21 +484,20 @@ async function refreshSnapshot(): Promise<number> {
         "Accept-Profile": "public",
       },
       body: JSON.stringify({ p_schema: FUNCTION_SCHEMA }),
+      signal: AbortSignal.timeout(LIVE_FETCH_TIMEOUT_MS),
     });
     if (!res.ok) {
-      console.error(
-        `[FAIL] --refresh: rpc/${ROUTINE_DUMP_RPC} returned ${res.status}: ${(await res.text()).slice(0, 300)}\n` +
-          MCP_INSTRUCTIONS,
-      );
-      return 2;
+      return {
+        definition: null,
+        failure: `rpc/${ROUTINE_DUMP_RPC} returned ${res.status}: ${(await res.text()).slice(0, 300)}`,
+      };
     }
     raw = await res.text();
   } catch (err) {
-    console.error(
-      `[FAIL] --refresh: could not reach Supabase (${err instanceof Error ? err.message : String(err)}).\n` +
-        MCP_INSTRUCTIONS,
-    );
-    return 2;
+    return {
+      definition: null,
+      failure: `could not reach Supabase at ${endpoint} (${err instanceof Error ? err.message : String(err)})`,
+    };
   }
 
   let dump = raw;
@@ -449,10 +510,18 @@ async function refreshSnapshot(): Promise<number> {
 
   const definition = extractFunctionDefinition(dump);
   if (!definition) {
-    console.error(
-      `[FAIL] --refresh: ${FUNCTION_SCHEMA}.${FUNCTION_NAME} was not in the routine dump — the function may have been dropped or renamed.\n` +
-        MCP_INSTRUCTIONS,
-    );
+    return {
+      definition: null,
+      failure: `${FUNCTION_SCHEMA}.${FUNCTION_NAME} was not in the routine dump — the function may have been dropped or renamed`,
+    };
+  }
+  return { definition, failure: null };
+}
+
+async function refreshSnapshot(): Promise<number> {
+  const { definition, failure } = await fetchLiveDefinition();
+  if (definition === null) {
+    console.error(`[FAIL] --refresh: ${failure}.\n` + MCP_INSTRUCTIONS);
     return 2;
   }
 
@@ -477,12 +546,16 @@ async function refreshSnapshot(): Promise<number> {
 
 async function main(): Promise<number> {
   const strict = process.argv.includes("--strict");
+  const wantsLive = process.argv.includes("--live");
   const isTTY = process.stdout.isTTY && process.env.NO_COLOR !== "1";
   const RED = isTTY ? "\x1b[1;91m" : "";
   const RED_BG = isTTY ? "\x1b[1;97;41m" : "";
+  const YELLOW_BG = isTTY ? "\x1b[1;30;103m" : "";
+  const YELLOW = isTTY ? "\x1b[1;93m" : "";
   const GREEN = isTTY ? "\x1b[1;92m" : "";
   const DIM = isTTY ? "\x1b[2m" : "";
   const RESET = isTTY ? "\x1b[0m" : "";
+  const bar = "=".repeat(72);
 
   if (process.argv.includes("--refresh")) {
     const code = await refreshSnapshot();
@@ -502,13 +575,58 @@ async function main(): Promise<number> {
     return 2;
   }
 
-  const parsed = parseSyncSetClause(snapshot.definition);
+  // ── Pick the truth this run compares against ───────────────────────────────
+  let definition = snapshot.definition;
+  let truthLabel =
+    `committed snapshot ${SNAPSHOT_REL} ` +
+    `${DIM}(captured ${snapshot.generated_at}, via ${snapshot.source})${RESET}`;
+  /** Loud banners printed after the verdict. Never affect the exit code. */
+  const banners: string[] = [];
+
+  if (wantsLive) {
+    const { definition: liveDefinition, failure } = await fetchLiveDefinition();
+    if (liveDefinition !== null) {
+      definition = liveDefinition;
+      truthLabel = `LIVE ${FUNCTION_SCHEMA}.${FUNCTION_NAME}() ${DIM}(pulled now via rpc/${ROUTINE_DUMP_RPC})${RESET}`;
+      if (liveDefinition.trim() !== snapshot.definition.trim()) {
+        banners.push(
+          `${YELLOW_BG}${bar}${RESET}\n` +
+            `${YELLOW}COMMITTED SNAPSHOT IS STALE — the live function no longer matches ${SNAPSHOT_REL}.${RESET}\n` +
+            `${YELLOW_BG}${bar}${RESET}\n` +
+            `  The comparison above used the LIVE definition, so its verdict is correct.\n` +
+            `  But every run WITHOUT --live parses that stale snapshot and will judge\n` +
+            `  AGENT_SYNC_FIELDS against a function that no longer exists.\n` +
+            `  ${YELLOW}Fix: run \`pnpm check:sync-fields:refresh\` and commit the snapshot.${RESET}`,
+        );
+      }
+    } else {
+      banners.push(
+        `${YELLOW_BG}${bar}${RESET}\n` +
+          `${YELLOW}LIVE PULL FAILED — THIS RUN CANNOT DETECT DB-SIDE DRIFT.${RESET}\n` +
+          `${YELLOW_BG}${bar}${RESET}\n` +
+          `  reason: ${failure}\n` +
+          `  Falling back to the committed snapshot (captured ${snapshot.generated_at}).\n` +
+          `  That only catches someone editing features/agents/sync/sync-fields.ts.\n` +
+          `  A change made to ${FUNCTION_SCHEMA}.${FUNCTION_NAME}() in Supabase since that\n` +
+          `  capture is INVISIBLE to this run — a green result above does NOT mean the\n` +
+          `  TypeScript list matches the deployed function.\n` +
+          `  ${YELLOW}Fix: re-run where Supabase is reachable, or refresh the snapshot via the${RESET}\n` +
+          `  ${YELLOW}Supabase MCP (see \`pnpm check:sync-fields:refresh\`).${RESET}`,
+      );
+    }
+  }
+
+  const parsed = parseSyncSetClause(definition);
   const issues = diffSyncFields(parsed.columns, AGENT_SYNC_FIELDS);
   const identityCount = parsed.columns.filter((c) => c.group === "identity").length;
 
-  console.log(
-    `  snapshot: ${SNAPSHOT_REL} ${DIM}(captured ${snapshot.generated_at}, via ${snapshot.source})${RESET}`,
-  );
+  console.log(`  compared against: ${truthLabel}`);
+  if (!wantsLive) {
+    console.log(
+      `  ${DIM}mode: offline — snapshot only. A change made to the RPC in Supabase since ` +
+        `capture is NOT visible here; run with --live to compare against the deployed function.${RESET}`,
+    );
+  }
   console.log(
     `  DB SET clause: ${parsed.columns.length} synced column(s) ` +
       `${DIM}(${identityCount} identity, ${parsed.columns.length - identityCount} behavior; ` +
@@ -517,17 +635,25 @@ async function main(): Promise<number> {
   console.log(`  TS AGENT_SYNC_FIELDS: ${AGENT_SYNC_FIELDS.length} column(s)`);
   console.log("");
 
+  /** Banners go LAST so they are the final thing on screen, never scrolled past. */
+  const printBanners = (): void => {
+    for (const b of banners) {
+      console.log("");
+      console.log(b);
+    }
+  };
+
   if (parsed.problems.length === 0 && issues.length === 0) {
     console.log(
-      `${GREEN}OK — AGENT_SYNC_FIELDS matches every column the RPC writes, group for group.${RESET}`,
+      `${GREEN}OK — AGENT_SYNC_FIELDS matches every column the ${wantsLive && banners.length === 0 ? "live " : ""}RPC writes, group for group.${RESET}`,
     );
     console.log(
-      `${DIM}Snapshot is offline truth. Re-pull it with \`pnpm check:sync-fields:refresh\` after any change to the function.${RESET}`,
+      `${DIM}Re-pull the snapshot with \`pnpm check:sync-fields:refresh\` after any change to the function.${RESET}`,
     );
+    printBanners();
     return 0;
   }
 
-  const bar = "=".repeat(72);
   console.log(`${RED_BG}${bar}${RESET}`);
   console.log(
     `${RED}AGENT-SYNC FIELD DRIFT — ${issues.length} contradiction(s), ${parsed.problems.length} parse problem(s).${RESET}`,
@@ -549,8 +675,10 @@ async function main(): Promise<number> {
       `(or change the RPC and refresh this snapshot in the same change). The snapshot may also be stale — ` +
       `run \`pnpm check:sync-fields:refresh\` before assuming the code is wrong.${RESET}`,
   );
+  printBanners();
 
-  // Advisory by default; only --strict blocks.
+  // Advisory by default; only --strict blocks. A failed live pull is never
+  // drift — it is a run that could not check, and it must not fail the gate.
   return strict ? 1 : 0;
 }
 
