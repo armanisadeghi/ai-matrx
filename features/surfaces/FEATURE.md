@@ -149,7 +149,10 @@ internal platform use — never a washed-down user variant beside a private one:
   agent-writable adopters: `matrx-user/marketing-page`,
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
-  `TaskEditorBody.tsx`).
+  `TaskEditorBody.tsx`), `matrx-user/cms-page` (4 draft targets —
+  `page_title`, `page_meta`, `page_excerpt`, `page_tags`; handlers in
+  `features/cms/components/PageEditor.tsx`, which also mounts the surface's
+  first `SurfaceRuntimeProvider`).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -310,6 +313,8 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
 
 ## Change Log
+
+- **2026-08-09 — CMS page editor agent-writable, and its FIRST `SurfaceRuntimeProvider`.** `matrx-user/cms-page` declares 4 ask-policy DRAFT targets — `page_title`, `page_meta` (one object: `{meta_title?, meta_description?, meta_keywords?}`, edited together on the SEO tab), `page_excerpt`, `page_tags`. Handlers live in `features/cms/components/PageEditor.tsx` and call the editor's own setters (`page_title` goes through `handleTitleChange`, the title input's real `onChange`), so a staged value is indistinguishable from a typed one and only the Save buttons persist anything — this feature's write path is `/api/cms/*`, never a browser Supabase client. The editor previously mounted only `EditableContextMenu`, so the header Agents chrome resolved to the layout's `matrx-user/cms-site` scope; it now mounts its own provider (deeper, so it wins) with `getScope={useCmsPageSurfaceScope(...)}`. Deliberately NOT writable: slug/category/show_in_nav/sort_order (they move `client_pages.route`), publish/discard/rollback (human calls), and the HTML/CSS/JS buffers (the v3 menu's text-replace seam owns those, with selection semantics). Live-verified end to end on `dev-website` with Badass Agent: SEO meta + excerpt asked for in ONE message produced two per-target confirms carrying the manifest description text, Apply staged into the SEO/Settings tabs with Save Draft + Save & Publish intact, Save & Publish persisted the row (verified in `client_pages`, one version bump, slug/tags untouched), "Keep as is" returned `{ok:false, declined:true}` and the agent moved on, a bad shape (`page_tags` as a string) came back as the handler's own message, a slug change was refused as undeclared, and the Error Inspector recorded zero `surface-writeback` captures. `pnpm check:surface-drift` (133 surfaces, 3237 values) + `pnpm type-check` clean.
 
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 

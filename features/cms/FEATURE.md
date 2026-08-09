@@ -99,6 +99,13 @@ a matching `use<Surface>SurfaceScope` hook under `features/cms/hooks/` /
 `features/html-pages/hooks/` returning `() => SurfaceScopePayload` so menus read live editor state at
 click time, not a stale snapshot.
 
+**Write half (2026-08-09).** `matrx-user/cms-page` is the only one of the five
+that is agent-WRITABLE so far: `PageEditor.tsx` mounts the
+`SurfaceRuntimeProvider` and registers handlers for the manifest's four
+`writeTargets` (`page_title`, `page_meta`, `page_excerpt`, `page_tags`). All
+four stage into the editor's own state and are confirmed per target — see the
+change-log entry below for what is deliberately left un-writable and why.
+
 **Agent skill:** `skill.definition` row `cms-authoring` (migration `migrations/cms_surfaces_seed.sql`)
 teaches CMS-bound agents the two-content-system model, draft/publish twins, `site_structure`/
 `html_pages_structure`, URL rules, `agent_write_policy`, and the aidream CMS tool map. Opt-in via
@@ -343,6 +350,36 @@ UI-complete here but only take effect once P1's service layer reads them.
 ---
 
 ## Change log
+
+- `2026-08-09` — **The page editor is agent-WRITABLE (and finally emits its own
+  live scope).** `matrx-user/cms-page` gained four `writeTargets`, all
+  `mode: "draft"` + `applyPolicy: "ask"`: `page_title`, `page_meta`
+  (`{meta_title?, meta_description?, meta_keywords?}` as ONE object — the SEO
+  tab edits them together), `page_excerpt`, `page_tags`. Handlers live in
+  `PageEditor.tsx` and call the editor's OWN setters, so an applied value is
+  the same staged state a human's typing produces and persistence still
+  belongs to Save Draft / Save & Publish — no new write path, and in
+  particular no browser Supabase client for this project (see the doctrine
+  note above). Which save carries what is now stated in each target's
+  description, because the two save paths differ: `save-draft` writes only the
+  `*_draft` twins (html/css/js/meta/og/canonical), so title, excerpt and tags
+  persist through `update` (Save & Publish) alone — same as when a human types
+  in them. NOT writable, on purpose: `slug`/`category`/`show_in_nav`/
+  `sort_order` (each MOVES `client_pages.route`), publish/discard/rollback
+  (`agent_write_policy` exists because that call is a person's), and the
+  HTML/CSS/JS buffers (the v3 menu's text-replace seam already owns those).
+  `PageEditor` also now mounts the surface's first `SurfaceRuntimeProvider`
+  (fed by the existing `useCmsPageSurfaceScope`) — it previously mounted only
+  `EditableContextMenu`, so the header Agents chrome fell back to
+  `SiteLayoutClient`'s `cms-site` scope; the editor's provider is deeper and
+  wins. Live-verified on `dev-website`'s "Events & Booking" page with Badass
+  Agent: one message asking for SEO metadata + an excerpt produced two
+  per-target confirm dialogs quoting the manifest text, Apply staged into the
+  SEO and Settings tabs, Save & Publish persisted the row (`client_pages`
+  checked directly — slug and tags untouched), declining returned a non-error
+  result, a malformed `page_tags` value came back as the handler's own error,
+  and a requested slug change was refused as undeclared. That page keeps the
+  agent-authored meta/excerpt as the verification record.
 
 - `2026-08-07` (round 2) — **Starter kit for humans + theme un-bake + shell integrity
   (WF-1/2/4/7).** `/cms/[siteId]/settings` gained a "Site Shell" card — Install starter kit

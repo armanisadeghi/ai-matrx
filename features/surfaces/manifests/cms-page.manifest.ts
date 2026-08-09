@@ -27,6 +27,11 @@
  * Runtime emitter: `features/cms/agent-context/buildCmsPageContextData.ts`
  * via `features/cms/hooks/useCmsPageSurfaceScope.ts`, called at right-click
  * time from `features/cms/components/PageEditor.tsx`.
+ *
+ * The surface is also agent-WRITABLE — see the `writeTargets` block below.
+ * `PageEditor` mounts the `SurfaceRuntimeProvider` that registers a handler
+ * per target; every handler stages into the editor's own local state, so the
+ * write half never bypasses the Save buttons.
  */
 
 import type {
@@ -34,6 +39,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import type { AgentWritePolicy } from "@/features/cms/types";
@@ -589,6 +595,91 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * The WRITE half — the authored copy an agent may propose into the OPEN page
+ * editor. Every target is `mode: "draft"`: the handler stages into the exact
+ * same `useState` buffer the user's own typing writes to
+ * (`features/cms/components/PageEditor.tsx`), so an applied value is visible,
+ * editable, and reversible, and NOTHING reaches `client_pages` until the user
+ * presses a Save button themselves. There is no parallel write path and no
+ * direct Supabase access — this project's only authenticated writes are the
+ * `/api/cms/*` routes the Save buttons already call.
+ *
+ * Every target is `applyPolicy: "ask"`. A CMS page is a client's live website;
+ * an agent PROPOSING copy is the point, an agent changing copy unasked is not.
+ *
+ * WHICH SAVE PERSISTS WHAT — the editor has two save paths and they carry
+ * different columns, so the target descriptions say so plainly:
+ *   - `page_meta` lands in the SEO tab's buffers, which BOTH "Save Draft"
+ *     (`save-draft` → the `*_draft` twin columns) and "Save & Publish"
+ *     (`update`) carry.
+ *   - `page_title`, `page_excerpt` and `page_tags` are not part of the
+ *     draft-twin column set at all; "Save Draft" does not carry them, so they
+ *     persist only through "Save & Publish" (`update`). Same as when a human
+ *     types in those fields — the write half inherits the editor's shape
+ *     rather than inventing a second one.
+ *
+ * DELIBERATELY NOT WRITABLE. `page_slug` / `page_category` / `show_in_nav` /
+ * `sort_order` MOVE the page's public URL or its navigation placement
+ * (`client_pages.route` is trigger-derived from slug+category+parent) — a
+ * routing decision, not authored copy. Publish, discard-draft and rollback
+ * stay human: `agent_write_policy` exists precisely because deciding what the
+ * live site serves is a person's call. `html_content`/`css_content`/
+ * `js_content` are not targets either — the page body is edited through the
+ * v3 context menu's text-replace seam on the live textarea, which already
+ * carries selection semantics a whole-buffer overwrite would destroy.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "page_title",
+    label: "Page title",
+    description:
+      "Stages a new title into the open page editor's title field. Value: a non-empty plain string (the human-readable page name, not a URL slug). On a saved page the slug and URL are untouched; on a brand-new unsaved page the slug field auto-derives from the title, exactly as it does when the user types there. Staged only: it persists when the user presses Save & Publish; Save Draft does not carry the title.",
+    valueType: "string",
+    updatesValue: "page_title",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "page_identity",
+    sortOrder: 100,
+  },
+  {
+    name: "page_meta",
+    label: "SEO metadata",
+    description:
+      "Stages this page's search metadata into the SEO tab. Value: { meta_title?: string, meta_description?: string, meta_keywords?: string } — supply at least one; an omitted field keeps its current value, and an empty string clears that field. meta_keywords is ONE comma-separated string (\"dentist austin, family dentistry\"), not an array. Replaces each supplied field in full — read meta_title / meta_description / meta_keywords first if you mean to extend rather than replace. Staged only: it persists when the user presses Save Draft or Save & Publish.",
+    valueType: "object",
+    updatesValue: "page_seo",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "page_seo",
+    sortOrder: 110,
+  },
+  {
+    name: "page_excerpt",
+    label: "Excerpt",
+    description:
+      "Stages the page's excerpt — the short summary the site's listing/blog templates show — into the Settings tab. Value: a plain string, or an empty string to clear it. Replaces the whole excerpt. Staged only: it persists when the user presses Save & Publish; Save Draft does not carry the excerpt.",
+    valueType: "string",
+    updatesValue: "excerpt",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "page_settings",
+    sortOrder: 120,
+  },
+  {
+    name: "page_tags",
+    label: "Tags",
+    description:
+      "Stages the page's FULL tag set into the Settings tab (replaces, not appends — read the `tags` value and include every tag you want kept). Value: an array of non-empty strings; an empty array clears all tags. Tags are free-form, no fixed vocabulary; commas are not allowed inside a tag because the field stores them comma-separated. Staged only: it persists when the user presses Save & Publish; Save Draft does not carry tags.",
+    valueType: "array",
+    updatesValue: "tags",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "page_settings",
+    sortOrder: 130,
+  },
+];
+
 export const cmsPageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/cms-page",
   readiness: "verified",
@@ -600,12 +691,14 @@ agent_write_policy governs everything you may do: "blocked" means propose only, 
 This system has draft/live twins. The editor buffers you receive (html_content, css_content, js_content, and every SEO/settings value) already resolve to the draft when one exists and include the user's unsaved edits — has_draft and is_published tell you how that relates to what the live site serves, and preview_url is how a human checks unpublished work.
 html_content is a BODY FRAGMENT, not a whole document: the site's chrome, shared header/footer (see page_layout) and site_global_css wrap it. Do not emit doctype/head/html tags into it. Page CSS/JS are page-specific additions on top of the site-wide stylesheet.
 active_tab says where the user is and therefore what content and selection contain — the matching HTML/CSS/JS buffer on those tabs, the meta description on the SEO tab, nothing on preview/settings/versions. A brand-new page (is_new_page true) has no page_id and no history; the only write available there is a create.
+You can also PROPOSE authored copy directly into the open editor — the page title, the SEO metadata block, the excerpt, and the tags — via the write targets offered to you. Each one stages into the field the user is looking at and asks them first; nothing is saved by you, and publishing is always theirs.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "text_before", "text_after", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
   agentRoles: [
     {
       name: "page_editor",
