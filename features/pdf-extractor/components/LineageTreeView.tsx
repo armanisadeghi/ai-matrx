@@ -242,7 +242,6 @@ function ProcessingRow({
           name={node.name}
           showIcon={false}
           openInNewTab
-          fill
           className="text-[11px] font-medium"
         />
         <p className="text-[9px] text-muted-foreground truncate">
@@ -296,7 +295,6 @@ function BinaryRow({
           name={node.fileName}
           showIcon={false}
           openInNewTab
-          fill
           className="text-[11px] font-medium"
         />
         <p className="text-[9px] text-muted-foreground truncate">

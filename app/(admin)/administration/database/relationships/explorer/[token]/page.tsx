@@ -9,7 +9,10 @@
 import { notFound } from "next/navigation";
 
 import { createClient } from "@/utils/supabase/server";
-import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import {
+  resolveEntityToken,
+  tryGetEntityInfo,
+} from "@/features/scopes/registry/entityRegistry";
 import { EntityRelationshipOrbitPageBody } from "@/features/admin/relationships/components/EntityRelationshipOrbitPageBody";
 import { EntityExplorerHeader } from "@/features/admin/relationships/components/EntityExplorerHeader";
 
@@ -18,7 +21,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ token: string }>;
 }) {
-  const { token } = await params;
+  const { token: rawToken } = await params;
+  const token = resolveEntityToken(rawToken);
   const label = tryGetEntityInfo(token)?.label ?? token;
   return { title: `${label} relationships | Matrx Admin` };
 }
@@ -28,7 +32,13 @@ export default async function EntityRelationshipExplorerPage({
 }: {
   params: Promise<{ token: string }>;
 }) {
-  const { token } = await params;
+  // Canonicalise BEFORE the gate, and carry the canonical token downstream.
+  // `tryGetEntityInfo` resolves aliases (`cld_file` → `file`), so gating on it
+  // while querying `admin_relationship_rules` with the RAW segment would render
+  // a page titled "File" with an empty rule set — worse than the clean 404 an
+  // unknown token gets. One token, one meaning, for the title and the query.
+  const { token: rawToken } = await params;
+  const token = resolveEntityToken(rawToken);
   if (!tryGetEntityInfo(token)) {
     notFound();
   }

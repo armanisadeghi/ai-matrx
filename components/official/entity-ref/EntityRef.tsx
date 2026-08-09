@@ -112,6 +112,18 @@ export interface EntityRefProps {
    * cell you usually want them beside the name.
    */
   fill?: boolean;
+  /**
+   * Classes for the clickable LABEL itself, not the wrapper.
+   *
+   * `className` lands on the outer wrapper, which is right for layout and
+   * wrong for anything that must apply to the text: `line-through` on a
+   * completed task, a font weight, a decoration. Whether such a style reaches
+   * the label by inheritance depends on the box type and fights the label's
+   * own `hover:underline` — so it is passed explicitly rather than hoped for.
+   * This is the third call-site need of this shape; `wrap` and `fill` stay as
+   * named props because they encode a DECISION, while this is plain styling.
+   */
+  labelClassName?: string;
   /** Controls stay visible instead of appearing on hover/focus. */
   alwaysShowActions?: boolean;
   /** Surface-specific extra doors (open in window, jump to versions, …). */
@@ -153,6 +165,7 @@ export function EntityRef({
   openInNewTab = false,
   wrap = false,
   fill = false,
+  labelClassName,
   alwaysShowActions = false,
   extraActions,
   onOpen,
@@ -176,7 +189,11 @@ export function EntityRef({
   const stopAny = (e: React.SyntheticEvent) => e.stopPropagation();
   // One string carries BOTH label decisions so the three label branches
   // (link / button / inert span) cannot drift apart — they already did once.
-  const labelFit = cn(wrap ? "break-all" : "truncate", fill && "grow");
+  const labelFit = cn(
+    wrap ? "break-all" : "truncate",
+    fill && "grow",
+    labelClassName,
+  );
 
   return (
     <span
@@ -299,15 +316,26 @@ export function EntityRef({
       {canPeek && peekOpen && (
         <span
           className="contents"
+          // NARROW ON PURPOSE — mouse/click only.
+          //
+          // `pointerdown` and `pointerup` are deliberately NOT stopped: Radix's
+          // dismissable layer listens for `pointerdown` on `ownerDocument` in
+          // the BUBBLE phase, and React 19 delegates portal events at
+          // `document.body` — one node below `document`. Stopping it here
+          // therefore kills click-outside-to-close for every peek, every time,
+          // since a modal dialog's full-screen overlay means every outside
+          // click lands inside this seam. Keyboard is left alone for the same
+          // reason in reverse: Escape-to-close registers with `{capture:true}`
+          // and survives, but blocking bubble-phase keys here would silently
+          // swallow global shortcuts while a peek is open.
+          //
+          // The mouse events below are the ones the seam actually exists for:
+          // a row that toggles on `click` and `preventDefault`s `mousedown`.
           onClick={stopAny}
           onDoubleClick={stopAny}
           onMouseDown={stopAny}
           onMouseUp={stopAny}
-          onPointerDown={stopAny}
-          onPointerUp={stopAny}
           onContextMenu={stopAny}
-          onKeyDown={stopAny}
-          onKeyUp={stopAny}
         >
           <ResourcePeekHost
             kind={peekKind}

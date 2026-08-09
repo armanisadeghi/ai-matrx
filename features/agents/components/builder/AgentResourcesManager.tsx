@@ -19,7 +19,10 @@ import {
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import type { ResourcePickerViewId } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
-import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import {
+  resolveEntityToken,
+  tryGetEntityInfo,
+} from "@/features/scopes/registry/entityRegistry";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { AssociationTargetEdge } from "@/features/scopes/types";
@@ -169,8 +172,14 @@ export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
       toast.error(`Couldn't load resources: ${result.error.message}`);
       return;
     }
-    setEdges(
-      result.data.edges.filter((edge) => edge.role === AGENT_RESOURCE_ROLE),
+    const next = result.data.edges.filter(
+      (edge) => edge.role === AGENT_RESOURCE_ROLE,
+    );
+    setEdges(next);
+    // A peek open on an edge the reload dropped would keep previewing a
+    // resource this agent no longer has.
+    setPeekFor((current) =>
+      current && next.some((edge) => edge.id === current.id) ? current : null,
     );
   };
 
@@ -252,9 +261,14 @@ export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
             );
           }
 
-          const entity = tryGetEntityInfo(edge.sourceType);
-          const peekKind = peekKeyForToken(edge.sourceType);
-          const canPeek = hasPeek(peekKind);
+          // ONE canonicalisation feeds both doors. Resolving the entity
+          // through `tryGetEntityInfo` (which canonicalises) while looking the
+          // peek up by the RAW string is the "one door and not the other"
+          // split this helper was extracted to prevent — reintroduced in the
+          // commit that extracted it, and caught in review.
+          const canonicalToken = resolveEntityToken(edge.sourceType);
+          const entity = tryGetEntityInfo(canonicalToken);
+          const canPeek = hasPeek(peekKeyForToken(canonicalToken));
           return (
             <ResourceAttachmentTile
               key={edge.id}
@@ -291,7 +305,7 @@ export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
 
       {peekFor && (
         <ResourcePeekHost
-          kind={peekKeyForToken(peekFor.sourceType)}
+          kind={peekKeyForToken(resolveEntityToken(peekFor.sourceType))}
           id={peekFor.sourceId}
           onClose={() => setPeekFor(null)}
         />

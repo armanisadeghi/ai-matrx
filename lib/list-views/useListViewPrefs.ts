@@ -20,13 +20,30 @@
 // tab are query state and deliberately NOT stored here — restoring a stale
 // search that renders an empty list is a bug, not a feature.
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useSyncExternalStore,
+} from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   setPreference,
   type ListViewPrefs,
 } from "@/lib/redux/preferences/userPreferencesSlice";
 import { resolveListViewPrefs } from "./defaults";
+
+/** `localStorage` never changes under us here — see the read below. */
+const subscribeToNothing = () => () => {};
+
+function readLocalStorage(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    // Private mode / disabled storage — nothing to adopt.
+    return null;
+  }
+}
 
 export interface UseListViewPrefsResult {
   prefs: ListViewPrefs;
@@ -88,18 +105,56 @@ export function useListViewPrefs(
   const stored = useAppSelector(
     (state) => state.userPreferences.listViews?.[surfaceKey],
   );
-  // The same gate FeedbackButton uses: non-null means the persisted blob has
-  // been merged in, so `stored === undefined` genuinely means "nothing synced"
-  // rather than "not loaded yet".
-  const prefsHydrated = useAppSelector(
-    (state) => state.userPreferences._meta.loadedPreferences !== null,
+  // The legacy value is a READ-ONLY FALLBACK, never a write.
+  //
+  // The obvious implementation — "if nothing is stored, dispatch the imported
+  // value" — is a trap, and it shipped for one commit before review caught it.
+  // `userPreferences` hydrates ASYNCHRONOUSLY from IDB (and later from the
+  // remote row), so on first mount `stored === undefined` means "not loaded
+  // yet", not "nothing saved". Worse, the sync middleware snapshots the WHOLE
+  // partialized slice at dispatch time and debounce-writes it to
+  // `users.user_preferences` — so a write fired before hydration would replace
+  // the user's entire preferences row (models, voice, display, favorites) with
+  // defaults. `_meta.loadedPreferences` does NOT guard against this: the store
+  // initializes it non-null at construction, so it is a constant `true`.
+  //
+  // Reading it as a fallback has none of that risk: it cannot write anything,
+  // and the moment real prefs hydrate, `stored` takes precedence. The key is
+  // removed only once a synced value exists — see `setPrefs`.
+  // `useSyncExternalStore`, not an effect: `localStorage` IS an external store,
+  // and reading it this way gives a correct server snapshot (`null`) with no
+  // hydration mismatch and no setState-in-effect. `subscribe` is a no-op
+  // because the only writer is this hook's own cleanup below, which by then
+  // has a synced value that takes precedence anyway. The snapshot is the raw
+  // STRING — a stable primitive, so repeated reads compare equal; mapping it
+  // to an object happens in `useMemo` where a new identity is harmless.
+  const legacyRaw = useSyncExternalStore(
+    subscribeToNothing,
+    () => (legacy ? readLocalStorage(legacy.key) : null),
+    () => null,
   );
-  const importedRef = useRef(false);
+  const legacyValue = useMemo(
+    () => (legacy && legacyRaw !== null ? legacy.map(legacyRaw) : null),
+    [legacy, legacyRaw],
+  );
 
   const prefs = useMemo(
-    () => resolveListViewPrefs(surfaceDefaults, stored),
-    [surfaceDefaults, stored],
+    () => resolveListViewPrefs(surfaceDefaults, stored ?? legacyValue),
+    [surfaceDefaults, stored, legacyValue],
   );
+
+  // Once the synced tier holds a value for this surface, the device-local key
+  // is dead weight that would otherwise shadow nothing forever. Dropping it
+  // here (rather than at import time) is what makes the fallback survive a
+  // reload for a user who has not touched the control yet.
+  useEffect(() => {
+    if (!legacy || stored === undefined) return;
+    try {
+      window.localStorage.removeItem(legacy.key);
+    } catch {
+      // Nothing to clean.
+    }
+  }, [legacy, stored]);
 
   const setPrefs = useCallback(
     (patch: Partial<ListViewPrefs>) => {
@@ -115,32 +170,6 @@ export function useListViewPrefs(
     },
     [dispatch, prefs, surfaceKey],
   );
-
-  useEffect(() => {
-    if (!legacy || importedRef.current) return;
-    if (!prefsHydrated || stored !== undefined) return;
-    importedRef.current = true;
-
-    let raw: string | null = null;
-    try {
-      raw = window.localStorage.getItem(legacy.key);
-      if (raw !== null) window.localStorage.removeItem(legacy.key);
-    } catch {
-      // Private mode / disabled storage — nothing to adopt, nothing to clean.
-      return;
-    }
-    if (raw === null) return;
-
-    const patch = legacy.map(raw);
-    if (!patch) return;
-    dispatch(
-      setPreference({
-        module: "listViews",
-        preference: surfaceKey,
-        value: { ...resolveListViewPrefs(surfaceDefaults, undefined), ...patch },
-      }),
-    );
-  }, [dispatch, legacy, prefsHydrated, stored, surfaceDefaults, surfaceKey]);
 
   const setView = useCallback(
     (view: ListViewPrefs["view"]) => setPrefs({ view }),

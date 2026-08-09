@@ -703,12 +703,17 @@ export default function TasksTableView() {
                           name={task.title}
                           showIcon={false}
                           onOpen={() => dispatch(setSelectedTaskId(task.id))}
-                          className={cn(
-                            "text-[13px]",
+                          className="text-[13px]"
+                          // On the LABEL, not the wrapper: `line-through` is
+                          // the completed-state signal, and whether a wrapper
+                          // decoration reaches an inline-flex child's link is
+                          // not something to leave to inheritance — especially
+                          // when that link carries its own `hover:underline`.
+                          labelClassName={
                             task.completed
                               ? "line-through text-muted-foreground"
-                              : "font-medium text-foreground",
-                          )}
+                              : "font-medium text-foreground"
+                          }
                         />
                         {labels.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-0.5">

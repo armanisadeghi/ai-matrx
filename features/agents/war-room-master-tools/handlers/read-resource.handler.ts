@@ -36,7 +36,10 @@ import {
   readEntityRowGeneric,
 } from "@/features/scopes/registry/entityContentAdapters";
 import { listAssignmentsForContainer } from "@/features/war-room/service/associations";
-import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import {
+  resolveEntityToken,
+  tryGetEntityInfo,
+} from "@/features/scopes/registry/entityRegistry";
 
 function clip(text: string, maxChars: number): { text: string; truncated: boolean } {
   if (text.length <= maxChars) return { text, truncated: false };
@@ -147,7 +150,12 @@ export const readResourceHandler: WarRoomMasterToolHandler<
       }
 
       // ── Registry adapters + the generic RLS row read ────────────────────
-      if (!tryGetEntityInfo(entity_type)) {
+      // Canonicalise once. `tryGetEntityInfo` resolves aliases, so gating on it
+      // and then keying the adapter off the RAW string lets an alias past the
+      // gate and straight past its own bespoke adapter — the read still
+      // succeeds via the generic path, silently taking the wrong route.
+      const canonicalType = resolveEntityToken(entity_type);
+      if (!tryGetEntityInfo(canonicalType)) {
         return {
           ok: false,
           ...base,
@@ -155,13 +163,13 @@ export const readResourceHandler: WarRoomMasterToolHandler<
           hint: `"${entity_type}" is not a registered entity type — use a type from the <resources> roster.`,
         };
       }
-      const adapter = getEntityContentAdapter(entity_type);
+      const adapter = getEntityContentAdapter(canonicalType);
       const result = adapter?.read
         ? await adapter.read(entity_id, {
             mode: args.mode,
             maxChars,
           })
-        : await readEntityRowGeneric(entity_type, entity_id, {
+        : await readEntityRowGeneric(canonicalType, entity_id, {
             mode: args.mode,
             maxChars,
           });

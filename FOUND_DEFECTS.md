@@ -13,6 +13,27 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D141 — the entity registry's content_role alarm screams for 289 of 322 tokens (2026-08-09)
+
+`getEntityInfo` (`features/scopes/registry/entityRegistry.ts:461-470`) `console.error`s a
+"loud recovery" banner whenever `platform.entity_types.content_role` is not one of the five
+valid values, and falls back to `destination`. **`content_role` is NULL for 289 of the 322
+rows** — only 33 carry a value — so the banner is not reporting an exception, it is reporting
+the norm. In production `console.error` is captured into the Error Inspector
+(`lib/diagnostics/globalErrorCapture.ts`), so any surface that renders a list of
+lesser-used tokens floods it.
+
+Found while giving `processed_document` its `hrefFor`: the PDF lineage tree calls
+`tryGetEntityInfo` once per node per render, and every call fired the banner. I set that one
+row to `source` live (it is a source like `file`/`transcript`/`web_page`) — but the other 288
+are untouched and this is a data problem, not a code one.
+
+**Decide which it is** and act once: either `content_role` is genuinely required (backfill all
+322 and make the column NOT NULL, so the alarm means something) or it is optional for
+non-content tokens (then the fallback is correct behaviour, not a recovery, and the
+`console.error` should be a one-time dev-only warning keyed by token). A guard that fires on
+the majority case trains everyone to ignore it, which is the opposite of a loud recovery.
+
 ### D139 — CRM scope counts fire `3 + N_orgs` round trips per keystroke (2026-08-09)
 
 `fetchPartyScopeCounts` (`features/crm/service.ts:224-267`) issues one
