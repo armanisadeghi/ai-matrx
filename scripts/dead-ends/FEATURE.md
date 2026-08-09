@@ -265,6 +265,20 @@ files out of 6,809 scanned, in ~9s.**
   violations hide there.
 - **Analysis is per-file and ancestor-based.** A door in a parent component's
   file, or a body extracted into a sibling component, is not seen.
+- **`no-doors-in-file` triggers on EMITTED findings, not on detection.**
+  `sawNamedId` is set only when a `bare-id-text` finding is actually pushed, so
+  a file whose every id is suppressed per-expression cannot raise the file-level
+  Inventory Law finding. **Measured** (2026-08-09, instrumented run over the
+  full tree): 34 files render a resolvable id in text position with no file
+  finding — **31 of them contain a click or navigation mechanism** (`onClick` /
+  `href` / `<Link>` / `router.push`), i.e. the suppressing gate was
+  `findDoorAncestor` or `findRowDoor` and the file genuinely has a door; the
+  remaining 3 are detail panels showing their OWN subject's id
+  (`AdditionalInfoTab` renders the `appId` it was handed as a prop), which
+  `isSelfSubject` is meant to suppress. **Zero confirmed misses.** Decoupling
+  the trigger from emission would fire on all 31 — the false-positive class the
+  first audit scored 0/9 on. Left as-is deliberately; re-measure before changing
+  it.
 - **Only `features/`, `components/`, `app/` and `lib/` are scanned.** `hooks/`,
   `utils/`, `providers/` and `packages/` are invisible to the scoreboard — a
   surface rendered from there is not covered at all.
@@ -387,3 +401,10 @@ new one.
   Simulated all three states against the committed pair: matched → delta 0, no
   alert; report absent → alert; report absent AND the last bar a different
   number (the dangerous case) → alert, no delta.
+- **2026-08-09 (evening, alert split)** — the red alert no longer states one
+  failure mode for two different failures. `problems` (totals vs findings) and
+  `historyDrift` (report vs history scan identity) reach the header separately
+  and pick their own headline; merging them meant a history-only mismatch was
+  announced as "the totals do not match its own findings" — a false claim in the
+  one component whose whole job is not making false claims. Also recorded the
+  measured `no-doors-in-file` emission-coupling limit above.

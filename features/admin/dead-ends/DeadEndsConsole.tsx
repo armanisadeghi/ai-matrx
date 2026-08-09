@@ -351,15 +351,12 @@ export function DeadEndsConsole({ report, history, problems }: DeadEndsConsolePr
    * reconcile uses — shown, never thrown.
    */
   const currentIsPlotted = currentInHistory >= 0;
-  const snapshotProblems =
+  const historyDrift =
     history.length > 0 && !currentIsPlotted
-      ? [
-          ...problems,
-          `history.json does not contain this report's scan (${report.generatedAt}` +
-            `${report.commit ? ` @ ${report.commit.slice(0, 7)}` : ""}), so the ` +
-            `trend below ends at a different scan than the totals above`,
-        ]
-      : problems;
+      ? `history.json does not contain this report's scan (${report.generatedAt}` +
+        `${report.commit ? ` @ ${report.commit.slice(0, 7)}` : ""}), so the ` +
+        `trend below ends at a different scan than the totals above`
+      : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
@@ -367,7 +364,8 @@ export function DeadEndsConsole({ report, history, problems }: DeadEndsConsolePr
         report={report}
         scanAgeDays={scanAgeDays}
         delta={delta}
-        problems={snapshotProblems}
+        problems={problems}
+        historyDrift={historyDrift}
         onCopyRefresh={() =>
           void copy("refresh", REFRESH_COMMAND, "Refresh command")
         }
@@ -553,6 +551,7 @@ function Header({
   scanAgeDays,
   delta,
   problems,
+  historyDrift,
   onCopyAll,
   onCopyRefresh,
 }: {
@@ -560,7 +559,16 @@ function Header({
   /** `null` until the client has read the clock (see the console above). */
   scanAgeDays: number | null;
   delta: number | null;
+  /** Ways `report.json`'s totals disagree with its OWN findings list. */
   problems: string[];
+  /**
+   * The way `report.json` and `history.json` disagree about which scan is
+   * current, or `null`. Kept SEPARATE from `problems` rather than concatenated:
+   * the two are different failures with different repairs, and one headline
+   * covering both would state whichever it names as fact — the exact defect
+   * this alert exists to prevent.
+   */
+  historyDrift: string | null;
   onCopyAll: () => void;
   onCopyRefresh: () => void;
 }) {
@@ -615,17 +623,21 @@ function Header({
         </span>
       )}
 
-      {problems.length > 0 && (
+      {(problems.length > 0 || historyDrift) && (
         <span
           className="inline-flex flex-wrap items-center gap-1.5 rounded-md border border-red-500/50 bg-red-500/10 px-2 py-1 text-[11px] text-red-700 dark:text-red-400"
           role="alert"
         >
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
           <strong className="font-semibold">
-            Snapshot is inconsistent — the totals below do not match its own findings.
+            {problems.length > 0 && historyDrift
+              ? "Snapshot is inconsistent — the totals disagree with the findings below, and the trend is from a different scan."
+              : problems.length > 0
+                ? "Snapshot is inconsistent — the totals below do not match its own findings."
+                : "Snapshot is inconsistent — the trend below is from a different scan than the totals."}
           </strong>
           <span>
-            {problems.join("; ")}. Re-run{" "}
+            {[...problems, ...(historyDrift ? [historyDrift] : [])].join("; ")}. Re-run{" "}
             <code className="font-mono">pnpm check:dead-ends:write</code> and commit both
             JSON files together.
           </span>
