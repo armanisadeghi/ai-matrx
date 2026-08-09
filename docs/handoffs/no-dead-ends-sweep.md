@@ -241,11 +241,54 @@ Ordered by traffic. Each item is independently actionable.
    toast-system limits recorded above. Do not "finish" this item by forcing
    links onto entities that have no page.
 
-   **Badges were not swept.** The count-is-a-door corollary is only partly
-   covered: `ReassignResourcesDialog` got the destination-member door, and the
-   deliberately-inert counts are listed in the Blocked section. A systematic
-   badge pass has not happened.
-5. **`(dev)` demos** — audit in flight 2026-08-09.
+   **Badges: started 2026-08-09, and the first result reframes the corollary.**
+   The doctrine's own example is "3 overrides". The actual site
+   (`features/research/admin/ProjectsOverview.tsx:87`) counts **JSONB keys in
+   `agent_config`**, not rows with ids — there is no set of records to reach, so
+   it is not a door and forcing one would be theatre.
+
+   **The test for a count is therefore: does a SET OF RECORDS exist behind it,
+   and is there a destination that lists them?** Two failing cases so far, both
+   correctly left alone: the overrides badge (no records), and
+   `AgentAssignmentsDemo`'s "Durable results (N)" (the records are already
+   rendered directly underneath — the count's destination is the screen you are
+   on). A systematic pass over the remaining count sites
+   (`SettingsColumnHeader.tsx:96`, `TopicAgentsPage.tsx:62`, …) has not happened.
+5. **`(dev)` demos — audited + swept 2026-08-09. Effectively DONE.**
+
+   **The ratio is the headline, and it is the opposite of what the wave order
+   assumed.** Of **235** `page.dev.tsx` leaves under `app/(dev)/demos/**`, only
+   **~52 (~22%)** touch real data at all and only **~18 (~8%)** render an
+   identified DB record. The other ~92% are component showcases with invented
+   props, hardcoded sample arrays, upload/blob harnesses, or Tailwind labs —
+   `pdf-processing/*` alone is 28 pages of them. **The Door Law barely applies
+   to this tree**, and the violations were concentrated in about six pages.
+
+   Swept: `context-menu/{lab,surface-mappings,launch-inspector}` ·
+   `selection-demo` · `agent-selector-demo` · `scopes/context-lab` (nine
+   findings, the densest file) · `AgentAssignmentsDemo` · `tool-viz/in-action` ·
+   `tests/extension-bridge`.
+
+   Two of these were **resolve-the-relationship** fixes rather than link-the-name
+   fixes: `tool-viz/in-action` was not selecting `conversation_id` (and
+   hardcoded `conversationId: ""`), and `extension-bridge` truncated a real
+   conversation id into a log title string. One extra column made both rows
+   doors.
+
+   Explicitly cleared, do not re-chase: `tasks-widgets` (already uses the
+   clickable `TaskChip`) · `notes-salvage` (user types the id; toast already has
+   a View action) · `lists-junk/**` (delegates to live `features/user-lists/*`
+   product components) · `agent-cards`, `run-settings-demo`, `dashboard`'s
+   RecentActivity, `token-broker`, `diff-gallery` (all MOCK data).
+
+   **Rejected:** the audit proposed a shared `<RecordRef entityType id name>`
+   debug widget to clear seven findings at once. That is a FORK of `EntityRef`.
+   "Name + raw id" is `EntityRef` + `MatrxUuidCell` composed — both already
+   exist, and the demo pages now compose them.
+
+   Left as-is deliberately: `context-lab`'s simulated-SQL preview interpolates
+   names and a truncated file id into an illustrative STRING, not a record
+   display; the assignment `sessionId` has a REST read but no UI route.
 6. **aidream admin surfaces** — after matrx-frontend.
 7. **Collapse the `AssociationList` fork.** It has ZERO live JSX consumers;
    war-room renders `WarRoomResourcesList`, a second implementation of the same
@@ -269,6 +312,18 @@ Ordered by traffic. Each item is independently actionable.
 per-surface patch.** Consolidated from three independent audits on 2026-08-09;
 each was verified against `entityRegistry.ts` and the generated entity types,
 not assumed.
+
+**Closed 2026-08-09: `research_topic`** now carries
+`hrefFor(id) => /research/topics/<id>`. The research admin console had been
+hand-rolling a bare `ExternalLink` to exactly that path — **that is the tell.**
+When you find a surface hardcoding a route for a token, the fix is the registry
+entry, not the call site.
+
+**Registered but route-blocked** (a token exists; no per-record page does).
+Do NOT invent an `hrefFor` for these — an id here gets `MatrxUuidCell` with NO
+token (full value + copy) so it is at least honest and copyable:
+`research_template` · `plan_entity` · `study_goal` · `pc_episode`.
+`brand_asset` is not registered at all.
 
 **No token at all** (nothing to resolve — the name is unavoidably plain text):
 
