@@ -1,0 +1,20 @@
+[
+  {
+    "generatedAt": "2026-08-09T05:32:52.641Z",
+    "commit": "22be8ffbc41de26c36902223f2e2791bdfd10d0b",
+    "findings": 472,
+    "high": 155,
+    "medium": 317,
+    "low": 0,
+    "filesWithFindings": 300
+  },
+  {
+    "generatedAt": "2026-08-09T05:34:07.301Z",
+    "commit": "22be8ffbc41de26c36902223f2e2791bdfd10d0b",
+    "findings": 472,
+    "high": 155,
+    "medium": 317,
+    "low": 0,
+    "filesWithFindings": 300
+  }
+]
