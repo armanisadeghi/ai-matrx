@@ -52,7 +52,7 @@ the FE hand-mirrored a request type with `key` while the backend model used `pre
 
 3. **Streamed endpoints publish an empty 200 schema — 256 operations of 797** (was 229 at the
    2026-07-12 audit; it is getting worse). Still `unknown`: `POST /rag/search`, `/rag/search/stream`,
-   `/rag/ingest`, `/rag/verify`, `/rag/cross-doc/stream`, 10+ `/rag/library/*`, `/ai/agent/{id}`,
+   `/rag/ingest`, `/rag/verify`, 10+ `/rag/library/*`, `/ai/agent/{id}`,
    `/ai/agents/{id}`, `/v2/ai/agent*`. Publish a typed terminal/summary payload, or register the
    NDJSON event envelope as a schema. **Do NOT blanket-fix** — target FE-consumed streamed
    responses only; health/warm calls are noise. Until then these calls stay on the raw client.

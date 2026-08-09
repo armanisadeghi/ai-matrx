@@ -25,6 +25,7 @@ The page is the `matrx-admin/agent-slots` surface (`features/surfaces/manifests/
 
 ## Change Log
 
+- 2026-08-08 — Bindings are now EDITABLE in the console: `SlotDetail` embeds the shared `SlotOverridePanel` (`features/agents/slots/components/`) — user + admin-org bindings incl. settings-only `config_overrides`, written via the aidream bind endpoint (`PUT/DELETE /agent-slots/{slot_key}/binding`, 422 contract verdicts shown verbatim); the read-only "All overrides" roll-up stays below it.
 - 2026-08-08 — One-value-per-column pass (Arman): Label its own column; IO kinds split into separate Input / Output columns. Never re-merge values into a compound column.
 - 2026-08-08 — Console rebuilt on MatrxDataTable (was a hand-rolled `<table>` with no sort/filter/copy); expanded-row editor moved to the side-panel/window workbench; per-slot remount keys added.
 - 2026-08-07 — Created: slot list, pin-vs-latest drift badges, repin editor, enable toggle, override display.

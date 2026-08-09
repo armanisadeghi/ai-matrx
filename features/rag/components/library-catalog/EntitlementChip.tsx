@@ -13,7 +13,7 @@
  *   null         → "Not entitled"
  */
 
-import { Building2, Check, Globe, Lock } from "lucide-react";
+import { Building2, Check, Globe, Lock, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CatalogEntitlement } from "@/features/rag/hooks/useLibraryCatalog";
 
@@ -28,6 +28,8 @@ export function entitlementLabel(
       return industryName ? `via ${industryName}` : "via industry";
     case "global":
       return "Available to everyone";
+    case "admin":
+      return "Admin access";
     default:
       return "Not entitled";
   }
@@ -51,7 +53,9 @@ export function EntitlementChip({
         ? Building2
         : entitledVia === "global"
           ? Globe
-          : Lock;
+          : entitledVia === "admin"
+            ? ShieldCheck
+            : Lock;
   return (
     <span
       className={cn(

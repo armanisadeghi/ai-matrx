@@ -752,6 +752,7 @@ export async function processStream({
             operationId: d.operation_id,
             operation: d.operation,
             parentOperationId: d.parent_operation_id,
+            metadata: d.metadata ?? null,
             timestamp: now,
           }),
         );

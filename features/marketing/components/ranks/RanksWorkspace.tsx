@@ -50,9 +50,10 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
 import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
-import type {
-  AgentCopyGroomerConfig,
-  AgentCopyGroomerSection,
+import {
+  groomerPresetVariants,
+  type AgentCopyGroomerConfig,
+  type AgentCopyGroomerSection,
 } from "@/components/agent-copy/groomer-types";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import {
@@ -655,6 +656,7 @@ export function RanksWorkspace() {
               human={() => humanRankPortfolio(rows)}
               json={() => rows}
               agent={pageAgentPayload}
+              aiVariants={groomerPresetVariants(groomerConfig)}
             />
             <ExportMenu
               label={`rank-portfolio-${site.domain}`}

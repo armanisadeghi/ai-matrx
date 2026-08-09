@@ -31,6 +31,8 @@ import { ToolTestSamplesViewer } from "@/features/tool-call-visualization/admin/
 import { RegistryTab } from "@/features/tool-registry/tools-admin/components/RegistryTab";
 import { Network } from "lucide-react";
 import { SourceKindBadge } from "./source-kind-badge";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { toolBrief, toolSummary } from "./format";
 import type { Database, Json } from "@/types/database.types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -407,6 +409,37 @@ export function ToolViewPage({ tool }: Props) {
           </div>
 
           <div className="flex items-center gap-2 ml-auto flex-wrap">
+            <CopyButtons
+              size="icon"
+              label={`Tool ${tool.name}`}
+              human={() => toolSummary(tool)}
+              json={() => tool}
+              agent={() => ({
+                kind: "mcp-tool",
+                location: `AI Matrx Admin — Tool Registry · Tool detail (/administration/agents/mcp-tools/${tool.id})`,
+                description:
+                  "The full tool definition record currently open in the admin detail page.",
+                data: tool,
+                summary: toolSummary(tool),
+                attributes: { id: tool.id, name: tool.name, active: isActive },
+              })}
+              aiVariants={[
+                {
+                  id: "summary",
+                  label: "Summary",
+                  hint: "Metadata only — no parameter/output schemas",
+                  build: () => ({
+                    kind: "mcp-tool",
+                    location: `AI Matrx Admin — Tool Registry · Tool detail (/administration/agents/mcp-tools/${tool.id})`,
+                    description:
+                      "Compact digest of the tool definition open in the admin detail page.",
+                    data: toolBrief(tool),
+                    summary: toolSummary(tool),
+                    attributes: { id: tool.id, name: tool.name },
+                  }),
+                },
+              ]}
+            />
             <div className="flex items-center gap-1.5">
               {isTogglingActive && (
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />

@@ -54,6 +54,7 @@ export type AudioSessionSource =
   | "recording" // mic capture (transcription, voice message, etc.)
   | "media-capture" // Capture Studio video/audio recording (features/media-capture)
   | "file-media" // file-system media players (InlineMediaRef, previews, blocks)
+  | "research" // research pipeline media (gallery videos, output assets)
   | "other";
 
 /** What kind of media a session carries — lets the panel render video rows

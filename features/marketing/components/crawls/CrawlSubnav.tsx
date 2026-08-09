@@ -11,7 +11,12 @@ import {
   PanelsTopLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import type { CrawlSession } from "@/features/marketing/types";
+import {
+  humanLines,
+  webCopy,
+} from "@/features/marketing/lib/copy-payloads";
 import {
   formatCompactDate,
   StatusBadge,
@@ -20,8 +25,30 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 
 export function CrawlSubnav({ crawl }: { crawl: CrawlSession }) {
   const pathname = usePathname();
-  const { sitePath } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const root = `${sitePath}/crawls/${crawl.id}`;
+  const sessionCopy = webCopy({
+    kind: "web-crawl-session",
+    label: `Crawl session ${crawl.id}`,
+    description:
+      "This crawl session's record: status, trigger, timing, scope, and stats.",
+    surface: `Crawl session — ${site.root_url}`,
+    data: crawl,
+    lines: [
+      ["Session", crawl.id],
+      ["Site", site.root_url],
+      ["Status", crawl.status],
+      ["Trigger", crawl.trigger],
+      ["Started", formatCompactDate(crawl.started_at ?? crawl.created_at)],
+      ["Finished", crawl.finished_at ? formatCompactDate(crawl.finished_at) : "—"],
+      ["Error", crawl.error],
+    ],
+    attributes: {
+      session_id: crawl.id,
+      site_id: site.id,
+      status: crawl.status,
+    },
+  });
   const items = [
     { label: "Summary", href: root, icon: Activity },
     { label: "URLs", href: `${root}/urls`, icon: Link2 },
@@ -32,11 +59,14 @@ export function CrawlSubnav({ crawl }: { crawl: CrawlSession }) {
   ];
   return (
     <div className="flex shrink-0 flex-col gap-2 rounded-lg border border-border bg-card px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0">
+      <div className="group/session min-w-0">
         <div className="flex items-center gap-2">
           <StatusBadge value={crawl.status} />
           <span className="truncate font-mono text-[11px] text-muted-foreground">
             {crawl.id}
+          </span>
+          <span className="opacity-0 transition-opacity focus-within:opacity-100 group-hover/session:opacity-100">
+            <CopyButtons size="xs" {...sessionCopy} json={() => crawl} />
           </span>
         </div>
         <p className="mt-1 text-[11px] text-muted-foreground">

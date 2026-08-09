@@ -21,9 +21,10 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
-import type {
-  AgentCopyGroomerConfig,
-  AgentCopyGroomerSection,
+import {
+  groomerPresetVariants,
+  type AgentCopyGroomerConfig,
+  type AgentCopyGroomerSection,
 } from "@/components/agent-copy/groomer-types";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -49,6 +50,7 @@ import { useCrawl } from "@/features/marketing/data/hooks";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import {
   humanLines,
+  keyFieldsAiVariant,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
 import { ExternalLinksView } from "@/features/marketing/components/inspection/link-graph/ExternalLinksView";
@@ -470,6 +472,7 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
             human={pageHuman}
             json={pageFullData}
             agent={pageAgentPayload}
+            aiVariants={groomerPresetVariants(groomerConfig)}
           />
           <AgentCopyGroomerLauncher config={groomerConfig} />
           <div className="flex items-center rounded-md border border-border p-0.5">
@@ -556,6 +559,23 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
                 session_id: crawlId,
                 total_matching: links.data?.total ?? 0,
               }),
+              aiVariants: (visible) => [
+                keyFieldsAiVariant({
+                  kind: "web-link-edges",
+                  location: pageLocation,
+                  description:
+                    "The currently loaded link-edge rows projected to key fields.",
+                  hint: "Visible edges projected to core link fields",
+                  visible,
+                  project: projectLinkRow,
+                  query: table.state,
+                  attributes: {
+                    site_id: site.id,
+                    session_id: crawlId,
+                    total_matching: links.data?.total ?? 0,
+                  },
+                }),
+              ],
             }}
             detail={{
               title: (row) => row.target_url,

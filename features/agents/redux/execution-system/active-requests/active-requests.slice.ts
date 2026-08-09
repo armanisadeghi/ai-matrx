@@ -465,6 +465,7 @@ const activeRequestsSlice = createSlice({
         operationId: string;
         operation: Operation;
         parentOperationId?: string | null;
+        metadata?: Record<string, unknown> | null;
         timestamp: number;
       }>,
     ) {
@@ -475,6 +476,7 @@ const activeRequestsSlice = createSlice({
         operationId: action.payload.operationId,
         operation: action.payload.operation,
         parentOperationId: action.payload.parentOperationId ?? null,
+        metadata: action.payload.metadata ?? null,
         startedAt: action.payload.timestamp,
       };
     },
@@ -500,6 +502,9 @@ const activeRequestsSlice = createSlice({
         operationId: action.payload.operationId,
         operation: action.payload.operation,
         parentOperationId: active?.parentOperationId ?? null,
+        // Completion events carry no metadata — carry the init's forward so
+        // consumers (agent-set highlight) keep the child conversation id.
+        metadata: active?.metadata ?? null,
         startedAt,
         status: action.payload.status,
         result: action.payload.result,

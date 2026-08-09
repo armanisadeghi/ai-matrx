@@ -4,14 +4,13 @@ One hook, `useListViewPrefs(surfaceKey, surfaceDefaults?)`, backed by the synced
 
 ## What it replaces
 
-Four byte-identical `localStorage` blocks, each with its own key and its own locally-declared `HubViewMode` union, none of which followed the user to another device:
+Four byte-identical `localStorage` blocks, each with its own key and its own locally-declared `HubViewMode` union, none of which followed the user to another device. `/transcripts` migrated 2026-08-08 (its block was deleted with the hub rewrite onto `lib/entity-list`); three remain:
 
 - `features/projects/components/ProjectsHub.tsx` (`"projects-view"`)
-- `features/transcripts/components/TranscriptsListPage.tsx` (`HUB_VIEW_STORAGE_KEY`)
 - `features/tasks/components/TaskListPane.tsx` (`LIST_VIEW_STORAGE_KEY`)
 - `app/(core)/documents/page.tsx` (`HUB_VIEW_STORAGE_KEY`)
 
-Those four are **not yet migrated** — `/agents/browse` is the first consumer. Migrating them is the follow-up, and each migration deletes a `useState` + `useEffect` + a local type.
+Each migration deletes a `useState` + `useEffect` + a local type.
 
 ## The split that matters
 

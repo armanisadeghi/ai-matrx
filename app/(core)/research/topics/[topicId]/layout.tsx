@@ -5,7 +5,9 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import {
   getTopicServer,
   getTopicOverviewServer,
+  getResearchIntentsServer,
 } from "@/features/research/service/server";
+import { IntentBadge } from "@/features/research/components/shared/IntentBadge";
 import ResearchTopicShell from "./ResearchTopicShell";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 
@@ -56,14 +58,19 @@ export default async function ResearchTopicLayout({
     notFound();
   }
 
-  const [topic, overview] = await Promise.all([
+  const [topic, overview, intents] = await Promise.all([
     getTopicServer(topicId),
     getTopicOverviewServer(topicId),
+    getResearchIntentsServer(),
   ]);
 
   if (!topic) {
     notFound();
   }
+
+  const intentLabel = topic.intent_key
+    ? (intents.find((i) => i.key === topic.intent_key)?.label ?? null)
+    : null;
 
   return (
     <>
@@ -79,6 +86,7 @@ export default async function ResearchTopicLayout({
           <span className="text-sm font-medium text-foreground truncate min-w-0">
             {topic.name}
           </span>
+          <IntentBadge label={intentLabel} className="shrink-0" />
         </div>
       </PageHeader>
       <div className="flex h-dvh flex-col bg-textured">

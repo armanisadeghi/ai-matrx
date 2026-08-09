@@ -33,7 +33,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Check, ListFilter, Loader2, Scale, Sparkles, Tags, X } from "lucide-react";
+import { Check, Fingerprint, ListFilter, Loader2, Scale, Sparkles, Tags, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type {
@@ -67,6 +67,7 @@ import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads"
 import { ClassCell } from "@/features/marketing/search-console/components/classification/ClassCell";
 import { ClassStatsBand } from "@/features/marketing/search-console/components/classification/ClassStatsBand";
 import { ClassRulesPanel } from "@/features/marketing/search-console/components/classification/ClassRulesPanel";
+import { BrandIdentityPanel } from "@/features/marketing/search-console/components/classification/BrandIdentityPanel";
 import { ImportExportMenu } from "@/features/marketing/search-console/components/classification/ImportExportMenu";
 import {
   classifyKeywordsWithAi,
@@ -191,6 +192,7 @@ export function KeywordClassificationWorkspace({
   const [excluded, setExcluded] = useState<ReadonlySet<string>>(new Set());
   const [preview, setPreview] = useState<RulePreview | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [brandOpen, setBrandOpen] = useState(false);
   const [dialog, setDialog] = useState<{
     ruling: GscClassRuling;
     keywordIds: string[];
@@ -846,6 +848,16 @@ export function KeywordClassificationWorkspace({
               size="sm"
               variant="outline"
               className="h-7 gap-1.5 px-2 text-xs"
+              title="The site's brand identity — every alias the brand rung matches, plus custom aliases (people, legal names, misspellings)"
+              onClick={() => setBrandOpen(true)}
+            >
+              <Fingerprint className="h-3.5 w-3.5" /> Brand
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 px-2 text-xs"
               onClick={() => setRulesOpen(true)}
             >
               <ListFilter className="h-3.5 w-3.5" /> Rules
@@ -925,6 +937,16 @@ export function KeywordClassificationWorkspace({
           className="min-h-0 flex-1"
         />
       </div>
+
+      {/* Brand identity sheet */}
+      <Sheet open={brandOpen} onOpenChange={setBrandOpen}>
+        <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="text-sm">Brand identity</SheetTitle>
+          </SheetHeader>
+          <BrandIdentityPanel siteId={siteId} onChanged={invalidate} />
+        </SheetContent>
+      </Sheet>
 
       {/* Rules sheet */}
       <Sheet open={rulesOpen} onOpenChange={setRulesOpen}>

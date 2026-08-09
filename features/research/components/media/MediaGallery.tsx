@@ -54,6 +54,7 @@ import {
   hostLabel,
 } from "./mediaEmbed";
 import MediaDebugPanel from "./MediaDebugPanel";
+import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
 import { uploadFileWithProgress } from "@/features/files/api/files";
 import {
   parseYouTubeUrl,
@@ -975,8 +976,9 @@ function VideoCard({
             allowFullScreen
           />
         ) : playing && isDirectFile ? (
-          // eslint-disable-next-line jsx-a11y/media-has-caption
-          <video
+          <SessionMediaElement
+            sessionSource="research"
+            sessionLabel={label}
             src={item.url}
             className="absolute inset-0 h-full w-full"
             controls

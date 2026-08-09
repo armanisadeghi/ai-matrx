@@ -215,14 +215,10 @@ import {
   upsertCategories as upsertCategoriesAction,
   mergePartialCategory,
 } from "../agent-shortcut-categories/slice";
-import {
-  upsertContentBlocks as upsertContentBlocksAction,
-  mergePartialContentBlock,
-} from "../agent-content-blocks/slice";
+import { sklActions } from "@/features/agent-connections/redux/skl/slice";
+import type { SklRenderDefinition } from "@/features/agent-connections/redux/skl/types";
 import { categoryRowToDef } from "../agent-shortcut-categories/converters";
-import { contentBlockRowToDef } from "../agent-content-blocks/converters";
 import type { CategoryApiRow } from "../agent-shortcut-categories/types";
-import type { ContentBlockApiRow } from "../agent-content-blocks/types";
 import { mergePartialAgent } from "@/features/agents/redux/agent-definition/slice";
 import {
   selectShortcutById,
@@ -1166,8 +1162,28 @@ interface UnifiedMenuShortcutItem extends ShortcutApiRow {
   category_id: string;
 }
 
-interface UnifiedMenuContentBlockItem extends ContentBlockApiRow {
+/**
+ * Content-block wire row from `agent.context_menu_view` — backed by
+ * `skill.render_definition` (block items carry only the menu-relevant
+ * columns; `user_id` is the view's alias for `created_by`).
+ */
+interface UnifiedMenuContentBlockItem {
   type: "content_block";
+  id: string;
+  block_id: string;
+  category_id: string | null;
+  label: string;
+  description: string | null;
+  icon_name: string;
+  sort_order: number | null;
+  template: string;
+  is_active: boolean | null;
+  user_id: string | null;
+  organization_id: string | null;
+  project_id: string | null;
+  task_id: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
   scope?: Scope;
 }
 
@@ -1272,7 +1288,9 @@ export const fetchUnifiedMenu = createAsyncThunk<
 
         const categoryDefs: ReturnType<typeof categoryRowToDef>[] = [];
         const shortcutDefs: AgentShortcut[] = [];
-        const contentBlockDefs: ReturnType<typeof contentBlockRowToDef>[] = [];
+        const contentBlockDefs: (Partial<SklRenderDefinition> & {
+          id: string;
+        })[] = [];
 
         if (process.env.NODE_ENV !== "production") {
           const placementSummary = (payload.data ?? []).map((p) => ({
@@ -1334,25 +1352,21 @@ export const fetchUnifiedMenu = createAsyncThunk<
               } else if ((item as { type: string }).type === "content_block") {
                 const blockItem = item as UnifiedMenuContentBlockItem;
                 const scopeFields = extractScopeFromUnifiedItem(blockItem);
-                contentBlockDefs.push(
-                  contentBlockRowToDef({
-                    id: blockItem.id,
-                    block_id: blockItem.block_id,
-                    category_id: blockItem.category_id ?? group.category.id,
-                    label: blockItem.label,
-                    description: blockItem.description,
-                    icon_name: blockItem.icon_name,
-                    sort_order: blockItem.sort_order ?? 0,
-                    template: blockItem.template,
-                    is_active: blockItem.is_active ?? true,
-                    user_id: scopeFields.userId,
-                    organization_id: scopeFields.organizationId,
-                    project_id: scopeFields.projectId,
-                    task_id: scopeFields.taskId,
-                    created_at: blockItem.created_at ?? "",
-                    updated_at: blockItem.updated_at ?? "",
-                  }),
-                );
+                contentBlockDefs.push({
+                  id: blockItem.id,
+                  blockId: blockItem.block_id,
+                  categoryId: blockItem.category_id ?? group.category.id,
+                  label: blockItem.label,
+                  description: blockItem.description,
+                  iconName: blockItem.icon_name,
+                  sortOrder: blockItem.sort_order ?? 0,
+                  template: blockItem.template,
+                  isActive: blockItem.is_active ?? true,
+                  userId: scopeFields.userId,
+                  organizationId: scopeFields.organizationId,
+                  projectId: scopeFields.projectId,
+                  taskId: scopeFields.taskId,
+                });
               }
             }
           }
@@ -1365,7 +1379,7 @@ export const fetchUnifiedMenu = createAsyncThunk<
           dispatch(upsertShortcuts(shortcutDefs));
         }
         if (contentBlockDefs.length > 0) {
-          dispatch(upsertContentBlocksAction(contentBlockDefs));
+          dispatch(sklActions.renderDefinitionsMerged(contentBlockDefs));
         }
 
         dispatch(setShortcutScopeLoaded({ scopeRef: ref, loaded: true }));
@@ -1506,17 +1520,12 @@ export {
   deleteCategory,
 } from "../agent-shortcut-categories/thunks";
 
-export {
-  fetchContentBlocksForScope,
-  createContentBlock,
-  updateContentBlock,
-  deleteContentBlock,
-} from "../agent-content-blocks/thunks";
+// Content-block CRUD moved to the canonical skl thunks
+// (features/agent-connections/redux/skl/thunks.ts —
+// create/update/deleteRenderDefinition against skill.render_definition).
 
 export type { UpdateCategoryInput } from "../agent-shortcut-categories/thunks";
-export type { UpdateContentBlockInput } from "../agent-content-blocks/thunks";
 
-// mergePartialCategory / mergePartialContentBlock are re-exported so the
-// unified-menu consumer can seed slices with partial data outside of a full
-// fetch.
-export { mergePartialCategory, mergePartialContentBlock };
+// mergePartialCategory is re-exported so the unified-menu consumer can seed
+// the slice with partial data outside of a full fetch.
+export { mergePartialCategory };

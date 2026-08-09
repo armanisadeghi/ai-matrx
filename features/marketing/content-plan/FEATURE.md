@@ -340,6 +340,32 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-08-08 — Claude: **Build with AI (guided intake).** The bar's primary
+  button is now "Build with AI" (`setup/components/BuildWithAiDialog.tsx`):
+  a few optional questions answered as HINTS, never commitments (size feel,
+  single/multi location + rough count, free notes — serialized by
+  `buildGuidanceInputs` in setup/ai.ts as an explicitly-overridable guidance
+  block + `target_page_count`). Works with ZERO research: the flow runs the
+  full company-research pipeline first (dialog states cost/time), reads the
+  fresh Document directly (`getLatestSuccessfulDocument`), then drafts the
+  whole work order. Bounded by design — everything stages; live plan
+  untouched until the user approves the routes. Guidance also threads into
+  the family-namer runs.
+
+- 2026-08-08 — Claude: **Setup grounding + one-click work order.** The AI bar
+  can now CREATE the research from here — "Research this company" runs the
+  full pipeline headlessly via the new
+  `features/research/hooks/useCompanyQuickResearch.ts` (topic from the system
+  Company Research template → keywords → run → Document), selects + links the
+  topic the moment it exists, and refreshes the picker/report when done. New
+  primary "Draft the work order" button composes shape → per-family names →
+  count-only topics in one confirmed click (all staged; the user still
+  commits); "Recommend shape & counts" demoted to "Shape only".
+  `site_context` is now real (`buildSiteContext` — name/domain/root URL/
+  description; was an empty string). An unnamed family with a loaded report
+  renders "Name with AI" as a solid button instead of a link
+  (discoverability — Arman hand-typed services next to an invisible link).
+
 - 2026-08-08 — Codex: **researched-topic promotion.** Count-only Blog/Guide
   families remain hub-only by default, but their staged researched titles now
   have an explicit, confirmed “Create as pages” action. It creates normal

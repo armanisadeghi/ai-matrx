@@ -1,6 +1,6 @@
 import type { AgentShortcut } from "@/features/agents/redux/agent-shortcuts/types";
 import type { AgentShortcutCategoryDef } from "@/features/agents/redux/agent-shortcut-categories/types";
-import type { AgentContentBlockDef } from "@/features/agents/redux/agent-content-blocks/types";
+import type { AgentContentBlockDef } from "@/features/agent-connections/redux/skl/content-block-compat";
 import type { AgentScope, PlacementType, ScopeLevel } from "./constants";
 import type { ShortcutContext } from "@/features/agents/utils/shortcut-context-utils";
 
@@ -14,10 +14,11 @@ export type {
   AgentShortcutCategoryRecord,
 } from "@/features/agents/redux/agent-shortcut-categories/types";
 
+// Content blocks are canonical `skill.render_definition` rows (skl slice).
 export type {
   AgentContentBlockDef,
   AgentContentBlockRecord,
-} from "@/features/agents/redux/agent-content-blocks/types";
+} from "@/features/agent-connections/redux/skl/content-block-compat";
 
 export type { AgentScope, PlacementType, ScopeLevel } from "./constants";
 
@@ -40,17 +41,6 @@ export interface CategoryFormData {
   isActive: boolean;
   enabledFeatures: ShortcutContext[];
   metadata: Record<string, unknown>;
-}
-
-export interface ContentBlockFormData {
-  blockId: string;
-  label: string;
-  description: string;
-  iconName: string;
-  categoryId: string | null;
-  template: string;
-  sortOrder: number;
-  isActive: boolean;
 }
 
 export type ShortcutFormData = Omit<

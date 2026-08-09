@@ -16,6 +16,9 @@ import {
   BookOpen,
   Type,
   FileText,
+  Target,
+  Pencil,
+  Check,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -28,6 +31,7 @@ import {
 import {
   addKeywords,
   deleteKeyword as deleteKeywordService,
+  updateKeywordGoal,
 } from "../../service";
 import { evaluateKeywordQuota, type QuotaVerdict } from "../../keywordQuota";
 import { useRunPipeline } from "../../hooks/useRunPipeline";
@@ -39,6 +43,113 @@ import type { ResearchKeyword, ResearchSource } from "../../types";
 import { Favicon } from "../overview/live-pipeline/ui/Favicon";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import KeywordOverlapMatrix from "./KeywordOverlapMatrix";
+
+/**
+ * The keyword's FOCUSED LENS, viewable and editable in place. A goal changes
+ * what every agent is told when researching this keyword (and gives it its own
+ * per-lens analyses server-side), so it lives right on the row — never buried
+ * in a settings pane. Clearing the text returns the keyword to the shared
+ * topic-level lens.
+ */
+function KeywordGoalRow({
+  keyword,
+  onSaved,
+}: {
+  keyword: ResearchKeyword;
+  onSaved: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(keyword.goal ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    const next = draft.trim() || null;
+    if (next === (keyword.goal ?? null)) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateKeywordGoal(keyword.id, next);
+      setEditing(false);
+      onSaved();
+    } catch (err) {
+      toast.error((err as Error).message ?? "Could not save the goal");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <div
+        className="mt-1 flex items-center gap-1.5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Target className="h-3 w-3 shrink-0 text-primary/70" />
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="What is this search for?"
+          className="flex-1 min-w-0 rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-xs outline-none focus:border-primary/50"
+          style={{ fontSize: "16px" }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void save();
+            if (e.key === "Escape") {
+              setDraft(keyword.goal ?? "");
+              setEditing(false);
+            }
+          }}
+          disabled={saving}
+        />
+        <button
+          className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-muted/60 shrink-0"
+          onClick={() => void save()}
+          disabled={saving}
+        >
+          {saving ? (
+            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+          ) : (
+            <Check className="h-3 w-3 text-primary" />
+          )}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="group/goal mt-1 flex items-start gap-1.5"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <Target
+        className={cn(
+          "h-3 w-3 shrink-0 mt-0.5",
+          keyword.goal ? "text-primary/70" : "text-muted-foreground/40",
+        )}
+      />
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          setDraft(keyword.goal ?? "");
+          setEditing(true);
+        }}
+        className={cn(
+          "min-w-0 text-left text-[11px] leading-snug hover:underline decoration-dotted underline-offset-2",
+          keyword.goal
+            ? "text-muted-foreground"
+            : "text-muted-foreground/50 italic",
+        )}
+        title="Edit this keyword's goal"
+      >
+        {keyword.goal ?? "No goal — researched through the topic lens"}
+        <Pencil className="ml-1 inline h-2.5 w-2.5 opacity-0 group-hover/goal:opacity-60 transition-opacity" />
+      </button>
+    </div>
+  );
+}
 
 interface KeywordStat {
   sources: number;
@@ -58,6 +169,7 @@ export default function KeywordManager() {
   const { data: keywords, isLoading, refresh } = useResearchKeywords(topicId);
 
   const [newKeyword, setNewKeyword] = useState("");
+  const [newGoal, setNewGoal] = useState("");
   const [adding, setAdding] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -156,8 +268,14 @@ export default function KeywordManager() {
     async (kw: string) => {
       setAdding(true);
       try {
-        await addKeywords(topicId, { keywords: [kw] });
+        const goal = newGoal.trim();
+        await addKeywords(
+          topicId,
+          { keywords: [kw] },
+          goal ? { [kw]: goal } : undefined,
+        );
         setNewKeyword("");
+        setNewGoal("");
         refresh();
         refreshProgress();
       } catch (err) {
@@ -166,7 +284,7 @@ export default function KeywordManager() {
         setAdding(false);
       }
     },
-    [topicId, refresh, refreshProgress],
+    [topicId, newGoal, refresh, refreshProgress],
   );
 
   const handleAdd = async () => {
@@ -323,6 +441,23 @@ export default function KeywordManager() {
         </button>
       </div>
 
+      {/* Focused lens — optional goal for the keyword being added. Appears only
+          while a keyword is typed so the toolbar stays one quiet row at rest. */}
+      {newKeyword.trim() && (
+        <div className="flex items-center gap-1.5 h-7 px-2.5 rounded-full matrx-glass-card">
+          <Target className="h-3 w-3 text-muted-foreground shrink-0" />
+          <input
+            value={newGoal}
+            onChange={(e) => setNewGoal(e.target.value)}
+            placeholder="What is this search for? e.g. “information about the partner, not the firm” (optional)"
+            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-foreground placeholder:text-muted-foreground placeholder:text-[11px]"
+            style={{ fontSize: "16px" }}
+            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+            disabled={adding}
+          />
+        </div>
+      )}
+
       {/* Overlap read — how well the chosen keywords converge on one goal.
           Mounts once there are ≥2 keywords; it self-handles the no-search-yet
           and single-active-keyword states. */}
@@ -423,6 +558,11 @@ export default function KeywordManager() {
                       <Trash2 className="h-3 w-3 text-destructive/70" />
                     )}
                   </button>
+                </div>
+
+                {/* Focused lens — per-keyword goal, editable in place. */}
+                <div className="px-2.5 pb-2 -mt-1">
+                  <KeywordGoalRow keyword={kw} onSaved={refresh} />
                 </div>
 
                 {/* Top results — shown inline by default; the rest live behind

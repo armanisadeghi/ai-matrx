@@ -9,9 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
-import type {
-  AgentCopyGroomerConfig,
-  AgentCopyGroomerSection,
+import {
+  groomerPresetVariants,
+  type AgentCopyGroomerConfig,
+  type AgentCopyGroomerSection,
 } from "@/components/agent-copy/groomer-types";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import {
@@ -43,6 +44,7 @@ import type {
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import {
   humanLines,
+  keyFieldsAiVariant,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
 
@@ -312,6 +314,7 @@ export function FindingsTable() {
                 human={pageHuman}
                 json={pageFullData}
                 agent={pageAgentPayload}
+                aiVariants={groomerPresetVariants(groomerConfig)}
               />
               <AgentCopyGroomerLauncher config={groomerConfig} />
               <Button
@@ -368,6 +371,22 @@ export function FindingsTable() {
             site_id: site.id,
             total_matching: findings.data?.total ?? 0,
           }),
+          aiVariants: (visible) => [
+            keyFieldsAiVariant({
+              kind: "web-findings-list",
+              location: pageLocation,
+              description:
+                "The currently loaded finding rows projected to key fields.",
+              hint: "Visible rows projected to core lifecycle fields",
+              visible,
+              project: projectFindingRow,
+              query: table.state,
+              attributes: {
+                site_id: site.id,
+                total_matching: findings.data?.total ?? 0,
+              },
+            }),
+          ],
         }}
         detail={{ enabled: false }}
         onRowOpen={(row) =>

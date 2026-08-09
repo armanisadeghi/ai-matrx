@@ -222,6 +222,36 @@ export function withPrevCompare(periods: GscResolvedPeriods): GscResolvedPeriods
   };
 }
 
+/**
+ * The freshest stored day across a site's `gsc_perf_freshness` rows — the value
+ * `resolvePeriods` takes as `dataEnd` so a window never promises days GSC has
+ * not delivered.
+ *
+ * `search_appearance` is excluded by default: its history is intentionally
+ * shallow, so including it would drag the site's apparent freshness backwards.
+ *
+ * Pass `profiles` when the consumer reads ONE profile. Taking the max across
+ * profiles is WRONG for such a caller: if `page` imported further than `query`,
+ * a query-only window would run past the last day of query data and every
+ * metric would show a phantom decline against a fully-settled compare period.
+ *
+ * Extracted because three callers (the workspace, the drilldown window, and the
+ * ambassador rollup) each need the identical reduction — a fourth hand-rolled
+ * copy is how the exclusion rule silently drifts on one surface only.
+ */
+export function resolveGscDataThrough(
+  rows: readonly { dimension_profile: string; max_date: string }[] | undefined,
+  profiles?: readonly string[],
+): string | null {
+  const candidates = (rows ?? []).filter((r) =>
+    profiles
+      ? profiles.includes(r.dimension_profile)
+      : r.dimension_profile !== "search_appearance",
+  );
+  const dates = candidates.map((r) => r.max_date);
+  return dates.length > 0 ? ([...dates].sort().at(-1) ?? null) : null;
+}
+
 /** The filter keys each tab's dimension group can serve (RPC profile rule). */
 const QUERY_PAGE_FILTER_KEYS: readonly (keyof GscFilters)[] = [
   "query_contains",

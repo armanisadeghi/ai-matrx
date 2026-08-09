@@ -90,6 +90,13 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "@/lib/toast";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  feedbackBrief,
+  feedbackMarkdown,
+  feedbackRowSummary,
+  feedbackTypeLabels,
+} from "../format";
 import { cn } from "@/lib/utils";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
@@ -107,13 +114,6 @@ const feedbackTypeIcons: Record<FeedbackType, React.ReactNode> = {
   feature: <Flame className="w-5 h-5 text-purple-500" />,
   suggestion: <Lightbulb className="w-5 h-5 text-yellow-500" />,
   other: <HelpCircle className="w-5 h-5 text-gray-500" />,
-};
-
-const feedbackTypeLabels: Record<FeedbackType, string> = {
-  bug: "Bug Report",
-  feature: "Feature Request",
-  suggestion: "Suggestion",
-  other: "Other",
 };
 
 const authorTypeConfig: Record<
@@ -385,128 +385,18 @@ export default function FeedbackDetailDialog({
 
   /** Copy all feedback data to clipboard as structured markdown */
   const handleCopyAll = useCallback(async () => {
-    const sections: string[] = [];
-
-    sections.push(`# Feedback: ${feedbackTypeLabels[item.feedback_type]}`);
-    sections.push("");
-
-    // Metadata
-    sections.push("## Metadata");
-    sections.push(`- **ID:** ${item.id}`);
-    sections.push(`- **Type:** ${feedbackTypeLabels[item.feedback_type]}`);
-    sections.push(`- **Status:** ${item.status}`);
-    sections.push(`- **Priority:** ${item.priority}`);
-    sections.push(`- **Route:** ${item.route}`);
-    sections.push(`- **User:** ${item.username || "Anonymous"}`);
-    sections.push(
-      `- **Created:** ${format(new Date(item.created_at), "PPpp")}`,
-    );
-    sections.push(
-      `- **Updated:** ${format(new Date(item.updated_at), "PPpp")}`,
-    );
-    if (item.admin_decision !== "pending")
-      sections.push(`- **Admin Decision:** ${item.admin_decision}`);
-    if (item.work_priority !== null)
-      sections.push(`- **Work Priority:** #${item.work_priority}`);
-    if (item.has_open_issues) sections.push(`- **Open Issues:** Yes`);
-    if (item.parent_id) sections.push(`- **Parent ID:** ${item.parent_id}`);
-    sections.push("");
-
-    // Description
-    sections.push("## Description");
-    sections.push(item.description);
-    sections.push("");
-
-    // AI Analysis
-    if (item.ai_assessment || item.ai_solution_proposal) {
-      sections.push("## AI Analysis");
-      if (item.ai_assessment) {
-        sections.push("### Assessment");
-        sections.push(item.ai_assessment);
-      }
-      if (item.ai_solution_proposal) {
-        sections.push("### Solution Proposal");
-        sections.push(item.ai_solution_proposal);
-      }
-      if (item.ai_suggested_priority)
-        sections.push(
-          `- **Suggested Priority:** ${item.ai_suggested_priority}`,
-        );
-      if (item.ai_complexity)
-        sections.push(`- **Complexity:** ${item.ai_complexity}`);
-      if (item.autonomy_score !== null)
-        sections.push(`- **Autonomy Score:** ${item.autonomy_score}/5`);
-      if (item.ai_estimated_files?.length) {
-        sections.push("### Estimated Files");
-        item.ai_estimated_files.forEach((f) => sections.push(`- ${f}`));
-      }
-      sections.push("");
-    }
-
-    // Admin Direction / Notes
-    if (item.admin_direction || item.admin_notes) {
-      sections.push("## Admin Input");
-      if (item.admin_direction) {
-        sections.push("### Direction");
-        sections.push(item.admin_direction);
-      }
-      if (item.admin_notes) {
-        sections.push("### Notes");
-        sections.push(item.admin_notes);
-      }
-      sections.push("");
-    }
-
-    // Testing
-    if (
-      item.testing_instructions ||
-      item.testing_url ||
-      item.resolution_notes
-    ) {
-      sections.push("## Testing");
-      if (item.resolution_notes) {
-        sections.push("### Resolution Notes");
-        sections.push(item.resolution_notes);
-      }
-      if (item.testing_instructions) {
-        sections.push("### Testing Instructions");
-        sections.push(item.testing_instructions);
-      }
-      if (item.testing_url)
-        sections.push(`- **Testing URL:** ${item.testing_url}`);
-      if (item.testing_result)
-        sections.push(`- **Testing Result:** ${item.testing_result}`);
-      sections.push("");
-    }
-
-    // Comments
-    if (comments.length > 0) {
-      sections.push("## Comments");
-      comments.forEach((c) => {
-        const time = format(new Date(c.created_at), "PPpp");
-        sections.push(`### ${c.author_name} (${c.author_type}) — ${time}`);
-        sections.push(c.content);
-        sections.push("");
-      });
-    }
-
-    // Screenshots
-    if (item.image_urls?.length) {
-      sections.push("## Screenshots");
-      item.image_urls.forEach((url, i) =>
-        sections.push(`- Screenshot ${i + 1}: ${url}`),
-      );
-      sections.push("");
-    }
-
-    const text = sections.join("\n");
+    const text = feedbackMarkdown(item, {
+      comments,
+      userMessages,
+      categoryName: categories.find((c) => c.id === item.category_id)?.name,
+    });
     try {
       await navigator.clipboard.writeText(text);
       toast.success("Full feedback data copied to clipboard");
     } catch {
       toast.error("Failed to copy to clipboard");
     }
-  }, [item, comments]);
+  }, [item, comments, userMessages, categories]);
 
   const loadComments = useCallback(async () => {
     setIsLoadingComments(true);
@@ -1014,16 +904,72 @@ export default function FeedbackDetailDialog({
                   </span>
                 </DialogDescription>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopyAll}
-                className="flex-shrink-0 gap-1.5 text-xs self-start mr-6"
-                title="Copy all feedback data to clipboard"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                Copy All
-              </Button>
+              <div className="flex flex-shrink-0 items-center gap-1 self-start mr-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyAll}
+                  className="gap-1.5 text-xs"
+                  title="Copy all feedback data to clipboard"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  Copy All
+                </Button>
+                <CopyButtons
+                  size="icon"
+                  label={`Feedback ${item.id.slice(0, 8)}`}
+                  human={() =>
+                    feedbackMarkdown(item, {
+                      comments,
+                      userMessages,
+                      categoryName: categories.find(
+                        (c) => c.id === item.category_id,
+                      )?.name,
+                    })
+                  }
+                  json={() => ({
+                    feedback: item,
+                    comments,
+                    user_messages: userMessages,
+                  })}
+                  agent={() => ({
+                    kind: "feedback-item",
+                    location:
+                      "AI Matrx Admin — Feedback Management · detail dialog (/administration/users/feedback)",
+                    description:
+                      "One user-feedback record with its comments and user messages.",
+                    data: {
+                      feedback: item,
+                      comments,
+                      user_messages: userMessages,
+                    },
+                    summary: feedbackRowSummary(item),
+                    attributes: {
+                      id: item.id,
+                      type: item.feedback_type,
+                      status: item.status,
+                      priority: item.priority,
+                    },
+                  })}
+                  aiVariants={[
+                    {
+                      id: "brief",
+                      label: "Triage brief",
+                      hint: "Metadata + trimmed description, no threads",
+                      build: () => ({
+                        kind: "feedback-item",
+                        location:
+                          "AI Matrx Admin — Feedback Management · detail dialog (/administration/users/feedback)",
+                        description:
+                          "Compact triage digest of one user-feedback record.",
+                        data: feedbackBrief(item),
+                        summary: feedbackRowSummary(item),
+                        attributes: { id: item.id, status: item.status },
+                      }),
+                    },
+                  ]}
+                />
+              </div>
             </div>
           </DialogHeader>
         </div>
@@ -1915,7 +1861,7 @@ export default function FeedbackDetailDialog({
                         authorTypeConfig[comment.author_type] ||
                         authorTypeConfig.user;
                       return (
-                        <div key={comment.id} className="flex gap-3">
+                        <div key={comment.id} className="group/cmt flex gap-3">
                           <div
                             className={cn(
                               "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
@@ -1941,6 +1887,27 @@ export default function FeedbackDetailDialog({
                                   { addSuffix: true },
                                 )}
                               </span>
+                              <CopyButtons
+                                size="xs"
+                                label="Comment"
+                                className="opacity-0 group-hover/cmt:opacity-100 focus-within:opacity-100"
+                                human={() =>
+                                  `${comment.author_name || config.label} (${comment.author_type}):\n${comment.content}`
+                                }
+                                json={() => comment}
+                                agent={() => ({
+                                  kind: "feedback-comment",
+                                  location:
+                                    "AI Matrx Admin — Feedback Management · detail dialog (/administration/users/feedback)",
+                                  description:
+                                    "One internal comment on the open feedback record.",
+                                  data: comment,
+                                  attributes: {
+                                    feedback_id: comment.feedback_id,
+                                    author: comment.author_type,
+                                  },
+                                })}
+                              />
                             </div>
                             <div className="text-sm whitespace-pre-wrap text-foreground/90">
                               {comment.content}
@@ -2463,7 +2430,7 @@ export default function FeedbackDetailDialog({
                         <div
                           key={msg.id}
                           className={cn(
-                            "flex gap-3",
+                            "group/umsg flex gap-3",
                             isAdmin ? "" : "flex-row-reverse",
                           )}
                         >
@@ -2516,6 +2483,27 @@ export default function FeedbackDetailDialog({
                                   sent
                                 </span>
                               )}
+                              <CopyButtons
+                                size="xs"
+                                label="User message"
+                                className="opacity-0 group-hover/umsg:opacity-100 focus-within:opacity-100"
+                                human={() =>
+                                  `${msg.sender_name ?? msg.sender_type}:\n${msg.content}`
+                                }
+                                json={() => msg}
+                                agent={() => ({
+                                  kind: "feedback-user-message",
+                                  location:
+                                    "AI Matrx Admin — Feedback Management · detail dialog (/administration/users/feedback)",
+                                  description:
+                                    "One admin↔user message on the open feedback record.",
+                                  data: msg,
+                                  attributes: {
+                                    feedback_id: msg.feedback_id,
+                                    sender: msg.sender_type,
+                                  },
+                                })}
+                              />
                             </div>
                             <div
                               className={cn(

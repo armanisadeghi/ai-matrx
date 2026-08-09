@@ -15,6 +15,7 @@
  */
 
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
+import type { AiVariant } from "@/components/agent-copy/AiCopyMenu";
 
 export interface WebCopyInput {
   /** Stable root xml tag, e.g. "web-page-serp". Always `web-` prefixed. */
@@ -50,6 +51,38 @@ export function humanLines(
     .filter(([, value]) => value !== null && value !== undefined && value !== "")
     .map(([label, value]) => `${label}: ${value}`)
     .join("\n");
+}
+
+/**
+ * The table-toolbar "Key fields" AI variant: the visible rows projected to
+ * their core fields (the raw everything-dump stays the automatic escape
+ * hatch). Use from a `MatrxDataTable` `copy.aiVariants` callback:
+ * `aiVariants: (visible) => [keyFieldsAiVariant({ ..., visible })]`.
+ */
+export function keyFieldsAiVariant<T>(input: {
+  /** List kind — same slug the table's `copy.listKind` uses. */
+  kind: string;
+  location: string;
+  description: string;
+  hint?: string;
+  visible: T[];
+  project: (row: T) => unknown;
+  /** The live table query state, echoed beside the rows. */
+  query?: unknown;
+  attributes?: AgentPayloadInput["attributes"];
+}): AiVariant {
+  return {
+    id: "key-fields",
+    label: "Key fields",
+    hint: input.hint ?? "Visible rows projected to core fields",
+    build: () => ({
+      kind: input.kind,
+      location: input.location,
+      description: input.description,
+      data: { query: input.query, rows: input.visible.map(input.project) },
+      attributes: { ...input.attributes, detail: "key-fields" },
+    }),
+  };
 }
 
 export function webCopy(input: WebCopyInput): {

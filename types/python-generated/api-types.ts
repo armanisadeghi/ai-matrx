@@ -9368,39 +9368,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/rag/cross-doc/stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Rag Cross Doc Stream
-         * @description End-to-end trial-prep flow: split retrieval → synthesis →
-         *     faithfulness check, all events streamed.
-         *
-         *     Event sequence (ordered):
-         *
-         *       rag.cross_doc.retrieval.started
-         *       rag.cross_doc.retrieval.complete
-         *       rag.cross_doc.synth.chunk    (token-streamed answer chunks)
-         *       rag.cross_doc.synth.complete
-         *       rag.cross_doc.verify.complete
-         *       rag.cross_doc.result         (final consolidated payload)
-         *
-         *     The FE renders the answer as streaming text and the per-claim verdicts
-         *     as colored highlights over the answer.
-         */
-        post: operations["rag_cross_doc_stream_rag_cross_doc_stream_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/rag/search/stream": {
         parameters: {
             query?: never;
@@ -23800,59 +23767,6 @@ export interface components {
             /** Page Ranges */
             page_ranges?: components["schemas"]["PdfPageRange"][] | null;
             crop_box: components["schemas"]["PdfCropBox"];
-        };
-        /** CrossDocRequest */
-        CrossDocRequest: {
-            /** Question */
-            question: string;
-            /** Library Query */
-            library_query: string;
-            /** Case Query */
-            case_query: string;
-            /**
-             * Library Tag
-             * @default MTUS
-             */
-            library_tag?: string;
-            /**
-             * Case Tag
-             * @default CASE
-             */
-            case_tag?: string;
-            /**
-             * Limit Per Side
-             * @default 4
-             */
-            limit_per_side?: number;
-            /**
-             * Multi Query
-             * @default 2
-             */
-            multi_query?: number;
-            /**
-             * Rerank
-             * @default true
-             */
-            rerank?: boolean;
-            /**
-             * Use Mmr
-             * @default true
-             */
-            use_mmr?: boolean;
-            /** System Addendum */
-            system_addendum?: string | null;
-            /**
-             * Synth Model
-             * @default claude-haiku-4-5
-             */
-            synth_model?: string;
-            /** Judge Model */
-            judge_model?: string | null;
-            /**
-             * Skip Verify
-             * @default false
-             */
-            skip_verify?: boolean;
         };
         /** CrossTopicSourceMatch */
         CrossTopicSourceMatch: {
@@ -60191,39 +60105,6 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["aidream__api__routers__rag__SearchRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    rag_cross_doc_stream_rag_cross_doc_stream_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CrossDocRequest"];
             };
         };
         responses: {

@@ -34,12 +34,33 @@ describe("marketing-nav ↔ coming-soon registry", () => {
     }
   });
 
-  it("every marketing-owned registry row is declared in marketing-nav", () => {
+  /**
+   * Not every marketing promise is a reserved ROUTE. Some are in-page actions
+   * that will land inside a surface that already exists, so they have a
+   * registry row (the user sees them) but no nav entry (there is no URL to
+   * reserve). Those are listed here explicitly rather than loosening the
+   * check — an unlisted orphan is still a real drift failure.
+   */
+  const NON_ROUTE_PROMISES = new Set([
+    // Lives on the existing site media view, not at a URL of its own.
+    "marketing.generate-video",
+  ]);
+
+  it("every route-backed marketing registry row is declared in marketing-nav", () => {
     const declared = new Set(declaredComingSoonIds);
     const orphans = Object.values(COMING_SOON)
       .filter((e) => e.owner === "marketing")
-      .filter((e) => !declared.has(e.id));
+      .filter((e) => !declared.has(e.id))
+      .filter((e) => !NON_ROUTE_PROMISES.has(e.id));
     expect(orphans.map((e) => e.id)).toEqual([]);
+  });
+
+  it("every non-route promise still exists in the registry", () => {
+    // Guards the exemption list itself: a stale entry here would silently
+    // re-open the hole it was carved for.
+    for (const id of NON_ROUTE_PROMISES) {
+      expect(COMING_SOON[id]).toBeDefined();
+    }
   });
 
   it("declared ids are unique", () => {

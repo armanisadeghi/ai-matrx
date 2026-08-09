@@ -471,6 +471,7 @@ function quotasFromTopic(topic: ResearchTopic): TopicQuotaFields {
     max_documents: topic.max_documents,
     max_tag_consolidations: topic.max_tag_consolidations,
     max_auto_tag_calls: topic.max_auto_tag_calls,
+    videos_per_keyword: topic.videos_per_keyword,
   };
 }
 
@@ -484,6 +485,7 @@ function provisionalQuotas(maxKeywords: number): TopicQuotaFields {
     max_documents: 1,
     max_tag_consolidations: 0,
     max_auto_tag_calls: 0,
+    videos_per_keyword: 2,
   };
 }
 

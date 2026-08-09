@@ -40,6 +40,9 @@ import {
   fetchAgentAppsAdmin,
   type AgentAppAdminView,
 } from "@/lib/services/agent-apps-admin-service";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
+import { humanAgentApp } from "@/features/agent-apps/format";
 
 export default function AgentAppsAnalyticsPage() {
   const [apps, setApps] = useState<AgentAppAdminView[]>([]);
@@ -127,33 +130,78 @@ export default function AgentAppsAnalyticsPage() {
               label="Total Executions"
               value={totals.totalExecutions.toLocaleString()}
               sub={`Across ${apps.length} app${apps.length === 1 ? "" : "s"}`}
+              copyLabel="Total executions"
+              copyAgent={() => ({
+                kind: "agent-app-analytics-stat",
+                location: "AI Matrx Admin — Agent Apps — Analytics",
+                description: "The total-executions stat card.",
+                data: { totalExecutions: totals.totalExecutions, appCount: apps.length },
+              })}
             />
             <OverviewCard
               icon={<Users className="w-4 h-4 text-purple-600" />}
               label="Unique Users"
               value={totals.totalUniqueUsers.toLocaleString()}
               sub="All identified callers"
+              copyLabel="Unique users"
+              copyAgent={() => ({
+                kind: "agent-app-analytics-stat",
+                location: "AI Matrx Admin — Agent Apps — Analytics",
+                description: "The unique-users stat card.",
+                data: { totalUniqueUsers: totals.totalUniqueUsers },
+              })}
             />
             <OverviewCard
               icon={<CheckCircle className="w-4 h-4 text-green-600" />}
               label="Success Rate"
               value={`${overallSuccessRate}%`}
               sub="Execution-weighted average"
+              copyLabel="Success rate"
+              copyAgent={() => ({
+                kind: "agent-app-analytics-stat",
+                location: "AI Matrx Admin — Agent Apps — Analytics",
+                description: "The execution-weighted success-rate stat card.",
+                data: { overallSuccessRate: Number(overallSuccessRate) },
+              })}
             />
             <OverviewCard
               icon={<DollarSign className="w-4 h-4 text-green-600" />}
               label="Total Cost"
               value={`$${totals.totalCost.toFixed(4)}`}
               sub={`${totals.totalTokens.toLocaleString()} tokens`}
+              copyLabel="Total cost"
+              copyAgent={() => ({
+                kind: "agent-app-analytics-stat",
+                location: "AI Matrx Admin — Agent Apps — Analytics",
+                description: "The total-cost stat card.",
+                data: { totalCost: totals.totalCost, totalTokens: totals.totalTokens },
+              })}
             />
           </div>
 
           <Card>
-            <CardHeader>
-              <CardTitle>App Performance</CardTitle>
-              <CardDescription>
-                Per-app aggregates from `aga_apps`
-              </CardDescription>
+            <CardHeader className="flex-row items-start justify-between gap-2">
+              <div>
+                <CardTitle>App Performance</CardTitle>
+                <CardDescription>
+                  Per-app aggregates from `aga_apps`
+                </CardDescription>
+              </div>
+              {apps.length > 0 && (
+                <CopyButtons
+                  size="icon"
+                  label="App performance"
+                  human={() => apps.map(humanAgentApp).join("\n\n")}
+                  json={() => apps}
+                  agent={() => ({
+                    kind: "agent-apps",
+                    location: "AI Matrx Admin — Agent Apps — Analytics",
+                    description: "Per-app performance aggregates shown in this table.",
+                    data: apps,
+                    attributes: { count: apps.length },
+                  })}
+                />
+              )}
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -165,8 +213,23 @@ export default function AgentAppsAnalyticsPage() {
                   return (
                     <div
                       key={app.id}
-                      className="border border-border rounded-lg p-4 hover:shadow-sm transition-shadow"
+                      className="group/x border border-border rounded-lg p-4 hover:shadow-sm transition-shadow relative"
                     >
+                      <CopyButtons
+                        size="xs"
+                        label={app.name}
+                        className="absolute top-3 right-3 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
+                        human={() => humanAgentApp(app)}
+                        json={() => app}
+                        agent={() => ({
+                          kind: "agent-app",
+                          location: "AI Matrx Admin — Agent Apps — Analytics",
+                          description: "A single app's performance card.",
+                          data: app,
+                          summary: humanAgentApp(app),
+                          attributes: { id: app.id, status: app.status },
+                        })}
+                      />
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -267,14 +330,18 @@ function OverviewCard({
   label,
   value,
   sub,
+  copyLabel,
+  copyAgent,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   sub: string;
+  copyLabel: string;
+  copyAgent: () => AgentPayloadInput;
 }) {
   return (
-    <Card>
+    <Card className="group/x relative">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           {icon}
@@ -285,6 +352,13 @@ function OverviewCard({
         <div className="text-2xl font-bold">{value}</div>
         <div className="text-xs text-muted-foreground mt-1">{sub}</div>
       </CardContent>
+      <CopyButtons
+        size="xs"
+        label={copyLabel}
+        className="absolute top-3 right-3 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
+        human={() => `${label}: ${value} (${sub})`}
+        agent={copyAgent}
+      />
     </Card>
   );
 }

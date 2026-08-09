@@ -44,6 +44,13 @@ const VISIBLE_FIELDS: FieldSpec[] = [
     max: 30,
   },
   {
+    key: "videos_per_keyword",
+    label: "Videos / keyword",
+    hint: "Videos to capture (transcribe) per keyword — a separate budget from page reads.",
+    min: 0,
+    max: 25,
+  },
+  {
     key: "max_keyword_syntheses",
     label: "Keyword syntheses",
     hint: "Total cap. When below keyword count, picks keywords with most analyses.",

@@ -96,7 +96,7 @@ import {
 } from "@/lib/redux/slices/appContextSlice";
 import { selectAllShortcutsArray } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { selectAllCategoriesArray } from "@/features/agents/redux/agent-shortcut-categories/selectors";
-import { selectAllContentBlocksArray } from "@/features/agents/redux/agent-content-blocks/selectors";
+import { selectAllContentBlocksArray } from "@/features/agent-connections/redux/skl/content-block-compat";
 import { fetchUnifiedMenu } from "@/features/agents/redux/agent-shortcuts/thunks";
 import { resolveRowScope } from "@/features/agents/redux/shared/scope";
 import type { Scope, ScopeRef } from "@/features/agents/redux/shared/scope";

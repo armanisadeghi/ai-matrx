@@ -22,6 +22,7 @@ import {
   DESCRIPTION_LIMITS,
 } from "@/features/marketing/seo/serp/metrics";
 import type { SerpEntry } from "@/features/marketing/seo/serp/types";
+import { ApplyMetaToPage } from "@/features/marketing/seo/serp/ApplyMetaToPage";
 
 /**
  * Shared overlay renderer for every SEO meta check — the agent's results
@@ -196,9 +197,15 @@ export function SerpToolOverlay({
                     Needs optimization
                   </Badge>
                 )}
-                <span className="text-sm text-muted-foreground">
-                  #{index + 1}
-                </span>
+                <div className="flex items-center gap-2">
+                  <ApplyMetaToPage
+                    title={entry.title}
+                    description={entry.description}
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    #{index + 1}
+                  </span>
+                </div>
               </div>
 
               {/* The real thing — the simulated Google result */}

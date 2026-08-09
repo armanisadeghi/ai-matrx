@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-27
+updated: 2026-08-08
 repos: [matrx-frontend, aidream, common-docs]
 audience: a successor (junior dev + coding agent) with ZERO prior context
 supersedes_status_of: docs/handoffs/shared-knowledge-access.md (that file is the terse status log; THIS is the full package)
@@ -110,19 +110,27 @@ guarding is **personal** data; everything else inside an org is collaborative an
 | Project/task/war-room conveyance | `file/data_store/working_document/processed_document → project/task/war_room` convey **editor**; `task→project` transitivity; war-room tiles | `migrations/project_task_warroom_convey_contents.sql` — verified: project editor-member gets editor on an attached file, unattached file denied |
 | Version endpoint (D-G) | `GET /health/version` reads Coolify `SOURCE_COMMIT` at runtime | aidream `api/routers/health.py` |
 | Security fixes | D89 (members-rich denied grant readers), a cross-user entitlement oracle, a service-role regression | `migrations/data_store_members_rich_grant_reader.sql`, `library_grant_predicate_actor_guard_and_service_role.sql` |
+| Project attach surface (2026-08-08) | ProjectWorkspace "Associated resources" = canonical `AssociationCardGrid` (attach writes real edges → conveyance live); conveyance re-proven by synthetic probe | `features/projects/components/ProjectWorkspace.tsx`; task/war-room surfaces already canonical |
+| Admin entitlement chip (2026-08-08) | Catalog reports `entitled_via='admin'` fallback for Matrx admins (was a misleading "Not entitled"); chip shows "Admin access" | `migrations/library_catalog_admin_entitlement.sql` (applied + ledgered), `useLibraryCatalog.ts`, `EntitlementChip.tsx` |
 
 ### 2.2 PARTIAL — started, specific remainder
 
-- **Project/task/war-room conveyance is registered but inert until the product writes the edges.**
-  The `association_types` **rules** exist (so conveyance is *correct when an edge exists*), but
-  **zero `platform.associations` edges** of these kinds exist today, because the product attaches
-  files to **folders** (`file.parent_folder_id`), not projects, and no `folder→project` link
-  exists. **Remaining:** decide/verify how files & documents actually get attached to a project in
-  the product, and make that attach path write a `platform.associations` edge (source=item,
-  target=project/task, `role` per the edge). Until then a project member still won't see a file
-  "in" the project — because nothing records that it *is* in the project.
-- **`/health/version` reports `"unknown"` on prod** until the **next aidream deploy** ships the
-  `SOURCE_COMMIT` fix (the code is committed, not yet deployed).
+- **Attach surfaces (2026-08-08):** war-room (RoomResourcesButton/thread resources) and task
+  (TaskAttachmentsPanel) already wrote canonical edges via `associationsService`; the **project
+  workspace was the gap and is now wired** — its FK-count "Associated resources" section was
+  replaced with `PrimaryEntityProvider` + `AssociationCardGrid` (attach/detach/create-and-attach,
+  writes real `file/data_store/… → project` edges). Conveyance re-proven by rolled-back synthetic
+  probe: non-member denied → project editor-member gets **editor** on an attached file and viewer
+  on an attached data_store. **Remainder:** browser-verify the new project surface on prod after
+  the next FE release; edges only accumulate as users attach.
+  **Nuance discovered:** `iam.has_access_for` routes `file` through `files.has_access_for`, and
+  **crawl artifacts marked `system_immutable` are viewer-ceiling for everyone** — an editor-level
+  conveyance probe against such a file "fails" correctly. Probe with a non-crawl file.
+- **aidream prod deploy is STALE (blocking).** Arman's 2026-08-08 review found the library ingest
+  endpoint **404s on prod** (`POST /rag/library/stores/{id}/ingest` exists on aidream main; FE
+  path matches). `/health/version` also still unverified. Cloud agent sandboxes cannot reach
+  `server.app.matrxserver.com` (egress blocked) — a session with deploy rights must push/release
+  aidream and confirm `/health/version` + ingest answer.
 - **Convergence A (full-lifecycle clickthrough on prod):** create industry → ingest a fresh doc
   via admin UI → publish → org opts in → member finds/reads it + sees provenance. Every step is
   individually verified; the **single end-to-end run with a brand-new document and a fresh org**
@@ -256,15 +264,15 @@ chats/DMs default `personal`.
 
 ## 4. NEXT STEPS (prioritized — start at the top)
 
-1. **Make project/task file attachment write an association edge** (closes the biggest PARTIAL).
-   Find the product path that "adds a file/document to a project" (or decide it should exist),
-   and have it write `platform.associations (source_type='file', source_id=…,
-   target_type='project', target_id=…)`. The conveyance rule already exists, so the moment the
-   edge lands, a project member gets editor on the file. Verify with the synthetic pattern in §5.
-   Repeat for `data_store` / `working_document` / `processed_document` and for `task` / `war_room`.
-2. **Redeploy aidream** so `/health/version` reports the real SHA (currently `"unknown"`), and to
-   confirm the ingest/gate code is the newest. aidream auto-deploys on push to `main` (Coolify);
-   confirm via `GET https://server.app.matrxserver.com/health/version`.
+1. **Redeploy aidream + verify** (now BLOCKING two review-queue rows): prod 404s the library
+   ingest endpoint and `/health/version` is unverified. Push/release aidream `main` (Coolify
+   auto-deploys), then confirm `GET https://server.app.matrxserver.com/health/version` returns a
+   real SHA and the ingest path answers. Requires a session that can reach prod (cloud agent
+   sandboxes are egress-blocked from it).
+2. **Ship the FE branch + browser-verify** the new project "Associated resources" grid
+   (`/projects/[id]`) and the two review fixes ('Admin access' entitlement chip on
+   `/rag/library-catalog`; shared-knowledge console mobile targets), then flip the two claimed
+   `agent.review_queue` rows back to pending.
 3. **Run Convergence A once, end-to-end, on prod** with a fresh small PDF and a fresh org. This is
    the acceptance test for the whole shared-knowledge feature.
 4. **Begin the permissive-access sweep** (Vision #3). Audit over-restrictive gates on non-personal,

@@ -13,6 +13,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LineChart, Loader2, RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { extractErrorMessage } from "@/utils/errors";
@@ -101,6 +103,30 @@ export function SiteAnalyticsCard({
       engagedSessions: dayRows.reduce((sum, r) => sum + r.engaged_sessions, 0),
     }));
 
+  const analyticsCopy = webCopy({
+    kind: "web-site-analytics",
+    label: "Google Analytics evidence",
+    description:
+      "Persisted GA4 daily evidence for this site: every stored row plus the 14-day sessions/users/engagement rollup shown on screen.",
+    surface: "Site settings — Google Analytics",
+    data: { rows, daily_rollup: days },
+    lines: [
+      ["GA4", ga4Enabled ? "connected" : "not connected"],
+      ["Stored rows", rows?.length ?? 0],
+      ...days.map(
+        (day): [string, string] => [
+          day.date,
+          `${integer(day.sessions)} sessions · ${integer(day.users)} users · ${integer(day.engagedSessions)} engaged`,
+        ],
+      ),
+    ],
+    attributes: {
+      site_id: siteId,
+      stored_rows: rows?.length ?? 0,
+      ga4_enabled: ga4Enabled,
+    },
+  });
+
   return (
     <section className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="flex h-10 items-center justify-between gap-2 border-b border-border px-3">
@@ -113,24 +139,29 @@ export function SiteAnalyticsCard({
             {ga4Enabled ? "Connected" : "Not connected"}
           </Badge>
         </div>
-        <button
-          type="button"
-          onClick={() => void runSync()}
-          disabled={syncing || !ga4Enabled}
-          aria-label="Sync Google Analytics"
-          title={
-            ga4Enabled
-              ? "Run a GA4 landing-page collection for this site"
-              : "Bind a Google Analytics 4 property to this site first"
-          }
-          className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {syncing ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3.5 w-3.5" />
-          )}
-        </button>
+        <div className="flex items-center gap-1">
+          {rows && rows.length > 0 ? (
+            <CopyButtons size="icon" {...analyticsCopy} json={() => rows} />
+          ) : null}
+          <button
+            type="button"
+            onClick={() => void runSync()}
+            disabled={syncing || !ga4Enabled}
+            aria-label="Sync Google Analytics"
+            title={
+              ga4Enabled
+                ? "Run a GA4 landing-page collection for this site"
+                : "Bind a Google Analytics 4 property to this site first"
+            }
+            className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {syncing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </div>
       </div>
       <div className="grid gap-2 p-3">
         {error ? <p className="text-xs text-destructive">{error}</p> : null}

@@ -22,7 +22,10 @@ import {
   useGscTimeseries,
 } from "@/features/marketing/search-console/hooks/useGscQuery";
 import { gscSummaryCopy } from "@/features/marketing/search-console/lib/copy-payloads";
-import { resolvePeriods } from "@/features/marketing/search-console/lib/url-state";
+import {
+  resolveGscDataThrough,
+  resolvePeriods,
+} from "@/features/marketing/search-console/lib/url-state";
 import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
 import { GSC_DEFAULT_RANGE } from "@/features/marketing/search-console/types";
 import type {
@@ -80,12 +83,10 @@ export default function GscDrilldownWindow({
     "impressions",
   ]);
   const freshness = useGscFreshness(siteId);
-  const dataThrough = useMemo(() => {
-    const dates = (freshness.data ?? [])
-      .filter((r) => r.dimension_profile !== "search_appearance")
-      .map((r) => r.max_date);
-    return dates.length > 0 ? [...dates].sort().at(-1) ?? null : null;
-  }, [freshness.data]);
+  const dataThrough = useMemo(
+    () => resolveGscDataThrough(freshness.data),
+    [freshness.data],
+  );
   const periods = useMemo(
     () =>
       resolvePeriods({ range, customFrom, customTo, compare }, new Date(), dataThrough),

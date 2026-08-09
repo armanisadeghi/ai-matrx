@@ -28,7 +28,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import type { MarketingSite } from "@/features/marketing/types";
+import { useCompanyQuickResearch } from "@/features/research/hooks/useCompanyQuickResearch";
 import { useLatestSuccessfulResearchDocument } from "@/features/research/hooks/useResearchState";
+import { getLatestSuccessfulDocument } from "@/features/research/service";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { createContentPlanSetupScope } from "@/features/surfaces/manifests/content-plan-setup.manifest";
@@ -63,13 +65,17 @@ import {
   buildAvailableKeywordLines,
   buildCurrentPlanLines,
   buildCurrentPlanSummary,
+  buildGuidanceInputs,
   buildKeywordPlanLines,
+  buildSiteContext,
   REVIEWER_OUTPUT_CONTRACT,
   useSetupAgents,
   type EntityAttachPlan,
   type KeywordStrategyResult,
   type PlanReviewFinding,
   type PlanReviewResult,
+  type SetupGuidance,
+  type ShapePlanResult,
 } from "../ai";
 import { applyEntityAttachments } from "../entity-attach";
 import { applyKeywordStrategy, readNodeKeywordStrategy } from "../keyword-strategy";
@@ -103,6 +109,7 @@ import {
   parentRouteOf,
   slugOf,
 } from "./PlanReviewSection";
+import { BuildWithAiDialog } from "./BuildWithAiDialog";
 import { SetupAiBar, type SetupAiRunSummary } from "./SetupAiBar";
 import { SetupBridgeSection } from "./SetupBridgeSection";
 import { SetupPreviewColumn } from "./SetupPreviewColumn";
@@ -231,6 +238,8 @@ export function SetupView() {
 
   // ── AI grounding + step agents ──────────────────────────────────────────
   const [researchTopicId, setResearchTopicId] = useState<string | null>(null);
+  const [draftingWorkOrder, setDraftingWorkOrder] = useState(false);
+  const [buildDialogOpen, setBuildDialogOpen] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [lastAiRun, setLastAiRun] = useState<SetupAiRunSummary | null>(null);
   const [review, setReview] = useState<PlanReviewResult | null>(null);
@@ -251,6 +260,7 @@ export function SetupView() {
   // Newest SUCCESSFUL report — matches aidream's `_load_research_report`, so
   // a failed re-assembly never hides a perfectly good older report.
   const researchDoc = useLatestSuccessfulResearchDocument(researchTopicId ?? "");
+  const quickResearch = useCompanyQuickResearch();
   const agents = useSetupAgents(siteId);
   const researchReport =
     researchDoc.data?.status === "success" && researchDoc.data.content?.trim()
@@ -258,6 +268,7 @@ export function SetupView() {
       : null;
   // The runner permits ONE run at a time — every AI control reads this.
   const anyAgentBusy =
+    draftingWorkOrder ||
     agents.shapeBusy ||
     agents.namingFamilyKey !== null ||
     agents.entitiesBusy ||
@@ -413,7 +424,6 @@ export function SetupView() {
           toast.error(`Setup draft not saved: ${extractErrorMessage(error)}`);
         });
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const archetypes = library.data?.archetypes ?? [];
@@ -584,50 +594,125 @@ export function SetupView() {
   };
 
   // ── the AI steps — read the research report, stage into THIS state ──────
+
+  /**
+   * Select a research topic AND record the site↔research link — aidream's
+   * generator and deepen read the same key, so one pick grounds every later
+   * AI step. Shared by the picker and the quick-create flow below.
+   */
+  const selectTopic = (topicId: string | null) => {
+    setResearchTopicId(topicId);
+    setAiError(null);
+    if (siteId) {
+      void recordSiteResearchTopic(siteId, topicId)
+        .then(() => invalidateSiteOptions())
+        .catch((error) => {
+          toast.error(
+            `Research link not recorded on the site: ${extractErrorMessage(error)}`,
+          );
+        });
+    }
+  };
+
+  /**
+   * No research yet? Create it FROM HERE: one confirmed click runs the whole
+   * company-research pipeline (topic from the "Company Research" template →
+   * search → scrape → analyze → synthesize → final Document) and lands the
+   * report back in this bar. The topic is selected + linked the moment it
+   * exists, so even an interrupted run leaves the site pointing at it.
+   */
+  const handleCreateResearch = async () => {
+    if (!site) return;
+    const ok = await confirm({
+      title: `Research ${site.name}?`,
+      description:
+        "Runs the full company research pipeline (search → scrape → analyze → synthesize → report) " +
+        "for this site's company. It takes several minutes and spends real AI credits. Keep this tab " +
+        "open — the finished report lands here and grounds every AI step automatically.",
+      confirmLabel: "Start research",
+    });
+    if (!ok) return;
+    setAiError(null);
+    try {
+      await quickResearch.run({
+        organizationId: site.organization_id,
+        companyName: site.name,
+        websiteUrl: site.root_url || site.domain,
+        onTopicCreated: (topic) => selectTopic(topic.id),
+      });
+      researchDoc.refresh();
+      toast.success(
+        "Research report ready — the AI steps are now grounded in it.",
+      );
+    } catch (error) {
+      toast.error(`Company research failed: ${extractErrorMessage(error)}`);
+    }
+  };
+
+  /** The Shape Planner's variables — one builder so every caller agrees. */
+  const shapePlannerVariables = (
+    report: string,
+    guidance = "",
+    targetPageCount = "",
+  ) => ({
+    research_report: report,
+    site_domain: site?.domain ?? site?.name ?? "",
+    site_context: site ? buildSiteContext(site) : "",
+    archetype_options: buildArchetypeOptionsJson(archetypes, baseline),
+    current_plan_summary: buildCurrentPlanSummary(committed, nodeRows),
+    target_page_count: targetPageCount,
+    guidance,
+  });
+
+  /**
+   * Validate + stage a Shape Planner result into this view's state. Shared by
+   * the single-step "Recommend shape" button and the whole-work-order draft —
+   * one staging path so the two can never disagree on what "applied" means.
+   */
+  const stageShapePlan = (plan: ShapePlanResult) => {
+    if (!archetypes.some((item) => item.key === plan.archetypeKey)) {
+      throw new Error(
+        `The planner picked "${plan.archetypeKey}", which is not in the shape library — nothing was applied.`,
+      );
+    }
+    const validFamilies = new Set(
+      (baseline.get(plan.archetypeKey)?.families ?? []).map((item) => item.key),
+    );
+    const recommendedCounts: Record<string, number> = {};
+    for (const item of plan.familyCounts) {
+      if (validFamilies.has(item.familyKey)) {
+        recommendedCounts[item.familyKey] = item.count;
+      }
+    }
+    setPickedKey(plan.archetypeKey);
+    setResult(null);
+    setCountsByArchetype((current) => ({
+      ...current,
+      [plan.archetypeKey]: recommendedCounts,
+    }));
+    const conceptNameMap = Object.fromEntries(
+      plan.conceptNames.map((item) => [item.conceptKey, item.name]),
+    );
+    if (plan.conceptNames.length > 0) {
+      setConceptNamesByArchetype((current) => ({
+        ...current,
+        [plan.archetypeKey]: {
+          ...(current[plan.archetypeKey] ?? {}),
+          ...conceptNameMap,
+        },
+      }));
+    }
+    return { recommendedCounts, conceptNameMap };
+  };
+
   const handleRecommendShape = async () => {
     if (!researchReport || !site) return;
     setAiError(null);
     try {
-      const plan = await agents.recommendShape({
-        research_report: researchReport,
-        site_domain: site.domain ?? site.name ?? "",
-        site_context: "",
-        archetype_options: buildArchetypeOptionsJson(archetypes, baseline),
-        current_plan_summary: buildCurrentPlanSummary(committed, nodeRows),
-        target_page_count: "",
-        guidance: "",
-      });
-      if (!archetypes.some((item) => item.key === plan.archetypeKey)) {
-        throw new Error(
-          `The planner picked "${plan.archetypeKey}", which is not in the shape library — nothing was applied.`,
-        );
-      }
-      const validFamilies = new Set(
-        (baseline.get(plan.archetypeKey)?.families ?? []).map((item) => item.key),
+      const plan = await agents.recommendShape(
+        shapePlannerVariables(researchReport),
       );
-      const recommendedCounts: Record<string, number> = {};
-      for (const item of plan.familyCounts) {
-        if (validFamilies.has(item.familyKey)) {
-          recommendedCounts[item.familyKey] = item.count;
-        }
-      }
-      setPickedKey(plan.archetypeKey);
-      setResult(null);
-      setCountsByArchetype((current) => ({
-        ...current,
-        [plan.archetypeKey]: recommendedCounts,
-      }));
-      if (plan.conceptNames.length > 0) {
-        setConceptNamesByArchetype((current) => ({
-          ...current,
-          [plan.archetypeKey]: {
-            ...(current[plan.archetypeKey] ?? {}),
-            ...Object.fromEntries(
-              plan.conceptNames.map((item) => [item.conceptKey, item.name]),
-            ),
-          },
-        }));
-      }
+      const { recommendedCounts } = stageShapePlan(plan);
       const countSummary = Object.entries(recommendedCounts)
         .map(([key, value]) => `${key} × ${value}`)
         .join(", ");
@@ -638,6 +723,178 @@ export function SetupView() {
       });
     } catch (error) {
       setAiError(extractErrorMessage(error));
+    }
+  };
+
+  /**
+   * The whole work order in one pass: shape + counts + every family's real
+   * names + count-only topics, all staged from the research report, steered
+   * (never bound) by the user's Build-with-AI hints. The user reviews the
+   * exact routes and hits "Create N pages" — the agent never writes a page.
+   *
+   * Sequential on purpose: the runner allows one agent run at a time, and each
+   * step's live status lands in the AI bar so the wait is never silent.
+   */
+  const runDraftWorkOrder = async (report: string, hints: SetupGuidance) => {
+    if (!site) return;
+    const { guidance, targetPageCount } = buildGuidanceInputs(hints);
+    {
+      setLastAiRun({
+        kind: "shape",
+        headline: "Drafting the work order — reading the report, picking the shape…",
+      });
+      const plan = await agents.recommendShape(
+        shapePlannerVariables(report, guidance, targetPageCount),
+      );
+      const { recommendedCounts, conceptNameMap } = stageShapePlan(plan);
+      const archetype =
+        archetypes.find((item) => item.key === plan.archetypeKey) ?? null;
+      const draftExpansion = expandSafely(
+        archetype,
+        recommendedCounts,
+        {},
+        catalog,
+        conceptNameMap,
+      );
+      if (!draftExpansion.expanded) {
+        throw new Error(
+          draftExpansion.error ??
+            "The recommended shape could not be expanded — shape and counts were staged, names were not.",
+        );
+      }
+      // Names the LIVE plan already carries — a family that is fully named by
+      // real pages is skipped, exactly like the manual flow adopts them.
+      const planDerivedNames = namesFromPlan(
+        draftExpansion.expanded.families,
+        nodeRows,
+      );
+      // The draft NEVER overwrites staged user work: a family the user already
+      // named/pasted (or a prior run named), and count-only topics already
+      // staged, are left alone — the per-family buttons re-run explicitly.
+      const stagedNames = namesByArchetype[plan.archetypeKey] ?? {};
+      const stagedTopics = topicsByArchetype[plan.archetypeKey] ?? {};
+      let namedFamilies = 0;
+      for (const family of draftExpansion.expanded.families) {
+        const target = recommendedCounts[family.key] ?? family.count;
+        if (target <= 0) continue;
+        const commonVariables = {
+          research_report: report,
+          site_domain: site.domain ?? site.name ?? "",
+          family_key: family.key,
+          family_label: family.label,
+          family_route: family.route,
+          target_count: String(target),
+        };
+        if (family.materialize === "pages") {
+          if ((stagedNames[family.key]?.length ?? 0) > 0) continue;
+          if ((planDerivedNames[family.key]?.length ?? 0) >= target) continue;
+          setLastAiRun({
+            kind: "names",
+            headline: `Drafting — naming the ${family.label.toLowerCase()} pages…`,
+          });
+          const outcome = await agents.nameFamily(family.key, {
+            ...commonVariables,
+            existing_names: (planDerivedNames[family.key] ?? []).join("\n"),
+            guidance,
+          });
+          const labels = outcome.names.map((item) => item.label);
+          setNamesByArchetype((current) => ({
+            ...current,
+            [plan.archetypeKey]: {
+              ...(current[plan.archetypeKey] ?? {}),
+              [family.key]: labels,
+            },
+          }));
+          // A name list SETS the count — same rule as the manual paste box.
+          setCountsByArchetype((current) => {
+            const forArchetype = { ...(current[plan.archetypeKey] ?? {}) };
+            delete forArchetype[family.key];
+            return { ...current, [plan.archetypeKey]: forArchetype };
+          });
+          namedFamilies += 1;
+        } else {
+          if ((stagedTopics[family.key]?.length ?? 0) > 0) continue;
+          setLastAiRun({
+            kind: "names",
+            headline: `Drafting — planning the ${family.label.toLowerCase()} topics…`,
+          });
+          const outcome = await agents.nameFamily(family.key, {
+            ...commonVariables,
+            existing_names: "",
+            guidance:
+              `These are ARTICLE TITLES for the ${family.label} section at ${family.route} — ` +
+              "each one is a publishable piece, not a navigation page. Titles should reflect " +
+              "real search demand and the audiences the report identifies." +
+              (guidance ? `\n${guidance}` : ""),
+          });
+          setTopicsByArchetype((current) => ({
+            ...current,
+            [plan.archetypeKey]: {
+              ...(current[plan.archetypeKey] ?? {}),
+              [family.key]: outcome.names.map((item) => item.label),
+            },
+          }));
+          namedFamilies += 1;
+        }
+      }
+      setLastAiRun({
+        kind: "shape",
+        headline:
+          `Work order drafted: "${plan.archetypeKey}" with ${namedFamilies} ` +
+          `named famil${namedFamilies === 1 ? "y" : "ies"} — review the routes on the right, hit "Create pages", ` +
+          "then run Plan keywords / Assign entities / Plan review below.",
+        detail: plan.rationale,
+      });
+    }
+  };
+
+  /**
+   * "Build with AI" — the guided flow. The dialog's answers arrive as HINTS;
+   * when no report exists this FIRST runs the whole research pipeline (the
+   * dialog said so, with the cost), then drafts the work order from the fresh
+   * report. Bounded by design: everything stages; the live plan is untouched
+   * until the user approves the routes.
+   */
+  const handleBuildWithAi = async (hints: SetupGuidance) => {
+    if (!site) return;
+    setBuildDialogOpen(false);
+    setAiError(null);
+    setDraftingWorkOrder(true);
+    try {
+      let report = researchReport;
+      // A topic can be SELECTED while its document query is still loading (or
+      // this hook's copy is stale) — check the DB directly before ever paying
+      // for a new pipeline. New research runs ONLY when the selected topic
+      // truly has no successful report, or no topic is selected at all.
+      if (!report && researchTopicId) {
+        const existing = await getLatestSuccessfulDocument(researchTopicId);
+        report = existing?.content?.trim() || null;
+        // Sync the hook copy so the bar + every aiReady control light up too.
+        if (report) researchDoc.refresh();
+      }
+      if (!report) {
+        const topic = await quickResearch.run({
+          organizationId: site.organization_id,
+          companyName: site.name,
+          websiteUrl: site.root_url || site.domain,
+          onTopicCreated: (created) => selectTopic(created.id),
+        });
+        researchDoc.refresh();
+        // The hook state is async — read the fresh report DIRECTLY so the
+        // draft grounds on it this pass, not on a stale closure.
+        const doc = await getLatestSuccessfulDocument(topic.id);
+        report = doc?.content?.trim() || null;
+        if (!report) {
+          throw new Error(
+            "Research finished but no report content was found — open the topic in Research and re-run Document assembly.",
+          );
+        }
+      }
+      await runDraftWorkOrder(report, hints);
+    } catch (error) {
+      setAiError(extractErrorMessage(error));
+    } finally {
+      setDraftingWorkOrder(false);
     }
   };
 
@@ -1440,30 +1697,32 @@ export function SetupView() {
 
       <SetupAiBar
         selectedTopicId={researchTopicId}
-        onSelectTopic={(topicId) => {
-          setResearchTopicId(topicId);
-          setAiError(null);
-          // Record the site↔research link — aidream's generator and deepen
-          // read the same key, so one pick grounds every later AI step.
-          if (siteId) {
-            void recordSiteResearchTopic(siteId, topicId)
-              .then(() => invalidateSiteOptions())
-              .catch((error) => {
-                toast.error(
-                  `Research link not recorded on the site: ${extractErrorMessage(error)}`,
-                );
-              });
-          }
-        }}
+        onSelectTopic={selectTopic}
+        onCreateResearch={() => void handleCreateResearch()}
+        researchStage={quickResearch.stage}
         document={researchDoc.data ?? null}
         documentLoading={Boolean(researchTopicId) && researchDoc.isLoading}
         onRecommendShape={() => void handleRecommendShape()}
         shapeBusy={agents.shapeBusy}
+        onBuildWithAi={() => setBuildDialogOpen(true)}
+        draftBusy={draftingWorkOrder}
         anyAgentBusy={anyAgentBusy}
         lastRun={lastAiRun}
         error={aiError}
         onDismissError={() => setAiError(null)}
       />
+
+      {site ? (
+        <BuildWithAiDialog
+          open={buildDialogOpen}
+          onOpenChange={setBuildDialogOpen}
+          siteName={site.name}
+          reportReady={Boolean(researchReport)}
+          reportPending={Boolean(researchTopicId) && !researchReport}
+          busy={draftingWorkOrder}
+          onSubmit={(hints) => void handleBuildWithAi(hints)}
+        />
+      ) : null}
 
       {/* Mobile: ONE page scroll, panels stacked at natural height. md+: a
         fixed grid where each column owns its own scroll. */}

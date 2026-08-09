@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-28
+updated: 2026-08-08
 repos: [matrx-frontend]
 vision: [features/marketing/FEATURE.md, .claude/skills/module-landing-pages/SKILL.md, lib/coming-soon/FEATURE.md]
 ---
@@ -120,29 +120,26 @@ to end clean structured setup for this major feature 'marketing'."**
 
 ### 2.1 Done and verified
 
-| Area | Evidence |
-| --- | --- |
-| `/content-plan` → `/marketing/content-plan` (308 permanent) | `next.config.js`; verified live on `www.aimatrx.com` |
-| `/seo/keyword-research` → `/marketing/keyword-research` (308) | same |
-| `features/content-plan/` → `features/marketing/content-plan/` | ~50 import sites updated |
-| `features/seo/` → `features/marketing/seo/` | same; `(core)/seo` directory deleted entirely |
-| `/marketing` is a real multi-pillar hub, not a redirect | `app/(core)/marketing/page.tsx` + `features/marketing/components/MarketingHub.tsx` |
-| Single-source structure | `features/marketing/lib/marketing-nav.ts` (`MARKETING_PILLARS`) |
-| Shell sidebar GENERATED from that source | `marketingNavChildren()` in `features/shell/constants/nav-data.ts` — 26 children in 9 pillar subgroups |
-| Reserved-route metadata GENERATED from that source | `RESERVED_ROUTES` in `features/marketing/lib/route-metadata.ts` |
-| 16 reserved routes render + return 200 | `app/(core)/marketing/{campaigns,calendar,audience,local,ranks,ai-visibility,content-studio,social,email,ads,outreach,competitors,monitoring,analytics,reports,automations}/page.tsx` |
-| All 16 promises tracked | 16 `marketing.*` rows in `lib/coming-soon/registry.ts` |
-| Public `/marketing/tools` index of the 5 public analyzers | `app/(core)/marketing/tools/page.tsx` |
-| Guest landing on ANY `/marketing/*` URL, no login wall | `app/(core)/marketing/layout.tsx` server branch → `MarketingLanding` |
-| Landing registered on `/features` | `MODULE_LANDING_DIRECTORY` |
-| Landing sub-areas GENERATED from the same source | `listMarketingLandingAreas()` — status derived from whether a pillar has any live entry; href prefers a built surface |
-| Admin map covers all 16 reserved routes | `app/(core)/marketing/admin/page.tsx` |
-| **`/marketing/ranks` SHIPPED (2026-07-28)** — 15 reserved routes remain | `CrossSiteRanksHub.tsx` + `cross-site-data.ts`; registry row deleted |
-| Public `/seo` index single-sourced (2026-07-28); 11 planned analyzers registered as `marketing.tools.*` promises | `MARKETING_PUBLIC_TOOL_CATEGORIES` in `marketing-nav.ts` |
+**The module SHAPE is finished and live.** Route consolidation (`/content-plan`
+and `/seo/keyword-research` 308 into `/marketing/*`; `features/seo` +
+`features/content-plan` moved under `features/marketing/`), the eight-pillar hub,
+the guest landing on every `/marketing/*` URL, and the admin map all shipped and
+were verified in production (v0.4.189–191). Everything that renders a map of the
+module — sidebar, hub, landing sub-areas, reserved-route metadata, `/marketing/tools`
+— is GENERATED from `MARKETING_PILLARS`, so a surface cannot exist in one menu
+and be missing from another.
 
-**Deployed:** CONFIRMED 2026-07-28 — releases v0.4.189–191 shipped after the
-build-out, and `www.aimatrx.com/marketing`, `/marketing/campaigns`, and
-`/marketing/ranks` all return 200 in production.
+**Reserved routes: 15 of 16 remain.** `/marketing/ranks` shipped 2026-07-28 and
+is the reference for how to ship one (build the real page at the same URL, delete
+the `lib/coming-soon/registry.ts` row, drop `status` from the nav entry, add a
+FEATURE.md change-log line, register the surface manifest).
+
+**GSC ambassador (2026-08-08).** Traffic-class decomposition no longer lives only
+on `/marketing/search-console`: `features/marketing/search-console/components/ambassador/`
+puts it on site overview, the sites-list hovercard, and brand pages, backed by the
+new `seo.gsc_perf_class_summary_multi` RPC. Verified against live data
+(vasaro.com reads 72% brand / 0% money — an insight the raw "255 clicks" hid).
+See that FEATURE.md § The ambassador.
 
 ### 2.2 Partial — started, specifically unfinished
 
@@ -283,29 +280,27 @@ Check `pnpm dev:status` first — several servers usually run already.
 
 ## 4. Next steps, in order
 
-(2026-07-28: type-check/deploy verification, the duplicate tool index collapse,
-and the `/marketing/ranks` ship are DONE — see §2.1/Done. Ranks is the reference
-implementation for "how we ship a reserved route": build the real page at the
-same URL, delete the registry row, drop `status` from the nav entry, add a
-FEATURE.md change-log line. Its surface manifest shipped 2026-07-28 — §2.2.1.)
+1. **Finish the ambassador sweep (cheapest real value).** PageWorkspace and its
+   cards still show RAW GSC (`PageSearchConsoleCard`, `PageQueriesCard`,
+   `PageTargetPerformanceCard`, `PagesTable`, `SitesPortfolio` columns). Per-query
+   class chips need a keyword-text → class resolver that does not exist yet
+   (`seo.gsc_keyword_class_map` keys on `keyword_id`); a page-level class split
+   needs a page-filtered variant of `gsc_perf_class_summary`. Decide which, then
+   reuse `GscClassBar`.
 
-1. **Decide the access-asymmetry question (§2.2.2).** (The cross-site ranks
-   surface manifest is DONE — §2.2.1.)
+2. **`/marketing/campaigns`.** Highest-leverage reserved surface: social, email,
+   ads, and outreach all report into it, so building the campaign entity first
+   prevents four incompatible designs. Needs a migration — ask Arman before
+   designing the schema.
 
-2. **Then `/marketing/campaigns`.** It is the highest-leverage reserved surface
-   because every other channel (social, email, ads, outreach) reports into it —
-   building the campaign entity first prevents four incompatible designs. Needs a
-   migration; ask Arman before designing the schema.
+3. **`/marketing/analytics` and `/marketing/reports`.** Both read providers already
+   bound in `/marketing/connections`. NOTE: `seo.web_analytics_daily` is EMPTY
+   (0 rows) and `web.finding` is empty — analytics has no GA4 data to render yet,
+   so `reports` over GSC is the better first build.
 
-5. **`/marketing/analytics` and `/marketing/reports`.** Both read from providers
-   already bound in `/marketing/connections` (GSC, GA4, Bing) — no new
-   integrations, mostly aggregation and layout. `reports` is the agency
-   deliverable and probably the highest perceived value per hour of work.
+4. **The access-asymmetry question (§2.2.2)** — still open.
 
-Everything else is a genuine greenfield build; take them in whatever order Arman
-prioritizes.
-
----
+Everything else is genuine greenfield; order is Arman's call.
 
 ## 5. Gotchas
 

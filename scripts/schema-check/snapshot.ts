@@ -65,7 +65,10 @@ function finalize(
 function fromFeFormat(raw: any): Snapshot {
   return finalize(
     raw.generated_at ?? "unknown",
-    "schema_truth_snapshot() RPC (live)",
+    // The file is a cached pull, not a per-run query — say so, with its age.
+    // (A rename applied after the last pull once flagged 11 phantom errors
+    // while this label claimed "live".)
+    `schema_truth_snapshot() RPC (cached ${raw.generated_at ?? "unknown"}; refresh: pnpm check:schema:snapshot)`,
     "rpc",
     toMap(raw.schemas),
     toMap(raw.views),

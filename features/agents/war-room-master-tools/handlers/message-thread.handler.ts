@@ -8,7 +8,7 @@
  *     seeded with the thread's OWN read-only context (its task / notes / files
  *     via `buildThreadAgentContextEntries`) plus the master's message. No prior
  *     chat history. Recipe = the spec's FRESH INSTANCE path:
- *       createManualInstance({ agentId: WAR_ROOM_THREAD_AGENT_ID,
+ *       createManualInstance({ agentId: <war_room.thread slot>,
  *         apiEndpointMode:"agent", allowChat:true })
  *       → setContextEntries(tile entries) → setUserInputText → executeInstance.
  *
@@ -23,10 +23,13 @@
  * concise tool result. We never throw: a failed thread run becomes an `ok:false`
  * result the master can reason about.
  *
- * AGENT: the thread agent is `WAR_ROOM_THREAD_AGENT_ID` — the dedicated Thread
- * persona that every tile "Agent+" panel defaults to (knows its thread role and
- * can list/read the user's data via the `data` tool). When the master/room
+ * AGENT: the thread agent resolves from the `war_room.thread` AGENT SLOT — the
+ * dedicated Thread persona that every tile "Agent+" panel defaults to (knows
+ * its thread role and can list/read the user's data via the `data` tool), or
+ * whatever the admin/user has bound in its place. When the master/room
  * delegates a message into a thread, the thread answers as that same persona.
+ * A slot that will not resolve returns `ok:false` to the master — it never
+ * falls back to a hardcoded id.
  */
 
 import { toast } from "@/lib/toast";
@@ -42,7 +45,8 @@ import { loadWarRoomSession } from "@/features/war-room/redux/thunks";
 import { listRoomIdsForThread } from "@/features/war-room/service/associations";
 import { buildThreadAgentContextEntries } from "@/features/war-room/service/warRoomAgentContext";
 import { selectThreadById } from "@/features/war-room/redux/selectors";
-import { WAR_ROOM_THREAD_AGENT_ID } from "@/features/war-room/constants";
+import { WAR_ROOM_THREAD_AGENT_SLOT } from "@/features/war-room/constants";
+import { resolveAgentSlot } from "@/features/agents/slots/service";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { forkConversationServer } from "@/features/agents/redux/execution-system/message-crud/server/fork-conversation-server.thunk";
@@ -174,9 +178,10 @@ export const messageThreadHandler: WarRoomMasterToolHandler<
         thread.id,
       );
 
+      const threadSlot = await resolveAgentSlot(WAR_ROOM_THREAD_AGENT_SLOT);
       const conversationId = await dispatch(
         createManualInstance({
-          agentId: WAR_ROOM_THREAD_AGENT_ID,
+          agentId: threadSlot.agentId,
           apiEndpointMode: "agent",
           sourceFeature: "agent-runner",
           allowChat: true,

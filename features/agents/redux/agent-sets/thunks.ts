@@ -10,6 +10,7 @@ import type { RootState } from "@/lib/redux/rootReducer";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { agentSetsService } from "@/features/agents/agent-sets/service/agentSetsService";
 import type { AgentSetConfig, AgentSetMember, AgentSetMemberMeta } from "@/features/agents/agent-sets/types";
+import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { agentSetsActions } from "./slice";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
@@ -20,6 +21,41 @@ export interface SetWriteResult {
 }
 
 const listInFlight = { p: null as Promise<void> | null };
+
+// Member-agent hydration in flight (module-level: `setAgentLoading` is a no-op
+// for ids that don't exist in the agentDefinition slice yet, so the slice can't
+// dedupe these fetches itself).
+const memberHydrationInFlight = new Set<string>();
+
+/**
+ * Batch-hydrate member agents that aren't in the agentDefinition slice.
+ *
+ * `initializeChatAgents` only loads the user's own gallery (`agx_get_list`), so
+ * a member agent shared-with-you via the set renders the "Agent" fallback name
+ * in AgentRoleCard until its definition is fetched. Sets are small, so parallel
+ * `fetchFullAgent` calls (the canonical single-agent fetch) are fine. Guarded
+ * against refetch loops: only ids absent from state and not already in flight
+ * are fetched; failures (e.g. access revoked) reject their thunk action and are
+ * not retried here.
+ */
+function hydrateMissingMemberAgents(members: AgentSetMember[]): AppThunk<void> {
+  return (dispatch, getState) => {
+    const loaded = getState().agentDefinition.agents;
+    const missing = members
+      .map((m) => m.agentId)
+      .filter((id) => id && !loaded[id] && !memberHydrationInFlight.has(id));
+    if (missing.length === 0) return;
+
+    for (const id of missing) {
+      memberHydrationInFlight.add(id);
+      // createAsyncThunk promises never throw un-unwrapped; fire-and-forget so
+      // set loading is never blocked on member hydration.
+      void dispatch(fetchFullAgent(id)).finally(() => {
+        memberHydrationInFlight.delete(id);
+      });
+    }
+  };
+}
 
 /** Load every set the user can see. Deduped; `status === "ready"` short-circuits. */
 export function fetchAgentSets(opts?: { force?: boolean }): AppThunk<Promise<void>> {
@@ -63,6 +99,9 @@ export function loadAgentSet(
       );
     } else {
       dispatch(agentSetsActions.detailFulfilled(res.data));
+      // Shared-member hydration: members outside the user's own agents slice
+      // (shared-with-you) need their definitions fetched or they render "Agent".
+      dispatch(hydrateMissingMemberAgents(res.data.members));
     }
   };
 }
