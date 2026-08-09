@@ -82,7 +82,7 @@ export function MessagingSideSheet() {
     <div
       className={cn(
         "fixed top-10 right-0 bottom-0 z-40",
-        "flex flex-col",
+        "flex flex-col pb-[env(safe-area-inset-bottom)]",
         "bg-background border-l border-zinc-200 dark:border-zinc-800",
         "shadow-lg"
       )}

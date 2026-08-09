@@ -91,7 +91,7 @@ export default function EditTabLayout({ title, subtitle, tabs, id, onSave, hasCh
     };
 
     return (
-        <div className="space-y-6 pb-20">
+        <div className="space-y-6 pb-[calc(4rem+max(1rem,env(safe-area-inset-bottom)))]">
             {/* Fullscreen preview component */}
             <FullScreenAppletPreview
                 appletId={id}
@@ -189,7 +189,7 @@ export default function EditTabLayout({ title, subtitle, tabs, id, onSave, hasCh
                 </div>
             </Tabs>
 
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-textured border-t border-border z-10">
+            <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-textured border-t border-border z-10">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <Button variant="outline" onClick={handleBack} className="flex items-center gap-2">

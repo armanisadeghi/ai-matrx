@@ -99,7 +99,7 @@ export default function MobileLayout({
         </div>
 
         {/* Sidebar Content - Scrollable */}
-        <nav className="flex-1 overflow-y-auto p-4">
+        <nav className="flex-1 overflow-y-auto px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {/* Primary Links */}
           <div className="mb-6">
             <ul className="space-y-1">

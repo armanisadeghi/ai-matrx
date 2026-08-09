@@ -31,7 +31,7 @@ export function YouTubeVideoPreviewPage({ videoId }: { videoId: string }) {
 
   if (error) {
     return (
-      <main className="grid min-h-screen place-items-center bg-background p-6 text-foreground dark:bg-[#07090d] dark:text-zinc-100">
+      <main className="grid min-h-dvh place-items-center bg-background p-6 text-foreground dark:bg-[#07090d] dark:text-zinc-100">
         <div className="max-w-lg rounded-3xl border border-red-500/30 bg-red-500/10 p-7 text-center text-red-700 dark:text-red-200">
           {error}
         </div>
@@ -41,7 +41,7 @@ export function YouTubeVideoPreviewPage({ videoId }: { videoId: string }) {
 
   if (!video) {
     return (
-      <main className="grid min-h-screen place-items-center bg-background text-muted-foreground dark:bg-[#07090d] dark:text-zinc-400">
+      <main className="grid min-h-dvh place-items-center bg-background text-muted-foreground dark:bg-[#07090d] dark:text-zinc-400">
         <div className="flex items-center gap-3">
           <LoaderCircle className="h-5 w-5 animate-spin" />
           Loading video preview…
