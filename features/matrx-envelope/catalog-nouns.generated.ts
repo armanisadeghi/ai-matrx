@@ -41,6 +41,10 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "workbench.working_documents",
   "title_column": "title"
  },
+ "expertise_pack": {
+  "table": "platform.expertise_pack",
+  "title_column": "name"
+ },
  "conversation": {
   "table": "chat.conversation",
   "title_column": "title"

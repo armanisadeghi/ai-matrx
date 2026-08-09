@@ -8,7 +8,7 @@ The USER/ORG-facing override surface (browse slots, provenance, write `slot_bind
 
 ## The two laws (Arman's ruling, 2026-08-08 — violations are defects, fix on sight)
 
-1. **THE SYSTEM-AGENT LAW.** A slot DEFAULT may only reference a **system agent** (`agent_type='builtin'`, system-org owned, no user). A personal/shared/org agent pinned as a slot default breaks every user the slot serves — it fails the moment ownership, visibility, or archival shifts, and it fails on some page far from where it was pinned. The console picker therefore offers ONLY system agents; any row whose default drifts to a non-builtin shows a destructive **"NOT a system agent — fix this pin"** badge; aidream's `sync_declared_slots` screams the same on every boot. Promote an agent to system via `agx_duplicate_agent(p_as_system => true)`, then pin the promoted copy. (User/org OVERRIDE bindings are the opposite case — those are *supposed* to be the principal's own agents.)
+1. **THE SYSTEM-AGENT LAW.** A slot DEFAULT may only reference a **system agent** (`agent_type='builtin'`, system-org owned, no user). A personal/shared/org agent pinned as a slot default breaks every user the slot serves — it fails the moment ownership, visibility, or archival shifts, and it fails on some page far from where it was pinned. The console picker therefore offers ONLY system agents; any row whose default drifts to a non-builtin shows a destructive **"NOT a system agent — fix this pin"** badge; aidream's `sync_declared_slots` screams the same on every boot. Promote an agent to system via `agx_duplicate_agent(p_as_system => true)`, then pin the promoted copy. (User/org OVERRIDE bindings are the opposite case — those are _supposed_ to be the principal's own agents.)
    A super-admin promotion may copy a private source on the platform's behalf;
    the normal personal-copy path still requires viewer access. This split is
    enforced by `agx_duplicate_agent` / `agx_duplicate_version` and recorded in
@@ -21,7 +21,7 @@ The USER/ORG-facing override surface (browse slots, provenance, write `slot_bind
 
 ## Console shape (2026-08-08 rebuild)
 
-The list is the canonical `MatrxDataTable` (`components/official/matrx-data-table`) — every column sorts + filters, global search, Copy/Copy-for-AI (row + this view), pagination, UUID cell on `id`. Derived `SlotRow` adds a filterable **Health** column (`ok` / `version drift` / `agent archived` / `not a system agent` — worst-first). Row click → side-panel workbench (`SlotDetail`): pin editor + test bench + overrides; the WindowPanel Edit tab reuses the same body. `SlotEditor`/`SlotTestBench` seed local state from props, so `SlotDetail` keys them by slot id — dropping the key regresses to stale cross-slot state (bug found 2026-08-08).
+The list is the canonical `MatrxDataTable` (`components/official/matrx-data-table`) — every column sorts + filters, global search, Copy/Copy-for-AI (row + this view), pagination, UUID cell on `id`. Derived `SlotRow` adds a filterable **Health** column (`ok` / `version drift` / `agent archived` / `not a system agent` — worst-first). Row click → side-panel workbench (`SlotDetail`): pin editor + test bench + overrides; the WindowPanel Edit tab reuses the same body. All three agent choices are compact `AgentListDropdown` controls: the selected agent stays visible, while the catalogues mount only on demand. `SlotEditor`/`SlotTestBench` seed local state from props, so `SlotDetail` keys them by slot id — dropping the key regresses to stale cross-slot state (bug found 2026-08-08).
 
 ## THE DOOR LAW on this console (2026-08-08)
 
@@ -38,6 +38,8 @@ Doctrine: `/Users/armanisadeghi/code/common-docs/policies/no-dead-ends.md`; reci
 The page is the `matrx-admin/agent-slots` surface (`features/surfaces/manifests/agent-slots.manifest.ts`, readiness `partial`; route mapped in `features/surfaces/utils/route-to-surface.ts`; `ui.ui_surface` + values synced live 2026-08-08). `AgentSlotsConsole` mounts `<SurfaceRuntimeProvider>` and builds the Run-time scope via `createAgentSlotsScope` — slot list summary, health roll-up, system-agent picker count, and the selected slot's id/detail/health/overrides. Test-bench state (exemplars, candidate runs) stays in `SlotTestBench` local state and is NOT in the scope yet — lifting it promotes readiness.
 
 ## Change Log
+
+- 2026-08-09 — Replaced the three permanently expanded agent catalogues in the slot workbench (default pin, test candidate, and principal override) with the canonical `AgentListDropdown`. Each trigger now shows its selected agent or default state; opening it preserves the existing search, ownership scopes, filters, previews, record doors, and mobile drawer.
 
 - 2026-08-09 — The slot picker now enforces the System-Agent Law at all three visible boundaries: only the **System** ownership tab exists, a legacy personal pin is not repeated as a selectable "Current agent," and Save rejects any id outside the loaded builtin-agent set. The shared `AgentListInlinePicker` gained reusable ownership-tab visibility, system-label, pinned-row, and per-record-route controls instead of a one-off slot picker fork.
 

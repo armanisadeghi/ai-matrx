@@ -76,7 +76,7 @@ export function useAgentListCore({
   const router = useRouter();
   const [, startTransition] = useTransition();
 
-  const [hasFetched, setHasFetched] = useState(false);
+  const hasFetchedRef = useRef(false);
   const [hoveredAgent, setHoveredAgent] =
     useState<AgentDefinitionRecord | null>(null);
   const hoverLeaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -93,7 +93,13 @@ export function useAgentListCore({
   const agents = useAppSelector(selectFiltered);
   const sliceStatus = useAppSelector(selectAgentsSliceStatus);
   const reduxActiveAgentId = useAppSelector(selectActiveAgentId);
-  const activeAgentId = activeAgentIdOverride ?? reduxActiveAgentId;
+  // `null` is an intentional "nothing selected" value for assignment
+  // dropdowns. Only an omitted override falls back to the app-wide active
+  // agent; otherwise an empty slot would misleadingly show the chat agent.
+  const activeAgentId =
+    activeAgentIdOverride === undefined
+      ? reduxActiveAgentId
+      : activeAgentIdOverride;
   const pinnedAgent = useAppSelector((state) =>
     activeAgentId ? selectAgentById(state, activeAgentId) : undefined,
   );
@@ -116,11 +122,11 @@ export function useAgentListCore({
   const agentsLoaded = sliceStatus === "succeeded" || sliceStatus === "failed";
 
   const ensureLoaded = useCallback(() => {
-    if (!hasFetched) {
+    if (!hasFetchedRef.current) {
+      hasFetchedRef.current = true;
       dispatch(initializeChatAgents());
-      setHasFetched(true);
     }
-  }, [hasFetched, dispatch]);
+  }, [dispatch]);
 
   useEffect(() => {
     if (defaultTabAppliedRef.current) return;

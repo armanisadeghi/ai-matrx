@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { isJsonObject } from "@/types/json";
 import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
+import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import {
   createSlotExemplar,
   deleteSlotExemplar,
@@ -31,7 +31,13 @@ import {
   type SlotTestResponse,
 } from "./service";
 
-function OutputPreview({ output, artifact }: { output: string; artifact: unknown }) {
+function OutputPreview({
+  output,
+  artifact,
+}: {
+  output: string;
+  artifact: unknown;
+}) {
   const fileId = output ? fileIdFromUserFilesUrl(output.trim()) : null;
   if (fileId) {
     return (
@@ -43,11 +49,14 @@ function OutputPreview({ output, artifact }: { output: string; artifact: unknown
       </div>
     );
   }
-  const text =
-    artifact != null ? JSON.stringify(artifact, null, 1) : output;
+  const text = artifact != null ? JSON.stringify(artifact, null, 1) : output;
   return (
     <pre className="text-[11px] whitespace-pre-wrap break-words max-h-48 overflow-auto bg-muted/40 rounded p-1.5">
-      {text ? (text.length > 2400 ? `${text.slice(0, 2400)}…` : text) : "(empty)"}
+      {text
+        ? text.length > 2400
+          ? `${text.slice(0, 2400)}…`
+          : text
+        : "(empty)"}
     </pre>
   );
 }
@@ -64,7 +73,9 @@ function ResultCard({
     <div className="flex-1 min-w-[240px] border border-border rounded-md p-2">
       <div className="flex items-center gap-2 flex-wrap text-xs mb-1">
         <span className="font-medium">{title}</span>
-        <Badge variant="outline">{(result.duration_ms / 1000).toFixed(1)}s</Badge>
+        <Badge variant="outline">
+          {(result.duration_ms / 1000).toFixed(1)}s
+        </Badge>
         {s.checked ? (
           <Badge variant={s.ok ? "secondary" : "destructive"}>
             {s.ok ? "structure OK" : "structure FAILED"}
@@ -223,7 +234,11 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
             className="text-xs font-mono min-h-20"
           />
           <div>
-            <Button size="sm" className="h-6 text-xs" onClick={() => void addExemplar()}>
+            <Button
+              size="sm"
+              className="h-6 text-xs"
+              onClick={() => void addExemplar()}
+            >
               Save exemplar
             </Button>
           </div>
@@ -235,24 +250,25 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
           <div className="text-[11px] font-medium text-muted-foreground mb-1">
             Candidate agent (blank = current default)
           </div>
-          {/* THE canonical agent picker (admin variant) — never a bespoke
-              list + text box. See AgentSlotsConsole for the rationale. */}
-          <AgentListInlinePicker
+          {/* The canonical agent dropdown (admin variant). The candidate
+              catalogue is mounted only while this control is open. */}
+          <AgentListDropdown
             consumerId={`slot-test-candidate-${slot.id}`}
             onSelect={(id) =>
               setCandidateAgentId((current) => (current === id ? null : id))
             }
             activeAgentId={candidateAgentId}
+            label={candidateAgentId ? undefined : "Current default agent"}
             initialTab="system"
             includeSystemInAll
-            autoFocusSearch={false}
-            className="h-80 rounded-md border border-border bg-card"
+            contentSide="left"
+            className="h-9 w-full"
           />
         </div>
         <div>
           <div className="text-[11px] font-medium text-muted-foreground mb-1">
-            config_overrides JSON (optional — e.g. {"{"}"model": "…", "thinking_level":
-            "low"{"}"})
+            config_overrides JSON (optional — e.g. {"{"}"model": "…",
+            "thinking_level": "low"{"}"})
           </div>
           <Textarea
             value={overridesText}
@@ -277,7 +293,10 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
           const result = results[exemplar.id];
           const isRunning = Boolean(running[exemplar.id]);
           return (
-            <div key={exemplar.id} className="border border-border rounded-md p-2 mb-2">
+            <div
+              key={exemplar.id}
+              className="border border-border rounded-md p-2 mb-2"
+            >
               <div className="flex items-center gap-2 text-xs mb-1.5">
                 <span className="font-medium">{exemplar.label}</span>
                 <Badge variant="outline">{exemplar.source}</Badge>
@@ -285,7 +304,9 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
                   <summary className="cursor-pointer">inputs</summary>
                   <pre className="text-[10px] whitespace-pre-wrap break-words max-h-40 overflow-auto bg-muted/40 rounded p-1.5 mt-1">
                     {JSON.stringify(exemplar.variables, null, 1)}
-                    {exemplar.user_input ? `\nuser_input: ${exemplar.user_input}` : ""}
+                    {exemplar.user_input
+                      ? `\nuser_input: ${exemplar.user_input}`
+                      : ""}
                   </pre>
                 </details>
                 <div className="ml-auto flex items-center gap-1">

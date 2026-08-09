@@ -48,7 +48,7 @@ import {
   selectOwnedAgents,
   selectSharedWithMeAgents,
 } from "@/features/agents/redux/agent-definition/selectors";
-import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
+import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
 import {
   checkSlotContract,
@@ -98,15 +98,21 @@ export function SlotOverrideEditor({
   const ownedAgents = useAppSelector(selectOwnedAgents);
   const sharedAgents = useAppSelector(selectSharedWithMeAgents);
 
-
   const existingOverrides = useMemo(
-    () => (binding && isJsonObject(binding.config_overrides) ? binding.config_overrides : null),
+    () =>
+      binding && isJsonObject(binding.config_overrides)
+        ? binding.config_overrides
+        : null,
     [binding],
   );
 
-  const [agentId, setAgentId] = useState<string | null>(binding?.agent_id ?? null);
+  const [agentId, setAgentId] = useState<string | null>(
+    binding?.agent_id ?? null,
+  );
   const [model, setModel] = useState<string | null>(
-    typeof existingOverrides?.model === "string" ? existingOverrides.model : null,
+    typeof existingOverrides?.model === "string"
+      ? existingOverrides.model
+      : null,
   );
   const [thinking, setThinking] = useState<ThinkingLevel | null>(() => {
     const v = existingOverrides?.thinking_level;
@@ -123,8 +129,12 @@ export function SlotOverrideEditor({
     | { status: "done"; agentId: string; result: SlotContractCheck }
   >({ status: "idle" });
 
-  const contract = useMemo(() => parseSlotContract(slot.contract), [slot.contract]);
-  const contractSize = contract.requiredVariables.length + contract.requiredContextSlots.length;
+  const contract = useMemo(
+    () => parseSlotContract(slot.contract),
+    [slot.contract],
+  );
+  const contractSize =
+    contract.requiredVariables.length + contract.requiredContextSlots.length;
 
   const runContractCheck = useCallback(
     async (candidateId: string) => {
@@ -148,11 +158,15 @@ export function SlotOverrideEditor({
       } catch {
         setContractCheck({
           status: "error",
-          message: "Couldn't load that agent's declared inputs. Check access and try again.",
+          message:
+            "Couldn't load that agent's declared inputs. Check access and try again.",
         });
         return;
       }
-      const payload = selectAgentExecutionPayload(store.getState(), candidateId);
+      const payload = selectAgentExecutionPayload(
+        store.getState(),
+        candidateId,
+      );
       if (!payload.isReady) {
         setContractCheck({
           status: "error",
@@ -204,7 +218,9 @@ export function SlotOverrideEditor({
     agentId !== (binding?.agent_id ?? null) ||
     JSON.stringify(buildConfigOverrides()) !==
       JSON.stringify(
-        existingOverrides && Object.keys(existingOverrides).length > 0 ? existingOverrides : null,
+        existingOverrides && Object.keys(existingOverrides).length > 0
+          ? existingOverrides
+          : null,
       );
 
   const nothingSet = agentId == null && buildConfigOverrides() == null;
@@ -213,7 +229,9 @@ export function SlotOverrideEditor({
     if (contractBlocked) return;
     const configOverrides = buildConfigOverrides();
     if (agentId == null && configOverrides == null) {
-      toast.error("Pick a different agent or change a setting — an empty override does nothing.");
+      toast.error(
+        "Pick a different agent or change a setting — an empty override does nothing.",
+      );
       return;
     }
     setSaving(true);
@@ -224,7 +242,9 @@ export function SlotOverrideEditor({
         {
           principalType: principal.kind,
           organizationId:
-            principal.kind === "org" ? (principal.organizationId ?? undefined) : undefined,
+            principal.kind === "org"
+              ? (principal.organizationId ?? undefined)
+              : undefined,
         },
         { agentId, configOverrides },
       );
@@ -235,7 +255,8 @@ export function SlotOverrideEditor({
       );
       onChanged();
     } catch (err) {
-      const message = (err as { message?: string } | null)?.message ?? "unknown error";
+      const message =
+        (err as { message?: string } | null)?.message ?? "unknown error";
       toast.error(`Couldn't save override: ${message}`);
     } finally {
       setSaving(false);
@@ -249,13 +270,16 @@ export function SlotOverrideEditor({
       await removeSlotBinding(dispatch, slot.slot_key, {
         principalType: principal.kind,
         organizationId:
-          principal.kind === "org" ? (principal.organizationId ?? undefined) : undefined,
+          principal.kind === "org"
+            ? (principal.organizationId ?? undefined)
+            : undefined,
       });
       toast.success("Override removed — back to the system default.");
       setRemoveOpen(false);
       onChanged();
     } catch (err) {
-      const message = (err as { message?: string } | null)?.message ?? "unknown error";
+      const message =
+        (err as { message?: string } | null)?.message ?? "unknown error";
       toast.error(`Couldn't remove override: ${message}`);
     } finally {
       setRemoving(false);
@@ -269,11 +293,17 @@ export function SlotOverrideEditor({
     try {
       const newId = slot.default_agent_version_id
         ? await dispatch(
-            duplicateAgentVersion({ versionId: slot.default_agent_version_id, asSystem: false }),
+            duplicateAgentVersion({
+              versionId: slot.default_agent_version_id,
+              asSystem: false,
+            }),
           ).unwrap()
         : slot.default_agent_id
           ? await dispatch(
-              duplicateAgent({ agentId: slot.default_agent_id, asSystem: false }),
+              duplicateAgent({
+                agentId: slot.default_agent_id,
+                asSystem: false,
+              }),
             ).unwrap()
           : null;
       if (!newId) {
@@ -282,10 +312,13 @@ export function SlotOverrideEditor({
       }
       setAgentId(newId);
       void runContractCheck(newId);
-      toast.success("Copied — opening your editable version. Save here to connect it.");
+      toast.success(
+        "Copied — opening your editable version. Save here to connect it.",
+      );
       router.push(`/agents/${newId}/build`);
     } catch (err) {
-      const message = (err as { message?: string } | null)?.message ?? "unknown error";
+      const message =
+        (err as { message?: string } | null)?.message ?? "unknown error";
       toast.error(`Couldn't copy agent: ${message}`);
     } finally {
       setCopying(false);
@@ -351,27 +384,29 @@ export function SlotOverrideEditor({
           </div>
         ) : (
           <p className="mb-2 text-[12px] text-muted-foreground">
-            No swap — the system agent keeps running this step. Pick one of your agents below to
-            replace it, or just change settings.
+            No swap — the system agent keeps running this step. Pick one of your
+            agents below to replace it, or just change settings.
           </p>
         )}
 
-        {/* THE canonical agent picker — search, Mine/Shared/All/System tabs
-            with counts, sort, favorites, category + tag filters. Opens on
-            "Mine" because a swap replaces the system agent with YOUR agent. */}
-        <AgentListInlinePicker
+        {/* The canonical agent dropdown — search, Mine/Shared/All/System tabs
+            with counts, sort, favorites, category + tag filters. The list is
+            mounted only while the user is choosing a replacement. */}
+        <AgentListDropdown
           consumerId="slot-override-editor-agent"
           onSelect={handlePickAgent}
           activeAgentId={agentId}
+          label={selectedAgentName ?? "Keep system agent"}
           initialTab="mine"
-          autoFocusSearch={false}
-          className="h-80 rounded-md border border-border bg-card"
+          contentSide="left"
+          className="h-9 w-full"
         />
 
         {/* Contract check result */}
         {contractCheck.status === "checking" ? (
           <p className="mt-2 flex items-center gap-1.5 text-[12px] text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" /> Checking the slot contract…
+            <Loader2 className="h-3 w-3 animate-spin" /> Checking the slot
+            contract…
           </p>
         ) : null}
         {contractCheck.status === "error" ? (
@@ -381,7 +416,10 @@ export function SlotOverrideEditor({
           </div>
         ) : null}
         {contractCheck.status === "done" ? (
-          <ContractResult contract={contractCheck.result} contractSize={contractSize} />
+          <ContractResult
+            contract={contractCheck.result}
+            contractSize={contractSize}
+          />
         ) : null}
       </section>
 
@@ -392,7 +430,9 @@ export function SlotOverrideEditor({
         </h4>
         <div className="grid gap-2 sm:grid-cols-2">
           <label className="block">
-            <span className="text-[11px] font-medium text-muted-foreground">Model</span>
+            <span className="text-[11px] font-medium text-muted-foreground">
+              Model
+            </span>
             <div className="mt-1 flex items-center gap-1.5">
               <SmartModelSelect
                 value={model}
@@ -414,7 +454,9 @@ export function SlotOverrideEditor({
             </div>
           </label>
           <label className="block">
-            <span className="text-[11px] font-medium text-muted-foreground">Thinking level</span>
+            <span className="text-[11px] font-medium text-muted-foreground">
+              Thinking level
+            </span>
             <Select
               value={thinking ?? THINKING_UNSET}
               onValueChange={(v) =>
@@ -436,8 +478,9 @@ export function SlotOverrideEditor({
           </label>
         </div>
         <p className="mt-1.5 text-[11px] text-muted-foreground">
-          Settings apply to whichever agent runs the step — swap nothing and this is a
-          settings-only override (same agent, your model and thinking level).
+          Settings apply to whichever agent runs the step — swap nothing and
+          this is a settings-only override (same agent, your model and thinking
+          level).
         </p>
       </section>
 
@@ -476,8 +519,9 @@ export function SlotOverrideEditor({
         title="Remove this override?"
         description={
           <>
-            {principal.kind === "org" ? principal.label : "You"} will fall back to the system
-            default for this step. Your agents stay intact — only the override is cleared.
+            {principal.kind === "org" ? principal.label : "You"} will fall back
+            to the system default for this step. Your agents stay intact — only
+            the override is cleared.
           </>
         }
         confirmLabel="Remove override"
@@ -496,7 +540,8 @@ function ContractResult({
   contract: SlotContractCheck;
   contractSize: number;
 }) {
-  const missing = contract.missingVariables.length + contract.missingSlots.length;
+  const missing =
+    contract.missingVariables.length + contract.missingSlots.length;
   const passing = contract.passing;
   if (contractSize === 0) {
     return (
@@ -518,10 +563,16 @@ function ContractResult({
       <p
         className={cn(
           "flex items-center gap-1.5 font-medium",
-          passing ? "text-emerald-700 dark:text-emerald-400" : "text-destructive",
+          passing
+            ? "text-emerald-700 dark:text-emerald-400"
+            : "text-destructive",
         )}
       >
-        {passing ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
+        {passing ? (
+          <CheckCircle2 className="h-3.5 w-3.5" />
+        ) : (
+          <XCircle className="h-3.5 w-3.5" />
+        )}
         {passing
           ? "Contract satisfied — this agent declares every required input."
           : `Missing ${missing} required input${missing === 1 ? "" : "s"} — it can't run this step.`}
@@ -529,7 +580,10 @@ function ContractResult({
       {!passing ? (
         <ul className="mt-1.5 space-y-1">
           {contract.missingVariables.map((name) => (
-            <li key={`v-${name}`} className="flex items-center gap-1.5 text-destructive/90">
+            <li
+              key={`v-${name}`}
+              className="flex items-center gap-1.5 text-destructive/90"
+            >
               <Hash className="h-3 w-3" />
               <code className="font-mono">{name}</code>
               <ArrowRight className="h-2.5 w-2.5 text-muted-foreground/60" />
@@ -537,11 +591,16 @@ function ContractResult({
             </li>
           ))}
           {contract.missingSlots.map((name) => (
-            <li key={`s-${name}`} className="flex items-center gap-1.5 text-destructive/90">
+            <li
+              key={`s-${name}`}
+              className="flex items-center gap-1.5 text-destructive/90"
+            >
               <KeyRound className="h-3 w-3" />
               <code className="font-mono">{name}</code>
               <ArrowRight className="h-2.5 w-2.5 text-muted-foreground/60" />
-              <span className="text-muted-foreground">required context slot</span>
+              <span className="text-muted-foreground">
+                required context slot
+              </span>
             </li>
           ))}
         </ul>

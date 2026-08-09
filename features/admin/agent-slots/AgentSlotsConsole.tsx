@@ -9,7 +9,14 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { GitBranch, History, Link2, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import {
+  GitBranch,
+  History,
+  Link2,
+  Loader2,
+  RefreshCw,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +33,7 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOpenAgentConvertSystemWindow } from "@/features/overlays/openers/agentConvertSystemWindow";
-import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
+import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeController";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -108,7 +115,9 @@ function buildRow(slot: SlotDefinitionRow, data: SlotConsoleData): SlotRow {
 
   if (slot.default_agent_version_id) {
     const version = data.versionsById[slot.default_agent_version_id];
-    const agent = version?.agentId ? data.agentsById[version.agentId] : undefined;
+    const agent = version?.agentId
+      ? data.agentsById[version.agentId]
+      : undefined;
     const latest = agent?.version ?? null;
     const pinned = version?.versionNumber ?? null;
     agentId = agent?.id ?? version?.agentId ?? null;
@@ -116,12 +125,16 @@ function buildRow(slot: SlotDefinitionRow, data: SlotConsoleData): SlotRow {
     agentType = agent?.agentType ?? null;
     pinnedVersionNumber = pinned;
     latestVersion = latest;
-    pinLabel = pinned != null ? `pinned v${pinned}` : "pinned (unknown version)";
-    if (pinned != null && latest != null && latest > pinned) drift = `v${latest} is latest`;
+    pinLabel =
+      pinned != null ? `pinned v${pinned}` : "pinned (unknown version)";
+    if (pinned != null && latest != null && latest > pinned)
+      drift = `v${latest} is latest`;
     nonSystem = agent != null && agent.agentType !== "builtin";
     archived = Boolean(agent?.isArchived);
   } else {
-    const agent = slot.default_agent_id ? data.agentsById[slot.default_agent_id] : undefined;
+    const agent = slot.default_agent_id
+      ? data.agentsById[slot.default_agent_id]
+      : undefined;
     agentId = agent?.id ?? slot.default_agent_id ?? null;
     agentName = agent?.name ?? "(unknown agent)";
     agentType = agent?.agentType ?? null;
@@ -164,7 +177,8 @@ function buildRow(slot: SlotDefinitionRow, data: SlotConsoleData): SlotRow {
     overridesCount: (data.bindingsBySlotId[slot.id] ?? []).length,
     isEnabled: Boolean(slot.is_enabled),
     isPlaceholder:
-      isJsonObject(slot.metadata) && slot.metadata.migration_status === "placeholder",
+      isJsonObject(slot.metadata) &&
+      slot.metadata.migration_status === "placeholder",
     updatedAt: slot.updated_at ?? null,
   };
 }
@@ -329,7 +343,9 @@ function SlotAgentIdentityCard({
   if (row.health === "unresolved pin") {
     return (
       <div className="space-y-1 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-600">
-        <div className="font-medium">This slot&apos;s agent could not be read.</div>
+        <div className="font-medium">
+          This slot&apos;s agent could not be read.
+        </div>
         <p>
           {HEALTH_HINT["unresolved pin"]}
           {row.agentId && (
@@ -354,7 +370,9 @@ function SlotAgentIdentityCard({
         </div>
         <Badge
           variant="outline"
-          className={isSystem ? HEALTH_CLASS.ok : HEALTH_CLASS["not a system agent"]}
+          className={
+            isSystem ? HEALTH_CLASS.ok : HEALTH_CLASS["not a system agent"]
+          }
         >
           {isSystem ? "System agent" : "Personal agent — not a system agent"}
         </Badge>
@@ -384,18 +402,25 @@ function SlotAgentIdentityCard({
         )}
       </div>
 
-      {(lineage.parent || lineage.systemTwin || lineage.children.length > 0) && (
+      {(lineage.parent ||
+        lineage.systemTwin ||
+        lineage.children.length > 0) && (
         <div className="flex flex-wrap items-center gap-1.5">
           {lineage.parent && (
-            <LineageChip label="copied from" agent={lineage.parent} Icon={GitBranch} />
-          )}
-          {lineage.systemTwin && lineage.systemTwin.id !== lineage.parent?.id && (
             <LineageChip
-              label="system twin"
-              agent={lineage.systemTwin}
-              Icon={ShieldCheck}
+              label="copied from"
+              agent={lineage.parent}
+              Icon={GitBranch}
             />
           )}
+          {lineage.systemTwin &&
+            lineage.systemTwin.id !== lineage.parent?.id && (
+              <LineageChip
+                label="system twin"
+                agent={lineage.systemTwin}
+                Icon={ShieldCheck}
+              />
+            )}
           {lineage.children
             .filter((c) => c.id !== lineage.systemTwin?.id)
             .map((c) => (
@@ -405,7 +430,12 @@ function SlotAgentIdentityCard({
       )}
 
       <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-        <Button asChild size="sm" variant="outline" className="h-6 gap-1 px-1.5 text-[11px]">
+        <Button
+          asChild
+          size="sm"
+          variant="outline"
+          className="h-6 gap-1 px-1.5 text-[11px]"
+        >
           <a
             href={getAgentModeHref("versions", row.agentId, basePath)}
             target="_blank"
@@ -417,7 +447,11 @@ function SlotAgentIdentityCard({
         </Button>
         <LinkedSyncButton
           agentId={row.agentId}
-          label={lineage.systemTwin ? "Compare with system twin…" : "Linked Agent Sync…"}
+          label={
+            lineage.systemTwin
+              ? "Compare with system twin…"
+              : "Linked Agent Sync…"
+          }
         />
         {!isSystem && lineage.systemTwin && (
           <RepinToTwinButton
@@ -434,21 +468,24 @@ function SlotAgentIdentityCard({
 function SlotEditor({
   slot,
   data,
-  builtinAgentIds,
+  builtinAgentsById,
   onSaved,
 }: {
   slot: SlotDefinitionRow;
   data: SlotConsoleData;
-  builtinAgentIds: ReadonlySet<string>;
+  builtinAgentsById: ReadonlyMap<string, string>;
   onSaved: () => void;
 }) {
   const pinnedVersion = slot.default_agent_version_id
     ? data.versionsById[slot.default_agent_version_id]
     : undefined;
-  const initialAgentId = slot.default_agent_id ?? pinnedVersion?.agentId ?? null;
+  const initialAgentId =
+    slot.default_agent_id ?? pinnedVersion?.agentId ?? null;
   const [agentId, setAgentId] = useState<string | null>(initialAgentId);
   const [useLatest, setUseLatest] = useState<boolean>(Boolean(slot.use_latest));
-  const [versionId, setVersionId] = useState<string | null>(slot.default_agent_version_id);
+  const [versionId, setVersionId] = useState<string | null>(
+    slot.default_agent_version_id,
+  );
   // Versions keyed by the agent they were fetched for — "loading" is DERIVED
   // (requested agent ≠ loaded agent), so the effect never sets state
   // synchronously (react-hooks/set-state-in-effect).
@@ -457,8 +494,10 @@ function SlotEditor({
     rows: SlotVersionInfo[];
   } | null>(null);
   const [saving, setSaving] = useState(false);
-  const versions = loadedVersions?.agentId === agentId ? loadedVersions.rows : [];
-  const loadingVersions = !useLatest && agentId != null && loadedVersions?.agentId !== agentId;
+  const versions =
+    loadedVersions?.agentId === agentId ? loadedVersions.rows : [];
+  const loadingVersions =
+    !useLatest && agentId != null && loadedVersions?.agentId !== agentId;
 
   useEffect(() => {
     if (!agentId || useLatest) return;
@@ -472,7 +511,9 @@ function SlotEditor({
         );
       })
       .catch((error: unknown) => {
-        toast.error(`Failed to load versions: ${error instanceof Error ? error.message : String(error)}`);
+        toast.error(
+          `Failed to load versions: ${error instanceof Error ? error.message : String(error)}`,
+        );
       });
     return () => {
       cancelled = true;
@@ -484,7 +525,7 @@ function SlotEditor({
       toast.error("Pick an agent first.");
       return;
     }
-    if (!builtinAgentIds.has(agentId)) {
+    if (!builtinAgentsById.has(agentId)) {
       toast.error("Choose a system agent before saving this slot.");
       return;
     }
@@ -508,28 +549,43 @@ function SlotEditor({
     } finally {
       setSaving(false);
     }
-  }, [agentId, builtinAgentIds, useLatest, versionId, slot.id, slot.slot_key, onSaved]);
+  }, [
+    agentId,
+    builtinAgentsById,
+    useLatest,
+    versionId,
+    slot.id,
+    slot.slot_key,
+    onSaved,
+  ]);
+
+  const selectableAgentId =
+    agentId && builtinAgentsById.has(agentId) ? agentId : null;
+  const selectedAgentName = selectableAgentId
+    ? (builtinAgentsById.get(selectableAgentId) ?? "Selected system agent")
+    : "Select a system agent";
 
   return (
     <div className="space-y-3">
       <div>
-        <div className="text-xs font-medium text-muted-foreground mb-1">Agent</div>
-        {/* THE canonical agent picker, constrained to system agents because a
-            slot default serves every user. A personal legacy pin stays visible
-            in the identity card above, but is not repeated as a selectable
-            current row here. */}
-        <AgentListInlinePicker
+        <div className="text-xs font-medium text-muted-foreground mb-1">
+          Agent
+        </div>
+        {/* The canonical agent dropdown, constrained to system agents because
+            a slot default serves every user. The full catalogue exists only
+            while the admin opens the dropdown. */}
+        <AgentListDropdown
           consumerId={`agent-slot-repin-${slot.id}`}
           onSelect={setAgentId}
-          activeAgentId={
-            agentId && builtinAgentIds.has(agentId) ? agentId : null
-          }
+          activeAgentId={selectableAgentId}
+          label={selectedAgentName}
           initialTab="system"
           visibleTabs={["system"]}
           systemTabLabel="System"
           resolveAgentHref={(agent) => agentHref(agent.id, agent.agentType)}
-          showPinnedAgent={Boolean(agentId && builtinAgentIds.has(agentId))}
-          className="h-96 rounded-md border border-border bg-card"
+          showPinnedAgent={Boolean(selectableAgentId)}
+          contentSide="left"
+          className="h-9 w-full"
         />
       </div>
       <label className="flex items-center gap-2 text-sm">
@@ -548,7 +604,8 @@ function SlotEditor({
             <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
           ) : versions.length === 0 ? (
             <span className="text-muted-foreground">
-              No saved versions for this agent — save a version first, or track latest.
+              No saved versions for this agent — save a version first, or track
+              latest.
             </span>
           ) : (
             <select
@@ -593,7 +650,9 @@ function OverridesList({
   if (bindings.length === 0) return null;
   return (
     <div className="text-xs">
-      <div className="font-medium text-muted-foreground mb-1">All overrides</div>
+      <div className="font-medium text-muted-foreground mb-1">
+        All overrides
+      </div>
       {bindings.map((b) => {
         const versionAgentId = b.agent_version_id
           ? data.versionsById[b.agent_version_id]?.agentId
@@ -623,13 +682,13 @@ function SlotDetail({
   row,
   data,
   lineage,
-  builtinAgentIds,
+  builtinAgentsById,
   onSaved,
 }: {
   row: SlotRow;
   data: SlotConsoleData;
   lineage: AgentLineage;
-  builtinAgentIds: ReadonlySet<string>;
+  builtinAgentsById: ReadonlyMap<string, string>;
   onSaved: () => void;
 }) {
   const bindings = data.bindingsBySlotId[row.id] ?? [];
@@ -648,7 +707,7 @@ function SlotDetail({
         key={row.id}
         slot={row.slot}
         data={data}
-        builtinAgentIds={builtinAgentIds}
+        builtinAgentsById={builtinAgentsById}
         onSaved={onSaved}
       />
       <div className="border-t border-border pt-3">
@@ -732,8 +791,9 @@ export function AgentSlotsConsole() {
   // admin pinning a personal/shared agent here would break every user the
   // slot serves. Never hand-query agent.definition for a picker.
   const builtinAgents = useAppSelector(selectBuiltinAgents);
-  const builtinAgentIds = useMemo<ReadonlySet<string>>(
-    () => new Set(builtinAgents.map((agent) => agent.id)),
+  const builtinAgentsById = useMemo<ReadonlyMap<string, string>>(
+    () =>
+      new Map(builtinAgents.map((agent) => [agent.id, agent.name ?? agent.id])),
     [builtinAgents],
   );
   // Lineage for every agent the slice holds — derived, no extra queries. This
@@ -863,7 +923,9 @@ export function AgentSlotsConsole() {
         width: 240,
         cell: (r) => (
           <div className="flex flex-col items-start gap-0.5">
-            <span className="whitespace-nowrap font-mono text-xs">{r.slotKey}</span>
+            <span className="whitespace-nowrap font-mono text-xs">
+              {r.slotKey}
+            </span>
             {r.isPlaceholder && (
               <Badge variant="outline" className="text-[10px]">
                 placeholder
@@ -900,13 +962,17 @@ export function AgentSlotsConsole() {
         width: 190,
         cell: (r) => (
           <div className="flex items-center gap-1">
-            <Badge variant={r.slot.use_latest ? "secondary" : "outline"}>{r.pinLabel}</Badge>
+            <Badge variant={r.slot.use_latest ? "secondary" : "outline"}>
+              {r.pinLabel}
+            </Badge>
             {r.agentId && (
               <a
                 href={getAgentModeHref(
                   "versions",
                   r.agentId,
-                  r.agentType === "builtin" ? SYSTEM_AGENT_BASE : USER_AGENT_BASE,
+                  r.agentType === "builtin"
+                    ? SYSTEM_AGENT_BASE
+                    : USER_AGENT_BASE,
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -938,21 +1004,37 @@ export function AgentSlotsConsole() {
                 className={HEALTH_CLASS[r.health]}
                 title={HEALTH_HINT[r.health]}
               >
-                {r.health === "not a system agent" ? "NOT a system agent" : r.health}
+                {r.health === "not a system agent"
+                  ? "NOT a system agent"
+                  : r.health}
               </Badge>
               {r.drift && r.health !== "version drift" && (
-                <Badge variant="outline" className={HEALTH_CLASS["version drift"]}>
+                <Badge
+                  variant="outline"
+                  className={HEALTH_CLASS["version drift"]}
+                >
                   {r.drift}
                 </Badge>
               )}
               {r.health === "not a system agent" && twin && (
                 <>
-                  <LineageChip label="system twin" agent={twin} Icon={ShieldCheck} />
-                  <RepinToTwinButton slot={r.slot} twin={twin} onSaved={reload} />
+                  <LineageChip
+                    label="system twin"
+                    agent={twin}
+                    Icon={ShieldCheck}
+                  />
+                  <RepinToTwinButton
+                    slot={r.slot}
+                    twin={twin}
+                    onSaved={reload}
+                  />
                 </>
               )}
               {r.health === "not a system agent" && !twin && r.agentId && (
-                <LinkedSyncButton agentId={r.agentId} label="Create system twin…" />
+                <LinkedSyncButton
+                  agentId={r.agentId}
+                  label="Create system twin…"
+                />
               )}
             </div>
           );
@@ -964,7 +1046,9 @@ export function AgentSlotsConsole() {
         header: "Input",
         filter: "select",
         width: 110,
-        cell: (r) => <span className="text-xs text-muted-foreground">{r.inputKind}</span>,
+        cell: (r) => (
+          <span className="text-xs text-muted-foreground">{r.inputKind}</span>
+        ),
       },
       {
         id: "outputKind",
@@ -972,7 +1056,9 @@ export function AgentSlotsConsole() {
         header: "Output",
         filter: "select",
         width: 110,
-        cell: (r) => <span className="text-xs text-muted-foreground">{r.outputKind}</span>,
+        cell: (r) => (
+          <span className="text-xs text-muted-foreground">{r.outputKind}</span>
+        ),
       },
       {
         id: "overridesCount",
@@ -1015,7 +1101,13 @@ export function AgentSlotsConsole() {
           </span>
         ),
       },
-      { id: "id", accessorKey: "id", header: "ID", cellKind: "uuid", width: 110 },
+      {
+        id: "id",
+        accessorKey: "id",
+        header: "ID",
+        cellKind: "uuid",
+        width: 110,
+      },
     ];
   }, [toggleEnabled, lineageIndex, reload]);
 
@@ -1025,76 +1117,84 @@ export function AgentSlotsConsole() {
       getScope={getSurfaceScope}
       isEditable={false}
     >
-    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
-      <div className="min-h-0 flex-1" data-surface-value="slots_summary">
-        <MatrxDataTable
-          data={rows}
-          columns={columns}
-          getRowId={(r) => r.id}
-          isLoading={loading}
-          isFetching={fetching}
-          pageSize={50}
-          selectedId={selectedId}
-          onSelectedIdChange={setSelectedId}
-          emptyState={{
-            title: "No slots yet",
-            description: "Slots seed from aidream code declarations on server boot.",
-          }}
-          toolbar={{
-            search: true,
-            searchPlaceholder: "Search slots, agents…",
-            actions: (
-              <Button size="sm" variant="outline" onClick={reload} disabled={fetching}>
-                {fetching ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-4 h-4" />
-                )}
-              </Button>
-            ),
-          }}
-          copy={{
-            label: "Agent slot",
-            listLabel: "Agent slots (this view)",
-            location: "/administration/agents/slots",
-            rowKind: "agent-slot",
-            listKind: "agent-slots",
-            humanRow,
-            rowAttributes: (r) => ({
-              id: r.id,
-              slot_key: r.slotKey,
-              health: r.health,
-              enabled: r.isEnabled,
-            }),
-          }}
-          detail={{
-            title: (r) => <span className="font-mono text-sm">{r.slotKey}</span>,
-            description: (r) => r.label ?? undefined,
-            defaultWidth: 520,
-            render: (r) =>
-              data ? (
-                <SlotDetail
-                  row={r}
-                  data={data}
-                  lineage={
-                    (r.agentId ? lineageIndex[r.agentId] : undefined) ?? {
-                      parent: null,
-                      children: [],
-                      systemTwin: null,
+      <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+        <div className="min-h-0 flex-1" data-surface-value="slots_summary">
+          <MatrxDataTable
+            data={rows}
+            columns={columns}
+            getRowId={(r) => r.id}
+            isLoading={loading}
+            isFetching={fetching}
+            pageSize={50}
+            selectedId={selectedId}
+            onSelectedIdChange={setSelectedId}
+            emptyState={{
+              title: "No slots yet",
+              description:
+                "Slots seed from aidream code declarations on server boot.",
+            }}
+            toolbar={{
+              search: true,
+              searchPlaceholder: "Search slots, agents…",
+              actions: (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={reload}
+                  disabled={fetching}
+                >
+                  {fetching ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                </Button>
+              ),
+            }}
+            copy={{
+              label: "Agent slot",
+              listLabel: "Agent slots (this view)",
+              location: "/administration/agents/slots",
+              rowKind: "agent-slot",
+              listKind: "agent-slots",
+              humanRow,
+              rowAttributes: (r) => ({
+                id: r.id,
+                slot_key: r.slotKey,
+                health: r.health,
+                enabled: r.isEnabled,
+              }),
+            }}
+            detail={{
+              title: (r) => (
+                <span className="font-mono text-sm">{r.slotKey}</span>
+              ),
+              description: (r) => r.label ?? undefined,
+              defaultWidth: 520,
+              render: (r) =>
+                data ? (
+                  <SlotDetail
+                    row={r}
+                    data={data}
+                    lineage={
+                      (r.agentId ? lineageIndex[r.agentId] : undefined) ?? {
+                        parent: null,
+                        children: [],
+                        systemTwin: null,
+                      }
                     }
-                  }
-                  builtinAgentIds={builtinAgentIds}
-                  onSaved={reload}
-                />
-              ) : null,
-          }}
-          window={{
-            title: (r) => `Slot — ${r.slotKey}`,
-            defaultTab: "edit",
-          }}
-        />
+                    builtinAgentsById={builtinAgentsById}
+                    onSaved={reload}
+                  />
+                ) : null,
+            }}
+            window={{
+              title: (r) => `Slot — ${r.slotKey}`,
+              defaultTab: "edit",
+            }}
+          />
+        </div>
       </div>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

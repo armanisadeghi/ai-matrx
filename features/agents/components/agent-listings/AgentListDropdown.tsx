@@ -35,7 +35,7 @@ import { PANEL_HEIGHT, LIST_MAX_HEIGHT } from "./core/types";
 
 const CONSUMER_ID = "agent-list-dropdown";
 
-interface AgentListDropdownProps {
+export interface AgentListDropdownProps {
   onSelect?: (agentId: string) => void;
   navigateTo?: string;
   className?: string;
@@ -65,13 +65,21 @@ interface AgentListDropdownProps {
   initialTab?: AgentTab;
   /** ADMIN variant: blend system agents into the "All" tab. */
   includeSystemInAll?: boolean;
+  /** Restrict which ownership tabs are available for domain-constrained pickers. */
+  visibleTabs?: readonly AgentTab[];
+  /** Label override for the builtin-agent tab. Admin surfaces use "System". */
+  systemTabLabel?: string;
+  /** Resolve the route used by each named agent door. */
+  resolveAgentHref?: (agent: AgentDefinitionRecord) => string;
+  /** Show the active agent above the filtered list. Default true. */
+  showPinnedAgent?: boolean;
 }
 
 export function AgentListDropdown({
   onSelect,
   navigateTo,
   className,
-  label = "Agents",
+  label,
   triggerSlot,
   noBorder = false,
   compact = false,
@@ -80,6 +88,10 @@ export function AgentListDropdown({
   consumerId = CONSUMER_ID,
   initialTab,
   includeSystemInAll = false,
+  visibleTabs,
+  systemTabLabel,
+  resolveAgentHref: resolveAgentHrefProp,
+  showPinnedAgent = true,
 }: AgentListDropdownProps) {
   const isMobile = useIsMobile();
   const dialogContainer = useDialogContainer();
@@ -121,11 +133,13 @@ export function AgentListDropdown({
     includeSystemInAll,
   });
 
+  const displayLabel = label ?? pinnedAgent?.name ?? "Agents";
+
   const showAssignedTooltip =
     Boolean(activeAgentId) &&
-    label.trim().length > 0 &&
-    label !== "Select an agent" &&
-    label !== "Agents";
+    displayLabel.trim().length > 0 &&
+    displayLabel !== "Select an agent" &&
+    displayLabel !== "Agents";
 
   const handleOpen = (nextOpen: boolean) => {
     setOpen(nextOpen);
@@ -185,10 +199,11 @@ export function AgentListDropdown({
   }, [coreDetailMouseLeave]);
 
   const resolveAgentHref = useMemo(() => {
+    if (resolveAgentHrefProp) return resolveAgentHrefProp;
     if (!navigateTo) return undefined;
     return (agent: AgentDefinitionRecord) =>
       navigateTo.replace("{id}", agent.id);
-  }, [navigateTo]);
+  }, [navigateTo, resolveAgentHrefProp]);
 
   const hasRightPanel = rightPanel !== null;
 
@@ -203,7 +218,9 @@ export function AgentListDropdown({
         className,
       )}
     >
-      <span className="truncate max-w-[200px]">{label}</span>
+      <span className="min-w-0 max-w-[200px] flex-1 truncate text-left">
+        {displayLabel}
+      </span>
       {activeFilterCount > 0 && (
         <span className="flex items-center justify-center w-4 h-4 rounded-md bg-primary text-primary-foreground text-[10px]">
           {activeFilterCount}
@@ -225,7 +242,7 @@ export function AgentListDropdown({
           <TooltipTrigger asChild>{triggerButton}</TooltipTrigger>
         </Trigger>
         <TooltipContent side="bottom" className="max-w-xs">
-          {label}
+          {displayLabel}
         </TooltipContent>
       </Tooltip>
     );
@@ -252,8 +269,11 @@ export function AgentListDropdown({
       onFilterChipClick={handleFilterChipClick}
       rightPanel={rightPanel}
       tabCounts={tabCounts}
-      systemTabLabel={includeSystemInAll ? "System" : undefined}
-      pinnedAgent={pinnedAgent}
+      visibleTabs={visibleTabs}
+      systemTabLabel={
+        systemTabLabel ?? (includeSystemInAll ? "System" : undefined)
+      }
+      pinnedAgent={showPinnedAgent ? pinnedAgent : null}
       listOpen={open}
     />
   );
