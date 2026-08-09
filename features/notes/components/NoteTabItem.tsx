@@ -592,6 +592,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
         open={moveDialogOpen}
         onOpenChange={setMoveDialogOpen}
         onConfirm={handleMoveToFolder}
+        noteId={noteId}
         noteName={label}
         currentFolder={currentFolder}
         availableFolders={allFolders}

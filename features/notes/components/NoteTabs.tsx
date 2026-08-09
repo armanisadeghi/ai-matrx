@@ -590,6 +590,7 @@ export function NoteTabs({
                             if (!open) setMoveNoteId(null);
                         }}
                         onConfirm={(folderName) => onMoveNote(note.id, folderName)}
+                        noteId={note.id}
                         noteName={note.label}
                         currentFolder={note.folder_name || 'Draft'}
                         availableFolders={allFolders}

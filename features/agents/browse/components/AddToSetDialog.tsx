@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { addAgentToSet } from "@/features/agents/redux/agent-sets/thunks";
 import { useAgentSetsList } from "@/features/agents/agent-sets/hooks/useAgentSetsList";
 
@@ -68,23 +69,40 @@ export function AddToSetDialog({ agentId, agentName, open, onClose }: Props) {
               // and `label` overrides the orchestrator's name when authored.
               const setLabel = set.label ?? set.name;
               return (
-                <button
-                  key={set.orchestratorId}
-                  type="button"
-                  disabled={busyId !== null}
-                  onClick={() => void add(set.orchestratorId, setLabel)}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-muted disabled:opacity-50"
-                >
-                  {busyId === set.orchestratorId ? (
-                    <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-                  ) : (
-                    <Network className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  )}
-                  <span className="truncate">{setLabel}</span>
-                  <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
-                    {set.memberCount}
-                  </span>
-                </button>
+                <div key={set.orchestratorId} className="group relative">
+                  <button
+                    type="button"
+                    disabled={busyId !== null}
+                    onClick={() => void add(set.orchestratorId, setLabel)}
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-2 pr-16 text-left text-sm hover:bg-muted disabled:opacity-50"
+                  >
+                    {busyId === set.orchestratorId ? (
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                    ) : (
+                      <Network className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    )}
+                    <span className="truncate">{setLabel}</span>
+                    <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
+                      {set.memberCount}
+                    </span>
+                  </button>
+                  {/* THE DOOR LAW: a set IS its orchestrator agent, and the user
+                      is being asked to pick one with nothing but a label to go
+                      on. Doors are an absolutely-positioned SIBLING because the
+                      row is a `<button>` whose click means "attach" — a nested
+                      anchor or button is invalid DOM, and a stray click that
+                      navigated would cost the user the picker. `pr-16` on the
+                      button reserves the space so these never sit on top of the
+                      member count. Same shape as LinkAgentToShortcutModal. */}
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <EntityDoorControls
+                      token="agent"
+                      id={set.orchestratorId}
+                      name={setLabel}
+                      alwaysShowActions
+                    />
+                  </div>
+                </div>
               );
             })}
           </div>

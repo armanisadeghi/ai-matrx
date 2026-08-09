@@ -3,6 +3,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { FolderInput, FolderPlus, Search } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,11 @@ interface MoveNoteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (targetFolder: string) => void | Promise<void>;
+  /**
+   * The note being moved. Required so its name can be a door — every caller
+   * already holds it (it is what `onConfirm` moves).
+   */
+  noteId: string;
   noteName: string;
   currentFolder: string;
   availableFolders: string[];
@@ -41,6 +47,7 @@ export function MoveNoteDialog({
   open,
   onOpenChange,
   onConfirm,
+  noteId,
   noteName,
   currentFolder,
   availableFolders,
@@ -238,8 +245,25 @@ export function MoveNoteDialog({
             <DialogTitle className="flex items-center gap-2">
               <FolderInput className="h-5 w-5 text-primary" /> Move note
             </DialogTitle>
-            <DialogDescription>
-              Move “{noteName || "Untitled"}” to another folder.
+            <DialogDescription className="flex min-w-0 flex-wrap items-center gap-1">
+              {/* THE DOOR LAW: the dialog is about to move a specific note and
+                  named it as flat text. Sibling controls, not a linked name —
+                  the folder the user picked (and any folder they just created)
+                  is local state that a same-tab navigation would discard.
+                  `alwaysShowActions` because a dialog body has no hover
+                  affordance to discover. */}
+              <span className="shrink-0">Move</span>
+              <span className="truncate font-medium text-foreground">
+                {noteName || "Untitled"}
+              </span>
+              <EntityDoorControls
+                token="note"
+                id={noteId}
+                name={noteName}
+                alwaysShowActions
+                className="shrink-0"
+              />
+              <span className="shrink-0">to another folder.</span>
             </DialogDescription>
           </DialogHeader>
           <form
