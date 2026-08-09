@@ -69,6 +69,12 @@ const IDENTITY_FLAG = "v_identity";
 const TARGET_TABLE = "agent.definition";
 /** The RPC that dumps every routine in a schema (anon-executable via PostgREST). */
 const ROUTINE_DUMP_RPC = "__dump_schema_routines";
+
+/**
+ * The Supabase project the committed snapshot was captured from. A `--live`
+ * pull against any other project is refused, not compared.
+ */
+const EXPECTED_PROJECT_REF = "txzxabzwovsujtloxrus";
 /**
  * The ONLY columns the sync UPDATE may write without copying from the source
  * row. Anything else assigned a constant is drift the guard must scream about —
@@ -470,6 +476,20 @@ async function fetchLiveDefinition(): Promise<
       failure: `no Supabase URL/key found in env or .env* files, so the live definition cannot be pulled`,
     };
   }
+  // The snapshot names the project it was captured from. A local .env pointing
+  // at a DIFFERENT Supabase project would otherwise diff AGENT_SYNC_FIELDS
+  // against someone else's function — and in `--live --strict` pass or fail a
+  // release on it. Refuse rather than compare the wrong database.
+  const projectRef = /^https?:\/\/([a-z0-9-]+)\.supabase\.co/i.exec(env.url)?.[1];
+  if (projectRef && projectRef !== EXPECTED_PROJECT_REF) {
+    return {
+      definition: null,
+      failure:
+        `the configured Supabase URL points at project "${projectRef}", but the snapshot ` +
+        `was captured from "${EXPECTED_PROJECT_REF}". Refusing to compare against a different database.`,
+    };
+  }
+
   const endpoint = `${env.url.replace(/\/$/, "")}/rest/v1/rpc/${ROUTINE_DUMP_RPC}`;
   let raw: string;
   try {

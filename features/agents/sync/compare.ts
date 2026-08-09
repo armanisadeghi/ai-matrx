@@ -106,17 +106,28 @@ function countChangedLeaves(node: DiffNode): number {
 /**
  * True when every changed leaf beneath this node is a pure reorder.
  *
- * The engine's array scan is set-based, so it also reports `reordered` when the
- * two arrays hold the same distinct values at different MULTIPLICITIES
- * (`["a","b"]` vs `["a","b","b"]`). An added duplicate is not a reorder, so the
- * length check keeps the gentler "order only" label honest.
+ * The engine's array scan is SET-based, so it reports `reordered` whenever the
+ * two arrays hold the same distinct values — including at different
+ * MULTIPLICITIES. `["a","b"]` vs `["a","b","b"]` differs in length, but
+ * `["a","a","b"]` vs `["a","b","b"]` does not, so a length check is not enough:
+ * that pair is a genuine content change wearing a reorder's clothes. Comparing
+ * the multisets is what actually keeps the gentler "order only" label honest.
+ *
+ * Note this can only ever be true for arrays of PRIMITIVES (tools, tags,
+ * mcp_servers). The verdict matches arrays of objects positionally, so a
+ * reordered `variable_definitions` surfaces as modified leaves, not `reordered`.
  */
 function isOrderOnly(node: DiffNode): boolean {
   if (node.changeType === "reordered") {
     const before = node.oldValue;
     const after = node.newValue;
     if (Array.isArray(before) && Array.isArray(after)) {
-      return before.length === after.length;
+      if (before.length !== after.length) return false;
+      const sortedKeys = (arr: unknown[]) =>
+        arr.map((v) => JSON.stringify(v) ?? "undefined").sort();
+      const a = sortedKeys(before);
+      const b = sortedKeys(after);
+      return a.every((key, i) => key === b[i]);
     }
     return true;
   }

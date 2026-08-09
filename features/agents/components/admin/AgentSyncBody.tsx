@@ -571,9 +571,22 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
   const pullBlocked = !!pullImpact?.nothingToSync;
   const pushBlocked = !!pushImpact?.nothingToSync;
 
-  // Disabled is broader: a sync is never offered before its impact is known.
-  // `comparing` covers the first load AND the recheck after a sync, so a second
-  // overwrite cannot be fired into an unknown state.
+  /**
+   * Disabled is broader than the verdict, but deliberately NOT "disabled
+   * whenever the impact is unknown".
+   *
+   * `comparing` blocks the transient states — the first load and the recheck
+   * after a sync — because the answer is seconds away and firing a second
+   * overwrite into it is pure race.
+   *
+   * `unknown` and a failed comparison stay ENABLED on purpose. There the answer
+   * is not coming: a side is unreadable, or the request failed. Blocking sync
+   * would strand a super admin who legitimately needs to publish and can see
+   * perfectly well what they are doing — over-tightening is its own defect. The
+   * verdict card says plainly that we could not compare, and each button's
+   * tooltip says it would overwrite the target with changes the user cannot see
+   * here. Informed, not prevented.
+   */
   const pullDisabled = !canPull || busy !== null || comparing || pullBlocked;
   const pushDisabled = !canPush || busy !== null || comparing || pushBlocked;
 

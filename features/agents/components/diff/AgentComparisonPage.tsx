@@ -117,7 +117,10 @@ export function AgentComparisonPage({
 
     dispatch(fetchFullAgent(agentId))
       .unwrap()
-      .then(() => patchIfCurrent({ agentLoading: false }))
+      // Clearing loadError on success matters: pick A (slow) → pick B → pick A
+      // again lets request #1's rejection through the agentId guard, so a
+      // later success has to be able to undo it.
+      .then(() => patchIfCurrent({ agentLoading: false, loadError: null }))
       .catch(() =>
         patchIfCurrent({
           agentLoading: false,

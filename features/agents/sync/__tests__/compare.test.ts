@@ -257,6 +257,19 @@ describe("compareAgentSyncSnapshots — per-field detection", () => {
     expect(result.changed[0].orderOnly).toBe(true);
   });
 
+  it("does not call a same-length multiplicity change order-only", () => {
+    // ["a","a","b"] vs ["a","b","b"]: same distinct values, same LENGTH, but a
+    // genuinely different multiset. A length check alone would call this a
+    // reorder; the label has to compare multisets.
+    const result = compareAgentSyncSnapshots(
+      snapshot({ tags: ["a", "a", "b"] }),
+      snapshot({ tags: ["a", "b", "b"] }),
+    );
+    expect(result.verdict).toBe("differs");
+    expect(result.changed[0].field).toBe("tags");
+    expect(result.changed[0].orderOnly).toBe(false);
+  });
+
   it("does not call an added duplicate an order-only change", () => {
     // Same distinct values, different multiplicity — the set-based array scan
     // reports "reordered", but an extra copy is not a reorder.
@@ -383,6 +396,59 @@ describe("compareAgentSyncSnapshots — per-field detection", () => {
       "settings",
       "defaultRagBoost",
     ]);
+  });
+});
+
+describe("compareAgentSyncSnapshots — never throws on a real jsonb shape", () => {
+  // Every synced container is unconstrained jsonb. A heterogeneous array used
+  // to crash the diff engine, which surfaced to the user as a raw TypeError in
+  // the "comparison request failed" card — and left both sync buttons enabled
+  // with no impact preview.
+  const shapes: [string, Record<string, unknown>, Record<string, unknown>][] = [
+    [
+      "custom_tools holding an object then a string",
+      { custom_tools: [{ x: 1 }, "a"] },
+      { custom_tools: [{ x: 1 }, "b"] },
+    ],
+    [
+      "custom_tools holding an object then null",
+      { custom_tools: [{ x: 1 }, "a"] },
+      { custom_tools: [{ x: 1 }, null] },
+    ],
+    [
+      "variable_definitions with a non-object entry",
+      { variable_definitions: [{ name: "a" }, { name: "b" }] },
+      { variable_definitions: [{ name: "b" }, "junk"] },
+    ],
+    [
+      "context_slots with a non-object entry",
+      { context_slots: [{ key: "a" }, { key: "b" }] },
+      { context_slots: [{ key: "b" }, "junk"] },
+    ],
+    [
+      "messages holding an object then a string",
+      { messages: [{ role: "system" }, "a"] },
+      { messages: [{ role: "system" }, "b"] },
+    ],
+    [
+      "a heterogeneous array nested inside settings",
+      { settings: { list: [{ x: 1 }, "a"] } },
+      { settings: { list: [{ x: 1 }, "b"] } },
+    ],
+    [
+      "an array of arrays",
+      { custom_tools: [[1], [2]] },
+      { custom_tools: [[1], [3]] },
+    ],
+  ];
+
+  it.each(shapes)("compares %s without throwing", (_label, a, b) => {
+    expect(() =>
+      compareAgentSyncSnapshots(snapshot(a), snapshot(b)),
+    ).not.toThrow();
+    expect(compareAgentSyncSnapshots(snapshot(a), snapshot(b)).verdict).toBe(
+      "differs",
+    );
   });
 });
 
