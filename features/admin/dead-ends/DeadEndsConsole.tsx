@@ -339,13 +339,35 @@ export function DeadEndsConsole({ report, history, problems }: DeadEndsConsolePr
       ? report.totals.findings - previous.findings
       : null;
 
+  /**
+   * The loaded report is not in the history at all — the two committed files
+   * describe different scans.
+   *
+   * Withholding the delta (above) was necessary but NOT sufficient: the trend
+   * below still plots history alone, so the hero would read "142 findings"
+   * while the last bar showed some other total, and nothing on the page said
+   * why. A silent inconsistency on a scoreboard is the failure this whole
+   * surface exists to prevent, so it joins the same loud alert the internal
+   * reconcile uses — shown, never thrown.
+   */
+  const currentIsPlotted = currentInHistory >= 0;
+  const snapshotProblems =
+    history.length > 0 && !currentIsPlotted
+      ? [
+          ...problems,
+          `history.json does not contain this report's scan (${report.generatedAt}` +
+            `${report.commit ? ` @ ${report.commit.slice(0, 7)}` : ""}), so the ` +
+            `trend below ends at a different scan than the totals above`,
+        ]
+      : problems;
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <Header
         report={report}
         scanAgeDays={scanAgeDays}
         delta={delta}
-        problems={problems}
+        problems={snapshotProblems}
         onCopyRefresh={() =>
           void copy("refresh", REFRESH_COMMAND, "Refresh command")
         }
@@ -368,6 +390,7 @@ export function DeadEndsConsole({ report, history, problems }: DeadEndsConsolePr
           report={report}
           delta={delta}
           history={history}
+          endsAtCurrentScan={currentIsPlotted}
           onPickSeverity={(severity) => setBucket({ kind: "severity", value: severity })}
         />
         <BucketCard
@@ -643,11 +666,14 @@ function TotalsCard({
   report,
   delta,
   history,
+  endsAtCurrentScan,
   onPickSeverity,
 }: {
   report: DeadEndReport;
   delta: number | null;
   history: DeadEndHistoryPoint[];
+  /** False when the loaded report is absent from history — see the console. */
+  endsAtCurrentScan: boolean;
   onPickSeverity: (severity: DeadEndSeverity) => void;
 }) {
   const { totals } = report;
@@ -707,7 +733,7 @@ function TotalsCard({
         </span>
       </div>
 
-      <Trend history={history} />
+      <Trend history={history} endsAtCurrentScan={endsAtCurrentScan} />
     </div>
   );
 }
@@ -717,7 +743,19 @@ function TotalsCard({
  * time on an admin card; pulling a charting dependency into this chunk to draw
  * ten rectangles is exactly the weight the Fragmentation Law exists to avoid.
  */
-function Trend({ history }: { history: DeadEndHistoryPoint[] }) {
+function Trend({
+  history,
+  endsAtCurrentScan,
+}: {
+  history: DeadEndHistoryPoint[];
+  /**
+   * Whether the last bar IS the scan whose totals the page is showing. When
+   * the two committed files disagree it is not, and calling it "now" in the
+   * accessible label would state the inconsistency as fact to exactly the
+   * users who cannot see the chart. The red alert above carries the why.
+   */
+  endsAtCurrentScan: boolean;
+}) {
   const points = history.slice(-40);
   if (points.length < 2) {
     return (
@@ -739,8 +777,12 @@ function Trend({ history }: { history: DeadEndHistoryPoint[] }) {
         preserveAspectRatio="none"
         className="h-8 w-full"
         role="img"
-        aria-label={`Findings trend over the last ${points.length} scans, now ${
-          points[points.length - 1]?.findings ?? 0
+        aria-label={`Findings trend over the last ${points.length} scans, ${
+          endsAtCurrentScan ? "now" : "last recorded"
+        } ${points[points.length - 1]?.findings ?? 0}${
+          endsAtCurrentScan
+            ? ""
+            : " — this does not match the totals above; the snapshot files disagree"
         }`}
       >
         {points.map((p, i) => {

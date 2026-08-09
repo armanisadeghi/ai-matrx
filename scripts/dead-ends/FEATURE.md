@@ -128,6 +128,15 @@ deliberately does not throw — the rows are still worth showing, and a parse
 that takes the scoreboard down is the mistake the history validator already had
 to be walked back from.
 
+**The same alert covers the OTHER divergence: `report.json` vs `history.json`.**
+Withholding the "since last scan" delta when the loaded report is absent from
+the history was necessary and not sufficient — the trend still plotted history
+alone, so the hero could read `142 findings` above a last bar showing something
+else, silently. The page now says so in the same red alert, and the chart's
+accessible label drops the word "now" (it reads *last recorded*, plus the
+mismatch) rather than asserting the inconsistency as fact to the users who
+cannot see the bars.
+
 ## The rules
 
 | Id | Severity | Fires when |
@@ -369,3 +378,12 @@ new one.
   the hole was reachable, and the ESLint half held at **87** for the same reason.
   Surfaced a registry gap worth its own line: `transcript` has a live route and
   no `hrefFor`.
+- **2026-08-09 (evening, last)** — closed the last silent path between the two
+  snapshot files. The delta already refused to compute when `report.json` was
+  absent from `history.json`, but the trend kept plotting history alone and its
+  aria-label still called the final bar "now" — so the hero total and the last
+  bar could disagree with nothing on the page admitting it. That divergence now
+  joins the red alert, and the label reads *last recorded* + the mismatch.
+  Simulated all three states against the committed pair: matched → delta 0, no
+  alert; report absent → alert; report absent AND the last bar a different
+  number (the dangerous case) → alert, no delta.
