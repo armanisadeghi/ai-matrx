@@ -42,6 +42,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import type { PermissionLevel } from "@/utils/permissions/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
@@ -387,6 +388,95 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may WRITE into the open note.
+ *
+ * A note is the user's own prose, so the bar is deliberately narrow: only the
+ * four things an agent can plausibly author better than a blank cursor (the
+ * body, an appended block, the title, the tags) plus filing it into a folder
+ * that ALREADY exists. Everything else on this surface stays human — ids,
+ * ownership, sharing/permissions, visibility, version history, and every
+ * destructive action (delete, empty trash, permanent delete).
+ *
+ * Modes follow where the write actually lands:
+ * - `draft` for content/title/tags: they stage through the SAME slice actions
+ *   the user's own typing dispatches (`updateNoteContent`, `updateNoteLabel`,
+ *   `updateNoteTags` → `applyFieldEdit`), so each lands on the note's undo
+ *   stack, marks the field dirty, and rides the canonical autosave. The user
+ *   sees the change in the editor and can Cmd+Z it like their own keystroke.
+ * - `entity` for the folder: a move is only correct when `folder_name` and
+ *   `folder_id` change together, which is the `moveNoteToFolder` thunk's job
+ *   (resolve id → set both → save). There is no draft form of it.
+ *
+ * All targets are `ask`: a note is the user's writing, so an agent-originated
+ * change is confirmed in place, naming the target, every time. Handlers are
+ * registered by `NoteContentEditor.tsx` on its `SurfaceRuntimeProvider`, and
+ * are withheld entirely on a view-only shared note (see `shared_access`) so
+ * agents are never offered a write RLS would reject.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "note_content",
+    label: "Note content",
+    description:
+      "REPLACES the entire body of the open note with the value — markdown text, exactly as it should read. Use for rewrites, cleanups, and restructures; read the current body from `current_note` first so nothing the user wants kept is dropped. To add to the note instead of replacing it, use `append_to_note`. Staged into the live editor (undoable, autosaved like the user's own typing).",
+    valueType: "string",
+    updatesValue: "current_note",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "note_identity",
+    sortOrder: 100,
+  },
+  {
+    name: "append_to_note",
+    label: "Appended note content",
+    description:
+      "APPENDS the value to the end of the open note's body, separated by a blank line. Nothing already in the note is changed or removed — pass ONLY the new markdown to add (do not repeat the existing body). Use for adding a summary, a section, or action items to what the user already wrote. Staged into the live editor (undoable, autosaved like the user's own typing).",
+    valueType: "string",
+    updatesValue: "current_note",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "note_identity",
+    sortOrder: 110,
+  },
+  {
+    name: "note_title",
+    label: "Note title",
+    description:
+      "Sets the open note's title (its label on the tab and in the sidebar). A non-empty single-line plain string — no markdown, no surrounding quotes, no trailing punctuation. Staged into the live editor and autosaved.",
+    valueType: "string",
+    updatesValue: "current_note_title",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "note_identity",
+    sortOrder: 120,
+  },
+  {
+    name: "note_tags",
+    label: "Note tags",
+    description:
+      "Sets the FULL tag set on the open note — this REPLACES the existing tags, it does not merge. Read `current_note_tags` first and include every existing tag you want kept. Value: an array of short plain-text tag strings (free vocabulary, no leading '#'); pass an empty array to clear all tags. Staged into the live editor and autosaved.",
+    valueType: "array",
+    updatesValue: "current_note_tags",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "note_identity",
+    sortOrder: 130,
+  },
+  {
+    name: "note_folder",
+    label: "Note folder",
+    description:
+      "Files the open note into an EXISTING folder, by exact name (case-sensitive) from `all_folder_names` — a name that is not already in that list is refused rather than creating a new folder. Moves the note immediately through the canonical move path and saves it; this one is not staged.",
+    valueType: "string",
+    updatesValue: "current_note_folder",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "note_identity",
+    sortOrder: 140,
+  },
+];
+
 export const notesEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/notes",
   readiness: "verified",
@@ -396,6 +486,7 @@ export const notesEditorManifest: SurfaceManifest = {
 You are on the Notes editor: the user's markdown workspace of many small-to-medium notes, organized into folders and opened as tabs. One note is active in the editor at a time; a second may sit in a split pane.
 Read the values in tiers: the Selection & cursor group is the live runtime cut (what is highlighted, where the cursor is); the Active note group identifies the persisted note and its metadata — its full content resolves through the current_note resource reference (with an unsaved-buffer overlay when dirty); the Workspace group describes the surrounding tabs, folders, and scope assignments; Editor state tells you what the UI can currently do (mode, panes, find bar).
 When shared_access is present the note belongs to someone else — respect its permission_level before proposing writes. When is_new_note is true the note has no server row yet; actions needing a stable id should save first or refuse.
+You can also WRITE to this surface: the note's body (replace or append), its title, its tags, and its folder. These edit the user's own writing, so each one is confirmed with the user before it lands — read the matching value first (a replace or a tag set overwrites what is there), change only what was asked for, and leave the rest of the note alone.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -407,6 +498,7 @@ When shared_access is present the note belongs to someone else — respect its p
     pickBaseline("selection", "text_before", "text_after", "content"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One open-tab entry as emitted in `open_notes_summary`. */
