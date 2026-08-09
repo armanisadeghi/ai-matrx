@@ -747,12 +747,32 @@ export function MatrxDataTable<T>({
                       const entityId = entityToken
                         ? (col.entityId?.(row) ?? getRowId(row))
                         : undefined;
+                      // LOUD RECOVERY. With no `cell` of its own, a UUID-shaped
+                      // value renders `MatrxUuidCell`, which contains its own
+                      // buttons — wrapping that in `EntityRef`'s anchor nests
+                      // interactive elements inside a link. It is also
+                      // redundant: `MatrxUuidCell` already carries doors. This
+                      // is a column-config mistake, so it screams rather than
+                      // rendering something subtly broken.
+                      const uuidCellConflict =
+                        Boolean(entityToken) &&
+                        !col.cell &&
+                        isUuidValue(getCellValue(row, col));
+                      if (uuidCellConflict && !warnedUuidDoorColumns.has(columnId(col))) {
+                        warnedUuidDoorColumns.add(columnId(col));
+                        console.error(
+                          `[MatrxDataTable] column "${columnId(col)}" sets \`entityToken\` ` +
+                            "but renders the default UUID cell, which has its own controls — " +
+                            "nesting them inside the EntityRef anchor. Give the column a `cell`, " +
+                            "or drop `entityToken` (MatrxUuidCell already offers doors).",
+                        );
+                      }
                       const doorDisplay =
-                        entityToken && entityId ? (
+                        entityToken && entityId && !uuidCellConflict ? (
                           <EntityRef
                             token={entityToken}
                             id={String(entityId)}
-                            name={entityDisplayName(row, col)}
+                            name={entityDisplayName(displayRow, col)}
                             href={cellHref}
                             showIcon={false}
                             fill
@@ -1026,6 +1046,9 @@ function columnWidthVar(
  * Falls back to undefined so `EntityRef` shows its truncated-id form rather
  * than the literal "[object Object]" a naive String() would produce.
  */
+/** Columns already screamed about — one banner per column, not per row. */
+const warnedUuidDoorColumns = new Set<string>();
+
 function entityDisplayName<T>(
   row: T,
   col: MatrxColumnDef<T>,

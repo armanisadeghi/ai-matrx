@@ -13,6 +13,33 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D142 — on TOUCH, EntityRef offers only one of its four doors (2026-08-09)
+
+`EntityRef`'s control cluster (peek + new tab) is revealed by `group-hover` /
+`focus-within` and is `pointer-events-none opacity-0` otherwise
+(`components/official/entity-ref/EntityRef.tsx`). A touch device has no hover,
+so on phones and tablets **the peek and the explicit new-tab door do not exist**
+— every `EntityRef` degrades to Open-only. That is THE DOOR LAW failing inside
+the component built to enforce it, on the platform where losing your place by
+navigating hurts most.
+
+The `pointer-events-none` is itself correct and deliberate — without it, an
+invisible new-tab link sits beside every name and a stray tap opens a blank tab.
+The gap is that nothing replaces it for touch.
+
+Secondary, same cause: the cluster stays IN FLOW, so it permanently reserves
+~44px (two 20px controls + gaps) in every cell it lands in, including the
+`/transcripts` title column which declares no width. Found while giving
+`MatrxDataTable` columns the door set (that adoption made the cost visible; it
+predates it).
+
+**Needs a product call, which is why this is filed rather than fixed:** either
+(a) `alwaysShowActions` whenever `useIsMobile()`, which changes the resting
+appearance of every list on mobile; (b) a long-press / tap-and-hold affordance;
+or (c) the row's `…` menu carries peek on touch and `EntityRef` stays
+hover-only. (c) is probably right for tables and wrong for prose references.
+Whatever is chosen, `opacity-0` should stop reserving layout.
+
 ### D141 — the entity registry's content_role alarm screams for 289 of 322 tokens (2026-08-09)
 
 `getEntityInfo` (`features/scopes/registry/entityRegistry.ts:461-470`) `console.error`s a

@@ -100,6 +100,13 @@ export interface MatrxColumnDef<T> {
    * text. Pair with a per-row `href` when the kinds diverge.
    */
   entityToken?: string | ((row: T) => string | undefined);
+  /**
+   * NOTE: give the column a `cell` when you set this. Without one, a
+   * UUID-shaped value renders the default `MatrxUuidCell`, which has its own
+   * controls — wrapping those in the door's anchor would nest interactive
+   * elements inside a link, and is redundant besides. The shell detects that
+   * combination, skips the door, and screams once per column.
+   */
   /** The id `entityToken` refers to. Defaults to the table's `getRowId(row)`. */
   entityId?: (row: T) => string | undefined;
   /**
