@@ -36,6 +36,19 @@ export interface PriorityQueueRow extends MarketingPriorityProjection {
 export interface FindingListRow extends MarketingFinding {
   page_path: string | null;
   page_url: string | null;
+  /**
+   * The catalogue's human label for `item_key`, when the catalogue knows it.
+   * A brand-new server check has no `analysis_item` row yet — null here is
+   * normal and the UI falls back to the humanized key.
+   */
+  item_label: string | null;
+  /**
+   * `metadata.reasoning` from the finding's LATEST analysis result — the
+   * analyzer's own plain-language sentence about what is wrong. The server
+   * writes one on EVERY result, so this is the guaranteed floor the UI can
+   * always show, including for item keys this frontend has never seen.
+   */
+  reasoning: string | null;
 }
 
 export interface FindingDetailData {

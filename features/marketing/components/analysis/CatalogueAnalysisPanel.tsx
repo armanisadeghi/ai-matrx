@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { CircleGauge, Loader2, Play } from "lucide-react";
+import { CircleGauge, ExternalLink, Loader2, Play } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
@@ -28,6 +28,7 @@ import {
   formatCompactDate,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { humanizeItemKey } from "@/features/marketing/lib/finding-remedies";
 
 function scoreTone(score: number | null): "default" | "good" | "warning" | "bad" {
   if (score === null) return "default";
@@ -208,11 +209,20 @@ export function CatalogueAnalysisPanel() {
                         }
                       >
                         <span className="min-w-0">
-                          <span className="block truncate font-mono text-[11px] text-foreground">
-                            {item.itemKey}
+                          {/* Readable name first — a rollup keyed by
+                              `ttfb_server_response` is not a UI. An item key
+                              the catalogue has not labelled yet (a check the
+                              server added since) humanizes rather than
+                              disappearing. */}
+                          <span className="block truncate text-xs text-foreground">
+                            {humanizeItemKey(item.itemKey)}
                           </span>
-                          <span className="block truncate text-[10px] capitalize text-muted-foreground">
-                            {item.category} / {item.subcategory}
+                          <span className="block truncate font-mono text-[10px] text-muted-foreground">
+                            {item.itemKey}
+                            <span className="capitalize">
+                              {" "}
+                              · {item.category} / {item.subcategory}
+                            </span>
                           </span>
                         </span>
                         <span className="flex shrink-0 items-center gap-2">
@@ -238,10 +248,10 @@ export function CatalogueAnalysisPanel() {
               ) : (
                 <ul className="divide-y divide-border">
                   {data.worstPages.map((page: AnalysisWorstPage) => (
-                    <li key={page.pageId}>
+                    <li key={page.pageId} className="flex items-center">
                       <button
                         type="button"
-                        className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left hover:bg-muted/50"
+                        className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-2 text-left hover:bg-muted/50"
                         onClick={() =>
                           navigate(`${sitePath}/pages/${page.pageId}`)
                         }
@@ -268,6 +278,19 @@ export function CatalogueAnalysisPanel() {
                           {page.pageScore.toFixed(1)}
                         </span>
                       </button>
+                      {/* The second door: the live page itself, in a new tab. */}
+                      {page.url ? (
+                        <a
+                          href={page.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Open the live page in a new tab"
+                          aria-label="Open the live page in a new tab"
+                          className="mr-2 shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      ) : null}
                     </li>
                   ))}
                 </ul>

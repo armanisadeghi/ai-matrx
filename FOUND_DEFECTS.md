@@ -13,6 +13,19 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D138 — `/marketing/.../audit` dead-ends on a large site: "Audit rollup unavailable" (2026-08-09)
+
+Reproduced on a CLEAN tree (so not caused by the findings work of the same day):
+`/marketing/brands/13c6df9e-475e-4fa0-b7dc-2f4ba0001388/sites/baa61391-286f-4143-81dc-226dfbc90358/audit`
+(Cosmetic Injectables, 325 pages / 319 scored) sits on "Aggregating site audit…" and then
+renders the `QueryError` "Audit rollup unavailable" with only a Retry. The whole tab is lost,
+including the Catalogue-analysis panel mounted inside it. Suspect the bounded paged fetch
+`fetchSiteAuditRows` (`features/marketing/data/service.ts`) timing out or exceeding a range on
+this row count. Fix: capture the real Supabase error (it is swallowed into a generic message —
+`QueryError` should surface the PostgREST code), then page or cap the rollup. Also a dead end
+by doctrine: the error state offers no route to the data that DOES load (findings register,
+priority queue).
+
 ### D136 — `pnpm check:hatches` is red on main: baseline drifted, ratchet no longer ratchets (2026-08-08)
 
 `scripts/type-escape-baseline.json` is far behind the tree — five categories are ABOVE baseline
