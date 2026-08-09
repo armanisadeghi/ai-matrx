@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -124,6 +125,28 @@ export function NotifyOwnerDialog({ open, target, onClose }: NotifyOwnerDialogPr
             They&apos;ll get a direct message with a link to review.
           </DialogDescription>
         </DialogHeader>
+
+        {/* THE DOOR LAW: the dialog is about drift on a specific AGENT, whose
+            id is right there in `target.drift.agentId`, and named it as flat
+            text. Rendered as its OWN row rather than by linkifying
+            `contextLabel`, because that label is documented as "agent name OR
+            'all affected users'" — turning it into an agent link would
+            mislabel the fleet-wide case.
+
+            The RECIPIENTS deliberately stay uncounted-only: they are users,
+            and `user` is not a registered entity token, so there is nothing to
+            resolve. See the registry-gaps table in
+            docs/handoffs/no-dead-ends-sweep.md. */}
+        {target?.drift.agentId ? (
+          <div className="flex min-w-0 items-center gap-1.5 text-xs">
+            <span className="shrink-0 text-muted-foreground">Agent</span>
+            <EntityRef
+              token="agent"
+              id={target.drift.agentId}
+              name={target.contextLabel || null}
+            />
+          </div>
+        ) : null}
 
         <div className="space-y-3">
           <div>
