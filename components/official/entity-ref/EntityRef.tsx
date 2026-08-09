@@ -148,6 +148,22 @@ export interface EntityRefProps {
    */
   onOpen?: () => void;
   className?: string;
+  /**
+   * Render arbitrary content as the label instead of the name text.
+   *
+   * The doors are the point of this component; the label is incidental. A
+   * table cell renders `<span>{title}</span><Badge>Draft</Badge>`, a card
+   * renders a title over a subtitle — neither is a string, and before this
+   * existed those surfaces could not adopt `EntityRef` at all without
+   * flattening what they show. That is how a shell ends up with its OWN
+   * Open-only door beside this one (`MatrxDataTable.href`) and every column
+   * that names a record loses new-tab and peek.
+   *
+   * `name` is still required-ish when you pass children: it supplies the
+   * `title`/`aria-label` text, so a screen reader and a tooltip still say
+   * which record this is.
+   */
+  children?: React.ReactNode;
 }
 
 const CONTROL_CLASS =
@@ -170,6 +186,7 @@ export function EntityRef({
   extraActions,
   onOpen,
   className,
+  children,
 }: EntityRefProps) {
   const [peekOpen, setPeekOpen] = useState(false);
 
@@ -183,6 +200,9 @@ export function EntityRef({
   const peekKind = peekKeyForToken(canonicalToken);
   const canPeek = !disablePeek && hasPeek(peekKind);
   const label = name?.trim() || `${id.slice(0, 8)}…`;
+  // `label` stays the ACCESSIBLE name (title/aria) even when children
+  // replace what is drawn — a tooltip reading "Open" tells nobody anything.
+  const labelBody = children ?? label;
   const Icon = info?.Icon ?? null;
 
   const stop = (e: React.MouseEvent) => e.stopPropagation();
@@ -230,7 +250,7 @@ export function EntityRef({
             labelFit,
           )}
         >
-          {label}
+          {labelBody}
         </Link>
       ) : onOpen ? (
         <button
@@ -245,7 +265,7 @@ export function EntityRef({
             labelFit,
           )}
         >
-          {label}
+          {labelBody}
         </button>
       ) : (
         <span className={cn("min-w-0", labelFit)} title={label}>

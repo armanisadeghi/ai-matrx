@@ -76,6 +76,25 @@ export interface MatrxColumnDef<T> {
    */
   href?: (row: T) => string | undefined;
   /**
+   * Canonical entity token for the record this column NAMES. When set, the cell
+   * renders through `EntityRef`, so the name carries the full door set — Open,
+   * new tab, and Peek — instead of the Open-only `<Link>` that `href` alone
+   * produces.
+   *
+   * THE INVENTORY LAW, applied to this component: the table grew its own door
+   * (`href`) beside the platform's (`EntityRef`), and every column that named a
+   * record picked one and silently lost the other half. This field collapses
+   * them — `href` still works and still forces the pencil trigger, and it
+   * OVERRIDES the registry route when both are set (for an admin-side route on
+   * a satellite deployment).
+   *
+   * Needs the record's id: `entityToken` is paired with `entityId`, defaulting
+   * to the table's own `getRowId`.
+   */
+  entityToken?: string;
+  /** The id `entityToken` refers to. Defaults to the table's `getRowId(row)`. */
+  entityId?: (row: T) => string | undefined;
+  /**
    * Built-in cell kinds. `"uuid"` / `"fk"` use MatrxUuidCell (short + copy +
    * optional open). `"auto"` (default) detects UUID-shaped strings.
    */

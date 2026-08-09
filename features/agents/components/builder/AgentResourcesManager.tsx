@@ -161,8 +161,15 @@ function AgentResourcePickerAction({
 export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
   const [edges, setEdges] = useState<AssociationTargetEdge[]>([]);
   const [loading, setLoading] = useState(true);
-  /** The attached resource the user is previewing, if any. */
-  const [peekFor, setPeekFor] = useState<AssociationTargetEdge | null>(null);
+  /**
+   * The attached resource being previewed, held as an ID and DERIVED from
+   * `edges` below. Storing the edge object instead means every path that drops
+   * an edge — `reload`, `detach`, a future one — has to remember to clear the
+   * peek, and the first review caught exactly that: `detach` filters `edges`
+   * directly and left a preview open on a resource the agent no longer had.
+   * Deriving makes that unrepresentable rather than remembered.
+   */
+  const [peekEdgeId, setPeekEdgeId] = useState<string | null>(null);
 
   const reload = async () => {
     const result = await associationsService.listForTargetsVisible("agent", [
@@ -172,14 +179,8 @@ export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
       toast.error(`Couldn't load resources: ${result.error.message}`);
       return;
     }
-    const next = result.data.edges.filter(
-      (edge) => edge.role === AGENT_RESOURCE_ROLE,
-    );
-    setEdges(next);
-    // A peek open on an edge the reload dropped would keep previewing a
-    // resource this agent no longer has.
-    setPeekFor((current) =>
-      current && next.some((edge) => edge.id === current.id) ? current : null,
+    setEdges(
+      result.data.edges.filter((edge) => edge.role === AGENT_RESOURCE_ROLE),
     );
   };
 
@@ -233,6 +234,10 @@ export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
     }
     setEdges((current) => current.filter((item) => item.id !== edge.id));
   };
+
+  const peekEdge = peekEdgeId
+    ? (edges.find((edge) => edge.id === peekEdgeId) ?? null)
+    : null;
 
   return (
     <div className="flex min-w-0 items-center gap-2">
@@ -290,7 +295,7 @@ export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
               // does want to go. Gated on a peek actually existing — an
               // openable-looking tile that no-ops is the dead end this
               // campaign exists to kill.
-              onClick={canPeek ? () => setPeekFor(edge) : undefined}
+              onClick={canPeek ? () => setPeekEdgeId(edge.id) : undefined}
               onRemove={() => void detach(edge)}
               variant="compact"
             />
@@ -303,11 +308,11 @@ export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
         <AgentResourcePickerAction batch onSelected={attach} />
       </div>
 
-      {peekFor && (
+      {peekEdge && (
         <ResourcePeekHost
-          kind={peekKeyForToken(resolveEntityToken(peekFor.sourceType))}
-          id={peekFor.sourceId}
-          onClose={() => setPeekFor(null)}
+          kind={peekKeyForToken(resolveEntityToken(peekEdge.sourceType))}
+          id={peekEdge.sourceId}
+          onClose={() => setPeekEdgeId(null)}
         />
       )}
     </div>

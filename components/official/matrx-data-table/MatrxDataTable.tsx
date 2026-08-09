@@ -21,6 +21,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem } from "@/components/agent-copy/export";
 import { cn } from "@/lib/utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ColumnHeaderCell } from "./ColumnHeaderCell";
 import { DataRowInspector } from "./DataRowInspector";
 import DataRowWindow from "./DataRowWindow.dynamic";
@@ -733,6 +734,30 @@ export function MatrxDataTable<T>({
                       );
                       const dirty = Boolean(rowEdits && field in rowEdits);
                       const cellHref = col.href?.(row) ?? undefined;
+                      // A column that NAMES a record renders its display
+                      // through `EntityRef`, so the name carries Open + new
+                      // tab + Peek rather than the Open-only link `href` gives.
+                      // `href` still wins as the route (admin-side overrides),
+                      // and still forces the pencil trigger below — the linked
+                      // body and the inline edit must not fight.
+                      const entityToken = col.entityToken;
+                      const entityId = entityToken
+                        ? (col.entityId?.(row) ?? getRowId(row))
+                        : undefined;
+                      const doorDisplay =
+                        entityToken && entityId ? (
+                          <EntityRef
+                            token={entityToken}
+                            id={String(entityId)}
+                            name={entityDisplayName(row, col)}
+                            href={cellHref}
+                            showIcon={false}
+                            fill
+                            className="w-full"
+                          >
+                            {display}
+                          </EntityRef>
+                        ) : null;
                       return (
                         <td
                           key={columnId(col)}
@@ -761,12 +786,21 @@ export function MatrxDataTable<T>({
                               }
                               editType={col.editable}
                               editOptions={col.editOptions}
-                              display={display}
+                              display={doorDisplay ?? display}
                               dirty={dirty}
                               onCommit={(next) => commitCell(id, field, next)}
-                              href={cellHref}
-                              editTrigger={col.editTrigger}
+                              // The door already IS the anchor, so `href`
+                              // must not be passed again (two nested links).
+                              // `editTrigger="pencil"` reproduces exactly what
+                              // `href` used to force: a linked body cannot also
+                              // be a click-to-edit target.
+                              href={doorDisplay ? undefined : cellHref}
+                              editTrigger={
+                                doorDisplay ? "pencil" : col.editTrigger
+                              }
                             />
+                          ) : doorDisplay ? (
+                            doorDisplay
                           ) : cellHref ? (
                             <Link
                               href={cellHref}
@@ -981,6 +1015,22 @@ function columnWidthVar(
   return {
     "--matrx-col-w": typeof width === "number" ? `${width}px` : width,
   } as CSSProperties;
+}
+
+/**
+ * The plain-text name for an `entityToken` cell — `EntityRef` needs a string
+ * for its `title`/`aria-label` even when children draw the visible content.
+ * Falls back to undefined so `EntityRef` shows its truncated-id form rather
+ * than the literal "[object Object]" a naive String() would produce.
+ */
+function entityDisplayName<T>(
+  row: T,
+  col: MatrxColumnDef<T>,
+): string | undefined {
+  const raw = getCellValue(row, col);
+  if (typeof raw === "string") return raw.trim() || undefined;
+  if (typeof raw === "number" || typeof raw === "boolean") return String(raw);
+  return undefined;
 }
 
 function renderCell<T>(

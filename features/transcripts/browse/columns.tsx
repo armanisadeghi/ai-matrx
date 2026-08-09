@@ -49,6 +49,12 @@ export const TRANSCRIPT_COLUMNS: EntityColumnSpec<TranscriptListRow>[] = [
       accessorKey: "title",
       header: "Title",
       filter: "text",
+      // THE DOOR LAW, via the shell rather than a bespoke cell: `entityToken`
+      // makes the name an `EntityRef`, so it carries Open + new tab + peek and
+      // the shell keeps forcing the pencil so the link and the inline edit
+      // cannot fight. This column was blocked on exactly that interplay; the
+      // answer was that MatrxDataTable already solved it for its own `href`.
+      entityToken: "transcript",
       editable: "string",
       // Unsorted recordings have no user-facing title — no pencil for them.
       editableIf: (row) => row.kind !== "unsorted",
