@@ -11355,7 +11355,7 @@
           "SEO Collections"
         ],
         "summary": "Sync Page Pagespeed",
-        "description": "On-demand streamed PageSpeed Insights collection for one canonical\npage (M-74/M-75, WS-12): builds the CollectionRequest from the page's\nlive URL (SSOT — never a caller-supplied URL) and runs it through the\nONE ``run_collection`` funnel every other provider uses. First-ever\nrows land in ``seo.page_performance``.",
+        "description": "On-demand streamed PageSpeed Insights collection for one canonical\npage (M-74/M-75, WS-12): builds the CollectionRequest from the page's\nlive URL (SSOT — never a caller-supplied URL) and runs it through the\nONE ``run_collection`` funnel every other provider uses. Rows land in\n``seo.page_performance`` — the canonical PSI store.\n\n``strategy: \"both\"`` collects mobile and desktop sequentially (PSI is\nslow and rate-limited; two parallel calls on one page buy nothing and\ndouble the burst against the shared platform quota).",
         "operationId": "sync_page_pagespeed_seo_pages__page_id__pagespeed_sync_post",
         "parameters": [
           {
@@ -11384,6 +11384,61 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/pages/{page_id}/performance": {
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Read Page Performance",
+        "description": "Combined canonical performance read for one page: the latest persisted\nPageSpeed Insights observation per strategy (``seo.page_performance``),\nthe history behind it, the detected regressions, and the page's Google\nSearch Console stats (``web.gsc_page_stat``).\n\nThis is the canonical replacement for the retired\n``GET /scraper/admin/pages/{id}/performance``, which read the deleted\n``scraper.psi_metrics`` / ``scraper.gsc_metrics`` tables.",
+        "operationId": "read_page_performance_seo_pages__page_id__performance_get",
+        "parameters": [
+          {
+            "name": "page_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Page Id"
+            }
+          },
+          {
+            "name": "gsc_window_days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "default": 28,
+              "title": "Gsc Window Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagePerformanceResponse"
+                }
               }
             }
           },
@@ -12615,6 +12670,47 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BrowserFetchResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scraper/browser-inspect": {
+      "post": {
+        "tags": [
+          "Scraper"
+        ],
+        "summary": "Navigate ONE URL in the pooled browser and report render evidence",
+        "operationId": "browser_inspect_scraper_browser_inspect_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BrowserInspectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserInspectResult"
                 }
               }
             }
@@ -55161,6 +55257,175 @@
         "title": "BrowserFetchResult",
         "description": "Typed OUT shape for /browser-fetch — one model, never a hand-built dict."
       },
+      "BrowserInspectRequest": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "maximum": 30000,
+            "minimum": 1000,
+            "title": "Timeout Ms",
+            "default": 25000
+          },
+          "kinds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 6,
+            "title": "Kinds"
+          },
+          "expect_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expect Text"
+          },
+          "expect_selector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expect Selector"
+          },
+          "user_agent_suffix": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Agent Suffix"
+          },
+          "use_proxy": {
+            "type": "boolean",
+            "title": "Use Proxy",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "BrowserInspectRequest",
+        "description": "One-shot render CHECK of a single URL — errors, DOM probes, screenshots.\n\nThe third stateless sibling of `/browser-fetch` (HTML only) and the\n`/browser/*` session API (DOM automation). Neither of those can answer\n\"did this page render correctly for a visitor\": that needs the console\nerror stream, the failed-request stream and a DOM probe, all of which\nonly exist while the page is open. Chromium-less hosts (aidream runs no\nbrowser by design; see its Dockerfile note) call this instead of\nlaunching a local browser."
+      },
+      "BrowserInspectResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "http_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Http Status"
+          },
+          "final_url": {
+            "type": "string",
+            "title": "Final Url"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": ""
+          },
+          "console_errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Console Errors"
+          },
+          "failed_requests": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Failed Requests"
+          },
+          "expect_text_found": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expect Text Found"
+          },
+          "expect_selector_found": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expect Selector Found"
+          },
+          "screenshots": {
+            "items": {
+              "$ref": "#/components/schemas/InspectedScreenshot"
+            },
+            "type": "array",
+            "title": "Screenshots"
+          },
+          "screenshot_failures": {
+            "items": {
+              "$ref": "#/components/schemas/ScreenshotFailure"
+            },
+            "type": "array",
+            "title": "Screenshot Failures"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "retryable": {
+            "type": "boolean",
+            "title": "Retryable",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "final_url"
+        ],
+        "title": "BrowserInspectResult",
+        "description": "Typed OUT shape for /browser-inspect — one model, never a hand-built dict."
+      },
       "BrowserLoginMatch": {
         "properties": {
           "item_id": {
@@ -75827,6 +76092,53 @@
         ],
         "title": "GraphPayload"
       },
+      "GscDailyPoint": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "clicks": {
+            "type": "integer",
+            "title": "Clicks"
+          },
+          "impressions": {
+            "type": "integer",
+            "title": "Impressions"
+          },
+          "ctr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ctr"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "date",
+          "clicks",
+          "impressions"
+        ],
+        "title": "GscDailyPoint"
+      },
       "GscOauthStartRequest": {
         "properties": {
           "display_name": {
@@ -75871,6 +76183,76 @@
           "redirect_uri"
         ],
         "title": "GscOauthStartRequest"
+      },
+      "GscPageSummary": {
+        "properties": {
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "title": "End Date"
+          },
+          "clicks": {
+            "type": "integer",
+            "title": "Clicks",
+            "default": 0
+          },
+          "impressions": {
+            "type": "integer",
+            "title": "Impressions",
+            "default": 0
+          },
+          "ctr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ctr"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          },
+          "daily": {
+            "items": {
+              "$ref": "#/components/schemas/GscDailyPoint"
+            },
+            "type": "array",
+            "title": "Daily"
+          },
+          "has_data": {
+            "type": "boolean",
+            "title": "Has Data",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "window_days",
+          "start_date",
+          "end_date"
+        ],
+        "title": "GscPageSummary"
       },
       "GscSearchPerformanceSyncBody": {
         "properties": {
@@ -77586,6 +77968,34 @@
         },
         "type": "object",
         "title": "InsertPagesRequest"
+      },
+      "InspectedScreenshot": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "width": {
+            "type": "integer",
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height"
+          },
+          "image_base64": {
+            "type": "string",
+            "title": "Image Base64"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "width",
+          "height",
+          "image_base64"
+        ],
+        "title": "InspectedScreenshot"
       },
       "IntakeAnswer": {
         "properties": {
@@ -87439,6 +87849,339 @@
         ],
         "title": "PageKeywordMapResult"
       },
+      "PagePerformanceConfig": {
+        "properties": {
+          "psi_has_key": {
+            "type": "boolean",
+            "title": "Psi Has Key"
+          },
+          "psi_source": {
+            "type": "string",
+            "title": "Psi Source"
+          },
+          "gsc_bound": {
+            "type": "boolean",
+            "title": "Gsc Bound"
+          },
+          "gsc_property": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gsc Property"
+          },
+          "gsc_unbound_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gsc Unbound Reason"
+          },
+          "refresh_pagespeed_path": {
+            "type": "string",
+            "title": "Refresh Pagespeed Path"
+          },
+          "refresh_gsc_path": {
+            "type": "string",
+            "title": "Refresh Gsc Path"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "psi_has_key",
+          "psi_source",
+          "gsc_bound",
+          "refresh_pagespeed_path",
+          "refresh_gsc_path"
+        ],
+        "title": "PagePerformanceConfig",
+        "description": "What is wired up — so the UI can offer the fix instead of a dead end."
+      },
+      "PagePerformanceRegressionOut": {
+        "properties": {
+          "strategy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "mobile",
+                  "desktop"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strategy"
+          },
+          "metric": {
+            "type": "string",
+            "title": "Metric"
+          },
+          "data_kind": {
+            "type": "string",
+            "enum": [
+              "lab",
+              "field"
+            ],
+            "title": "Data Kind"
+          },
+          "previous_observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Previous Observed At"
+          },
+          "current_observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Current Observed At"
+          },
+          "previous_value": {
+            "type": "number",
+            "title": "Previous Value"
+          },
+          "current_value": {
+            "type": "number",
+            "title": "Current Value"
+          },
+          "delta": {
+            "type": "number",
+            "title": "Delta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "metric",
+          "data_kind",
+          "previous_observed_at",
+          "current_observed_at",
+          "previous_value",
+          "current_value",
+          "delta"
+        ],
+        "title": "PagePerformanceRegressionOut"
+      },
+      "PagePerformanceResponse": {
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "psi_mobile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PagePerformanceSample"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "psi_desktop": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PagePerformanceSample"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "psi_history": {
+            "items": {
+              "$ref": "#/components/schemas/PagePerformanceSample"
+            },
+            "type": "array",
+            "title": "Psi History"
+          },
+          "regressions": {
+            "items": {
+              "$ref": "#/components/schemas/PagePerformanceRegressionOut"
+            },
+            "type": "array",
+            "title": "Regressions"
+          },
+          "has_psi_data": {
+            "type": "boolean",
+            "title": "Has Psi Data",
+            "default": false
+          },
+          "gsc": {
+            "$ref": "#/components/schemas/GscPageSummary"
+          },
+          "config": {
+            "$ref": "#/components/schemas/PagePerformanceConfig"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "site_id",
+          "url",
+          "organization_id",
+          "gsc",
+          "config"
+        ],
+        "title": "PagePerformanceResponse"
+      },
+      "PagePerformanceSample": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "strategy": {
+            "type": "string",
+            "enum": [
+              "mobile",
+              "desktop"
+            ],
+            "title": "Strategy"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          },
+          "performance_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Performance Score"
+          },
+          "accessibility_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accessibility Score"
+          },
+          "best_practices_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Practices Score"
+          },
+          "seo_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seo Score"
+          },
+          "lab_metrics": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Lab Metrics"
+          },
+          "field_lcp_p75_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Lcp P75 Ms"
+          },
+          "field_overall_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Overall Category"
+          },
+          "lighthouse_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lighthouse Version"
+          },
+          "final_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "run_id",
+          "provider",
+          "strategy",
+          "observed_at"
+        ],
+        "title": "PagePerformanceSample",
+        "description": "One persisted PSI observation, flattened for a client."
+      },
       "PageSummary": {
         "properties": {
           "page_index": {
@@ -87596,7 +88339,8 @@
             "type": "string",
             "enum": [
               "mobile",
-              "desktop"
+              "desktop",
+              "both"
             ],
             "title": "Strategy",
             "default": "mobile"
@@ -98489,6 +99233,29 @@
         "type": "object",
         "title": "ScoreSourcesRequest",
         "description": "Trigger the config-driven PRE-READ scoring over a topic's sources.\n\n``source_ids=None`` scores every included source on the topic; otherwise only\nthe given sources are (re)scored. Always recomputes from the current keyword-\nrank + authority data — so a user hits this after tuning the scoring config to\nre-rank their sources without re-running the whole pipeline."
+      },
+      "ScreenshotFailure": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "error_class": {
+            "type": "string",
+            "title": "Error Class"
+          },
+          "error_message": {
+            "type": "string",
+            "title": "Error Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "error_class",
+          "error_message"
+        ],
+        "title": "ScreenshotFailure"
       },
       "ScrubRequest": {
         "properties": {

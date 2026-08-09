@@ -4510,10 +4510,41 @@ export interface paths {
          * @description On-demand streamed PageSpeed Insights collection for one canonical
          *     page (M-74/M-75, WS-12): builds the CollectionRequest from the page's
          *     live URL (SSOT — never a caller-supplied URL) and runs it through the
-         *     ONE ``run_collection`` funnel every other provider uses. First-ever
-         *     rows land in ``seo.page_performance``.
+         *     ONE ``run_collection`` funnel every other provider uses. Rows land in
+         *     ``seo.page_performance`` — the canonical PSI store.
+         *
+         *     ``strategy: "both"`` collects mobile and desktop sequentially (PSI is
+         *     slow and rate-limited; two parallel calls on one page buy nothing and
+         *     double the burst against the shared platform quota).
          */
         post: operations["sync_page_pagespeed_seo_pages__page_id__pagespeed_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/pages/{page_id}/performance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Page Performance
+         * @description Combined canonical performance read for one page: the latest persisted
+         *     PageSpeed Insights observation per strategy (``seo.page_performance``),
+         *     the history behind it, the detected regressions, and the page's Google
+         *     Search Console stats (``web.gsc_page_stat``).
+         *
+         *     This is the canonical replacement for the retired
+         *     ``GET /scraper/admin/pages/{id}/performance``, which read the deleted
+         *     ``scraper.psi_metrics`` / ``scraper.gsc_metrics`` tables.
+         */
+        get: operations["read_page_performance_seo_pages__page_id__performance_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4987,6 +5018,23 @@ export interface paths {
         put?: never;
         /** Render ONE URL in the pooled browser and return its HTML */
         post: operations["browser_fetch_scraper_browser_fetch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scraper/browser-inspect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Navigate ONE URL in the pooled browser and report render evidence */
+        post: operations["browser_inspect_scraper_browser_inspect_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -20438,6 +20486,76 @@ export interface components {
              */
             truncated?: boolean;
         };
+        /**
+         * BrowserInspectRequest
+         * @description One-shot render CHECK of a single URL — errors, DOM probes, screenshots.
+         *
+         *     The third stateless sibling of `/browser-fetch` (HTML only) and the
+         *     `/browser/*` session API (DOM automation). Neither of those can answer
+         *     "did this page render correctly for a visitor": that needs the console
+         *     error stream, the failed-request stream and a DOM probe, all of which
+         *     only exist while the page is open. Chromium-less hosts (aidream runs no
+         *     browser by design; see its Dockerfile note) call this instead of
+         *     launching a local browser.
+         */
+        BrowserInspectRequest: {
+            /** Url */
+            url: string;
+            /**
+             * Timeout Ms
+             * @default 25000
+             */
+            timeout_ms?: number;
+            /** Kinds */
+            kinds?: string[];
+            /** Expect Text */
+            expect_text?: string | null;
+            /** Expect Selector */
+            expect_selector?: string | null;
+            /** User Agent Suffix */
+            user_agent_suffix?: string | null;
+            /**
+             * Use Proxy
+             * @default false
+             */
+            use_proxy?: boolean;
+        };
+        /**
+         * BrowserInspectResult
+         * @description Typed OUT shape for /browser-inspect — one model, never a hand-built dict.
+         */
+        BrowserInspectResult: {
+            /** Success */
+            success: boolean;
+            /** Http Status */
+            http_status?: number | null;
+            /** Final Url */
+            final_url: string;
+            /**
+             * Title
+             * @default
+             */
+            title?: string;
+            /** Console Errors */
+            console_errors?: string[];
+            /** Failed Requests */
+            failed_requests?: string[];
+            /** Expect Text Found */
+            expect_text_found?: boolean | null;
+            /** Expect Selector Found */
+            expect_selector_found?: boolean | null;
+            /** Screenshots */
+            screenshots?: components["schemas"]["InspectedScreenshot"][];
+            /** Screenshot Failures */
+            screenshot_failures?: components["schemas"]["ScreenshotFailure"][];
+            /** Error */
+            error?: string | null;
+            /**
+             * Retryable
+             * @default false
+             */
+            retryable?: boolean;
+        };
         /** BrowserLoginMatch */
         BrowserLoginMatch: {
             /** Item Id */
@@ -27949,6 +28067,22 @@ export interface components {
             /** Truncated */
             truncated: boolean;
         };
+        /** GscDailyPoint */
+        GscDailyPoint: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Clicks */
+            clicks: number;
+            /** Impressions */
+            impressions: number;
+            /** Ctr */
+            ctr?: number | null;
+            /** Position */
+            position?: number | null;
+        };
         /** GscOauthStartRequest */
         GscOauthStartRequest: {
             /** Display Name */
@@ -27964,6 +28098,42 @@ export interface components {
              * @default false
              */
             is_default?: boolean;
+        };
+        /** GscPageSummary */
+        GscPageSummary: {
+            /** Window Days */
+            window_days: number;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /**
+             * Clicks
+             * @default 0
+             */
+            clicks?: number;
+            /**
+             * Impressions
+             * @default 0
+             */
+            impressions?: number;
+            /** Ctr */
+            ctr?: number | null;
+            /** Position */
+            position?: number | null;
+            /** Daily */
+            daily?: components["schemas"]["GscDailyPoint"][];
+            /**
+             * Has Data
+             * @default false
+             */
+            has_data?: boolean;
         };
         /** GscSearchPerformanceSyncBody */
         GscSearchPerformanceSyncBody: {
@@ -28679,6 +28849,17 @@ export interface components {
              * @default false
              */
             join_duplicates?: boolean;
+        };
+        /** InspectedScreenshot */
+        InspectedScreenshot: {
+            /** Kind */
+            kind: string;
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /** Image Base64 */
+            image_base64: string;
         };
         /** IntakeAnswer */
         IntakeAnswer: {
@@ -32349,6 +32530,120 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /**
+         * PagePerformanceConfig
+         * @description What is wired up — so the UI can offer the fix instead of a dead end.
+         */
+        PagePerformanceConfig: {
+            /** Psi Has Key */
+            psi_has_key: boolean;
+            /** Psi Source */
+            psi_source: string;
+            /** Gsc Bound */
+            gsc_bound: boolean;
+            /** Gsc Property */
+            gsc_property?: string | null;
+            /** Gsc Unbound Reason */
+            gsc_unbound_reason?: string | null;
+            /** Refresh Pagespeed Path */
+            refresh_pagespeed_path: string;
+            /** Refresh Gsc Path */
+            refresh_gsc_path: string;
+        };
+        /** PagePerformanceRegressionOut */
+        PagePerformanceRegressionOut: {
+            /** Strategy */
+            strategy?: ("mobile" | "desktop") | null;
+            /** Metric */
+            metric: string;
+            /**
+             * Data Kind
+             * @enum {string}
+             */
+            data_kind: "lab" | "field";
+            /**
+             * Previous Observed At
+             * Format: date-time
+             */
+            previous_observed_at: string;
+            /**
+             * Current Observed At
+             * Format: date-time
+             */
+            current_observed_at: string;
+            /** Previous Value */
+            previous_value: number;
+            /** Current Value */
+            current_value: number;
+            /** Delta */
+            delta: number;
+        };
+        /** PagePerformanceResponse */
+        PagePerformanceResponse: {
+            /** Page Id */
+            page_id: string;
+            /** Site Id */
+            site_id: string;
+            /** Url */
+            url: string;
+            /** Organization Id */
+            organization_id: string;
+            psi_mobile?: components["schemas"]["PagePerformanceSample"] | null;
+            psi_desktop?: components["schemas"]["PagePerformanceSample"] | null;
+            /** Psi History */
+            psi_history?: components["schemas"]["PagePerformanceSample"][];
+            /** Regressions */
+            regressions?: components["schemas"]["PagePerformanceRegressionOut"][];
+            /**
+             * Has Psi Data
+             * @default false
+             */
+            has_psi_data?: boolean;
+            gsc: components["schemas"]["GscPageSummary"];
+            config: components["schemas"]["PagePerformanceConfig"];
+        };
+        /**
+         * PagePerformanceSample
+         * @description One persisted PSI observation, flattened for a client.
+         */
+        PagePerformanceSample: {
+            /** Id */
+            id: string;
+            /** Run Id */
+            run_id: string;
+            /** Provider */
+            provider: string;
+            /**
+             * Strategy
+             * @enum {string}
+             */
+            strategy: "mobile" | "desktop";
+            /**
+             * Observed At
+             * Format: date-time
+             */
+            observed_at: string;
+            /** Performance Score */
+            performance_score?: number | null;
+            /** Accessibility Score */
+            accessibility_score?: number | null;
+            /** Best Practices Score */
+            best_practices_score?: number | null;
+            /** Seo Score */
+            seo_score?: number | null;
+            /** Lab Metrics */
+            lab_metrics?: {
+                [key: string]: number;
+            };
+            /** Field Lcp P75 Ms */
+            field_lcp_p75_ms?: number | null;
+            /** Field Overall Category */
+            field_overall_category?: string | null;
+            /** Lighthouse Version */
+            lighthouse_version?: string | null;
+            /** Final Url */
+            final_url?: string | null;
+        };
         /** PageSummary */
         PageSummary: {
             /** Page Index */
@@ -32412,7 +32707,7 @@ export interface components {
              * @default mobile
              * @enum {string}
              */
-            strategy?: "mobile" | "desktop";
+            strategy?: "mobile" | "desktop" | "both";
             /** Request Id */
             request_id?: string | null;
         };
@@ -36700,6 +36995,15 @@ export interface components {
         ScoreSourcesRequest: {
             /** Source Ids */
             source_ids?: string[] | null;
+        };
+        /** ScreenshotFailure */
+        ScreenshotFailure: {
+            /** Kind */
+            kind: string;
+            /** Error Class */
+            error_class: string;
+            /** Error Message */
+            error_message: string;
         };
         /**
          * ScrubRequest
@@ -51279,6 +51583,39 @@ export interface operations {
             };
         };
     };
+    read_page_performance_seo_pages__page_id__performance_get: {
+        parameters: {
+            query?: {
+                gsc_window_days?: number;
+            };
+            header?: never;
+            path: {
+                page_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagePerformanceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     sync_site_analytics_seo_sites__site_id__analytics_sync_post: {
         parameters: {
             query?: never;
@@ -52078,6 +52415,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BrowserFetchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    browser_inspect_scraper_browser_inspect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrowserInspectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowserInspectResult"];
                 };
             };
             /** @description Validation Error */
