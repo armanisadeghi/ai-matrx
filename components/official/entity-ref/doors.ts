@@ -45,8 +45,10 @@ const UUID_RE =
  * component-free entry point on the door path. It used to live only inside
  * `MatrxUuidCell`, which meant guarding an id dragged a table cell (and its
  * tooltip/toast/peek-host graph) into whatever chunk needed the check —
- * THE FRAGMENTATION LAW, paid for a three-line regex. `MatrxUuidCell` now
- * re-exports this one so existing importers are unaffected.
+ * THE FRAGMENTATION LAW, paid for a three-line regex. Every importer was moved
+ * to this module in the same change — there is deliberately no re-export left
+ * behind in `MatrxUuidCell`, because that tripped `no-barrel-files` and the
+ * rule is right.
  */
 export function isUuidValue(value: unknown): value is string {
   return typeof value === "string" && UUID_RE.test(value.trim());

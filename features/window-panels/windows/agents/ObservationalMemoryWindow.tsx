@@ -155,21 +155,23 @@ function SidebarRow({
             className="shrink-0"
           />
         </div>
-        {row.agentName && (
+        {/* Gated on the ID, not the name. The name comes from a selector that
+            may not have hydrated yet, and gating on it meant a KNOWN agent got
+            no door at all whenever its name was still loading — the corollary
+            this sweep exists to kill, inverted. */}
+        {row.agentId && (
           <div className="flex min-w-0 items-center gap-1 pl-4">
-            <span className="truncate text-[10px] text-muted-foreground">
-              {row.agentName}
-            </span>
-            {/* The window already resolved which agent this is; naming it and
-                refusing to link it is the corollary this sweep exists to kill. */}
-            {row.agentId && (
-              <EntityDoorControls
-                token="agent"
-                id={row.agentId}
-                name={row.agentName}
-                className="shrink-0"
-              />
+            {row.agentName && (
+              <span className="truncate text-[10px] text-muted-foreground">
+                {row.agentName}
+              </span>
             )}
+            <EntityDoorControls
+              token="agent"
+              id={row.agentId}
+              name={row.agentName}
+              className="shrink-0"
+            />
           </div>
         )}
         <div className="flex items-center gap-2 pl-4 mt-0.5">

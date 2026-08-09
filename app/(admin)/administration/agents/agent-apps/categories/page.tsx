@@ -39,6 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { DeepLinkMissNotice } from "@/components/official/deep-link/DeepLinkMissNotice";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -300,6 +301,11 @@ function AgentAppsCategoriesAdminPageInner() {
   const selected = selectedId
     ? categories.find((c) => c.id === selectedId)
     : null;
+
+  // The URL names a category this list does not contain (deleted, or a bad id).
+  // Without this the address bar keeps advertising a selection while the panel
+  // says "No Category Selected" — the link looks valid and does nothing.
+  const linkMissed = Boolean(selectedId && !loading && !selected);
 
   if (loading && categories.length === 0) {
     return (
@@ -619,7 +625,17 @@ function AgentAppsCategoriesAdminPageInner() {
             </ScrollArea>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-4">
+            {linkMissed && (
+              <DeepLinkMissNotice
+                token="app_category"
+                entityLabel="category"
+                id={selectedId ?? ""}
+                containerLabel="list"
+                onClear={() => selectCategory(null)}
+                className="w-full max-w-xl"
+              />
+            )}
             <div className="text-center text-muted-foreground">
               <Lightbulb className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-medium mb-2">No Category Selected</h3>

@@ -538,6 +538,12 @@ function BackgroundTestMode({
  */
 function AgentUnderTest({ agentId }: { agentId: string }) {
   const agentName = useAppSelector((state) => selectAgentName(state, agentId));
+  // `createManualInstanceNoAgent` sets `agentId: ""`. An empty id resolves to
+  // `/agents/`, so the door would silently open the agents LIST while labelled
+  // as this agent — a wrong door wearing a right label.
+  if (!agentId) {
+    return <span className="font-medium text-muted-foreground">No agent</span>;
+  }
   return (
     <>
       <span className="min-w-0 truncate font-medium">
@@ -580,7 +586,10 @@ export function AgentExecutionTestModal({
           {/* The modal exists to run ONE agent and never said which. The id was
               in props the whole time — naming the record and refusing to link it
               is the corollary; not naming it at all is worse. */}
-          <DialogTitle className="flex min-w-0 items-center gap-1.5 text-sm">
+          {/* pr-14 clears the Dialog's built-in close (X) button, which sits at
+              `absolute right-4 top-4` and would otherwise land on top of the
+              always-visible door controls once the agent name truncates. */}
+          <DialogTitle className="flex min-w-0 items-center gap-1.5 pr-14 text-sm">
             <span className="shrink-0">
               {MODE_TITLES[testType] ?? "Test Execution"}
             </span>

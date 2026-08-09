@@ -27,7 +27,12 @@ import {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
-import { AdminUserRef } from "@/features/admin/users/components/AdminUserRef";
+import {
+  AdminUserRef,
+  accountHrefFor,
+} from "@/features/admin/users/components/AdminUserRef";
+import { DeepLinkMissNotice } from "@/components/official/deep-link/DeepLinkMissNotice";
+import { useDeepLinkParam } from "@/components/official/deep-link/useDeepLinkParam";
 import type { Database } from "@/types/database.types";
 
 const PAGE_LOCATION =
@@ -134,6 +139,17 @@ function AdminsManagementPageContent() {
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // The roster loaded and the linked person holds no admin row. Checked against
+  // the FULL `admins` list, not the table's filtered view, so a search the user
+  // typed themselves can never be mistaken for a missing record.
+  const focusMissed = Boolean(
+    focusedUserId &&
+      !loading &&
+      !admins.some((row) => row.user_id === focusedUserId),
+  );
+
+  const { clear: clearUserFocus } = useDeepLinkParam("user");
 
   // Add-admin form state
   const [emailQuery, setEmailQuery] = useState("");
@@ -487,6 +503,20 @@ function AdminsManagementPageContent() {
           <h2 className="text-sm font-medium text-foreground">
             Current admins ({admins.length})
           </h2>
+          {/* `AdminUserRef` advertises this route as the "Admin level" door, so
+              it is reached constantly for people who are NOT admins. Seeding the
+              search then leaves an empty table and says nothing — the link looks
+              broken. The notice names what happened and still offers the
+              account door, since "not an admin" is not "unreachable". */}
+          {focusMissed && (
+            <DeepLinkMissNotice
+              token="user"
+              id={focusedUserId}
+              href={accountHrefFor(focusedUserId)}
+              containerLabel="admin roster"
+              onClear={clearUserFocus}
+            />
+          )}
           <div className="h-[480px]">
             <MatrxDataTable
               data={admins}
@@ -494,7 +524,18 @@ function AdminsManagementPageContent() {
               getRowId={(r) => r.user_id}
               isLoading={loading}
               pageSize={25}
-              emptyState={{ title: "No admins." }}
+              // Must not contradict the notice above: with a missed deep link
+              // the table is empty because that person is not an admin, not
+              // because there are no admins at all.
+              emptyState={
+                focusMissed
+                  ? {
+                      title: "That person isn't an admin",
+                      description:
+                        "Clear the link above to see every admin on this roster.",
+                    }
+                  : { title: "No admins." }
+              }
               toolbar={{
                 search: true,
                 searchPlaceholder: "Search email, level, user id…",

@@ -1026,9 +1026,13 @@ export function ShortcutList({
             )}
           </ScrollArea>
         </div>
-        <div className="sr-only">
-          Scope: {scope} {scopeId ?? ""}
-        </div>
+        {/* Screen-reader-only status. It used to read the raw container uuid
+            aloud, character by character — noise, not identity, and it was the
+            only place this list mentioned its scope at all. The scope LEVEL is
+            the part a listener can actually use.
+            (Sighted users get no scope indicator here whatsoever; that gap is a
+            design question, tracked in the no-dead-ends handoff.) */}
+        <div className="sr-only">Scope: {scope}</div>
       </div>
     </TooltipProvider>
   );

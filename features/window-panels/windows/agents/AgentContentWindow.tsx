@@ -251,9 +251,9 @@ function FooterControls({
   return (
     <div className="flex w-full min-w-0 items-center justify-between gap-2">
       <div className="flex min-w-0 items-center gap-1.5">
-        {/* THE DOOR LAW in a window title bar: this window IS an agent, and its
-            name was a flat span with the id sitting right beside it in a
-            copy-only button.
+        {/* THE DOOR LAW in this window's FOOTER bar (`footerLeft`): this window
+            IS an agent, and its name was a flat span with the id sitting right
+            beside it in a copy-only button.
 
             All three doors, including same-tab Open on the name: the edit buffer
             and its dirty flag live in Redux (`selectAgentIsDirty`), so a route
@@ -261,12 +261,16 @@ function FooterControls({
             agent. Contrast `CleanupReviewDialog`, whose decisions are local
             state and therefore gets sibling controls instead.
 
-            Safe here because WindowPanel's action zone stops pointer-down
-            propagation, so the anchor cannot be swallowed by the drag gesture. */}
+            Safe from the drag gesture because `WindowPanel`'s footer bar stops
+            pointer-down propagation (WindowPanel.tsx, the `footerBar` element) —
+            the footer is not itself a drag handle, but the header is, and the
+            same suppression is what keeps the anchor clickable. */}
         <EntityRef
           token="agent"
           id={agentId}
-          name={agentName || "Agent"}
+          // Not `agentName || "Agent"` — that literal is LESS identifying than
+          // EntityRef's own fallback, which shows the truncated id.
+          name={agentName}
           showIcon={false}
           nameClassName="max-w-[160px] truncate text-[11px] font-medium text-foreground"
         />
