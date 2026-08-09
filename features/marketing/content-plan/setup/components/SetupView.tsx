@@ -245,6 +245,7 @@ export function SetupView() {
   // all-but-last render as completed. Capped so a chatty stream can't grow it
   // unbounded.
   const [buildLog, setBuildLog] = useState<BuildLogEntry[]>([]);
+  const [buildFailed, setBuildFailed] = useState(false);
   const pushBuildProgress = (text: string) => {
     setBuildLog((current) => {
       if (current[current.length - 1]?.text === text) return current;
@@ -880,6 +881,7 @@ export function SetupView() {
     // whole run happen instead of staring at a spinner while the page shifts.
     setAiError(null);
     setBuildLog([]);
+    setBuildFailed(false);
     setDraftingWorkOrder(true);
     try {
       let report = researchReport;
@@ -920,6 +922,7 @@ export function SetupView() {
     } catch (error) {
       const message = extractErrorMessage(error);
       setAiError(message);
+      setBuildFailed(true);
       pushBuildProgress(`Failed — ${message}`);
     } finally {
       setDraftingWorkOrder(false);
@@ -1733,9 +1736,12 @@ export function SetupView() {
         onRecommendShape={() => void handleRecommendShape()}
         shapeBusy={agents.shapeBusy}
         onBuildWithAi={() => {
-          // Re-opening for a NEW run clears the finished feed so the intake
-          // questions come back; an in-flight run keeps its live feed.
-          if (!draftingWorkOrder) setBuildLog([]);
+          // Re-opening for a NEW run clears the finished/failed feed so the
+          // intake questions come back; an in-flight run keeps its live feed.
+          if (!draftingWorkOrder) {
+            setBuildLog([]);
+            setBuildFailed(false);
+          }
           setBuildDialogOpen(true);
         }}
         draftBusy={draftingWorkOrder}
@@ -1755,6 +1761,11 @@ export function SetupView() {
           selectedTopicId={researchTopicId}
           onSelectTopic={selectTopic}
           log={buildLog}
+          failed={buildFailed}
+          onReset={() => {
+            setBuildLog([]);
+            setBuildFailed(false);
+          }}
           busy={draftingWorkOrder}
           onSubmit={(hints) => void handleBuildWithAi(hints)}
         />

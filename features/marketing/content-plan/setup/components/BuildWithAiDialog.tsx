@@ -13,7 +13,7 @@
  * until the user reviews the routes and hits "Create N pages".
  */
 import { useEffect, useRef, useState } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -101,7 +101,15 @@ function ChoiceRow<T extends string>({
 }
 
 /** The live feed — every step visible, newest active, auto-scrolled. */
-function ActivityFeed({ log, busy }: { log: BuildLogEntry[]; busy: boolean }) {
+function ActivityFeed({
+  log,
+  busy,
+  failed,
+}: {
+  log: BuildLogEntry[];
+  busy: boolean;
+  failed: boolean;
+}) {
   const endRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "nearest" });
@@ -113,16 +121,24 @@ function ActivityFeed({ log, busy }: { log: BuildLogEntry[]; busy: boolean }) {
       aria-label="Build activity"
     >
       {log.map((entry, index) => {
-        const active = busy && index === log.length - 1 && !entry.done;
+        const last = index === log.length - 1;
+        const active = busy && last && !entry.done;
+        const isFailure = failed && last && !busy;
         return (
           <div
             key={`${index}-${entry.text}`}
             className={cn(
               "flex items-start gap-1.5 text-xs leading-relaxed",
-              active ? "font-medium text-foreground" : "text-muted-foreground",
+              isFailure
+                ? "font-medium text-destructive"
+                : active
+                  ? "font-medium text-foreground"
+                  : "text-muted-foreground",
             )}
           >
-            {active ? (
+            {isFailure ? (
+              <X className="mt-0.5 h-3 w-3 shrink-0 text-destructive" />
+            ) : active ? (
               <Loader2 className="mt-0.5 h-3 w-3 shrink-0 animate-spin text-primary" />
             ) : (
               <Check className="mt-0.5 h-3 w-3 shrink-0 text-success" />
@@ -145,6 +161,8 @@ export function BuildWithAiDialog({
   selectedTopicId,
   onSelectTopic,
   log,
+  failed = false,
+  onReset,
   busy,
   onSubmit,
 }: {
@@ -164,11 +182,16 @@ export function BuildWithAiDialog({
   onSelectTopic: (topicId: string | null) => void;
   /** The live activity feed (SetupView owns it — it outlives this dialog). */
   log: BuildLogEntry[];
+  /** The last run ended in an error (its message is the feed's last line). */
+  failed?: boolean;
+  /** Clear the finished/failed feed so the intake questions come back. */
+  onReset: () => void;
   busy: boolean;
   onSubmit: (guidance: SetupGuidance) => void;
 }) {
   const [guidance, setGuidance] = useState<SetupGuidance>(DEFAULT_SETUP_GUIDANCE);
-  const finished = !busy && log.length > 0;
+  const finished = !busy && log.length > 0 && !failed;
+  const errored = !busy && log.length > 0 && Boolean(failed);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -178,15 +201,19 @@ export function BuildWithAiDialog({
           <DialogDescription>
             {busy
               ? "Building — watch every step below. Closing this window does not stop the run."
-              : finished
-                ? "Done — the drafted work order is staged. Review the routes on the right, then Create pages."
-                : "Answer what you know — everything here is a hint, not a commitment. The AI reads the research, picks the shape and counts, names the pages, and stages it all for your review. Nothing is created until you approve the routes."}
+              : errored
+                ? "The build stopped — the last step below says why. Nothing broken was staged; you can try again."
+                : finished
+                  ? "Done — the drafted work order is staged. Review the routes on the right, then Create pages."
+                  : "Answer what you know — everything here is a hint, not a commitment. The AI reads the research, picks the shape and counts, names the pages, and stages it all for your review. Nothing is created until you approve the routes."}
           </DialogDescription>
         </DialogHeader>
 
-        {log.length > 0 ? <ActivityFeed log={log} busy={busy} /> : null}
+        {log.length > 0 ? (
+          <ActivityFeed log={log} busy={busy} failed={errored} />
+        ) : null}
 
-        {!busy && !finished ? (
+        {!busy && !finished && !errored ? (
           <div className="space-y-4">
             <div>
               <p className="mb-1.5 text-xs font-medium text-foreground">
@@ -277,11 +304,20 @@ export function BuildWithAiDialog({
             size="sm"
             onClick={() => onOpenChange(false)}
           >
-            {busy ? "Hide (keeps running)" : finished ? "Close" : "Cancel"}
+            {busy
+              ? "Hide (keeps running)"
+              : finished || errored
+                ? "Close"
+                : "Cancel"}
           </Button>
-          {!busy && !finished ? (
+          {!busy && !finished && !errored ? (
             <Button size="sm" onClick={() => onSubmit(guidance)}>
               {reportReady || reportPending ? "Build it" : "Research + build it"}
+            </Button>
+          ) : null}
+          {errored ? (
+            <Button size="sm" onClick={onReset}>
+              Try again
             </Button>
           ) : null}
           {finished ? (
