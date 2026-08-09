@@ -407,13 +407,20 @@ Ordered by traffic. Each item is independently actionable.
    an 8-char stub. Caught by an adversarial pass; the sentence is now corrected
    in place with a note not to restore it.
 
-   **Remaining there (mechanical):** two local dead-text `Field` components
-   (`logs/log-detail`, `persistence`) that should delegate to `RecordField` the
-   way the explorer overview tabs already do; hand-rolled user cells that
-   should use `buildUserIdColumn`; and `cx-explorer`'s snapshot-list `IdChip`s,
-   which are **blocked** — they sit inside a `<button>`, so an anchor cannot
-   nest, and a proper fix means restructuring the row (layout risk that cannot
-   be checked without a browser, see the banner above).
+   ⚠️ **This item's "remaining" list was STALE and is now re-verified against
+   the code (2026-08-09).** All three named leftovers were already done:
+   `logs/log-detail`'s and `persistence`'s local `Field` components both
+   delegate to `RecordField` today (their own docblocks say so), and
+   `buildUserIdColumn` is consumed by `persistence` ×2, `logs/structured-tab`,
+   and `ops-triage` — the two remaining raw cells (`aga-explorer/
+   rate-limits-tab`, `ops-triage/issue-detail`) both carry a comment saying why
+   they cannot swap. **Re-read before you work an item on this list; a stale
+   "remaining" is how a finished thing gets done twice.**
+
+   **Genuinely remaining, and BLOCKED:** `cx-explorer`'s snapshot-list
+   `IdChip`s sit inside a `<button>`, so an anchor cannot nest. A proper fix
+   restructures the row — layout risk that cannot be checked without a browser
+   (see the banner above).
 7. **Collapse the `AssociationList` fork.** It has ZERO live JSX consumers;
    war-room renders `WarRoomResourcesList`, a second implementation of the same
    grouped row list, while three war-room docblocks still call `AssociationList`
