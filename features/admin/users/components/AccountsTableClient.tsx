@@ -506,15 +506,17 @@ export function AccountsTableClient() {
               admin_level: r.admin_level,
               onboarded: r.onboarding_completed,
             }),
-            // `all` is the table's DATA prop, which is now the focus-filtered
-            // array — so reading `all.length` reported "total: 1" while the
-            // roster held N accounts, telling an agent the platform has one
-            // user. The true total is the unfiltered `rows`; the focused id is
-            // named so the payload explains its own narrowness instead of
-            // silently understating the fleet.
+            // `all` is the table's DATA prop, which is the focus-filtered
+            // array — so the framework's own `total_count` reported 1 while the
+            // roster held N accounts, telling any agent reading the payload
+            // that the platform has one user. `listAttributes` is spread LAST
+            // in buildListPayload, so overriding `total_count` here corrects
+            // the canonical key rather than adding a second, truer one beside
+            // a wrong one. The focused id is named so the payload explains its
+            // own narrowness instead of silently understating the fleet.
             listAttributes: (visible) => ({
-              visible: visible.length,
-              total: rows.length,
+              visible_count: visible.length,
+              total_count: rows.length,
               ...(focusedUserId ? { focused_user_id: focusedUserId } : {}),
             }),
           }}

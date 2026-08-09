@@ -21,6 +21,10 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  MatrxUuidCell,
+  isUuidValue,
+} from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { useCapturedErrors } from "@/lib/diagnostics/useCapturedErrors";
 import {
   clearCapturedErrors,
@@ -64,14 +68,35 @@ function relativeTime(ms: number): string {
   return `${Math.floor(delta / 86_400_000)}d ago`;
 }
 
-function Field({ label, value }: { label: string; value?: string | number }) {
+/**
+ * `token` marks this field as pointing at a real record. THE DOOR LAW: an
+ * error report that names the conversation which blew up, and then makes you
+ * copy the uuid by hand to go look at it, is a dead end at the exact moment
+ * the user most needs the door. Rendering falls back to plain text unless the
+ * value is genuinely a uuid, so a token on a non-id value can never mint a
+ * link to a record that isn't there.
+ */
+function Field({
+  label,
+  value,
+  token,
+}: {
+  label: string;
+  value?: string | number;
+  token?: string;
+}) {
   if (value === undefined || value === null || value === "") return null;
+  const openable = token && isUuidValue(value);
   return (
     <div className="grid grid-cols-[7rem_1fr] gap-2 py-1 border-b border-border/50">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <span className="text-xs text-foreground break-words whitespace-pre-wrap font-mono">
-        {value}
-      </span>
+      {openable ? (
+        <MatrxUuidCell value={String(value)} label={label} token={token} />
+      ) : (
+        <span className="text-xs text-foreground break-words whitespace-pre-wrap font-mono">
+          {value}
+        </span>
+      )}
     </div>
   );
 }
@@ -375,7 +400,11 @@ export default function ErrorInspectorWindow({
               <Field label="Details" value={selected.details} />
               <Field label="Hint" value={selected.hint} />
               <Field label="Request id" value={selected.requestId} />
-              <Field label="Conversation" value={selected.conversationId} />
+              <Field
+                label="Conversation"
+                value={selected.conversationId}
+                token="conversation"
+              />
               <Field label="Route" value={selected.route} />
               <Field label="Occurrences" value={selected.count} />
               <Field

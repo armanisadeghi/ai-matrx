@@ -21,6 +21,8 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { formatJson } from "@/utils/json/json-cleaner-utility";
 
 // ─── Agent definition selectors ───────────────────────────────────────────────
@@ -241,7 +243,13 @@ function OverviewTab({
       <div className="px-3 pb-1 space-y-0.5">
         <KvRow label="name" value={agent.name} />
         <KvRow label="category" value={agent.category ?? "—"} dim />
-        <KvRow label="agentId" value={agentId.slice(0, 8) + "…"} mono dim />
+        {/* THE DOOR LAW: a hand-truncated uuid you can neither copy nor open.
+            MatrxUuidCell already owns short display + copy + the registry's
+            doors, so the debug window can reach the agent it is debugging. */}
+        <KvRow
+          label="agentId"
+          value={<MatrxUuidCell value={agentId} label="Agent ID" token="agent" />}
+        />
         <KvRow
           label="description"
           value={
@@ -270,9 +278,13 @@ function OverviewTab({
           <div className="px-3 pb-1 space-y-0.5">
             <KvRow
               label="conversationId"
-              value={conversationId.slice(0, 8) + "…"}
-              mono
-              dim
+              value={
+                <MatrxUuidCell
+                  value={conversationId}
+                  label="Conversation ID"
+                  token="conversation"
+                />
+              }
             />
             <KvRow
               label="status"
@@ -377,9 +389,13 @@ function InstancesTab({
             <div key={inst.conversationId} className="px-3 py-2 space-y-0.5">
               <KvRow
                 label="conversationId"
-                value={inst.conversationId.slice(0, 8) + "…"}
-                mono
-                dim
+                value={
+                  <MatrxUuidCell
+                    value={inst.conversationId}
+                    label="Conversation ID"
+                    token="conversation"
+                  />
+                }
               />
               <KvRow label="status" value={<Badge label={inst.status} />} />
               <KvRow label="origin" value={inst.origin} mono dim />
@@ -799,6 +815,16 @@ function InstanceSidebarRow({
           {instance.status}
         </span>
       )}
+      {/* Doors as a SIBLING: the row is a role="button" that selects the
+          instance in this window, so an anchor inside it would be invalid DOM
+          and a stray click would cost the operator the panel. */}
+      <div
+        className="shrink-0"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <EntityDoorControls token="conversation" id={conversationId} />
+      </div>
       <button
         type="button"
         onClick={(e) => {
