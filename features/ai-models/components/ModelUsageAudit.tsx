@@ -23,6 +23,10 @@ import { aiModelService } from "../service";
 import type { AiModel, ModelUsageResult } from "../types";
 import { ModelSettingsReviewDialog } from "./ModelSettingsReviewDialog";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 interface ModelUsageAuditProps {
   model: AiModel;
@@ -364,7 +368,7 @@ function UsageSection({
         <p className="text-xs text-muted-foreground pl-1">{emptyMessage}</p>
       ) : (
         <div className="border rounded-md overflow-hidden">
-          <table className="w-full text-xs">
+          <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
             <thead>
               <tr className="bg-muted/50 border-b">
                 <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">

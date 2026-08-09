@@ -26,6 +26,11 @@ import {
   SOURCE_TYPE_CONFIG,
   authorityTier,
 } from "../../constants";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+} from "@/components/official/mobile-table/mobileTable";
 
 /**
  * Shared tabular view of sources for the casual browsing surfaces (keyword
@@ -331,7 +336,7 @@ export function SourceResultsTable({
 
   return (
     <div className="overflow-x-auto rounded-lg border border-border/50">
-      <table className="w-full text-left">
+      <table className={cn("text-left", MOBILE_TABLE)}>
         <thead>
           <tr className="border-b border-border/40 text-[10px] uppercase tracking-wider text-muted-foreground">
             <th className="py-1.5 pl-2 pr-1 w-10 font-medium">
@@ -347,7 +352,7 @@ export function SourceResultsTable({
                 "Best"
               )}
             </th>
-            <th className="py-1.5 px-1 font-medium">
+            <th className={cn("py-1.5 px-1 font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-card")}>
               {interactive ? (
                 <SortHeader
                   label="Source"
@@ -535,7 +540,7 @@ export function SourceResultsTable({
                 <td className="py-2 pl-2 pr-1 align-top font-mono text-[11px] tabular-nums text-muted-foreground">
                   {rank != null ? rank : "—"}
                 </td>
-                <td className="py-2 px-1 align-top">
+                <td className={cn("py-2 px-1 align-top", MOBILE_TABLE_FROZEN_CELL)}>
                   <div className="flex items-start gap-1.5 min-w-0">
                     <SourceTypeIcon type={sourceTypeFromDb(src.source_type)} />
                     <div className="min-w-0">

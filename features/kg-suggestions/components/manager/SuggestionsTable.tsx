@@ -45,6 +45,9 @@ import {
   type KgSuggestionStatus,
   type KgSuggestionsQuery,
 } from "@/features/kg-suggestions/types";
+import {
+  MOBILE_TABLE,
+} from "@/components/official/mobile-table/mobileTable";
 
 const STATUS_STYLE: Record<KgSuggestionStatus, string> = {
   pending: "border-primary/40 text-primary",
@@ -104,7 +107,7 @@ export function SuggestionsTable({
 
   return (
     <div className="min-w-[72rem]">
-      <table className="w-full border-collapse text-[11px]">
+      <table className={cn("border-collapse text-[11px]", MOBILE_TABLE)}>
         <thead className="sticky top-0 z-10 bg-card">
           <tr className="border-b border-border text-left text-muted-foreground">
             <th className="w-8 px-2 py-1.5">

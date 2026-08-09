@@ -19,6 +19,10 @@ import {
   useSeoSpendSummary,
   type SeoProviderSpendRow,
 } from "@/features/marketing/data/spend";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
   const pct = Math.max(0, Math.min(100, row.pct_used));
@@ -124,7 +128,7 @@ export function SeoSpendPanel() {
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] text-xs">
+            <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
               <thead>
                 <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
                   <th className="py-1.5 pr-3 font-medium">Provider</th>

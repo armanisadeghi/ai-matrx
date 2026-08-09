@@ -64,6 +64,10 @@ import {
   buildShortcutDirectoryBriefs,
   shortcutDirectoryRowSummary,
 } from "../format";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE,
+} from "@/components/official/mobile-table/mobileTable";
 
 type SortField =
   "label" | "agent" | "scope" | "category" | "placement" | "surface" | "status";
@@ -711,7 +715,7 @@ export function ShortcutDirectory({
                 so this container scrolls it horizontally, and the first
                 column freezes so a row stays identifiable while scrolling.
                 `sm:` restores the exact desktop rendering. */}
-            <Table className="w-max min-w-full max-w-none sm:w-full sm:min-w-0 sm:max-w-full">
+            <Table className={MOBILE_TABLE}>
               <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
                   <TableHead className="w-[260px] max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-background max-sm:whitespace-nowrap">ID</TableHead>

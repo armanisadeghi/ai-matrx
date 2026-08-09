@@ -6,6 +6,7 @@ import CodeBlockHeader from "@/features/code-editor/components/code-block/CodeBl
 import { languageMap } from "@/features/code-editor/components/code-block/LanguageDisplay";
 import { Folder, PanelLeftClose, PanelLeft, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { useMeasure } from "@/hooks/usehooks";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -303,7 +304,7 @@ export default function MultiFileCodeEditor({
   // Function to handle HTML document viewing in canvas
   const handleViewHTML = async () => {
     if (!user?.id) {
-      alert("You must be logged in to view HTML pages");
+      toast.error("You must be logged in to view HTML pages");
       return;
     }
 
@@ -325,7 +326,7 @@ export default function MultiFileCodeEditor({
       });
     } catch (error) {
       console.error("Failed to create HTML page:", error);
-      alert(`Failed to create HTML page: ${extractErrorMessage(error)}`);
+      toast.error(`Failed to create HTML page: ${extractErrorMessage(error)}`);
     } finally {
       setIsCreatingPage(false);
     }

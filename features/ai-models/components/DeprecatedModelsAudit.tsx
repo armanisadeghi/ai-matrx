@@ -39,6 +39,10 @@ import { aiModelService } from "../service";
 import type { AiModel, ModelUsageResult } from "../types";
 import { ModelSettingsReviewDialog } from "./ModelSettingsReviewDialog";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 interface DeprecatedModelsAuditProps {
   allModels: AiModel[];
@@ -579,7 +583,7 @@ export default function DeprecatedModelsAudit({
             </Button>
           </div>
         ) : (
-          <table className="w-full text-xs border-collapse">
+          <table className={cn("text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
             <thead className="sticky top-0 z-10 bg-card border-b">
               <tr className="h-8">
                 <Th field="model" label="Deprecated Model" />

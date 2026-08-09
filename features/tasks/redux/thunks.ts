@@ -26,7 +26,8 @@ import { adjustProjectTaskCount } from "@/features/agent-context/redux/projectsS
 import {
   setIsCreatingProject,
   setIsCreatingTask,
-  setOperatingTaskId,
+  addOperatingTaskId,
+  removeOperatingTaskId,
   setOperatingProjectId,
   setActiveProject,
   setExpandedProjects,
@@ -297,12 +298,12 @@ export const toggleTaskCompleteThunk = createAsyncThunk<
   { taskId: string },
   { state: RootState; dispatch: AppDispatch }
 >("tasksUi/toggleTaskComplete", async ({ taskId }, { dispatch, getState }) => {
-  if (getState().tasksUi.operatingTaskId === taskId) return;
-  dispatch(setOperatingTaskId(taskId));
+  if (getState().tasksUi.operatingTaskIds.includes(taskId)) return;
+  dispatch(addOperatingTaskId(taskId));
 
   const current = getState().tasks.entities[taskId];
   if (!current) {
-    dispatch(setOperatingTaskId(null));
+    dispatch(removeOperatingTaskId(taskId));
     return;
   }
   const prevStatus = current.status;
@@ -384,7 +385,7 @@ export const toggleTaskCompleteThunk = createAsyncThunk<
       }
     }
   } finally {
-    dispatch(setOperatingTaskId(null));
+    dispatch(removeOperatingTaskId(taskId));
   }
 });
 
@@ -398,10 +399,10 @@ export const updateTaskFieldThunk = createAsyncThunk<
 >(
   "tasksUi/updateTaskField",
   async ({ taskId, patch }, { dispatch, getState }) => {
-    dispatch(setOperatingTaskId(taskId));
+    dispatch(addOperatingTaskId(taskId));
     const current = getState().tasks.entities[taskId];
     if (!current) {
-      dispatch(setOperatingTaskId(null));
+      dispatch(removeOperatingTaskId(taskId));
       return;
     }
 
@@ -485,7 +486,7 @@ export const updateTaskFieldThunk = createAsyncThunk<
         }
       }
     } finally {
-      dispatch(setOperatingTaskId(null));
+      dispatch(removeOperatingTaskId(taskId));
     }
   },
 );
@@ -497,10 +498,10 @@ export const moveTaskThunk = createAsyncThunk<
 >(
   "tasksUi/moveTask",
   async ({ taskId, fromProjectId, toProjectId }, { dispatch, getState }) => {
-    dispatch(setOperatingTaskId(taskId));
+    dispatch(addOperatingTaskId(taskId));
     const current = getState().tasks.entities[taskId];
     if (!current) {
-      dispatch(setOperatingTaskId(null));
+      dispatch(removeOperatingTaskId(taskId));
       return;
     }
 
@@ -546,7 +547,7 @@ export const moveTaskThunk = createAsyncThunk<
         );
       }
     } finally {
-      dispatch(setOperatingTaskId(null));
+      dispatch(removeOperatingTaskId(taskId));
     }
   },
 );
@@ -558,11 +559,11 @@ export const deleteTaskThunk = createAsyncThunk<
 >(
   "tasksUi/deleteTask",
   async ({ taskId, projectId }, { dispatch, getState }) => {
-    if (getState().tasksUi.operatingTaskId === taskId) return;
-    dispatch(setOperatingTaskId(taskId));
+    if (getState().tasksUi.operatingTaskIds.includes(taskId)) return;
+    dispatch(addOperatingTaskId(taskId));
     const current = getState().tasks.entities[taskId];
     if (!current) {
-      dispatch(setOperatingTaskId(null));
+      dispatch(removeOperatingTaskId(taskId));
       return;
     }
 
@@ -589,7 +590,7 @@ export const deleteTaskThunk = createAsyncThunk<
         );
       }
     } finally {
-      dispatch(setOperatingTaskId(null));
+      dispatch(removeOperatingTaskId(taskId));
     }
   },
 );

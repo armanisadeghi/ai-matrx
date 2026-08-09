@@ -27,6 +27,10 @@ import {
   type SurfaceWithStats,
 } from "@/features/surfaces/services/surfaces.service";
 import { SurfaceReadinessBadge } from "@/features/surfaces/components/SurfaceReadinessBadge";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 type SortKey =
   | "name"
@@ -158,7 +162,7 @@ export function SurfacesTable({
   return (
     <TooltipProvider delayDuration={200}>
       <div className="flex-1 min-h-0 overflow-auto">
-        <table className="w-full text-xs">
+        <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
           <thead className="sticky top-0 z-10 bg-card">
             <tr>
               <th className={headerClass}>
