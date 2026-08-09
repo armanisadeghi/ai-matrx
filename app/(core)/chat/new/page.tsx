@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { ChatNewClient } from "@/features/agents/components/chat/ChatNewClient";
-import { ChatRunHeader } from "@/features/agents/components/chat/ChatRunHeader";
+import { ChatNewHeader } from "@/features/agents/components/chat/ChatNewHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import {
   DEFAULT_NEW_CHAT_SLOT_KEY,
@@ -57,8 +57,8 @@ export default async function NewChatPage() {
   return (
     <>
       <PageHeader>
-        <ChatRunHeader
-          activeAgentId={agentId ?? undefined}
+        <ChatNewHeader
+          agentId={agentId}
           initialAgentName={defaultAgentName ?? undefined}
         />
       </PageHeader>
