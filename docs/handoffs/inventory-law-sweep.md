@@ -53,8 +53,9 @@ one), and **10-11** (correct-looking markup whose EVENTS or HIT AREA silently
 changed). The last group is the dangerous one — 11 had already shipped in three
 surfaces before a bot flagged the fourth.
 
-Before replacing hand-rolled code with a shared primitive, answer all eleven.
-1-3, 6-7 and 9-10 are door-specific; 4, 5, 8 and 11 apply to ANY primitive adoption:
+Before replacing hand-rolled code with a shared primitive, answer all twelve.
+1-3, 6-7 and 9-10 are door-specific; 4, 5, 8, 11 and 12 apply to ANY primitive
+adoption:
 
 1. **Where did the old primary click go?** `router.push` (in place) or
    `window.open` (new tab)? Preserve it. A rail, sheet, side panel, or dialog
@@ -174,12 +175,21 @@ Before replacing hand-rolled code with a shared primitive, answer all eleven.
     child, so opening a peek inside a clickable row meant the row's `onClick`
     and `onMouseDown → preventDefault()` fired on the peek's body, its close
     button, and its backdrop — the preview could not be text-selected, and
-    closing it collapsed the row behind it. **Fixed at the primitive** (a
-    propagation seam wraps the peek host), so no consumer needs to know this —
-    but the mechanism generalises: any primitive you extend that renders an
-    overlay as a CHILD owes the same seam, and "it's in a portal" is not the
-    answer. *(Caught in `GlobalSearchResults`; latent in all 13 `EntityRef`
-    consumers.)*
+    closing it collapsed the row behind it. **Fixed at the primitive** with a
+    propagation seam, so no consumer needs to know this.
+
+    **The seam itself then had to be narrowed, and that is the real lesson:**
+    the first version stopped nine event types, including `pointerdown` — which
+    silently killed click-outside-to-close on every peek in the app. Radix's
+    dismissable layer listens for `pointerdown` on the *document* in the BUBBLE
+    phase, React 19 delegates portal events at `document.body` (one node
+    below), and a modal overlay means every outside click lands inside the
+    seam. So the "defensive" version broke dismissal 100% of the time while
+    looking strictly safer. **A propagation seam is a scalpel: stop only the
+    events the host row actually handles** (here `click`/`mousedown`), and
+    leave `pointerdown`/`pointerup`/keyboard alone — libraries and global
+    shortcuts listen there, and Escape-to-close uses capture so it survives
+    either way. *(Both halves caught in review; latent in all 13 consumers.)*
 
 11. **Did the old control fill the row? Then pass `fill`.** The layout sibling
     of 8, and it hit FOUR conversions before anyone noticed — including three
@@ -198,6 +208,24 @@ Before replacing hand-rolled code with a shared primitive, answer all eleven.
     full-width. `GlobalSearchResults` is deliberately left without `fill`:
     there the row whitespace has its own action, so a stretched name would
     steal the collapse toggle.)*
+
+12. **Does your migration WRITE on mount? Then it can clobber an async store.**
+    Not door-specific — it applies to any "adopt the old value into the new
+    system" step, and it is the most expensive mistake on this branch so far.
+    Moving four surfaces onto `useListViewPrefs` dropped their `localStorage`
+    reads, so the obvious repair was "if nothing is stored, dispatch the
+    imported value". That is a trap twice over: `userPreferences` hydrates
+    ASYNCHRONOUSLY from IDB, so on first mount "nothing stored" means "not
+    loaded yet"; and the sync middleware snapshots the WHOLE partialized slice
+    at dispatch time and debounce-writes it to `users.user_preferences` — so
+    one early write replaces the user's models, voice, display and favourites
+    with defaults. **The hydration guard I reached for was a no-op:**
+    `_meta.loadedPreferences` is non-null from store construction, so it is a
+    constant `true`. The fix is to not write at all — the legacy value is a
+    READ-ONLY fallback (`useSyncExternalStore`, which also gives a correct
+    server snapshot), and the old key is removed only once a synced value
+    exists. **Before writing to a synced store from an effect, prove your
+    "hydrated" signal actually flips.** *(Caught in review.)*
 
 Everything the primitive cannot decide for itself is documented on the props;
 read them rather than inferring from a neighbouring call site.
